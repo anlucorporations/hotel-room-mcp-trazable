@@ -1,0 +1,9 @@
+{
+  "//": "Configuración raíz para el editor; cada paquete extiende los presets de @hotel/config.",
+  "extends": "./packages/config/tsconfig/base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [],
+  "exclude": ["node_modules", "**/dist", "**/.next", "**/out"]
+}

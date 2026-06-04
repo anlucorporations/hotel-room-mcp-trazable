@@ -13,6 +13,10 @@ cache/
 broadcast/
 packages/contracts/out/
 
+# registros de despliegue (generados por deploy/sync; efímeros por entorno)
+packages/contracts/deployments/latest.json
+packages/shared/deployments/*.json
+
 # env & secrets
 .env
 .env.*
@@ -22,6 +26,12 @@ packages/contracts/out/
 *.log
 coverage/
 .DS_Store
+*.tsbuildinfo
+
+# playwright
+test-results/
+playwright-report/
+playwright/.cache/
 
 # informes de auditoría/revisión: efímeros — las correcciones se aplican a las specs
 # y el histórico queda en git; no se versionan para no mezclar proceso con producto

@@ -1,0 +1,29 @@
+{
+  "name": "@hotel/config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Configuración compartida: tsconfig, eslint y preset de Tailwind (fuente única)",
+  "files": [
+    "tsconfig/**",
+    "eslint/**",
+    "tailwind/**"
+  ],
+  "exports": {
+    "./eslint/base": "./eslint/base.mjs",
+    "./tailwind/preset": {
+      "types": "./tailwind/preset.d.ts",
+      "default": "./tailwind/preset.cjs"
+    },
+    "./tsconfig/base.json": "./tsconfig/base.json",
+    "./tsconfig/library.json": "./tsconfig/library.json",
+    "./tsconfig/node.json": "./tsconfig/node.json",
+    "./tsconfig/nextjs.json": "./tsconfig/nextjs.json"
+  },
+  "dependencies": {
+    "@eslint/js": "^9.17.0",
+    "eslint": "^9.17.0",
+    "globals": "^15.14.0",
+    "typescript-eslint": "^8.18.2"
+  }
+}
