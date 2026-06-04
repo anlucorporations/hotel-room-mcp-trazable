@@ -1,0 +1,55 @@
+{
+  "name": "@hotel/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Fuente única: constantes, tipos de dominio, configuración de red, ABI y registro de despliegues",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./env": {
+      "types": "./dist/env.d.ts",
+      "import": "./dist/env.js"
+    },
+    "./deployments": {
+      "types": "./dist/deployments.d.ts",
+      "import": "./dist/deployments.js"
+    },
+    "./health": {
+      "types": "./dist/health.d.ts",
+      "import": "./dist/health.js"
+    },
+    "./fixtures": {
+      "types": "./dist/fixtures.d.ts",
+      "import": "./dist/fixtures.js"
+    }
+  },
+  "files": [
+    "dist",
+    "deployments"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist .turbo coverage *.tsbuildinfo"
+  },
+  "dependencies": {
+    "viem": "^2.21.55",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@hotel/config": "workspace:*",
+    "@types/node": "^22.10.2",
+    "@vitest/coverage-v8": "^2.1.8",
+    "eslint": "^9.17.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

@@ -1,0 +1,2 @@
+# Los registros de despliegue (`<chainId>.json`) los escribe el script de deploy (T0.2).
+# Este archivo mantiene el directorio en el repo.
