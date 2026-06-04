@@ -24,6 +24,10 @@
     "./fixtures": {
       "types": "./dist/fixtures.d.ts",
       "import": "./dist/fixtures.js"
+    },
+    "./abi": {
+      "types": "./dist/abi.d.ts",
+      "import": "./dist/abi.js"
     }
   },
   "files": [

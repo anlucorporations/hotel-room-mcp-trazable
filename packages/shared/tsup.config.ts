@@ -7,6 +7,7 @@ export default defineConfig({
     deployments: "src/deployments/index.ts",
     health: "src/health/index.ts",
     fixtures: "src/fixtures/index.ts",
+    abi: "src/abi/index.ts",
   },
   format: ["esm"],
   dts: true,
