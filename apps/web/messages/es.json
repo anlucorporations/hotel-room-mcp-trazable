@@ -1,0 +1,11 @@
+{
+  "app": {
+    "name": "Hotel Marina del Sol"
+  },
+  "home": {
+    "title": "Hotel Marina del Sol",
+    "tagline": "Noches de hotel como NFTs, en la costa de Alicante.",
+    "catalogComingSoon": "El catálogo de noches estará disponible en la Fase 1.",
+    "skipToContent": "Saltar al contenido"
+  }
+}
