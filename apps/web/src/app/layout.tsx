@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
+import { Providers } from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,7 +21,9 @@ export default async function RootLayout({
   return (
     <html lang={locale}>
       <body>
-        <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider messages={messages}>
+          <Providers>{children}</Providers>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

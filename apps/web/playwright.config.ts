@@ -22,6 +22,7 @@ export default defineConfig({
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    env: { SESSION_SECRET: "e2e-test-secret" },
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 });

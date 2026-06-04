@@ -4,8 +4,63 @@
   },
   "home": {
     "title": "Hotel Marina del Sol",
-    "tagline": "Noches de hotel como NFTs, en la costa de Alicante.",
-    "catalogComingSoon": "El catálogo de noches estará disponible en la Fase 1.",
-    "skipToContent": "Saltar al contenido"
+    "tagline": "Noches de hotel como NFTs, en la costa de Alicante."
+  },
+  "catalog": {
+    "available": "Disponible",
+    "room": "Habitación {room}",
+    "imageAlt": "Habitación {type} {room} para el {date}",
+    "filterType": "Tipo de habitación",
+    "filterAll": "Todas",
+    "filterMaxPrice": "Precio máximo (ETH)",
+    "empty": "No hay noches disponibles con esos filtros.",
+    "degraded": "No se pudo cargar el catálogo. Revisa tu conexión e inténtalo de nuevo.",
+    "retry": "Reintentar",
+    "loadMore": "Ver más",
+    "endOfList": "No hay más noches."
+  },
+  "wallet": {
+    "noWallet": "No detectamos una wallet web3.",
+    "installMetamask": "Instala MetaMask",
+    "connect": "Conectar wallet",
+    "connecting": "Conectando…",
+    "wrongNetwork": "Estás en la red equivocada.",
+    "switchNetwork": "Cambiar de red",
+    "connectedAs": "Conectado: {address}"
+  },
+  "buy": {
+    "buy": "Comprar",
+    "needWallet": "Instala una wallet",
+    "connectToBuy": "Conecta para comprar",
+    "switchToBuy": "Cambia de red para comprar",
+    "processing": "Procesando…",
+    "close": "Cerrar",
+    "status": {
+      "signing": "Confirma en tu wallet",
+      "pending": "Transacción pendiente",
+      "confirmed": "¡Compra confirmada!",
+      "reverted": "La transacción falló"
+    },
+    "statusHint": {
+      "signing": "Revisa y firma la transacción en MetaMask.",
+      "pending": "Esperando confirmación en la red…",
+      "confirmed": "La noche ya es tuya. Aparecerá en «Mis noches».",
+      "reverted": "No se realizó ningún cargo. Puedes intentarlo de nuevo."
+    }
+  },
+  "admin": {
+    "title": "Back-office · Mintear noche",
+    "connectPrompt": "Conecta la wallet con rol MINTER para acceder.",
+    "signInPrompt": "Firma el reto para iniciar sesión.",
+    "signIn": "Iniciar sesión (SIWE)",
+    "noRole": "Tu wallet no tiene el rol MINTER.",
+    "room": "Habitación (101–130, 201–220)",
+    "date": "Fecha de la noche",
+    "price": "Precio (ETH)",
+    "mint": "Mintear",
+    "minting": "Minteando…",
+    "minted": "Noche minteada: token {tokenId}",
+    "invalidDate": "Fecha de calendario inválida.",
+    "invalidRoom": "La habitación no está en el maestro."
   }
 }
