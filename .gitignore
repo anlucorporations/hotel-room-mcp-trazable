@@ -28,6 +28,12 @@ coverage/
 .DS_Store
 *.tsbuildinfo
 
+# worker (checkpoint SQLite — runtime)
+.data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
 # playwright
 test-results/
 playwright-report/
