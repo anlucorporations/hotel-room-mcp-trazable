@@ -10,19 +10,19 @@ import { splitYYYYMMDD } from "./token-id";
  * Decisión Pinata vs Kubo (DISEÑO §16.3): **Kubo (nodo local)** en dev/CI y **Pinata** como
  * pinner gestionado en staging/producción, con redundancia (Decisión 13).
  *
- * ⚠️ CIDs placeholder: el pinning real depende de las 3 fotos del hotel (las aporta el
- * cliente) + un pinner, y se ejecuta con `pnpm --filter @hotel/contracts pin:images`.
- * Mientras `IMAGE_CIDS_ARE_PLACEHOLDERS` sea `true`, estos CIDs no resuelven. T1.1 reexige
- * fijar el CID antes del primer mint.
+ * CIDs reales (CIDv1 raw, sha2-256) de las 3 imágenes del cliente, calculados con
+ * `pnpm --filter @hotel/contracts pin:images`. Para que un gateway los resuelva hay que
+ * **pinear los bytes** (Kubo `ipfs add --raw-leaves --cid-version=1` o Pinata) — paso de
+ * operación (Decisión 13). La web sirve las imágenes por host/CDN (ADR-12), no por gateway.
  */
 export const IMAGE_CIDS: Readonly<Record<NightType, string>> = Object.freeze({
-  simple: "PLACEHOLDER_CID_SIMPLE",
-  doble: "PLACEHOLDER_CID_DOBLE",
-  suite: "PLACEHOLDER_CID_SUITE",
+  simple: "bafkreialyiktnrmy3kvdjebdndkc4tynjw63ghx4pw7mg2hznz3jema2qy",
+  doble: "bafkreid5x5rjq7xjo4e7jejtoagifqxsapqa4utiwlysyzddzhdnrtrm7u",
+  suite: "bafkreigedvpfrnvaoiceno5v4qtrkibhxzzatmsfrinyalx5wzzk6anfne",
 });
 
-/** `true` hasta que se ejecute el pinning real de las 3 imágenes (DISEÑO §16.3). */
-export const IMAGE_CIDS_ARE_PLACEHOLDERS = true;
+/** Los CIDs son reales (no placeholders); requieren pinning para resolución por gateway. */
+export const IMAGE_CIDS_ARE_PLACEHOLDERS = false;
 
 const DEFAULT_GATEWAY = "https://ipfs.io/ipfs/" as const;
 
