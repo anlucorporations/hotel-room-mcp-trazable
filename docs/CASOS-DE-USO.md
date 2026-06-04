@@ -831,7 +831,7 @@ Escenario: Pausa sin permiso
 
 **Flujo principal**
 1. El owner invoca `withdraw`.
-2. El contrato transfiere la **totalidad** del saldo a la dirección `TREASURY` configurada (sin dejar ETH residual), con protección `nonReentrant`, y emite un evento de retirada.
+2. El contrato transfiere el **saldo residual** a la dirección `TREASURY` configurada —es decir, todo el balance que **no** esté reservado a retiradas pendientes de reventa (`pendingWithdrawals`, ADR-15)— con protección `nonReentrant`, y emite `Withdrawn`. Si no hay reventas pendientes, el residual equivale a la totalidad del saldo.
 
 **Flujos alternativos / excepciones**
 - 15a — Cuenta sin permiso: revierte `AccessControlUnauthorizedAccount`.
@@ -857,7 +857,7 @@ Escenario: Retirada sin fondos
 ```
 
 **Restricciones (EARS)**
-- El sistema deberá transferir la totalidad del saldo hacia la dirección `TREASURY` configurada, sin dejar ETH residual.
+- El sistema deberá transferir a `TREASURY` el saldo residual del contrato, **reservando** los `pendingWithdrawals` de reventas (ADR-15); si no hay pendientes, equivale a la totalidad del saldo.
 - Si una cuenta no autorizada invoca `withdraw`, entonces el sistema deberá revertir con `AccessControlUnauthorizedAccount`.
 - Si no hay saldo, entonces el sistema deberá revertir con `NoFunds`.
 - El sistema deberá aplicar `nonReentrant` en `withdraw`.

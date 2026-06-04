@@ -63,6 +63,11 @@ contract HotelNights is
     mapping(uint256 tokenId => uint256 priceWei) private _price;
     mapping(uint256 tokenId => bool sold) private _soldOnce;
 
+    // Mercado secundario (FASE 2)
+    mapping(uint256 tokenId => Listing) private _listings;
+    mapping(address account => uint256 amount) private _pending; // pull payments (ADR-15)
+    uint256 private _totalPending; // suma de _pending: protege los fondos de usuarios en withdraw
+
     constructor(address treasury_, uint96 royaltyBps_)
         ERC721("Hotel Marina del Sol Nights", "HMSN")
         Ownable(msg.sender)
@@ -122,8 +127,135 @@ contract HotelNights is
         _safeTransfer(seller, msg.sender, tokenId, "");
 
         // Interaction 2: 100 % del importe a tesorería (la primaria no paga royalty).
+        // `treasury` DEBE poder recibir ETH (EOA o Safe); un contrato que revierta en
+        // `receive` bloquearía la primaria hasta un `setTreasury` (riesgo bajo: es el hotel).
         (bool ok,) = payable(treasury).call{value: price}("");
         if (!ok) revert EthTransferFailed();
+    }
+
+    // ── Mercado secundario (CU-06/07) ─────────────────────────────────────────
+    /// @inheritdoc IHotelNights
+    function list(uint256 tokenId, uint256 price) external override {
+        if (_ownerOf(tokenId) != msg.sender) revert NotOwner();
+        if (price == 0) revert InvalidPrice();
+        if (_isExpired(tokenId)) revert NightExpired(tokenId);
+
+        _listings[tokenId] = Listing({price: price, active: true});
+        emit Listed(tokenId, msg.sender, price);
+    }
+
+    /// @inheritdoc IHotelNights
+    function unlist(uint256 tokenId) external override {
+        if (_ownerOf(tokenId) != msg.sender) revert NotOwner();
+        if (!_listings[tokenId].active) revert NotListed(tokenId);
+
+        delete _listings[tokenId];
+        emit Unlisted(tokenId);
+    }
+
+    /// @inheritdoc IHotelNights
+    function buyResale(uint256 tokenId) external payable override nonReentrant whenNotPaused {
+        Listing memory listing = _listings[tokenId];
+        if (!listing.active) revert NotListed(tokenId);
+        if (_isExpired(tokenId)) revert NightExpired(tokenId);
+        if (msg.value != listing.price) revert IncorrectPayment(listing.price, msg.value);
+
+        address seller = _ownerOf(tokenId);
+        // Royalty fuente única (ERC-2981). Invariante: royalty + proceeds == price (sin wei atrapados).
+        (address royaltyReceiver, uint256 royaltyAmount) = royaltyInfo(tokenId, listing.price);
+        uint256 sellerProceeds = listing.price - royaltyAmount;
+
+        // Effects (CEI): cerrar listado, marcar vendida y acreditar pagos (pull, ADR-15).
+        delete _listings[tokenId];
+        _soldOnce[tokenId] = true; // ya cambió de manos: nunca burnable como inventario del hotel
+        _credit(seller, sellerProceeds);
+        _credit(royaltyReceiver, royaltyAmount);
+        emit Sale(tokenId, seller, msg.sender, listing.price, SaleType.SECONDARY);
+        emit RoyaltyPaid(tokenId, royaltyReceiver, royaltyAmount);
+
+        // Interaction: transferir el NFT (autorizado por el guard transient).
+        _unlockTransfer();
+        _safeTransfer(seller, msg.sender, tokenId, "");
+    }
+
+    /// @inheritdoc IHotelNights
+    function claim() external override nonReentrant {
+        uint256 amount = _pending[msg.sender];
+        if (amount == 0) revert NoFunds();
+
+        _pending[msg.sender] = 0; // effects antes de la interacción (CEI)
+        _totalPending -= amount;
+
+        (bool ok,) = payable(msg.sender).call{value: amount}("");
+        if (!ok) revert EthTransferFailed();
+    }
+
+    // ── Caducidad y burn (CU-13) ──────────────────────────────────────────────
+    /// @inheritdoc IHotelNights
+    function burnExpired(uint256[] calldata tokenIds)
+        external
+        override
+        onlyRole(BURNER_ROLE)
+        whenNotPaused
+    {
+        uint256 count = tokenIds.length;
+        if (count > BURN_BATCH_MAX) revert BatchTooLarge(count, BURN_BATCH_MAX);
+
+        for (uint256 i = 0; i < count; i++) {
+            uint256 tokenId = tokenIds[i];
+            if (_soldOnce[tokenId]) revert AlreadySold(tokenId); // noche de cliente: no se quema
+            if (!_isExpired(tokenId)) revert NotExpired(tokenId);
+
+            delete _listings[tokenId];
+            _burn(tokenId);
+            emit Burn(tokenId);
+        }
+    }
+
+    // ── Administración (CU-12/14/15/16) ───────────────────────────────────────
+    /// @inheritdoc IHotelNights
+    function setRoyaltyBps(uint96 bps) external override onlyRole(ROYALTY_ADMIN_ROLE) {
+        if (bps > ROYALTY_MAX_BPS) revert RoyaltyOutOfRange(bps);
+        uint96 oldBps = _royaltyBps;
+        _royaltyBps = bps;
+        _setDefaultRoyalty(treasury, bps);
+        emit RoyaltyUpdated(oldBps, bps);
+    }
+
+    /// @inheritdoc IHotelNights
+    function pause() external override onlyRole(PAUSER_ROLE) {
+        _pause();
+    }
+
+    /// @inheritdoc IHotelNights
+    function unpause() external override onlyRole(PAUSER_ROLE) {
+        _unpause();
+    }
+
+    /// @inheritdoc IHotelNights
+    function withdraw() external override onlyRole(TREASURER_ROLE) nonReentrant {
+        // Solo el saldo residual: los fondos de reventas (pull) quedan reservados a sus dueños.
+        uint256 amount = address(this).balance - _totalPending;
+        if (amount == 0) revert NoFunds();
+
+        (bool ok,) = payable(treasury).call{value: amount}("");
+        if (!ok) revert EthTransferFailed();
+        emit Withdrawn(treasury, amount);
+    }
+
+    /// @inheritdoc IHotelNights
+    function setTreasury(address newTreasury) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (newTreasury == address(0)) revert ZeroAddress();
+        address oldTreasury = treasury;
+        treasury = newTreasury;
+        _setDefaultRoyalty(newTreasury, _royaltyBps);
+        emit TreasuryUpdated(oldTreasury, newTreasury);
+    }
+
+    function _credit(address account, uint256 amount) private {
+        if (amount == 0) return;
+        _pending[account] += amount;
+        _totalPending += amount;
     }
 
     // ── Vistas ────────────────────────────────────────────────────────────────
@@ -140,6 +272,16 @@ contract HotelNights is
     /// @inheritdoc IHotelNights
     function isExpired(uint256 tokenId) external view override returns (bool) {
         return _isExpired(tokenId);
+    }
+
+    /// @inheritdoc IHotelNights
+    function listingOf(uint256 tokenId) external view override returns (Listing memory) {
+        return _listings[tokenId];
+    }
+
+    /// @inheritdoc IHotelNights
+    function pendingWithdrawals(address account) external view override returns (uint256) {
+        return _pending[account];
     }
 
     /// @inheritdoc IHotelNights

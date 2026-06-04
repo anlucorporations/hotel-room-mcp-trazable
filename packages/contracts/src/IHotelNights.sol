@@ -85,6 +85,49 @@ interface IHotelNights {
     /// @notice ¿La noche está expirada por umbral UTC? (ADR-08).
     function isExpired(uint256 tokenId) external view returns (bool);
 
+    // ── Mercado secundario (FASE 2) ───────────────────────────────────────────
+    struct Listing {
+        uint256 price;
+        bool active;
+    }
+
+    /// @notice Lista una noche propia para reventa (CU-06).
+    function list(uint256 tokenId, uint256 price) external;
+
+    /// @notice Cancela un listado de reventa propio (CU-06).
+    function unlist(uint256 tokenId) external;
+
+    /// @notice Compra una noche listada; reparte royalty (pull) y transfiere el NFT (CU-07).
+    function buyResale(uint256 tokenId) external payable;
+
+    /// @notice Retira los saldos acreditados por reventas (pull payments, ADR-15).
+    function claim() external;
+
+    /// @notice Listado de reventa de una noche.
+    function listingOf(uint256 tokenId) external view returns (Listing memory);
+
+    /// @notice Saldo pendiente de retirar de una cuenta (reventas).
+    function pendingWithdrawals(address account) external view returns (uint256);
+
+    // ── Administración (FASE 2) ───────────────────────────────────────────────
+    /// @notice Ajusta el royalty en bps (0–2000), ROYALTY_ADMIN (CU-12).
+    function setRoyaltyBps(uint96 bps) external;
+
+    /// @notice Pausa de emergencia: bloquea compra/reventa/mint/burn (PAUSER, CU-14).
+    function pause() external;
+
+    /// @notice Reanuda el sistema (PAUSER, CU-14).
+    function unpause() external;
+
+    /// @notice Quema en lote noches expiradas no vendidas del hotel (BURNER, CU-13).
+    function burnExpired(uint256[] calldata tokenIds) external;
+
+    /// @notice Retira a tesorería el saldo residual del contrato (TREASURER, CU-15).
+    function withdraw() external;
+
+    /// @notice Actualiza la dirección de tesorería/receptor de royalties (DEFAULT_ADMIN, CU-16).
+    function setTreasury(address newTreasury) external;
+
     // ── Getters de configuración ──────────────────────────────────────────────
     /// @notice Royalty actual en basis points (RF-08).
     function royaltyBps() external view returns (uint96);
