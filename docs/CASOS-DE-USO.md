@@ -86,6 +86,7 @@ no el texto. Se reutilizan los errores de OpenZeppelin v5 donde aplica.
 | `NotExpired(tokenId)` / `AlreadySold(tokenId)` | Burn de noche no expirada / ya vendida | — |
 | `BatchTooLarge(size, max)` | Lote de burn > `BURN_BATCH_MAX` | — |
 | `NoFunds()` | `withdraw` sin saldo | — |
+| `ZeroAddress()` | Dirección nula no permitida (constructor / `setTreasury`) | — |
 
 ---
 

@@ -1,0 +1,5 @@
+{
+  "filter_paths": "lib/",
+  "exclude_dependencies": true,
+  "exclude_informational": false
+}

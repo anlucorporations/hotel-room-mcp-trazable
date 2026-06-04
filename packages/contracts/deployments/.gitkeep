@@ -1,0 +1,1 @@
+# `latest.json` lo escribe el script de deploy y lo consume `scripts/sync-deployment.ts`.

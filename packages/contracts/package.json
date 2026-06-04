@@ -1,0 +1,28 @@
+{
+  "name": "@hotel/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Contrato HotelNights (Foundry) + despliegue con bootstrap de roles",
+  "scripts": {
+    "build": "forge build",
+    "test": "forge test -vvv",
+    "fmt": "forge fmt",
+    "fmt:check": "forge fmt --check",
+    "deploy:local": "forge script script/Deploy.s.sol:Deploy --rpc-url ${RPC_URL:-http://127.0.0.1:8545} --broadcast --slow",
+    "sync": "tsx scripts/sync-deployment.ts",
+    "seed": "tsx scripts/seed.ts",
+    "pin:images": "tsx scripts/pin-images.ts",
+    "smoke": "bash scripts/smoke-deploy.sh",
+    "clean": "forge clean && rm -rf .turbo"
+  },
+  "dependencies": {
+    "@hotel/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "viem": "^2.21.55"
+  }
+}
