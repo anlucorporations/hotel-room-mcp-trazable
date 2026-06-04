@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancela ejecuciones previas del mismo ref para no acumular CI.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Pipeline principal: monorepo TS + contrato + deploy de humo a Anvil ──────
+  build:
+    name: Build · typecheck · lint · test · smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive # deps Solidity (OZ v5, forge-std)
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: foundry-rs/foundry-toolchain@v1
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build # turbo: shared → apps + forge build
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test # vitest (shared/worker/mcp) + forge test
+      - name: Deploy de humo a Anvil (chainId 81234) + verificación de roles
+        run: pnpm --filter @hotel/contracts smoke
+
+  # ── E2E de la web con Playwright (smoke de FASE 0) ──────────────────────────
+  e2e:
+    name: Web · Playwright E2E
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @hotel/shared build
+      - run: pnpm --filter @hotel/web build
+      - name: Instalar navegador
+        run: pnpm --filter @hotel/web exec playwright install --with-deps chromium
+      - name: Ejecutar E2E
+        run: pnpm --filter @hotel/web test:e2e
+
+  # ── Análisis estático del contrato (informativo en F0; gate en F2) ──────────
+  slither:
+    name: Contract · slither (informativo)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: foundry-rs/foundry-toolchain@v1
+      - uses: crytic/slither-action@v0.4.0
+        with:
+          target: packages/contracts
+          slither-config: packages/contracts/slither.config.json
