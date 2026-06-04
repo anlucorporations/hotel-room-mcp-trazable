@@ -16,11 +16,16 @@
   },
   "dependencies": {
     "@hotel/shared": "workspace:*",
-    "pino": "^9.5.0"
+    "better-sqlite3": "^11.7.0",
+    "nodemailer": "^6.9.16",
+    "pino": "^9.5.0",
+    "viem": "^2.21.55"
   },
   "devDependencies": {
     "@hotel/config": "workspace:*",
+    "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^22.10.2",
+    "@types/nodemailer": "^6.4.17",
     "eslint": "^9.17.0",
     "tsup": "^8.3.5",
     "typescript": "^5.7.2",
