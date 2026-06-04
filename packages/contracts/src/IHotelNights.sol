@@ -58,6 +58,32 @@ interface IHotelNights {
     error BatchTooLarge(uint256 size, uint256 max);
     error NoFunds();
     error ZeroAddress();
+    error EthTransferFailed();
+
+    // ── Operaciones (FASE 1) ──────────────────────────────────────────────────
+    /**
+     * @notice Mintea una noche (habitación × fecha) en el inventario del hotel.
+     * @param room Habitación del maestro (RF-18a).
+     * @param dateYYYYMMDD Fecha de entrada validada off-chain (calendario) y on-chain (rango).
+     * @param price Precio de venta primaria en wei (> 0).
+     * @param metadataURI `tokenURI` (ipfs://CID) fijado antes/at del mint.
+     * @return tokenId Identificador canónico `room·10^8 + AAAAMMDD`.
+     */
+    function mint(uint256 room, uint256 dateYYYYMMDD, uint256 price, string calldata metadataURI)
+        external
+        returns (uint256 tokenId);
+
+    /// @notice Compra primaria de una noche `DISPONIBLE` (paga el precio exacto; 100 % a treasury).
+    function buy(uint256 tokenId) external payable;
+
+    /// @notice Precio de venta primaria en wei.
+    function priceOf(uint256 tokenId) external view returns (uint256);
+
+    /// @notice ¿La noche ya tuvo su venta primaria? (ADR-16).
+    function soldOnce(uint256 tokenId) external view returns (bool);
+
+    /// @notice ¿La noche está expirada por umbral UTC? (ADR-08).
+    function isExpired(uint256 tokenId) external view returns (bool);
 
     // ── Getters de configuración ──────────────────────────────────────────────
     /// @notice Royalty actual en basis points (RF-08).

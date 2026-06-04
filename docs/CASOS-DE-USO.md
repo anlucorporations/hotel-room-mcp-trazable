@@ -214,7 +214,7 @@ Escenario: Minteo correcto de una noche
   Y no existe NFT para la habitación 102 en la fecha 2026-06-15
   Cuando minteo la habitación 102 para 2026-06-15 con precio 0,5 ETH
   Entonces se crea el NFT con tokenId 10220260615
-  Y se emite Mint(10220260615, 102, 20260615, "suite", 0.5 ETH)
+  Y se emite Mint(10220260615, 102, 20260615, "simple", 0.5 ETH)
   Y la noche queda en estado DISPONIBLE
 
 Escenario: Minteo duplicado rechazado por unicidad

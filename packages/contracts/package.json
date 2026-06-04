@@ -11,6 +11,7 @@
     "fmt:check": "forge fmt --check",
     "deploy:local": "forge script script/Deploy.s.sol:Deploy --rpc-url ${RPC_URL:-http://127.0.0.1:8545} --broadcast --slow",
     "sync": "tsx scripts/sync-deployment.ts",
+    "gen:abi": "tsx scripts/gen-abi.ts",
     "seed": "tsx scripts/seed.ts",
     "pin:images": "tsx scripts/pin-images.ts",
     "smoke": "bash scripts/smoke-deploy.sh",
