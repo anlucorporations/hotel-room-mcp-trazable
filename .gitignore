@@ -22,3 +22,7 @@ packages/contracts/out/
 *.log
 coverage/
 .DS_Store
+
+# informes de auditoría/revisión: efímeros — las correcciones se aplican a las specs
+# y el histórico queda en git; no se versionan para no mezclar proceso con producto
+docs/REVISION-*.md
