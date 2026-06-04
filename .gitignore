@@ -1,0 +1,24 @@
+# deps
+node_modules/
+.pnpm-store/
+
+# builds
+dist/
+.next/
+out/
+.turbo/
+
+# foundry
+cache/
+broadcast/
+packages/contracts/out/
+
+# env & secrets
+.env
+.env.*
+!.env.example
+
+# misc
+*.log
+coverage/
+.DS_Store
