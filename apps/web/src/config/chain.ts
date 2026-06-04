@@ -13,6 +13,9 @@ export const rpcUrl: string = process.env.NEXT_PUBLIC_RPC_URL ?? "http://127.0.0
 export const contractAddress: Address =
   (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as Address | undefined) ?? DEV_CONTRACT;
 
+/** Bloque de despliegue: punto de inicio del escaneo de `getLogs` (fuente única, ADR-09). */
+export const deploymentBlock: bigint = BigInt(process.env.NEXT_PUBLIC_DEPLOYMENT_BLOCK ?? "0");
+
 const envChainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? CHAIN_ID);
 
 function resolveChain(): Chain {

@@ -5,37 +5,35 @@ import { hotelNightsAbi } from "@hotel/shared/abi";
 import { contractAddress } from "@/config/chain";
 import { deriveTxStatus, type TxStatus } from "@/components/tx/txStatus";
 
-export interface UseBuyNightResult {
-  buy: (tokenId: string, priceWei: string) => void;
-  buyResale: (tokenId: string, priceWei: string) => void;
+export interface UseListNightResult {
+  list: (tokenId: string, priceWei: bigint) => void;
+  unlist: (tokenId: string) => void;
   reset: () => void;
   status: TxStatus;
   hash: `0x${string}` | undefined;
   error: Error | null;
 }
 
-/** Orquesta la compra (primaria o reventa) con wagmi y deriva el estado de la tx (CU-05/07/17). */
-export function useBuyNight(): UseBuyNightResult {
+/** Listar/cancelar la reventa de una noche con wagmi y estado de tx (CU-06). */
+export function useListNight(): UseListNightResult {
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
   const receipt = useWaitForTransactionReceipt({ hash });
 
-  function buy(tokenId: string, priceWei: string): void {
+  function list(tokenId: string, priceWei: bigint): void {
     writeContract({
       address: contractAddress,
       abi: hotelNightsAbi,
-      functionName: "buy",
-      args: [BigInt(tokenId)],
-      value: BigInt(priceWei),
+      functionName: "list",
+      args: [BigInt(tokenId), priceWei],
     });
   }
 
-  function buyResale(tokenId: string, priceWei: string): void {
+  function unlist(tokenId: string): void {
     writeContract({
       address: contractAddress,
       abi: hotelNightsAbi,
-      functionName: "buyResale",
+      functionName: "unlist",
       args: [BigInt(tokenId)],
-      value: BigInt(priceWei),
     });
   }
 
@@ -47,5 +45,5 @@ export function useBuyNight(): UseBuyNightResult {
     isReverted: receipt.isError,
   });
 
-  return { buy, buyResale, reset, status, hash, error };
+  return { list, unlist, reset, status, hash, error };
 }

@@ -5,37 +5,25 @@ import { hotelNightsAbi } from "@hotel/shared/abi";
 import { contractAddress } from "@/config/chain";
 import { deriveTxStatus, type TxStatus } from "@/components/tx/txStatus";
 
-export interface UseBuyNightResult {
-  buy: (tokenId: string, priceWei: string) => void;
-  buyResale: (tokenId: string, priceWei: string) => void;
+export interface UseClaimResult {
+  claim: () => void;
   reset: () => void;
   status: TxStatus;
   hash: `0x${string}` | undefined;
   error: Error | null;
 }
 
-/** Orquesta la compra (primaria o reventa) con wagmi y deriva el estado de la tx (CU-05/07/17). */
-export function useBuyNight(): UseBuyNightResult {
+/** Cobra (pull-payment) los saldos pendientes de reventas con wagmi y estado de tx (CU-07). */
+export function useClaim(): UseClaimResult {
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
   const receipt = useWaitForTransactionReceipt({ hash });
 
-  function buy(tokenId: string, priceWei: string): void {
+  function claim(): void {
     writeContract({
       address: contractAddress,
       abi: hotelNightsAbi,
-      functionName: "buy",
-      args: [BigInt(tokenId)],
-      value: BigInt(priceWei),
-    });
-  }
-
-  function buyResale(tokenId: string, priceWei: string): void {
-    writeContract({
-      address: contractAddress,
-      abi: hotelNightsAbi,
-      functionName: "buyResale",
-      args: [BigInt(tokenId)],
-      value: BigInt(priceWei),
+      functionName: "claim",
+      args: [],
     });
   }
 
@@ -47,5 +35,5 @@ export function useBuyNight(): UseBuyNightResult {
     isReverted: receipt.isError,
   });
 
-  return { buy, buyResale, reset, status, hash, error };
+  return { claim, reset, status, hash, error };
 }

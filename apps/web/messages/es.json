@@ -4,10 +4,12 @@
   },
   "home": {
     "title": "Hotel Marina del Sol",
-    "tagline": "Noches de hotel como NFTs, en la costa de Alicante."
+    "tagline": "Noches de hotel como NFTs, en la costa de Alicante.",
+    "myNightsLink": "Mis noches"
   },
   "catalog": {
     "available": "Disponible",
+    "resale": "Reventa",
     "room": "Habitación {room}",
     "imageAlt": "Habitación {type} {room} para el {date}",
     "filterType": "Tipo de habitación",
@@ -30,6 +32,7 @@
   },
   "buy": {
     "buy": "Comprar",
+    "buyResale": "Comprar reventa",
     "needWallet": "Instala una wallet",
     "connectToBuy": "Conecta para comprar",
     "switchToBuy": "Cambia de red para comprar",
@@ -47,6 +50,28 @@
       "confirmed": "La noche ya es tuya. Aparecerá en «Mis noches».",
       "reverted": "No se realizó ningún cargo. Puedes intentarlo de nuevo."
     }
+  },
+  "myNights": {
+    "title": "Mis noches",
+    "tagline": "Gestiona tus noches: ponlas en reventa, cancela el listado o cobra tus saldos.",
+    "connectPrompt": "Conecta tu wallet para ver y gestionar tus noches.",
+    "loading": "Cargando tus noches…",
+    "loadError": "No se pudieron cargar tus noches. Inténtalo de nuevo.",
+    "retry": "Reintentar",
+    "empty": "Todavía no posees ninguna noche.",
+    "room": "Habitación {room}",
+    "imageAlt": "Habitación {type} {room} para el {date}",
+    "listedBadge": "En reventa",
+    "ownedBadge": "Tuya",
+    "listedPrice": "Precio de reventa: {price}",
+    "priceLabel": "Precio de reventa (ETH)",
+    "list": "Listar",
+    "unlist": "Cancelar reventa",
+    "invalidPrice": "Introduce un precio mayor que 0.",
+    "pendingTitle": "Saldo pendiente",
+    "pendingHint": "Tienes fondos de reventas listos para cobrar.",
+    "claim": "Cobrar {amount}",
+    "processing": "Procesando…"
   },
   "admin": {
     "title": "Back-office · Mintear noche",

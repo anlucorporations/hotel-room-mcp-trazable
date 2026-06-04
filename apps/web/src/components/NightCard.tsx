@@ -28,9 +28,17 @@ export function NightCard({ night }: { night: NightView }) {
         </div>
         <p className="text-sm text-slate-600">{formatNightDate(night.dateYYYYMMDD)}</p>
         <p className="text-lg font-bold">{formatEth(night.priceWei)}</p>
-        <span className="text-xs font-medium text-emerald-700">{t("available")}</span>
+        {night.saleType === "SECONDARY" ? (
+          <span className="text-xs font-medium text-amber-700">{t("resale")}</span>
+        ) : (
+          <span className="text-xs font-medium text-emerald-700">{t("available")}</span>
+        )}
         <div className="mt-auto pt-2">
-          <BuyButton tokenId={night.tokenId} priceWei={night.priceWei} />
+          <BuyButton
+            tokenId={night.tokenId}
+            priceWei={night.priceWei}
+            saleType={night.saleType}
+          />
         </div>
       </div>
     </article>
