@@ -43,6 +43,36 @@ const LISTED_EVENT = parseAbiItem(
   "event Listed(uint256 indexed tokenId, address indexed seller, uint256 price)",
 );
 
+/**
+ * Concurrencia máxima de peticiones RPC en vuelo (MAJOR#5). Acota el escaneo de `getLogs`
+ * y las lecturas `listingOf` para no saturar el RPC ni disparar un degradado espurio.
+ * 6 es un punto medio prudente para proveedores públicos sin batching agresivo.
+ */
+const RPC_CONCURRENCY = 6;
+
+/**
+ * Limitador de concurrencia minimalista (estilo p-limit) sin dependencias externas.
+ * Aplica `task` a cada elemento conservando el orden del resultado, con como máximo
+ * `limit` tareas resolviéndose en paralelo. Si una tarea rechaza, propaga el error.
+ */
+async function mapWithConcurrency<T, R>(
+  items: readonly T[],
+  limit: number,
+  task: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+  const worker = async (): Promise<void> => {
+    while (next < items.length) {
+      const index = next++;
+      results[index] = await task(items[index]!, index);
+    }
+  };
+  const workers = Array.from({ length: Math.min(limit, items.length) }, worker);
+  await Promise.all(workers);
+  return results;
+}
+
 async function paginatedLogs<TEvent extends AbiEvent>(
   client: PublicClient,
   address: Address,
@@ -55,8 +85,9 @@ async function paginatedLogs<TEvent extends AbiEvent>(
   for (let from = fromBlock; from <= toBlock; from += range) {
     ranges.push({ from, to: from + range - 1n > toBlock ? toBlock : from + range - 1n });
   }
-  const chunks = await Promise.all(
-    ranges.map(({ from, to }) => client.getLogs({ address, event, fromBlock: from, toBlock: to })),
+  // Concurrencia acotada: evita lanzar todos los chunks a la vez contra el RPC (MAJOR#5).
+  const chunks = await mapWithConcurrency(ranges, RPC_CONCURRENCY, ({ from, to }) =>
+    client.getLogs({ address, event, fromBlock: from, toBlock: to }),
   );
   return chunks.flat() as GetLogsReturnType<TEvent>;
 }
@@ -108,20 +139,19 @@ export async function fetchCatalog(): Promise<NightView[]> {
   // LISTADA_SECUNDARIO: candidatas de `Listed`, confirmadas con `listingOf` (estado actual).
   // Cada lectura se aísla: un revert puntual no debe tumbar todo el catálogo (resiliencia).
   const candidates = [...new Set(listed.map((log) => (log.args.tokenId ?? 0n).toString()))];
-  const listings = await Promise.all(
-    candidates.map(async (id) => {
-      try {
-        return await client.readContract({
-          address,
-          abi: hotelNightsAbi,
-          functionName: "listingOf",
-          args: [BigInt(id)],
-        });
-      } catch {
-        return null;
-      }
-    }),
-  );
+  // Concurrencia acotada también en las lecturas `listingOf` (MAJOR#5).
+  const listings = await mapWithConcurrency(candidates, RPC_CONCURRENCY, async (id) => {
+    try {
+      return await client.readContract({
+        address,
+        abi: hotelNightsAbi,
+        functionName: "listingOf",
+        args: [BigInt(id)],
+      });
+    } catch {
+      return null;
+    }
+  });
   candidates.forEach((id, i) => {
     const listing = listings[i];
     if (!listing?.active) return;

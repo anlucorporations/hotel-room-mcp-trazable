@@ -13,8 +13,23 @@ export const rpcUrl: string = process.env.NEXT_PUBLIC_RPC_URL ?? "http://127.0.0
 export const contractAddress: Address =
   (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as Address | undefined) ?? DEV_CONTRACT;
 
-/** Bloque de despliegue: punto de inicio del escaneo de `getLogs` (fuente única, ADR-09). */
+/**
+ * Bloque de despliegue: punto de inicio del escaneo de `getLogs` (fuente única, ADR-09).
+ *
+ * MINOR#16 — Un valor 0 SOLO es válido para Anvil/CI recién levantados (el contrato vive en
+ * los primeros bloques). En cadenas reales escanear desde 0 multiplica los chunks y puede
+ * saturar el RPC, así que fuera de `development` se advierte (sin romper el demo: env=0 en dev
+ * sigue funcionando). Se documenta vía aviso en lugar de fail-fast para no tumbar previews.
+ */
 export const deploymentBlock: bigint = BigInt(process.env.NEXT_PUBLIC_DEPLOYMENT_BLOCK ?? "0");
+
+if (process.env.NODE_ENV !== "development" && deploymentBlock === 0n) {
+  console.warn(
+    "[chain] NEXT_PUBLIC_DEPLOYMENT_BLOCK=0 fuera de desarrollo: el escaneo de getLogs " +
+      "arrancará en el bloque 0 (válido solo para Anvil/CI). Configura el bloque real de " +
+      "despliegue del contrato para reducir chunks y evitar saturar el RPC.",
+  );
+}
 
 const envChainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? CHAIN_ID);
 

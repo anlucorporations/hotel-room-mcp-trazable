@@ -1,24 +1,58 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
+import { formatEther } from "viem";
 import type { NightType } from "@hotel/shared";
-import { FilterBar, type MonthOption } from "@/components/catalog/FilterBar";
+import {
+  FilterBar,
+  type MonthOption,
+  type PriceOption,
+} from "@/components/catalog/FilterBar";
 import { NightCard } from "@/components/NightCard";
 import { formatMonthLabel, monthKeyOf } from "@/lib/format";
 import type { NightView } from "@/lib/nights";
 
 const PAGE_SIZE = 12;
-// Umbral del chip de precio «≤ 0,5 ETH» (DISEÑO-UX §4.1) en wei.
-const MAX_PRICE_WEI = 500_000_000_000_000_000n;
+// Tarjetas con imagen de carga ansiosa (LCP, UX#10): la primera fila de escritorio.
+const PRIORITY_CARDS = 3;
 
 interface Filters {
   readonly type: NightType | "all";
   readonly month: number | null;
-  readonly maxPrice: boolean;
+  /** Umbral de precio máximo en wei; `null` = cualquier precio (RF-14, MINOR#19). */
+  readonly maxPriceWei: bigint | null;
+  /** Rango de fechas `AAAA-MM-DD` (input nativo); vacío = sin acotar (RF-14). */
+  readonly dateFrom: string;
+  readonly dateTo: string;
+  /** Búsqueda por número de habitación (RF-14). */
+  readonly search: string;
 }
 
-const NO_FILTERS: Filters = { type: "all", month: null, maxPrice: false };
+const NO_FILTERS: Filters = {
+  type: "all",
+  month: null,
+  maxPriceWei: null,
+  dateFrom: "",
+  dateTo: "",
+  search: "",
+};
+
+const hasActiveFilters = (f: Filters): boolean =>
+  f.type !== "all" ||
+  f.month !== null ||
+  f.maxPriceWei !== null ||
+  f.dateFrom !== "" ||
+  f.dateTo !== "" ||
+  f.search.trim() !== "";
+
+/** `AAAA-MM-DD` (input date) → entero `AAAAMMDD` comparable; null si está vacío/incompleto. */
+function isoToYYYYMMDD(iso: string): number | null {
+  if (!iso) return null;
+  const [year, month, day] = iso.split("-").map(Number);
+  if (!year || !month || !day) return null;
+  return year * 10_000 + month * 100 + day;
+}
 
 /** Icono de mapa/brújula para el estado vacío (stroke, DISEÑO-UX §3). */
 function EmptyIcon() {
@@ -30,9 +64,10 @@ function EmptyIcon() {
   );
 }
 
-/** Catálogo público con filtros de chips y paginación load-more (CU-04, RF-14). */
+/** Catálogo público con filtros completos (RF-14) y paginación load-more (CU-04). */
 export function CatalogClient({ nights }: { nights: readonly NightView[] }) {
   const t = useTranslations("catalog");
+  const format = useFormatter();
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [added, setAdded] = useState(0);
@@ -48,11 +83,38 @@ export function CatalogClient({ nights }: { nights: readonly NightView[] }) {
     return [...seen.values()].sort((a, b) => a.key - b.key);
   }, [nights]);
 
+  // Umbrales de precio máximo derivados del catálogo real (MINOR#19): se calculan a partir del
+  // precio máximo presente, redondeando «hacia arriba» a medios ETH, y se etiquetan vía next-intl
+  // (origen único; sin literal «Hasta 0,5 ETH» hardcodeado).
+  const priceOptions: readonly PriceOption[] = useMemo(() => {
+    if (nights.length === 0) return [];
+    const maxWei = nights.reduce((acc, n) => {
+      const wei = BigInt(n.priceWei);
+      return wei > acc ? wei : acc;
+    }, 0n);
+    const stepWei = 500_000_000_000_000_000n; // medio ETH por escalón
+    const options: PriceOption[] = [];
+    for (let wei = stepWei; wei < maxWei + stepWei; wei += stepWei) {
+      const ethLabel = format.number(Number(formatEther(wei)), {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 2,
+      });
+      options.push({ wei, label: t("maxPriceOption", { price: ethLabel }) });
+    }
+    return options;
+  }, [nights, format, t]);
+
   const filtered = useMemo(() => {
+    const from = isoToYYYYMMDD(filters.dateFrom);
+    const to = isoToYYYYMMDD(filters.dateTo);
+    const query = filters.search.trim();
     return nights.filter((night) => {
       if (filters.type !== "all" && night.type !== filters.type) return false;
       if (filters.month !== null && monthKeyOf(night.dateYYYYMMDD) !== filters.month) return false;
-      if (filters.maxPrice && BigInt(night.priceWei) > MAX_PRICE_WEI) return false;
+      if (filters.maxPriceWei !== null && BigInt(night.priceWei) > filters.maxPriceWei) return false;
+      if (from !== null && night.dateYYYYMMDD < from) return false;
+      if (to !== null && night.dateYYYYMMDD > to) return false;
+      if (query !== "" && !String(night.room).includes(query)) return false;
       return true;
     });
   }, [nights, filters]);
@@ -64,7 +126,10 @@ export function CatalogClient({ nights }: { nights: readonly NightView[] }) {
     setAdded(0);
   }, []);
 
-  const onToggleAll = useCallback(() => applyFilters(() => NO_FILTERS), [applyFilters]);
+  const onToggleAll = useCallback(
+    () => applyFilters((prev) => ({ ...prev, type: "all", month: null })),
+    [applyFilters],
+  );
   const onToggleType = useCallback(
     (type: NightType) =>
       applyFilters((prev) => ({ ...prev, type: prev.type === type ? "all" : type })),
@@ -75,14 +140,28 @@ export function CatalogClient({ nights }: { nights: readonly NightView[] }) {
       applyFilters((prev) => ({ ...prev, month: prev.month === monthKey ? null : monthKey })),
     [applyFilters],
   );
-  const onTogglePrice = useCallback(
-    () => applyFilters((prev) => ({ ...prev, maxPrice: !prev.maxPrice })),
+  const onMaxPriceChange = useCallback(
+    (wei: bigint | null) => applyFilters((prev) => ({ ...prev, maxPriceWei: wei })),
     [applyFilters],
   );
+  const onDateFromChange = useCallback(
+    (value: string) => applyFilters((prev) => ({ ...prev, dateFrom: value })),
+    [applyFilters],
+  );
+  const onDateToChange = useCallback(
+    (value: string) => applyFilters((prev) => ({ ...prev, dateTo: value })),
+    [applyFilters],
+  );
+  const onSearchChange = useCallback(
+    (value: string) => applyFilters((prev) => ({ ...prev, search: value })),
+    [applyFilters],
+  );
+  const onClearFilters = useCallback(() => applyFilters(() => NO_FILTERS), [applyFilters]);
 
   const shown = filtered.slice(0, visible);
   const hasMore = visible < filtered.length;
   const firstNewIndex = shown.length - added; // primer elemento de la última tanda añadida
+  const filtersActive = hasActiveFilters(filters);
 
   const onLoadMore = useCallback(() => {
     const before = visible;
@@ -97,14 +176,21 @@ export function CatalogClient({ nights }: { nights: readonly NightView[] }) {
     <>
       <FilterBar
         months={months}
+        priceOptions={priceOptions}
         type={filters.type}
         month={filters.month}
-        maxPrice={filters.maxPrice}
+        maxPriceWei={filters.maxPriceWei}
+        dateFrom={filters.dateFrom}
+        dateTo={filters.dateTo}
+        search={filters.search}
         resultCount={filtered.length}
         onToggleAll={onToggleAll}
         onToggleType={onToggleType}
         onToggleMonth={onToggleMonth}
-        onTogglePrice={onTogglePrice}
+        onMaxPriceChange={onMaxPriceChange}
+        onDateFromChange={onDateFromChange}
+        onDateToChange={onDateToChange}
+        onSearchChange={onSearchChange}
       />
 
       <div className="mx-auto w-full max-w-6xl px-5 py-8">
@@ -119,15 +205,26 @@ export function CatalogClient({ nights }: { nights: readonly NightView[] }) {
             <span className="mb-3.5 text-sea opacity-60">
               <EmptyIcon />
             </span>
-            <h3 className="font-display text-h3 font-semibold">{t("empty")}</h3>
-            <p className="mx-auto mt-1.5 max-w-[40ch] text-ink-soft">{t("emptyHint")}</p>
-            <button
-              type="button"
-              onClick={onToggleAll}
-              className="mt-5 inline-flex min-h-touch items-center rounded-pill border border-line bg-shell px-5 font-semibold text-ink transition-colors hover:border-sea hover:text-sea"
-            >
-              {t("clearFilters")}
-            </button>
+            {filtersActive ? (
+              // Con filtros activos: guía a relajarlos y ofrece «Quitar filtros» (MINOR#15).
+              <>
+                <h3 className="font-display text-h3 font-semibold">{t("empty")}</h3>
+                <p className="mx-auto mt-1.5 max-w-[40ch] text-ink-soft">{t("emptyHint")}</p>
+                <button
+                  type="button"
+                  onClick={onClearFilters}
+                  className="mt-5 inline-flex min-h-touch items-center rounded-pill border border-line bg-shell px-5 font-semibold text-ink transition-colors hover:border-sea hover:text-sea"
+                >
+                  {t("clearFilters")}
+                </button>
+              </>
+            ) : (
+              // Sin filtros: el catálogo está realmente vacío; sin botón «Quitar filtros» (MINOR#15).
+              <>
+                <h3 className="font-display text-h3 font-semibold">{t("emptyNoListings")}</h3>
+                <p className="mx-auto mt-1.5 max-w-[40ch] text-ink-soft">{t("emptyNoListingsHint")}</p>
+              </>
+            )}
           </div>
         ) : (
           <ul
@@ -141,7 +238,12 @@ export function CatalogClient({ nights }: { nights: readonly NightView[] }) {
                 tabIndex={index === firstNewIndex && added > 0 ? -1 : undefined}
                 className="outline-none"
               >
-                <NightCard night={night} />
+                {/* El reveal escalonado solo aplica a la primera tanda (índices < PAGE_SIZE). */}
+                <NightCard
+                  night={night}
+                  revealIndex={added === 0 ? index : undefined}
+                  priority={index < PRIORITY_CARDS}
+                />
               </li>
             ))}
           </ul>

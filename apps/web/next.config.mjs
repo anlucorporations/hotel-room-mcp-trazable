@@ -19,7 +19,15 @@ const securityHeaders = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Las imágenes se sirven por host/CDN (ADR-12); los remotePatterns se configuran en F1.
+  // Imágenes servidas por host/CDN (ADR-12). next/image (UX#10) necesita permitir SVG para los
+  // placeholders locales de habitación (`/images/*.svg`); el optimizador no los reescala, así que
+  // se sirven tal cual con CSP estricta que impide scripts incrustados en el SVG. Los
+  // `remotePatterns` para el CDN real se configuran en F1.
+  images: {
+    dangerouslyAllowSVG: true,
+    contentDispositionType: "attachment",
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
