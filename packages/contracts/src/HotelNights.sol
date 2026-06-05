@@ -2,8 +2,9 @@
 pragma solidity 0.8.24;
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import {ERC721URIStorage} from
-    "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import {
+    ERC721URIStorage
+} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import {ERC2981} from "@openzeppelin/contracts/token/common/ERC2981.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
@@ -24,6 +25,17 @@ import {RoomMaster} from "./libraries/RoomMaster.sol";
  * Seguridad (RNF-14): CEI + `nonReentrant` en `buy`; guard de transferencias con transient
  * storage (EIP-1153, ADR-07) que bloquea `transferFrom` directos (`DirectTransferDisabled`);
  * validación de inputs en `mint`; `Pausable`.
+ *
+ * @dev AUTORIDAD (MAJOR#1, opción B): `owner()` (de `Ownable2Step`) es **meramente
+ *      informativo** y NO gobierna ninguna función de negocio — ninguna usa el modificador
+ *      `onlyOwner`. El control real recae en `AccessControl`: `DEFAULT_ADMIN_ROLE` administra
+ *      todos los roles y `setTreasury`, y cada operación restringida exige su rol específico
+ *      (`MINTER_ROLE`, `ROYALTY_ADMIN_ROLE`, `PAUSER_ROLE`, `BURNER_ROLE`, `TREASURER_ROLE`).
+ *      Por tanto, `transferOwnership`/`acceptOwnership` NO ceden el control del contrato: la
+ *      cesión REAL de gobernanza se hace concediendo `DEFAULT_ADMIN_ROLE` al nuevo admin
+ *      (`grantRole`) y renunciando el antiguo (`renounceRole`). Se conserva `Ownable2Step`
+ *      por compatibilidad con herramientas/marketplaces que leen `owner()`; la UI aclara su
+ *      carácter informativo en otra ola de trabajo.
  */
 contract HotelNights is
     IHotelNights,
@@ -72,7 +84,9 @@ contract HotelNights is
         ERC721("Hotel Marina del Sol Nights", "HMSN")
         Ownable(msg.sender)
     {
-        if (treasury_ == address(0)) revert ZeroAddress();
+        if (treasury_ == address(0)) {
+            revert ZeroAddress();
+        }
         if (royaltyBps_ > ROYALTY_MAX_BPS) revert RoyaltyOutOfRange(royaltyBps_);
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -120,6 +134,10 @@ contract HotelNights is
 
         // Effects (CEI): marcar vendida antes de cualquier interacción.
         _soldOnce[tokenId] = true;
+        // Higiene de estado (MINOR#1): el inventario del hotel no debería tener listados, pero
+        // si alguno sobreviviera no debe persistir tras la primaria — el nuevo dueño no hereda
+        // un listado ajeno. `list()` ya exige `soldOnce`, así que esto es defensa en profundidad.
+        delete _listings[tokenId];
         emit Sale(tokenId, seller, msg.sender, price, SaleType.PRIMARY);
 
         // Interaction 1: transferir el NFT (autorizado por el guard transient).
@@ -137,6 +155,9 @@ contract HotelNights is
     /// @inheritdoc IHotelNights
     function list(uint256 tokenId, uint256 price) external override {
         if (_ownerOf(tokenId) != msg.sender) revert NotOwner();
+        // Solo se revende desde EN_PODER_CLIENTE (MINOR#5, CASOS §4): una noche que aún no tuvo
+        // venta primaria es inventario DISPONIBLE del hotel y NO debe entrar por la vía SECONDARY.
+        if (!_soldOnce[tokenId]) revert NightNotResellable(tokenId);
         if (price == 0) revert InvalidPrice();
         if (_isExpired(tokenId)) revert NightExpired(tokenId);
 
@@ -282,6 +303,11 @@ contract HotelNights is
     /// @inheritdoc IHotelNights
     function pendingWithdrawals(address account) external view override returns (uint256) {
         return _pending[account];
+    }
+
+    /// @inheritdoc IHotelNights
+    function totalPending() external view override returns (uint256) {
+        return _totalPending;
     }
 
     /// @inheritdoc IHotelNights

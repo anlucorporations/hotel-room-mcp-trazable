@@ -16,6 +16,15 @@ ffi = false
 [profile.ci]
 verbosity = 3
 
+# Invariantes financieras (MAJOR#2): secuencias aleatorias contra el handler.
+[invariant]
+runs = 256
+depth = 32
+fail_on_revert = false
+
+[fuzz]
+runs = 256
+
 [fmt]
 line_length = 100
 tab_width = 4

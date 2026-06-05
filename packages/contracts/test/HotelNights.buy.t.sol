@@ -24,15 +24,19 @@ contract ReentrantBuyer is IERC721Receiver {
         NFT.buy{value: price_}(tokenId_);
     }
 
-    function onERC721Received(address, address, uint256, bytes calldata)
-        external
-        returns (bytes4)
-    {
+    function onERC721Received(address, address, uint256, bytes calldata) external returns (bytes4) {
         NFT.buy{value: price}(tokenId); // reentrada → debe revertir
         return IERC721Receiver.onERC721Received.selector;
     }
 
     receive() external payable {}
+}
+
+/// @notice Tesorería hostil: rechaza ETH en `receive` (MINOR#7: bloquea la primaria).
+contract RejectingTreasury {
+    receive() external payable {
+        revert("tesoreria rechaza ETH");
+    }
 }
 
 /// @notice CU-05 — Comprar una noche (venta primaria) + guard de transferencias (ADR-07).
@@ -146,6 +150,25 @@ contract HotelNightsBuyTest is Test {
         vm.prank(buyer);
         vm.expectRevert(IHotelNights.DirectTransferDisabled.selector);
         nft.transferFrom(buyer, address(0xBEEF), TOKEN_ID);
+    }
+
+    function test_BuyEthTransferFailedWhenTreasuryReverts() public {
+        // MINOR#7: si la tesorería revierte al recibir ETH, la primaria revierte
+        // `EthTransferFailed` y la venta NO se materializa (CEI + revert atómico).
+        RejectingTreasury rejecter = new RejectingTreasury();
+        HotelNights local = new HotelNights(address(rejecter), ROYALTY_BPS);
+        local.grantRole(local.MINTER_ROLE(), minter);
+        vm.prank(minter);
+        local.mint(ROOM, DATE, PRICE, URI); // minteada al inventario (rejecter)
+
+        vm.deal(buyer, PRICE);
+        vm.prank(buyer);
+        vm.expectRevert(IHotelNights.EthTransferFailed.selector);
+        local.buy{value: PRICE}(TOKEN_ID);
+
+        // La venta no se materializó: sigue en el inventario y sin marcar como vendida.
+        assertEq(local.ownerOf(TOKEN_ID), address(rejecter));
+        assertFalse(local.soldOnce(TOKEN_ID));
     }
 
     function test_GuardNotStuckAfterRevertedBuy() public {

@@ -51,6 +51,10 @@ interface IHotelNights {
     error NotOwner();
     error IncorrectPayment(uint256 expected, uint256 sent);
     error NotListed(uint256 tokenId);
+    /// @dev Solo una noche EN_PODER_CLIENTE (ya vendida en primaria) puede listarse en
+    ///      reventa. Listar inventario DISPONIBLE del hotel rompería la máquina de estados
+    ///      (CASOS §4) y distorsionaría las métricas PRIMARY vs SECONDARY (CU-09/CU-11).
+    error NightNotResellable(uint256 tokenId);
     error DirectTransferDisabled();
     error RoyaltyOutOfRange(uint96 bps);
     error NotExpired(uint256 tokenId);
@@ -108,6 +112,11 @@ interface IHotelNights {
 
     /// @notice Saldo pendiente de retirar de una cuenta (reventas).
     function pendingWithdrawals(address account) external view returns (uint256);
+
+    /// @notice Suma de todos los saldos pull pendientes (Σ `pendingWithdrawals`); fondos de
+    ///         usuarios reservados que `withdraw` nunca toca. Invariante: `address(this).balance
+    ///         >= totalPending()`.
+    function totalPending() external view returns (uint256);
 
     // ── Administración (FASE 2) ───────────────────────────────────────────────
     /// @notice Ajusta el royalty en bps (0–2000), ROYALTY_ADMIN (CU-12).

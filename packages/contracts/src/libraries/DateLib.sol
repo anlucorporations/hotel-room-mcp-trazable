@@ -32,13 +32,36 @@ library DateLib {
         return timestampToYYYYMMDD(nowTimestamp);
     }
 
-    /// @notice Validación de rango (no de calendario): AAAAMMDD de 8 dígitos, MM ∈ [1,12], DD ∈ [1,31].
+    /// @notice Validación de fecha civil real: AAAAMMDD de 8 dígitos, MM ∈ [1,12] y DD válido
+    ///         según los días del mes (incluido el 29-feb solo en años bisiestos).
     /// @dev El tope `< 10^8` garantiza que la fecha cabe en los 8 dígitos bajos del `tokenId`
     ///      (`room*10^8 + fecha`): una fecha de ≥9 dígitos corrompería el split habitación/fecha.
+    ///      Además del rango, valida el calendario real (MINOR#2): defensa en profundidad on-chain
+    ///      (`baseFee=0`) que rechaza fechas inexistentes como 20260230 o 20260431. La validación
+    ///      de zona horaria `Europe/Madrid` sigue siendo off-chain (ADR-08).
     function isInRange(uint256 yyyymmdd) internal pure returns (bool) {
         if (yyyymmdd >= 100_000_000) return false;
+        uint256 year = yyyymmdd / 10_000;
         uint256 month = (yyyymmdd / 100) % 100;
         uint256 day = yyyymmdd % 100;
-        return month >= 1 && month <= 12 && day >= 1 && day <= 31;
+        if (month < 1 || month > 12 || day < 1) return false;
+        return day <= _daysInMonth(year, month);
+    }
+
+    /// @dev Días del mes `month` (1–12) del año `year`, contemplando el bisiesto en febrero.
+    function _daysInMonth(uint256 year, uint256 month) private pure returns (uint256) {
+        if (month == 2) {
+            return _isLeapYear(year) ? 29 : 28;
+        }
+        // Abril, junio, septiembre y noviembre tienen 30 días; el resto, 31.
+        if (month == 4 || month == 6 || month == 9 || month == 11) {
+            return 30;
+        }
+        return 31;
+    }
+
+    /// @dev Regla gregoriana del año bisiesto: divisible por 4, salvo los seculares no divisibles por 400.
+    function _isLeapYear(uint256 year) private pure returns (bool) {
+        return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
     }
 }

@@ -33,4 +33,31 @@ contract DateLibTest is Test {
         assertFalse(DateLib.isInRange(100_000_101)); // ≥9 dígitos: no cabe en el tokenId
         assertFalse(DateLib.isInRange(999_991_231));
     }
+
+    // ── MINOR#2: validación de calendario real (días por mes + bisiesto) ──────────
+    function test_CalendarRejectsImpossibleDays() public pure {
+        assertFalse(DateLib.isInRange(20_260_230)); // 30-feb no existe
+        assertFalse(DateLib.isInRange(20_260_431)); // 31-abr no existe
+        assertFalse(DateLib.isInRange(20_260_631)); // 31-jun no existe
+        assertFalse(DateLib.isInRange(20_260_931)); // 31-sep no existe
+        assertFalse(DateLib.isInRange(20_261_131)); // 31-nov no existe
+    }
+
+    function test_CalendarLeapDayLogic() public pure {
+        // 2026 no es bisiesto → 29-feb inválido; 28-feb válido.
+        assertFalse(DateLib.isInRange(20_260_229));
+        assertTrue(DateLib.isInRange(20_260_228));
+        // 2024 sí es bisiesto → 29-feb válido.
+        assertTrue(DateLib.isInRange(20_240_229));
+        // 1900 secular no divisible por 400 → NO bisiesto.
+        assertFalse(DateLib.isInRange(19_000_229));
+        // 2000 secular divisible por 400 → SÍ bisiesto.
+        assertTrue(DateLib.isInRange(20_000_229));
+    }
+
+    function test_CalendarAcceptsMonthMaxDays() public pure {
+        assertTrue(DateLib.isInRange(20_260_131)); // 31-ene
+        assertTrue(DateLib.isInRange(20_260_430)); // 30-abr
+        assertTrue(DateLib.isInRange(20_261_231)); // 31-dic
+    }
 }

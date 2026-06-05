@@ -68,9 +68,7 @@ contract HotelNightsRolesTest is Test {
         vm.prank(stranger);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector,
-                stranger,
-                adminRole
+                IAccessControl.AccessControlUnauthorizedAccount.selector, stranger, adminRole
             )
         );
         nft.grantRole(minterRole, stranger);
@@ -88,10 +86,7 @@ contract HotelNightsRolesTest is Test {
     function test_SupportsExpectedInterfaces() public view {
         assertTrue(nft.supportsInterface(IID_ERC721), "ERC721");
         assertTrue(nft.supportsInterface(IID_ERC2981), "ERC2981");
-        assertTrue(
-            nft.supportsInterface(type(IAccessControl).interfaceId),
-            "AccessControl"
-        );
+        assertTrue(nft.supportsInterface(type(IAccessControl).interfaceId), "AccessControl");
     }
 
     function test_ConstructorRejectsZeroTreasury() public {

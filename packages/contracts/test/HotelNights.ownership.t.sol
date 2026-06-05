@@ -73,4 +73,54 @@ contract HotelNightsOwnershipTest is Test {
         );
         nft.grantRole(minterRole, stranger);
     }
+
+    // ── MAJOR#1: `owner()` es informativo; el control real es DEFAULT_ADMIN_ROLE ──
+    function test_OwnershipTransferDoesNotMoveRealControl() public {
+        bytes32 adminRole = nft.DEFAULT_ADMIN_ROLE();
+        bytes32 minterRole = nft.MINTER_ROLE();
+
+        // Transferir la propiedad NO concede DEFAULT_ADMIN_ROLE al nuevo owner.
+        nft.transferOwnership(newOwner);
+        vm.prank(newOwner);
+        nft.acceptOwnership();
+        assertEq(nft.owner(), newOwner);
+
+        // El nuevo `owner()` NO puede administrar roles (no tiene DEFAULT_ADMIN_ROLE).
+        assertFalse(nft.hasRole(adminRole, newOwner));
+        vm.prank(newOwner);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, newOwner, adminRole
+            )
+        );
+        nft.grantRole(minterRole, newOwner);
+
+        // El antiguo `owner()` (address(this)) sigue siendo el admin real.
+        assertTrue(nft.hasRole(adminRole, address(this)));
+        nft.grantRole(minterRole, operator); // funciona sin ser ya owner
+        assertTrue(nft.hasRole(minterRole, operator));
+    }
+
+    function test_RealGovernanceHandoverViaAdminRole() public {
+        // La cesión REAL: grant DEFAULT_ADMIN al nuevo + renounce del antiguo.
+        bytes32 adminRole = nft.DEFAULT_ADMIN_ROLE();
+        bytes32 minterRole = nft.MINTER_ROLE();
+        nft.grantRole(adminRole, newOwner);
+        nft.renounceRole(adminRole, address(this));
+
+        assertTrue(nft.hasRole(adminRole, newOwner));
+        assertFalse(nft.hasRole(adminRole, address(this)));
+
+        // El antiguo admin ya no puede administrar; el nuevo sí.
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), adminRole
+            )
+        );
+        nft.grantRole(minterRole, stranger);
+
+        vm.prank(newOwner);
+        nft.grantRole(minterRole, operator);
+        assertTrue(nft.hasRole(minterRole, operator));
+    }
 }

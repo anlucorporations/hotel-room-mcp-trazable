@@ -799,6 +799,19 @@ export const hotelNightsAbi = [
   },
   {
     "type": "function",
+    "name": "totalPending",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "transferFrom",
     "inputs": [
       {
@@ -1612,6 +1625,17 @@ export const hotelNightsAbi = [
   {
     "type": "error",
     "name": "NightNotAvailable",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "NightNotResellable",
     "inputs": [
       {
         "name": "tokenId",

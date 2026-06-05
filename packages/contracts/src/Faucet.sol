@@ -24,6 +24,7 @@ contract Faucet is Ownable, ReentrancyGuard {
     error FaucetInsufficientBalance();
     error InvalidConfig();
     error EthTransferFailed();
+    error ZeroAddress();
 
     constructor(uint256 amount_, uint256 cooldown_, uint256 lowThreshold_) Ownable(msg.sender) {
         if (amount_ == 0) revert InvalidConfig();
@@ -70,6 +71,7 @@ contract Faucet is Ownable, ReentrancyGuard {
 
     /// @notice Retira el saldo sobrante (solo operador, dev/test).
     function drain(address payable to) external onlyOwner {
+        if (to == address(0)) revert ZeroAddress(); // MINOR#9: no quemar fondos a la dirección cero
         (bool ok,) = to.call{value: address(this).balance}("");
         if (!ok) revert EthTransferFailed();
     }

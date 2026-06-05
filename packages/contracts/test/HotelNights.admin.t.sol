@@ -61,7 +61,9 @@ contract HotelNightsAdminTest is Test {
     }
 
     function test_SetRoyaltyOutOfRangeReverts() public {
-        vm.expectRevert(abi.encodeWithSelector(IHotelNights.RoyaltyOutOfRange.selector, uint96(2001)));
+        vm.expectRevert(
+            abi.encodeWithSelector(IHotelNights.RoyaltyOutOfRange.selector, uint96(2001))
+        );
         nft.setRoyaltyBps(2001);
     }
 
@@ -69,7 +71,9 @@ contract HotelNightsAdminTest is Test {
         bytes32 role = nft.ROYALTY_ADMIN_ROLE();
         vm.prank(stranger);
         vm.expectRevert(
-            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, stranger, role)
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, stranger, role
+            )
         );
         nft.setRoyaltyBps(500);
     }
@@ -108,7 +112,9 @@ contract HotelNightsAdminTest is Test {
         bytes32 role = nft.PAUSER_ROLE();
         vm.prank(stranger);
         vm.expectRevert(
-            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, stranger, role)
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, stranger, role
+            )
         );
         nft.pause();
     }
@@ -133,7 +139,9 @@ contract HotelNightsAdminTest is Test {
         vm.deal(address(nft), 1 ether);
         vm.prank(stranger);
         vm.expectRevert(
-            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, stranger, role)
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, stranger, role
+            )
         );
         nft.withdraw();
     }
@@ -190,7 +198,9 @@ contract HotelNightsAdminTest is Test {
         bytes32 role = nft.DEFAULT_ADMIN_ROLE();
         vm.prank(stranger);
         vm.expectRevert(
-            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, stranger, role)
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, stranger, role
+            )
         );
         nft.setTreasury(stranger);
     }
