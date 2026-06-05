@@ -46,3 +46,6 @@ docs/REVISION-*.md
 
 # Estado local de agentes/herramientas
 .claude/
+
+# Cobertura forge
+packages/contracts/lcov.info

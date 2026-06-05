@@ -5,7 +5,8 @@ default:
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive # deps Solidity (OZ v5, forge-std)
-  PNPM_VERSION: "10.32.1"
+  PNPM_VERSION: "10.32.1" # fuente única: coincide con packageManager de package.json
+  FOUNDRY_VERSION: "v1.7.1" # Foundry fijado para builds reproducibles (coherente con solc 0.8.24)
 
 stages:
   - verify
@@ -25,11 +26,15 @@ verify:
     - apt-get update && apt-get install -y --no-install-recommends curl git unzip
     - corepack enable && corepack prepare "pnpm@${PNPM_VERSION}" --activate
     - curl -L https://foundry.paradigm.xyz | bash
-    - export PATH="$HOME/.foundry/bin:$PATH" && foundryup
+    # foundryup --install <ver>: instala la versión fijada (reproducible), no la última.
+    - export PATH="$HOME/.foundry/bin:$PATH" && foundryup --install "${FOUNDRY_VERSION}"
     - pnpm config set store-dir "$CI_PROJECT_DIR/.pnpm-store"
     - pnpm install --frozen-lockfile
   script:
     - export PATH="$HOME/.foundry/bin:$PATH"
+    # Auditoría de dependencias (SCA, informativa; gate futuro en F2). No bloquea
+    # todavía: el "|| true" la mantiene informativa hasta triar vulnerabilidades.
+    - pnpm audit --audit-level=high || true
     - pnpm build # turbo: shared → apps + forge build
     - pnpm typecheck
     - pnpm lint
@@ -49,12 +54,17 @@ e2e:
     - pnpm --filter @hotel/web exec playwright install --with-deps chromium
     - pnpm --filter @hotel/web test:e2e
 
-# ── Análisis estático del contrato (informativo; no bloquea) ──
+# ── Análisis estático del contrato — gate de severidad HIGH (defecto #37 / RNF-14) ──
+# Alineado con GitHub (fail-on: high):
+#   - --fail-high: slither devuelve código de error solo ante hallazgos high o
+#     superiores (sustituye al "|| true" redundante: el job ya puede fallar).
+#   - Los hallazgos MEDIUM no bloquean: se triagan a mano (aceptar con justificación
+#     en slither.config.json o abrir issue). Quitar --fail-high → --fail-medium
+#     cuando el backlog de medium esté triado.
 slither:
   stage: verify
   image: ghcr.io/trailofbits/eth-security-toolbox:latest
-  allow_failure: true
   before_script: []
   script:
     - cd packages/contracts
-    - slither . --config-file slither.config.json || true
+    - slither . --config-file slither.config.json --fail-high

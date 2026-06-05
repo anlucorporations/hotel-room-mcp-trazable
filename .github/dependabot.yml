@@ -1,0 +1,28 @@
+# Dependabot — SCA / actualización de dependencias (defecto infra #45).
+# Mantiene al día el ecosistema npm (workspace pnpm) y las GitHub Actions.
+# Las actualizaciones de actions llegan ya pinneadas por SHA (defecto #46): cuando
+# Dependabot proponga un bump, actualizará el SHA y el comentario "# vX.Y.Z".
+version: 2
+updates:
+  # ── Dependencias npm del monorepo (pnpm workspace) ───────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    versioning-strategy: increase
+    groups:
+      # Agrupa parches/minors no-mayores para reducir ruido de PRs.
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ── GitHub Actions (pinneadas por SHA en .github/workflows) ──────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10

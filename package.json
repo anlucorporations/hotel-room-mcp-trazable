@@ -6,7 +6,7 @@
   "type": "module",
   "packageManager": "pnpm@10.32.1",
   "engines": {
-    "node": ">=20.11.0"
+    "node": ">=24"
   },
   "scripts": {
     "build": "turbo run build",
@@ -27,6 +27,9 @@
     "onlyBuiltDependencies": [
       "esbuild",
       "better-sqlite3"
-    ]
+    ],
+    "overrides": {
+      "viem": "2.52.0"
+    }
   }
 }
