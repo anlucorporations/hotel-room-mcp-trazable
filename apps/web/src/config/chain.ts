@@ -33,16 +33,38 @@ if (process.env.NODE_ENV !== "development" && deploymentBlock === 0n) {
 
 const envChainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? CHAIN_ID);
 
+/**
+ * Explorador de bloques (opcional). Las redes locales (Anvil/Besu privada) no tienen
+ * explorador, así que por defecto queda sin definir y el recibo degrada honestamente a
+ * hash acortado + copiar (UX#2/#13). En una red con explorador, configúralo vía
+ * `NEXT_PUBLIC_BLOCK_EXPLORER_URL` y el recibo mostrará el enlace «Ver transacción».
+ */
+const explorerUrl = process.env.NEXT_PUBLIC_BLOCK_EXPLORER_URL?.replace(/\/+$/, "");
+const blockExplorers: Chain["blockExplorers"] = explorerUrl
+  ? { default: { name: process.env.NEXT_PUBLIC_BLOCK_EXPLORER_NAME ?? "Explorador", url: explorerUrl } }
+  : undefined;
+
 function resolveChain(): Chain {
-  if (process.env.NEXT_PUBLIC_NETWORK === "besu") return besuChain;
-  if (envChainId === CHAIN_ID) return anvilChain;
-  // Dev sobre otra chainId local (p. ej. 31337, la de Anvil por defecto).
-  return defineChain({
-    id: envChainId,
-    name: `Anvil dev (${envChainId})`,
-    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-    rpcUrls: { default: { http: [rpcUrl] } },
-  });
+  const base =
+    process.env.NEXT_PUBLIC_NETWORK === "besu"
+      ? besuChain
+      : envChainId === CHAIN_ID
+        ? anvilChain
+        : // Dev sobre otra chainId local (p. ej. 31337, la de Anvil por defecto).
+          defineChain({
+            id: envChainId,
+            name: `Anvil dev (${envChainId})`,
+            nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+            rpcUrls: { default: { http: [rpcUrl] } },
+          });
+  // Solo añadimos `blockExplorers` si hay uno configurado (degradación honesta sin él).
+  return blockExplorers ? { ...base, blockExplorers } : base;
 }
 
 export const activeChain: Chain = resolveChain();
+
+/** URL del explorador para una tx, o `null` si la red no tiene explorador configurado. */
+export function txExplorerUrl(hash: `0x${string}`): string | null {
+  const url = activeChain.blockExplorers?.default?.url;
+  return url ? `${url}/tx/${hash}` : null;
+}

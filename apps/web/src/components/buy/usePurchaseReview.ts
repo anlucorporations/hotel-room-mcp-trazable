@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useReadContract } from "wagmi";
 import {
   decodePurchaseTx,
@@ -27,6 +27,15 @@ export interface PurchaseReview {
   readonly reverify: ClientReverifyResult | null;
   /** `true` solo si la tx está verificada y se puede firmar sin riesgo. */
   readonly verified: boolean;
+  /** `true` mientras se LEE el precio on-chain (MINOR#23): «verificando», no «fallo». */
+  readonly verifying: boolean;
+  /**
+   * `true` si la verificación NO pudo realizarse por un fallo de LECTURA del precio on-chain
+   * (RPC caído, calldata indecodificable) — distinto de «el precio no coincide» (MINOR#22).
+   */
+  readonly verifyFailed: boolean;
+  /** Re-lanza la lectura del precio on-chain para reintentar la verificación. */
+  readonly refetch: () => void;
 }
 
 /**
@@ -49,12 +58,14 @@ export function usePurchaseReview(tx: PurchaseTxData, expectedTokenId: bigint): 
   const callTokenId = decoded?.tokenId;
 
   // Precio on-chain del tokenId REAL del calldata (no de lo que afirme quien construyó la tx).
+  // `staleTime:0` + `refetchOnMount` (UX#12): la re-verificación del paso «Revisar» NO debe
+  // servirse de la caché global de 30s; siempre se contrasta contra el precio actual on-chain.
   const priceRead = useReadContract({
     address: contractAddress,
     abi: hotelNightsAbi,
     functionName: isResale ? "listingOf" : "priceOf",
     args: callTokenId !== undefined ? [callTokenId] : undefined,
-    query: { enabled: callTokenId !== undefined },
+    query: { enabled: callTokenId !== undefined, staleTime: 0, refetchOnMount: "always" },
   });
   const onChainPrice: bigint | undefined = isResale
     ? (priceRead.data as { price: bigint } | undefined)?.price
@@ -74,10 +85,22 @@ export function usePurchaseReview(tx: PurchaseTxData, expectedTokenId: bigint): 
     [tx, decoded, onChainPrice, expectedTokenId],
   );
 
+  // Reintento estable de la lectura on-chain (no expone la promesa de wagmi al consumidor).
+  const refetchPrice = priceRead.refetch;
+  const refetch = useCallback(() => {
+    void refetchPrice();
+  }, [refetchPrice]);
+
   const displayTokenId = callTokenId ?? null;
   const { room, dateYYYYMMDD } =
     displayTokenId !== null ? decodeTokenId(displayTokenId) : { room: null, dateYYYYMMDD: null };
   const type = room !== null ? (roomTypeOf(room) ?? null) : null;
+
+  // «Verificando»: el calldata se decodificó pero aún no hay precio on-chain con que comparar.
+  const verifying = callTokenId !== undefined && onChainPrice === undefined && !priceRead.isError;
+  // «Fallo de verificación»: calldata indecodificable (no hay tokenId) o la lectura del
+  // precio on-chain falló (RPC). NO es lo mismo que «el precio no coincide» (eso lo dice reverify).
+  const verifyFailed = callTokenId === undefined || priceRead.isError;
 
   return {
     tokenId: displayTokenId,
@@ -89,5 +112,8 @@ export function usePurchaseReview(tx: PurchaseTxData, expectedTokenId: bigint): 
     isResale,
     reverify,
     verified: reverify?.ok === true,
+    verifying,
+    verifyFailed,
+    refetch,
   };
 }
