@@ -19,8 +19,12 @@ interface AssistantApiResponse {
   readonly preparedPurchase: PreparedPurchase | null;
 }
 
-/** Estado de la conversación con el asistente (CU-08). Habla con `/api/assistant` server-side. */
-export function useAssistant(): UseAssistantResult {
+/**
+ * Estado de la conversación con el asistente (CU-08). Habla con `/api/assistant` server-side.
+ * `walletAddress` (la cuenta conectada, opcional) se envía como contexto para que el asistente
+ * pueda, por ejemplo, consultar las noches del usuario sin pedirle la dirección.
+ */
+export function useAssistant(walletAddress?: string): UseAssistantResult {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [status, setStatus] = useState<AssistantStatus>("idle");
   const [unavailable, setUnavailable] = useState(false);
@@ -41,7 +45,7 @@ export function useAssistant(): UseAssistantResult {
         const res = await fetch("/api/assistant", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ messages: conversation }),
+          body: JSON.stringify({ messages: conversation, walletAddress }),
         });
         if (!res.ok) {
           setUnavailable(true);
@@ -58,7 +62,7 @@ export function useAssistant(): UseAssistantResult {
         setStatus("error");
       }
     },
-    [messages, status],
+    [messages, status, walletAddress],
   );
 
   return { messages, status, unavailable, preparedPurchase, send };

@@ -3,13 +3,15 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { useOnboarding } from "@/components/wallet/useOnboarding";
 import { useAssistant } from "./useAssistant";
 import { PurchaseHandoff } from "./PurchaseHandoff";
 
 /** Panel de chat del asistente IA (CU-08): conversación + handoff a firma + estado 08e. */
 export function AssistantChat() {
   const t = useTranslations("assistant");
-  const { messages, status, unavailable, preparedPurchase, send } = useAssistant();
+  const { address } = useOnboarding();
+  const { messages, status, unavailable, preparedPurchase, send } = useAssistant(address);
   const [input, setInput] = useState("");
 
   function onSubmit(event: FormEvent): void {

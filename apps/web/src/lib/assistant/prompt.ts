@@ -29,8 +29,13 @@ function todayIsoUtc(now: Date): string {
  * sí mismo: sin ella asume años incorrectos y consulta ventanas vacías. Se inyecta en cada
  * petición (el orquestador recibe el `system` ya compuesto, lo que mantiene los tests deterministas).
  */
-export function buildSystemPrompt(now: Date): string {
+export function buildSystemPrompt(now: Date, walletAddress?: string): string {
+  const walletContext = walletAddress
+    ? `La wallet conectada del usuario es ${walletAddress}. Cuando pregunte por "sus noches", "mis reservas" o equivalente, llama a getOwnedNights con ESA dirección, sin pedírsela. Esa misma wallet será la que firme la compra.`
+    : `No hay ninguna wallet conectada. Si el usuario pregunta por "sus noches", pídele que conecte su wallet (o que te facilite una dirección) antes de consultarlas.`;
   return `${SYSTEM_PROMPT}
 
-Contexto temporal: hoy es ${todayIsoUtc(now)} (UTC). No asumas el año por tu cuenta; usa esta fecha. Para mostrar disponibilidad general, llama a listAvailableNights SIN el parámetro window; usa una ventana de fechas solo si el usuario indica fechas concretas.`;
+Contexto temporal: hoy es ${todayIsoUtc(now)} (UTC). No asumas el año por tu cuenta; usa esta fecha. Para mostrar disponibilidad general, llama a listAvailableNights SIN el parámetro window; usa una ventana de fechas solo si el usuario indica fechas concretas.
+
+Contexto de sesión: ${walletContext}`;
 }

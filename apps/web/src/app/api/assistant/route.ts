@@ -16,6 +16,14 @@ const MAX_MESSAGES = 40;
 
 interface AssistantBody {
   readonly messages?: unknown;
+  readonly walletAddress?: unknown;
+}
+
+const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
+
+/** La dirección de wallet es pública; solo se usa como contexto read-only (getOwnedNights). */
+function sanitizeWallet(input: unknown): string | undefined {
+  return typeof input === "string" && ADDRESS_RE.test(input) ? input : undefined;
 }
 
 /** Saneamiento estricto de la conversación entrante (no se confía en el cliente). */
@@ -65,7 +73,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       contractAddress,
       chainId: activeChain.id,
     });
-    const system = buildSystemPrompt(new Date());
+    const system = buildSystemPrompt(new Date(), sanitizeWallet(body.walletAddress));
     const result = await runAssistant({ llm, gateway, validatePreparedTx, system }, messages);
     return NextResponse.json(result);
   } catch (error) {
