@@ -17,7 +17,7 @@ export function ClaimPanel({
   onConfirmed: () => void;
 }) {
   const t = useTranslations("myNights");
-  const { claim, reset, status } = useClaim();
+  const { claim, reset, status, hash } = useClaim();
 
   const busy = status === "signing" || status === "pending";
 
@@ -43,7 +43,7 @@ export function ClaimPanel({
       >
         {busy ? t("processing") : t("claim", { amount: formatEth(pendingWei) })}
       </button>
-      <TxModal status={status} onClose={reset} />
+      <TxModal phase={status} onClose={reset} hash={hash} />
     </section>
   );
 }

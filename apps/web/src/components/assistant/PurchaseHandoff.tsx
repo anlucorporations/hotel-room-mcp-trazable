@@ -3,66 +3,33 @@
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { formatEther } from "viem";
-import { useReadContract, useSendTransaction, useWaitForTransactionReceipt } from "wagmi";
-import { decodePurchaseTx, decodeTokenId, roomTypeOf } from "@hotel/shared";
-import { hotelNightsAbi } from "@hotel/shared/abi";
-import { activeChain, contractAddress } from "@/config/chain";
+import { useSendTransaction, useWaitForTransactionReceipt } from "wagmi";
+import { TYPE_LABEL } from "@/lib/format";
 import { deriveTxStatus } from "@/components/tx/txStatus";
 import { classifyTxError } from "@/components/tx/txError";
 import { TxModal } from "@/components/buy/TxModal";
+import { usePurchaseReview } from "@/components/buy/usePurchaseReview";
 import { useOnboarding } from "@/components/wallet/useOnboarding";
-import { reverifyPurchase } from "./reverify";
 import type { PreparedPurchase } from "@/lib/assistant/types";
 
-const BTN = "min-h-touch rounded-md bg-emerald-700 px-4 py-2 font-semibold text-white disabled:opacity-60";
+const PRIMARY_BTN =
+  "min-h-touch rounded-brand bg-sea px-4 py-2 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60";
 
 /**
  * Handoff de la compra preparada por el asistente a la firma del usuario (CU-08, RNF-19).
- * La fuente de verdad es el `tokenId` DECODIFICADO del calldata (lo que de verdad se firma):
- * con él se leen precio y datos a mostrar, y se re-verifica que coincide con lo que afirma el
- * servidor y con el precio on-chain (`value == priceOf/listingOf`, `to`, `chainId`). El botón
- * de firma se bloquea si la re-verificación no pasa: nunca se firma una tx no verificada.
+ * Reutiliza `usePurchaseReview` (mismo punto de verdad que el catálogo): decodifica el
+ * `tokenId` REAL del calldata, lee precio on-chain y re-verifica `value == precio`/`to`/`chainId`.
+ * El botón de firma se bloquea si la verificación no pasa o si la wallet no está lista
+ * (desconectada o red incorrecta): nunca se firma una tx no verificada (ADR-11).
  */
 export function PurchaseHandoff({ purchase }: { purchase: PreparedPurchase }) {
   const t = useTranslations("assistant");
-  const { isConnected, connect } = useOnboarding();
+  const { isConnected, isWrongNetwork, connect, switchToAppChain } = useOnboarding();
   const tx = purchase.tx;
 
-  const decoded = useMemo(() => {
-    try {
-      return decodePurchaseTx(tx.data);
-    } catch {
-      return null;
-    }
-  }, [tx.data]);
-  const isResale = decoded?.functionName === "buyResale";
-  const callTokenId = decoded?.tokenId;
-
-  // Precio on-chain del tokenId REAL del calldata (independiente de lo que diga el asistente).
-  const priceRead = useReadContract({
-    address: contractAddress,
-    abi: hotelNightsAbi,
-    functionName: isResale ? "listingOf" : "priceOf",
-    args: callTokenId !== undefined ? [callTokenId] : undefined,
-    query: { enabled: callTokenId !== undefined },
-  });
-  const onChainPrice: bigint | undefined = isResale
-    ? (priceRead.data as { price: bigint } | undefined)?.price
-    : (priceRead.data as bigint | undefined);
-
-  const reverify = useMemo(
-    () =>
-      decoded && onChainPrice !== undefined
-        ? reverifyPurchase({
-            tx,
-            expectedTokenId: BigInt(purchase.tokenId),
-            expectedContract: contractAddress,
-            expectedChainId: activeChain.id,
-            onChainPriceWei: onChainPrice,
-          })
-        : null,
-    [tx, decoded, onChainPrice, purchase.tokenId],
-  );
+  const review = usePurchaseReview(tx, BigInt(purchase.tokenId));
+  const displayTokenId = review.tokenId ?? BigInt(purchase.tokenId);
+  const typeLabel = review.type ? TYPE_LABEL[review.type] : null;
 
   const { sendTransaction, data: hash, isPending, error: sendError, reset } = useSendTransaction();
   const receipt = useWaitForTransactionReceipt({ hash });
@@ -73,29 +40,37 @@ export function PurchaseHandoff({ purchase }: { purchase: PreparedPurchase }) {
     isConfirmed: receipt.isSuccess,
     isReverted: receipt.isError,
   });
-  const txErrorKind = sendError && status === "idle" ? classifyTxError(sendError) : null;
+  const txErrorKind = useMemo(
+    () => (sendError && status === "idle" ? classifyTxError(sendError) : null),
+    [sendError, status],
+  );
 
-  const displayTokenId = callTokenId ?? BigInt(purchase.tokenId);
-  const { room, dateYYYYMMDD } = decodeTokenId(displayTokenId);
-  const type = roomTypeOf(room);
-  const canSign = isConnected && reverify?.ok === true && status !== "signing" && status !== "pending";
+  const walletReady = isConnected && !isWrongNetwork;
+  const canSign =
+    walletReady && review.verified && status !== "signing" && status !== "pending";
 
   function sign(): void {
-    if (!reverify?.ok) return;
+    if (!review.verified) return;
     sendTransaction({ to: tx.to, data: tx.data, value: BigInt(tx.value) });
   }
 
   return (
     <div
       data-testid="purchase-handoff"
-      className="flex flex-col gap-2 rounded-md border border-emerald-300 bg-emerald-50 p-4"
+      className="flex flex-col gap-2 rounded-brand border border-line bg-sand-2 p-4"
     >
-      <h3 className="font-semibold">{t("handoff.title")}</h3>
-      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+      <h3 className="font-display font-semibold text-ink">{t("handoff.title")}</h3>
+      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-small text-ink">
         <dt className="text-ink-soft">{t("handoff.room")}</dt>
-        <dd>{type ? t("handoff.roomValue", { room, type }) : room}</dd>
+        <dd>
+          {review.room !== null
+            ? typeLabel
+              ? t("handoff.roomValue", { room: review.room, type: typeLabel })
+              : review.room
+            : "—"}
+        </dd>
         <dt className="text-ink-soft">{t("handoff.date")}</dt>
-        <dd>{dateYYYYMMDD}</dd>
+        <dd>{review.dateYYYYMMDD ?? "—"}</dd>
         <dt className="text-ink-soft">{t("handoff.token")}</dt>
         <dd data-testid="handoff-tokenId">{displayTokenId.toString()}</dd>
         <dt className="text-ink-soft">{t("handoff.to")}</dt>
@@ -106,28 +81,32 @@ export function PurchaseHandoff({ purchase }: { purchase: PreparedPurchase }) {
         <dd data-testid="handoff-value">{formatEther(BigInt(tx.value))} ETH</dd>
       </dl>
 
-      {reverify && !reverify.ok && (
-        <p data-testid="handoff-reverify-error" role="alert" className="text-red-700">
+      {review.reverify && !review.verified && (
+        <p data-testid="handoff-reverify-error" role="alert" className="text-small text-terracotta-text">
           {t("handoff.reverifyFailed")}
         </p>
       )}
       {txErrorKind && (
-        <p data-testid="handoff-tx-error" role="alert" className="text-red-700">
+        <p data-testid="handoff-tx-error" role="alert" className="text-small text-terracotta-text">
           {t(`handoff.txError.${txErrorKind}`)}
         </p>
       )}
 
       {!isConnected ? (
-        <button type="button" onClick={connect} className={BTN}>
+        <button type="button" onClick={connect} className={PRIMARY_BTN}>
           {t("handoff.connect")}
         </button>
+      ) : isWrongNetwork ? (
+        <button type="button" data-testid="handoff-switch" onClick={switchToAppChain} className={PRIMARY_BTN}>
+          {t("handoff.switchNetwork")}
+        </button>
       ) : (
-        <button type="button" data-testid="handoff-sign" onClick={sign} disabled={!canSign} className={BTN}>
+        <button type="button" data-testid="handoff-sign" onClick={sign} disabled={!canSign} className={PRIMARY_BTN}>
           {t("handoff.confirm")}
         </button>
       )}
 
-      <TxModal status={status} onClose={reset} />
+      <TxModal phase={status} onClose={reset} hash={hash} />
     </div>
   );
 }

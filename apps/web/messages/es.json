@@ -60,24 +60,42 @@
     "connectedAs": "Conectado: {address}"
   },
   "buy": {
-    "buy": "Comprar",
-    "buyResale": "Comprar reventa",
+    "buy": "Reservar",
+    "buyResale": "Reservar reventa",
     "needWallet": "Instala una wallet",
-    "connectToBuy": "Conecta para comprar",
-    "switchToBuy": "Cambia de red para comprar",
+    "connectToBuy": "Conecta para reservar",
+    "switchToBuy": "Cambia de red para reservar",
     "processing": "Procesando…",
     "close": "Cerrar",
+    "cancel": "Cancelar",
+    "retry": "Intentar de nuevo",
+    "roomLabel": "Habitación {room}",
+    "review": "Revisar tu reserva",
+    "reviewHint": "Esto es lo que vas a firmar. Comprueba el importe y la noche antes de confirmar.",
+    "reviewRoom": "Habitación",
+    "reviewDate": "Noche",
+    "reviewAmount": "Importe",
+    "reviewToken": "Token",
+    "reviewContract": "Contrato",
+    "confirmSign": "Confirmar y firmar",
+    "reverifyFailed": "El importe no coincide con el precio on-chain. No firmes: vuelve a intentarlo.",
+    "receipt": "Recibo",
+    "insufficientBalance": "Saldo insuficiente para reservar esta noche.",
     "status": {
       "signing": "Confirma en tu wallet",
-      "pending": "Transacción pendiente",
-      "confirmed": "¡Compra confirmada!",
-      "reverted": "La transacción falló"
+      "pending": "Reservando tu noche…",
+      "confirmed": "¡Noche reservada!",
+      "reverted": "No se completó la reserva"
     },
     "statusHint": {
       "signing": "Revisa y firma la transacción en MetaMask.",
       "pending": "Esperando confirmación en la red…",
       "confirmed": "La noche ya es tuya. Aparecerá en «Mis noches».",
       "reverted": "No se realizó ningún cargo. Puedes intentarlo de nuevo."
+    },
+    "txError": {
+      "rejected": "Has cancelado la firma. Puedes intentarlo de nuevo cuando quieras.",
+      "failed": "No se pudo completar la reserva. Revisa que estés en la red correcta y vuelve a intentarlo."
     }
   },
   "myNights": {
@@ -100,7 +118,11 @@
     "pendingTitle": "Saldo pendiente",
     "pendingHint": "Tienes fondos de reventas listos para cobrar.",
     "claim": "Cobrar {amount}",
-    "processing": "Procesando…"
+    "processing": "Procesando…",
+    "txError": {
+      "rejected": "Has cancelado la firma. Puedes intentarlo de nuevo cuando quieras.",
+      "failed": "No se pudo completar la operación. Revisa la red y vuelve a intentarlo."
+    }
   },
   "history": {
     "title": "Histórico de ventas",
@@ -183,6 +205,7 @@
       "value": "Importe",
       "confirm": "Firmar compra",
       "connect": "Conecta tu wallet para comprar",
+      "switchNetwork": "Cambia de red para comprar",
       "reverifyFailed": "Los datos de la transacción no coinciden con el precio on-chain. No firmes: vuelve a intentarlo.",
       "txError": {
         "rejected": "Has cancelado la firma. Puedes intentarlo de nuevo.",
