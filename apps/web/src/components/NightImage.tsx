@@ -42,6 +42,11 @@ export function NightImage({
       fill
       sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
       priority={priority}
+      // Los placeholders de habitación son SVG vectoriales: el optimizador no los reescala
+      // (ver next.config) y, de hecho, devuelve 400 al pedir `/_next/image` sobre ellos. Se
+      // sirven tal cual con `unoptimized` (mismo origen, CSP estricta), evitando el fallback
+      // espurio y los reflows del 400. Para el CDN real (ADR-12) se quitará `unoptimized`.
+      unoptimized
       className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
       onError={() => setFailed(true)}
     />
