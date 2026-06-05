@@ -2,10 +2,55 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Sistema visual «Mediterráneo editorial» (DISEÑO-UX §2). */
 :root {
-  color-scheme: light dark;
+  --sand: #fbf6ec;
+  --sand-2: #f3ead8;
+  --shell: #ffffff;
+  --line: #e7dcc6;
+  --ink: #1b2327;
+  --ink-soft: #4c575c;
+  --sea: #0e5a63;
+  --sea-deep: #08424a;
+  --terracotta: #c0542e;
+  --terracotta-text: #a8431f;
+  --olive: #5e6b45;
+  --gold: #c68a2e;
+  --ease: cubic-bezier(0.21, 0.68, 0.27, 0.99);
 }
 
-body {
-  @apply bg-white text-slate-900 antialiased;
+@layer base {
+  body {
+    @apply bg-sand text-ink antialiased;
+    font-family: var(--font-hanken), system-ui, -apple-system, sans-serif;
+    font-size: 1.0625rem;
+    line-height: 1.5;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-fraunces), Georgia, serif;
+    color: var(--ink);
+  }
+
+  /* Foco visible de marca: doble anillo arena + teal (WCAG 2.4.7 / 1.4.11). */
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--sea);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px var(--sand-2);
+    border-radius: 8px;
+  }
+}
+
+/* Respeta la preferencia de movimiento reducido (DISEÑO-UX §2.3, RNF-20). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

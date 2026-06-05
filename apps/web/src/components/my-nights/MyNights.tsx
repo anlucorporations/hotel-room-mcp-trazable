@@ -28,7 +28,7 @@ export function MyNights() {
   if (!isConnected || isWrongNetwork) {
     return (
       <div className="flex flex-col gap-4">
-        <p className="text-slate-600">{t("connectPrompt")}</p>
+        <p className="text-ink-soft">{t("connectPrompt")}</p>
         <WalletBar />
       </div>
     );
@@ -36,7 +36,7 @@ export function MyNights() {
 
   if (query.isPending) {
     return (
-      <p data-testid="loading-mis-noches" role="status" aria-live="polite" className="text-slate-600">
+      <p data-testid="loading-mis-noches" role="status" aria-live="polite" className="text-ink-soft">
         {t("loading")}
       </p>
     );
@@ -44,13 +44,13 @@ export function MyNights() {
 
   if (query.isError) {
     return (
-      <div data-testid="error-mis-noches" className="flex flex-col items-start gap-3 rounded-md bg-amber-50 px-4 py-6 text-amber-800">
-        <p>{t("loadError")}</p>
+      <div data-testid="error-mis-noches" className="flex flex-col items-start gap-3 rounded-brand bg-sand-2 px-4 py-6 text-ink-soft">
+        <p className="text-terracotta-text">{t("loadError")}</p>
         <button
           type="button"
           data-testid="retry"
           onClick={refetch}
-          className="min-h-touch rounded-md bg-amber-700 px-4 py-2 font-semibold text-white"
+          className="inline-flex min-h-touch items-center rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep"
         >
           {t("retry")}
         </button>
@@ -66,7 +66,7 @@ export function MyNights() {
       {hasPending && <ClaimPanel pendingWei={pendingWei} onConfirmed={refetch} />}
 
       {nights.length === 0 ? (
-        <p data-testid="empty-mis-noches" className="rounded-md bg-slate-50 px-4 py-10 text-center text-slate-500">
+        <p data-testid="empty-mis-noches" className="rounded-brand bg-sand-2 px-4 py-10 text-center text-ink-soft">
           {t("empty")}
         </p>
       ) : (

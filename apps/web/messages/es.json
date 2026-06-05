@@ -4,24 +4,51 @@
   },
   "home": {
     "title": "Hotel Marina del Sol",
-    "tagline": "Noches de hotel como NFTs, en la costa de Alicante.",
-    "myNightsLink": "Mis noches",
-    "historyLink": "Histórico",
-    "assistantLink": "Asistente"
+    "tagline": "Tu noche frente al Mediterráneo, en propiedad. Reserva directa, sin intermediarios."
+  },
+  "shell": {
+    "skipToCatalog": "Saltar al catálogo",
+    "brandTitle": "Marina del Sol",
+    "brandSubtitle": "Alicante · Mediterráneo",
+    "brandHome": "Marina del Sol, inicio",
+    "navLabel": "Principal",
+    "navNights": "Noches",
+    "navMyNights": "Mis noches",
+    "navHistory": "Histórico",
+    "navAssistant": "Asistente",
+    "footerTagline": "Red segura · pagos verificados",
+    "footerAddress": "Hotel Marina del Sol · Paseo Marítimo, Alicante",
+    "footerHistory": "Histórico público",
+    "footerTerms": "Términos",
+    "footerPrivacy": "Privacidad"
+  },
+  "hero": {
+    "eyebrow": "Reserva directa · sin intermediarios",
+    "titleLead": "Tu noche frente al",
+    "titleHighlight": "Mediterráneo",
+    "titleTail": ", en propiedad.",
+    "subcopy": "Cada noche es tuya desde el momento en que la reservas. Y si tus planes cambian, puedes traspasarla a otro viajero. Sencillo, seguro, sin papeleo."
   },
   "catalog": {
     "available": "Disponible",
     "resale": "Reventa",
+    "suite": "Suite",
     "room": "Habitación {room}",
     "imageAlt": "Habitación {type} {room} para el {date}",
-    "filterType": "Tipo de habitación",
+    "sectionHeading": "Noches disponibles",
+    "filtersLabel": "Filtros del catálogo",
+    "filtersGroupLabel": "Filtrar noches",
     "filterAll": "Todas",
-    "filterMaxPrice": "Precio máximo (ETH)",
-    "empty": "No hay noches disponibles con esos filtros.",
+    "filterMaxPrice": "Hasta 0,5 ETH",
+    "resultCount": "{count, plural, =0 {Sin noches} one {# noche} other {# noches}}",
+    "empty": "No hay noches para estos filtros",
+    "emptyHint": "Prueba con otras fechas o tipos de habitación. Pronto añadiremos más disponibilidad.",
+    "clearFilters": "Quitar filtros",
     "degraded": "No se pudo cargar el catálogo. Revisa tu conexión e inténtalo de nuevo.",
     "retry": "Reintentar",
-    "loadMore": "Ver más",
-    "endOfList": "No hay más noches."
+    "loadMore": "Cargar más noches",
+    "loadMoreAnnounce": "Se han añadido {count, plural, one {# noche} other {# noches}} al catálogo.",
+    "endOfList": "Has visto todas las noches disponibles en los próximos 90 días."
   },
   "wallet": {
     "noWallet": "No detectamos una wallet web3.",

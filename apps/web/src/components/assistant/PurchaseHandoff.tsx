@@ -92,17 +92,17 @@ export function PurchaseHandoff({ purchase }: { purchase: PreparedPurchase }) {
     >
       <h3 className="font-semibold">{t("handoff.title")}</h3>
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-        <dt className="text-slate-500">{t("handoff.room")}</dt>
+        <dt className="text-ink-soft">{t("handoff.room")}</dt>
         <dd>{type ? t("handoff.roomValue", { room, type }) : room}</dd>
-        <dt className="text-slate-500">{t("handoff.date")}</dt>
+        <dt className="text-ink-soft">{t("handoff.date")}</dt>
         <dd>{dateYYYYMMDD}</dd>
-        <dt className="text-slate-500">{t("handoff.token")}</dt>
+        <dt className="text-ink-soft">{t("handoff.token")}</dt>
         <dd data-testid="handoff-tokenId">{displayTokenId.toString()}</dd>
-        <dt className="text-slate-500">{t("handoff.to")}</dt>
+        <dt className="text-ink-soft">{t("handoff.to")}</dt>
         <dd data-testid="handoff-to" className="break-all">
           {tx.to}
         </dd>
-        <dt className="text-slate-500">{t("handoff.value")}</dt>
+        <dt className="text-ink-soft">{t("handoff.value")}</dt>
         <dd data-testid="handoff-value">{formatEther(BigInt(tx.value))} ETH</dd>
       </dl>
 

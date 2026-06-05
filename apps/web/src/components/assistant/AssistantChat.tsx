@@ -29,7 +29,7 @@ export function AssistantChat() {
         aria-label={t("logLabel")}
         className="flex min-h-[12rem] flex-col gap-2 rounded-md border border-slate-200 p-4"
       >
-        {messages.length === 0 && <p className="text-slate-500">{t("intro")}</p>}
+        {messages.length === 0 && <p className="text-ink-soft">{t("intro")}</p>}
         {messages.map((m, i) => (
           <p
             key={i}
@@ -40,7 +40,7 @@ export function AssistantChat() {
           </p>
         ))}
         {status === "loading" && (
-          <p data-testid="assistant-loading" className="self-start text-slate-500" role="status">
+          <p data-testid="assistant-loading" className="self-start text-ink-soft" role="status">
             {t("sending")}
           </p>
         )}

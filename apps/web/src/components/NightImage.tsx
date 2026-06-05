@@ -16,7 +16,7 @@ export function NightImage({ type, alt }: { type: NightType; alt: string }) {
         data-testid="img-fallback"
         role="img"
         aria-label={alt}
-        className="flex h-40 w-full items-center justify-center bg-slate-200 text-sm text-slate-500"
+        className="flex h-full w-full items-center justify-center bg-gradient-to-br from-sea to-olive font-display text-small tracking-wide text-shell"
       >
         Imagen no disponible
       </div>
@@ -28,7 +28,8 @@ export function NightImage({ type, alt }: { type: NightType; alt: string }) {
     <img
       src={`/images/${type}.svg`}
       alt={alt}
-      className="h-40 w-full object-cover"
+      loading="lazy"
+      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
       onError={() => setFailed(true)}
     />
   );

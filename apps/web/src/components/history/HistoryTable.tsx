@@ -10,18 +10,18 @@ export function HistoryTable({ entries }: { entries: readonly SaleHistoryEntry[]
 
   if (entries.length === 0) {
     return (
-      <p data-testid="history-empty" className="rounded-md bg-slate-50 px-4 py-10 text-center text-slate-500">
+      <p data-testid="history-empty" className="rounded-brand bg-sand-2 px-4 py-10 text-center text-ink-soft">
         {t("empty")}
       </p>
     );
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-sm">
+    <div className="overflow-x-auto rounded-brand border border-line bg-shell px-4">
+      <table className="w-full border-collapse text-small">
         <caption className="sr-only">{t("title")}</caption>
         <thead>
-          <tr className="border-b border-slate-200 text-left text-slate-500">
+          <tr className="border-b border-line text-left text-ink-soft">
             <th scope="col" className="py-2 pr-4">{t("colRoom")}</th>
             <th scope="col" className="py-2 pr-4">{t("colDate")}</th>
             <th scope="col" className="py-2 pr-4">{t("colType")}</th>
@@ -33,7 +33,7 @@ export function HistoryTable({ entries }: { entries: readonly SaleHistoryEntry[]
         </thead>
         <tbody>
           {entries.map((e) => (
-            <tr key={`${e.txHash}-${e.logIndex}`} data-testid="history-row" className="border-b border-slate-100">
+            <tr key={`${e.txHash}-${e.logIndex}`} data-testid="history-row" className="border-b border-line/60">
               <td className="py-2 pr-4">{e.room}</td>
               <td className="py-2 pr-4">{formatNightDate(e.dateYYYYMMDD)}</td>
               <td className="py-2 pr-4">{TYPE_LABEL[e.roomType]}</td>
