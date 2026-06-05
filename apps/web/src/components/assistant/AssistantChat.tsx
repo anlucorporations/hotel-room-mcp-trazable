@@ -27,14 +27,18 @@ export function AssistantChat() {
         role="log"
         aria-live="polite"
         aria-label={t("logLabel")}
-        className="flex min-h-[12rem] flex-col gap-2 rounded-md border border-slate-200 p-4"
+        className="flex min-h-[12rem] flex-col gap-2 rounded-brand border border-line bg-shell p-4"
       >
         {messages.length === 0 && <p className="text-ink-soft">{t("intro")}</p>}
         {messages.map((m, i) => (
           <p
             key={i}
             data-testid={`msg-${m.role}`}
-            className={m.role === "user" ? "self-end rounded-md bg-sky-100 px-3 py-2" : "self-start rounded-md bg-slate-100 px-3 py-2"}
+            className={
+              m.role === "user"
+                ? "self-end rounded-brand bg-sea px-3 py-2 text-shell"
+                : "self-start rounded-brand bg-sand-2 px-3 py-2 text-ink"
+            }
           >
             {m.text}
           </p>
@@ -50,10 +54,10 @@ export function AssistantChat() {
         <div
           data-testid="assistant-unavailable"
           role="alert"
-          className="flex flex-col gap-2 rounded-md bg-amber-50 px-4 py-4 text-amber-800"
+          className="flex flex-col gap-2 rounded-brand border border-line bg-sand-2 px-4 py-4 text-ink"
         >
           <p>{t("unavailable")}</p>
-          <Link href="/" className="self-start font-semibold underline">
+          <Link href="/" className="self-start font-semibold text-sea underline">
             {t("manualLink")}
           </Link>
         </div>
@@ -68,13 +72,13 @@ export function AssistantChat() {
           onChange={(e) => setInput(e.target.value)}
           placeholder={t("placeholder")}
           aria-label={t("placeholder")}
-          className="min-h-touch flex-1 rounded-md border border-slate-300 px-3"
+          className="min-h-touch flex-1 rounded-brand border border-line bg-shell px-3 text-ink"
         />
         <button
           type="submit"
           data-testid="assistant-send"
           disabled={status === "loading" || input.trim().length === 0}
-          className="min-h-touch rounded-md bg-sky-700 px-4 py-2 font-semibold text-white disabled:opacity-60"
+          className="min-h-touch rounded-brand bg-sea px-4 py-2 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60"
         >
           {t("send")}
         </button>

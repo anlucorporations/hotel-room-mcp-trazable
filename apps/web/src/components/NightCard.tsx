@@ -52,7 +52,7 @@ export function NightCard({ night }: { night: NightView }) {
   return (
     <article
       data-testid={`night-card-${night.tokenId}`}
-      className="group flex h-full flex-col overflow-hidden rounded-brand-lg border border-line bg-shell shadow-card transition-shadow duration-300 hover:shadow-card-hover"
+      className="group flex h-full flex-col overflow-hidden rounded-brand-lg border border-line bg-shell shadow-card transition duration-300 ease-brand motion-safe:hover:-translate-y-1 hover:shadow-card-hover"
     >
       <div className="relative aspect-[4/3] overflow-hidden">
         <NightImage type={night.type} alt={alt} />
