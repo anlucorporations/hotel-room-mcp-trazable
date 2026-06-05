@@ -7,8 +7,9 @@ import { useTranslations } from "next-intl";
 import { formatEther } from "viem";
 import { useBalance } from "wagmi";
 import { buildPurchaseTxData, type SaleType } from "@hotel/shared";
-import { activeChain, contractAddress } from "@/config/chain";
+import { activeChain, contractAddress, faucetAddress } from "@/config/chain";
 import { useOnboarding } from "@/components/wallet/useOnboarding";
+import { FaucetButton } from "@/components/wallet/FaucetButton";
 import { classifyTxError } from "@/components/tx/txError";
 import { TxModal, type TxPhase } from "./TxModal";
 import { PurchaseReviewDetails } from "./PurchaseReviewDetails";
@@ -138,18 +139,24 @@ export function BuyButton({
       </button>
 
       {insufficientBalance && balance !== undefined && (
-        <p
-          data-testid="insufficient-balance"
-          role="status"
-          className="mt-2 text-small text-terracotta-text"
-        >
-          {t("insufficientBalanceDetail", {
-            missing: formatEther(shortfall),
-            have: formatEther(balance.value),
-            need: formatEther(price),
-            symbol: balance.symbol,
-          })}
-        </p>
+        <div data-testid="insufficient-balance" role="status" className="mt-2 text-small text-terracotta-text">
+          <p>
+            {t("insufficientBalanceDetail", {
+              missing: formatEther(shortfall),
+              have: formatEther(balance.value),
+              need: formatEther(price),
+              symbol: balance.symbol,
+            })}
+          </p>
+          {/* UX#3: si hay faucet de pruebas configurado, ofrecemos conseguir ETH aquí mismo.
+              `FaucetButton` se autogestiona (null si no aplica); el guard evita renderizar el
+              contenedor cuando no hay faucet, manteniendo el comportamiento sin faucet. */}
+          {faucetAddress !== null && (
+            <div className="mt-2">
+              <FaucetButton />
+            </div>
+          )}
+        </div>
       )}
 
       <TxModal

@@ -19,6 +19,8 @@ interface LatestDeployment {
   chainId: number;
   address: string;
   deploymentBlock: number;
+  // Solo presente cuando el deploy desplegó el faucet de pruebas (DEPLOY_FAUCET=true).
+  faucet?: string;
 }
 
 interface BroadcastTransaction {
@@ -79,6 +81,9 @@ const deployment = deploymentSchema.parse({
   deploymentBlock: onChain?.deploymentBlock ?? latest.deploymentBlock,
   abiHash,
   deployedAt: new Date().toISOString(),
+  // El faucet (RF-21) solo se propaga si el deploy lo escribió. Zod descarta `undefined`,
+  // así que el registro de producción (sin faucet) queda igual que antes (retrocompat).
+  faucet: latest.faucet,
 });
 
 mkdirSync(sharedDeploymentsDir, { recursive: true });
@@ -88,3 +93,4 @@ writeFileSync(outPath, `${JSON.stringify(deployment, null, 2)}\n`);
 console.log(`✓ Despliegue sincronizado → ${outPath}`);
 console.log(`  address=${deployment.address} block=${deployment.deploymentBlock}`);
 console.log(`  abiHash=${deployment.abiHash}`);
+if (deployment.faucet) console.log(`  faucet=${deployment.faucet}`);

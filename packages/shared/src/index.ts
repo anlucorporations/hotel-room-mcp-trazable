@@ -16,4 +16,5 @@ export * from "./domain/night-state";
 export * from "./domain/aggregates";
 export * from "./domain/purchase-tx";
 export * from "./domain/ipfs";
+export * from "./domain/faucet";
 export * from "./deployments/schema";

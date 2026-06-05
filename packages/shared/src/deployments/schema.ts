@@ -10,6 +10,9 @@ export const deploymentSchema = z.object({
   deploymentBlock: z.number().int().nonnegative(),
   abiHash: z.string().regex(/^0x[0-9a-fA-F]{64}$/, "hash de ABI inválido"),
   deployedAt: z.string().optional(),
+  // Faucet de pruebas (RF-21, ADR-13): opcional — solo presente en dev/test, nunca en
+  // producción. Retrocompatible: los despliegues anteriores sin faucet siguen siendo válidos.
+  faucet: z.string().regex(/^0x[0-9a-fA-F]{40}$/, "dirección de faucet inválida").optional(),
 });
 
 export type Deployment = z.infer<typeof deploymentSchema>;

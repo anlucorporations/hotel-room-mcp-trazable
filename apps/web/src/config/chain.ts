@@ -14,6 +14,15 @@ export const contractAddress: Address =
   (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as Address | undefined) ?? DEV_CONTRACT;
 
 /**
+ * Faucet de pruebas (RF-21, ADR-13): `null` si no se configura `NEXT_PUBLIC_FAUCET_ADDRESS`.
+ * En producción NO se define (no hay faucet) y en el E2E hermético tampoco, por lo que toda
+ * la UI de faucet queda oculta sin tocar más nada (retrocompatibilidad). Solo en dev/test se
+ * inyecta la dirección que escribió `Deploy.s.sol` y propagó `sync-deployment.ts`.
+ */
+export const faucetAddress: Address | null =
+  (process.env.NEXT_PUBLIC_FAUCET_ADDRESS as Address | undefined) ?? null;
+
+/**
  * Bloque de despliegue: punto de inicio del escaneo de `getLogs` (fuente única, ADR-09).
  *
  * MINOR#16 — Un valor 0 SOLO es válido para Anvil/CI recién levantados (el contrato vive en

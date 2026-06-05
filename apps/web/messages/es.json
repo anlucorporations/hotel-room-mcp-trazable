@@ -94,7 +94,22 @@
     "connecting": "Conectando…",
     "wrongNetwork": "Estás en la red equivocada.",
     "switchNetwork": "Cambiar de red",
-    "connectedAs": "Conectado: {address}"
+    "switchingNetwork": "Cambiando de red…",
+    "connectedAs": "Conectado: {address}",
+    "switchError": {
+      "chainNotAdded": "Tu wallet aún no tiene esta red. Aprueba añadirla cuando MetaMask te lo pida y vuelve a intentarlo.",
+      "rejected": "Has cancelado el cambio de red. Para reservar, cambia a la red de la aplicación.",
+      "failed": "No se pudo cambiar de red. Cámbiala manualmente en tu wallet a la red de la aplicación e inténtalo de nuevo."
+    }
+  },
+  "faucet": {
+    "get": "Conseguir ETH de prueba",
+    "dispensing": "Enviando ETH de prueba…",
+    "success": "¡Listo! Recibiste ETH de prueba en tu wallet.",
+    "cooldown": "Ya solicitaste ETH hace poco. Vuelve a intentarlo a partir de las {time}.",
+    "empty": "El faucet se ha quedado sin fondos. Avisa al operador para que lo recargue.",
+    "emptyShort": "Faucet sin fondos",
+    "error": "No se pudo enviar ETH de prueba. Inténtalo de nuevo en unos segundos."
   },
   "buy": {
     "buy": "Reservar",
