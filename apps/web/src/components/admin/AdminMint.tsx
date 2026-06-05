@@ -12,9 +12,10 @@ import {
   encodeTokenId,
 } from "@hotel/shared";
 import { TxModal } from "@/components/buy/TxModal";
-import { classifyTxError } from "@/components/tx/txError";
 import { AdminCard } from "./AdminPanel";
 import { useMintNight } from "./useMintNight";
+import { useAdminTxCopy } from "./adminTxCopy";
+import { classifyAdminTxError } from "./adminTxError";
 
 const FIELD = "min-h-touch rounded-brand border border-line bg-shell px-3 text-ink";
 const SUBMIT =
@@ -36,6 +37,7 @@ function parseDateInput(value: string): { yyyymmdd: number; valid: boolean } {
  */
 export function AdminMint() {
   const t = useTranslations("admin");
+  const txCopy = useAdminTxCopy();
   const { mint, status, hash, error: mintError, reset } = useMintNight();
 
   const [room, setRoom] = useState("");
@@ -45,7 +47,10 @@ export function AdminMint() {
   const [mintedTokenId, setMintedTokenId] = useState<string | null>(null);
 
   const busy = status === "signing" || status === "pending";
-  const txErrorKind = mintError ? classifyTxError(mintError) : null;
+  const txErrorKind = mintError ? classifyAdminTxError(mintError) : null;
+  // Error de formulario asociado a los inputs vía aria-describedby (MINOR#36).
+  const errorId = "mint-form-error";
+  const hasFormError = Boolean(formError);
 
   function onMint(event: FormEvent): void {
     event.preventDefault();
@@ -73,38 +78,49 @@ export function AdminMint() {
   return (
     <AdminCard>
       <form onSubmit={onMint} className="flex max-w-md flex-col gap-4">
-        <label className="flex flex-col gap-1 text-small font-medium text-ink">
+        <label htmlFor="mint-room" className="flex flex-col gap-1 text-small font-medium text-ink">
           {t("room")}
           <input
+            id="mint-room"
             data-testid="mint-room"
             type="number"
+            inputMode="numeric"
             value={room}
             onChange={(e) => setRoom(e.target.value)}
             required
+            aria-invalid={hasFormError || undefined}
+            aria-describedby={hasFormError ? errorId : undefined}
             className={FIELD}
           />
         </label>
-        <label className="flex flex-col gap-1 text-small font-medium text-ink">
+        <label htmlFor="mint-date" className="flex flex-col gap-1 text-small font-medium text-ink">
           {t("date")}
           <input
+            id="mint-date"
             data-testid="mint-date"
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
             required
+            aria-invalid={hasFormError || undefined}
+            aria-describedby={hasFormError ? errorId : undefined}
             className={FIELD}
           />
         </label>
-        <label className="flex flex-col gap-1 text-small font-medium text-ink">
+        <label htmlFor="mint-price" className="flex flex-col gap-1 text-small font-medium text-ink">
           {t("price")}
           <input
+            id="mint-price"
             data-testid="mint-price"
             type="number"
+            inputMode="decimal"
             step="0.001"
             min="0"
             value={priceEth}
             onChange={(e) => setPriceEth(e.target.value)}
             required
+            aria-invalid={hasFormError || undefined}
+            aria-describedby={hasFormError ? errorId : undefined}
             className={FIELD}
           />
         </label>
@@ -120,7 +136,7 @@ export function AdminMint() {
         </button>
 
         {formError && (
-          <p data-testid="mint-error" role="alert" className="text-terracotta-text">
+          <p id={errorId} data-testid="mint-error" role="alert" className="text-terracotta-text">
             {formError}
           </p>
         )}
@@ -135,7 +151,7 @@ export function AdminMint() {
           </p>
         )}
       </form>
-      <TxModal phase={status} onClose={reset} hash={hash} />
+      <TxModal phase={status} onClose={reset} hash={hash} copy={txCopy} />
     </AdminCard>
   );
 }

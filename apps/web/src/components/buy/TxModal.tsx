@@ -11,6 +11,24 @@ import { TxReceipt } from "@/components/tx/TxReceipt";
  */
 export type TxPhase = "review" | TxStatus;
 
+/**
+ * Copy del modal parametrizable por CONTEXTO (MAJOR#9). El flujo de compra usa el copy de
+ * dominio («Reservando tu noche…»); el back-office inyecta copy genérica del ciclo de tx
+ * («Esperando confirmación»). Cada campo es opcional: lo no provisto cae al copy de compra
+ * (`buy.*`), de modo que los consumidores existentes (compra/handoff/claim) NO necesitan
+ * cambios (retrocompatible).
+ */
+export interface TxModalCopy {
+  /** Título del paso «Revisar». Por defecto `buy.review`. */
+  readonly review?: string;
+  /** Hint del paso «Revisar». Por defecto `buy.reviewHint`. */
+  readonly reviewHint?: string;
+  /** Título por fase de estado (signing/pending/confirmed/reverted). Por defecto `buy.status.*`. */
+  readonly status?: Partial<Record<Exclude<TxPhase, "review" | "idle">, string>>;
+  /** Hint por fase de estado. Por defecto `buy.statusHint.*`. */
+  readonly statusHint?: Partial<Record<Exclude<TxPhase, "review" | "idle">, string>>;
+}
+
 export interface TxModalProps {
   /** Fase actual; `idle`/no `review` mantiene el modal cerrado. */
   readonly phase: TxPhase;
@@ -35,6 +53,11 @@ export interface TxModalProps {
    * sin perder la reserva. Sin ella no se muestra copy de dominio (back-office).
    */
   readonly pendingNote?: ReactNode;
+  /**
+   * Copy por contexto (MAJOR#9): el back-office pasa textos genéricos del ciclo de tx.
+   * Lo no provisto cae al copy del flujo de compra (`buy.*`), por lo que es retrocompatible.
+   */
+  readonly copy?: TxModalCopy;
 }
 
 /** Mapea cada fase al `data-testid` esperado por el plan de pruebas (§7). */
@@ -82,6 +105,7 @@ export function TxModal({
   errorActions,
   confirmedActions,
   pendingNote,
+  copy,
 }: TxModalProps) {
   const t = useTranslations("buy");
   const titleId = useId();
@@ -147,8 +171,13 @@ export function TxModal({
   // En el bloque «no review» `phase` ya nunca es "review" ni "idle"; estrechamos el tipo.
   const isReview = phase === "review";
   const statusPhase = phase as Exclude<TxPhase, "review" | "idle">;
-  const heading = isReview ? t("review") : t(`status.${statusPhase}`);
-  const hint = isReview ? t("reviewHint") : t(`statusHint.${statusPhase}`);
+  // Copy por contexto (MAJOR#9): el `copy` opcional sobrescribe; lo no provisto cae a `buy.*`.
+  const heading = isReview
+    ? (copy?.review ?? t("review"))
+    : (copy?.status?.[statusPhase] ?? t(`status.${statusPhase}`));
+  const hint = isReview
+    ? (copy?.reviewHint ?? t("reviewHint"))
+    : (copy?.statusHint?.[statusPhase] ?? t(`statusHint.${statusPhase}`));
   const isWorking = phase === "signing" || phase === "pending";
   // Texto que anuncia la región live persistente: vacío en «Revisar», el hint del estado si no.
   const liveText = isReview ? "" : hint;
@@ -194,10 +223,11 @@ export function TxModal({
           {liveText}
         </p>
 
-        {/* Aviso ASERTIVO separado solo para el fallo de la tx (MAJOR#7). */}
+        {/* Aviso ASERTIVO separado solo para el fallo de la tx (MAJOR#7). Respeta el copy por
+            contexto (MAJOR#9): en back-office el mensaje es genérico, no «no se completó la reserva». */}
         {phase === "reverted" && (
           <p role="alert" className="mt-2 text-small text-terracotta-text">
-            {t("statusHint.reverted")}
+            {copy?.statusHint?.reverted ?? t("statusHint.reverted")}
           </p>
         )}
 

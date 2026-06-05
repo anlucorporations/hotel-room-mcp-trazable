@@ -6,9 +6,10 @@ import { useReadContract } from "wagmi";
 import { hotelNightsAbi } from "@hotel/shared/abi";
 import { contractAddress } from "@/config/chain";
 import { TxModal } from "@/components/buy/TxModal";
-import { classifyTxError } from "@/components/tx/txError";
 import { AdminCard } from "./AdminPanel";
 import { useAdminWrite } from "./useAdminWrite";
+import { useAdminTxCopy } from "./adminTxCopy";
+import { classifyAdminTxError } from "./adminTxError";
 
 const ROYALTY_MIN_BPS = 0;
 const ROYALTY_MAX_BPS = 2000;
@@ -26,6 +27,7 @@ const bpsToPercent = (bps: number): string => (bps / 100).toFixed(2).replace(/\.
  */
 export function AdminRoyalty() {
   const t = useTranslations("admin");
+  const txCopy = useAdminTxCopy();
   const current = useReadContract({
     address: contractAddress,
     abi: hotelNightsAbi,
@@ -38,7 +40,9 @@ export function AdminRoyalty() {
 
   const currentBps = current.data !== undefined ? Number(current.data) : null;
   const busy = status === "signing" || status === "pending";
-  const txErrorKind = error ? classifyTxError(error) : null;
+  const txErrorKind = error ? classifyAdminTxError(error) : null;
+  const errorId = "royalty-form-error";
+  const hasFormError = Boolean(formError);
 
   // Tras confirmar, refresca el bps mostrado (`refetch` es estable; evita re-ejecutar por render).
   const { refetch: refetchCurrent } = current;
@@ -68,17 +72,24 @@ export function AdminRoyalty() {
       </p>
 
       <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-3">
-        <label className="flex flex-col gap-1 text-small font-medium text-ink">
+        <label
+          htmlFor="royalty-input"
+          className="flex flex-col gap-1 text-small font-medium text-ink"
+        >
           {t("royaltyField")}
           <input
+            id="royalty-input"
             data-testid="royalty-input"
             type="number"
+            inputMode="numeric"
             min={ROYALTY_MIN_BPS}
             max={ROYALTY_MAX_BPS}
             step="1"
             value={bps}
             onChange={(e) => setBps(e.target.value)}
             required
+            aria-invalid={hasFormError || undefined}
+            aria-describedby={hasFormError ? errorId : undefined}
             className={FIELD}
           />
         </label>
@@ -86,7 +97,7 @@ export function AdminRoyalty() {
           {busy ? t("processing") : t("royaltySet")}
         </button>
         {formError && (
-          <p data-testid="royalty-error" role="alert" className="text-terracotta-text">
+          <p id={errorId} data-testid="royalty-error" role="alert" className="text-terracotta-text">
             {formError}
           </p>
         )}
@@ -96,7 +107,7 @@ export function AdminRoyalty() {
           </p>
         )}
       </form>
-      <TxModal phase={status} onClose={reset} hash={hash} />
+      <TxModal phase={status} onClose={reset} hash={hash} copy={txCopy} />
     </AdminCard>
   );
 }

@@ -3,6 +3,8 @@
 import {
   createContext,
   useContext,
+  useId,
+  useState,
   type ReactNode,
 } from "react";
 import Link from "next/link";
@@ -53,6 +55,8 @@ function BrandMark() {
 function Sidebar({ session }: { session: AdminSession }) {
   const t = useTranslations("admin");
   const pathname = usePathname();
+  // Hint de bloqueo accesible una sola vez, referenciado por cada item deshabilitado (MINOR#38).
+  const lockedHintId = useId();
 
   const itemEnabled = (item: AdminNavItem): boolean =>
     item.role === null ? true : session.hasRole(item.role);
@@ -62,6 +66,11 @@ function Sidebar({ session }: { session: AdminSession }) {
       aria-label={t("nav.label")}
       className="flex flex-col gap-1 border-line tablet:border-r tablet:pr-4"
     >
+      {/* Motivo de bloqueo accesible (sr-only): los items deshabilitados lo referencian con
+          `aria-describedby`, no solo en `title` dependiente de hover (MINOR#38). */}
+      <span id={lockedHintId} className="sr-only">
+        {t("nav.lockedHint")}
+      </span>
       {ADMIN_NAV.map((item) => {
         const enabled = itemEnabled(item);
         const active = isActive(pathname, item.href);
@@ -71,6 +80,7 @@ function Sidebar({ session }: { session: AdminSession }) {
             <span
               key={item.href}
               aria-disabled="true"
+              aria-describedby={lockedHintId}
               title={t("nav.lockedHint")}
               className="flex min-h-touch items-center gap-2 rounded-brand px-3 text-small font-medium text-ink-soft opacity-50"
             >
@@ -99,6 +109,50 @@ function Sidebar({ session }: { session: AdminSession }) {
   );
 }
 
+function RoleChips({ roles }: { roles: readonly RoleName[] }) {
+  const t = useTranslations("admin");
+  // En móvil los chips saturan el ancho (UX#40): se colapsan tras un contador «ROLES (N)»
+  // expandible (`<details>`); desde tablet se muestran siempre expandidos.
+  const [open, setOpen] = useState(false);
+
+  const chips = (
+    <ul data-testid="admin-roles" className="flex flex-wrap items-center gap-1.5">
+      {roles.map((role) => (
+        <li
+          key={role}
+          className="rounded-pill bg-sand-2 px-2.5 py-1 text-micro font-semibold uppercase tracking-wide text-sea-deep"
+        >
+          {ROLE_LABEL[role]}
+        </li>
+      ))}
+    </ul>
+  );
+
+  return (
+    <>
+      {/* Móvil: contador expandible para no saturar el ancho de la topbar. */}
+      <div className="relative tablet:hidden">
+        <button
+          type="button"
+          data-testid="admin-roles-toggle"
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+          className="rounded-pill bg-sand-2 px-2.5 py-1 text-micro font-semibold uppercase tracking-wide text-sea-deep"
+        >
+          {t("rolesCount", { count: roles.length })}
+        </button>
+        {open && (
+          <div className="absolute left-0 top-full z-50 mt-1 rounded-brand border border-line bg-shell p-2 shadow-card">
+            {chips}
+          </div>
+        )}
+      </div>
+      {/* Tablet+: chips siempre visibles. */}
+      <div className="hidden tablet:block">{chips}</div>
+    </>
+  );
+}
+
 function Topbar({ session }: { session: AdminSession }) {
   const t = useTranslations("admin");
   const router = useRouter();
@@ -120,18 +174,7 @@ function Topbar({ session }: { session: AdminSession }) {
           {t("brandTitle")}
         </Link>
 
-        {session.roles.length > 0 && (
-          <ul data-testid="admin-roles" className="flex flex-wrap items-center gap-1.5">
-            {session.roles.map((role) => (
-              <li
-                key={role}
-                className="rounded-pill bg-sand-2 px-2.5 py-1 text-micro font-semibold uppercase tracking-wide text-sea-deep"
-              >
-                {ROLE_LABEL[role]}
-              </li>
-            ))}
-          </ul>
-        )}
+        {session.roles.length > 0 && <RoleChips roles={session.roles} />}
 
         <div className="ml-auto flex items-center gap-2">
           {session.sessionAddress && (
@@ -170,7 +213,7 @@ function SignInGate({ session }: { session: AdminSession }) {
         </>
       ) : onboarding.isWrongNetwork ? (
         <>
-          <p data-testid="wrong-network" className="text-terracotta-text">
+          <p data-testid="wrong-network" role="alert" className="text-terracotta-text">
             {t("wrongNetwork")}
           </p>
           <button type="button" onClick={onboarding.switchToAppChain} className={action}>
@@ -185,10 +228,15 @@ function SignInGate({ session }: { session: AdminSession }) {
             data-testid="admin-sign-in"
             onClick={() => void session.signIn()}
             disabled={isSigningIn}
+            aria-busy={isSigningIn}
             className={action}
           >
             {isSigningIn ? t("signingIn") : t("signIn")}
           </button>
+          {/* Estado de la firma anunciado a lectores de pantalla (MINOR#37). */}
+          <p role="status" aria-live="polite" className="sr-only">
+            {isSigningIn ? t("signingIn") : ""}
+          </p>
           {signInError && (
             <p data-testid="auth-error" role="alert" className="text-terracotta-text">
               {signInError === "noRole" ? t("noRole") : t("signInFailed")}

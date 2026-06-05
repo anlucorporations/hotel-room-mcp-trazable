@@ -67,7 +67,7 @@ export function AdminSignInScreen() {
             </>
           ) : onboarding.isWrongNetwork ? (
             <>
-              <p data-testid="wrong-network" className="text-terracotta-text">
+              <p data-testid="wrong-network" role="alert" className="text-terracotta-text">
                 {t("wrongNetwork")}
               </p>
               <button type="button" onClick={onboarding.switchToAppChain} className={action}>
@@ -82,10 +82,15 @@ export function AdminSignInScreen() {
                 data-testid="admin-sign-in"
                 onClick={() => void session.signIn()}
                 disabled={isSigningIn}
+                aria-busy={isSigningIn}
                 className={action}
               >
                 {isSigningIn ? t("signingIn") : t("signIn")}
               </button>
+              {/* Estado de la firma anunciado a lectores de pantalla (MINOR#37). */}
+              <p role="status" aria-live="polite" className="sr-only">
+                {isSigningIn ? t("signingIn") : ""}
+              </p>
               {signInError && (
                 <p data-testid="auth-error" role="alert" className="text-terracotta-text">
                   {signInError === "noRole" ? t("noRole") : t("signInFailed")}

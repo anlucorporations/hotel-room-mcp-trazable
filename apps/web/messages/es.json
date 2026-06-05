@@ -179,6 +179,7 @@
     "degraded": "No se pudieron cargar las métricas. Inténtalo de nuevo.",
     "retry": "Reintentar",
     "period": "Periodo: hasta el bloque {block}",
+    "asOf": "Corte aproximado: {datetime}",
     "primaryVolume": "Vendido (primaria)",
     "royalties": "Royalties acumulados",
     "secondaryVolume": "Volumen de reventa",
@@ -194,9 +195,7 @@
       "minted": "nº de eventos Mint",
       "burned": "nº de eventos Burn",
       "occupancy": "vendidas / minteadas"
-    },
-    "sparklineLabel": "Magnitud relativa de {label} frente al resto de métricas",
-    "sparklineNote": "Las barras comparan la magnitud de cada métrica entre sí. No hay serie temporal en los agregados, así que no se muestra evolución por periodos."
+    }
   },
   "admin": {
     "brandTitle": "Panel · Marina del Sol",
@@ -217,6 +216,7 @@
     "accountChanged": "Has cambiado de cuenta en la wallet. Las acciones las firmaría esta cuenta, que quizá no tenga los roles de tu sesión. Vuelve a iniciar sesión con la cuenta autorizada.",
     "resign": "Volver a iniciar sesión",
     "logout": "Cerrar sesión",
+    "rolesCount": "Roles ({count})",
     "loadingValue": "Cargando…",
     "readError": "No se pudo leer el valor on-chain.",
     "processing": "Procesando…",
@@ -288,8 +288,42 @@
     "rolesAccept": "Aceptar ownership",
     "txError": {
       "rejected": "Has cancelado la firma. Puedes intentarlo de nuevo cuando quieras.",
-      "failed": "No se pudo completar la operación. Revisa que tu cuenta tenga el rol y estés en la red correcta, y vuelve a intentarlo."
-    }
+      "failed": "No se pudo completar la operación. Revisa que tu cuenta tenga el rol y estés en la red correcta, y vuelve a intentarlo.",
+      "noFunds": "No hay saldo retirable. El balance bruto puede estar reservado para pagos pendientes de reventas.",
+      "paused": "El sistema está en pausa. Reanúdalo antes de ejecutar esta acción."
+    },
+    "tx": {
+      "review": "Confirmar operación",
+      "reviewHint": "Revisa los datos antes de firmar. La acción se ejecutará on-chain al confirmar.",
+      "signing": "Firma la transacción",
+      "signingHint": "Revisa y firma la transacción en tu wallet.",
+      "pending": "Esperando confirmación",
+      "pendingHint": "Esperando confirmación en la red…",
+      "confirmed": "Operación completada",
+      "confirmedHint": "La operación se ha confirmado on-chain.",
+      "reverted": "La operación no se completó",
+      "revertedHint": "La operación no se completó. Revisa los datos y vuelve a intentarlo."
+    },
+    "confirm": "Confirmar y firmar",
+    "cancel": "Cancelar",
+    "pauseConfirm": "Vas a PAUSAR el sistema: se bloquearán compras, reventas, mint y burn hasta que lo reanudes.",
+    "unpauseConfirm": "Vas a REANUDAR el sistema: se permitirán de nuevo compras, reventas, mint y burn.",
+    "fundsConfirm": "Vas a retirar el saldo residual del contrato a la tesorería. Esta acción transfiere ETH y es irreversible.",
+    "fundsWithdrawable": "Retirable ahora",
+    "fundsNoneWithdrawable": "No hay saldo retirable en este momento.",
+    "pausedWarning": "El sistema está en pausa: esta acción no se puede ejecutar hasta reanudarlo.",
+    "expiredConfirm": "Vas a QUEMAR {count, plural, one {# noche caducada} other {# noches caducadas}}. Esta acción es irreversible.",
+    "expiredConfirmTokens": "tokenIds a quemar:",
+    "rolesRevokeConfirm": "Vas a REVOCAR el rol {role} a {account}. La cuenta perderá ese permiso on-chain.",
+    "rolesTransferConfirm": "Vas a designar a {account} como nuevo owner pendiente. AVISO: la propiedad (owner) es solo informativa y NO cede el control real del contrato.",
+    "scanConfigError": "El bloque de despliegue configurado es posterior al bloque actual de la red. Revisa NEXT_PUBLIC_DEPLOYMENT_BLOCK: el escaneo no es fiable.",
+    "scanPartialError": "El escaneo no pudo verificar algunas noches por un error de red. El recuento puede estar incompleto; reintenta el escaneo.",
+    "rolesAdminTitle": "Super-admin real (control on-chain)",
+    "rolesAdminNote": "El control real del contrato lo gobierna el rol DEFAULT_ADMIN_ROLE, no «owner». Para ceder el control de verdad: concede DEFAULT_ADMIN al nuevo responsable y, una vez confirmado, el antiguo renuncia a su rol.",
+    "rolesOwnerInfoTitle": "Propiedad (informativa)",
+    "rolesOwnerInfoNote": "El campo «owner» (Ownable2Step) es informativo: transferirlo NO cede el control on-chain del contrato. Úsalo solo como etiqueta de titularidad.",
+    "rolesHandoverTitle": "Ceder el control real (DEFAULT_ADMIN)",
+    "fieldErrorPrefix": "Error:"
   },
   "assistant": {
     "title": "Asistente IA",

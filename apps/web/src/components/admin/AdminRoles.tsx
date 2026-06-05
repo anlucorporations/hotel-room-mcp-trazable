@@ -8,9 +8,10 @@ import { ALL_ROLE_NAMES, ROLES, type RoleName } from "@hotel/shared";
 import { hotelNightsAbi } from "@hotel/shared/abi";
 import { contractAddress } from "@/config/chain";
 import { TxModal } from "@/components/buy/TxModal";
-import { classifyTxError } from "@/components/tx/txError";
 import { AdminCard } from "./AdminPanel";
 import { useAdminWrite } from "./useAdminWrite";
+import { useAdminTxCopy } from "./adminTxCopy";
+import { classifyAdminTxError } from "./adminTxError";
 
 const PRIMARY =
   "min-h-touch rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60";
@@ -27,14 +28,22 @@ const ROLE_LABEL: Readonly<Record<RoleName, string>> = {
   TREASURER_ROLE: "TREASURER",
 };
 
+/** Acción pendiente de confirmación explícita (UX#21): solo las destructivas/engañosas. */
+type Pending =
+  | { kind: "revoke"; role: RoleName; account: Address }
+  | { kind: "transfer"; account: Address };
+
 /**
- * Roles y ownership (CU-16, DEFAULT_ADMIN): conceder/revocar un rol a una dirección
- * (`grantRole`/`revokeRole`) y transferir/aceptar ownership en dos pasos (Ownable2Step:
- * `transferOwnership`/`acceptOwnership`). Muestra `owner`/`pendingOwner`. El contrato es la
- * autoridad (revierte `AccessControlUnauthorizedAccount` / aceptación de cuenta no designada).
+ * Roles y ownership (CU-16, DEFAULT_ADMIN). El control REAL del contrato lo gobierna
+ * `DEFAULT_ADMIN_ROLE` (super-admin), no `owner()` (Ownable2Step), que es solo informativo: por
+ * eso la UI separa visualmente «Propiedad (informativa)» del super-admin real y guía el handover
+ * REAL (grant DEFAULT_ADMIN al nuevo + renounce del antiguo) (UX#25). Las acciones destructivas o
+ * engañosas (revoke, transferOwnership) exigen confirmación explícita en el `TxModal` (UX#21) con
+ * copy genérica del ciclo de tx (MAJOR#9). El contrato sigue siendo la autoridad.
  */
 export function AdminRoles() {
   const t = useTranslations("admin");
+  const txCopy = useAdminTxCopy();
   const owner = useReadContract({
     address: contractAddress,
     abi: hotelNightsAbi,
@@ -50,10 +59,15 @@ export function AdminRoles() {
   const [roleName, setRoleName] = useState<RoleName>("MINTER_ROLE");
   const [roleAccount, setRoleAccount] = useState("");
   const [newOwner, setNewOwner] = useState("");
-  const [formError, setFormError] = useState<string | null>(null);
+  // Errores SEPARADOS por formulario (MINOR#36): el de roles no debe aparecer junto al de ownership.
+  const [roleError, setRoleError] = useState<string | null>(null);
+  const [ownerError, setOwnerError] = useState<string | null>(null);
+  const [pending, setPending] = useState<Pending | null>(null);
 
   const busy = status === "signing" || status === "pending";
-  const txErrorKind = error ? classifyTxError(error) : null;
+  const txErrorKind = error ? classifyAdminTxError(error) : null;
+  const roleErrorId = "roles-role-error";
+  const ownerErrorId = "roles-owner-error";
 
   const { refetch: refetchOwner } = owner;
   const { refetch: refetchPendingOwner } = pendingOwner;
@@ -64,30 +78,67 @@ export function AdminRoles() {
     }
   }, [status, refetchOwner, refetchPendingOwner]);
 
-  function onRole(event: FormEvent, fn: "grantRole" | "revokeRole"): void {
-    event.preventDefault();
-    setFormError(null);
-    if (!isAddress(roleAccount)) return setFormError(t("rolesInvalidAddress"));
+  const phase = pending && status === "idle" ? "review" : status;
+
+  function closeModal(): void {
+    setPending(null);
     reset();
-    send(fn, [ROLES[roleName], roleAccount as Address]);
+  }
+
+  // Conceder no es destructivo: se firma directo. Revocar sí → confirmación (UX#21).
+  function onGrant(event: FormEvent): void {
+    event.preventDefault();
+    setRoleError(null);
+    if (!isAddress(roleAccount)) return setRoleError(t("rolesInvalidAddress"));
+    reset();
+    send("grantRole", [ROLES[roleName], roleAccount as Address]);
+  }
+
+  function onRevoke(event: FormEvent): void {
+    event.preventDefault();
+    setRoleError(null);
+    if (!isAddress(roleAccount)) return setRoleError(t("rolesInvalidAddress"));
+    setPending({ kind: "revoke", role: roleName, account: roleAccount as Address });
   }
 
   function onTransfer(event: FormEvent): void {
     event.preventDefault();
-    setFormError(null);
-    if (!isAddress(newOwner)) return setFormError(t("rolesInvalidAddress"));
-    reset();
-    send("transferOwnership", [newOwner as Address]);
+    setOwnerError(null);
+    if (!isAddress(newOwner)) return setOwnerError(t("rolesInvalidAddress"));
+    setPending({ kind: "transfer", account: newOwner as Address });
   }
+
+  function confirm(): void {
+    if (!pending) return;
+    reset();
+    if (pending.kind === "revoke") {
+      send("revokeRole", [ROLES[pending.role], pending.account]);
+    } else {
+      send("transferOwnership", [pending.account]);
+    }
+  }
+
+  const confirmText = !pending
+    ? ""
+    : pending.kind === "revoke"
+      ? t("rolesRevokeConfirm", { role: ROLE_LABEL[pending.role], account: pending.account })
+      : t("rolesTransferConfirm", { account: pending.account });
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Super-admin REAL: el control on-chain (UX#25). */}
+      <AdminCard>
+        <h2 className="font-display text-h3 font-semibold text-ink">{t("rolesAdminTitle")}</h2>
+        <p className="mt-2 text-small text-ink-soft">{t("rolesAdminNote")}</p>
+      </AdminCard>
+
       <AdminCard>
         <h2 className="font-display text-h3 font-semibold text-ink">{t("rolesGrantTitle")}</h2>
         <form className="mt-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-small font-medium text-ink">
+          <label htmlFor="roles-role" className="flex flex-col gap-1 text-small font-medium text-ink">
             {t("rolesRole")}
             <select
+              id="roles-role"
               data-testid="roles-role"
               value={roleName}
               onChange={(e) => setRoleName(e.target.value as RoleName)}
@@ -100,14 +151,20 @@ export function AdminRoles() {
               ))}
             </select>
           </label>
-          <label className="flex flex-col gap-1 text-small font-medium text-ink">
+          <label
+            htmlFor="roles-account"
+            className="flex flex-col gap-1 text-small font-medium text-ink"
+          >
             {t("rolesAccount")}
             <input
+              id="roles-account"
               data-testid="roles-account"
               type="text"
               value={roleAccount}
               onChange={(e) => setRoleAccount(e.target.value)}
               placeholder="0x…"
+              aria-invalid={Boolean(roleError) || undefined}
+              aria-describedby={roleError ? roleErrorId : undefined}
               className={`${FIELD} font-mono`}
             />
           </label>
@@ -116,7 +173,7 @@ export function AdminRoles() {
               type="submit"
               data-testid="roles-grant"
               disabled={busy}
-              onClick={(e) => onRole(e, "grantRole")}
+              onClick={onGrant}
               className={PRIMARY}
             >
               {t("rolesGrant")}
@@ -125,17 +182,29 @@ export function AdminRoles() {
               type="submit"
               data-testid="roles-revoke"
               disabled={busy}
-              onClick={(e) => onRole(e, "revokeRole")}
+              onClick={onRevoke}
               className={DANGER}
             >
               {t("rolesRevoke")}
             </button>
           </div>
+          {roleError && (
+            <p id={roleErrorId} data-testid="roles-error" role="alert" className="text-terracotta-text">
+              {roleError}
+            </p>
+          )}
         </form>
       </AdminCard>
 
+      {/* Handover REAL del control: grant DEFAULT_ADMIN + renounce del antiguo (UX#25). */}
       <AdminCard>
-        <h2 className="font-display text-h3 font-semibold text-ink">{t("rolesOwnershipTitle")}</h2>
+        <h2 className="font-display text-h3 font-semibold text-ink">{t("rolesHandoverTitle")}</h2>
+        <p className="mt-2 text-small text-ink-soft">{t("rolesAdminNote")}</p>
+      </AdminCard>
+
+      <AdminCard>
+        <h2 className="font-display text-h3 font-semibold text-ink">{t("rolesOwnerInfoTitle")}</h2>
+        <p className="mt-2 text-small text-ink-soft">{t("rolesOwnerInfoNote")}</p>
         <dl className="mt-3 flex flex-col gap-2">
           <div className="flex items-baseline justify-between gap-4">
             <dt className="text-small text-ink-soft">{t("rolesOwner")}</dt>
@@ -152,14 +221,20 @@ export function AdminRoles() {
         </dl>
 
         <form onSubmit={onTransfer} className="mt-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-small font-medium text-ink">
+          <label
+            htmlFor="roles-new-owner"
+            className="flex flex-col gap-1 text-small font-medium text-ink"
+          >
             {t("rolesNewOwner")}
             <input
+              id="roles-new-owner"
               data-testid="roles-new-owner"
               type="text"
               value={newOwner}
               onChange={(e) => setNewOwner(e.target.value)}
               placeholder="0x…"
+              aria-invalid={Boolean(ownerError) || undefined}
+              aria-describedby={ownerError ? ownerErrorId : undefined}
               className={`${FIELD} font-mono`}
             />
           </label>
@@ -180,20 +255,55 @@ export function AdminRoles() {
               {t("rolesAccept")}
             </button>
           </div>
+          {ownerError && (
+            <p
+              id={ownerErrorId}
+              data-testid="roles-owner-error"
+              role="alert"
+              className="text-terracotta-text"
+            >
+              {ownerError}
+            </p>
+          )}
         </form>
       </AdminCard>
 
-      {formError && (
-        <p data-testid="roles-error" role="alert" className="text-terracotta-text">
-          {formError}
-        </p>
-      )}
-      {!formError && txErrorKind && (
+      {txErrorKind && (
         <p role="alert" className="text-terracotta-text">
           {t(`txError.${txErrorKind}`)}
         </p>
       )}
-      <TxModal phase={status} onClose={reset} hash={hash} />
+
+      <TxModal
+        phase={phase}
+        onClose={closeModal}
+        hash={hash}
+        copy={txCopy}
+        reviewBody={
+          <p data-testid="roles-confirm" className="text-small text-ink">
+            {confirmText}
+          </p>
+        }
+        reviewActions={
+          <>
+            <button
+              type="button"
+              data-testid="roles-confirm-action"
+              onClick={confirm}
+              className={pending?.kind === "revoke" ? DANGER : PRIMARY}
+            >
+              {t("confirm")}
+            </button>
+            <button
+              type="button"
+              onClick={closeModal}
+              className="min-h-touch w-full rounded-brand border border-line px-4 py-2 font-semibold text-ink"
+            >
+              {t("cancel")}
+            </button>
+          </>
+        }
+      />
     </div>
   );
 }

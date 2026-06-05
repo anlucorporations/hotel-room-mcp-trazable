@@ -3,6 +3,8 @@
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { usePublicClient } from "wagmi";
 import {
+  BaseError,
+  ContractFunctionRevertedError,
   parseAbiItem,
   type AbiEvent,
   type Address,
@@ -17,6 +19,16 @@ import { contractAddress, deploymentBlock } from "@/config/chain";
 export interface ExpiredNight {
   readonly tokenId: string;
   readonly dateYYYYMMDD: number;
+}
+
+/**
+ * Resultado del escaneo de caducadas. `partial` indica que algún `isExpired` falló por error de
+ * RED (no por revert esperado), por lo que el recuento puede estar INCOMPLETO (MINOR#35): el
+ * panel lo avisa en vez de presentar el lote como completo.
+ */
+export interface ExpiredScanResult {
+  readonly nights: readonly ExpiredNight[];
+  readonly partial: boolean;
 }
 
 const MINT_EVENT = parseAbiItem(
@@ -45,22 +57,39 @@ async function getLogsPaginated<TEvent extends AbiEvent>(
   return chunks.flat() as GetLogsReturnType<TEvent>;
 }
 
-/** ¿`tokenId` está expirado on-chain? Tolera revert (token quemado/inexistente) → no candidato. */
-async function isExpired(client: PublicClient, tokenId: bigint): Promise<boolean> {
+/** Resultado por token: expirado/no, o error de red (no se pudo verificar). */
+type ExpiredCheck = { kind: "ok"; expired: boolean } | { kind: "network-error" };
+
+/**
+ * ¿`tokenId` está expirado on-chain? Distingue (MINOR#35):
+ *  - REVERT esperado (token quemado/inexistente) → no candidato (`expired: false`);
+ *  - error de RED (RPC caído/timeout) → `network-error` (el escaneo marcará el resultado parcial).
+ */
+async function checkExpired(client: PublicClient, tokenId: bigint): Promise<ExpiredCheck> {
   try {
-    return await client.readContract({
+    const expired = await client.readContract({
       address: contractAddress,
       abi: hotelNightsAbi,
       functionName: "isExpired",
       args: [tokenId],
     });
-  } catch {
-    return false;
+    return { kind: "ok", expired };
+  } catch (err) {
+    // Un revert del contrato (token inexistente/quemado) es ESPERADO: no es candidato.
+    if (err instanceof BaseError && err.walk((e) => e instanceof ContractFunctionRevertedError)) {
+      return { kind: "ok", expired: false };
+    }
+    // Cualquier otro fallo (red/RPC) NO debe ocultar candidatos en silencio.
+    return { kind: "network-error" };
   }
 }
 
-async function scanExpired(client: PublicClient): Promise<ExpiredNight[]> {
+async function scanExpired(client: PublicClient): Promise<ExpiredScanResult> {
   const head = await client.getBlockNumber();
+  // MINOR#34: si el bloque de despliegue es POSTERIOR al head, la config es inválida: la
+  // paginación no produciría rangos y devolveríamos 0 en silencio. Fallamos visiblemente.
+  if (deploymentBlock > head) throw new Error("SCAN_CONFIG_INVALID");
+
   const [mints, sales] = await Promise.all([
     getLogsPaginated(client, MINT_EVENT, deploymentBlock, head),
     getLogsPaginated(client, SALE_EVENT, deploymentBlock, head),
@@ -79,12 +108,17 @@ async function scanExpired(client: PublicClient): Promise<ExpiredNight[]> {
   }
 
   const candidates = [...minted.keys()];
-  const expiredFlags = await Promise.all(candidates.map((id) => isExpired(client, BigInt(id))));
+  const checks = await Promise.all(candidates.map((id) => checkExpired(client, BigInt(id))));
 
-  return candidates
-    .filter((_, i) => expiredFlags[i])
+  // Si algún token no se pudo verificar por red, el recuento es PARCIAL (MINOR#35).
+  const partial = checks.some((c) => c.kind === "network-error");
+
+  const nights = candidates
+    .filter((_, i) => checks[i]?.kind === "ok" && (checks[i] as { expired: boolean }).expired)
     .map((id) => ({ tokenId: id, dateYYYYMMDD: minted.get(id) ?? 0 }))
     .sort((a, b) => a.dateYYYYMMDD - b.dateYYYYMMDD);
+
+  return { nights, partial };
 }
 
 /**
@@ -92,14 +126,14 @@ async function scanExpired(client: PublicClient): Promise<ExpiredNight[]> {
  * por eventos (como `lib/nights.ts`/`useMyNights`): `Mint` − `Sale` (vendidas excluidas) y
  * confirmación `isExpired`. El escaneo es por RPC y puede ser costoso en cadenas con muchos
  * eventos; por eso es bajo demanda (TanStack Query, `enabled` controlado) y el panel ofrece
- * además entrada manual de tokenIds como alternativa.
+ * además entrada manual de tokenIds como alternativa. Devuelve el lote y si fue PARCIAL.
  */
-export function useExpiredNights(enabled: boolean): UseQueryResult<ExpiredNight[], Error> {
+export function useExpiredNights(enabled: boolean): UseQueryResult<ExpiredScanResult, Error> {
   const client = usePublicClient();
   return useQuery({
     queryKey: ["admin-expired", contractAddress],
     enabled: enabled && Boolean(client),
-    queryFn: async (): Promise<ExpiredNight[]> => {
+    queryFn: async (): Promise<ExpiredScanResult> => {
       if (!client) throw new Error("Cliente no disponible.");
       return scanExpired(client);
     },
