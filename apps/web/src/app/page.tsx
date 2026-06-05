@@ -26,12 +26,20 @@ export default async function HomePage() {
             <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
             <p className="text-slate-600">{t("tagline")}</p>
           </div>
-          <Link
-            href="/mis-noches"
-            className="min-h-touch self-center rounded-md border border-slate-300 px-4 py-2 font-medium"
-          >
-            {t("myNightsLink")}
-          </Link>
+          <nav className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/historico"
+              className="min-h-touch self-center rounded-md border border-slate-300 px-4 py-2 font-medium"
+            >
+              {t("historyLink")}
+            </Link>
+            <Link
+              href="/mis-noches"
+              className="min-h-touch self-center rounded-md border border-slate-300 px-4 py-2 font-medium"
+            >
+              {t("myNightsLink")}
+            </Link>
+          </nav>
         </div>
         <WalletBar />
       </header>

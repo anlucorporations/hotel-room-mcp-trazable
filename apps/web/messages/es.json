@@ -5,7 +5,8 @@
   "home": {
     "title": "Hotel Marina del Sol",
     "tagline": "Noches de hotel como NFTs, en la costa de Alicante.",
-    "myNightsLink": "Mis noches"
+    "myNightsLink": "Mis noches",
+    "historyLink": "Histórico"
   },
   "catalog": {
     "available": "Disponible",
@@ -72,6 +73,45 @@
     "pendingHint": "Tienes fondos de reventas listos para cobrar.",
     "claim": "Cobrar {amount}",
     "processing": "Procesando…"
+  },
+  "history": {
+    "title": "Histórico de ventas",
+    "tagline": "Todas las ventas registradas on-chain, ordenadas de la más reciente a la más antigua.",
+    "empty": "Todavía no se ha registrado ninguna venta.",
+    "degraded": "No se pudo cargar el histórico. Inténtalo de nuevo.",
+    "retry": "Reintentar",
+    "colRoom": "Habitación",
+    "colDate": "Noche",
+    "colType": "Tipo",
+    "colPrice": "Precio",
+    "colSaleType": "Venta",
+    "colSeller": "Vendedor",
+    "colBuyer": "Comprador",
+    "primary": "Primaria",
+    "secondary": "Reventa"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "tagline": "Métricas comerciales del hotel calculadas on-chain.",
+    "degraded": "No se pudieron cargar las métricas. Inténtalo de nuevo.",
+    "retry": "Reintentar",
+    "period": "Periodo: hasta el bloque {block}",
+    "primaryVolume": "Vendido (primaria)",
+    "royalties": "Royalties acumulados",
+    "secondaryVolume": "Volumen de reventa",
+    "sold": "Noches vendidas",
+    "minted": "Noches minteadas",
+    "burned": "Noches quemadas",
+    "occupancy": "Ocupación comercial",
+    "formula": {
+      "primaryVolume": "Σ precio de ventas primarias",
+      "royalties": "Σ RoyaltyPaid (solo secundarias)",
+      "secondaryVolume": "Σ precio de ventas secundarias",
+      "sold": "nº de ventas primarias",
+      "minted": "nº de eventos Mint",
+      "burned": "nº de eventos Burn",
+      "occupancy": "vendidas / minteadas"
+    }
   },
   "admin": {
     "title": "Back-office · Mintear noche",

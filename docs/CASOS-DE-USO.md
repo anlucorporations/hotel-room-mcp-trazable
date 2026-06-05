@@ -622,7 +622,7 @@ Escenario: Reanudación tras reconexión del RPC
 
 - **Actor primario:** Visor de dashboard (admin)
 - **Trazabilidad:** RF-10, RNF-17
-- **Precondición:** autenticado con permiso de lectura del dashboard.
+- **Precondición:** ninguna. Las métricas derivan de eventos públicos on-chain (sin PII), por lo que el dashboard es de **solo lectura pública** (coherente con CU-09 y la tabla de pausa §7: las lecturas están permitidas). Una verja de autenticación es opcional para producción.
 - **Disparador:** el admin abre el dashboard.
 
 **Flujo principal**
