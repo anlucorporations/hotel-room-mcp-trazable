@@ -2,13 +2,15 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { anvilChain, besuChain } from "@hotel/shared";
 import { tryReadDeployment } from "@hotel/shared/deployments";
-import { startHealthServer } from "@hotel/shared/health";
 import { loadWorkerConfig } from "./config";
 import { createWorkerHealthState, workerHealthProvider } from "./health";
 import { createLogger } from "./logger";
 import { SqliteCheckpointStore } from "./checkpoint-store";
+import { SqliteAggregateStore } from "./aggregate-store";
+import { AggregateProcessor } from "./aggregate-processor";
 import { ViemChainSource } from "./chain-source";
 import { NodemailerMailer } from "./mailer";
+import { startWorkerHttpServer } from "./http-server";
 import { runWorker } from "./run-worker";
 
 /**
@@ -19,6 +21,8 @@ import { runWorker } from "./run-worker";
  * un cierre limpio del store.
  */
 const CHECKPOINT_DB_PATH = process.env.WORKER_DB_PATH ?? ".data/worker.sqlite";
+const AGGREGATE_DB_PATH =
+  process.env.WORKER_AGGREGATE_DB_PATH ?? ".data/worker-aggregates.sqlite";
 
 async function main(): Promise<void> {
   const logger = createLogger("worker");
@@ -44,7 +48,9 @@ async function main(): Promise<void> {
   const chain = isLocalRpc(config.RPC_URL) ? anvilChain : besuChain;
 
   mkdirSync(dirname(CHECKPOINT_DB_PATH), { recursive: true });
+  mkdirSync(dirname(AGGREGATE_DB_PATH), { recursive: true });
   const store = new SqliteCheckpointStore(CHECKPOINT_DB_PATH);
+  const aggregateStore = new SqliteAggregateStore(AGGREGATE_DB_PATH);
   const chainSource = new ViemChainSource({
     rpcUrl: config.RPC_URL,
     chain,
@@ -59,11 +65,25 @@ async function main(): Promise<void> {
     to: config.ADMIN_EMAIL,
   });
 
+  // Lectura de agregados/histórico para los endpoints HTTP: comparte el `aggregateStore` con el
+  // procesador que escribe dentro de `runWorker` (misma fuente de verdad SQLite).
+  const aggregateReader = new AggregateProcessor({
+    chainSource,
+    store: aggregateStore,
+    deploymentBlock,
+  });
+
   const health = createWorkerHealthState();
-  const server = await startHealthServer({
+  const server = await startWorkerHttpServer({
     host: config.WORKER_HOST,
     port: config.WORKER_PORT,
     provider: workerHealthProvider(health),
+    data: {
+      getAggregates: () => aggregateReader.getAggregates(),
+      getHistory: () => aggregateReader.getHistory(),
+    },
+    onError: (error: unknown) =>
+      logger.error({ error }, "fallo al servir una petición HTTP del worker"),
   });
 
   const controller = new AbortController();
@@ -72,6 +92,7 @@ async function main(): Promise<void> {
     controller.abort();
     server.close();
     store.close();
+    aggregateStore.close();
     process.exitCode = 0;
   };
   process.once("SIGINT", () => shutdown("SIGINT"));
@@ -85,7 +106,7 @@ async function main(): Promise<void> {
       deploymentBlock,
       pollIntervalMs: config.POLL_INTERVAL_MS,
     },
-    "worker activo · escuchando eventos Sale → email",
+    "worker activo · eventos Sale → email + agregados/histórico (/aggregates, /history)",
   );
 
   await runWorker(
@@ -94,7 +115,15 @@ async function main(): Promise<void> {
       deploymentBlock,
       pollIntervalMs: config.POLL_INTERVAL_MS,
     },
-    { chainSource, mailer, store, logger, health, signal: controller.signal },
+    {
+      chainSource,
+      mailer,
+      store,
+      aggregateStore,
+      logger,
+      health,
+      signal: controller.signal,
+    },
   );
 }
 

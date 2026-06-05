@@ -1,8 +1,14 @@
 import type { Logger } from "pino";
 import { rebindCheckpoint } from "./rebind";
 import { SaleProcessor, type BackoffOptions } from "./sale-processor";
+import { AggregateProcessor } from "./aggregate-processor";
 import type { WorkerHealthState } from "./health";
-import type { ChainSource, CheckpointStore, Mailer } from "./types";
+import type {
+  AggregateStore,
+  ChainSource,
+  CheckpointStore,
+  Mailer,
+} from "./types";
 
 /**
  * Orquestación del mini-worker (T1.4 / CU-10 / RF-09): rebind del checkpoint si cambió la
@@ -22,6 +28,8 @@ export interface RunWorkerDeps {
   readonly chainSource: ChainSource;
   readonly mailer: Mailer;
   readonly store: CheckpointStore;
+  /** Store de agregados/histórico (FASE 3, CU-09/11). */
+  readonly aggregateStore: AggregateStore;
   readonly logger: Logger;
   readonly health: WorkerHealthState;
   /** Señal de parada para un cierre limpio del bucle (SIGINT/SIGTERM). */
@@ -82,7 +90,8 @@ export async function runWorker(
   config: RunWorkerConfig,
   deps: RunWorkerDeps,
 ): Promise<void> {
-  const { chainSource, mailer, store, logger, health, signal } = deps;
+  const { chainSource, mailer, store, aggregateStore, logger, health, signal } =
+    deps;
   const sleep = deps.sleep ?? ((ms: number) => defaultSleep(ms, signal));
 
   applyRebind(store, config.contractAddress, config.deploymentBlock, logger);
@@ -105,8 +114,15 @@ export async function runWorker(
     sleep: deps.sleep,
   });
 
+  // Agregados/histórico (FASE 3): se alimenta de los mismos bloques, de forma idempotente.
+  const aggregateProcessor = new AggregateProcessor({
+    chainSource,
+    store: aggregateStore,
+    deploymentBlock: config.deploymentBlock,
+  });
+
   while (!signal.aborted) {
-    await runCycle(processor, deps);
+    await runCycle(processor, aggregateProcessor, deps);
     if (signal.aborted) break;
     await sleep(config.pollIntervalMs);
   }
@@ -124,15 +140,36 @@ export async function runWorker(
  */
 export async function runCycle(
   processor: SaleProcessor,
+  aggregateProcessor: AggregateProcessor,
   deps: Pick<RunWorkerDeps, "chainSource" | "logger" | "health">,
 ): Promise<void> {
   const { chainSource, logger, health } = deps;
+
+  let head: bigint;
   try {
-    const head = await chainSource.getHeadBlock();
+    head = await chainSource.getHeadBlock();
+  } catch (error: unknown) {
+    health.recordRpcFailure();
+    logger.error({ error }, "fallo de RPC al leer la cabecera");
+    return;
+  }
+
+  // Email (CU-10): los fallos de RPC de `getSaleLogs` cuentan como fallo de RPC; el fallo de
+  // un evento concreto lo aísla `SaleProcessor.catchUp` (no llega aquí).
+  try {
     const processedUpTo = await processor.catchUp(head);
     health.recordCycle(Number(processedUpTo), Number(head));
   } catch (error: unknown) {
     health.recordRpcFailure();
-    logger.error({ error }, "fallo de RPC en el ciclo del worker (cabecera/logs)");
+    logger.error({ error }, "fallo de RPC procesando ventas (email)");
+    return;
+  }
+
+  // Agregados/histórico (CU-09/11): aislados. Un fallo (p. ej. I/O de SQLite) NO se clasifica
+  // como fallo de RPC ni atasca el ciclo del email; se registra y se reintenta en el siguiente.
+  try {
+    await aggregateProcessor.catchUp(head);
+  } catch (error: unknown) {
+    logger.error({ error }, "fallo al actualizar agregados/histórico (no es fallo de RPC)");
   }
 }

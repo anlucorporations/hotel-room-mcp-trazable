@@ -3,16 +3,26 @@ import { SqliteCheckpointStore } from "./checkpoint-store";
 import { createWorkerHealthState } from "./health";
 import { runCycle, runWorker } from "./run-worker";
 import { SaleProcessor } from "./sale-processor";
+import { AggregateProcessor } from "./aggregate-processor";
 import {
   AlwaysFailingMailer,
   FailingChainSource,
   FakeChainSource,
   FakeMailer,
+  InMemoryAggregateStore,
   InMemoryCheckpointStore,
   makeSaleEvent,
   noSleep,
   silentLogger,
 } from "./test-fakes";
+
+/** AggregateProcessor de conveniencia para los tests de `runCycle` (store en memoria). */
+const newAggregateProcessor = (chainSource: FakeChainSource | FailingChainSource) =>
+  new AggregateProcessor({
+    chainSource,
+    store: new InMemoryAggregateStore(),
+    deploymentBlock: 0,
+  });
 
 const CONTRACT = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 const OTHER = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
@@ -41,6 +51,7 @@ describe("runWorker · ciclo y salud", () => {
         chainSource: chain,
         mailer,
         store,
+        aggregateStore: new InMemoryAggregateStore(),
         logger: silentLogger(),
         health,
         signal: controller.signal,
@@ -68,17 +79,19 @@ describe("runWorker · ciclo y salud", () => {
       deploymentBlock: 0,
       sleep: noSleep,
     });
+    const failingChain = new FailingChainSource();
     const deps = {
-      chainSource: new FailingChainSource(),
+      chainSource: failingChain,
       logger: silentLogger(),
       health,
     };
+    const aggregate = newAggregateProcessor(failingChain);
 
     expect(health.toReport().status).toBe("ok");
-    await runCycle(processor, deps);
-    await runCycle(processor, deps);
+    await runCycle(processor, aggregate, deps);
+    await runCycle(processor, aggregate, deps);
     expect(health.toReport().status).toBe("ok"); // 2 fallos < umbral
-    await runCycle(processor, deps);
+    await runCycle(processor, aggregate, deps);
     expect(health.toReport().status).toBe("down"); // 3 fallos ⇒ down
   });
 
@@ -95,6 +108,7 @@ describe("runWorker · ciclo y salud", () => {
         chainSource: chain,
         mailer: new FakeMailer(),
         store,
+        aggregateStore: new InMemoryAggregateStore(),
         logger: silentLogger(),
         health: createWorkerHealthState(),
         signal: controller.signal,
@@ -134,8 +148,9 @@ describe("runWorker · salud de email se rearma tras recuperación SMTP (MAJOR 1
       health: emailHooks,
       sleep: noSleep,
     });
-    await runCycle(failingProcessor, {
-      chainSource: new FakeChainSource(5n, [event1]),
+    const chain1 = new FakeChainSource(5n, [event1]);
+    await runCycle(failingProcessor, newAggregateProcessor(chain1), {
+      chainSource: chain1,
       logger: silentLogger(),
       health,
     });
@@ -157,8 +172,9 @@ describe("runWorker · salud de email se rearma tras recuperación SMTP (MAJOR 1
       health: emailHooks,
       sleep: noSleep,
     });
-    await runCycle(recoveredProcessor, {
-      chainSource: new FakeChainSource(8n, [event2]),
+    const chain2 = new FakeChainSource(8n, [event2]);
+    await runCycle(recoveredProcessor, newAggregateProcessor(chain2), {
+      chainSource: chain2,
       logger: silentLogger(),
       health,
     });
@@ -192,16 +208,18 @@ describe("runWorker · fallo de procesamiento NO se clasifica como fallo de RPC 
       sleep: noSleep,
     });
 
+    const cycleChain = new FakeChainSource(5n, [event]);
     const deps = {
-      chainSource: new FakeChainSource(5n, [event]),
+      chainSource: cycleChain,
       logger: silentLogger(),
       health,
     };
+    const aggregate = newAggregateProcessor(cycleChain);
 
     // Tres ciclos con el mismo fallo de procesamiento: NUNCA debe marcarse down por RPC.
-    await runCycle(processor, deps);
-    await runCycle(processor, deps);
-    await runCycle(processor, deps);
+    await runCycle(processor, aggregate, deps);
+    await runCycle(processor, aggregate, deps);
+    await runCycle(processor, aggregate, deps);
 
     const report = health.toReport();
     // El umbral de RPC (3) no se alcanza porque el fallo no es de RPC.
@@ -239,8 +257,9 @@ describe("runWorker · fallo de procesamiento NO se clasifica como fallo de RPC 
       sleep: noSleep,
     });
 
-    await runCycle(processor, {
-      chainSource: new FakeChainSource(5n, [event]),
+    const recoverChain = new FakeChainSource(5n, [event]);
+    await runCycle(processor, newAggregateProcessor(recoverChain), {
+      chainSource: recoverChain,
       logger: silentLogger(),
       health,
     });
