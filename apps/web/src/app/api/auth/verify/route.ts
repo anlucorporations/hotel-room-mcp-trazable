@@ -41,6 +41,18 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (!host || fields.domain !== host) {
     return NextResponse.json({ error: "DOMAIN_MISMATCH" }, { status: 401 });
   }
+  // 1b. URI EIP-4361: su host debe coincidir con el dominio (defensa extra anti-phishing).
+  if (fields.uri) {
+    let uriHost: string;
+    try {
+      uriHost = new URL(fields.uri).host;
+    } catch {
+      return NextResponse.json({ error: "INVALID_URI" }, { status: 401 });
+    }
+    if (uriHost !== host) {
+      return NextResponse.json({ error: "URI_MISMATCH" }, { status: 401 });
+    }
+  }
   if (fields.chainId !== activeChain.id) {
     return NextResponse.json({ error: "CHAIN_MISMATCH" }, { status: 401 });
   }

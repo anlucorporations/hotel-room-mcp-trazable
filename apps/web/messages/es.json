@@ -197,6 +197,7 @@
     "roleDenied": "Tu sesión no incluye el rol necesario para este panel. Inicia sesión con una wallet que lo tenga.",
     "accountChanged": "Has cambiado de cuenta en la wallet. Las acciones las firmaría esta cuenta, que quizá no tenga los roles de tu sesión. Vuelve a iniciar sesión con la cuenta autorizada.",
     "resign": "Volver a iniciar sesión",
+    "logout": "Cerrar sesión",
     "loadingValue": "Cargando…",
     "readError": "No se pudo leer el valor on-chain.",
     "processing": "Procesando…",

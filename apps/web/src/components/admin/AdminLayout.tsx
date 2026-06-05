@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { RoleName } from "@hotel/shared";
 import { WalletBar } from "@/components/wallet/WalletBar";
@@ -101,6 +101,13 @@ function Sidebar({ session }: { session: AdminSession }) {
 
 function Topbar({ session }: { session: AdminSession }) {
   const t = useTranslations("admin");
+  const router = useRouter();
+
+  async function logout(): Promise<void> {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.refresh(); // re-evalúa el gate server-side → vuelve a la pantalla de acceso.
+  }
+
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-sand/85 backdrop-blur">
       <div className="mx-auto flex min-h-[64px] w-full max-w-6xl flex-wrap items-center gap-3 px-5 py-2">
@@ -126,7 +133,17 @@ function Topbar({ session }: { session: AdminSession }) {
           </ul>
         )}
 
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          {session.sessionAddress && (
+            <button
+              type="button"
+              data-testid="admin-logout"
+              onClick={() => void logout()}
+              className="min-h-touch rounded-pill border border-line px-4 text-small font-medium text-ink-soft transition-colors hover:bg-sand-2 hover:text-ink"
+            >
+              {t("logout")}
+            </button>
+          )}
           <WalletBar />
         </div>
       </div>

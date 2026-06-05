@@ -22,7 +22,7 @@ export function AdminPanel({
   children: ReactNode;
 }) {
   const t = useTranslations("admin");
-  const { hasRole } = useAdminContext();
+  const { hasRole, accountMismatch, signIn } = useAdminContext();
   const allowed = !requiredRole || hasRole(requiredRole);
 
   return (
@@ -31,9 +31,7 @@ export function AdminPanel({
         <h1 className="font-display text-h2 font-semibold text-ink">{t(titleKey)}</h1>
         {descriptionKey && <p className="text-ink-soft">{t(descriptionKey)}</p>}
       </header>
-      {allowed ? (
-        children
-      ) : (
+      {!allowed ? (
         <p
           data-testid="role-denied"
           role="alert"
@@ -41,6 +39,25 @@ export function AdminPanel({
         >
           {t("roleDenied")}
         </p>
+      ) : accountMismatch ? (
+        // La cuenta activa de la wallet difiere de la autenticada: bloquea las acciones para
+        // no firmar con otra cuenta y exige re-autenticar (la tx revertiría on-chain igualmente).
+        <div
+          data-testid="account-mismatch-block"
+          role="alert"
+          className="flex flex-col items-start gap-3 rounded-brand-lg border border-line bg-sand-2 px-5 py-8 text-ink"
+        >
+          <p className="text-terracotta-text">{t("accountChanged")}</p>
+          <button
+            type="button"
+            onClick={() => void signIn()}
+            className="min-h-touch rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep"
+          >
+            {t("resign")}
+          </button>
+        </div>
+      ) : (
+        children
       )}
     </section>
   );
