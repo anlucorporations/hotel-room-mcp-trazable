@@ -2,8 +2,9 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 
 /**
- * Pie público (DISEÑO-UX §3/§4.1): marca, sello «red segura · pagos verificados»,
- * enlaces (histórico real + legales placeholder) y dirección del hotel.
+ * Pie público (DISEÑO-UX §3/§4.1): marca, sello «red segura · pagos verificados»
+ * clicable hacia el histórico público (respaldado por su verificación on-chain, UX#41),
+ * enlaces (histórico + términos/privacidad reales) y dirección del hotel.
  */
 export function SiteFooter() {
   const t = useTranslations("shell");
@@ -14,21 +15,25 @@ export function SiteFooter() {
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-small text-ink-soft">
           <span className="font-display font-semibold text-ink">{t("brandTitle")}</span>
           <span>{t("footerAddress")}</span>
-          <span className="inline-flex items-center gap-2 rounded-pill border border-olive/30 bg-olive/10 px-3 py-1 text-micro font-semibold text-ink-soft">
+          <Link
+            href="/historico"
+            aria-label={t("footerSealAria")}
+            className="inline-flex items-center gap-2 rounded-pill border border-olive/30 bg-olive/10 px-3 py-1 text-micro font-semibold text-ink-soft transition-colors hover:border-olive/60 hover:text-ink"
+          >
             <span aria-hidden="true" className="h-2 w-2 rounded-full bg-olive" />
             {t("footerTagline")}
-          </span>
+          </Link>
         </div>
-        <nav aria-label={t("footerTagline")} className="flex flex-wrap gap-x-5 gap-y-2 text-small text-ink-soft">
+        <nav aria-label={t("footerNavLabel")} className="flex flex-wrap gap-x-5 gap-y-2 text-small text-ink-soft">
           <Link href="/historico" className="transition-colors hover:text-ink">
             {t("footerHistory")}
           </Link>
-          <a href="#" className="transition-colors hover:text-ink">
+          <Link href="/terminos" className="transition-colors hover:text-ink">
             {t("footerTerms")}
-          </a>
-          <a href="#" className="transition-colors hover:text-ink">
+          </Link>
+          <Link href="/privacidad" className="transition-colors hover:text-ink">
             {t("footerPrivacy")}
-          </a>
+          </Link>
         </nav>
       </div>
     </footer>

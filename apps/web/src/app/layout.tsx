@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Fraunces, Hanken_Grotesk } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
-import { getLocale, getMessages } from "next-intl/server";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -19,10 +19,14 @@ const hanken = Hanken_Grotesk({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: "Hotel Marina del Sol",
-  description: "Noches de hotel como NFTs (piloto sobre red Besu privada).",
-};
+// Metadata i18n (MINOR#41): título y descripción desde las claves `app.*`.
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("app");
+  return {
+    title: t("name"),
+    description: t("description"),
+  };
+}
 
 export default async function RootLayout({
   children,

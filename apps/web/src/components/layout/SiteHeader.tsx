@@ -1,9 +1,11 @@
 "use client";
 
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { WalletBar } from "@/components/wallet/WalletBar";
+import { isActiveRoute } from "./navigation";
 
 interface NavItem {
   readonly href: string;
@@ -17,14 +19,12 @@ const NAV_ITEMS: readonly NavItem[] = [
   { href: "/asistente", labelKey: "navAssistant" },
 ];
 
-/** Marca activa cuando la ruta coincide exactamente con el enlace (la home solo en «/»). */
-function isActive(pathname: string, href: string): boolean {
-  return href === "/" ? pathname === "/" : pathname.startsWith(href);
-}
-
 /**
  * Cabecera pública sticky (organismo Header, DISEÑO-UX §3/§4.1): marca con *mark* circular
  * en gradiente, navegación con `aria-current` en el activo y la barra de wallet a la derecha.
+ *
+ * En tablet+ la navegación es horizontal; en móvil se sustituye por un botón hamburguesa
+ * accesible que despliega los mismos `NAV_ITEMS` (MAJOR#10/UX#4).
  */
 export function SiteHeader() {
   const t = useTranslations("shell");
@@ -56,7 +56,7 @@ export function SiteHeader() {
 
         <nav aria-label={t("navLabel")} className="ml-2 hidden items-center gap-6 tablet:flex">
           {NAV_ITEMS.map((item) => {
-            const active = isActive(pathname, item.href);
+            const active = isActiveRoute(pathname, item.href);
             return (
               <Link
                 key={item.href}
@@ -72,10 +72,115 @@ export function SiteHeader() {
           })}
         </nav>
 
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
           <WalletBar />
+          <MobileNav pathname={pathname} />
         </div>
       </div>
     </header>
+  );
+}
+
+/**
+ * Navegación móvil accesible (MAJOR#10/UX#4), visible solo `<tablet`.
+ *
+ * Botón hamburguesa con `aria-expanded`/`aria-controls` y área táctil ≥44px que despliega
+ * los `NAV_ITEMS`. El panel cierra con Escape, al elegir un enlace y al cambiar de ruta;
+ * el foco se mueve al primer enlace al abrir y vuelve al botón al cerrar.
+ */
+function MobileNav({ pathname }: { pathname: string }) {
+  const t = useTranslations("shell");
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const firstLinkRef = useRef<HTMLAnchorElement>(null);
+
+  // Cierra el panel cuando la navegación cambia de ruta (evita panel abierto «fantasma»).
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  // Cierre con Escape y foco al primer enlace al abrir; devuelve el foco al botón al cerrar.
+  useEffect(() => {
+    if (!open) return;
+    firstLinkRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+        buttonRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open]);
+
+  return (
+    <div className="tablet:hidden">
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        aria-controls={panelId}
+        aria-label={open ? t("menuClose") : t("menuOpen")}
+        className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-brand-sm text-ink transition-colors hover:bg-sand-2"
+      >
+        <span aria-hidden="true" className="relative block h-4 w-5">
+          <span
+            className={`absolute left-0 block h-0.5 w-5 rounded bg-current transition-transform ${
+              open ? "top-1.5 rotate-45" : "top-0"
+            }`}
+          />
+          <span
+            className={`absolute left-0 top-1.5 block h-0.5 w-5 rounded bg-current transition-opacity ${
+              open ? "opacity-0" : "opacity-100"
+            }`}
+          />
+          <span
+            className={`absolute left-0 block h-0.5 w-5 rounded bg-current transition-transform ${
+              open ? "top-1.5 -rotate-45" : "top-3"
+            }`}
+          />
+        </span>
+      </button>
+
+      {open ? (
+        <>
+          <button
+            type="button"
+            aria-hidden="true"
+            tabIndex={-1}
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 top-[68px] z-30 cursor-default bg-ink/20"
+          />
+          <nav
+            id={panelId}
+            aria-label={t("navLabel")}
+            className="absolute left-0 right-0 top-[68px] z-40 border-b border-line bg-sand px-5 py-3 shadow-[0_10px_30px_rgba(0,0,0,0.08)]"
+          >
+            <ul className="flex flex-col">
+              {NAV_ITEMS.map((item, index) => {
+                const active = isActiveRoute(pathname, item.href);
+                return (
+                  <li key={item.href}>
+                    <Link
+                      ref={index === 0 ? firstLinkRef : undefined}
+                      href={item.href}
+                      aria-current={active ? "page" : undefined}
+                      onClick={() => setOpen(false)}
+                      className={`flex min-h-touch items-center text-body font-medium transition-colors ${
+                        active ? "text-ink" : "text-ink-soft hover:text-ink"
+                      }`}
+                    >
+                      {t(item.labelKey)}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        </>
+      ) : null}
+    </div>
   );
 }

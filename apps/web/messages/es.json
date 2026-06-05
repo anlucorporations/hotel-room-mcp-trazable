@@ -1,13 +1,19 @@
 {
   "app": {
-    "name": "Hotel Marina del Sol"
+    "name": "Hotel Marina del Sol",
+    "description": "Reserva tu noche frente al Mediterráneo como NFT y tráspasala cuando quieras (piloto sobre red Besu privada)."
+  },
+  "roomType": {
+    "simple": "Simple",
+    "doble": "Doble",
+    "suite": "Suite"
   },
   "home": {
     "title": "Hotel Marina del Sol",
     "tagline": "Tu noche frente al Mediterráneo, en propiedad. Reserva directa, sin intermediarios."
   },
   "shell": {
-    "skipToCatalog": "Saltar al catálogo",
+    "skipToContent": "Saltar al contenido",
     "brandTitle": "Marina del Sol",
     "brandSubtitle": "Alicante · Mediterráneo",
     "brandHome": "Marina del Sol, inicio",
@@ -16,11 +22,33 @@
     "navMyNights": "Mis noches",
     "navHistory": "Histórico",
     "navAssistant": "Asistente",
+    "menuOpen": "Abrir el menú",
+    "menuClose": "Cerrar el menú",
     "footerTagline": "Red segura · pagos verificados",
+    "footerSealAria": "Cada venta queda registrada y verificable on-chain. Consulta el histórico público.",
+    "footerNavLabel": "Enlaces legales y de transparencia",
     "footerAddress": "Hotel Marina del Sol · Paseo Marítimo, Alicante",
     "footerHistory": "Histórico público",
     "footerTerms": "Términos",
     "footerPrivacy": "Privacidad"
+  },
+  "howItWorks": {
+    "title": "Cómo funciona",
+    "subtitle": "Reservar una noche frente al Mediterráneo es directo, sin papeleo y sin intermediarios.",
+    "steps": {
+      "connect": {
+        "title": "1 · Conecta tu wallet",
+        "body": "Usa MetaMask u otra wallet web3. No creamos cuentas ni pedimos datos personales."
+      },
+      "reserve": {
+        "title": "2 · Reserva con ETH",
+        "body": "Elige tu noche, revisa el importe y firma el pago. No se cobra nada hasta que firmas."
+      },
+      "own": {
+        "title": "3 · Tu noche, traspasable",
+        "body": "La noche queda en tu wallet como NFT. Si cambian tus planes, puedes ponerla en reventa."
+      }
+    }
   },
   "hero": {
     "eyebrow": "Reserva directa · sin intermediarios",
@@ -325,15 +353,63 @@
     "rolesHandoverTitle": "Ceder el control real (DEFAULT_ADMIN)",
     "fieldErrorPrefix": "Error:"
   },
+  "legal": {
+    "terms": {
+      "title": "Términos del servicio",
+      "intro": "Marina del Sol es un piloto que permite reservar noches de hotel como NFTs sobre una red Besu privada. Estos términos resumen, en lenguaje claro, cómo funciona y qué puedes esperar.",
+      "sections": {
+        "pilot": {
+          "heading": "Naturaleza del piloto",
+          "body": "El servicio opera en una red de pruebas privada con fines de demostración. No constituye una oferta comercial de alojamiento real ni una venta de valores."
+        },
+        "ownership": {
+          "heading": "Tu noche, en propiedad",
+          "body": "Al reservar, recibes en tu wallet un NFT que representa la noche. El pago se firma desde tu propia wallet; nosotros nunca custodiamos tus fondos ni tu clave privada."
+        },
+        "transfer": {
+          "heading": "Reventa y traspaso",
+          "body": "Puedes poner tu noche en reventa o traspasarla a otra wallet en cualquier momento, según las reglas del contrato. Las comisiones de royalty aplicables se muestran antes de firmar."
+        },
+        "noWarranty": {
+          "heading": "Sin garantías",
+          "body": "El piloto se ofrece «tal cual», sin garantías de disponibilidad continua. Las transacciones on-chain son irreversibles: revisa siempre el importe y la noche antes de firmar."
+        }
+      },
+      "placeholderNote": "Texto de muestra para el piloto. La versión definitiva se publicará antes de cualquier despliegue público."
+    },
+    "privacy": {
+      "title": "Privacidad",
+      "intro": "Nuestro objetivo es recoger el mínimo de datos posible. Esta página explica qué información se procesa al usar Marina del Sol.",
+      "sections": {
+        "noPii": {
+          "heading": "No pedimos datos personales",
+          "body": "No creamos cuentas ni solicitamos nombre, correo o teléfono para reservar. La interacción se realiza a través de tu wallet."
+        },
+        "onChain": {
+          "heading": "Información on-chain pública",
+          "body": "Las transacciones (direcciones de wallet, importes y fechas) quedan registradas en la red y son públicas por diseño. No incluyen datos personales identificativos."
+        },
+        "wallet": {
+          "heading": "Conexión de la wallet",
+          "body": "Al conectar tu wallet compartes tu dirección pública con la aplicación para mostrarte tus noches. No accedemos a tu clave privada ni movemos fondos sin tu firma."
+        },
+        "contact": {
+          "heading": "Contacto",
+          "body": "Para cualquier consulta sobre privacidad durante el piloto, escríbenos a través del canal indicado por el equipo del hotel."
+        }
+      },
+      "placeholderNote": "Texto de muestra para el piloto. La versión definitiva se publicará antes de cualquier despliegue público."
+    }
+  },
   "assistant": {
     "title": "Asistente IA",
-    "tagline": "Pregunta por disponibilidad y prepara tu compra; tú firmas en tu wallet.",
-    "intro": "Hola, soy el asistente del Hotel Marina del Sol. Puedo ayudarte a consultar disponibilidad y preparar la compra de una noche.",
+    "tagline": "Pregunta por disponibilidad y prepara tu reserva; tú firmas en tu wallet.",
+    "intro": "Hola, soy el asistente del Hotel Marina del Sol. Puedo ayudarte a consultar disponibilidad y preparar la reserva de una noche.",
     "logLabel": "Conversación con el asistente",
     "placeholder": "Ej.: ¿hay alguna suite disponible en junio?",
     "send": "Enviar",
     "sending": "Pensando…",
-    "unavailable": "El asistente no está disponible ahora mismo. Puedes seguir comprando desde el catálogo.",
+    "unavailable": "El asistente no está disponible ahora mismo. Puedes seguir reservando desde el catálogo.",
     "manualLink": "Ir al catálogo",
     "errorReply": "Lo siento, no he podido responder ahora mismo. Inténtalo de nuevo en un momento.",
     "retry": "Reintentar",
@@ -341,19 +417,19 @@
     "suggestions": {
       "availability": "Ver suites en junio",
       "myNights": "Mis reservas",
-      "buy": "Comprar una noche"
+      "buy": "Reservar una noche"
     },
     "handoff": {
-      "title": "Compra preparada — revisa y firma",
+      "title": "Reserva preparada — revisa y firma",
       "room": "Habitación",
       "roomValue": "{room} ({type})",
       "date": "Noche",
       "token": "Token",
       "to": "Contrato",
       "value": "Importe",
-      "confirm": "Firmar compra",
-      "connect": "Conecta tu wallet para comprar",
-      "switchNetwork": "Cambia de red para comprar",
+      "confirm": "Firmar reserva",
+      "connect": "Conecta tu wallet para reservar",
+      "switchNetwork": "Cambia de red para reservar",
       "signer": "Firmarás con la wallet conectada {address}",
       "verifying": "Verificando el precio on-chain…",
       "verifyFailed": "No pudimos verificar el precio on-chain. Comprueba tu conexión a la red e inténtalo de nuevo.",
@@ -361,13 +437,13 @@
       "insufficientBalance": "Te faltan {missing} {symbol} (tienes {have}, necesitas {need}).",
       "reverifyFailed": "Los datos de la transacción no coinciden con el precio on-chain. No firmes: vuelve a intentarlo.",
       "successTitle": "¡Noche reservada!",
-      "successBody": "Tu compra se ha confirmado. Ya puedes verla en tus noches.",
+      "successBody": "Tu reserva se ha confirmado. Ya puedes verla en tus noches.",
       "viewMyNights": "Ver en Mis noches",
       "pendingClosable": "Puedes cerrar: la reserva continúa y aparecerá en «Mis noches».",
       "retry": "Intentar de nuevo",
       "txError": {
         "rejected": "Has cancelado la firma. Puedes intentarlo de nuevo.",
-        "failed": "No se pudo completar la compra. Revisa la red y vuelve a intentarlo."
+        "failed": "No se pudo completar la reserva. Revisa la red y vuelve a intentarlo."
       }
     }
   }
