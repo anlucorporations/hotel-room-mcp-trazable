@@ -12,6 +12,8 @@ const mcpEnvSchema = z.object({
   CHAIN_ID: z.coerce.number().int().positive().default(CHAIN_ID),
   MCP_HOST: z.string().min(1).default("0.0.0.0"),
   MCP_PORT: env.port.default(8788),
+  /** Bloque de despliegue del contrato; si falta, se resuelve del registro o se usa 0. */
+  DEPLOYMENT_BLOCK: z.coerce.number().int().nonnegative().optional(),
 });
 
 export type McpConfig = z.infer<typeof mcpEnvSchema>;

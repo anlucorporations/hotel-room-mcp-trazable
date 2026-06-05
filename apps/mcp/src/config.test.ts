@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+import type { Address } from "viem";
 import { EnvironmentValidationError } from "@hotel/shared/env";
 import { loadMcpConfig } from "./config";
 import { createMcpServer } from "./server";
+import type { ChainReader } from "./chain/chain-reader";
 
 const valid = {
   RPC_URL: "http://127.0.0.1:8545",
@@ -21,7 +23,10 @@ describe("mcp config", () => {
 });
 
 describe("mcp server factory", () => {
-  it("crea un MCP server (sin herramientas en FASE 0)", () => {
-    expect(createMcpServer()).toBeDefined();
+  const reader = {} as ChainReader; // las herramientas no se invocan al construir el server.
+  const config = { contractAddress: valid.CONTRACT_ADDRESS as Address, chainId: 81234 };
+
+  it("crea un MCP server con las herramientas registradas", () => {
+    expect(createMcpServer({ reader, config })).toBeDefined();
   });
 });
