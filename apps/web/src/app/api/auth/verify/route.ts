@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { recoverMessageAddress, type Address } from "viem";
 import { parseSiweMessage } from "viem/siwe";
-import { ROLES } from "@hotel/shared";
+import { ALL_ROLE_NAMES, ROLES, type RoleName } from "@hotel/shared";
 import { hotelNightsAbi } from "@hotel/shared/abi";
 import { activeChain, contractAddress } from "@/config/chain";
 import { consumeNonce } from "@/lib/nonce-store";
@@ -20,8 +20,10 @@ interface VerifyBody {
  *   1. binding de dominio y cadena (anti-phishing cross-domain/cross-chain),
  *   2. firma válida y coincidente con la dirección reclamada,
  *   3. nonce vigente de un solo uso (anti-replay, CWE-294),
- *   4. rol MINTER on-chain.
- * En éxito crea la sesión (cookie HttpOnly firmada con HMAC).
+ *   4. ≥1 de los 6 roles on-chain (AccessControl).
+ * En éxito crea la sesión (cookie HttpOnly firmada con HMAC) con la lista de roles que la
+ * wallet ostenta; sin ningún rol responde 403 (NO_ROLE). El gating de UI por rol es solo UX:
+ * la autoridad sigue siendo el contrato (cada tx revierte si la cuenta carece del rol).
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const { message, signature } = (await request.json()) as VerifyBody;
@@ -62,19 +64,26 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "NONCE_REPLAY_OR_EXPIRED" }, { status: 401 });
   }
 
-  // 4. Rol MINTER on-chain.
-  const hasMinterRole = await serverPublicClient().readContract({
-    address: contractAddress,
-    abi: hotelNightsAbi,
-    functionName: "hasRole",
-    args: [ROLES.MINTER_ROLE, recovered],
-  });
-  if (!hasMinterRole) {
+  // 4. Roles on-chain: leemos `hasRole` de los 6 roles EN PARALELO y concedemos sesión si
+  //    la wallet ostenta ≥1. La sesión guarda la lista de roles (instantánea, CU-01).
+  const client = serverPublicClient();
+  const held = await Promise.all(
+    ALL_ROLE_NAMES.map((role) =>
+      client.readContract({
+        address: contractAddress,
+        abi: hotelNightsAbi,
+        functionName: "hasRole",
+        args: [ROLES[role], recovered],
+      }),
+    ),
+  );
+  const roles: RoleName[] = ALL_ROLE_NAMES.filter((_, i) => held[i]);
+  if (roles.length === 0) {
     return NextResponse.json({ error: "NO_ROLE" }, { status: 403 });
   }
 
-  const response = NextResponse.json({ ok: true, address: recovered });
-  response.cookies.set(SESSION_COOKIE, signSession(recovered), {
+  const response = NextResponse.json({ ok: true, address: recovered, roles });
+  response.cookies.set(SESSION_COOKIE, signSession(recovered, roles), {
     httpOnly: true,
     sameSite: "lax",
     path: "/",

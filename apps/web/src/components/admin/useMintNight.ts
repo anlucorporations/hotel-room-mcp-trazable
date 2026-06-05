@@ -9,6 +9,7 @@ export interface UseMintNightResult {
   mint: (room: number, dateYYYYMMDD: number, priceWei: bigint, metadataURI: string) => void;
   reset: () => void;
   status: TxStatus;
+  hash: `0x${string}` | undefined;
   error: Error | null;
 }
 
@@ -34,5 +35,5 @@ export function useMintNight(): UseMintNightResult {
     isReverted: receipt.isError,
   });
 
-  return { mint, reset, status, error };
+  return { mint, reset, status, hash, error };
 }

@@ -1,14 +1,16 @@
-import { getTranslations } from "next-intl/server";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AdminMint } from "@/components/admin/AdminMint";
+import { AdminPanel } from "@/components/admin/AdminPanel";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminMintPage() {
-  const t = await getTranslations("admin");
+/** Publicar noche (CU-02): minteo gateado por rol MINTER dentro del back-office. */
+export default function AdminMintPage() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-6 px-6 py-10">
-      <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
-      <AdminMint />
-    </main>
+    <AdminLayout>
+      <AdminPanel titleKey="mintTitle" descriptionKey="mintTagline" requiredRole="MINTER_ROLE">
+        <AdminMint />
+      </AdminPanel>
+    </AdminLayout>
   );
 }
