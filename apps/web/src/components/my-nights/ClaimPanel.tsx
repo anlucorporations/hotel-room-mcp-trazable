@@ -6,7 +6,8 @@ import { TxModal } from "@/components/buy/TxModal";
 import { formatEth } from "@/lib/format";
 import { useClaim } from "./useClaim";
 
-const BTN = "min-h-touch rounded-md px-4 py-2 font-semibold text-white disabled:opacity-60";
+const BTN =
+  "min-h-touch rounded-pill bg-sea px-5 py-2 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60";
 
 /** Panel de cobro (pull-payment) del saldo pendiente de reventas (CU-07). */
 export function ClaimPanel({
@@ -28,18 +29,19 @@ export function ClaimPanel({
   return (
     <section
       data-testid="claim-panel"
-      className="flex flex-col gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+      className="flex flex-col gap-3 rounded-brand-lg border border-line bg-sand-2 px-4 py-4 tablet:flex-row tablet:items-center tablet:justify-between"
     >
       <div>
-        <h2 className="font-semibold text-emerald-900">{t("pendingTitle")}</h2>
-        <p className="text-sm text-emerald-800">{t("pendingHint")}</p>
+        <h2 className="font-display font-semibold text-ink">{t("pendingTitle")}</h2>
+        <p className="text-small text-ink-soft">{t("pendingHint")}</p>
       </div>
       <button
         type="button"
         data-testid="claim"
         disabled={busy}
+        aria-busy={busy}
         onClick={claim}
-        className={`${BTN} bg-emerald-700`}
+        className={BTN}
       >
         {busy ? t("processing") : t("claim", { amount: formatEth(pendingWei) })}
       </button>

@@ -5,8 +5,8 @@ import { useTranslations } from "next-intl";
 import { parseEther } from "viem";
 import { NightImage } from "@/components/NightImage";
 import { TxModal } from "@/components/buy/TxModal";
-import { classifyTxError } from "@/components/tx/txError";
 import { formatEth, formatNightDate, TYPE_LABEL } from "@/lib/format";
+import { resaleErrorMessage } from "./resaleErrorMessage";
 import { useListNight } from "./useListNight";
 import type { OwnedNight } from "./useMyNights";
 
@@ -27,16 +27,25 @@ export function MyNightCard({
   const { list, unlist, reset, status, hash, error } = useListNight();
   const [priceEth, setPriceEth] = useState("");
   const [priceError, setPriceError] = useState(false);
+  // Mostrar el formulario de precio: siempre en una noche sin listar, o cuando el usuario
+  // pulsa «Cambiar precio» en una ya listada.
+  const [editingPrice, setEditingPrice] = useState(false);
 
   const busy = status === "signing" || status === "pending";
   const isListed = night.listingPriceWei !== null;
-  // Feedback si el usuario cancela/falla la firma (mismo patrón que AdminMint, punto 4).
-  // Un rechazo deja `status` en idle (sin hash); un revert mantiene el error tras minar.
-  const txErrorKind = error ? classifyTxError(error) : null;
+  const showPriceForm = !isListed || editingPrice;
+  // Feedback diferenciado al fallar list/unlist: errores REVERT del contrato (NotOwner,
+  // InvalidPrice, NightExpired, NotListed) → mensaje claro; en su defecto, rechazo de firma
+  // o fallo genérico (`classifyTxError`). Un rechazo deja `status` en idle (sin hash); un
+  // revert mantiene el error tras minar.
+  const txErrorKey = error ? resaleErrorMessage(error) : null;
 
   // Tras confirmarse la tx, refresca los datos (re-lee listingOf/ownerOf).
   useEffect(() => {
-    if (status === "confirmed") onConfirmed();
+    if (status === "confirmed") {
+      setEditingPrice(false); // tras confirmar el cambio de precio, vuelve a las acciones.
+      onConfirmed();
+    }
   }, [status, onConfirmed]);
 
   const alt = t("imageAlt", {
@@ -54,12 +63,24 @@ export function MyNightCard({
     }
     setPriceError(false);
     reset(); // descarta el error de un intento anterior antes de reintentar.
+    // El contrato actualiza el `Listing` y reemite `Listed` también para una noche ya listada.
     list(night.tokenId, parseEther(priceEth));
   }
 
   function onUnlist(): void {
     reset();
     unlist(night.tokenId);
+  }
+
+  function openPriceForm(): void {
+    setPriceError(false);
+    setPriceEth(""); // arranca vacío; la validación exige > 0 antes de reenviar.
+    setEditingPrice(true);
+  }
+
+  function cancelPriceForm(): void {
+    setEditingPrice(false);
+    setPriceError(false);
   }
 
   return (
@@ -84,23 +105,15 @@ export function MyNightCard({
         )}
 
         <div className="mt-auto flex flex-col gap-2 pt-2">
-          {isListed ? (
-            <>
-              <p className="text-small font-semibold text-ink">
-                {t("listedPrice", { price: formatEth(night.listingPriceWei ?? "0") })}
-              </p>
-              <button
-                type="button"
-                data-testid={`unlist-${night.tokenId}`}
-                disabled={busy}
-                aria-busy={busy}
-                onClick={onUnlist}
-                className={GHOST_BTN}
-              >
-                {busy ? t("processing") : t("unlist")}
-              </button>
-            </>
-          ) : (
+          {isListed && (
+            <p className="text-small font-semibold text-ink">
+              {t("listedPrice", { price: formatEth(night.listingPriceWei ?? "0") })}
+            </p>
+          )}
+
+          {showPriceForm ? (
+            // Mismo input/validación que el listado inicial; en una noche ya listada
+            // «Cambiar precio» reutiliza el formulario y vuelve a llamar a `list`.
             <form onSubmit={onList} className="flex flex-col gap-2">
               <label className="flex flex-col text-small text-ink">
                 {t("priceLabel")}
@@ -127,18 +140,52 @@ export function MyNightCard({
                 aria-busy={busy}
                 className={PRIMARY_BTN}
               >
-                {busy ? t("processing") : t("list")}
+                {busy ? t("processing") : isListed ? t("saveNewPrice") : t("list")}
               </button>
+              {isListed && (
+                <button
+                  type="button"
+                  data-testid={`cancel-relist-${night.tokenId}`}
+                  disabled={busy}
+                  onClick={cancelPriceForm}
+                  className={GHOST_BTN}
+                >
+                  {t("cancelEdit")}
+                </button>
+              )}
             </form>
+          ) : (
+            <>
+              <button
+                type="button"
+                data-testid={`relist-${night.tokenId}`}
+                disabled={busy}
+                aria-busy={busy}
+                onClick={openPriceForm}
+                className={PRIMARY_BTN}
+              >
+                {t("changePrice")}
+              </button>
+              <button
+                type="button"
+                data-testid={`unlist-${night.tokenId}`}
+                disabled={busy}
+                aria-busy={busy}
+                onClick={onUnlist}
+                className={GHOST_BTN}
+              >
+                {busy ? t("processing") : t("unlist")}
+              </button>
+            </>
           )}
 
-          {txErrorKind && (
+          {txErrorKey && (
             <p
               data-testid={`list-tx-error-${night.tokenId}`}
               role="alert"
               className="text-small text-terracotta-text"
             >
-              {t(`txError.${txErrorKind}`)}
+              {t(txErrorKey)}
             </p>
           )}
         </div>
