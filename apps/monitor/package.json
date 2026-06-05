@@ -1,0 +1,31 @@
+{
+  "name": "@hotel/monitor",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Monitor de observabilidad: sondea /health de worker/mcp y alerta (RNF-17, CU-16)",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch --onSuccess \"node dist/main.js\"",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "clean": "rm -rf dist .turbo coverage *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@hotel/shared": "workspace:*",
+    "nodemailer": "^6.9.16",
+    "pino": "^9.5.0"
+  },
+  "devDependencies": {
+    "@hotel/config": "workspace:*",
+    "@types/node": "^22.10.2",
+    "@types/nodemailer": "^6.4.17",
+    "eslint": "^9.17.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

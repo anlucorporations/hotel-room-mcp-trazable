@@ -25,6 +25,7 @@
     "wagmi": "^2.14.6"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.1",
     "@hotel/config": "workspace:*",
     "@next/eslint-plugin-next": "^15.1.0",
     "@playwright/test": "^1.49.1",
