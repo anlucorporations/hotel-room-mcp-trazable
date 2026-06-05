@@ -34,6 +34,16 @@
     color: var(--ink);
   }
 
+  /* Los controles de formulario heredan la tipografía del cuerpo (≥16px). Por defecto NO
+     heredan la fuente, de modo que en iOS un input/select/textarea con fuente <16px provoca
+     auto-zoom al enfocarse (UX#23, RNF-01). Heredar del body (17px) lo evita sin tocar cada
+     control; los que fijan su tamaño con una utilidad lo siguen controlando. */
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
   /* Foco visible de marca: doble anillo arena + teal (WCAG 2.4.7 / 1.4.11). */
   :where(a, button, input, select, textarea, [tabindex]):focus-visible {
     outline: 2px solid var(--sea);

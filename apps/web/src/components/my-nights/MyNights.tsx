@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { dateToYYYYMMDD } from "@hotel/shared";
 import { WalletBar } from "@/components/wallet/WalletBar";
@@ -123,10 +124,31 @@ export function MyNights() {
         </button>
       </div>
 
+      {/* Anuncia a lectores de pantalla el cambio de pestaña y cuántas noches hay (UX#24). */}
+      <p className="sr-only" role="status" aria-live="polite">
+        {t("tabStatus", {
+          tab: t(tab === "upcoming" ? "tabUpcoming" : "tabPast"),
+          count: visibleNights.length,
+        })}
+      </p>
+
       {visibleNights.length === 0 ? (
-        <p data-testid="empty-mis-noches" className="rounded-brand bg-sand-2 px-4 py-10 text-center text-ink-soft">
-          {t(hasAny ? emptyKey : "empty")}
-        </p>
+        <div
+          data-testid="empty-mis-noches"
+          className="flex flex-col items-center gap-4 rounded-brand bg-sand-2 px-4 py-10 text-center text-ink-soft"
+        >
+          <p>{t(hasAny ? emptyKey : "empty")}</p>
+          {/* Sin ninguna noche: CTA para descubrir el catálogo (UX#24). */}
+          {!hasAny && (
+            <Link
+              href="/"
+              data-testid="explore-nights"
+              className="inline-flex min-h-touch items-center rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep"
+            >
+              {t("exploreNights")}
+            </Link>
+          )}
+        </div>
       ) : (
         <ul className="grid grid-cols-1 gap-6 tablet:grid-cols-2 desktop:grid-cols-3">
           {visibleNights.map((night) => (

@@ -1,8 +1,37 @@
 import { useTranslations } from "next-intl";
 import type { SaleHistoryEntry } from "@hotel/shared";
+import { txExplorerUrl } from "@/config/chain";
 import { formatEth, formatNightDate, useRoomTypeLabel } from "@/lib/format";
 
 const short = (address: string): string => `${address.slice(0, 6)}…${address.slice(-4)}`;
+
+/**
+ * Prueba pública de la venta (UX#28): el `txHash` enlaza al explorador si la red tiene uno
+ * configurado; si no (Anvil/Besu privada), degrada a texto con el hash completo en `title`.
+ * Presentacional y sin estado → válido en Server Component.
+ */
+function TxProof({ hash, label }: { hash: string; label: string }) {
+  const url = txExplorerUrl(hash as `0x${string}`);
+  if (url) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={label}
+        title={hash}
+        className="font-mono text-xs text-sea underline hover:text-sea-deep"
+      >
+        {short(hash)}
+      </a>
+    );
+  }
+  return (
+    <span title={hash} className="font-mono text-xs text-ink-soft">
+      {short(hash)}
+    </span>
+  );
+}
 
 /** Histórico público de ventas (CU-09): orden total, sin PII (solo wallets). */
 export function HistoryTable({ entries }: { entries: readonly SaleHistoryEntry[] }) {
@@ -42,9 +71,13 @@ export function HistoryTable({ entries }: { entries: readonly SaleHistoryEntry[]
               <dt className="text-ink-soft">{t("colSaleType")}</dt>
               <dd className="text-right">{t(e.saleType === "SECONDARY" ? "secondary" : "primary")}</dd>
               <dt className="text-ink-soft">{t("colSeller")}</dt>
-              <dd className="text-right font-mono text-xs">{short(e.seller)}</dd>
+              <dd className="text-right font-mono text-xs" title={e.seller}>{short(e.seller)}</dd>
               <dt className="text-ink-soft">{t("colBuyer")}</dt>
-              <dd className="text-right font-mono text-xs">{short(e.buyer)}</dd>
+              <dd className="text-right font-mono text-xs" title={e.buyer}>{short(e.buyer)}</dd>
+              <dt className="text-ink-soft">{t("colTx")}</dt>
+              <dd className="text-right">
+                <TxProof hash={e.txHash} label={t("viewTx")} />
+              </dd>
             </dl>
           </li>
         ))}
@@ -62,7 +95,8 @@ export function HistoryTable({ entries }: { entries: readonly SaleHistoryEntry[]
               <th scope="col" className="py-2 pr-4">{t("colPrice")}</th>
               <th scope="col" className="py-2 pr-4">{t("colSaleType")}</th>
               <th scope="col" className="py-2 pr-4">{t("colSeller")}</th>
-              <th scope="col" className="py-2">{t("colBuyer")}</th>
+              <th scope="col" className="py-2 pr-4">{t("colBuyer")}</th>
+              <th scope="col" className="py-2">{t("colTx")}</th>
             </tr>
           </thead>
           <tbody>
@@ -73,8 +107,9 @@ export function HistoryTable({ entries }: { entries: readonly SaleHistoryEntry[]
                 <td className="py-2 pr-4">{roomTypeLabel(e.roomType)}</td>
                 <td className="py-2 pr-4 font-medium">{formatEth(e.priceWei)}</td>
                 <td className="py-2 pr-4">{t(e.saleType === "SECONDARY" ? "secondary" : "primary")}</td>
-                <td className="py-2 pr-4 font-mono text-xs">{short(e.seller)}</td>
-                <td className="py-2 font-mono text-xs">{short(e.buyer)}</td>
+                <td className="py-2 pr-4 font-mono text-xs" title={e.seller}>{short(e.seller)}</td>
+                <td className="py-2 pr-4 font-mono text-xs" title={e.buyer}>{short(e.buyer)}</td>
+                <td className="py-2"><TxProof hash={e.txHash} label={t("viewTx")} /></td>
               </tr>
             ))}
           </tbody>

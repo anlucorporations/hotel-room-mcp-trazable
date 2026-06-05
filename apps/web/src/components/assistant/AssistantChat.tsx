@@ -161,7 +161,13 @@ export function AssistantChat() {
           rows={1}
           placeholder={t("placeholder")}
           aria-label={t("placeholder")}
-          className="min-h-touch flex-1 resize-none rounded-brand border border-line bg-shell px-3 py-2 text-ink"
+          // Teclado móvil afinado (UX#38): «enviar» como acción del intro, y mayúscula/corrección
+          // como en un campo de texto natural. `text-base` asegura ≥16px (sin auto-zoom iOS).
+          enterKeyHint="send"
+          autoCapitalize="sentences"
+          autoCorrect="on"
+          spellCheck
+          className="min-h-touch flex-1 resize-none rounded-brand border border-line bg-shell px-3 py-2 text-base text-ink"
         />
         <button
           type="submit"

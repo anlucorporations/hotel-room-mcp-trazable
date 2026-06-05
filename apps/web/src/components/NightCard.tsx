@@ -119,6 +119,9 @@ export function NightCard({
             {priceEth} <span className="font-sans text-small font-semibold text-ink-soft">ETH</span>
           </span>
         </div>
+        {/* Reaseguro de propiedad/reventa (UX#29): qué obtiene quien reserva, en lenguaje honesto.
+            No mostramos una conversión a € porque el piloto no integra un oráculo de precio. */}
+        <p className="mt-1.5 text-micro text-ink-soft">{t("ownershipNote")}</p>
         <div className="mt-3">
           <BuyButton tokenId={night.tokenId} priceWei={night.priceWei} saleType={night.saleType} />
         </div>
