@@ -15,6 +15,7 @@ import {
 } from "@hotel/shared";
 import { activeChain } from "@/config/chain";
 import { useOnboarding } from "@/components/wallet/useOnboarding";
+import { classifyTxError } from "@/components/tx/txError";
 import { useMintNight } from "./useMintNight";
 
 const BTN = "min-h-touch rounded-md bg-sky-700 px-4 py-2 font-semibold text-white disabled:opacity-60";
@@ -33,7 +34,7 @@ export function AdminMint() {
   const t = useTranslations("admin");
   const { isConnected, address, connect } = useOnboarding();
   const { signMessageAsync } = useSignMessage();
-  const { mint, status, reset } = useMintNight();
+  const { mint, status, error: mintError, reset } = useMintNight();
 
   const [sessionAddress, setSessionAddress] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -79,10 +80,19 @@ export function AdminMint() {
     }
   }, [address, signMessageAsync, t]);
 
+  // Si la wallet cambió a otra cuenta tras iniciar sesión, el minteo lo firmaría una cuenta
+  // distinta de la autenticada (probablemente sin rol MINTER): avisamos pero NO bloqueamos el
+  // formulario, para que el usuario pueda reintentar (o volver a iniciar sesión).
+  const accountMismatch = Boolean(
+    sessionAddress && address && address.toLowerCase() !== sessionAddress.toLowerCase(),
+  );
+  const txErrorKind = mintError ? classifyTxError(mintError) : null;
+
   function onMint(event: FormEvent): void {
     event.preventDefault();
     setFormError(null);
     setMintedTokenId(null);
+    reset(); // descarta el resultado/error de un intento anterior antes de reintentar.
 
     const roomNum = Number(room);
     if (!isRoomInMaster(roomNum)) return setFormError(t("invalidRoom"));
@@ -127,6 +137,18 @@ export function AdminMint() {
 
   return (
     <form onSubmit={onMint} className="flex max-w-md flex-col gap-4">
+      {accountMismatch && (
+        <div
+          data-testid="account-mismatch"
+          role="alert"
+          className="flex flex-col gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-amber-900"
+        >
+          <span>{t("accountChanged")}</span>
+          <button type="button" onClick={() => void signIn()} className="self-start underline">
+            {t("resign")}
+          </button>
+        </div>
+      )}
       <label className="flex flex-col gap-1">
         {t("room")}
         <input
@@ -170,6 +192,11 @@ export function AdminMint() {
       {formError && (
         <p data-testid="mint-error" className="text-red-700">
           {formError}
+        </p>
+      )}
+      {!formError && txErrorKind && (
+        <p data-testid="mint-tx-error" role="alert" className="text-red-700">
+          {t(`txError.${txErrorKind}`)}
         </p>
       )}
       {status === "confirmed" && mintedTokenId && (

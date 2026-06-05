@@ -126,6 +126,12 @@
     "minting": "Minteando…",
     "minted": "Noche minteada: token {tokenId}",
     "invalidDate": "Fecha de calendario inválida.",
-    "invalidRoom": "La habitación no está en el maestro."
+    "invalidRoom": "La habitación no está en el maestro.",
+    "accountChanged": "Has cambiado de cuenta en la wallet. El minteo lo firmaría esta cuenta, que quizá no tenga el rol MINTER. Vuelve a iniciar sesión con la cuenta autorizada o inténtalo igualmente.",
+    "resign": "Volver a iniciar sesión",
+    "txError": {
+      "rejected": "Has cancelado la firma. El formulario sigue aquí con tus datos: puedes intentarlo de nuevo.",
+      "failed": "No se pudo mintear. Revisa que la cuenta tenga rol MINTER y estés en la red correcta, y vuelve a intentarlo."
+    }
   }
 }
