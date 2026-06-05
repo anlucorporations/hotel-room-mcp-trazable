@@ -86,13 +86,13 @@ async function main(): Promise<void> {
       logger.error({ error }, "fallo al servir una petición HTTP del worker"),
   });
 
+  // Cierre limpio (MINOR 12): SIGINT/SIGTERM sólo abortan el bucle; los stores se cierran DESPUÉS
+  // de que `runWorker` termine el ciclo en curso (abajo), nunca a la vez (evita tocar una BD ya
+  // cerrada). El `AbortSignal` se propaga también al sleep del backoff SMTP del `SaleProcessor`.
   const controller = new AbortController();
   const shutdown = (signal: NodeJS.Signals): void => {
-    logger.info({ signal }, "cierre del worker en curso");
+    logger.info({ signal }, "cierre del worker en curso · esperando el ciclo actual");
     controller.abort();
-    server.close();
-    store.close();
-    aggregateStore.close();
     process.exitCode = 0;
   };
   process.once("SIGINT", () => shutdown("SIGINT"));
@@ -109,22 +109,30 @@ async function main(): Promise<void> {
     "worker activo · eventos Sale → email + agregados/histórico (/aggregates, /history)",
   );
 
-  await runWorker(
-    {
-      contractAddress: config.CONTRACT_ADDRESS,
-      deploymentBlock,
-      pollIntervalMs: config.POLL_INTERVAL_MS,
-    },
-    {
-      chainSource,
-      mailer,
-      store,
-      aggregateStore,
-      logger,
-      health,
-      signal: controller.signal,
-    },
-  );
+  try {
+    await runWorker(
+      {
+        contractAddress: config.CONTRACT_ADDRESS,
+        deploymentBlock,
+        pollIntervalMs: config.POLL_INTERVAL_MS,
+      },
+      {
+        chainSource,
+        mailer,
+        store,
+        aggregateStore,
+        logger,
+        health,
+        signal: controller.signal,
+      },
+    );
+  } finally {
+    // El bucle ya terminó (o falló): ahora sí es seguro cerrar servidor y stores.
+    server.close();
+    store.close();
+    aggregateStore.close();
+    logger.info("worker detenido · recursos liberados");
+  }
 }
 
 /** `true` para RPC locales (Anvil dev). */

@@ -18,6 +18,12 @@ import type {
  * un único email por clave; sólo podría duplicarse si el proceso cae justo tras el envío SMTP
  * y antes de `markProcessed` (ventana mínima entre ambas operaciones). No es exactamente-una-vez.
  *
+ * Invariante at-least-once del checkpoint (BLOCKER 1): el checkpoint NUNCA avanza por encima de
+ * un evento cuyo email no se entregó. Si la entrega de un evento falla tras agotar el backoff, el
+ * checkpoint se fija al bloque anterior al del fallo (`blockNumber - 1`) y el ciclo termina para
+ * reintentar en el siguiente. Como sólo se marca `markProcessed` tras una entrega correcta, en el
+ * reintento los eventos ya entregados se saltan (idempotencia) y sólo se reenvía el fallido.
+ *
  * No conoce viem, nodemailer ni SQLite: recibe sus colaboradores por construcción (DIP), por
  * lo que es testeable con fakes sin red ni SMTP reales.
  */
@@ -47,6 +53,12 @@ export interface SaleProcessorDeps {
   readonly health?: ProcessorHealthHooks;
   /** Función de espera inyectable (los tests la sustituyen para no dormir de verdad). */
   readonly sleep?: (ms: number) => Promise<void>;
+  /**
+   * Señal de cierre (MINOR 12): aborta el sleep del backoff SMTP para no demorar el shutdown. Si
+   * se aborta a mitad del backoff, `deliverWithBackoff` deja de reintentar y devuelve `false` (no
+   * entregado); el evento se reintentará en el siguiente arranque (at-least-once preservado).
+   */
+  readonly signal?: AbortSignal;
 }
 
 /**
@@ -68,14 +80,39 @@ export interface ProcessorHealthHooks {
   readonly onProcessingRecovered?: () => void;
 }
 
+/**
+ * Resultado de procesar un único evento `Sale`. Distingue explícitamente «no entregado» del éxito
+ * (BLOCKER 1) para que el llamador sepa cuándo debe detener el avance del checkpoint:
+ *   - `delivered`: el email se envió (o ya estaba marcado como procesado, idempotencia). El chunk
+ *     puede seguir avanzando.
+ *   - `not-delivered`: se agotó el backoff SMTP. El checkpoint NO debe pasar de este evento; el
+ *     ciclo debe terminar para reintentar sólo este evento más adelante.
+ */
+type ProcessOutcome = "delivered" | "not-delivered";
+
 const DEFAULT_BACKOFF: BackoffOptions = {
   retries: 4,
   baseDelayMs: 500,
   maxDelayMs: 30_000,
 };
 
-const defaultSleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+/** Sleep abortable: resuelve al cumplirse `ms` o de inmediato si la señal se aborta (MINOR 12). */
+const defaultSleep = (ms: number, signal?: AbortSignal): Promise<void> =>
+  new Promise((resolve) => {
+    if (signal?.aborted) {
+      resolve();
+      return;
+    }
+    const timer = setTimeout(resolve, ms);
+    signal?.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(timer);
+        resolve();
+      },
+      { once: true },
+    );
+  });
 
 export class SaleProcessor {
   private readonly chainSource: ChainSource;
@@ -87,6 +124,7 @@ export class SaleProcessor {
   private readonly backoff: BackoffOptions;
   private readonly health: ProcessorHealthHooks;
   private readonly sleep: (ms: number) => Promise<void>;
+  private readonly signal?: AbortSignal;
 
   constructor(deps: SaleProcessorDeps) {
     this.chainSource = deps.chainSource;
@@ -97,24 +135,38 @@ export class SaleProcessor {
     this.deploymentBlock = deps.deploymentBlock;
     this.backoff = deps.backoff ?? DEFAULT_BACKOFF;
     this.health = deps.health ?? {};
-    this.sleep = deps.sleep ?? defaultSleep;
+    this.signal = deps.signal;
+    this.sleep = deps.sleep ?? ((ms: number) => defaultSleep(ms, deps.signal));
+  }
+
+  /**
+   * Último bloque del checkpoint PERSISTIDO (no el retorno de `catchUp`), MINOR 13. Refleja el
+   * progreso real entregado tras un crash parcial: si un email no se entregó, el checkpoint queda
+   * detrás de `head` y el lag de `/health` lo muestra honestamente. `null` si nunca se persistió.
+   */
+  getPersistedLastBlock(): number | null {
+    return this.store.getLastBlock(this.contractAddress);
   }
 
   /**
    * Procesa todos los eventos `Sale` desde `max(checkpoint+1, deploymentBlock)` hasta `head`,
-   * en chunks ≤ `GETLOGS_MAX_RANGE`, avanzando el checkpoint tras cada chunk.
+   * en chunks ≤ `GETLOGS_MAX_RANGE`, en orden cronológico, avanzando el checkpoint sólo hasta el
+   * último evento ENTREGADO.
    *
-   * Política de errores (MAJOR 2):
+   * Política de errores:
    *   - `getSaleLogs` es una llamada al RPC: si falla, el error se propaga a `runCycle`, que lo
    *     contabiliza como fallo del RPC. No se avanza el checkpoint de ese chunk.
-   *   - El fallo al procesar un evento concreto (no-RPC/no-SMTP) NO se cuenta como fallo del
-   *     RPC ni aborta el chunk: se registra, se degrada la salud por "processing" y se continúa
-   *     con el resto de eventos. La idempotencia se preserva porque un evento que falla nunca
-   *     llega a `markProcessed` (se reintentará en un ciclo posterior). El checkpoint del chunk
-   *     avanza igualmente para evitar el bloqueo de cabecera de línea (head-of-line blocking):
-   *     un único evento defectuoso no debe impedir el progreso del worker de forma indefinida.
+   *   - Entrega de email NO realizada (se agotó el backoff SMTP) → invariante at-least-once
+   *     (BLOCKER 1): se fija el checkpoint al bloque anterior al del evento fallido
+   *     (`blockNumber - 1`) y el catch-up termina. En el reintento, los eventos previos ya
+   *     entregados se saltan por idempotencia (`markProcessed`) y sólo se reenvía el fallido.
+   *   - Fallo NO-RPC/NO-SMTP al procesar un evento (p. ej. datos inesperados): NO se cuenta como
+   *     fallo del RPC ni detiene el avance; se registra, se degrada la salud por "processing" y se
+   *     continúa con el resto del chunk (no debe bloquear la cabecera de línea indefinidamente).
+   *     La idempotencia se preserva porque un evento que falla nunca llega a `markProcessed`.
    *
-   * Devuelve el último bloque procesado (= `head`).
+   * Devuelve el último bloque cuyos eventos quedaron entregados (puede ser < `head` si hubo un
+   * email no entregado en mitad del rango).
    */
   async catchUp(headBlock: bigint): Promise<bigint> {
     const checkpoint = this.store.getLastBlock(this.contractAddress);
@@ -135,7 +187,14 @@ export class SaleProcessor {
       // Lectura del RPC: un fallo aquí se propaga (lo cuenta `runCycle` como fallo del RPC).
       const logs = await this.chainSource.getSaleLogs(fromBlock, toBlock);
       for (const event of logs) {
-        await this.processSaleSafely(event);
+        const outcome = await this.processSaleSafely(event);
+        if (outcome === "not-delivered") {
+          // No entregado: el checkpoint no debe pasar de aquí. Lo dejamos en el bloque anterior
+          // (puede contener eventos previos ya entregados) y terminamos para reintentar el ciclo.
+          const safeBlock = Number(event.blockNumber) - 1;
+          this.store.setLastBlock(this.contractAddress, Math.max(safeBlock, 0));
+          return event.blockNumber - 1n;
+        }
       }
 
       this.store.setLastBlock(this.contractAddress, Number(toBlock));
@@ -146,42 +205,56 @@ export class SaleProcessor {
   }
 
   /**
-   * Envoltura de `processSale` que aísla los fallos de procesamiento de un evento concreto del
-   * flujo de RPC (MAJOR 2). Un fallo aquí degrada la salud por "processing" (no por RPC) y se
-   * traga el error para no abortar el chunk; un éxito rearma la salud de procesamiento.
+   * Envoltura de `processSale` que separa las dos clases de fallo:
+   *   - Email no entregado (se agotó el backoff): devuelve `"not-delivered"` para que `catchUp`
+   *     detenga el avance del checkpoint (invariante at-least-once, BLOCKER 1). Esto NO degrada la
+   *     salud por "processing" (lo hace `deliverWithBackoff` por la vía de email).
+   *   - Fallo NO-RPC/NO-SMTP al procesar (p. ej. datos del evento inesperados): se registra, se
+   *     degrada la salud por "processing" (no por RPC) y se devuelve `"delivered"` para no atascar
+   *     el chunk; la idempotencia se preserva (el evento nunca llegó a `markProcessed`).
+   * Un procesamiento correcto rearma la salud de "processing".
    */
-  private async processSaleSafely(event: SaleEvent): Promise<void> {
+  private async processSaleSafely(event: SaleEvent): Promise<ProcessOutcome> {
     try {
-      await this.processSale(event);
-      this.health.onProcessingRecovered?.();
+      const outcome = await this.processSale(event);
+      if (outcome === "delivered") {
+        this.health.onProcessingRecovered?.();
+      }
+      return outcome;
     } catch (error: unknown) {
       this.logger.error(
         { txHash: event.txHash, logIndex: event.logIndex, blockNumber: event.blockNumber.toString(), error },
         "PROCESSING_FAILED · evento omitido en este ciclo (no es fallo de RPC)",
       );
       this.health.onProcessingError?.();
+      // Un fallo de procesamiento (no de entrega) no atasca el chunk: lo tratamos como entregado
+      // a efectos del avance (se reintentará en otro ciclo porque nunca se marcó como procesado).
+      return "delivered";
     }
   }
 
   /**
    * Procesa un único evento `Sale` de forma idempotente: si la clave ya está marcada, no hace
-   * nada; en otro caso envía el email y sólo entonces marca la clave como procesada.
+   * nada (`"delivered"`); en otro caso envía el email y sólo entonces marca la clave como
+   * procesada. Si la entrega falla tras agotar el backoff, devuelve `"not-delivered"` SIN marcar
+   * la clave (at-least-once): el llamador detendrá el avance del checkpoint.
    *
    * Garantía: at-least-once con ventana mínima. Normalmente 1 email por clave incluso tras
    * reinicios; sólo se duplicaría si el proceso cae justo tras el envío SMTP y antes de
    * `markProcessed`.
    */
-  async processSale(event: SaleEvent): Promise<void> {
+  async processSale(event: SaleEvent): Promise<ProcessOutcome> {
     const key = idempotencyKey(event);
     if (this.store.isProcessed(key)) {
-      return;
+      return "delivered";
     }
 
     const notification = buildNotification(event);
     const delivered = await this.deliverWithBackoff(notification, key);
     if (!delivered) {
-      // No marcamos como procesado: se reintentará en el próximo ciclo (at-least-once).
-      return;
+      // No entregado: NO marcamos como procesado y señalamos al llamador que detenga el avance
+      // del checkpoint para reintentar sólo este evento (invariante at-least-once, BLOCKER 1).
+      return "not-delivered";
     }
 
     // Envío correcto: rearma la salud de email (MAJOR 1). Tras `markProcessed` queda la ventana
@@ -192,12 +265,17 @@ export class SaleProcessor {
       { tokenId: notification.tokenId.toString(), txHash: notification.txHash },
       "aviso de venta enviado",
     );
+    return "delivered";
   }
 
   /**
    * Intenta enviar el email con backoff exponencial acotado. Si se agotan los reintentos,
    * registra `EMAIL_DELIVERY_FAILED` y marca la salud como degradada; devuelve `false` para
    * que el llamador NO marque la venta como procesada.
+   *
+   * Cierre limpio (MINOR 12): si la señal de cierre se aborta a mitad del backoff, dejamos de
+   * reintentar y devolvemos `false` (no entregado). El evento no se marca como procesado, por lo
+   * que el invariante at-least-once se mantiene: se reintentará en el siguiente arranque.
    */
   private async deliverWithBackoff(
     notification: SaleNotification,
@@ -205,6 +283,13 @@ export class SaleProcessor {
   ): Promise<boolean> {
     const totalAttempts = this.backoff.retries + 1;
     for (let attempt = 1; attempt <= totalAttempts; attempt += 1) {
+      if (this.signal?.aborted) {
+        this.logger.warn(
+          { key, txHash: notification.txHash, attempt },
+          "cierre en curso · se aborta el backoff SMTP (se reintentará al reiniciar)",
+        );
+        return false;
+      }
       try {
         await this.mailer.sendSaleEmail(notification);
         return true;

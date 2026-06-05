@@ -22,7 +22,14 @@ export interface RunWorkerConfig {
   readonly deploymentBlock: number;
   readonly pollIntervalMs: number;
   readonly backoff?: BackoffOptions;
+  /**
+   * Tiempo máximo (ms) que el cierre espera al ciclo en curso antes de retornar (MINOR 12). Acota
+   * el shutdown si el ciclo se queda atascado (p. ej. una llamada RPC colgada). Por defecto 10 s.
+   */
+  readonly shutdownTimeoutMs?: number;
 }
+
+const DEFAULT_SHUTDOWN_TIMEOUT_MS = 10_000;
 
 export interface RunWorkerDeps {
   readonly chainSource: ChainSource;
@@ -48,18 +55,27 @@ const defaultSleep = (ms: number, signal: AbortSignal): Promise<void> =>
   });
 
 /**
- * Aplica el rebind del checkpoint ante un posible redeploy (DISEÑO §14).
+ * Aplica el rebind del checkpoint ante un posible redeploy (DISEÑO §14) y mantiene coherente el
+ * agregado/histórico (MAJOR 3).
  *
- * El checkpoint se indexa por dirección: si no hay registro para la dirección actual, se trata
- * como un redeploy (sin estado previo) y el catch-up arrancará en `deploymentBlock` por su
+ * Checkpoint del email: se indexa por dirección. Si no hay registro para la dirección actual, se
+ * trata como un redeploy (sin estado previo) y el catch-up arrancará en `deploymentBlock` por su
  * rama `checkpoint === null` —no es necesario pre-sembrar la fila, lo cual además saltaría el
  * propio `deploymentBlock`—. Si la dirección coincide con un checkpoint existente, se conserva.
  *
- * Reutiliza la función pura `rebindCheckpoint` (T0.3) para decidir si hubo cambio (y poder
- * registrarlo), manteniendo una única fuente de verdad de la regla de rebind.
+ * Agregados/histórico (MAJOR 3): el `AggregateStore` no se indexa por dirección, sino que persiste
+ * la dirección a la que está vinculado (`getBoundAddress`). Si esa dirección difiere de la actual
+ * (redeploy con contrato nuevo), se RESETEA el agregado (`reset(deploymentBlock)`: contadores a la
+ * base id = 0, `sale_history`/`aggregate_applied` vacías, `last_block = deploymentBlock`) para no
+ * arrastrar datos del contrato anterior. La primera vez (sin vínculo previo) solo se registra la
+ * dirección, sin resetear (no hay estado previo que limpiar).
+ *
+ * Reutiliza la función pura `rebindCheckpoint` (T0.3) para decidir si hubo cambio en el checkpoint
+ * del email, manteniendo una única fuente de verdad de la regla de rebind.
  */
 function applyRebind(
   store: CheckpointStore,
+  aggregateStore: AggregateStore,
   contractAddress: string,
   deploymentBlock: number,
   logger: Logger,
@@ -73,9 +89,37 @@ function applyRebind(
   if (changed) {
     logger.info(
       { contractAddress: contractAddress.toLowerCase(), deploymentBlock },
-      "redeploy detectado · el catch-up arrancará en el bloque de despliegue",
+      "redeploy detectado · el catch-up de email arrancará en el bloque de despliegue",
     );
   }
+
+  rebindAggregates(aggregateStore, contractAddress, deploymentBlock, logger);
+}
+
+/**
+ * Rebind consciente del agregado/histórico (MAJOR 3). Compara la dirección vinculada persistida
+ * con la actual; si cambió, resetea el agregado y revincula. Si nunca se había vinculado, solo
+ * registra la dirección (no hay estado anterior que limpiar).
+ */
+function rebindAggregates(
+  aggregateStore: AggregateStore,
+  contractAddress: string,
+  deploymentBlock: number,
+  logger: Logger,
+): void {
+  const bound = aggregateStore.getBoundAddress();
+  const current = contractAddress.toLowerCase();
+  if (bound === current) {
+    return;
+  }
+  if (bound !== null) {
+    aggregateStore.reset(deploymentBlock);
+    logger.info(
+      { previous: bound, contractAddress: current, deploymentBlock },
+      "redeploy detectado · agregados/histórico reseteados (MAJOR 3)",
+    );
+  }
+  aggregateStore.setBoundAddress(current);
 }
 
 /**
@@ -94,7 +138,13 @@ export async function runWorker(
     deps;
   const sleep = deps.sleep ?? ((ms: number) => defaultSleep(ms, signal));
 
-  applyRebind(store, config.contractAddress, config.deploymentBlock, logger);
+  applyRebind(
+    store,
+    aggregateStore,
+    config.contractAddress,
+    config.deploymentBlock,
+    logger,
+  );
 
   const processor = new SaleProcessor({
     chainSource,
@@ -112,6 +162,8 @@ export async function runWorker(
       onProcessingRecovered: () => health.clearProcessingDegraded(),
     },
     sleep: deps.sleep,
+    // Cierre limpio (MINOR 12): aborta el backoff SMTP en curso al recibir SIGINT/SIGTERM.
+    signal,
   });
 
   // Agregados/histórico (FASE 3): se alimenta de los mismos bloques, de forma idempotente.
@@ -121,10 +173,45 @@ export async function runWorker(
     deploymentBlock: config.deploymentBlock,
   });
 
+  const shutdownTimeoutMs =
+    config.shutdownTimeoutMs ?? DEFAULT_SHUTDOWN_TIMEOUT_MS;
+
   while (!signal.aborted) {
-    await runCycle(processor, aggregateProcessor, deps);
+    // El ciclo en curso se ejecuta hasta el final salvo que el cierre lo exceda en tiempo: en ese
+    // caso retornamos para no bloquear el shutdown (MINOR 12). El `AbortSignal` ya hace que los
+    // sleeps internos (backoff SMTP) resuelvan de inmediato, así que el ciclo suele cerrar solo.
+    const cycle = runCycle(processor, aggregateProcessor, deps);
+    if (signal.aborted) {
+      await raceShutdown(cycle, shutdownTimeoutMs, logger);
+      break;
+    }
+    await cycle;
     if (signal.aborted) break;
     await sleep(config.pollIntervalMs);
+  }
+}
+
+/**
+ * Espera al ciclo en curso durante el cierre, acotado por `timeoutMs` (MINOR 12). Si el ciclo no
+ * termina a tiempo, registra el timeout y retorna para no bloquear el shutdown; el ciclo seguirá
+ * en segundo plano pero el invariante at-least-once se mantiene (nada se marca sin entregar).
+ */
+async function raceShutdown(
+  cycle: Promise<void>,
+  timeoutMs: number,
+  logger: Logger,
+): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<"timeout">((resolve) => {
+    timer = setTimeout(() => resolve("timeout"), timeoutMs);
+  });
+  const result = await Promise.race([cycle.then(() => "done" as const), timeout]);
+  if (timer) clearTimeout(timer);
+  if (result === "timeout") {
+    logger.warn(
+      { timeoutMs },
+      "el ciclo no terminó dentro del timeout de cierre · se cierra de todos modos",
+    );
   }
 }
 
@@ -132,11 +219,19 @@ export async function runWorker(
  * Un ciclo de procesamiento: lee la cabecera, procesa el catch-up hasta ella y actualiza la
  * salud. El bucle continúa siempre (resiliencia: la red/SMTP pueden recuperarse).
  *
- * Sólo los fallos del RPC (`getHeadBlock`/`getSaleLogs`) llegan a este `catch` y se contabilizan
- * para la transición a `down` por RPC (MAJOR 2). El fallo al procesar un evento concreto NO
- * llega aquí: `SaleProcessor.catchUp` lo aísla (lo registra y degrada la salud por "processing"),
- * de modo que un único evento defectuoso no se clasifica como fallo de RPC ni atasca el avance
- * del checkpoint (head-of-line blocking).
+ * Sólo los fallos del RPC (`getHeadBlock`/`getSaleLogs`) llegan al `catch` del email y se
+ * contabilizan para la transición a `down` por RPC (MAJOR 2). El fallo al procesar un evento
+ * concreto NO llega aquí: `SaleProcessor.catchUp` lo aísla (lo registra y degrada la salud por
+ * "processing"), de modo que un único evento defectuoso no se clasifica como fallo de RPC ni
+ * atasca el avance del checkpoint (head-of-line blocking).
+ *
+ * Salud:
+ *   - Email: el lag se reporta con el `lastBlock` PERSISTIDO del `CheckpointStore` (MINOR 13), no
+ *     con el retorno de `catchUp`. Así, si un email no se entregó (BLOCKER 1), el checkpoint queda
+ *     detrás de `head` y el lag lo refleja de forma honesta tras un crash parcial.
+ *   - Agregados (MAJOR 4): se observa el pipeline. Un `catchUp` correcto registra el último bloque
+ *     agregado (lag de agregados); un fallo persistente (p. ej. I/O de SQLite) degrada `/health`
+ *     tras N fallos consecutivos, en vez de quedar invisible.
  */
 export async function runCycle(
   processor: SaleProcessor,
@@ -157,19 +252,25 @@ export async function runCycle(
   // Email (CU-10): los fallos de RPC de `getSaleLogs` cuentan como fallo de RPC; el fallo de
   // un evento concreto lo aísla `SaleProcessor.catchUp` (no llega aquí).
   try {
-    const processedUpTo = await processor.catchUp(head);
-    health.recordCycle(Number(processedUpTo), Number(head));
+    await processor.catchUp(head);
+    // MINOR 13: reportamos el progreso PERSISTIDO (no el retorno de `catchUp`), que es el estado
+    // real entregado tras un email no entregado o un crash parcial.
+    const persisted = processor.getPersistedLastBlock();
+    health.recordCycle(persisted ?? Number(head), Number(head));
   } catch (error: unknown) {
     health.recordRpcFailure();
     logger.error({ error }, "fallo de RPC procesando ventas (email)");
     return;
   }
 
-  // Agregados/histórico (CU-09/11): aislados. Un fallo (p. ej. I/O de SQLite) NO se clasifica
-  // como fallo de RPC ni atasca el ciclo del email; se registra y se reintenta en el siguiente.
+  // Agregados/histórico (CU-09/11): aislados del ciclo del email. Un fallo (p. ej. I/O de SQLite)
+  // NO se clasifica como fallo de RPC, pero SÍ se observa en `/health` (MAJOR 4): degrada tras N
+  // fallos consecutivos y publica el lag de agregados.
   try {
     await aggregateProcessor.catchUp(head);
+    health.recordAggregateCycle(aggregateProcessor.getAggregates().lastBlock);
   } catch (error: unknown) {
+    health.recordAggregateFailure();
     logger.error({ error }, "fallo al actualizar agregados/histórico (no es fallo de RPC)");
   }
 }

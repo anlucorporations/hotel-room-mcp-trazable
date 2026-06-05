@@ -5,22 +5,29 @@ import { runCycle, runWorker } from "./run-worker";
 import { SaleProcessor } from "./sale-processor";
 import { AggregateProcessor } from "./aggregate-processor";
 import {
+  AggregateFailingChainSource,
   AlwaysFailingMailer,
   FailingChainSource,
   FakeChainSource,
   FakeMailer,
   InMemoryAggregateStore,
   InMemoryCheckpointStore,
+  makeSaleAggregateEvent,
   makeSaleEvent,
   noSleep,
+  SelectiveFailingMailer,
   silentLogger,
 } from "./test-fakes";
+import type { AggregateStore, ChainSource } from "./types";
 
 /** AggregateProcessor de conveniencia para los tests de `runCycle` (store en memoria). */
-const newAggregateProcessor = (chainSource: FakeChainSource | FailingChainSource) =>
+const newAggregateProcessor = (
+  chainSource: ChainSource,
+  store: AggregateStore = new InMemoryAggregateStore(),
+) =>
   new AggregateProcessor({
     chainSource,
-    store: new InMemoryAggregateStore(),
+    store,
     deploymentBlock: 0,
   });
 
@@ -266,6 +273,171 @@ describe("runWorker · fallo de procesamiento NO se clasifica como fallo de RPC 
 
     expect(health.toReport().details?.processingDegraded).toBe(false);
     expect(health.toReport().status).toBe("ok");
+    store.close();
+  });
+});
+
+describe("runWorker · rebind consciente de agregados (MAJOR 3)", () => {
+  /** Ejecuta exactamente un ciclo de `runWorker` con el `aggregateStore` y la dirección dados. */
+  const runOneCycle = async (
+    contractAddress: string,
+    aggregateStore: AggregateStore,
+    chain: FakeChainSource,
+  ): Promise<void> => {
+    const controller = new AbortController();
+    await runWorker(
+      { contractAddress, deploymentBlock: 40, pollIntervalMs: 1 },
+      {
+        chainSource: chain,
+        mailer: new FakeMailer(),
+        store: new SqliteCheckpointStore(":memory:"),
+        aggregateStore,
+        logger: silentLogger(),
+        health: createWorkerHealthState(),
+        signal: controller.signal,
+        sleep: async () => {
+          controller.abort();
+        },
+      },
+    );
+  };
+
+  it("redeploy (cambia la dirección) → resetea el agregado a base y last_block=deploymentBlock", async () => {
+    const aggregateStore = new InMemoryAggregateStore();
+    // Estado previo del contrato ANTIGUO: agregado vinculado con una venta contabilizada.
+    aggregateStore.setBoundAddress(OTHER);
+    aggregateStore.applyEvent(makeSaleAggregateEvent({ saleTypeRaw: 0, blockNumber: 41n }));
+    aggregateStore.setLastBlock(45);
+    expect(aggregateStore.getCounters().soldCount).toBe(1);
+
+    // Arranque con el contrato NUEVO (sin ventas en el rango): debe resetear el agregado.
+    await runOneCycle(CONTRACT, aggregateStore, new FakeChainSource(50n));
+
+    expect(aggregateStore.resetCount).toBe(1);
+    expect(aggregateStore.getCounters().soldCount).toBe(0);
+    expect(aggregateStore.getCounters().primaryVolumeWei).toBe(0n);
+    expect(aggregateStore.getHistory()).toHaveLength(0);
+    expect(aggregateStore.getBoundAddress()).toBe(CONTRACT.toLowerCase());
+  });
+
+  it("misma dirección (sin redeploy) → NO resetea el agregado", async () => {
+    const aggregateStore = new InMemoryAggregateStore();
+    aggregateStore.setBoundAddress(CONTRACT);
+    aggregateStore.applyEvent(makeSaleAggregateEvent({ saleTypeRaw: 0, blockNumber: 41n }));
+    aggregateStore.setLastBlock(45);
+
+    await runOneCycle(CONTRACT, aggregateStore, new FakeChainSource(50n));
+
+    expect(aggregateStore.resetCount).toBe(0);
+    expect(aggregateStore.getCounters().soldCount).toBe(1);
+  });
+
+  it("primer arranque (sin vínculo previo) → NO resetea, sólo registra la dirección", async () => {
+    const aggregateStore = new InMemoryAggregateStore();
+    expect(aggregateStore.getBoundAddress()).toBeNull();
+
+    await runOneCycle(CONTRACT, aggregateStore, new FakeChainSource(50n));
+
+    expect(aggregateStore.resetCount).toBe(0);
+    expect(aggregateStore.getBoundAddress()).toBe(CONTRACT.toLowerCase());
+  });
+});
+
+describe("runWorker · /health observa el pipeline de agregados (MAJOR 4)", () => {
+  it("degrada a down tras N fallos consecutivos del catchUp de agregados", async () => {
+    const health = createWorkerHealthState({
+      rpcFailureThreshold: 99, // descartamos la vía de RPC.
+      aggregateFailureThreshold: 3,
+    });
+    const aggChain = new AggregateFailingChainSource(10n);
+    const processor = new SaleProcessor({
+      chainSource: aggChain,
+      mailer: new FakeMailer(),
+      store: new SqliteCheckpointStore(":memory:"),
+      logger: silentLogger(),
+      contractAddress: CONTRACT,
+      deploymentBlock: 0,
+      sleep: noSleep,
+    });
+    const aggregate = newAggregateProcessor(aggChain);
+    const deps = { chainSource: aggChain, logger: silentLogger(), health };
+
+    await runCycle(processor, aggregate, deps);
+    await runCycle(processor, aggregate, deps);
+    expect(health.toReport().status).toBe("ok"); // 2 fallos < umbral
+    expect(health.toReport().details?.consecutiveRpcFailures).toBe(0); // no es fallo de RPC
+    await runCycle(processor, aggregate, deps);
+    expect(health.toReport().status).toBe("down"); // 3 fallos de agregados ⇒ down
+    expect(health.toReport().details?.consecutiveAggregateFailures).toBe(3);
+  });
+
+  it("publica aggregateLastBlock y aggregateLag tras el ciclo de agregados", async () => {
+    const health = createWorkerHealthState({ lagThreshold: 10 });
+    const chain = new FakeChainSource(100n);
+    const aggregateStore = new InMemoryAggregateStore();
+    const processor = new SaleProcessor({
+      chainSource: chain,
+      mailer: new FakeMailer(),
+      store: new SqliteCheckpointStore(":memory:"),
+      logger: silentLogger(),
+      contractAddress: CONTRACT,
+      deploymentBlock: 0,
+      sleep: noSleep,
+    });
+    const aggregate = new AggregateProcessor({
+      chainSource: chain,
+      store: aggregateStore,
+      deploymentBlock: 0,
+    });
+
+    await runCycle(processor, aggregate, { chainSource: chain, logger: silentLogger(), health });
+
+    // Tras el catch-up el agregado alcanza la cabecera ⇒ lag 0; reportamos ambos lags.
+    expect(health.aggregateLastBlock).toBe(100);
+    expect(health.aggregateLag).toBe(0);
+    expect(health.toReport().details).toMatchObject({ aggregateLastBlock: 100, aggregateLag: 0 });
+  });
+
+  it("un lag de agregados por encima del umbral marca down aunque el email vaya al día", () => {
+    const health = createWorkerHealthState({ lagThreshold: 10 });
+    // Email al día (lag 0) pero agregados muy por detrás (head 100, agregados en 0) ⇒ lag 100 > 10.
+    health.recordCycle(100, 100);
+    health.recordAggregateCycle(0);
+    expect(health.aggregateLag).toBe(100);
+    expect(health.toReport().status).toBe("down");
+  });
+});
+
+describe("runWorker · lag/health refleja el progreso persistido (MINOR 13)", () => {
+  it("reporta el lastBlock del CheckpointStore, no el retorno de catchUp", async () => {
+    // El email del bloque 5 no se entrega ⇒ catchUp se detiene en 4; el head es 6. El lag debe
+    // reflejar el progreso persistido (4), no el head ni un avance espurio.
+    const ev1 = makeSaleEvent({ txHash: `0x${"a1".repeat(32)}`, blockNumber: 3n });
+    const ev2 = makeSaleEvent({ txHash: `0x${"b2".repeat(32)}`, blockNumber: 5n });
+    const store = new SqliteCheckpointStore(":memory:");
+    const chain = new FakeChainSource(6n, [ev1, ev2]);
+    const health = createWorkerHealthState({ lagThreshold: 100 });
+    const processor = new SaleProcessor({
+      chainSource: chain,
+      mailer: new SelectiveFailingMailer(ev2.txHash),
+      store,
+      logger: silentLogger(),
+      contractAddress: CONTRACT,
+      deploymentBlock: 0,
+      backoff: { retries: 0, baseDelayMs: 1, maxDelayMs: 1 },
+      sleep: noSleep,
+    });
+
+    await runCycle(processor, newAggregateProcessor(chain), {
+      chainSource: chain,
+      logger: silentLogger(),
+      health,
+    });
+
+    expect(store.getLastBlock(CONTRACT)).toBe(4);
+    expect(health.lastBlock).toBe(4); // progreso PERSISTIDO, no el head (6)
+    expect(health.headBlock).toBe(6);
+    expect(health.lag).toBe(2);
     store.close();
   });
 });

@@ -290,5 +290,78 @@ describe("AggregateProcessor · idempotencia (TC-WK-022)", () => {
   });
 });
 
+describe("SqliteAggregateStore · reset por redeploy (MAJOR 3)", () => {
+  it("trunca contadores, histórico e idempotencia y fija last_block=deploymentBlock", () => {
+    const store = new SqliteAggregateStore(dbPath);
+    store.setBoundAddress("0x5FbDB2315678afecb367f032d93F642f64180aa3");
+    new AggregateProcessor({
+      chainSource: new FakeChainSource(0n),
+      store,
+      deploymentBlock: 0,
+    }).apply([
+      mint({ txHash: `0x${"51".repeat(32)}`, logIndex: 0, blockNumber: 2n }),
+      sale({ saleTypeRaw: 0, txHash: `0x${"52".repeat(32)}`, logIndex: 0, blockNumber: 3n }),
+      sale({ saleTypeRaw: 1, txHash: `0x${"53".repeat(32)}`, logIndex: 1, blockNumber: 4n }),
+      royalty({ txHash: `0x${"54".repeat(32)}`, logIndex: 2, blockNumber: 4n }),
+      burn({ txHash: `0x${"55".repeat(32)}`, logIndex: 0, blockNumber: 5n }),
+    ]);
+    store.setLastBlock(40);
+
+    // Hay estado acumulado antes del reset.
+    expect(store.getCounters().mintedCount).toBe(1);
+    expect(store.getHistory()).toHaveLength(2);
+
+    store.reset(100);
+
+    const counters = store.getCounters();
+    expect(counters).toMatchObject({
+      primaryVolumeWei: 0n,
+      royaltiesWei: 0n,
+      secondaryVolumeWei: 0n,
+      soldCount: 0,
+      mintedCount: 0,
+      burnedCount: 0,
+      lastBlock: 100, // = deploymentBlock pasado a reset
+    });
+    expect(store.getHistory()).toHaveLength(0);
+
+    // `aggregate_applied` vacío: reaplicar un evento ya contabilizado vuelve a contar (true).
+    expect(
+      store.applyEvent(
+        sale({ saleTypeRaw: 0, txHash: `0x${"52".repeat(32)}`, logIndex: 0, blockNumber: 3n }),
+      ),
+    ).toBe(true);
+    expect(store.getCounters().soldCount).toBe(1);
+    store.close();
+  });
+
+  it("persiste y devuelve la dirección vinculada (en minúsculas)", () => {
+    const store = new SqliteAggregateStore(dbPath);
+    expect(store.getBoundAddress()).toBeNull();
+    store.setBoundAddress("0xE7F1725E7734CE288F8367E1BB143E90BB3F0512");
+    expect(store.getBoundAddress()).toBe(
+      "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+    );
+    store.close();
+  });
+
+  it("el reset sobrevive a un reinicio (mismo fichero, nuevo store)", () => {
+    const store1 = new SqliteAggregateStore(dbPath);
+    new AggregateProcessor({
+      chainSource: new FakeChainSource(0n),
+      store: store1,
+      deploymentBlock: 0,
+    }).apply([sale({ saleTypeRaw: 0, txHash: `0x${"61".repeat(32)}`, logIndex: 0 })]);
+    store1.reset(7);
+    store1.close();
+
+    const store2 = new SqliteAggregateStore(dbPath);
+    expect(store2.getCounters().soldCount).toBe(0);
+    expect(store2.getCounters().lastBlock).toBe(7);
+    expect(store2.getHistory()).toHaveLength(0);
+    store2.close();
+  });
+});
+
 /** Rellena un índice a 2 dígitos hex para construir txHash únicos en los tests. */
 const pad = (n: number): string => n.toString(16).padStart(2, "0");

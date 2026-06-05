@@ -61,6 +61,28 @@ export class FakeChainSource implements ChainSource {
   }
 }
 
+/**
+ * ChainSource fake en el que el RPC del email funciona (cabecera y `getSaleLogs`) pero
+ * `getDomainLogs` (agregados) SIEMPRE falla. Simula un fallo aislado del pipeline de agregados
+ * (p. ej. lectura de logs de dominio) para verificar que `/health` lo observa (MAJOR 4) sin
+ * contarlo como fallo de RPC del email.
+ */
+export class AggregateFailingChainSource implements ChainSource {
+  constructor(private readonly head: bigint) {}
+
+  async getHeadBlock(): Promise<bigint> {
+    return this.head;
+  }
+
+  async getSaleLogs(): Promise<SaleEvent[]> {
+    return [];
+  }
+
+  async getDomainLogs(): Promise<ChainEvent[]> {
+    throw new Error("I/O de agregados caído");
+  }
+}
+
 /** ChainSource fake cuya `getHeadBlock` siempre falla (simula caída del RPC). */
 export class FailingChainSource implements ChainSource {
   async getHeadBlock(): Promise<bigint> {
@@ -92,6 +114,34 @@ export class AlwaysFailingMailer implements Mailer {
   async sendSaleEmail(): Promise<void> {
     this.attempts += 1;
     throw new Error("SMTP caído");
+  }
+}
+
+/**
+ * Mailer fake que falla SIEMPRE el envío de una clave concreta (`failTxHash`) y entrega el resto.
+ * Útil para el invariante at-least-once (BLOCKER 1): un email del medio del chunk no se entrega y
+ * el checkpoint no debe pasar de él, mientras los anteriores sí se envían (una sola vez).
+ *
+ * `mendTxHash()` deja de fallar esa clave (simula la recuperación SMTP) para verificar el
+ * reintento: en el siguiente ciclo sólo se reenvía el fallido, sin duplicar los previos.
+ */
+export class SelectiveFailingMailer implements Mailer {
+  readonly sent: SaleNotification[] = [];
+  private failing: string | null;
+
+  constructor(failTxHash: string) {
+    this.failing = failTxHash;
+  }
+
+  mendTxHash(): void {
+    this.failing = null;
+  }
+
+  async sendSaleEmail(notification: SaleNotification): Promise<void> {
+    if (this.failing !== null && notification.txHash === this.failing) {
+      throw new Error("SMTP caído para esta clave");
+    }
+    this.sent.push(notification);
   }
 }
 
@@ -154,7 +204,7 @@ export class InMemoryCheckpointStore implements CheckpointStore {
  * se alimente). Las pruebas específicas de agregados/histórico usan el store real de SQLite.
  */
 export class InMemoryAggregateStore implements AggregateStore {
-  private readonly applied = new Set<string>();
+  private applied = new Set<string>();
   private primaryVolumeWei = 0n;
   private royaltiesWei = 0n;
   private secondaryVolumeWei = 0n;
@@ -162,7 +212,10 @@ export class InMemoryAggregateStore implements AggregateStore {
   private mintedCount = 0;
   private burnedCount = 0;
   private lastBlock = 0;
-  private readonly history: HistoryRow[] = [];
+  private history: HistoryRow[] = [];
+  private boundAddress: string | null = null;
+  /** Nº de veces que se ha llamado a `reset` (para verificar el rebind consciente, MAJOR 3). */
+  resetCount = 0;
 
   applyEvent(event: ChainEvent): boolean {
     const key = idempotencyKey(event);
@@ -225,6 +278,27 @@ export class InMemoryAggregateStore implements AggregateStore {
 
   getHistory(): HistoryRow[] {
     return [...this.history];
+  }
+
+  reset(deploymentBlock: number): void {
+    this.resetCount += 1;
+    this.applied = new Set<string>();
+    this.primaryVolumeWei = 0n;
+    this.royaltiesWei = 0n;
+    this.secondaryVolumeWei = 0n;
+    this.soldCount = 0;
+    this.mintedCount = 0;
+    this.burnedCount = 0;
+    this.lastBlock = deploymentBlock;
+    this.history = [];
+  }
+
+  getBoundAddress(): string | null {
+    return this.boundAddress;
+  }
+
+  setBoundAddress(contractAddress: string): void {
+    this.boundAddress = contractAddress.toLowerCase();
   }
 
   close(): void {

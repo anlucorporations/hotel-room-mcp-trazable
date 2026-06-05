@@ -193,6 +193,20 @@ export interface AggregateStore {
   getCounters(): AggregateCounters;
   /** Histórico de ventas persistido (sin ordenar; el orden total lo aplica el procesador). */
   getHistory(): HistoryRow[];
+  /**
+   * Reinicia por completo el agregado ante un redeploy (MAJOR 3): trunca los contadores a su base
+   * (id = 0, importes a 0, recuentos a 0), vacía `sale_history` y `aggregate_applied`, y fija
+   * `last_block = deploymentBlock`. Tras `reset`, el catch-up reprocesa desde el nuevo contrato sin
+   * arrastrar datos del anterior.
+   */
+  reset(deploymentBlock: number): void;
+  /**
+   * Dirección de contrato a la que está vinculado el agregado actual (en minúsculas), o `null` si
+   * nunca se ha vinculado. Permite autodetectar un redeploy comparando con la dirección activa.
+   */
+  getBoundAddress(): string | null;
+  /** Persiste la dirección de contrato vinculada al agregado actual (se normaliza a minúsculas). */
+  setBoundAddress(contractAddress: string): void;
   /** Cierre limpio de recursos (fichero SQLite). */
   close(): void;
 }

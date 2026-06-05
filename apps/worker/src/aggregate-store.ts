@@ -48,7 +48,10 @@ export class SqliteAggregateStore implements AggregateStore {
     logIndex: number;
     txHash: string;
   }>;
+  private readonly selectBoundAddress: Database.Statement<[]>;
+  private readonly upsertBoundAddress: Database.Statement<[string]>;
   private readonly applyEventTx: (event: ChainEvent) => boolean;
+  private readonly resetTx: (deploymentBlock: number) => void;
 
   constructor(filePath: string) {
     this.db = new Database(filePath);
@@ -87,6 +90,14 @@ export class SqliteAggregateStore implements AggregateStore {
       CREATE TABLE IF NOT EXISTS aggregate_applied (
         idempotency_key TEXT PRIMARY KEY
       );
+
+      -- Dirección de contrato vinculada al agregado actual (MAJOR 3): permite autodetectar un
+      -- redeploy y resetear el estado para no arrastrar datos del contrato anterior.
+      CREATE TABLE IF NOT EXISTS aggregate_binding (
+        id INTEGER PRIMARY KEY CHECK (id = 0),
+        contract_address TEXT
+      );
+      INSERT OR IGNORE INTO aggregate_binding (id, contract_address) VALUES (0, NULL);
     `);
 
     this.selectCounters = this.db.prepare(
@@ -134,6 +145,12 @@ export class SqliteAggregateStore implements AggregateStore {
          @priceWei, @saleTypeRaw, @seller, @buyer, @blockNumber
        )`,
     );
+    this.selectBoundAddress = this.db.prepare(
+      "SELECT contract_address FROM aggregate_binding WHERE id = 0",
+    );
+    this.upsertBoundAddress = this.db.prepare(
+      "UPDATE aggregate_binding SET contract_address = ? WHERE id = 0",
+    );
 
     // Transacción atómica: marca de idempotencia + mutación. better-sqlite3 ejecuta el callback
     // dentro de BEGIN/COMMIT y hace ROLLBACK si lanza (p. ej. clave duplicada).
@@ -141,6 +158,20 @@ export class SqliteAggregateStore implements AggregateStore {
       this.markApplied.run(idempotencyKey(event));
       this.mutate(event);
       return true;
+    });
+
+    // Reset atómico del agregado ante un redeploy (MAJOR 3): trunca contadores, histórico e
+    // idempotencia, y fija `last_block = deploymentBlock`. Todo dentro de una única transacción.
+    this.resetTx = this.db.transaction((deploymentBlock: number): void => {
+      this.db.exec("DELETE FROM sale_history; DELETE FROM aggregate_applied;");
+      this.db
+        .prepare(
+          `UPDATE aggregate_counters
+           SET primary_volume_wei = '0', royalties_wei = '0', secondary_volume_wei = '0',
+               sold_count = 0, minted_count = 0, burned_count = 0, last_block = ?
+           WHERE id = 0`,
+        )
+        .run(deploymentBlock);
     });
   }
 
@@ -188,6 +219,21 @@ export class SqliteAggregateStore implements AggregateStore {
       logIndex: row.log_index,
       txHash: row.tx_hash,
     }));
+  }
+
+  reset(deploymentBlock: number): void {
+    this.resetTx(deploymentBlock);
+  }
+
+  getBoundAddress(): string | null {
+    const row = this.selectBoundAddress.get() as
+      | { contract_address: string | null }
+      | undefined;
+    return row?.contract_address ?? null;
+  }
+
+  setBoundAddress(contractAddress: string): void {
+    this.upsertBoundAddress.run(contractAddress.toLowerCase());
   }
 
   close(): void {
