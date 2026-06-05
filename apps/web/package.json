@@ -10,11 +10,14 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
+    "test": "vitest run",
     "test:e2e": "playwright test",
     "clean": "rm -rf .next out .turbo coverage *.tsbuildinfo"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.100.1",
     "@hotel/shared": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@tanstack/react-query": "^5.62.7",
     "next": "^14.2.20",
     "next-intl": "^3.26.3",
@@ -37,6 +40,7 @@
     "eslint-plugin-react-hooks": "^5.1.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.9"
   }
 }
