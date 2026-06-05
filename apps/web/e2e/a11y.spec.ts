@@ -6,7 +6,7 @@ import { expect, test } from "@playwright/test";
  * Sin RPC/worker en el entorno E2E, las vistas muestran su estado degradado (también debe
  * ser accesible).
  */
-const PATHS = ["/", "/historico", "/admin/dashboard", "/admin/mint"] as const;
+const PATHS = ["/", "/historico", "/admin/dashboard", "/admin/mint", "/asistente"] as const;
 
 for (const path of PATHS) {
   test(`a11y: ${path} sin violaciones critical/serious`, async ({ page }) => {

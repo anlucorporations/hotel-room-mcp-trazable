@@ -28,6 +28,12 @@ export default async function HomePage() {
           </div>
           <nav className="flex flex-wrap items-center gap-2">
             <Link
+              href="/asistente"
+              className="min-h-touch self-center rounded-md border border-slate-300 px-4 py-2 font-medium"
+            >
+              {t("assistantLink")}
+            </Link>
+            <Link
               href="/historico"
               className="min-h-touch self-center rounded-md border border-slate-300 px-4 py-2 font-medium"
             >

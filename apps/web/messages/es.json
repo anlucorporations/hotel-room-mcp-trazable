@@ -6,7 +6,8 @@
     "title": "Hotel Marina del Sol",
     "tagline": "Noches de hotel como NFTs, en la costa de Alicante.",
     "myNightsLink": "Mis noches",
-    "historyLink": "Histórico"
+    "historyLink": "Histórico",
+    "assistantLink": "Asistente"
   },
   "catalog": {
     "available": "Disponible",
@@ -132,6 +133,34 @@
     "txError": {
       "rejected": "Has cancelado la firma. El formulario sigue aquí con tus datos: puedes intentarlo de nuevo.",
       "failed": "No se pudo mintear. Revisa que la cuenta tenga rol MINTER y estés en la red correcta, y vuelve a intentarlo."
+    }
+  },
+  "assistant": {
+    "title": "Asistente IA",
+    "tagline": "Pregunta por disponibilidad y prepara tu compra; tú firmas en tu wallet.",
+    "backToCatalog": "Volver al catálogo",
+    "intro": "Hola, soy el asistente del Hotel Marina del Sol. Puedo ayudarte a consultar disponibilidad y preparar la compra de una noche.",
+    "logLabel": "Conversación con el asistente",
+    "placeholder": "Ej.: ¿hay alguna suite disponible en junio?",
+    "send": "Enviar",
+    "sending": "Pensando…",
+    "unavailable": "El asistente no está disponible ahora mismo. Puedes seguir comprando desde el catálogo.",
+    "manualLink": "Ir al catálogo",
+    "handoff": {
+      "title": "Compra preparada — revisa y firma",
+      "room": "Habitación",
+      "roomValue": "{room} ({type})",
+      "date": "Noche",
+      "token": "Token",
+      "to": "Contrato",
+      "value": "Importe",
+      "confirm": "Firmar compra",
+      "connect": "Conecta tu wallet para comprar",
+      "reverifyFailed": "Los datos de la transacción no coinciden con el precio on-chain. No firmes: vuelve a intentarlo.",
+      "txError": {
+        "rejected": "Has cancelado la firma. Puedes intentarlo de nuevo.",
+        "failed": "No se pudo completar la compra. Revisa la red y vuelve a intentarlo."
+      }
     }
   }
 }
