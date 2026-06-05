@@ -32,5 +32,12 @@ export default defineConfig({
       WORKER_BASE_URL: "http://127.0.0.1:1",
     },
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  // La suite hermética corre en desktop y en móvil (RNF-18/RNF-01): los specs actuales solo
+  // dependen de cabeceras, estados degradados y formularios, que se comportan igual en ambos
+  // viewports, por lo que pasan sin cambios en "Pixel 5". Si un futuro spec asumiera desktop,
+  // restríngelo con `test.skip(test.info().project.name === "mobile", "motivo")`.
+  projects: [
+    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    { name: "mobile", use: { ...devices["Pixel 5"] } },
+  ],
 });
