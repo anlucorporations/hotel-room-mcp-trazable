@@ -11,6 +11,7 @@ variables:
 stages:
   - verify
   - e2e
+  - nightly
 
 cache:
   key:
@@ -68,3 +69,52 @@ slither:
   script:
     - cd packages/contracts
     - slither . --config-file slither.config.json --fail-high
+
+# ── Nightly de rendimiento — INDICADOR INFORMATIVO, NO bloqueante (RNF-11) ──
+# Espejo de `perf-nightly` de .github/workflows/ci.yml. Solo corre en pipelines programados
+# (Schedules de GitLab → CI_PIPELINE_SOURCE == "schedule"); NO en push/MR.
+#   - `allow_failure: true`  → no es gate: un WARN/fallo de medición no tumba el pipeline.
+#   - `artifacts:`           → equivalente a upload-artifact: publica el informe de medición.
+# Levanta la MISMA web hermética que el job `e2e` (sin backend real: RPC/worker → 127.0.0.1:1
+# → estados degradados deterministas), por lo que el catálogo renderiza igual.
+# NOTA: GitLab no tiene "workflow_dispatch"; el equivalente manual es "Run pipeline" sobre un
+# Schedule, o disparar el Schedule a mano desde CI/CD > Schedules.
+perf-nightly:
+  stage: nightly
+  allow_failure: true # indicador informativo: no bloquea el pipeline.
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  variables:
+    WEB_PORT: "3100"
+    WEB_URL: "http://127.0.0.1:3100"
+    # Web hermética: sin backend (espejo del webServer de playwright.config.ts).
+    SESSION_SECRET: "perf-nightly-secret"
+    ANTHROPIC_API_KEY: ""
+    RPC_URL: "http://127.0.0.1:1"
+    WORKER_BASE_URL: "http://127.0.0.1:1"
+  before_script:
+    - corepack enable && corepack prepare "pnpm@${PNPM_VERSION}" --activate
+    - pnpm config set store-dir "$CI_PROJECT_DIR/.pnpm-store"
+    - pnpm install --frozen-lockfile
+    - pnpm --filter @hotel/shared build
+    - pnpm --filter @hotel/web build
+    - pnpm --filter @hotel/web exec playwright install --with-deps chromium
+  script:
+    # Arranca el build de producción y espera a que responda antes de medir (sin esperas fijas).
+    - pnpm --filter @hotel/web exec next start --port "${WEB_PORT}" &
+    - WEB_PID=$!
+    - |
+      for i in $(seq 1 60); do
+        if curl -fsS "http://127.0.0.1:${WEB_PORT}/" >/dev/null 2>&1; then echo "Web arriba tras ${i}s"; break; fi
+        sleep 1
+      done
+    - mkdir -p perf-report
+    # `|| true`: la medición es informativa; con allow_failure el job ya no bloquea, pero esto
+    # garantiza que igualmente se publique el artifact aunque measure-perf devuelva WARN/no-cero.
+    - node apps/web/scripts/measure-perf.mjs | tee perf-report/measure-perf.txt || true
+    - kill "$WEB_PID" 2>/dev/null || true
+  artifacts:
+    when: always # publica el informe aunque la medición acabe en WARN/fallo.
+    paths:
+      - perf-report/
+    expire_in: 30 days

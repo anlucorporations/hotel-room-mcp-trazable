@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Nightly informativo de rendimiento (RNF-11): cron diario + lanzamiento manual.
+  # El job `perf-nightly` (abajo) filtra por estos triggers, por lo que NO corre en push/PR.
+  schedule:
+    - cron: "17 3 * * *" # 03:17 UTC cada día (minuto no redondo: evita el pico de cron de GitHub).
+  workflow_dispatch: {}
 
 # Cancela ejecuciones previas del mismo ref para no acumular CI.
 concurrency:
@@ -96,3 +101,66 @@ jobs:
           target: packages/contracts
           slither-config: packages/contracts/slither.config.json
           fail-on: high # gate de severidad high (deja pasar medium → triage manual)
+
+  # ── Nightly de rendimiento — INDICADOR INFORMATIVO, NO bloqueante (RNF-11) ──────
+  # Separado del pipeline de PR: el `if` lo limita a schedule/dispatch, así NO corre en push/PR.
+  # No es un gate: `continue-on-error: true` en el step de medición evita que un WARN tumbe el
+  # nightly. La medición canónica P75 (4G/lab) sigue siendo manual; esto es una señal de tendencia.
+  # Levanta la MISMA web hermética que el job `e2e` (sin backend real: RPC/worker apuntan a
+  # 127.0.0.1:1 → estados degradados deterministas), por lo que el catálogo renderiza igual.
+  perf-nightly:
+    name: Web · perf nightly (RNF-11, informativo)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    env:
+      WEB_PORT: "3100"
+      # Web hermética: sin backend (espejo del webServer de playwright.config.ts).
+      SESSION_SECRET: perf-nightly-secret
+      ANTHROPIC_API_KEY: ""
+      RPC_URL: http://127.0.0.1:1
+      WORKER_BASE_URL: http://127.0.0.1:1
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+        # Sin "version": fuente única en packageManager de package.json.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @hotel/shared build
+      - run: pnpm --filter @hotel/web build
+      - name: Instalar navegador
+        run: pnpm --filter @hotel/web exec playwright install --with-deps chromium
+      - name: Arrancar web hermética (next start) en segundo plano
+        # Arranca el build de producción y espera a que responda antes de medir (sin esperas fijas).
+        run: |
+          pnpm --filter @hotel/web exec next start --port "${WEB_PORT}" &
+          echo "WEB_PID=$!" >> "$GITHUB_ENV"
+          for i in $(seq 1 60); do
+            if curl -fsS "http://127.0.0.1:${WEB_PORT}/" >/dev/null 2>&1; then
+              echo "Web arriba tras ${i}s"; exit 0
+            fi
+            sleep 1
+          done
+          echo "La web no respondió a tiempo en el puerto ${WEB_PORT}" >&2
+          exit 1
+      - name: Medir rendimiento (RNF-11, no bloqueante)
+        id: perf
+        continue-on-error: true # indicador informativo: un WARN no debe tumbar el nightly.
+        env:
+          WEB_URL: http://127.0.0.1:3100
+        run: |
+          mkdir -p perf-report
+          node apps/web/scripts/measure-perf.mjs | tee perf-report/measure-perf.txt
+      - name: Parar la web
+        if: always()
+        run: kill "${WEB_PID}" 2>/dev/null || true
+      - name: Subir informe de rendimiento como artifact
+        if: always() # sube el reporte aunque la medición termine en WARN/fallo.
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: perf-report
+          path: perf-report/
+          if-no-files-found: warn
+          retention-days: 30

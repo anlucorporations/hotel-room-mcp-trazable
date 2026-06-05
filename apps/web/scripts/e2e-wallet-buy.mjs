@@ -10,7 +10,15 @@
  *
  *   home → conectar wallet → localizar una noche DISPONIBLE → «Reservar» →
  *   modal «Revisar» (to/importe/tokenId decodificados + botón firmar habilitado tras la
- *   re-verificación on-chain) → «Firmar» → recibo.
+ *   re-verificación on-chain) → «Firmar» → recibo → confirmación on-chain (`ownerOf` == comprador).
+ *
+ * Robustez (revisión integral):
+ *   - Los clics de avance (conectar / «Reservar» / «Firmar») se reintentan de forma IDEMPOTENTE
+ *     con backoff acotado y aserción de estado previa (visible/habilitado), por si la wallet aún
+ *     no inyectó el provider o la UI no hidrató cuando se hizo el primer clic.
+ *   - En vez de dormir un tiempo fijo tras firmar, se hace polling al estado on-chain REAL con
+ *     viem (`ownerOf(tokenId)` == comprador), que es la prueba canónica de que la venta se asentó.
+ *   - Los fallos reportan el paso concreto y el último estado visible del modal/recibo.
  *
  * La wallet se inyecta como un `window.ethereum` mínimo (EIP-1193) vía `addInitScript`, que
  * REENVÍA todas las llamadas JSON-RPC a Anvil salvo:
@@ -37,6 +45,7 @@
  *     node apps/web/scripts/e2e-wallet-buy.mjs
  */
 import { chromium } from "@playwright/test";
+import { createPublicClient, http, getAddress } from "viem";
 
 const WEB_URL = process.env.WEB_URL ?? "http://127.0.0.1:3000";
 const RPC_URL = process.env.RPC_URL ?? "http://127.0.0.1:8545";
@@ -46,6 +55,23 @@ const BUYER = (process.env.BUYER ?? "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f"
 
 /** chainId de Anvil por defecto (31337) en hex, tal como lo espera `eth_chainId`. */
 const CHAIN_ID_HEX = "0x7a69";
+
+/**
+ * ABI mínimo de solo lectura para verificar la compra on-chain. Se declara inline (igual que
+ * `measure-perf.mjs` espeja sus literales) para NO acoplar el script al build de `@hotel/shared`.
+ */
+const OWNER_OF_ABI = [
+  {
+    type: "function",
+    name: "ownerOf",
+    stateMutability: "view",
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    outputs: [{ name: "", type: "address" }],
+  },
+];
+
+/** Cliente público viem contra Anvil para leer el estado real tras firmar (sin esperas fijas). */
+const publicClient = createPublicClient({ transport: http(RPC_URL) });
 
 /**
  * Provider EIP-1193 mínimo, serializado e inyectado en el navegador ANTES de que cargue la app
@@ -139,6 +165,82 @@ function fail(message) {
   process.exit(1);
 }
 
+/** Pausa no bloqueante (solo para el backoff del reintento; NO para sincronizar la cadena). */
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Ejecuta una acción idempotente reintentándola con backoff acotado hasta que `verify()` confirma
+ * que avanzó (p. ej. apareció el modal). Útil cuando el clic puede perderse porque la wallet aún
+ * no inyectó el provider o la UI no hidrató. Devuelve cuando `verify()` resuelve a `true`; lanza un
+ * error accionable (con el último error capturado) si se agotan los intentos.
+ *
+ * @param {string} label        Descripción del paso (para el mensaje de fallo).
+ * @param {() => Promise<void>} action  Acción idempotente a (re)intentar.
+ * @param {() => Promise<boolean>} verify  Comprobación de que la acción surtió efecto.
+ * @param {{ attempts?: number, baseDelayMs?: number, maxDelayMs?: number }} [opts]
+ */
+async function retryUntil(label, action, verify, opts = {}) {
+  const attempts = opts.attempts ?? 4;
+  const baseDelayMs = opts.baseDelayMs ?? 400;
+  const maxDelayMs = opts.maxDelayMs ?? 3_000;
+
+  let lastError = null;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      // Si ya está en el estado deseado, no repetimos la acción (idempotencia real).
+      if (await verify()) return;
+      await action();
+      if (await verify()) {
+        if (attempt > 1) ok(`${label}: confirmado en el intento ${attempt}`);
+        return;
+      }
+    } catch (error) {
+      lastError = error;
+    }
+    if (attempt < attempts) {
+      // Backoff exponencial acotado: 400ms, 800ms, 1600ms… tope en maxDelayMs.
+      await delay(Math.min(baseDelayMs * 2 ** (attempt - 1), maxDelayMs));
+    }
+  }
+  const reason = lastError ? ` (último error: ${lastError.message ?? lastError})` : "";
+  fail(`${label}: no se confirmó tras ${attempts} intentos${reason}`);
+}
+
+/**
+ * Espera el estado on-chain REAL de la compra (en vez de dormir un tiempo fijo): hace polling a
+ * `ownerOf(tokenId)` vía viem hasta que sea el comprador, o se agote el plazo. Devuelve el owner
+ * confirmado. Lanza un error accionable con el último owner observado si no converge.
+ */
+async function waitForOwnership(tokenId, buyer, { timeoutMs = 60_000, intervalMs = 1_000 } = {}) {
+  const expected = getAddress(buyer);
+  const deadline = Date.now() + timeoutMs;
+  let lastOwner = "n/d";
+  let lastError = null;
+  while (Date.now() < deadline) {
+    try {
+      const owner = await publicClient.readContract({
+        address: getAddress(CONTRACT),
+        abi: OWNER_OF_ABI,
+        functionName: "ownerOf",
+        args: [BigInt(tokenId)],
+      });
+      lastOwner = owner;
+      if (getAddress(owner) === expected) return owner;
+    } catch (error) {
+      // ownerOf revierte si el token aún no existe/transfirió: reintentamos hasta el deadline.
+      lastError = error;
+    }
+    await delay(intervalMs);
+  }
+  const detail = lastError ? ` (última lectura RPC falló: ${lastError.message ?? lastError})` : "";
+  fail(
+    `la propiedad on-chain no se confirmó para el token ${tokenId}: owner=${lastOwner}, ` +
+      `esperado=${expected}${detail}`,
+  );
+}
+
 async function main() {
   console.log("E2E wallet-buy (on-demand contra el demo)");
   console.log(`  WEB_URL = ${WEB_URL}`);
@@ -161,19 +263,36 @@ async function main() {
     if (msg.type() === "error") console.error(`  [browser:error] ${msg.text()}`);
   });
 
+  // Seguimiento del paso en curso: alimenta los mensajes de fallo accionables del `catch`.
+  let currentStep = "arranque";
+
   try {
+    currentStep = "cargar home";
     await page.goto(WEB_URL, { waitUntil: "domcontentloaded" });
     ok("home cargada");
 
     // 1) Conectar wallet. El botón del WalletBar no tiene testid; se localiza por su texto.
+    //    Reintento idempotente: la wallet (window.ethereum) puede no estar inyectada o la UI no
+    //    haber hidratado cuando se hace el primer clic; reintentamos hasta ver `wallet-connected`.
+    currentStep = "conectar wallet";
     const connectButton = page.getByRole("button", { name: /conectar wallet/i }).first();
-    await connectButton.waitFor({ state: "visible", timeout: 15_000 });
-    await connectButton.click();
-    // Tras conectar, el WalletBar muestra la cuenta corta.
-    await page.getByTestId("wallet-connected").waitFor({ state: "visible", timeout: 15_000 });
+    const connectedBadge = page.getByTestId("wallet-connected");
+    await retryUntil(
+      "conectar wallet",
+      async () => {
+        await connectButton.waitFor({ state: "visible", timeout: 15_000 });
+        await connectButton.click();
+        // Espera corta a que el badge aparezca antes de reintentar (no es una espera fija global).
+        await connectedBadge
+          .waitFor({ state: "visible", timeout: 5_000 })
+          .catch(() => {});
+      },
+      async () => (await connectedBadge.count()) > 0 && (await connectedBadge.isVisible()),
+    );
     ok("wallet conectada (cuenta de Anvil inyectada)");
 
     // 2) Localizar la primera noche DISPONIBLE (card + su botón de compra).
+    currentStep = "localizar noche disponible";
     const firstCard = page.locator('[data-testid^="night-card-"]').first();
     if ((await firstCard.count()) === 0) {
       fail(
@@ -185,21 +304,41 @@ async function main() {
     if (!tokenId) fail("no se pudo extraer el tokenId de la card");
     ok(`noche localizada: tokenId ${tokenId}`);
 
+    currentStep = `comprobar comprabilidad de la noche ${tokenId}`;
     const buyButton = page.getByTestId(`buy-button-${tokenId}`);
+    // Espera a que el botón esté visible Y habilitado antes de actuar (aserción previa clara).
     await buyButton.waitFor({ state: "visible", timeout: 10_000 });
-    if (await buyButton.isDisabled()) {
-      fail(
-        `la noche ${tokenId} no es comprable (botón deshabilitado: ¿saldo insuficiente o ya vendida?)`,
+    await page
+      .waitForFunction(
+        (id) => {
+          const btn = document.querySelector(`[data-testid="buy-button-${id}"]`);
+          return Boolean(btn) && !btn.hasAttribute("disabled");
+        },
+        tokenId,
+        { timeout: 10_000 },
+      )
+      .catch(() =>
+        fail(
+          `la noche ${tokenId} no es comprable (botón deshabilitado: ¿saldo insuficiente o ya vendida?)`,
+        ),
       );
-    }
 
-    // 3) «Reservar» → abre el modal de Revisar.
-    await buyButton.click();
+    // 3) «Reservar» → abre el modal de Revisar. Reintento idempotente: el primer clic puede no
+    //    avanzar si el handler aún no enganchó tras la hidratación; reintentamos hasta ver el modal.
+    currentStep = `abrir modal «Revisar» de la noche ${tokenId}`;
     const reviewModal = page.getByTestId("tx-review");
-    await reviewModal.waitFor({ state: "visible", timeout: 10_000 });
+    await retryUntil(
+      "abrir modal «Revisar»",
+      async () => {
+        await buyButton.click();
+        await reviewModal.waitFor({ state: "visible", timeout: 5_000 }).catch(() => {});
+      },
+      async () => (await reviewModal.count()) > 0 && (await reviewModal.isVisible()),
+    );
     ok("modal «Revisar» abierto");
 
     // Comprueba que la tx llega DECODIFICADA: contrato (to), importe y tokenId.
+    currentStep = "verificar datos decodificados del modal";
     const reviewContract = await reviewModal.getByTestId("review-contract").innerText();
     if (reviewContract.trim().toLowerCase() !== CONTRACT.toLowerCase()) {
       fail(`el contrato mostrado (${reviewContract}) no coincide con CONTRACT (${CONTRACT})`);
@@ -217,6 +356,7 @@ async function main() {
     ok(`tokenId decodificado coincide: ${reviewToken}`);
 
     // 4) El botón de firmar se habilita SOLO tras la re-verificación on-chain (precio real Anvil).
+    currentStep = "esperar habilitación del botón de firmar";
     const signButton = reviewModal.getByTestId("confirm-sign");
     await signButton.waitFor({ state: "visible", timeout: 10_000 });
     await page
@@ -230,25 +370,84 @@ async function main() {
       .catch(() => fail("el botón de firmar nunca se habilitó (re-verificación on-chain fallida)"));
     ok("botón de firmar habilitado (tx re-verificada contra el precio on-chain)");
 
-    // 5) Firmar → se envía a Anvil (firma desbloqueada) → esperar recibo.
-    await signButton.click();
+    // 5) Firmar → se envía a Anvil (firma desbloqueada). Reintento idempotente del clic: si el
+    //    handler aún no enganchó, el modal seguiría visible sin recibo/revert; reintentamos hasta
+    //    que la UI confirme que la firma se cursó (aparece recibo, o el revert explícito).
+    currentStep = `firmar la compra de la noche ${tokenId}`;
     const receipt = page.getByTestId("receipt");
-    await receipt.waitFor({ state: "visible", timeout: 60_000 });
-    const receiptText = (await receipt.innerText()).trim();
-    ok(`recibo recibido: ${receiptText.slice(0, 120)}`);
+    const reverted = page.getByTestId("tx-reverted");
+    await retryUntil(
+      "cursar la firma",
+      async () => {
+        await signButton.click();
+        // Espera corta a que la UI reaccione (recibo o revert) antes de reintentar el clic.
+        await Promise.race([
+          receipt.waitFor({ state: "visible", timeout: 5_000 }).catch(() => {}),
+          reverted.waitFor({ state: "visible", timeout: 5_000 }).catch(() => {}),
+        ]);
+      },
+      async () => {
+        if ((await reverted.count()) > 0 && (await reverted.isVisible())) {
+          fail("la transacción revirtió en cadena (tx-reverted): revisa el estado del demo");
+        }
+        return (await receipt.count()) > 0 && (await receipt.isVisible());
+      },
+      // Más reintentos para la firma: el clic es la acción más sensible a la hidratación.
+      { attempts: 5, baseDelayMs: 500 },
+    );
+    ok("firma cursada (la UI muestra recibo)");
 
-    console.log("\n✅ PASS: compra real en navegador completada (conectar → revisar → firmar → recibo).");
+    // 6) Confirmación on-chain REAL (sin espera fija): polling a `ownerOf(tokenId)` hasta que el
+    //    comprador sea el dueño. Es la aserción canónica de que la compra se asentó en Anvil.
+    currentStep = `confirmar propiedad on-chain del token ${tokenId}`;
+    const owner = await waitForOwnership(tokenId, BUYER);
+    ok(`propiedad on-chain confirmada: ownerOf(${tokenId}) == ${owner} (comprador)`);
+
+    const receiptText = (await receipt.innerText()).trim();
+    ok(`recibo en UI: ${receiptText.slice(0, 120)}`);
+
+    console.log(
+      "\n✅ PASS: compra real en navegador completada (conectar → revisar → firmar → recibo → ownerOf on-chain).",
+    );
   } catch (error) {
     // Si el revert llegó al modal, dejamos constancia explícita antes de fallar.
-    const reverted = await page.getByTestId("tx-reverted").count().catch(() => 0);
-    if (reverted > 0) {
+    const revertedCount = await page.getByTestId("tx-reverted").count().catch(() => 0);
+    if (revertedCount > 0) {
       fail("la transacción revirtió en cadena (tx-reverted): revisa el estado del demo");
     }
+    // Mensaje accionable: paso que falló + último estado relevante del modal/recibo.
+    const lastModalState = await readModalState(page);
     console.error(error);
-    fail("FAIL: el flujo de compra no se completó (ver error anterior)");
+    fail(`FAIL en el paso «${currentStep}». Último estado de la UI: ${lastModalState}`);
   } finally {
     await browser.close();
   }
+}
+
+/**
+ * Lee de forma defensiva el último estado visible del modal/recibo para enriquecer el mensaje de
+ * fallo. Nunca lanza: si algo no existe, lo reporta como ausente.
+ */
+async function readModalState(page) {
+  const parts = [];
+  for (const [label, testid] of [
+    ["modal", "tx-review"],
+    ["recibo", "receipt"],
+    ["revert", "tx-reverted"],
+  ]) {
+    try {
+      const locator = page.getByTestId(testid).first();
+      if ((await locator.count()) > 0 && (await locator.isVisible())) {
+        const text = (await locator.innerText()).trim().slice(0, 120);
+        parts.push(`${label}=visible("${text}")`);
+      } else {
+        parts.push(`${label}=ausente`);
+      }
+    } catch {
+      parts.push(`${label}=ilegible`);
+    }
+  }
+  return parts.join(", ");
 }
 
 void main();
