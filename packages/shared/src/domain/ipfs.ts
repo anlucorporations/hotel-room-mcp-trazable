@@ -24,13 +24,27 @@ export const IMAGE_CIDS: Readonly<Record<NightType, string>> = Object.freeze({
 /** Los CIDs son reales (no placeholders); requieren pinning para resolución por gateway. */
 export const IMAGE_CIDS_ARE_PLACEHOLDERS = false;
 
-const DEFAULT_GATEWAY = "https://ipfs.io/ipfs/" as const;
+/**
+ * Gateway público de IPFS usado **solo como fallback de desarrollo** (MINOR#31 / UX#31).
+ *
+ * ADR-12: en staging/producción las imágenes se sirven por **host/CDN propio** (`next/image`),
+ * no por un gateway público (`ipfs.io` ata el LCP a un tercero). Por eso este default NO debe
+ * usarse en producción: cada caller debe inyectar su gateway/CDN base (por config de entorno)
+ * vía el parámetro `gateway` de `ipfsGatewayUrl`.
+ */
+export const DEV_FALLBACK_GATEWAY = "https://ipfs.io/ipfs/" as const;
 
 export function ipfsUri(cid: string): string {
   return `ipfs://${cid}`;
 }
 
-export function ipfsGatewayUrl(cid: string, gateway: string = DEFAULT_GATEWAY): string {
+/**
+ * Resuelve la URL HTTP de un CID a través de un gateway/CDN.
+ *
+ * Pásese siempre el gateway/CDN propio (ADR-12). El parámetro es opcional por compatibilidad:
+ * si se omite, recurre a {@link DEV_FALLBACK_GATEWAY} (solo apto para desarrollo).
+ */
+export function ipfsGatewayUrl(cid: string, gateway: string = DEV_FALLBACK_GATEWAY): string {
   return `${gateway}${cid}`;
 }
 

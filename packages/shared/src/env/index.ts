@@ -51,7 +51,16 @@ export const env = {
   privateKey: z
     .string()
     .regex(/^0x[0-9a-fA-F]{64}$/, "debe ser una clave privada (0x + 64 hex)"),
-  httpUrl: z.string().url("debe ser una URL válida"),
+  // Restringido a http/https (MINOR#10): la URL válida de zod admite esquemas como `ftp:`,
+  // `redis:`, `javascript:` o `ws:`, que ningún consumidor (RPC_URL, WORKER_BASE_URL,
+  // MCP_BASE_URL) usa. Si en el futuro algún consumidor necesitase WebSocket (`ws://`/`wss://`),
+  // añádase un validador `rpcWsUrl` específico en lugar de relajar éste.
+  httpUrl: z
+    .string()
+    .url("debe ser una URL válida")
+    .refine((value) => /^https?:\/\//i.test(value), {
+      message: "debe usar el esquema http:// o https://",
+    }),
   port: z.coerce.number().int().min(1).max(65_535),
   email: z.string().email("debe ser un email válido"),
   nonEmpty: z.string().min(1, "es obligatorio"),

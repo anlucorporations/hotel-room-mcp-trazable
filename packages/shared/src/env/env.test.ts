@@ -39,3 +39,29 @@ describe("secret manager (loadEnv)", () => {
     ).toThrow(EnvironmentValidationError);
   });
 });
+
+describe("env.httpUrl (MINOR#10 — sólo esquemas http/https)", () => {
+  const urlSchema = z.object({ URL: env.httpUrl });
+  const parse = (URL: string) => loadEnv(urlSchema, { URL }).URL;
+
+  it.each([
+    "http://127.0.0.1:8545",
+    "https://rpc.example.com",
+    "https://rpc.example.com:8545/path",
+    "HTTP://localhost:8788/mcp",
+  ])("acepta URL http/https válida (%s)", (url) => {
+    expect(parse(url)).toBe(url);
+  });
+
+  it.each([
+    "ftp://archivo.example.com/datos",
+    "redis://localhost:6379",
+    "javascript:alert(1)",
+    "ws://127.0.0.1:8545",
+    "wss://rpc.example.com",
+    "file:///etc/passwd",
+    "no-es-una-url",
+  ])("rechaza esquemas no-http (%s)", (url) => {
+    expect(() => parse(url)).toThrow(EnvironmentValidationError);
+  });
+});
