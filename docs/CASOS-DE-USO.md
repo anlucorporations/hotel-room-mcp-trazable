@@ -122,11 +122,11 @@ no el texto. Se reutilizan los errores de OpenZeppelin v5 donde aplica.
 | CU-08 | Consultar disponibilidad y preparar compra vía asistente IA | Comprador (chat) | RF-12, RF-02, RNF-05, RNF-19 |
 | CU-09 | Consultar el histórico público de ventas | Cualquier visitante | RF-15, RNF-05 |
 | CU-10 | Notificar la venta al admin por email | Mini-worker (sistema) | RF-09, RNF-12, RNF-17 |
-| CU-11 | Consultar el dashboard de métricas | Visor de dashboard | RF-10, RNF-17 |
+| CU-11 | Consultar el dashboard de métricas | Visor de dashboard (admin autenticado) | RF-10, RNF-17, RNF-19 |
 | CU-12 | Configurar el porcentaje de royalty | ROYALTY_ADMIN | RF-08, RNF-13, Dec. 17 |
 | CU-13 | Gestionar noches caducadas (expiración + burn) | BURNER | RF-17 |
 | CU-14 | Pausar / reanudar el sistema (emergencia) | PAUSER | RNF-15, RNF-13 |
-| CU-15 | Retirar fondos a tesorería | DEFAULT_ADMIN / owner | RNF-15, RNF-13 |
+| CU-15 | Retirar fondos a tesorería | TREASURER_ROLE | RNF-15, RNF-13, Dec. 20 |
 | CU-16 🆕 | Gestionar roles y transferir ownership | DEFAULT_ADMIN | RF-06, RNF-13, Dec. 20 |
 | CU-17 🆕 | Onboarding web3 (conectar wallet, añadir red) | Visitante/Comprador | RF-04, RNF-18, RNF-19 |
 | CU-PR-01 | (Utilidad de pruebas) Dispensar ETH del faucet | Tester/CI | RF-21 (solo entorno de pruebas) |
@@ -621,8 +621,8 @@ Escenario: Reanudación tras reconexión del RPC
 ## CU-11 — Consultar el dashboard de métricas
 
 - **Actor primario:** Visor de dashboard (admin)
-- **Trazabilidad:** RF-10, RNF-17
-- **Precondición:** ninguna. Las métricas derivan de eventos públicos on-chain (sin PII), por lo que el dashboard es de **solo lectura pública** (coherente con CU-09 y la tabla de pausa §7: las lecturas están permitidas). Una verja de autenticación es opcional para producción.
+- **Trazabilidad:** RF-10, RNF-17, RNF-19
+- **Precondición:** sesión de back-office válida. El dashboard vive bajo `/admin` y queda **gateado en servidor** (el layout RSC verifica la cookie de sesión SIWE; sin sesión no se renderiza ni se envían los paneles). Las métricas derivan de eventos públicos on-chain (sin PII) —técnicamente serían de solo lectura pública (coherente con CU-09 y la tabla de pausa §7)— pero por decisión de operación se sirven **solo a operadores autenticados** para unificar el back-office. La fuente de verdad del gate es `apps/web/src/app/admin/layout.tsx`.
 - **Disparador:** el admin abre el dashboard.
 
 **Flujo principal**
@@ -824,10 +824,11 @@ Escenario: Pausa sin permiso
 
 ## CU-15 — Retirar fondos a tesorería
 
-- **Actor primario:** DEFAULT_ADMIN / owner (multisig en producción, RNF-13)
-- **Trazabilidad:** RNF-15, RNF-13
-- **Precondición:** hay fondos en el contrato.
+- **Actor primario:** TREASURER_ROLE (multisig en producción, RNF-13)
+- **Trazabilidad:** RNF-15, RNF-13, Decisión 20
+- **Precondición:** hay fondos en el contrato y la cuenta tiene `TREASURER_ROLE`.
 - **Disparador:** el responsable retira los ingresos.
+- **Nota de diseño:** la retirada está gobernada por `TREASURER_ROLE` (no por `DEFAULT_ADMIN`), por **separación de poderes** (Decisión 20): la administración de roles y la disposición de fondos quedan en manos distintas. El código (`HotelNights.withdraw()` → `onlyRole(TREASURER_ROLE)`) es la fuente de verdad.
 
 **Flujo principal**
 1. El owner invoca `withdraw`.
@@ -840,15 +841,15 @@ Escenario: Pausa sin permiso
 
 ```gherkin
 Escenario: Retirada autorizada de la totalidad
-  Dado que el contrato tiene 5 ETH y mi cuenta tiene rol owner/DEFAULT_ADMIN
+  Dado que el contrato tiene 5 ETH y mi cuenta tiene rol TREASURER_ROLE
   Cuando ejecuto withdraw
   Entonces se transfieren 5 ETH a la dirección TREASURY
   Y el saldo del contrato queda en 0
 
 Escenario: Retirada no autorizada
-  Dado que mi wallet no está autorizada
+  Dado que mi wallet no tiene TREASURER_ROLE
   Cuando invoco withdraw
-  Entonces la transacción revierte con AccessControlUnauthorizedAccount(miWallet, DEFAULT_ADMIN_ROLE)
+  Entonces la transacción revierte con AccessControlUnauthorizedAccount(miWallet, TREASURER_ROLE)
 
 Escenario: Retirada sin fondos
   Dado que el contrato tiene 0 ETH

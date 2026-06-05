@@ -43,14 +43,14 @@ Traza inversa `git log --grep "RF-08"`; verificación `sdd-traceability-check`.
 | RF-01 | CU-02, CU-05 | TC-CT-010/017, TC-CT-020 | T0.2, T1.1, T1.3 | — | `packages/contracts/src/HotelNights.sol` |
 | RF-02 | CU-04, CU-08 | TC-E2E-010, TC-MCP-001/008 | T1.2, T4.1 | — | `apps/web/src/app/page.tsx` + `src/components/{catalog,CatalogClient,NightCard}`, `apps/mcp/src` |
 | RF-03 | CU-05, CU-07 | TC-CT-020, TC-CT-040, TC-ACC-001 | T1.3, T2.2 | — | `HotelNights.sol` |
-| RF-04 | CU-17, CU-05/07 | TC-E2E-060..064, TC-E2E-020/023, TC-ACC-002 | T1.3, T4.3 | — | `apps/web/src/config/chain.ts`, `packages/shared/src/network.ts` |
+| RF-04 | CU-17, CU-05/07 | TC-E2E-060..064, TC-E2E-020/023, TC-ACC-002 | T1.3, T4.3, **Rev.** | — | `apps/web/src/config/chain.ts`, `packages/shared/src/network.ts`, `apps/web/src/components/wallet/{useOnboarding,WalletBar,switchChainError}.tsx` (onboarding guiado + manejo error 4902) |
 | RF-05 | CU-02 | TC-CT-010 | T1.1 | — | `apps/web/src/app/admin/mint`, `HotelNights.sol` |
 | RF-06 (CU-01) | CU-01 | TC-INT-001, TC-CT-001 | T1.1 | — | `HotelNights.sol`, `apps/web/src/lib/{session,nonce-store}.ts` + `src/app/api/auth/*` |
 | RF-06 (CU-16) | CU-16 | TC-CT-090/091/092/093 | **T3.3** | — | `HotelNights.sol` (AccessControl/Ownable2Step) |
 | RF-07 | CU-06, CU-07 | TC-CT-030..036, TC-CT-040..049, TC-E2E-023 | T2.1, T2.2 | — | `HotelNights.sol` |
 | RF-08 | CU-07, CU-12 | TC-CT-040/041, TC-CT-050/051 | T2.2, T2.4 | — | `HotelNights.sol` |
 | RF-09 | CU-10 | TC-WK-001..006 | T1.4 | — | `apps/worker/src` |
-| RF-10 | CU-11 | TC-WK-020/021/022, TC-E2E-050/051 | T3.2 | — | `apps/worker`, `apps/web/src/app/admin/dashboard` |
+| RF-10 | CU-11 | TC-WK-020/021/022, TC-E2E-050/051 | T3.2 | — | `apps/worker`, `apps/web/src/app/admin/dashboard` (gateado server-side bajo `/admin/layout.tsx`, CU-11) |
 | RF-12 | CU-08 | TC-MCP-001..008, TC-E2E-030/031 | T4.1, T4.2, T4.3 | — | `apps/mcp/src`, `apps/web/src/{lib,components}/assistant`, `apps/web/src/app/{asistente,api/assistant}`, `packages/shared/src/domain/purchase-tx.ts` |
 | RF-14 | CU-04 | TC-E2E-011 | T1.2 | — | `apps/web/src/app/page.tsx` + `src/components/{catalog,CatalogClient,NightCard}` |
 | RF-15 | CU-09 | TC-WK-010/011, TC-E2E-040/041/042 | T3.1 | — | `apps/worker`, `apps/web/src/app/historico` |
@@ -58,7 +58,7 @@ Traza inversa `git log --grep "RF-08"`; verificación `sdd-traceability-check`.
 | RF-18a | CU-02 | TC-CT-012 | T1.1 | — | `HotelNights.sol`, `packages/shared/src/domain/room-master.ts` |
 | RF-18b | CU-02 | TC-CT-010 | T1.1 | — | `HotelNights.sol` |
 | RF-19 | CU-02 | TC-CT-011/016/017 | T1.1 | — | `HotelNights.sol` |
-| RF-21 | CU-PR-01 | TC-CT-100/101/102 | T1.1 (faucet dev) | — | `packages/contracts/src/Faucet.sol` (testeado). **Piloto: financiación manual** — deploy + UI del faucet diferidos (decisión FASE 4.5) |
+| RF-21 | CU-PR-01 | TC-CT-100/101/102 | T1.1 (faucet dev), **Rev.** | — | `packages/contracts/src/Faucet.sol` (testeado) + `script/Deploy.s.sol` (deploy+fund gateado por `DEPLOY_FAUCET`) + `apps/web/src/components/wallet/{useFaucet,FaucetButton}.tsx` + `packages/shared/src/domain/faucet.ts`. **End-to-end** (deploy→fund→`NEXT_PUBLIC_FAUCET_ADDRESS`→UI «Conseguir ETH de prueba»); oculto en producción. Supera la financiación manual de FASE 4.5 |
 
 ### RNF
 | RNF | Tests | Trabajo(s) | Commit |
@@ -78,7 +78,7 @@ Traza inversa `git log --grep "RF-08"`; verificación `sdd-traceability-check`.
 | RNF-18 | proyecto Playwright «mobile» (suite hermética) + `apps/web/scripts/e2e-wallet-buy.mjs` (compra con wallet, on-demand sobre Anvil) + TC-ACC-002 (MetaMask real, T5.1) | T1.3, T4.5, T5.1 | — |
 | RNF-19 | TC-E2E-060/063, TC-E2E-030 (panel decodificado E2E + unit `reverify`/`validate-tx` para `value==priceOf`) | T1.3, T4.3 | — |
 | RNF-20 | TC-NF-030 | T3.4 | — |
-| RNF-21 (runbook) | runbook por componente | **T5.1** | — |
+| RNF-21 (runbook) | runbook por componente → `docs/RUNBOOK.md` (deploy 2-pasos, env por componente, faucet, observabilidad, incidencias, rotación de secretos, checklist release) | **Rev.** (entregado; aceptación Besu pendiente T5.1) | — |
 | RNF-22 | TC-ACC-010/011/012 | T5.1 | — |
 | RNF-06/07 | Fase 2 (fuera MVP) | — | — |
 
@@ -90,7 +90,7 @@ Traza inversa `git log --grep "RF-08"`; verificación `sdd-traceability-check`.
 - **`/health`** (RNF-17): worker (T1.4), MCP (T4.1, testeado), monitor end-to-end (T3.3). El faucet es on-chain (sin servidor `/health`).
 - **Secretos** (RNF-13 off-chain): trazado a **T0.3** con oráculo verificable.
 - **RNF-14 `slither`** (TC-NF-050): trazado a T5.1 (cierre del contrato) con triage de *medium*.
-- **RNF-21 (runbook):** clasificado **en el MVP**, entregado en T5.1.
+- **RNF-21 (runbook):** clasificado **en el MVP**, entregado en `docs/RUNBOOK.md` (revisión integral); la sección de aceptación en Besu se completará en T5.1.
 - **Pendiente:** Commit/Código (⏳), reconstruibles por los trailers (§2).
 
 ## 6. Cómo se mantiene viva la matriz
