@@ -33,7 +33,9 @@ const DEFAULT_MAX_ROUNDS = 4;
  *
  * Guardrails: el alcance lo fija el prompt (rechazo fuera de dominio, no exponer instrucciones)
  * y, estructuralmente, el conjunto de herramientas (solo lectura + `buildPurchaseTx`, sin firma).
- * Toda compra preparada se **valida server-side** de forma independiente antes de ofrecerse.
+ * Toda compra preparada se valida server-side contra el **precio on-chain** + `to`/`chainId` antes
+ * de ofrecerse; la garantía frente a «noche equivocada» NO es el tokenId (que afirma el LLM) sino
+ * el precio on-chain + el contrato + la revisión del usuario en el handoff (MINOR#20/#25).
  */
 export async function runAssistant(
   deps: AssistantDeps,
@@ -83,6 +85,11 @@ async function dispatchTool(
 
     if (toolUse.name === BUILD_PURCHASE_TOOL) {
       const tx = raw as PurchaseTxData;
+      // `tokenId` proviene de `toolUse.input`, es decir, de lo que AFIRMA el LLM (MINOR#25). Por eso
+      // el contraste tokenId-del-calldata == tokenId-afirmado es tautológico y NO detecta «el
+      // asistente preparó la noche equivocada». La defensa REAL que aplica `validatePreparedTx` es
+      // el **precio on-chain** (`value == priceOf`/`listingOf.price`) + `to`/`chainId` + el propio
+      // contrato; y la última línea es la **revisión del usuario** en el panel del handoff.
       const tokenId = String(toolUse.input.tokenId);
       const check = await deps.validatePreparedTx(tokenId, tx);
       if (!check.ok) {

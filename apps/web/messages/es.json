@@ -301,6 +301,14 @@
     "sending": "Pensando…",
     "unavailable": "El asistente no está disponible ahora mismo. Puedes seguir comprando desde el catálogo.",
     "manualLink": "Ir al catálogo",
+    "errorReply": "Lo siento, no he podido responder ahora mismo. Inténtalo de nuevo en un momento.",
+    "retry": "Reintentar",
+    "suggestionsLabel": "Sugerencias",
+    "suggestions": {
+      "availability": "Ver suites en junio",
+      "myNights": "Mis reservas",
+      "buy": "Comprar una noche"
+    },
     "handoff": {
       "title": "Compra preparada — revisa y firma",
       "room": "Habitación",
@@ -312,7 +320,17 @@
       "confirm": "Firmar compra",
       "connect": "Conecta tu wallet para comprar",
       "switchNetwork": "Cambia de red para comprar",
+      "signer": "Firmarás con la wallet conectada {address}",
+      "verifying": "Verificando el precio on-chain…",
+      "verifyFailed": "No pudimos verificar el precio on-chain. Comprueba tu conexión a la red e inténtalo de nuevo.",
+      "verifyRetry": "Reintentar verificación",
+      "insufficientBalance": "Te faltan {missing} {symbol} (tienes {have}, necesitas {need}).",
       "reverifyFailed": "Los datos de la transacción no coinciden con el precio on-chain. No firmes: vuelve a intentarlo.",
+      "successTitle": "¡Noche reservada!",
+      "successBody": "Tu compra se ha confirmado. Ya puedes verla en tus noches.",
+      "viewMyNights": "Ver en Mis noches",
+      "pendingClosable": "Puedes cerrar: la reserva continúa y aparecerá en «Mis noches».",
+      "retry": "Intentar de nuevo",
       "txError": {
         "rejected": "Has cancelado la firma. Puedes intentarlo de nuevo.",
         "failed": "No se pudo completar la compra. Revisa la red y vuelve a intentarlo."
