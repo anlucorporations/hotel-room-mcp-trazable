@@ -13,5 +13,6 @@ export * from "./domain/roles";
 export * from "./domain/room-master";
 export * from "./domain/token-id";
 export * from "./domain/night-state";
+export * from "./domain/aggregates";
 export * from "./domain/ipfs";
 export * from "./deployments/schema";
