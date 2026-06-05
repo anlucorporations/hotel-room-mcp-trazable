@@ -40,12 +40,26 @@ async function main(): Promise<void> {
     deploymentBlock: BigInt(deploymentBlock),
   });
 
+  // Binding seguro por defecto (MINOR#14): loopback salvo configuración explícita. Exponer en una
+  // interfaz pública sin allowlist habilita DNS-rebinding; avisamos para forzar reverse proxy/allowlist.
+  const isLoopbackHost = config.MCP_HOST === "127.0.0.1" || config.MCP_HOST === "::1";
+  const hasAllowlist = config.MCP_ALLOWED_HOSTS.length > 0 || config.MCP_ALLOWED_ORIGINS.length > 0;
+  if (!isLoopbackHost && !hasAllowlist) {
+    logger.warn(
+      { host: config.MCP_HOST },
+      "MCP escuchando fuera de loopback sin allowlist (MCP_ALLOWED_HOSTS/ORIGINS): " +
+        "expón solo tras reverse proxy con allowlist de Origin o habilita la protección DNS-rebinding",
+    );
+  }
+
   await startMcpHttpServer({
     host: config.MCP_HOST,
     port: config.MCP_PORT,
     healthProvider: mcpHealthProvider(reader),
     deps: { reader, config: { contractAddress, chainId: config.CHAIN_ID } },
     onError: (error) => logger.error({ error }, "error atendiendo una petición MCP"),
+    allowedHosts: config.MCP_ALLOWED_HOSTS,
+    allowedOrigins: config.MCP_ALLOWED_ORIGINS,
   });
 
   logger.info(

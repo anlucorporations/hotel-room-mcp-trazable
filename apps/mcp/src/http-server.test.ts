@@ -1,6 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
+import { connect } from "node:net";
 import type { Address } from "viem";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
@@ -32,13 +33,41 @@ function listen(server: Server): Promise<number> {
   );
 }
 
-const startServer = (reader: ChainReader): Server =>
+const startServer = (reader: ChainReader, onError?: (error: unknown) => void): Server =>
   createMcpHttpServer({
     host: "127.0.0.1",
     port: 0,
     healthProvider: mcpHealthProvider(reader),
     deps: { reader, config: { contractAddress: CONTRACT, chainId: 31337 } },
+    onError,
   });
+
+/**
+ * Envía un POST /mcp crudo cuyo `Content-Length` promete más bytes de los que entrega y luego
+ * destruye el socket: provoca un error/abort del stream de la petición en el server (BLOCKER#2).
+ */
+function postAbortedBody(port: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const socket = connect(port, "127.0.0.1", () => {
+      socket.write(
+        "POST /mcp HTTP/1.1\r\n" +
+          "Host: 127.0.0.1\r\n" +
+          "Content-Type: application/json\r\n" +
+          "Content-Length: 1000\r\n" +
+          "\r\n" +
+          '{"jsonrpc":', // cuerpo incompleto: faltan los 1000 bytes prometidos
+      );
+      // Cierra a la fuerza la conexión: el server verá ECONNRESET/aborted al leer el cuerpo.
+      socket.destroy();
+      resolve();
+    });
+    socket.on("error", () => resolve()); // un reset visto por el cliente también es válido
+    socket.setTimeout(2000, () => {
+      socket.destroy();
+      reject(new Error("timeout enviando el cuerpo abortado"));
+    });
+  });
+}
 
 describe("MCP HTTP server (transporte Streamable + /health)", () => {
   let server: Server;
@@ -65,6 +94,29 @@ describe("MCP HTTP server (transporte Streamable + /health)", () => {
       body: "{ esto no es json",
     });
     expect(res.status).toBe(400);
+  });
+
+  // BLOCKER#2: un cuerpo que aborta/yerra no debe lanzar ni dejar una promesa rechazada sin
+  // controlar (tumbaba/inestabilizaba el server). Debe registrarse vía `onError` y el server seguir vivo.
+  it("POST /mcp con cuerpo abortado: no lanza, registra onError y el server sigue vivo", async () => {
+    const onError = vi.fn();
+    const unhandled = vi.fn();
+    process.on("unhandledRejection", unhandled);
+    const srv = startServer(new FakeReader(), onError);
+    const srvPort = await listen(srv);
+    try {
+      await postAbortedBody(srvPort);
+      // Da margen al server a procesar el abort y a que aflore cualquier rechazo no controlado.
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(unhandled).not.toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledTimes(1);
+      // El server sigue atendiendo: /health responde con normalidad tras el abort.
+      const health = await fetch(`http://127.0.0.1:${srvPort}/health`);
+      expect(health.status).toBe(200);
+    } finally {
+      process.off("unhandledRejection", unhandled);
+      srv.close();
+    }
   });
 
   it("expone las 4 herramientas y ejecuta checkAvailability por el transporte MCP", async () => {

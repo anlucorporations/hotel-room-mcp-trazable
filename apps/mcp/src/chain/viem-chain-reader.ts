@@ -116,15 +116,21 @@ export class ViemChainReader implements ChainReader {
   }
 
   async getNightSignals(tokenId: bigint): Promise<NightSignals> {
-    if (!(await this.tokenExists(tokenId))) {
-      return { exists: false, soldOnce: false, expired: false, listed: false, primaryPriceWei: 0n, listingPriceWei: 0n };
-    }
-    const [soldOnce, expired, listing, primaryPriceWei] = await Promise.all([
+    // Un único `Promise.all` con las 5 lecturas en paralelo (antes: `ownerOf` secuencial + 4 reads,
+    // dos viajes RPC encadenados → UX#27/N+1). La existencia se infiere de `ownerOf`: revierte si el
+    // token no existe (no minteado o quemado), así que se captura el revert → `exists:false`.
+    // `soldOnce`/`isExpired`/`listingOf`/`priceOf` no revierten para tokens inexistentes (devuelven
+    // los defaults del mapping), por eso `ownerOf` es el único oráculo fiable de existencia.
+    const [exists, soldOnce, expired, listing, primaryPriceWei] = await Promise.all([
+      this.tokenExists(tokenId),
       this.read("soldOnce", tokenId) as Promise<boolean>,
       this.read("isExpired", tokenId) as Promise<boolean>,
       this.read("listingOf", tokenId) as Promise<{ price: bigint; active: boolean }>,
       this.read("priceOf", tokenId) as Promise<bigint>,
     ]);
+    if (!exists) {
+      return { exists: false, soldOnce: false, expired: false, listed: false, primaryPriceWei: 0n, listingPriceWei: 0n };
+    }
     return {
       exists: true,
       soldOnce,
