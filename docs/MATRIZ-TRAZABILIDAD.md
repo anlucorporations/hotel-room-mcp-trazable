@@ -9,9 +9,13 @@
 ## 1. Modelo y estado de la cadena
 ```
 RF/RNF ─► CU ─► Escenario (Gherkin/EARS) ─► Test (TC-*) ─► Trabajo (T<fase>.<n>) ─► Commit ─► Código
-   ✅       ✅           ✅                     ✅                 ✅                    ⏳        ⏳
+   ✅       ✅           ✅                     ✅                 ✅                    ✅        ✅
 ```
-✅ definido (specs + plan de pruebas + plan de construcción). ⏳ Commit/Código se cierran al implementar.
+✅ **FASES 0–4.5 implementadas, commiteadas y pusheadas** (contrato + worker + MCP + web con
+UX «Mediterráneo», back-office completo y asistente IA): commits atómicos `T<fase>.<n>` en
+`main` (GitLab). Suites verdes: forge 75 · vitest 156 (shared/web/mcp/worker/monitor) · E2E
+Playwright (chromium+mobile) + compra real con wallet on-demand. ⏳ **Pendiente: FASE 5**
+(aceptación on-chain en Besu, `TC-ACC-*`), bloqueada por la wallet/red de Besu (Codecrypto).
 
 ## 2. Convención de commit (traza hasta el commit)
 ```

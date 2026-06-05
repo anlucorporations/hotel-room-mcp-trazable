@@ -40,6 +40,10 @@ describe("token-id", () => {
       expect(isDateInRange(20260632)).toBe(false); // día 32
       expect(isDateInRange(20260600)).toBe(false); // día 0
     });
+    it("rechaza fechas de ≥9 dígitos (no caben en los 8 dígitos bajos del tokenId)", () => {
+      expect(isDateInRange(100000101)).toBe(false);
+      expect(isDateInRange(999991231)).toBe(false);
+    });
   });
 
   describe("validación de calendario (off-chain, defensa en profundidad)", () => {

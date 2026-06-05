@@ -32,8 +32,11 @@ library DateLib {
         return timestampToYYYYMMDD(nowTimestamp);
     }
 
-    /// @notice Validación de rango (no de calendario): MM ∈ [1,12], DD ∈ [1,31].
+    /// @notice Validación de rango (no de calendario): AAAAMMDD de 8 dígitos, MM ∈ [1,12], DD ∈ [1,31].
+    /// @dev El tope `< 10^8` garantiza que la fecha cabe en los 8 dígitos bajos del `tokenId`
+    ///      (`room*10^8 + fecha`): una fecha de ≥9 dígitos corrompería el split habitación/fecha.
     function isInRange(uint256 yyyymmdd) internal pure returns (bool) {
+        if (yyyymmdd >= 100_000_000) return false;
         uint256 month = (yyyymmdd / 100) % 100;
         uint256 day = yyyymmdd % 100;
         return month >= 1 && month <= 12 && day >= 1 && day <= 31;

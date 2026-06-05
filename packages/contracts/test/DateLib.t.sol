@@ -30,5 +30,7 @@ contract DateLibTest is Test {
         assertFalse(DateLib.isInRange(20_261_301)); // mes 13
         assertFalse(DateLib.isInRange(20_260_632)); // día 32
         assertFalse(DateLib.isInRange(20_260_600)); // día 0
+        assertFalse(DateLib.isInRange(100_000_101)); // ≥9 dígitos: no cabe en el tokenId
+        assertFalse(DateLib.isInRange(999_991_231));
     }
 }

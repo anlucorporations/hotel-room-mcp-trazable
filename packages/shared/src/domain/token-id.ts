@@ -33,8 +33,12 @@ export function splitYYYYMMDD(yyyymmdd: number): CivilDate {
   };
 }
 
-/** Validación de rango (equivalente a la on-chain): MM 1–12, DD 1–31. */
+/**
+ * Validación de rango (equivalente a la on-chain): AAAAMMDD de 8 dígitos (`< 10^8`, para que
+ * quepa en la parte baja del `tokenId`), MM 1–12, DD 1–31.
+ */
 export function isDateInRange(yyyymmdd: number): boolean {
+  if (yyyymmdd >= 100_000_000) return false;
   const { month, day } = splitYYYYMMDD(yyyymmdd);
   return month >= 1 && month <= 12 && day >= 1 && day <= 31;
 }

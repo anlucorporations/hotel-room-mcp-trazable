@@ -275,7 +275,6 @@
   "assistant": {
     "title": "Asistente IA",
     "tagline": "Pregunta por disponibilidad y prepara tu compra; tú firmas en tu wallet.",
-    "backToCatalog": "Volver al catálogo",
     "intro": "Hola, soy el asistente del Hotel Marina del Sol. Puedo ayudarte a consultar disponibilidad y preparar la compra de una noche.",
     "logLabel": "Conversación con el asistente",
     "placeholder": "Ej.: ¿hay alguna suite disponible en junio?",
