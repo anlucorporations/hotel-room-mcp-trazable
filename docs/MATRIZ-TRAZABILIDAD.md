@@ -47,7 +47,7 @@ Traza inversa `git log --grep "RF-08"`; verificación `sdd-traceability-check`.
 | RF-08 | CU-07, CU-12 | TC-CT-040/041, TC-CT-050/051 | T2.2, T2.4 | — | `HotelNights.sol` |
 | RF-09 | CU-10 | TC-WK-001..006 | T1.4 | — | `apps/worker/src` |
 | RF-10 | CU-11 | TC-WK-020/021/022, TC-E2E-050/051 | T3.2 | — | `apps/worker`, `apps/web/app/admin/dashboard` |
-| RF-12 | CU-08 | TC-MCP-001..008, TC-E2E-030/031 | T4.1, T4.2, T4.3 | — | `apps/mcp/src`, `apps/web/app/chat` |
+| RF-12 | CU-08 | TC-MCP-001..008, TC-E2E-030/031 | T4.1, T4.2, T4.3 | — | `apps/mcp/src`, `apps/web/src/{lib,components}/assistant`, `apps/web/src/app/{asistente,api/assistant}`, `packages/shared/src/domain/purchase-tx.ts` |
 | RF-14 | CU-04 | TC-E2E-011 | T1.2 | — | `apps/web/app/(catalog)` |
 | RF-15 | CU-09 | TC-WK-010/011, TC-E2E-040/041/042 | T3.1 | — | `apps/worker`, `apps/web/app/historico` |
 | RF-17 | CU-13 | TC-CT-060..067 | T2.3 | — | `HotelNights.sol` |
@@ -70,9 +70,9 @@ Traza inversa `git log --grep "RF-08"`; verificación `sdd-traceability-check`.
 | RNF-14 | TC-CT-024/044/048/083, **TC-NF-050 (slither)** | T1.3, T2.2, T2.4, T5.1 | — |
 | RNF-15 | TC-CT-070..083 | T2.4 | — |
 | RNF-16 | (PLAN-DE-PRUEBAS.md) + CI | T0.2 | — |
-| RNF-17 | TC-WK-030/031 (worker), `/health` MCP+faucet, TC-NF-020 (monitor) | T1.4, T1.1, T4.1, T3.3 | — |
+| RNF-17 | TC-WK-030/031 (worker), `/health` MCP (`http-server.test.ts` 200/503)+faucet, TC-NF-020 (monitor) | T1.4, T1.1, T4.1, T3.3 | — |
 | RNF-18 | TC-E2E-061, TC-ACC-002 | T1.3, T5.1 | — |
-| RNF-19 | TC-E2E-060/063, TC-E2E-030 | T1.3, T4.3 | — |
+| RNF-19 | TC-E2E-060/063, TC-E2E-030 (panel decodificado E2E + unit `reverify`/`validate-tx` para `value==priceOf`) | T1.3, T4.3 | — |
 | RNF-20 | TC-NF-030 | T3.4 | — |
 | RNF-21 (runbook) | runbook por componente | **T5.1** | — |
 | RNF-22 | TC-ACC-010/011/012 | T5.1 | — |
