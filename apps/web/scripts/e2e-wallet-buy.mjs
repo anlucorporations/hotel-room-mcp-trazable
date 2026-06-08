@@ -53,8 +53,12 @@ const CONTRACT = process.env.CONTRACT ?? "0x5FbDB2315678afecb367f032d93F642f6418
 // Cuenta #8 de Anvil (desbloqueada/prefinanciada). Distinta del minter/treasury del demo.
 const BUYER = (process.env.BUYER ?? "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f").toLowerCase();
 
-/** chainId de Anvil por defecto (31337) en hex, tal como lo espera `eth_chainId`. */
-const CHAIN_ID_HEX = "0x7a69";
+/**
+ * chainId que reporta la wallet inyectada, en hex (lo espera `eth_chainId`). Por defecto el de
+ * Anvil (31337 → `0x7a69`); configurable por env `CHAIN_ID_HEX` para correr contra Besu
+ * (81234 → `0x13d52`, aceptación TC-ACC-002). Debe coincidir con `NEXT_PUBLIC_CHAIN_ID` de la web.
+ */
+const CHAIN_ID_HEX = process.env.CHAIN_ID_HEX ?? "0x7a69";
 
 /**
  * ABI mínimo de solo lectura para verificar la compra on-chain. Se declara inline (igual que
@@ -115,7 +119,12 @@ function injectWallet({ rpcUrl, account, chainIdHex }) {
           // La red ya es la correcta (la app debe correr con NEXT_PUBLIC_CHAIN_ID=31337).
           return null;
         case "eth_sendTransaction": {
-          // Inyecta `from` = cuenta desbloqueada de Anvil y reenvía: Anvil firma por nosotros.
+          // Inyecta `from` = cuenta DESBLOQUEADA de Anvil y reenvía: Anvil firma por nosotros.
+          // LIMITACIÓN: esto solo funciona en redes con cuentas desbloqueadas (Anvil/Hardhat).
+          // Besu NO soporta `eth_sendTransaction` (exige firmar en cliente y `eth_sendRawTransaction`),
+          // por lo que este harness es Anvil-only. La compra real en Besu (FASE 5, TC-ACC-001/002) se
+          // valida con MetaMask real (firma local) o con una `buy()` firmada (cast/viem), no con este
+          // wallet simulado. La UI (revisar/decodificar/re-verificar) sí se ejercita contra Besu.
           const tx = { ...(params?.[0] ?? {}), from: account };
           return forward("eth_sendTransaction", [tx]);
         }
@@ -370,7 +379,7 @@ async function main() {
       .catch(() => fail("el botón de firmar nunca se habilitó (re-verificación on-chain fallida)"));
     ok("botón de firmar habilitado (tx re-verificada contra el precio on-chain)");
 
-    // 5) Firmar → se envía a Anvil (firma desbloqueada). Reintento idempotente del clic: si el
+    // 5) Firmar → se envía a la red (firma desbloqueada). Reintento idempotente del clic: si el
     //    handler aún no enganchó, el modal seguiría visible sin recibo/revert; reintentamos hasta
     //    que la UI confirme que la firma se cursó (aparece recibo, o el revert explícito).
     currentStep = `firmar la compra de la noche ${tokenId}`;
@@ -379,7 +388,7 @@ async function main() {
     await retryUntil(
       "cursar la firma",
       async () => {
-        await signButton.click();
+        await signButton.click({ force: true });
         // Espera corta a que la UI reaccione (recibo o revert) antes de reintentar el clic.
         await Promise.race([
           receipt.waitFor({ state: "visible", timeout: 5_000 }).catch(() => {}),

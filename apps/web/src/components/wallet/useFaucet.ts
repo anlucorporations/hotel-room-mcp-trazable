@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount, useBalance, useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import {
   decodeCooldownAvailableAt,
@@ -92,6 +92,18 @@ export function useFaucet(): UseFaucetResult {
   const { writeContract, data: txHash, isPending, error: writeError, reset } = useWriteContract();
   const receipt = useWaitForTransactionReceipt({ hash: txHash });
 
+  // Reloj CLIENT-ONLY para el cálculo de cooldown. `Date.now()` NO debe llamarse en render
+  // (impuro + mismatch de hidratación SSR: provocaba un re-render/parpadeo del subárbol del
+  // WalletBar). Se inicializa a `null` (server y primer render cliente coinciden → sin mismatch)
+  // y se fija en un efecto, refrescándose cada 30 s para mantener vigente la cuenta atrás.
+  const [nowSec, setNowSec] = useState<number | null>(null);
+  useEffect(() => {
+    const tick = () => setNowSec(Math.floor(Date.now() / 1000));
+    tick();
+    const id = setInterval(tick, 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   const status = deriveTxStatus({
     isPending,
     hash: txHash,
@@ -107,12 +119,14 @@ export function useFaucet(): UseFaucetResult {
     const balance = faucetBalance.data?.value;
     const isEmpty =
       amount !== undefined && balance !== undefined ? balance < amount : false;
-    // `Date.now()` se inyecta a la función pura (no dentro de ella) → estado determinista.
+    // El «ahora» se inyecta desde el reloj client-only (no se llama `Date.now()` en render).
+    // Antes de que el efecto fije la hora (`nowSec === null`), usamos `availableAt` como ahora,
+    // de modo que el primer paint nunca muestra un cooldown espurio (y server==cliente).
     return deriveFaucetAvailability(
       { availableAt, isLow: Boolean(lowQuery.data), isEmpty },
-      Math.floor(Date.now() / 1000),
+      nowSec ?? availableAt,
     );
-  }, [availableAtQuery.data, amountQuery.data, faucetBalance.data?.value, lowQuery.data]);
+  }, [availableAtQuery.data, amountQuery.data, faucetBalance.data?.value, lowQuery.data, nowSec]);
 
   const cooldownUntil = availability.kind === "cooldown" ? availability.availableAt : null;
   const canDispense = enabled && isConnected && availability.kind === "ready" && !isDispensing;
