@@ -31,22 +31,31 @@ export function useOnboarding(): OnboardingState {
 
   const [hasWallet, setHasWallet] = useState(true);
   const [switchError, setSwitchError] = useState<SwitchChainError | null>(null);
+  // `mounted` evita el mismatch de hidratación: el SERVIDOR siempre renderiza «desconectado»
+  // (no conoce la wallet), así que hasta que monta el cliente devolvemos ese MISMO estado. Sin
+  // esto, una wallet ya conectada (MetaMask) hace que el primer render cliente difiera del HTML
+  // del servidor → React descarta y re-renderiza el árbol (destellos), y se repite en cada
+  // `router.refresh()` de la compra. Tras montar, exponemos el estado real (CU-17, RNF-19/20).
+  const [mounted, setMounted] = useState(false);
   useEffect(() => {
+    setMounted(true);
     const provider = (window as unknown as { ethereum?: unknown }).ethereum;
     setHasWallet(Boolean(provider));
   }, []);
 
-  const isWrongNetwork = isConnected && chainId !== activeChain.id;
+  // Valores estabilizados para SSR: antes de montar, todo «desconectado» (igual que el servidor).
+  const connected = mounted ? isConnected : false;
+  const isWrongNetwork = connected && chainId !== activeChain.id;
 
   return {
-    hasWallet,
-    isConnected,
-    address,
+    hasWallet: mounted ? hasWallet : true,
+    isConnected: connected,
+    address: mounted ? address : undefined,
     isWrongNetwork,
-    isConnecting: isPending,
-    canPurchase: isConnected && !isWrongNetwork,
+    isConnecting: mounted ? isPending : false,
+    canPurchase: connected && !isWrongNetwork,
     switchError,
-    isSwitchingNetwork: isSwitching,
+    isSwitchingNetwork: mounted ? isSwitching : false,
     connect: () => connect({ connector: injected() }),
     // Capturamos el error de cambio de red (4902 incl.) para guiar al usuario sin romper.
     switchToAppChain: () => {
