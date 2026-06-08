@@ -14,8 +14,10 @@ RF/RNF ─► CU ─► Escenario (Gherkin/EARS) ─► Test (TC-*) ─► Traba
 ✅ **FASES 0–4.5 implementadas, commiteadas y pusheadas** (contrato + worker + MCP + web con
 UX «Mediterráneo», back-office completo y asistente IA): commits atómicos `T<fase>.<n>` en
 `main` (GitLab). Suites verdes: forge 75 · vitest 156 (shared/web/mcp/worker/monitor) · E2E
-Playwright (chromium+mobile) + compra real con wallet on-demand. ⏳ **Pendiente: FASE 5**
-(aceptación on-chain en Besu, `TC-ACC-*`), bloqueada por la wallet/red de Besu (Codecrypto).
+Playwright (chromium+mobile) + compra real con wallet on-demand. ✅ **FASE 5 (T5.1) ejecutada**
+en Besu 81234: contrato desplegado (`0x9fD16e…`, owner aceptado, EOA revocado) + faucet, y
+aceptación `TC-ACC-010/011/012` PASS + compra primaria real firmada (`ownerOf`→comprador,
+worker `soldCount=1`). Ver runbook §1.5.
 
 ## 2. Convención de commit (traza hasta el commit)
 ```
@@ -65,7 +67,7 @@ Traza inversa `git log --grep "RF-08"`; verificación `sdd-traceability-check`.
 |-----|-------|-----------|--------|
 | RNF-01 | TC-NF-040 | T1.2, T3.4 | — |
 | RNF-02 / RNF-11 | objetivos en constantes (`RENDER_TARGET_MS`/`LCP_TARGET_MS`) + medición on-demand `apps/web/scripts/measure-perf.mjs`; TC-NF-001/002/011 NO son gate de CI | T1.2, T3.4, T4.5 | — |
-| RNF-03 | TC-ACC-001 | T5.1 | — |
+| RNF-03 | TC-ACC-001 (compra primaria real firmada en Besu 81234; `buy()` status success, `ownerOf`→comprador, worker `soldCount=1`) | **T5.1 ✅** | — |
 | RNF-05 | TC-E2E-040, TC-CT-020 | T1.3, T3.1 | — |
 | RNF-10 | TC-CT-043/046 | T1.3, T2.1, T2.2 | — |
 | RNF-12 | TC-E2E-012/013/042/051, TC-WK-004/006 | T1.2, T1.4 | — |
@@ -78,8 +80,8 @@ Traza inversa `git log --grep "RF-08"`; verificación `sdd-traceability-check`.
 | RNF-18 | proyecto Playwright «mobile» (suite hermética) + `apps/web/scripts/e2e-wallet-buy.mjs` (compra con wallet, on-demand sobre Anvil) + TC-ACC-002 (MetaMask real, T5.1) | T1.3, T4.5, T5.1 | — |
 | RNF-19 | TC-E2E-060/063, TC-E2E-030 (panel decodificado E2E + unit `reverify`/`validate-tx` para `value==priceOf`) | T1.3, T4.3 | — |
 | RNF-20 | TC-NF-030 | T3.4 | — |
-| RNF-21 (runbook) | runbook por componente → `docs/RUNBOOK.md` (deploy 2-pasos, env por componente, faucet, observabilidad, incidencias, rotación de secretos, checklist release) | **Rev.** (entregado; aceptación Besu pendiente T5.1) | — |
-| RNF-22 | TC-ACC-010/011/012 | T5.1 | — |
+| RNF-21 (runbook) | runbook por componente → `docs/RUNBOOK.md` (deploy 2-pasos, **§1.5 Besu/FASE 5**, env por componente, faucet, observabilidad, incidencias, rotación de secretos, checklist release) | **Rev. + T5.1 ✅** | — |
+| RNF-22 | TC-ACC-010/011/012 medidos en Besu (`scripts/measure-besu.mjs`): bloque P50/P95=2s (≤3/≤6), RPC P95≈44ms (≤400), 12/12 eventos indexables (0 perdidos) | **T5.1 ✅** | — |
 | RNF-06/07 | Fase 2 (fuera MVP) | — | — |
 
 ## 5. Verificación de integridad de la traza

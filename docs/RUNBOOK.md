@@ -54,6 +54,24 @@ HotelNights.acceptOwnership()   # owner() pasa a ser ADMIN_ADDRESS → despliegu
 Los fondos se retiran con **`TREASURER_ROLE`** (`withdraw()`), distinto de `DEFAULT_ADMIN_ROLE`
 (gestión de roles). Asigna `TREASURER_ROLE` a la cuenta/Safe de tesorería, no al admin de roles.
 
+### 1.5 Despliegue y aceptación en Besu (FASE 5, T5.1)
+Red de aceptación: **Besu 81234** (`https://besu1.proyectos.codecrypto.academy`, espejo `besu2`).
+Particularidades frente a Anvil:
+- **Gas:** `baseFeePerGas = 0`, `eth_gasPrice = 1000 wei` (mín. > 0). Despliega con `forge script
+  … --broadcast --slow --legacy` (legacy usa el `gasPrice` de la red; coste despreciable).
+- **Firma:** Besu **no soporta `eth_sendTransaction`** (sin cuentas desbloqueadas). Toda escritura
+  es una tx **firmada en cliente** + `eth_sendRawTransaction` (forge/viem/MetaMask lo hacen ya).
+  → El E2E `e2e-wallet-buy.mjs` (headless-wallet que reenvía `eth_sendTransaction`) es **Anvil-only**;
+  la compra real en Besu se valida con MetaMask (TC-ACC-001/002) o con una `buy()` firmada (cast/viem).
+- **Aceptación medida** (`packages/contracts/scripts/measure-besu.mjs`, RNF-22):
+  `TC-ACC-010` bloque P50/P95 = 2 s (≤3/≤6) · `TC-ACC-011` RPC P95 ≈ 44 ms (≤400) ·
+  `TC-ACC-012` 0 eventos perdidos.
+- **Cuentas:** la red usa la **mnemónica estándar de Anvil/Hardhat** ya financiada (deployer/admin/
+  treasury/compradores con saldo). El despliegue funciona con las mismas claves que en local.
+- **Procedimiento:** idéntico a §1.2–§1.4 con `RPC_URL` de Besu + `--legacy`; `acceptOwnership()`
+  desde el admin; `sync` escribe `deployments/81234.json`. Apps a Besu vía env `NEXT_PUBLIC_NETWORK=besu`
+  (web) y `RPC_URL`/`CONTRACT_ADDRESS`/`DEPLOYMENT_BLOCK`/`CHAIN_ID=81234` (worker/mcp).
+
 ---
 
 ## 2. Despliegue de las apps (por entorno, vía `NEXT_PUBLIC_*` / env)
@@ -136,4 +154,5 @@ Orden recomendado: contrato → sync deployment → worker (que ya indexa desde 
 - [ ] `TREASURY` capaz de recibir ETH; `TREASURER_ROLE` asignado a tesorería.
 - [ ] Apps desplegadas con env por entorno; worker indexando; monitor activo.
 - [ ] `ANTHROPIC_API_KEY` solo server-side y rotada si hubo exposición.
-- [ ] Aceptación en Besu: `TC-ACC-001/002/010/011/012` (FASE 5) ejecutados.
+- [x] Aceptación en Besu: `TC-ACC-010/011/012` PASS + compra real firmada (`TC-ACC-001`); `TC-ACC-002`
+      (MetaMask real) por el operador. Ver §1.5.
