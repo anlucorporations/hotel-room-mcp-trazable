@@ -92,6 +92,20 @@ Particularidades frente a Anvil:
 
 Orden recomendado: contrato → sync deployment → worker (que ya indexa desde el bloque) → mcp → web → monitor.
 
+### 2.1 Imágenes en IPFS (ADR-12, Decisión 13)
+Los 3 CIDs de `IMAGE_CIDS` (`packages/shared/src/domain/ipfs.ts`) están **pineados** (2026-06-11)
+en un nodo **Kubo** del host del demo (`brew services start ipfs`; pins en `~/.ipfs`) y su
+resolución por gateway está verificada (`https://ipfs.io/ipfs/<cid>` → 200, sha256 == SVG del
+repo). Re-pinear desde el repo (los CIDs son deterministas, no cambian):
+```
+cd apps/web/public/images && for f in simple doble suite; do
+  ipfs add --raw-leaves --cid-version=1 "$f.svg"; done
+```
+**Pendiente de ops:** pinning **gestionado con redundancia** (Pinata) cuando haya credenciales —
+`PINATA_JWT=… pnpm --filter @hotel/contracts pin:images <simple> <doble> <suite>` sube los mismos
+bytes sin alterar los CIDs. Mientras tanto el único provider es el nodo local: si se apaga, los
+gateways solo sirven de su caché. La web NO depende de esto en runtime (sirve por host/CDN).
+
 ---
 
 ## 3. Faucet (dev/test, RF-21 / CU-PR-01 — NUNCA en producción)

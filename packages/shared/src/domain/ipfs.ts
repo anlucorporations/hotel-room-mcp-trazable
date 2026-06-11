@@ -11,9 +11,12 @@ import { splitYYYYMMDD } from "./token-id";
  * pinner gestionado en staging/producción, con redundancia (Decisión 13).
  *
  * CIDs reales (CIDv1 raw, sha2-256) de las 3 imágenes del cliente, calculados con
- * `pnpm --filter @hotel/contracts pin:images`. Para que un gateway los resuelva hay que
- * **pinear los bytes** (Kubo `ipfs add --raw-leaves --cid-version=1` o Pinata) — paso de
- * operación (Decisión 13). La web sirve las imágenes por host/CDN (ADR-12), no por gateway.
+ * `pnpm --filter @hotel/contracts pin:images`. **Pineados** (2026-06-11) en un nodo Kubo
+ * (`ipfs add --raw-leaves --cid-version=1`, daemon como servicio launchd) y verificados por
+ * gateway público (`ipfs.io` 200 + sha256 idéntico al SVG del repo). El pinning GESTIONADO
+ * con redundancia (Pinata, Decisión 13) sigue pendiente de credenciales: `PINATA_JWT` +
+ * `pin:images` lo sube sin tocar los CIDs. La web sirve las imágenes por host/CDN (ADR-12),
+ * no por gateway.
  */
 export const IMAGE_CIDS: Readonly<Record<NightType, string>> = Object.freeze({
   simple: "bafkreialyiktnrmy3kvdjebdndkc4tynjw63ghx4pw7mg2hznz3jema2qy",
@@ -21,7 +24,7 @@ export const IMAGE_CIDS: Readonly<Record<NightType, string>> = Object.freeze({
   suite: "bafkreigedvpfrnvaoiceno5v4qtrkibhxzzatmsfrinyalx5wzzk6anfne",
 });
 
-/** Los CIDs son reales (no placeholders); requieren pinning para resolución por gateway. */
+/** Los CIDs son reales (no placeholders) y están pineados (resolución por gateway verificada). */
 export const IMAGE_CIDS_ARE_PLACEHOLDERS = false;
 
 /**
