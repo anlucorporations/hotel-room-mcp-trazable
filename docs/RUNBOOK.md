@@ -61,8 +61,11 @@ Particularidades frente a Anvil:
   … --broadcast --slow --legacy` (legacy usa el `gasPrice` de la red; coste despreciable).
 - **Firma:** Besu **no soporta `eth_sendTransaction`** (sin cuentas desbloqueadas). Toda escritura
   es una tx **firmada en cliente** + `eth_sendRawTransaction` (forge/viem/MetaMask lo hacen ya).
-  → El E2E `e2e-wallet-buy.mjs` (headless-wallet que reenvía `eth_sendTransaction`) es **Anvil-only**;
-  la compra real en Besu se valida con MetaMask (TC-ACC-001/002) o con una `buy()` firmada (cast/viem).
+  → El E2E `e2e-wallet-buy.mjs` soporta este modo con `BUYER_PK` (firma local viem + raw tx, el
+  mismo flujo que MetaMask): **TC-ACC-001 automatizado en Besu por la UI completa** (PASS
+  2026-06-11, tx `0x24aea781…c994cf80`: conectar→revisar→firmar→recibo→`ownerOf`). Sin `BUYER_PK`
+  conserva el modo Anvil (cuenta desbloqueada). `TC-ACC-002` (add-network 4902 + firma con
+  **MetaMask real**) sigue siendo validación manual del operador.
 - **Aceptación medida** (`packages/contracts/scripts/measure-besu.mjs`, RNF-22):
   `TC-ACC-010` bloque P50/P95 = 2 s (≤3/≤6) · `TC-ACC-011` RPC P95 ≈ 44 ms (≤400) ·
   `TC-ACC-012` 0 eventos perdidos.
@@ -154,5 +157,6 @@ Orden recomendado: contrato → sync deployment → worker (que ya indexa desde 
 - [ ] `TREASURY` capaz de recibir ETH; `TREASURER_ROLE` asignado a tesorería.
 - [ ] Apps desplegadas con env por entorno; worker indexando; monitor activo.
 - [ ] `ANTHROPIC_API_KEY` solo server-side y rotada si hubo exposición.
-- [x] Aceptación en Besu: `TC-ACC-010/011/012` PASS + compra real firmada (`TC-ACC-001`); `TC-ACC-002`
-      (MetaMask real) por el operador. Ver §1.5.
+- [x] Aceptación en Besu: `TC-ACC-010/011/012` PASS + `TC-ACC-001` PASS automatizado por la UI
+      (`e2e-wallet-buy.mjs` con `BUYER_PK`, firma cliente); `TC-ACC-002` (add-network con MetaMask
+      real) por el operador. Ver §1.5.

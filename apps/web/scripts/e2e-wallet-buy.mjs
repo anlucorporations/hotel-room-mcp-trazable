@@ -21,37 +21,61 @@
  *   - Los fallos reportan el paso concreto y el último estado visible del modal/recibo.
  *
  * La wallet se inyecta como un `window.ethereum` mínimo (EIP-1193) vía `addInitScript`, que
- * REENVÍA todas las llamadas JSON-RPC a Anvil salvo:
- *   - `eth_chainId`                         → `0x7a69` (31337)
- *   - `eth_accounts` / `eth_requestAccounts`→ [cuenta Anvil prefinanciada]
- *   - `eth_sendTransaction`                 → inyecta `from` = esa cuenta y reenvía a Anvil
- *     (Anvil firma porque la cuenta está desbloqueada/prefinanciada).
+ * REENVÍA todas las llamadas JSON-RPC al RPC salvo:
+ *   - `eth_chainId`                         → `CHAIN_ID_HEX` (def. 0x7a69, Anvil)
+ *   - `eth_accounts` / `eth_requestAccounts`→ [cuenta compradora]
+ *   - `eth_sendTransaction`                 → DOS modos (ver abajo).
+ *
+ * Modos de firma (la diferencia clave Anvil vs Besu):
+ *   - **Anvil (def., sin `BUYER_PK`)**: inyecta `from` = cuenta desbloqueada y reenvía
+ *     `eth_sendTransaction` al nodo (Anvil firma por nosotros).
+ *   - **Firma cliente (`BUYER_PK` definido)**: la tx vuelve a Node por un binding de Playwright,
+ *     se firma LOCALMENTE con viem (tx legacy, `gasPrice` del nodo) y se difunde con
+ *     `eth_sendRawTransaction` — el mismo flujo que MetaMask. Esto habilita el harness en redes
+ *     SIN cuentas desbloqueadas (Besu, aceptación FASE 5 TC-ACC-001/002).
  *
  * Requisitos del demo (los arranca el operador, NO este script):
- *   - Anvil en `RPC_URL` (chainId 31337, cuentas desbloqueadas, contrato sembrado con noches).
- *   - Web (Next dev) en `WEB_URL`, construida/arrancada con `NEXT_PUBLIC_CHAIN_ID=31337` y
- *     `NEXT_PUBLIC_CONTRACT_ADDRESS=<CONTRACT>` para que la red coincida con la wallet.
+ *   - Nodo en `RPC_URL` (Anvil 31337 o Besu 81234) con el contrato sembrado con noches.
+ *   - Web (Next dev) en `WEB_URL`, arrancada con `NEXT_PUBLIC_CHAIN_ID`/`NEXT_PUBLIC_CONTRACT_ADDRESS`
+ *     coherentes con la wallet (en Besu: el bloque Besu de `.env.local`).
  *
  * Parametrizable por entorno:
- *   WEB_URL   (def. http://127.0.0.1:3000)
- *   RPC_URL   (def. http://127.0.0.1:8545)
- *   CONTRACT  (def. 0x5FbDB2315678afecb367f032d93F642f64180aa3) — solo informativo en logs.
- *   BUYER     (def. 0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f, cuenta #8 de Anvil)
+ *   WEB_URL      (def. http://127.0.0.1:3000)
+ *   RPC_URL      (def. http://127.0.0.1:8545)
+ *   CONTRACT     (def. 0x5FbDB2315678afecb367f032d93F642f64180aa3) — solo informativo en logs.
+ *   BUYER        (def. 0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f, cuenta #8 de Anvil)
+ *   BUYER_PK     (opcional) clave privada del comprador → activa la firma cliente; `BUYER` se
+ *                deriva de ella (se ignora el env BUYER).
+ *   CHAIN_ID_HEX (def. 0x7a69) — 0x13d52 para Besu 81234.
  *
- * Uso:
+ * Uso (Anvil):
  *   node apps/web/scripts/e2e-wallet-buy.mjs
- *   WEB_URL=http://127.0.0.1:3000 RPC_URL=http://127.0.0.1:8545 \
- *     BUYER=0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f \
+ * Uso (Besu, TC-ACC-001/002):
+ *   RPC_URL=https://besu1.proyectos.codecrypto.academy CHAIN_ID_HEX=0x13d52 \
+ *     CONTRACT=0x9fD16eA9E31233279975D99D5e8Fc91dd214c7Da BUYER_PK=0x… \
  *     node apps/web/scripts/e2e-wallet-buy.mjs
  */
 import { chromium } from "@playwright/test";
-import { createPublicClient, http, getAddress } from "viem";
+import { createPublicClient, createWalletClient, defineChain, http, getAddress } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 
 const WEB_URL = process.env.WEB_URL ?? "http://127.0.0.1:3000";
 const RPC_URL = process.env.RPC_URL ?? "http://127.0.0.1:8545";
 const CONTRACT = process.env.CONTRACT ?? "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+
+/**
+ * Clave privada del comprador (modo FIRMA CLIENTE, redes sin cuentas desbloqueadas como Besu).
+ * Si está definida, el comprador se deriva de ella y `eth_sendTransaction` se firma en local.
+ */
+const BUYER_PK = process.env.BUYER_PK;
+const buyerAccount = BUYER_PK ? privateKeyToAccount(BUYER_PK) : null;
+
 // Cuenta #8 de Anvil (desbloqueada/prefinanciada). Distinta del minter/treasury del demo.
-const BUYER = (process.env.BUYER ?? "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f").toLowerCase();
+const BUYER = (
+  buyerAccount?.address ??
+  process.env.BUYER ??
+  "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f"
+).toLowerCase();
 
 /**
  * chainId que reporta la wallet inyectada, en hex (lo espera `eth_chainId`). Por defecto el de
@@ -74,8 +98,34 @@ const OWNER_OF_ABI = [
   },
 ];
 
-/** Cliente público viem contra Anvil para leer el estado real tras firmar (sin esperas fijas). */
+/** Cliente público viem contra el nodo para leer el estado real tras firmar (sin esperas fijas). */
 const publicClient = createPublicClient({ transport: http(RPC_URL) });
+
+/**
+ * Firma una transacción EN LOCAL con la clave del comprador y la difunde con
+ * `eth_sendRawTransaction` (modo firma cliente, `BUYER_PK`). Es el flujo de una wallet real
+ * (MetaMask): el nodo nunca ve la clave. Tx **legacy** con `gasPrice` del nodo, igual que el
+ * deploy de FASE 5 (`--legacy`; Besu 81234 corre con `baseFee=0`).
+ *
+ * @param {{ to?: string, value?: string, data?: string }} tx  Campos EIP-1193 que envía la web.
+ * @returns {Promise<string>} hash de la tx difundida.
+ */
+async function signAndSendRaw(tx) {
+  const chain = defineChain({
+    id: parseInt(CHAIN_ID_HEX, 16),
+    name: `e2e-${CHAIN_ID_HEX}`,
+    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+    rpcUrls: { default: { http: [RPC_URL] } },
+  });
+  const wallet = createWalletClient({ account: buyerAccount, chain, transport: http(RPC_URL) });
+  const gasPrice = await publicClient.getGasPrice();
+  return wallet.sendTransaction({
+    to: getAddress(tx.to),
+    value: tx.value ? BigInt(tx.value) : 0n,
+    data: tx.data ?? "0x",
+    gasPrice, // fuerza tx legacy (firmada y difundida vía eth_sendRawTransaction)
+  });
+}
 
 /**
  * Provider EIP-1193 mínimo, serializado e inyectado en el navegador ANTES de que cargue la app
@@ -119,13 +169,15 @@ function injectWallet({ rpcUrl, account, chainIdHex }) {
           // La red ya es la correcta (la app debe correr con NEXT_PUBLIC_CHAIN_ID=31337).
           return null;
         case "eth_sendTransaction": {
-          // Inyecta `from` = cuenta DESBLOQUEADA de Anvil y reenvía: Anvil firma por nosotros.
-          // LIMITACIÓN: esto solo funciona en redes con cuentas desbloqueadas (Anvil/Hardhat).
-          // Besu NO soporta `eth_sendTransaction` (exige firmar en cliente y `eth_sendRawTransaction`),
-          // por lo que este harness es Anvil-only. La compra real en Besu (FASE 5, TC-ACC-001/002) se
-          // valida con MetaMask real (firma local) o con una `buy()` firmada (cast/viem), no con este
-          // wallet simulado. La UI (revisar/decodificar/re-verificar) sí se ejercita contra Besu.
           const tx = { ...(params?.[0] ?? {}), from: account };
+          // Modo FIRMA CLIENTE (BUYER_PK): la tx vuelve a Node (binding de Playwright), se firma
+          // en local con viem y se difunde con `eth_sendRawTransaction` — el flujo de MetaMask.
+          // Funciona en redes sin cuentas desbloqueadas (Besu, TC-ACC-001/002).
+          if (typeof window.__hotelSignAndSend === "function") {
+            return window.__hotelSignAndSend(tx);
+          }
+          // Modo ANVIL: inyecta `from` = cuenta DESBLOQUEADA y reenvía; Anvil firma por nosotros
+          // (solo redes con cuentas desbloqueadas: Anvil/Hardhat).
           return forward("eth_sendTransaction", [tx]);
         }
         default:
@@ -260,6 +312,15 @@ async function main() {
   const browser = await chromium.launch();
   const context = await browser.newContext();
 
+  // Modo firma cliente (BUYER_PK): expone el firmador de Node a la página. La wallet inyectada
+  // lo usa en `eth_sendTransaction` → firma local + `eth_sendRawTransaction` (válido en Besu).
+  if (buyerAccount) {
+    await context.exposeBinding("__hotelSignAndSend", (_source, tx) => signAndSendRaw(tx));
+    console.log("  Modo de firma: CLIENTE (local, eth_sendRawTransaction)\n");
+  } else {
+    console.log("  Modo de firma: NODO (cuenta desbloqueada, solo Anvil/Hardhat)\n");
+  }
+
   // Inyecta la wallet ANTES de cargar la app (se aplica a cada página del contexto).
   await context.addInitScript(injectWallet, {
     rpcUrl: RPC_URL,
@@ -298,20 +359,26 @@ async function main() {
       },
       async () => (await connectedBadge.count()) > 0 && (await connectedBadge.isVisible()),
     );
-    ok("wallet conectada (cuenta de Anvil inyectada)");
+    ok("wallet conectada (cuenta compradora inyectada)");
 
-    // 2) Localizar la primera noche DISPONIBLE (card + su botón de compra).
-    currentStep = "localizar noche disponible";
-    const firstCard = page.locator('[data-testid^="night-card-"]').first();
-    if ((await firstCard.count()) === 0) {
-      fail(
-        "no hay ninguna noche en el catálogo: ¿está el demo sembrado y la web en la chainId 31337?",
+    // 2) Localizar la primera noche COMPRABLE: la primera card del catálogo puede estar ya
+    //    VENDIDA (sin botón de compra), así que se busca directamente el primer botón de compra
+    //    presente. Timeout holgado: en Besu el catálogo pagina getLogs sobre decenas de chunks.
+    currentStep = "localizar noche comprable";
+    const anyBuyButton = page.locator('[data-testid^="buy-button-"]').first();
+    await anyBuyButton
+      .waitFor({ state: "visible", timeout: 60_000 })
+      .catch(() =>
+        fail(
+          "no hay ninguna noche comprable en el catálogo: ¿está el demo sembrado y la web en la chainId correcta?",
+        ),
       );
-    }
-    await firstCard.scrollIntoViewIfNeeded();
-    const tokenId = (await firstCard.getAttribute("data-testid"))?.replace("night-card-", "");
-    if (!tokenId) fail("no se pudo extraer el tokenId de la card");
-    ok(`noche localizada: tokenId ${tokenId}`);
+    const tokenId = (await anyBuyButton.getAttribute("data-testid"))?.replace("buy-button-", "");
+    if (!tokenId) fail("no se pudo extraer el tokenId del botón de compra");
+    ok(`noche comprable localizada: tokenId ${tokenId}`);
+
+    const card = page.getByTestId(`night-card-${tokenId}`);
+    if ((await card.count()) > 0) await card.scrollIntoViewIfNeeded();
 
     currentStep = `comprobar comprabilidad de la noche ${tokenId}`;
     const buyButton = page.getByTestId(`buy-button-${tokenId}`);

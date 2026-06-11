@@ -67,7 +67,7 @@ Traza inversa `git log --grep "RF-08"`; verificación `sdd-traceability-check`.
 |-----|-------|-----------|--------|
 | RNF-01 | TC-NF-040 | T1.2, T3.4 | — |
 | RNF-02 / RNF-11 | objetivos en constantes (`RENDER_TARGET_MS`/`LCP_TARGET_MS`) + medición on-demand `apps/web/scripts/measure-perf.mjs`; TC-NF-001/002/011 NO son gate de CI | T1.2, T3.4, T4.5 | — |
-| RNF-03 | TC-ACC-001 (compra primaria real firmada en Besu 81234; `buy()` status success, `ownerOf`→comprador, worker `soldCount=1`) | **T5.1 ✅** | — |
+| RNF-03 | TC-ACC-001 (compra primaria real firmada en Besu 81234; `buy()` status success, `ownerOf`→comprador, worker `soldCount=1`; **re-PASS 2026-06-11 por la UI completa** con `e2e-wallet-buy.mjs` + `BUYER_PK` firma cliente, tx `0x24aea781…c994cf80`) | **T5.1 ✅** | — |
 | RNF-05 | TC-E2E-040, TC-CT-020 | T1.3, T3.1 | — |
 | RNF-10 | TC-CT-043/046 | T1.3, T2.1, T2.2 | — |
 | RNF-12 | TC-E2E-012/013/042/051, TC-WK-004/006 | T1.2, T1.4 | — |
@@ -77,7 +77,7 @@ Traza inversa `git log --grep "RF-08"`; verificación `sdd-traceability-check`.
 | RNF-15 | TC-CT-070..083 | T2.4 | — |
 | RNF-16 | (PLAN-DE-PRUEBAS.md) + CI | T0.2 | — |
 | RNF-17 | TC-WK-030/031 (worker), `/health` MCP (`http-server.test.ts` 200/503), TC-NF-020 (monitor). *El faucet es on-chain: sin servidor `/health`.* | T1.4, T4.1, T3.3 | — |
-| RNF-18 | proyecto Playwright «mobile» (suite hermética) + `apps/web/scripts/e2e-wallet-buy.mjs` (compra con wallet, on-demand sobre Anvil) + TC-ACC-002 (MetaMask real, T5.1) | T1.3, T4.5, T5.1 | — |
+| RNF-18 | proyecto Playwright «mobile» (suite hermética) + `apps/web/scripts/e2e-wallet-buy.mjs` (compra con wallet, on-demand; Anvil y **Besu vía `BUYER_PK`** firma cliente) + TC-ACC-002 (MetaMask real, T5.1) | T1.3, T4.5, T5.1 | — |
 | RNF-19 | TC-E2E-060/063, TC-E2E-030 (panel decodificado E2E + unit `reverify`/`validate-tx` para `value==priceOf`) | T1.3, T4.3 | — |
 | RNF-20 | TC-NF-030 | T3.4 | — |
 | RNF-21 (runbook) | runbook por componente → `docs/RUNBOOK.md` (deploy 2-pasos, **§1.5 Besu/FASE 5**, env por componente, faucet, observabilidad, incidencias, rotación de secretos, checklist release) | **Rev. + T5.1 ✅** | — |
@@ -85,7 +85,7 @@ Traza inversa `git log --grep "RF-08"`; verificación `sdd-traceability-check`.
 | RNF-06/07 | Fase 2 (fuera MVP) | — | — |
 
 ## 5. Verificación de integridad de la traza
-- **RF del MVP sin CU/Trabajo:** 0. **CU sin test:** 0. La trazabilidad TC↔test es **por convención** (no todos los tests llevan el tag `TC-` inline); `TC-ACC-*` y `TC-NF-001/002` son **diferidos a T5.1 / medición on-demand**, no gates de CI. Flujo de compra con wallet en navegador: `scripts/e2e-wallet-buy.mjs` (on-demand) + MetaMask real en T5.1.
+- **RF del MVP sin CU/Trabajo:** 0. **CU sin test:** 0. La trazabilidad TC↔test es **por convención** (no todos los tests llevan el tag `TC-` inline); `TC-ACC-*` y `TC-NF-001/002` son **diferidos a T5.1 / medición on-demand**, no gates de CI. Flujo de compra con wallet en navegador: `scripts/e2e-wallet-buy.mjs` (on-demand; **TC-ACC-001 PASS en Besu 2026-06-11** con firma cliente `BUYER_PK`). `TC-ACC-002` (add-network con MetaMask real) = manual del operador.
 - **Numeración unificada:** un único esquema `T<fase>.<n>` en plan + matriz + commits (`Task:`). Sin `T-NNN`.
 - **RF-06 dividido:** CU-01/SIWE → T1.1 (Hito/Fase 1); CU-16 roles+Ownable2Step → T3.3 (Fase 3).
 - **`setTreasury` (TC-CT-094/095/096):** hogar único en **T2.4** (CU-16), en fila tabular RNF-13.
