@@ -64,8 +64,13 @@ Particularidades frente a Anvil:
   → El E2E `e2e-wallet-buy.mjs` soporta este modo con `BUYER_PK` (firma local viem + raw tx, el
   mismo flujo que MetaMask): **TC-ACC-001 automatizado en Besu por la UI completa** (PASS
   2026-06-11, tx `0x24aea781…c994cf80`: conectar→revisar→firmar→recibo→`ownerOf`). Sin `BUYER_PK`
-  conserva el modo Anvil (cuenta desbloqueada). `TC-ACC-002` (add-network 4902 + firma con
-  **MetaMask real**) sigue siendo validación manual del operador.
+  conserva el modo Anvil (cuenta desbloqueada).
+  → **TC-ACC-002 PASS (2026-06-11, manual):** MetaMask real **añadió la red 81234** vía el
+  onboarding de la web (flujo 4902) y **firmó la compra** (tx `0x8ced18fa…73c9ac`, tipo 2 con
+  `maxFeePerGas=1000 wei` — MetaMask propone comisión válida en `baseFee=0` sin ajuste manual;
+  `status=1`, `ownerOf`→comprador). Herramienta del operador:
+  `node apps/web/scripts/launch-metamask.mjs` (Chromium + extensión MetaMask descargada en
+  `/tmp/metamask/ext`, perfil persistente).
 - **Aceptación medida** (`packages/contracts/scripts/measure-besu.mjs`, RNF-22):
   `TC-ACC-010` bloque P50/P95 = 2 s (≤3/≤6) · `TC-ACC-011` RPC P95 ≈ 44 ms (≤400) ·
   `TC-ACC-012` 0 eventos perdidos.
@@ -171,6 +176,6 @@ gateways solo sirven de su caché. La web NO depende de esto en runtime (sirve p
 - [ ] `TREASURY` capaz de recibir ETH; `TREASURER_ROLE` asignado a tesorería.
 - [ ] Apps desplegadas con env por entorno; worker indexando; monitor activo.
 - [ ] `ANTHROPIC_API_KEY` solo server-side y rotada si hubo exposición.
-- [x] Aceptación en Besu: `TC-ACC-010/011/012` PASS + `TC-ACC-001` PASS automatizado por la UI
-      (`e2e-wallet-buy.mjs` con `BUYER_PK`, firma cliente); `TC-ACC-002` (add-network con MetaMask
-      real) por el operador. Ver §1.5.
+- [x] Aceptación en Besu **completa**: `TC-ACC-010/011/012` PASS + `TC-ACC-001` PASS automatizado
+      por la UI (`e2e-wallet-buy.mjs` con `BUYER_PK`, firma cliente) + `TC-ACC-002` PASS manual
+      (MetaMask real: add-network 4902 + firma, 2026-06-11). Ver §1.5.
