@@ -1,0 +1,1 @@
+# hotel-room-mcp-trazable
