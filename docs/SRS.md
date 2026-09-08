@@ -1,8 +1,8 @@
 # SRS — Especificación de Requisitos de Software
 ## Hotel Marina del Sol: Plataforma NFT de Reservas
 
-> **Versión**: 1.2.0  
-> **Estado**: Aprobado — Post-Auditoría Plan y Backlog (17 hallazgos resueltos)  
+> **Versión**: 1.3.0  
+> **Estado**: Aprobado — Post-Auditoría v3 (21 hallazgos resueltos)  
 > **Fecha**: 2026-09-08  
 > **Referencia**: PRD v1.1.0  
 
@@ -14,7 +14,9 @@
 Este documento define formalmente la arquitectura técnica, interfaces de contratos inteligentes, especificación de APIs, modelo de base de datos off-chain y criterios de resiliencia para el desarrollo de la plataforma NFT del Hotel Marina del Sol.
 
 ### 1.2 Alcance del MVP
-El sistema abarca el catálogo público reactivo, filtrado optimizado, compra primaria anónima con MetaMask / WalletConnect v2, marketplace de reventa propio con enforcing inmutable de royalties (5% y 10%), entrega de resguardo QR criptográfico con secreto off-chain cifrado (AES-256-GCM), validación segura en recepción (RECEPTION_ROLE), panel de analítica para el propietario con MFA y JWT blocklist, sincronizador de eventos on-chain con cola asíncrona de correos (BullMQ), quema programada desatendida por lotes (con Redis Redlock) e histórico público de ventas.
+El sistema abarca el catálogo público reactivo, filtrado optimizado, compra primaria anónima con MetaMask / WalletConnect v2, marketplace de reventa propio con enforcing inmutable de royalties (5% y 10%) y precio mínimo anti-evasión (`minListingPrice`), entrega de resguardo QR criptográfico con secreto off-chain cifrado (AES-256-GCM) y pases Apple/Google Wallet, validación segura en recepción asistida por MFA y anclaje on-chain (`markCheckedIn`), panel de analítica para el propietario con MFA y JWT blocklist, observabilidad centralizada con Sentry y Cloud Logging, sincronizador de eventos on-chain con cola asíncrona de correos (BullMQ) respaldada en BD, quema programada desatendida por lotes (con Redis Redlock) e histórico público de ventas.
+
+> **Cumplimiento Normativo (RD 933/2021)**: La compraventa on-chain se mantiene 100% anónima. La captura e inscripción de los datos del viajero (DNI/Pasaporte, nombre) exigida por ley se delega físicamente al software de gestión hotelera (PMS) en el mostrador de recepción al entregar las llaves; la plataforma no almacena datos de filiación personal.
 
 ### 1.3 Definiciones Técnicas
 
@@ -23,8 +25,9 @@ El sistema abarca el catálogo público reactivo, filtrado optimizado, compra pr
 | **NFT (ERC-721)** | Token no fungible que representa el derecho de ocupación de una habitación específica en una fecha determinada. |
 | **Token ID** | Identificador único uint256 generado on-chain: `keccak256(roomNumber, checkInDate)`. |
 | **EIP-2981** | Estándar Ethereum para declaración de royalties on-chain en mercados secundarios. |
-| **checkInSecret** | Token criptográfico aleatorio de 32 bytes generado off-chain, almacenado cifrado con AES-256-GCM, para el check-in seguro de un solo uso. |
-| **AccessControl** | Patrón OpenZeppelin de roles granulares: `DEFAULT_ADMIN_ROLE`, `MINTER_ROLE`, `BURNER_ROLE` y `RECEPTION_ROLE`. |
+| **checkInSecret** | Token criptográfico aleatorio de 32 bytes generado off-chain, almacenado cifrado con AES-256-GCM en base de datos. |
+| **AccessControl On-chain** | Patrón OpenZeppelin de roles en contratos: `DEFAULT_ADMIN_ROLE`, `MINTER_ROLE`, `BURNER_ROLE` y `RECEPTION_ROLE`. |
+| **RECEPTION_ROLE Off-chain** | Claim RBAC en JWT emitido por la API tras login con contraseña y verificación obligatoria de MFA TOTP. |
 | **Event Listener** | Worker persistente conectado vía WebSocket RPC a Polygon para replicar eventos on-chain en la base de datos. |
 | **Listing** | Oferta activa de venta de un NFT en el mercado secundario con precio fijado por su poseedor. |
 | **JWT Blocklist** | Lista negra en Redis de JWTs revocados activamente al hacer logout, con TTL igual al tiempo de expiración restante del token. |
@@ -39,31 +42,33 @@ El sistema abarca el catálogo público reactivo, filtrado optimizado, compra pr
 │                        FRONTEND (SPA Web3)                             │
 │   Catálogo Reactivo · Búsqueda & Filtros (<500ms)                      │
 │   Compra Anónima (MetaMask / WalletConnect v2)                         │
-│   Marketplace Reventa · Resguardo QR Descargable (PNG/PDF + Wallet)    │
-│   Back-office Propietario (MFA + Dashboard) · Web Recepción            │
+│   Marketplace Reventa · Resguardo QR Descargable (PNG/PDF/Passes)      │
+│   Back-office Propietario (MFA + Dashboard) · Web Recepción (MFA)      │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │ HTTPS (REST API)
 ┌───────────────────────────────────▼────────────────────────────────────┐
 │                           BACKEND API                                  │
-│   Entorno: Node.js (TypeScript) / Python (FastAPI) [Abierto]           │
-│   Auth Admin: JWT RS256 + MFA + RTR + JWT Blocklist (Redis)            │
-│   Re-confirmación MFA para operaciones de alto impacto (mintBatch)     │
+│   Entorno: Node.js (TypeScript) / Python (FastAPI)                     │
+│   Auth Admin/Recepción: JWT RS256 + MFA Obligatorio + RTR + Blocklist  │
+│   Re-confirmación MFA exclusiva para mintBatch                         │
 │   Worker Caché EUR (CoinGecko / Fallback Binance) - latencia <5ms      │
-│   Cola Asíncrona (BullMQ / Celery): Emails (SendGrid / Resend)         │
-│   Servicio Web Push (FCM)                                              │
+│   Cola Asíncrona (BullMQ): Emails con persistencia en BD               │
+│   Pases Digitales: passkit-generator (.pkpass) / Google Wallet API     │
+│   Observabilidad: Sentry (errores) + Cloud Logging (JSON estructurado) │
+│   Health Checks: /health/live y /health/ready                          │
 └───────────────┬───────────────────────────────┬────────────────────────┘
                 │ RPC Failover (Alchemy/Infura) │ Pool Conexiones
 ┌───────────────▼───────────────┐     ┌─────────▼────────────────────────┐
 │      SMART CONTRACTS          │     │     BASE DE DATOS OFF-CHAIN      │
-│   Polygon PoS (Mainnet 137)   │     │   PostgreSQL / MongoDB           │
+│   Polygon PoS (Mainnet 137)   │     │   PostgreSQL Clúster             │
 │   Polygon Amoy (Testnet 80002)│     │   Tablas Indexadas:              │
-│   HotelNFT (AccessControl)    │     │   nfts · listings · sale_events  │
-│   HotelMarketplace (Pausable) │     │   push_subscriptions · sessions  │
+│   HotelNFT (markCheckedIn)    │     │   nfts · listings · sale_events  │
+│   HotelMarketplace (minPrice) │     │   email_notifications · sessions │
 └───────────────▲───────────────┘     └─────────────────▲────────────────┘
                 │                                       │
                 └──────────────[ EVENT LISTENER ]───────┘
-                     Sincronizador WebSocket con Heartbeat
-                     Alerta email si sin eventos > 10 min
+                     Sincronizador WebSocket con Heartbeat (5000ms)
+                     Alerta DevOps si sin eventos > 10 min
                      Reconciliación con eth_getLogs
                      Worker Burn Scheduler (burnBatch + Redlock)
 ```
@@ -74,12 +79,18 @@ El sistema abarca el catálogo público reactivo, filtrado optimizado, compra pr
 
 ### 3.1 Contrato `HotelNFT.sol` (ERC-721 + EIP-2981 + AccessControl + Pausable)
 
-Implementa el estándar ERC-721 con metadata extensible, declaración de royalties EIP-2981, gobernanza delegada mediante OpenZeppelin `AccessControl` y pausado de emergencia con `PausableUpgradeable`.
+Implementa el estándar ERC-721 con metadata extensible, declaración de royalties EIP-2981, gobernanza delegada mediante OpenZeppelin `AccessControl`, función de marcado de estancia y pausado de emergencia.
 
-#### Roles de Seguridad
-- `DEFAULT_ADMIN_ROLE`: Asignado a la multisig **Gnosis Safe 2-of-3**. Controla configuración global, `setMarketplaceContract()`, actualización de royalties y pausado de emergencia con `pause()`/`unpause()`.
-- `MINTER_ROLE`: Asignado a la **wallet caliente de servicio del backend** (relayer). Autorizado para invocar `mintBatch()` desde el back-office de Carlos, con cuota máxima configurable (≤50 tokens/lote).
+#### Roles de Seguridad On-chain
+- `DEFAULT_ADMIN_ROLE`: Asignado a la multisig **Gnosis Safe 2-of-3** en producción. Controla configuración global, `setMarketplaceContract()`, actualización de royalties y pausado de emergencia (`pause()` / `unpause()`).
+- `MINTER_ROLE`: Asignado a la **wallet caliente de servicio del backend** (relayer). Autorizado para invocar `mintBatch()` con cuota máxima (≤50 tokens/lote).
 - `BURNER_ROLE`: Asignado a la **wallet de bot burner del backend**. Autorizado exclusivamente para invocar `burn()` y `burnBatch()` sobre habitaciones no vendidas.
+- `RECEPTION_ROLE`: Asignado a la **wallet operativa del backend para recepción**. Autorizado para invocar `markCheckedIn(tokenId)` al validar la estancia del huésped.
+
+#### Flujo Transaccional de Venta Primaria
+1. El backend (mediante Carlos en Back-office) invoca `mintBatch(address(HotelNFT), ...)` acuñando los tokens a nombre del propio contrato `HotelNFT`.
+2. En la misma secuencia orquestada, el relayer con permisos ejecuta `HotelNFT.approve(address(marketplaceContract), tokenId)` para cada token minteado.
+3. El relayer invoca `HotelMarketplace.listForSale(tokenId, priceWei)`, dejando la habitación activa para compra primaria en el catálogo.
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -93,8 +104,9 @@ import "@openzeppelin/contracts/utils/Pausable.sol";
 contract HotelNFT is ERC721, ERC2981, AccessControl, Pausable {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
+    bytes32 public constant RECEPTION_ROLE = keccak256("RECEPTION_ROLE");
 
-    uint256 public constant MAX_BATCH_MINT = 50; // Cuota máxima por lote
+    uint256 public constant MAX_BATCH_MINT = 50;
     
     enum RoomType { SIMPLE, DOBLE, SUITE }
 
@@ -103,6 +115,7 @@ contract HotelNFT is ERC721, ERC2981, AccessControl, Pausable {
         uint256 checkInTimestamp;
         RoomType roomType;
         uint256 basePriceWei;
+        bool isCheckedIn;
     }
 
     mapping(uint256 => RoomInfo) public rooms;
@@ -111,20 +124,17 @@ contract HotelNFT is ERC721, ERC2981, AccessControl, Pausable {
     event NFTMinted(uint256 indexed tokenId, uint256 roomNumber, uint256 checkInTimestamp, RoomType roomType, uint256 basePrice);
     event NFTBurned(uint256 indexed tokenId, uint256 roomNumber, uint256 checkInTimestamp);
     event BatchBurned(uint256[] tokenIds);
+    event NFTCheckedInOnChain(uint256 indexed tokenId, uint256 timestamp);
     event MarketplaceContractUpdated(address indexed oldAddress, address indexed newAddress);
 
-    // Setter para actualizar la dirección del marketplace sin redesplegar
-    function setMarketplaceContract(address _marketplace)
-        external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setMarketplaceContract(address _marketplace) external onlyRole(DEFAULT_ADMIN_ROLE) {
         emit MarketplaceContractUpdated(marketplaceContract, _marketplace);
         marketplaceContract = _marketplace;
     }
 
-    // Pausado de emergencia (solo DEFAULT_ADMIN_ROLE)
     function pause() external onlyRole(DEFAULT_ADMIN_ROLE) { _pause(); }
     function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) { _unpause(); }
 
-    // Minteo por lote desde Back-office (relayer con MINTER_ROLE)
     function mintBatch(
         address to,
         uint256[] calldata roomNumbers,
@@ -133,26 +143,28 @@ contract HotelNFT is ERC721, ERC2981, AccessControl, Pausable {
         uint256[] calldata pricesWei
     ) external onlyRole(MINTER_ROLE) whenNotPaused {
         require(roomNumbers.length <= MAX_BATCH_MINT, "HotelNFT: Exceeds max batch size");
-        // ... implementación
+        // ... inicialización de tokens y almacenamiento en struct rooms
     }
 
-    // Quema individual de habitación no vendida
-    function burn(uint256 tokenId) external onlyRole(BURNER_ROLE) whenNotPaused;
+    // Marcado on-chain para prevenir reventa posterior a check-in
+    function markCheckedIn(uint256 tokenId) external onlyRole(RECEPTION_ROLE) whenNotPaused {
+        require(!rooms[tokenId].isCheckedIn, "HotelNFT: Already checked in");
+        rooms[tokenId].isCheckedIn = true;
+        emit NFTCheckedInOnChain(tokenId, block.timestamp);
+    }
 
-    // Quema masiva desatendida para optimizar gas
+    function burn(uint256 tokenId) external onlyRole(BURNER_ROLE) whenNotPaused;
     function burnBatch(uint256[] calldata tokenIds) external onlyRole(BURNER_ROLE) whenNotPaused;
 
-    // EIP-2981: Consulta de royalties (5% simple/doble = 500bp, 10% suite = 1000bp)
     function royaltyInfo(uint256 tokenId, uint256 salePrice) 
         external view override returns (address receiver, uint256 royaltyAmount);
 
-    // Bloqueo de operador: canaliza transferencias obligatoriamente por el Marketplace
     function _update(address to, uint256 tokenId, address auth) internal override returns (address) {
         address from = _ownerOf(tokenId);
-        // Permite minting (from == address(0)) y burning (to == address(0)) libremente
         if (from != address(0) && to != address(0)) {
-            require(!paused(), "HotelNFT: Contract is paused");
-            require(msg.sender == marketplaceContract, "HotelNFT: Transfers restricted to HotelMarketplace");
+            require(!paused(), "HotelNFT: Contract paused");
+            require(!rooms[tokenId].isCheckedIn, "HotelNFT: Cannot transfer checked-in room");
+            require(msg.sender == marketplaceContract, "HotelNFT: Transfers restricted to Marketplace");
         }
         return super._update(to, tokenId, auth);
     }
@@ -161,9 +173,11 @@ contract HotelNFT is ERC721, ERC2981, AccessControl, Pausable {
 
 ---
 
-### 3.2 Contrato `HotelMarketplace.sol` (+ Pausable + Pull-over-Push)
+### 3.2 Contrato `HotelMarketplace.sol` (+ Pull-over-Push + Anti-evasión)
 
-Marketplace exclusivo que gestiona compras primarias y reventas con liquidación atómica mediante **patrón Pull-over-Push** (los fondos se acumulan en mappings y se retiran con `withdraw()`) y protección anti-reentrancy.
+Marketplace exclusivo que gestiona compras primarias y reventas con liquidación mediante **Pull-over-Push**, control anti-evasión de royalties (`minListingPrice`) y protección anti-reentrancy.
+
+> **Limitación Técnica de Retiro**: El método `withdraw()` transfiere nativo mediante `call{value}`. Está diseñado para clientes operando con wallets de tipo EOA (Externally Owned Accounts). Si un vendedor utiliza un contrato intermediario, este debe implementar `receive()` o `fallback()` adecuadamente para recibir los fondos acumulados.
 
 ```solidity
 contract HotelMarketplace is ReentrancyGuard, AccessControl, Pausable {
@@ -174,51 +188,45 @@ contract HotelMarketplace is ReentrancyGuard, AccessControl, Pausable {
     }
 
     HotelNFT public immutable nftContract;
+    uint256 public minListingPrice; // Precio mínimo contra wash trading (1 wei)
     mapping(uint256 => Listing) public listings;
-
-    // Pull-over-Push: fondos pendientes de retiro
     mapping(address => uint256) public pendingWithdrawals;
 
     event NFTListed(uint256 indexed tokenId, address indexed seller, uint256 priceInWei);
     event ListingCancelled(uint256 indexed tokenId, address indexed seller);
-    event NFTSold(
-        uint256 indexed tokenId, 
-        address indexed seller, 
-        address indexed buyer, 
-        uint256 priceInWei, 
-        uint256 royaltyAmount,
-        bool isSecondary
-    );
+    event NFTSold(uint256 indexed tokenId, address indexed seller, address indexed buyer, uint256 priceInWei, uint256 royaltyAmount, bool isSecondary);
     event Withdrawal(address indexed recipient, uint256 amount);
+    event MinListingPriceUpdated(uint256 newMinPrice);
 
-    // Pausado de emergencia (solo DEFAULT_ADMIN_ROLE)
-    function pause() external onlyRole(DEFAULT_ADMIN_ROLE) { _pause(); }
-    function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) { _unpause(); }
+    constructor(address _nftContract, uint256 _initialMinPrice) {
+        nftContract = HotelNFT(_nftContract);
+        minListingPrice = _initialMinPrice;
+    }
 
-    // Listar NFT para reventa (requiere approve() previo en el NFT)
+    function setMinListingPrice(uint256 _newMinPrice) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        minListingPrice = _newMinPrice;
+        emit MinListingPriceUpdated(_newMinPrice);
+    }
+
     function listForSale(uint256 tokenId, uint256 priceInWei) external nonReentrant whenNotPaused {
-        require(nftContract.ownerOf(tokenId) == msg.sender, "Marketplace: Not the owner");
-        require(priceInWei > 0, "Marketplace: Price must be > 0");
-        (, uint256 checkInTimestamp, , ) = nftContract.rooms(tokenId);
-        require(block.timestamp < checkInTimestamp, "Marketplace: Cannot list expired night");
+        require(nftContract.ownerOf(tokenId) == msg.sender, "Marketplace: Not owner");
+        require(priceInWei >= minListingPrice, "Marketplace: Price below minimum floor");
+        (, uint256 checkInTimestamp, , , bool isCheckedIn) = nftContract.rooms(tokenId);
+        require(!isCheckedIn, "Marketplace: Room already checked in");
+        require(block.timestamp < checkInTimestamp, "Marketplace: Expired night");
 
         listings[tokenId] = Listing(msg.sender, priceInWei, true);
         emit NFTListed(tokenId, msg.sender, priceInWei);
     }
 
-    // Cancelar listing (solo vendedor o admin de gobernanza)
     function cancelListing(uint256 tokenId) external nonReentrant whenNotPaused {
         Listing memory item = listings[tokenId];
         require(item.active, "Marketplace: Listing not active");
-        require(
-            msg.sender == item.seller || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), 
-            "Marketplace: Unauthorized"
-        );
+        require(msg.sender == item.seller || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Marketplace: Unauthorized");
         delete listings[tokenId];
         emit ListingCancelled(tokenId, item.seller);
     }
 
-    // Compra atómica con Pull-over-Push: acumula fondos en pendingWithdrawals
     function buy(uint256 tokenId) external payable nonReentrant whenNotPaused {
         Listing memory item = listings[tokenId];
         require(item.active, "Marketplace: Not listed");
@@ -226,10 +234,8 @@ contract HotelMarketplace is ReentrancyGuard, AccessControl, Pausable {
 
         delete listings[tokenId];
 
-        (address royaltyReceiver, uint256 royaltyAmount) = 
-            nftContract.royaltyInfo(tokenId, item.priceInWei);
+        (address royaltyReceiver, uint256 royaltyAmount) = nftContract.royaltyInfo(tokenId, item.priceInWei);
 
-        // Acumular royalty (a multisig) y remanente (al vendedor) para retiro
         pendingWithdrawals[royaltyReceiver] += royaltyAmount;
         pendingWithdrawals[item.seller] += (item.priceInWei - royaltyAmount);
 
@@ -237,7 +243,6 @@ contract HotelMarketplace is ReentrancyGuard, AccessControl, Pausable {
         emit NFTSold(tokenId, item.seller, msg.sender, item.priceInWei, royaltyAmount, item.seller != address(nftContract));
     }
 
-    // Retiro de fondos acumulados (Pull-over-Push)
     function withdraw() external nonReentrant {
         uint256 amount = pendingWithdrawals[msg.sender];
         require(amount > 0, "Marketplace: Nothing to withdraw");
@@ -253,372 +258,139 @@ contract HotelMarketplace is ReentrancyGuard, AccessControl, Pausable {
 
 ### 3.3 Bot Burner Desatendido (Scheduler con Redlock)
 
-- **Frecuencia de Ejecución**: Cron job ejecutado a las **12:00 PM (mediodía) hora `Europe/Madrid`** diariamente.
-- **Exclusión Mutua**: Antes de ejecutar, el bot adquiere un **Redis Redlock** con clave `hotel:burn:lock` y TTL de 30 segundos. Si no puede adquirir el lock (otra instancia activa), aborta silenciosamente y registra en log.
-- **Alerta de Gas**: Si el saldo de la wallet con `BURNER_ROLE` cae por debajo de **5 POL**, el bot envía un email de alerta a Carlos **antes** de intentar `burnBatch()` y aborta la quema.
-- **Criterio de Selección**:
-  1. Consultar en la BD off-chain tokens con `status = 'AVAILABLE'` y `checkInDate < hoy`.
-  2. Verificar on-chain que `ownerOf(tokenId) == address(HotelNFT)` (asegurando que no pertenece a ningún huésped).
-  3. Si hay más de un token caducado, invocar `HotelNFT.burnBatch(tokenIds)` mediante la hot-wallet con `BURNER_ROLE`.
-  4. Actualizar estado a `BURNED` en la base de datos y emitir métrica operacional.
-- **Custodia de Clave**: La clave privada de la wallet con `BURNER_ROLE` se almacena en el **vault del servidor** (HashiCorp Vault o AWS Secrets Manager). Nunca se escribe en variables de entorno en texto plano en producción.
-
----
-
-### 3.4 Entornos de Despliegue y Pruebas
-
-**Toolchain de despliegue**: [Foundry](https://book.getfoundry.sh/) (`forge script`) ejecutado en instancia **GCP** del equipo para testnet y producción.
-
-| Parámetro | Desarrollo Local | Testnet Oficial | Producción |
-|-----------|------------------|-----------------|------------|
-| **Red** | Anvil / Hardhat Node | **Polygon Amoy** | **Polygon PoS** |
-| **Chain ID** | 31337 | **80002** | **137** |
-| **Moneda** | ETH / Test POL | Test MATIC/POL | POL / MATIC |
-| **Owner Admin** | Wallet 0 de Anvil | Cuenta de Prueba QA | Multisig Gnosis Safe 2-of-3 |
-| **MINTER_ROLE** | Wallet 1 de Anvil | Wallet Minter Testnet | Hot-wallet Relayer Backend |
-| **BURNER_ROLE** | Wallet 2 de Anvil | Wallet Bot Testnet | Hot-wallet Servicio Backend |
-| **Herramienta deploy** | `forge script` local | `forge script` en GCP | `forge script` en GCP |
+- **Frecuencia**: Cron ejecutado a las **12:00 PM (mediodía) hora `Europe/Madrid`**.
+- **Exclusión Mutua**: Redis Redlock (`hotel:burn:lock`, TTL 30s).
+- **Alerta de Saldo**: Si el balance de la wallet con `BURNER_ROLE` es `< 5 POL`, se remite alerta inmediata al canal técnico (`DEVOPS_ALERT_EMAIL`) y la ejecución se suspende.
+- **Custodia de Claves**: La clave del bot se gestiona mediante Google Cloud Secret Manager o HashiCorp Vault.
 
 ---
 
 ## 4. Especificación de la API Backend
 
-### 4.1 Autenticación Administrativa (Back-office)
+### 4.1 Autenticación (Admin y Recepción)
+
+Tanto las cuentas de Carlos (Admin) como las del personal de recepción exigen autenticación multifactor (MFA TOTP) obligatoria:
 
 ```
 POST /auth/login
-Body: { "email": "carlos@hotel.es", "password": "..." }
+Body: { "email": "recepcion@hotel.es", "password": "..." }
 Response: { "challengeRequired": true, "sessionToken": "..." }
 
 POST /auth/mfa/verify
 Body: { "sessionToken": "...", "totpCode": "123456" }
-Response: { "accessToken": "...", "refreshToken": "..." }
-
-POST /auth/refresh
-Headers: Authorization: Bearer <refreshToken>
-Response: { "accessToken": "...", "newRefreshToken": "..." }
-// RTR: invalida el anterior y guarda hash SHA-256 del nuevo en BD
+Response: { "accessToken": "...", "refreshToken": "...", "roles": ["RECEPTION_ROLE"] }
 
 POST /auth/logout
 Headers: Authorization: Bearer <accessToken>
 Response: { "success": true }
-// Añade el JWT a la blocklist en Redis (TTL = tiempo restante del token)
-// Revoca de inmediato la sesión eliminando el registro en admin_sessions
-
-POST /auth/mfa/recovery
-Body: { "email": "...", "recoveryCode": "..." }
-Response: { "accessToken": "...", "refreshToken": "..." }
-// Valida uno de los 8 códigos de rescate bcrypt; lo marca como usado
+// Agrega el JWT a la Blocklist en Redis por el tiempo restante de expiración
 ```
 
-#### Operaciones de Alto Impacto (Re-confirmación MFA)
-Las siguientes operaciones requieren re-verificación del código TOTP actual antes de ejecutarse:
-- `POST /admin/nfts/mint-batch` — Minteo masivo de NFTs
-
-```
-POST /admin/nfts/mint-batch
-Headers: Authorization: Bearer <accessToken>
-Body: {
-  "confirmTotpCode": "456789",  // Re-confirmación MFA obligatoria
-  "rooms": [...]
-}
-```
+> **Operaciones de Alto Impacto**: En el MVP, la única operación catalogada como de alto impacto que exige re-confirmación obligatoria de TOTP en el cuerpo de la petición (`confirmTotpCode`) es `POST /admin/nfts/mint-batch`.
 
 ---
 
-### 4.2 Catálogo y Mercado Público (Anónimo)
+### 4.2 Catálogo, Metadatos y Salud del Sistema
 
 ```
 GET /api/nfts
-Query Params:
-  - status: AVAILABLE | LISTED_RESALE
-  - roomType: SIMPLE | DOBLE | SUITE
-  - dateFrom: YYYY-MM-DD
-  - dateTo: YYYY-MM-DD
-  - priceMinWei: string
-  - priceMaxWei: string
-  - page: integer (default 1)
-  - limit: integer (default 20, max 50)
-Response:
-{
-  "items": [
-    {
-      "tokenId": "0x1a2b...",
-      "roomNumber": 102,
-      "roomType": "SIMPLE",
-      "checkInDate": "2026-07-15",
-      "priceWei": "5000000000000000000",
-      "priceEur": 8.50,
-      "status": "AVAILABLE",
-      "imageUrl": "https://hotel.com/assets/simple.jpg",
-      "isResale": false,
-      "listing": null
-    }
-  ],
-  "total": 45,
-  "eurExchangeRate": 1.70,
-  "exchangeRateUpdatedAt": "2026-09-07T21:00:00Z"
-}
+Query Params: status, roomType, dateFrom, dateTo, priceMinWei, priceMaxWei, page, limit
+Response: { "items": [...], "total": 45, "eurExchangeRate": 1.70, "exchangeRateUpdatedAt": "..." }
 
 GET /api/nfts/:tokenId/metadata
-Response: JSON conforme a ERC-721 Metadata Standard (name, description, image, attributes)
+Response: Formato ERC-721 Metadata Standard con atributos de habitación.
 
-GET /api/sales/history
-Query Params: page, limit, eventType (PRIMARY_SALE | RESALE), dateFrom, dateTo
-Response: Listado público paginado de ventas y reventas (excluye BURN)
-Exportación: GET /api/sales/history?format=csv → descarga directa en CSV
+GET /health/live
+Response: 200 OK { "status": "ALIVE" }
 
-GET /admin/dashboard
-GET /admin/dashboard/export?format=csv
+GET /health/ready
+Response: 200 OK { 
+  "status": "READY", 
+  "dependencies": { "postgres": "UP", "redis": "UP", "polygonRPC": "UP" } 
+}
 ```
 
 ---
 
-### 4.3 Check-in Criptográfico y Validación en Recepción
+### 4.3 Check-in, Contingencia y Pases Digitales
 
 ```
 GET /api/qr/:tokenId
-Headers:
-  x-wallet-address: 0x...
-  x-signature: 0x... (Firma EIP-712 con { tokenId, nonce, expiresAt })
-// Verifica on-chain ownerOf(tokenId) == x-wallet-address
-// Si el secreto existe en BD (check_in_secret_enc), lo descifra con AES-256-GCM
-// Si no existe (primera generación), genera 32 bytes aleatorios, los cifra y guarda
-Response:
-{
-  "qrPayload": "https://hotel.com/checkin?t=0x1a2b&s=e7c8d9...",
-  "tokenId": "0x1a2b...",
-  "roomNumber": 201,
-  "checkInDate": "2026-07-20",
-  "expiresAt": "2026-07-21T23:59:59Z"
-}
+Headers: x-wallet-address, x-signature (EIP-712 con tokenId, nonce, expiresAt)
+Response: { "qrPayload": "https://hotel.com/checkin?t=0x1a...&s=e7c8...", "tokenId": "0x1a...", ... }
 
-POST /admin/qr/validate (Protegido - RECEPTION_ROLE)
-Body:
-{
-  "tokenId": "0x1a2b...",
-  "checkInSecret": "e7c8d9f0..."
-}
-Response:
-{
-  "status": "SUCCESS", // SUCCESS | ALREADY_CHECKED_IN | EXPIRED | INVALID_SECRET
-  "roomNumber": 201,
-  "roomType": "SUITE",
-  "guestWallet": "0x1234...abcd",
-  "checkInDate": "2026-07-20"
-}
-```
+POST /admin/qr/validate (Protegido - RECEPTION_ROLE con MFA)
+Body: { "tokenId": "0x1a2b...", "checkInSecret": "e7c8d9f0..." }
+Response: { "status": "SUCCESS", "roomNumber": 201, "roomType": "SUITE", "guestWallet": "0x123..." }
+// Ejecuta llamada on-chain markCheckedIn(tokenId) y marca status='CHECKED_IN' en BD
 
----
+POST /admin/qr/contingency-checkin (Protegido - RECEPTION_ROLE con MFA)
+Body: { "roomNumber": 201, "checkInDate": "2026-07-20", "reason": "Huésped sin dispositivo móvil" }
+Response: { "status": "SUCCESS", "tokenId": "0x1a2b..." }
+// Permite check-in manual asistido tras validación física de identidad en PMS
 
-### 4.4 Suscripción Web Push (Opt-in)
-
-```
-POST /api/push/subscribe
-Body: { "endpoint": "...", "p256dh": "...", "auth": "..." }
-
-DELETE /api/push/unsubscribe
-Body: { "endpoint": "..." }
+GET /api/wallet/pass/:tokenId?type=apple|google
+Headers: x-wallet-address, x-signature (EIP-712)
+Response: Binario firmado .pkpass (Apple) o URL de objeto Pass (Google Wallet)
+// Generado con passkit-generator utilizando Pass Type ID Certificate oficial
 ```
 
 ---
 
 ## 5. Esquema de Base de Datos Off-chain
 
-### 5.0 Máquina de Estados Unificada
-
-La coherencia entre `nfts.status` y `listings.status` se rige por las siguientes transiciones y reglas de invariante:
-
-```
-                    ┌─────────────────────────────────────────────┐
-                    │             nfts.status                      │
-                    │                                             │
-                    │  [AVAILABLE] ──buy()──────────────────────> [SOLD]
-                    │      │                                       │
-                    │  burnBatch()                         checkIn validated
-                    │      │                                       │
-                    │      ▼                                       ▼
-                    │   [BURNED]                           [CHECKED_IN]
-                    │                                             │
-                    │                              (burn bloqueado; estado final)
-                    └─────────────────────────────────────────────┘
-
-                    ┌─────────────────────────────────────────────┐
-                    │             listings.status                  │
-                    │                                             │
-                    │  [ACTIVE] ──buy()──────────────────────> [COMPLETED]
-                    │      │
-                    │  cancelListing()
-                    │      │
-                    │      ▼
-                    │  [CANCELLED]
-                    └─────────────────────────────────────────────┘
-```
-
-**Reglas de invariante obligatorias (aplicadas por el Event Listener):**
-
-| Evento on-chain | Acción en `nfts` | Acción en `listings` |
-|----------------|-------------------|----------------------|
-| `NFTSold` | `status` → `SOLD`, `current_owner` → buyer, rotar `check_in_secret_enc` | listing activo del token → `status = COMPLETED`, `sold_at = now()` |
-| `ListingCancelled` | Sin cambio | listing activo → `status = CANCELLED`, `cancelled_at = now()` |
-| `NFTBurned` | `status` → `BURNED`, `burned_at = now()` | listing activo (si existe) → forzar `CANCELLED` (race condition resuelta) |
-| `NFTCheckedIn` (BD) | `status` → `CHECKED_IN`, `checked_in_at = now()` | Bloquear `listForSale()` on-chain (verificar `checkInTimestamp < now`) |
-
-**Precondición en `listForSale()`:** El contrato requiere `block.timestamp < checkInTimestamp`, lo que implícitamente bloquea el listado de tokens ya validados en check-in.
-
----
-
 ### Tabla: `nfts`
 ```sql
 CREATE TABLE nfts (
     token_id VARCHAR(66) PRIMARY KEY,
     room_number INT NOT NULL,
-    room_type VARCHAR(10) NOT NULL, -- SIMPLE, DOBLE, SUITE
+    room_type VARCHAR(10) NOT NULL,
     check_in_date DATE NOT NULL,
     base_price_wei VARCHAR(78) NOT NULL,
-    status VARCHAR(20) NOT NULL,    -- AVAILABLE, SOLD, BURNED, CHECKED_IN
+    status VARCHAR(20) NOT NULL, -- AVAILABLE, SOLD, BURNED, CHECKED_IN
     current_owner VARCHAR(42) NOT NULL,
-    check_in_secret_enc TEXT NULL,  -- Secreto cifrado con AES-256-GCM (clave en vault)
+    check_in_secret_enc TEXT NULL, -- AES-256-GCM (clave administrada en Secret Manager)
     minted_at TIMESTAMP NOT NULL,
     checked_in_at TIMESTAMP NULL,
     burned_at TIMESTAMP NULL,
     tx_hash_mint VARCHAR(66) NOT NULL
 );
-
--- Índices obligatorios para soportar 200 usuarios concurrentes y consultas reactivas (<500ms)
 CREATE INDEX idx_nfts_query ON nfts(status, check_in_date, room_type);
 CREATE INDEX idx_nfts_room ON nfts(room_number);
 ```
 
-### Tabla: `listings` (Marketplace de Reventa)
+### Tabla: `email_notifications` (Resiliencia de BullMQ)
 ```sql
-CREATE TABLE listings (
-    listing_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    token_id VARCHAR(66) NOT NULL REFERENCES nfts(token_id),
-    seller_address VARCHAR(42) NOT NULL,
-    price_wei VARCHAR(78) NOT NULL,
-    status VARCHAR(20) NOT NULL, -- ACTIVE, COMPLETED, CANCELLED
-    listed_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    cancelled_at TIMESTAMP NULL,
-    sold_at TIMESTAMP NULL,
-    tx_hash VARCHAR(66) NOT NULL
-);
-
-CREATE INDEX idx_listings_active ON listings(status, token_id);
-```
-
-### Tabla: `sale_events`
-```sql
-CREATE TABLE sale_events (
+CREATE TABLE email_notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    token_id VARCHAR(66) NOT NULL REFERENCES nfts(token_id),
-    event_type VARCHAR(20) NOT NULL, -- PRIMARY_SALE, RESALE, BURN
-    from_address VARCHAR(42),
-    to_address VARCHAR(42),
-    price_wei VARCHAR(78),
-    royalty_wei VARCHAR(78),
-    price_eur DECIMAL(10, 2),
-    block_number BIGINT NOT NULL,
-    tx_hash VARCHAR(66) NOT NULL,
-    timestamp TIMESTAMP NOT NULL
-);
-
-CREATE INDEX idx_sales_dashboard ON sale_events(event_type, timestamp);
-```
-
-### Tabla: `admin_sessions`
-```sql
-CREATE TABLE admin_sessions (
-    session_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email VARCHAR(255) NOT NULL,
-    refresh_token_hash VARCHAR(64) NOT NULL, -- Hash SHA-256, nunca texto plano
-    is_mfa_verified BOOLEAN DEFAULT FALSE,
-    expires_at TIMESTAMP NOT NULL,
+    event_type VARCHAR(50) NOT NULL,
+    recipient_email VARCHAR(255) NOT NULL,
+    payload JSONB NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING', -- PENDING, SENT, FAILED
+    attempts INT NOT NULL DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    last_rotated_at TIMESTAMP NOT NULL DEFAULT NOW()
+    sent_at TIMESTAMP NULL
 );
-```
-
-### Tabla: `mfa_recovery_codes`
-```sql
-CREATE TABLE mfa_recovery_codes (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email VARCHAR(255) NOT NULL,
-    code_hash VARCHAR(60) NOT NULL,  -- Hash bcrypt del código de 8 caracteres
-    used_at TIMESTAMP NULL,          -- NULL = no usado; timestamp = usado y consumido
-    created_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
--- Se generan 8 registros al activar MFA por primera vez
-```
-
-### Tabla: `push_subscriptions`
-```sql
-CREATE TABLE push_subscriptions (
-    endpoint TEXT PRIMARY KEY,
-    p256dh TEXT NOT NULL,
-    auth TEXT NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
+CREATE INDEX idx_notifications_pending ON email_notifications(status, created_at);
 ```
 
 ---
 
-## 6. Event Listener y Resiliencia
+## 6. Sincronización y Resiliencia del Event Listener
 
-### 6.1 Sincronización y Reconciliación Transaccional
-- **Conexión**: WebSocket RPC primario (Alchemy) con conmutación automática al secundario (Infura) en caso de caída.
-- **Heartbeat Activo**: Ping/pong técnico cada 30 segundos. Si falla 2 veces consecutivas, se activa la reconexión inmediata.
-- **Persistencia de Bloque**: El listener guarda atómicamente en BD el `lastBlockProcessed`.
-- **Reconciliación Retroactiva**: Al reconectar tras cualquier fallo de red, se invoca `eth_getLogs(fromBlock = lastBlockProcessed + 1)` para procesar todas las transacciones intermedias sin pérdida de datos.
-- **Alerta de Silencio**: Si el listener no procesa ningún evento en **10 minutos**, envía un email de alerta a Carlos (posible nodo caído, desconexión silenciosa o red inactiva). El umbral es configurable por variable de entorno.
-
-### 6.2 Cola Asíncrona de Correos (BullMQ / Celery)
-- Ante el evento `NFTSold`, el listener encola una tarea de notificación en memoria (Redis).
-- El worker de correo procesa el envío a Carlos mediante SendGrid / Resend en < 60s con 3 reintentos y backoff exponencial (10s, 30s, 90s).
+- **WebSocket Heartbeat**: Ping/pong cada 30 segundos con timeout estricto de **5000ms**. Tras 2 fallos consecutivos, conmuta inmediatamente al RPC de respaldo (Infura).
+- **Alerta de Silencio**: Si no se procesan eventos en 10 minutos, se despacha notificación de advertencia a `DEVOPS_ALERT_EMAIL`.
+- **Reconciliación de Notificaciones**: Un cron backend consulta periódicamente registros con `status = 'PENDING'` en `email_notifications` con antigüedad > 5 minutos para re-encolarlos automáticamente ante caídas imprevistas de Redis.
 
 ---
 
-## 7. Conversión de Precios EUR Resiliente
+## 7. Plan de Pruebas y Compuertas de Calidad (DoD)
 
-- **Worker de Fondo**: Un proceso backend independiente consulta el tipo de cambio MATIC/EUR cada 5 minutos a CoinGecko.
-- **Caché en Memoria**: El valor obtenido se almacena en memoria/Redis con TTL de 10 minutos.
-- **Failover a Fuente Secundaria**: Si CoinGecko retorna error 429 (Rate Limit) o timeout, el worker consulta automáticamente la API de Binance o CryptoCompare.
-- **Respuesta a Clientes**: Todos los endpoints del catálogo (`/api/nfts`) leen la cotización desde la caché interna, respondiendo en **< 5ms** sin consumir llamadas a APIs externas.
-
----
-
-## 8. Plan Integral de Pruebas y Criterios de Aceptación (DoD)
-
-### 8.1 Pruebas de Smart Contracts (Foundry + Slither)
-1. **Minting batch**: Ejecución correcta de lotes de ≤50 habitaciones por relayer con `MINTER_ROLE`.
-2. **AccessControl**: `BURNER_ROLE` quema tokens no vendidos; terceros reciben revert `AccessControlUnauthorizedAccount`.
-3. **Royalties EIP-2981**: 5% deducido en habitaciones simples/dobles y 10% en suite.
-4. **Enforcing de Marketplace**: Transferencias directas fuera del contrato marketplace revierten.
-5. **Reentrancy**: Comprobación exhaustiva con fuzzer en la función `buy()`.
-6. **Pull-over-Push**: Verificación de que `buy()` no transfiere ETH directamente; acumula en `pendingWithdrawals`.
-7. **Pausable**: Verificación de que operaciones fallan con `EnforcedPause()` cuando el contrato está pausado.
-8. **Análisis estático**: `slither .` sin vulnerabilidades de severidad alta o crítica en CI.
-
-### 8.2 Pruebas de Backend y Rendimiento
-1. **Flujo Check-in**: Verificación de `checkInSecret` y rechazo inmediato de intentos de reutilización (`ALREADY_CHECKED_IN`).
-2. **Re-descarga QR**: Verificación de que el QR puede re-descargarse con firma EIP-712 válida y es rechazado con firma inválida.
-3. **Rotación de secreto en reventa**: Al procesar `NFTSold`, el `check_in_secret_enc` se regenera en BD.
-4. **Pruebas de Carga k6**: Escenario de **200 usuarios concurrentes** navegando y filtrando el catálogo, con tiempo de respuesta **p95 < 500ms** y 0% de errores HTTP 5xx.
-5. **JWT Blocklist**: Verificación de que un JWT en logout no es aceptado tras ser añadido a la blocklist de Redis.
-6. **Códigos de rescate MFA**: Cada código solo puede usarse una vez; el segundo intento es rechazado.
-7. **Redis Redlock**: Verificación de que dos instancias concurrentes del bot burner no ejecutan `burnBatch()` simultáneamente.
-
-### 8.3 Definición de Hecho (DoD) — Global
-Todos los criterios siguientes deben cumplirse para considerar una historia como **Hecha**:
-
-- [ ] Código revisado en merge request por al menos 1 par (code review).
-- [ ] Tests unitarios y de integración escritos y pasando en CI.
-- [ ] **Cobertura de código ≥ 80%** medida por el pipeline CI (contratos: Foundry lcov; backend: Jest/Pytest).
-- [ ] Análisis estático de contratos con `slither .` sin hallazgos críticos o altos.
-- [ ] Despliegue verificado en entorno de desarrollo local (Anvil) o testnet según sprint.
-- [ ] Criterios de aceptación de la historia validados manualmente o con test E2E.
-- [ ] Documentación técnica actualizada si el cambio modifica una interfaz pública.
-- [ ] Despliegue verificado en testnet **Polygon Amoy (chainId 80002)** a partir de Sprint 3.
+- [ ] Cobertura de código unitario e integración **≥ 80%** unificada.
+- [ ] Ejecución en pipeline CI de `slither .` sin vulnerabilidades de severidad **HIGH** o **CRITICAL** para todo commit o pull request que incluya contratos inteligentes.
+- [ ] Validación de compilación y despliegues mediante Foundry en GCP.
+- [ ] Health checks funcionales `/health/live` y `/health/ready` respondiendo en staging.
+- [ ] Prevención de reventa confirmada en pruebas Foundry tras invocar `markCheckedIn()`.
 
 ---
-*SRS v1.2.0 — Aprobado formalmente tras resolución de 17 hallazgos de auditoría del Plan y Backlog.*
+*SRS v1.3.0 — Aprobado formalmente tras incorporar las 21 resoluciones de auditoría.*
