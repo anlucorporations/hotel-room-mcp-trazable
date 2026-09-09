@@ -20,7 +20,12 @@ packages/shared/deployments/*.json
 # env & secrets
 .env
 .env.*
+.env.vault
 !.env.example
+
+# docker local data
+postgres_data/
+redis_data/
 
 # misc
 *.log

@@ -18,3 +18,4 @@ export * from "./domain/purchase-tx";
 export * from "./domain/ipfs";
 export * from "./domain/faucet";
 export * from "./deployments/schema";
+export * from "./logger";
