@@ -130,6 +130,9 @@ contract HotelMarketplace is ReentrancyGuard, AccessControl, Pausable {
         require(item.active, "Marketplace: Not listed");
         require(msg.value == item.priceInWei, "Marketplace: Incorrect payment");
 
+        (, uint256 checkInTimestamp, , , ) = nftContract.rooms(tokenId);
+        require(block.timestamp < checkInTimestamp, "Marketplace: Expired night");
+
         delete listings[tokenId];
 
         (address royaltyReceiver, uint256 royaltyAmount) = nftContract.royaltyInfo(

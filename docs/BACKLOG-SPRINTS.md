@@ -108,19 +108,22 @@ Los siguientes criterios aplican de forma obligatoria a **todas** las historias 
 ### 🟢 SPRINT 2: Backend Core, Base de Datos, Health Checks y Endpoints Catálogo
 **Duración**: Semanas 4 y 5 · **Capacidad**: 26 SP · **Meta**: Base de datos indexada, endpoints de catálogo funcionales, health checks y autenticación protegida con MFA TOTP obligatorio.
 
-#### US-04: Esquema de Base de Datos Off-chain y Health Checks (5 SP)
+#### US-04: Esquema de Base de Datos Off-chain, Pool de Conexiones y Health Checks (5 SP)
 - **Criterios de Aceptación**:
-  - Tablas: `nfts` (con `check_in_secret_enc` AES-256-GCM), `listings`, `sale_events`, `admin_sessions`, `mfa_recovery_codes`, `email_notifications`.
+  - Tablas: `nfts` (con `check_in_secret_enc` AES-256-GCM y `NUMERIC(78,0)` para importes en wei), `listings`, `sale_events`, `admin_sessions`, `mfa_recovery_codes`, `email_notifications`.
+  - Configuración del pool de conexiones PostgreSQL (`max: 20`, `idleTimeout: 30s`, `connectionTimeout: 5s`) y cron de purga para notificaciones `SENT` > 90 días.
   - Endpoints `GET /health/live` (200 OK) y `GET /health/ready` (comprobando PostgreSQL, Redis y RPC).
 - **Tareas Técnicas**:
-  - `TASK-04.1`: Migraciones DDL completas en PostgreSQL.
-  - `TASK-04.2`: Creación de índices compuestos optimizados.
-  - `TASK-04.3`: Tests de integración de BD.
-  - `TASK-04.4`: Implementación de endpoints `/health/live` y `/health/ready`.
+  - `TASK-04.1`: Migraciones DDL completas en PostgreSQL con tipos numéricos precisos.
+  - `TASK-04.2`: Configuración de pool de conexiones (`pg-pool`) y script de mantenimiento / purga.
+  - `TASK-04.3`: Creación de índices compuestos optimizados.
+  - `TASK-04.4`: Tests de integración de BD.
+  - `TASK-04.5`: Implementación de endpoints `/health/live` y `/health/ready`.
 
-#### US-05: Autenticación con MFA Obligatorio (Admin y Recepción) y JWT Blocklist (13 SP)
+#### US-05: Autenticación con MFA Obligatorio (Admin y Recepción), JWT Blocklist y Rate Limiting (13 SP)
 - **Criterios de Aceptación**:
   - Cuentas de Administrador y Recepción exigen contraseña + MFA TOTP obligatorio.
+  - Rate limiting en Redis: máximo 5 intentos fallidos / 15 min en login y MFA antes de bloqueo temporal.
   - Refresh Token Rotation (RTR) con hash SHA-256 en BD.
   - Logout añade JWT a blocklist en Redis (TTL = expiración restante).
   - `mintBatch` exige `confirmTotpCode` en el cuerpo de la petición.
@@ -129,6 +132,7 @@ Los siguientes criterios aplican de forma obligatoria a **todas** las historias 
   - `TASK-05.2`: Middleware de validación TOTP y JWT blocklist.
   - `TASK-05.3`: 8 códigos de rescate con hash bcrypt.
   - `TASK-05.4`: Tests de seguridad de autenticación.
+  - `TASK-05.5`: Middleware de Rate Limiting con Redis para `/auth/login` y `/auth/mfa/verify` (5 intentos fallidos / 15 min con bloqueo temporal).
 
 #### US-06: Servicio Resiliente de Cotización EUR con Caché (<5ms) (3 SP)
 - **Criterios de Aceptación**:
@@ -150,24 +154,26 @@ Los siguientes criterios aplican de forma obligatoria a **todas** las historias 
 ### 🟢 SPRINT 3: Event Listener, Bot Burner y Primer Deploy Amoy
 **Duración**: Semanas 6 y 7 · **Capacidad**: 21 SP · **Meta**: Sincronización continua de eventos on-chain, bot burner desatendido, alertas técnicas dirigidas y despliegue inicial en testnet.
 
-#### US-07: Sincronizador de Eventos On-chain con Alerta a DevOps (8 SP)
+#### US-07: Sincronizador de Eventos On-chain con Alerta a DevOps y Protección Anti-Reorgs (8 SP)
 - **Criterios de Aceptación**:
   - WebSocket con heartbeat cada 30s y timeout de respuesta de **5000ms**.
-  - Alerta por email a `DEVOPS_ALERT_EMAIL` si no hay eventos en 10 minutos.
+  - Alerta por email a `DEVOPS_ALERT_EMAIL` si no se reciben bloques `newHeads` de Polygon en > 10 minutos.
+  - Profundidad de 32 bloques de confirmación contra reorganizaciones (reorgs) antes de consolidar el estado `SOLD` / `CHECKED_IN`, reportando `CONFIRMING` temporalmente.
   - Persistencia de `lastBlockProcessed` y reconciliación con `eth_getLogs`.
   - Rotación de `check_in_secret_enc` ante `NFTSold`.
 - **Tareas Técnicas**:
-  - `TASK-07.1`: EventListener con multi-RPC, heartbeat de 5000ms y alerta de silencio.
-  - `TASK-07.2`: Transiciones de estado atómicas en BD.
-  - `TASK-07.3`: Tests de reconciliación tras caída de red.
+  - `TASK-07.1`: EventListener con multi-RPC, heartbeat de 5000ms, buffer de 32 confirmaciones anti-reorgs y monitor de `newHeads` con alerta de silencio > 10 min.
+  - `TASK-07.2`: Transiciones de estado atómicas en BD (`CONFIRMING` -> `SOLD`).
+  - `TASK-07.3`: Paginación y reconciliación histórica con `eth_getLogs` (chunking de máximo 2.000 bloques y backoff exponencial) y tests de recuperación ante caída de red y reorganización.
 
 #### US-08: Cola Asíncrona de Notificaciones con Resiliencia en BD (3 SP)
 - **Criterios de Aceptación**:
   - Notificación de venta despachada a Carlos en < 60s.
   - Registro previo en tabla `email_notifications` (PENDING) con cron de reconciliación ante caídas de Redis.
+  - Deduplicación nativa en BullMQ mediante `jobId = notification.id` para prevenir duplicación de envíos.
 - **Tareas Técnicas**:
-  - `TASK-08.1`: Cola BullMQ y plantilla responsiva.
-  - `TASK-08.2`: Mecanismo de persistencia y reconciliación de correos.
+  - `TASK-08.1`: Cola BullMQ con deduplicación por `jobId = notification.id` y plantilla de email responsiva.
+  - `TASK-08.2`: Mecanismo de persistencia y reconciliación periódica de correos pendientes.
 
 #### US-09: Bot Burner con Redlock y Alerta Técnica de Gas (5 SP)
 - **Criterios de Aceptación**:
@@ -195,12 +201,14 @@ Los siguientes criterios aplican de forma obligatoria a **todas** las historias 
 ### 🟢 SPRINT 4: Frontend Tienda Pública, Pases Wallet y Checkout Anónimo
 **Duración**: Semanas 8 y 9 · **Capacidad**: 26 SP · **Meta**: Tienda pública operativa, compra anónima Web3, generación de resguardos y pases móviles, y tests E2E.
 
-#### US-10: Catálogo Público Responsivo en Tiempo Real (5 SP)
+#### US-10: Catálogo Público Responsivo en Tiempo Real e Histórico de Ventas (5 SP)
 - **Criterios de Aceptación**:
   - Carga LCP < 2.5s; filtros combinables con respuesta < 500ms; mobile-first.
+  - Vista pública de Histórico de Ventas (RF-10) consumiendo `/api/sales/history`, paginada a 20 filas, ocultando eventos internos MINT/BURN, mostrando importe en cripto/EUR y wallets truncadas (0x1234...ABCD).
 - **Tareas Técnicas**:
   - `TASK-10.1`: Componentes UI del catálogo y filtros reactivos.
   - `TASK-10.2`: Consumo del endpoint `/api/nfts`.
+  - `TASK-10.3`: Vista de Histórico Público de Transacciones (RF-10) con paginación de 20 registros, tabla cronológica descendente y enlaces a Polygonscan.
 
 #### US-11: Conexión Wallet y Checkout Anónimo On-chain (8 SP)
 - **Criterios de Aceptación**:
@@ -211,12 +219,14 @@ Los siguientes criterios aplican de forma obligatoria a **todas** las historias 
 
 #### US-12: Resguardo QR Seguro y Pases Digitales Apple/Google Wallet (8 SP)
 - **Criterios de Aceptación**:
-  - QR con secreto AES-256-GCM; re-descarga con firma EIP-712.
+  - QR criptográfico con payload en fragmento hash (`#ticket=<jws>`) firmado por el backend con secreto AES-256-GCM; re-descarga con firma EIP-712.
   - Generación de pase `.pkpass` (Apple Wallet) con `passkit-generator` y pase Google Wallet mediante `GET /api/wallet/pass/:tokenId`.
+  - Opción de envío de resguardo a email efímero sin persistencia en base de datos ni vinculación a la wallet (cumplimiento RGPD art. 5.1.c).
 - **Tareas Técnicas**:
-  - `TASK-12.1`: Generación de QR criptográfico y re-descarga EIP-712.
+  - `TASK-12.1`: Generación de QR criptográfico (token JWS en hash fragment para lector de recepción) y re-descarga con firma EIP-712.
   - `TASK-12.2`: Descarga de resguardos en PNG/PDF.
   - `TASK-12.2b`: Servicio de generación y firma de pases Apple y Google Wallet.
+  - `TASK-12.3`: Endpoint `POST /api/qr/:tokenId/send-email` y despacho efímero vía BullMQ sin persistencia en BD (RGPD).
 
 #### US-13: Internacionalización Multilingüe (ES / EN / RU) (3 SP)
 - **Criterios de Aceptación**:
@@ -226,9 +236,10 @@ Los siguientes criterios aplican de forma obligatoria a **todas** las historias 
 
 #### US-21: Tests E2E Frontend Sprint 4 con Playwright (2 SP)
 - **Criterios de Aceptación**:
-  - Cobertura de pruebas E2E para catálogo, checkout y descarga de pases.
+  - Cobertura de pruebas E2E deterministas para catálogo, checkout anónimo y descarga de pases.
+  - Ejecución fluida en CI sin dependencias de extensiones de navegador, mediante inyección de provider EIP-1193 programable.
 - **Tareas Técnicas**:
-  - `TASK-21.1`: Suite de pruebas E2E en Playwright.
+  - `TASK-21.1`: Suite de pruebas E2E en Playwright con mock provider EIP-1193 inyectado vía `page.addInitScript()` y conectado al nodo Anvil local.
 
 ---
 
@@ -238,20 +249,25 @@ Los siguientes criterios aplican de forma obligatoria a **todas** las historias 
 #### US-14: Validación Segura en Recepción con MFA, On-chain y Contingencia (6 SP)
 - **Criterios de Aceptación**:
   - Acceso a web de recepción protegido por MFA TOTP obligatorio.
-  - Validación de QR invoca `markCheckedIn(tokenId)` on-chain y marca `CHECKED_IN` en BD.
-  - **Protocolo de contingencia**: Recepción puede buscar por habitación y fecha para ejecutar check-in asistido si el huésped no dispone de dispositivo móvil.
+  - **Validación optimista**: Respuesta en pantalla en < 500ms (cumpliendo SLA RNF-03 < 3s) tras verificar el ticket JWS y marcar `CHECKED_IN` en BD, despachando la transacción `markCheckedIn(tokenId)` on-chain en segundo plano con notificación WebSocket si se produce un fallo.
+  - Cola secuencial transaccional para la hot-wallet con `RECEPTION_ROLE` previniendo colisiones de nonce ante check-ins concurrentes.
+  - Alerta inmediata a `DEVOPS_ALERT_EMAIL` si el balance de la hot-wallet de recepción cae por debajo de 5 POL.
+  - **Protocolo de contingencia**: Recepción puede buscar por habitación y fecha para ejecutar check-in asistido si el huésped no dispone de dispositivo móvil, requiriendo validación previa de un factor de posesión (dirección wallet compradora, hash de transacción en Polygonscan o resguardo físico/email).
   - El cumplimiento del RD 933/2021 se registra físicamente en el PMS del hotel.
 - **Tareas Técnicas**:
   - `TASK-14.1`: Interfaz web de recepción con lector de cámara y soporte MFA.
-  - `TASK-14.2`: Integración de llamada on-chain `markCheckedIn(tokenId)`.
-  - `TASK-14.3`: Flujo de contingencia asistido por habitación y fecha.
+  - `TASK-14.2`: Integración de validación optimista (< 500ms) con cola transaccional secuencial para llamada on-chain `markCheckedIn(tokenId)`, alerta de gas < 5 POL y notificación WebSocket reactiva en caso de reversión.
+  - `TASK-14.3`: Flujo de contingencia asistido con formulario de verificación de factor de posesión y registro en PMS.
 
-#### US-15: Marketplace de Reventa Propio con Flujo Guiado (7 SP)
+#### US-15: Marketplace de Reventa Propio con Flujo Guiado y Retiro Pull-over-Push (7 SP)
 - **Criterios de Aceptación**:
-  - Vista "Mis Noches"; validación de que el precio propuesto sea `price >= minListingPrice`.
+  - Vista "Mis Noches" con listado de estancias adquiridas; validación de precio `price >= minListingPrice`.
+  - Flujo guiado de reventa con pre-aprobación del contrato `HotelMarketplace`.
+  - **Módulo de Retiro Pull-over-Push**: Los vendedores pueden visualizar su saldo acumulado en `pendingWithdrawals(address)` y ejecutar la función `withdraw()` mediante un botón de reclamo con notificación de éxito o fallo y actualización reactiva del balance.
 - **Tareas Técnicas**:
-  - `TASK-15.1`: UI de gestión de reventa.
+  - `TASK-15.1`: UI de gestión de reventa y listado de noches.
   - `TASK-15.2`: Flujo guiado de `approve()` y `listForSale()`.
+  - `TASK-15.3`: Componente UI de consulta de saldo y botón de retiro Pull-over-Push (`withdraw()`).
 
 #### US-16: Back-office Carlos: Minteo con Re-MFA y Dashboard Financiero (8 SP)
 - **Criterios de Aceptación**:
@@ -262,12 +278,13 @@ Los siguientes criterios aplican de forma obligatoria a **todas** las historias 
   - `TASK-16.1`: Panel de minteo masivo con re-MFA.
   - `TASK-16.2`: Componentes de gráficas y exportador CSV.
 
-#### US-18: Notificaciones Web Push Opt-in (3 SP)
+#### US-18: Notificaciones Web Push Opt-in para Nuevos Lotes y Reventas (3 SP)
 - **Criterios de Aceptación**:
-  - Suscripción Web Push anónima ante ventas de reventa.
+  - Suscripción Web Push anónima (opt-in LSSI-CE art. 21) que alerta al navegador ante la puesta a la venta de nuevos lotes de habitaciones minteadas por el hotel y nuevas ofertas en reventa.
+  - Opción de opt-out y revocación accesible en todo momento desde la interfaz.
 - **Tareas Técnicas**:
-  - `TASK-18.1`: Worker Web Push (FCM).
-  - `TASK-18.2`: Toggle UI en frontend.
+  - `TASK-18.1`: Worker Web Push (FCM / Web Push API) disparado ante eventos de nuevos lotes primarios y publicaciones de reventa.
+  - `TASK-18.2`: Toggle UI en frontend con modal de consentimiento y gestión de suscripción anónima.
 
 #### US-22: Tests E2E Frontend Sprint 5 con Playwright (0 SP — Hito)
 - **Criterios de Aceptación**:
@@ -296,13 +313,16 @@ Los siguientes criterios aplican de forma obligatoria a **todas** las historias 
 #### US-25: Formalización del Hito Regulatorio `H-COMPLIANCE` (4 SP)
 - **Criterios de Aceptación**:
   - Informe MiCA y guía fiscal anexados al repositorio (`docs/COMPLIANCE.md`).
+  - Cláusula legal expresa de no custodia bajo el Reglamento MiCA (UE) 2023/1114 en Términos y Condiciones, acreditando la naturaleza de software no custodial y exención de licencias CASP.
   - Guía operativa de custodios multisig validada (`docs/GUIA-GNOSIS-SAFE.md`).
 - **Tareas Técnicas**:
-  - `TASK-25.1`: Documentación legal formalizada.
+  - `TASK-25.1`: Documentación legal formalizada con dictamen MiCA, guía fiscal y cláusula de no custodia en `docs/COMPLIANCE.md`.
 
 ---
 
 ## 3. Matriz de Trazabilidad Completa: Requisitos ↔ Historias
+
+> **Nota de Trazabilidad sobre Identificadores**: El identificador de historia `US-19` fue concebido para la capa visual frontend del Histórico de Ventas (RF-10) y se encuentra plenamente cubierto e integrado como `TASK-10.3` dentro de `US-10` en el Sprint 4, preservando intacta la correlatividad de los identificadores consolidados `US-20` a `US-25`.
 
 | Requisito PRD / SRS | Descripción del Requisito | Historia(s) de Usuario | Sprint |
 |---------------------|---------------------------|------------------------|--------|
@@ -315,7 +335,7 @@ Los siguientes criterios aplican de forma obligatoria a **todas** las historias 
 | **RF-07** | Generación y Entrega de QR / Passes | `US-12` | Sprint 4 |
 | **RF-08** | Validación de QR en Recepción | `US-14` | Sprint 5 |
 | **RF-09** | Dashboard del Propietario (7 métricas) | `US-16` | Sprint 5 |
-| **RF-10** | Histórico de Ventas Público | `US-17` | Sprint 3 |
+| **RF-10** | Histórico de Ventas Público | `US-17`, `US-10` (TASK-10.3) | Sprint 3, 4 |
 | **RF-11** | Quema Automática de NFTs (Burn) | `US-09`, `US-01` | Sprint 3, 1 |
 | **RF-12** | Notificaciones Push Web (Opt-in) | `US-18` | Sprint 5 |
 | **RNF-01** | Carga móvil LCP < 2.5s / E2E | `US-10`, `US-21` | Sprint 4 |

@@ -75,4 +75,23 @@ Para ejecutar cualquier transacción administrativa se requiere la firma coordin
 2. Invocar `setMinListingPrice(uint256 _newMinPrice)` especificando el valor en wei.
 
 ---
+
+### 2.5 Retiro Periódico de Fondos de Tesorería (`withdraw()`)
+
+**Cuándo aplicar**: Liquidación periódica (semanal / mensual) de los fondos acumulados en el contrato `HotelMarketplace.sol` por concepto de ventas primarias (100% del importe) y royalties de reventa (5% simples, 10% suites).
+
+1. **Verificación de Saldo Pendiente**:
+   - En Polygonscan o mediante Safe{Wallet}, consultar la función de lectura `pendingWithdrawals(address treasuryAddress)`.
+   - Constatar que el saldo acumulado en wei sea mayor a 0.
+2. **Creación de la Propuesta de Retiro**:
+   - Acceder a [Safe{Wallet}](https://app.safe.global/) con la cuenta de Tesorería configurada en los contratos.
+   - Ir a **"New Transaction"** -> **"Contract Interaction"**.
+   - Ingresar la dirección del contrato `HotelMarketplace`.
+   - Seleccionar el método `withdraw()`.
+   - Generar y firmar la transacción inicial (Custodio 1).
+3. **Confirmación y Ejecución**:
+   - El segundo custodio verifica en Safe{Wallet} que la transacción transfiere los fondos directamente a la dirección de la Safe / Tesorería.
+   - Tras la segunda firma, la llamada se ejecuta en Polygon PoS y los fondos POL son transferidos íntegramente al balance líquido de la Tesorería.
+
+---
 *Guía Operativa Gnosis Safe v1.0.0 — Documento de gobernanza y respuesta a incidentes.*

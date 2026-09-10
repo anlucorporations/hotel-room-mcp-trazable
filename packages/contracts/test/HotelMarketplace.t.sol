@@ -241,4 +241,20 @@ contract HotelMarketplaceTest is Test {
         vm.expectRevert("Marketplace: Withdrawal failed");
         attacker.attack();
     }
+
+    function test_BuyRevertsIfNightExpired() public {
+        uint256 tokenId = _mintTestToken(seller1, 101, HotelNFT.RoomType.SIMPLE, 0.05 ether);
+        vm.startPrank(seller1);
+        nft.approve(address(marketplace), tokenId);
+        marketplace.listForSale(tokenId, 0.05 ether);
+        vm.stopPrank();
+
+        // Adelantar el tiempo más allá del checkInTimestamp de la noche de hotel
+        vm.warp(futureDate + 1);
+
+        // Intento de compra tras expiración debe revertir
+        vm.prank(buyer1);
+        vm.expectRevert("Marketplace: Expired night");
+        marketplace.buy{value: 0.05 ether}(tokenId);
+    }
 }

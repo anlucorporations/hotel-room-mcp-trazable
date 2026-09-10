@@ -42,10 +42,12 @@ El desarrollo sigue un enfoque **incremental y guiado por pruebas (TDD/BDD)**.
 | **RPC Respaldo** | N/A | Infura Polygon Amoy RPC | Infura Polygon Mainnet RPC |
 | **Toolchain Deploy**| `forge script` (local) | `forge script` en **GCP** | `forge script` en **GCP** |
 | **DEFAULT_ADMIN_ROLE** | Cuenta 0 de Anvil | Wallet QA dedicada | **Gnosis Safe Multisig 2-of-3** |
-| **MINTER_ROLE** | Cuenta 1 de Anvil | Wallet Minter Testnet | Hot-wallet Relayer Backend |
-| **BURNER_ROLE** | Cuenta 2 de Anvil | Wallet Bot Testnet | Hot-wallet Bot Backend |
-| **RECEPTION_ROLE** | Cuenta 3 de Anvil | Wallet Recepción Testnet | Hot-wallet Recepción Backend |
+| **MINTER_ROLE** | Cuenta 1 de Anvil | Wallet Operador Testnet | Hot-wallet Operador Backend (`HOTEL_OPERATOR_HOT_WALLET`) |
+| **BURNER_ROLE** | Cuenta 1 de Anvil | Wallet Operador Testnet | Hot-wallet Operador Backend (`HOTEL_OPERATOR_HOT_WALLET`) |
+| **RECEPTION_ROLE** | Cuenta 2 de Anvil | Wallet Recepción Testnet | Hot-wallet Recepción Backend |
 | **Observabilidad**| Logs en consola | Sentry Staging + Cloud Logs | Sentry Prod + Cloud Logs |
+
+> **Simplificación Operativa de Claves (ID_V-20)**: Para reducir la complejidad en la administración y monitoreo de saldos de gas en producción, las funciones de backend relayer (`MINTER_ROLE`) y bot burner (`BURNER_ROLE`) se unifican bajo una única hot-wallet de servicio (`HOTEL_OPERATOR_HOT_WALLET`), manteniendo segregada la hot-wallet del mostrador de recepción (`RECEPTION_ROLE`) y la gobernanza multisig (`DEFAULT_ADMIN_ROLE`).
 
 ---
 
@@ -115,7 +117,7 @@ F6: Pruebas k6, Hardening, Compliance & Validación Amoy (Semanas 12–13)
 ### Fase 3: Event Listener, Bot Burner y Despliegue en Amoy (Semanas 6–7)
 - **Objetivo**: Sincronización continua de eventos, scheduler desatendido seguro y primer despliegue real en testnet.
 - **Entregables**:
-  - Event Listener WebSocket con timeout de ping en **5000ms**, reconciliación `eth_getLogs` y alerta a `DEVOPS_ALERT_EMAIL` tras 10 min en silencio.
+  - Event Listener WebSocket con timeout de ping en **5000ms**, reconciliación `eth_getLogs` y alerta a `DEVOPS_ALERT_EMAIL` tras 10 min sin recibir bloques `newHeads`.
   - Bot Burner con cron a las **12:00 PM Europe/Madrid**, Redis Redlock (TTL 30s) y alerta si saldo < 5 POL.
   - Worker de correos BullMQ con persistencia y reconciliación en tabla `email_notifications`.
   - Histórico de ventas: `GET /api/sales/history` con exportación CSV.
@@ -131,14 +133,14 @@ F6: Pruebas k6, Hardening, Compliance & Validación Amoy (Semanas 12–13)
   - Resguardo QR con AES-256-GCM y re-descarga con firma EIP-712.
   - Generación de pases Apple Wallet (`.pkpass` con passkit-generator) y Google Wallet (`.json`).
   - Internacionalización ES / EN / RU.
-  - Pruebas E2E con Playwright para navegación, checkout y descarga.
+  - Pruebas E2E con Playwright para navegación, checkout y descarga, empleando un mock provider EIP-1193 inyectado en el contexto de página y respaldado por el nodo local Anvil para estabilidad y velocidad en CI.
 
 ---
 
 ### Fase 5: Módulos Operativos (Recepción, Reventa y Back-office) (Semanas 10–11)
 - **Objetivo**: Módulo de recepción seguro con contingencia y marcado on-chain, reventa y analítica.
 - **Entregables**:
-  - Pantalla de recepción protegida con MFA TOTP: escaneo QR y llamada a `markCheckedIn()` on-chain en < 3s.
+  - Pantalla de recepción protegida con MFA TOTP: escaneo QR con validación optimista en < 500ms (SLA RNF-03 < 3s) y llamada asíncrona a `markCheckedIn()` on-chain.
   - Flujo de contingencia en recepción: búsqueda manual por habitación/fecha asistida para huéspedes sin dispositivo.
   - Registro de viajeros RD 933/2021 formalmente documentado como operación en PMS físico.
   - Reventa guiada: `approve()` + `listForSale()` con verificación `price >= minListingPrice`.
