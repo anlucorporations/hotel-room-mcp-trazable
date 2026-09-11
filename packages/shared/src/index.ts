@@ -19,3 +19,14 @@ export * from "./domain/ipfs";
 export * from "./domain/faucet";
 export * from "./deployments/schema";
 export * from "./logger";
+
+// Módulos backend de persistencia, auth, redis, tasas y health checks
+export * from "./db/pool";
+export * from "./db/migrator";
+export * from "./db/repositories/nfts.repository";
+export * from "./db/repositories/sessions.repository";
+export * from "./redis/client";
+export * from "./auth/service";
+export * from "./rates/exchange-service";
+export * from "./health/service";
+
