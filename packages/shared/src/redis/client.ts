@@ -124,3 +124,37 @@ export async function getCachedEURRate(
     return null;
   }
 }
+
+/**
+ * Adquiere un bloqueo distribuido (Redlock simplificado de clave única) en Redis (US-09).
+ * Retorna el lockValue único si se adquirió con éxito, o null si ya estaba bloqueado.
+ */
+export async function acquireDistributedLock(
+  lockKey: string,
+  ttlSeconds = 30,
+  redis = getRedisClient(),
+): Promise<string | null> {
+  const lockValue = `${Date.now()}-${Math.random().toString(36).substring(2)}`;
+  const acquired = await redis.set(lockKey, lockValue, "EX", ttlSeconds, "NX");
+  return acquired === "OK" ? lockValue : null;
+}
+
+/**
+ * Libera el bloqueo distribuido asegurando que el lockValue coincida atómicamente (script Lua).
+ */
+export async function releaseDistributedLock(
+  lockKey: string,
+  lockValue: string,
+  redis = getRedisClient(),
+): Promise<boolean> {
+  const luaScript = `
+    if redis.call("get", KEYS[1]) == ARGV[1] then
+      return redis.call("del", KEYS[1])
+    else
+      return 0
+    end
+  `;
+  const result = await redis.eval(luaScript, 1, lockKey, lockValue);
+  return result === 1;
+}
+

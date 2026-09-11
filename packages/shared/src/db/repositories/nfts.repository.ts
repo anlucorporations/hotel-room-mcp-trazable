@@ -265,6 +265,47 @@ export class NFTsRepository {
     return { items, total };
   }
 
+  async getUnsoldExpiredNFTs(beforeDate: string): Promise<NFTRecord[]> {
+    const res = await this.pool.query(
+      `SELECT * FROM nfts 
+       WHERE status = 'AVAILABLE' AND check_in_date <= $1 
+       ORDER BY check_in_date ASC, room_number ASC`,
+      [beforeDate],
+    );
+    return res.rows.map(this.mapRowToNFT);
+  }
+
+  async updateNFTStatus(
+    tokenId: string,
+    status: "AVAILABLE" | "CONFIRMING" | "SOLD" | "BURNED" | "CHECKED_IN",
+    extra?: { currentOwner?: string; checkInSecretEnc?: string; burnedAt?: Date; checkedInAt?: Date },
+  ): Promise<void> {
+    const updates: string[] = ["status = $2"];
+    const values: any[] = [tokenId, status];
+    let idx = 3;
+
+    if (extra?.currentOwner) {
+      updates.push(`current_owner = $${idx++}`);
+      values.push(extra.currentOwner);
+    }
+    if (extra?.checkInSecretEnc) {
+      updates.push(`check_in_secret_enc = $${idx++}`);
+      values.push(extra.checkInSecretEnc);
+    }
+    if (status === "BURNED") {
+      updates.push(`burned_at = NOW()`);
+    }
+    if (status === "CHECKED_IN") {
+      updates.push(`checked_in_at = NOW()`);
+    }
+
+    await this.pool.query(
+      `UPDATE nfts SET ${updates.join(", ")} WHERE token_id = $1`,
+      values,
+    );
+  }
+
+
   private mapRowToNFT(row: any): NFTRecord {
     return {
       tokenId: row.token_id,

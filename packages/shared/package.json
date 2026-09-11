@@ -45,6 +45,7 @@
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
+    "bullmq": "^6.3.4",
     "ioredis": "^6.0.0",
     "jose": "^6.2.12",
     "otplib": "^13.5.0",

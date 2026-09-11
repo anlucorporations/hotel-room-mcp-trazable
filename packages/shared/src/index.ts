@@ -29,4 +29,8 @@ export * from "./redis/client";
 export * from "./auth/service";
 export * from "./rates/exchange-service";
 export * from "./health/service";
+export * from "./queue/notifications";
+export * from "./burner/service";
+export * from "./events/listener";
+
 

@@ -73,5 +73,7 @@ contract Deploy is Script {
         vm.serializeAddress(key, "hotelMarketplace", marketplace);
         string memory json = vm.serializeUint(key, "deploymentBlock", block.number);
         vm.writeJson(json, "./deployments/latest.json");
+        vm.writeJson(json, string.concat("./deployments/", vm.toString(block.chainid), ".json"));
     }
 }
+

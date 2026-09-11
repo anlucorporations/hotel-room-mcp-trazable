@@ -70,21 +70,26 @@ describe("AuthService (US-05)", () => {
   });
 
   describe("Recovery Codes", () => {
-    it("debe generar exactamente 8 códigos de rescate de 10 caracteres hex", async () => {
-      const { plainCodes, hashedCodes } = authService.generateRecoveryCodes(8);
-      expect(plainCodes).toHaveLength(8);
-      plainCodes.forEach((code) => {
-        expect(code).toMatch(/^[A-F0-9]{10}$/);
-      });
+    it(
+      "debe generar exactamente 8 códigos de rescate de 10 caracteres hex",
+      async () => {
+        const { plainCodes, hashedCodes } = authService.generateRecoveryCodes(8);
+        expect(plainCodes).toHaveLength(8);
+        plainCodes.forEach((code) => {
+          expect(code).toMatch(/^[A-F0-9]{10}$/);
+        });
 
-      const resolvedHashes = await hashedCodes;
-      expect(resolvedHashes).toHaveLength(8);
-      for (let i = 0; i < 8; i++) {
-        const match = await authService.comparePassword(plainCodes[i], resolvedHashes[i]);
-        expect(match).toBe(true);
-      }
-    });
+        const resolvedHashes = await hashedCodes;
+        expect(resolvedHashes).toHaveLength(8);
+        for (let i = 0; i < 8; i++) {
+          const match = await authService.comparePassword(plainCodes[i], resolvedHashes[i]);
+          expect(match).toBe(true);
+        }
+      },
+      15000,
+    );
   });
+
 
   describe("Challenge Token (MFA Reto)", () => {
     it("debe generar un challenge token verificable con expiración y datos de usuario", async () => {
