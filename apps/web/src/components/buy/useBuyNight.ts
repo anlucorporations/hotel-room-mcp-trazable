@@ -1,8 +1,8 @@
 "use client";
 
 import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
-import { hotelNightsAbi } from "@hotel/shared/abi";
-import { contractAddress } from "@/config/chain";
+import { hotelMarketplaceAbi } from "@hotel/shared/abi";
+import { marketplaceAddress } from "@/config/chain";
 import { deriveTxStatus, type TxStatus } from "@/components/tx/txStatus";
 
 export interface UseBuyNightResult {
@@ -14,15 +14,15 @@ export interface UseBuyNightResult {
   error: Error | null;
 }
 
-/** Orquesta la compra (primaria o reventa) con wagmi y deriva el estado de la tx (CU-05/07/17). */
+/** Orquesta la compra en HotelMarketplace con wagmi y deriva el estado de la tx (CU-05/07/17). */
 export function useBuyNight(): UseBuyNightResult {
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
   const receipt = useWaitForTransactionReceipt({ hash });
 
   function buy(tokenId: string, priceWei: string): void {
     writeContract({
-      address: contractAddress,
-      abi: hotelNightsAbi,
+      address: marketplaceAddress,
+      abi: hotelMarketplaceAbi,
       functionName: "buy",
       args: [BigInt(tokenId)],
       value: BigInt(priceWei),
@@ -30,13 +30,7 @@ export function useBuyNight(): UseBuyNightResult {
   }
 
   function buyResale(tokenId: string, priceWei: string): void {
-    writeContract({
-      address: contractAddress,
-      abi: hotelNightsAbi,
-      functionName: "buyResale",
-      args: [BigInt(tokenId)],
-      value: BigInt(priceWei),
-    });
+    buy(tokenId, priceWei);
   }
 
   const status = deriveTxStatus({

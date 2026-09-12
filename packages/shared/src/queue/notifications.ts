@@ -77,6 +77,34 @@ export class NotificationQueueService {
   }
 
   /**
+   * Encola un correo efímero exclusivamente en memoria (BullMQ/Redis) sin persistir en PostgreSQL.
+   * Cumplimiento estricto de RGPD (art. 5.1.c) para resguardos enviados a emails no vinculados a wallets (US-12).
+   */
+  async enqueueEphemeralEmail(
+    recipientEmail: string,
+    payload: Record<string, any>,
+  ): Promise<string> {
+    const ephemeralId = `ephemeral_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const q = this.getQueue();
+    await q.add(
+      "EPHEMERAL_TICKET",
+      {
+        notificationId: ephemeralId,
+        eventType: "EPHEMERAL_TICKET",
+        recipientEmail,
+        payload,
+        isEphemeral: true,
+      },
+      {
+        jobId: ephemeralId,
+        removeOnComplete: true,
+        removeOnFail: true,
+      },
+    );
+    return ephemeralId;
+  }
+
+  /**
    * Marca la notificación como enviada (SENT) en BD.
    */
   async markAsSent(notificationId: string): Promise<void> {
@@ -136,7 +164,7 @@ export class NotificationQueueService {
    * Crea un worker de BullMQ para procesar correos.
    */
   createWorker(
-    handler: (job: Job<{ notificationId: string; eventType: string; recipientEmail: string; payload: any }>) => Promise<void>,
+    handler: (job: Job<{ notificationId: string; eventType: string; recipientEmail: string; payload: any; isEphemeral?: boolean }>) => Promise<void>,
   ): Worker {
     const redis = getRedisClient();
     return new Worker(
@@ -144,9 +172,13 @@ export class NotificationQueueService {
       async (job) => {
         try {
           await handler(job);
-          await this.markAsSent(job.data.notificationId);
+          if (!job.data.isEphemeral) {
+            await this.markAsSent(job.data.notificationId);
+          }
         } catch (err) {
-          await this.markAsFailed(job.data.notificationId);
+          if (!job.data.isEphemeral) {
+            await this.markAsFailed(job.data.notificationId);
+          }
           throw err;
         }
       },

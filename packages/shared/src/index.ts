@@ -32,5 +32,7 @@ export * from "./health/service";
 export * from "./queue/notifications";
 export * from "./burner/service";
 export * from "./events/listener";
+export * from "./passes/jws";
+
 
 

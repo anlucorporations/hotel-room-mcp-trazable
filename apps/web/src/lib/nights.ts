@@ -10,6 +10,7 @@ import {
   GETLOGS_MAX_RANGE,
   decodeTokenId,
   roomTypeOf,
+  NFTsRepository,
   type NightType,
   type SaleType,
 } from "@hotel/shared";
@@ -17,12 +18,12 @@ import { hotelNightsAbi } from "@hotel/shared/abi";
 import { contractAddress, deploymentBlock } from "@/config/chain";
 import { serverPublicClient } from "@/lib/server-client";
 
+const nftsRepo = new NFTsRepository();
+
 /**
- * Lectura del catálogo por RPC sin indexador (ADR-09):
- *   - DISPONIBLE (primaria): noches minteadas sin venta, en la ventana, no expiradas.
- *   - LISTADA_SECUNDARIO (reventa): noches con listado activo (de los eventos `Listed`,
- *     confirmadas con `listingOf`), en la ventana, no expiradas.
- * `getLogs` se pagina en chunks ≤ `GETLOGS_MAX_RANGE` desde el `deploymentBlock`.
+ * Lectura del catálogo:
+ *   1. Prioridad: Consulta rápida a base de datos PostgreSQL indexada vía NFTsRepository.
+ *   2. Resiliencia: Fallback a lectura RPC sin indexador (ADR-09).
  */
 export interface NightView {
   readonly tokenId: string;
@@ -108,6 +109,35 @@ const inWindow = (date: number, today: number, end: number): boolean =>
 
 /** Noches comprables (DISPONIBLE + LISTADA_SECUNDARIO) en la ventana, ordenadas por fecha. */
 export async function fetchCatalog(): Promise<NightView[]> {
+  // 1. Intento primario vía base de datos off-chain
+  try {
+    const catalog = await nftsRepo.queryCatalog({ status: "AVAILABLE", limit: 100 });
+    if (catalog && catalog.items && catalog.items.length > 0) {
+      return catalog.items
+        .map((nft) => {
+          const parts = nft.checkInDate.split("-").map(Number);
+          const y = parts[0] ?? 2026;
+          const m = parts[1] ?? 7;
+          const d = parts[2] ?? 20;
+          const dateYYYYMMDD = y * 10_000 + m * 100 + d;
+          const type: NightType = nft.roomType.toLowerCase() === "suite" ? "suite" : "simple";
+          return {
+            tokenId: nft.tokenId,
+            room: nft.roomNumber,
+            dateYYYYMMDD,
+            type,
+            priceWei: nft.basePriceWei,
+            saleType: "PRIMARY" as SaleType,
+          };
+        })
+        .sort((a, b) => a.dateYYYYMMDD - b.dateYYYYMMDD);
+    }
+  } catch (dbErr) {
+    // Si la BD no está disponible, degradación elegante al RPC on-chain
+    console.warn("[fetchCatalog] Fallback a escaneo RPC:", dbErr);
+  }
+
+  // 2. Fallback on-chain por RPC
   const client = serverPublicClient();
   const address = contractAddress;
   const head = await client.getBlockNumber();

@@ -13,6 +13,9 @@ export const rpcUrl: string = process.env.NEXT_PUBLIC_RPC_URL ?? "http://127.0.0
 export const contractAddress: Address =
   (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as Address | undefined) ?? DEV_CONTRACT;
 
+export const marketplaceAddress: Address =
+  (process.env.NEXT_PUBLIC_MARKETPLACE_ADDRESS as Address | undefined) ?? contractAddress;
+
 /**
  * Faucet de pruebas (RF-21, ADR-13): `null` si no se configura `NEXT_PUBLIC_FAUCET_ADDRESS`.
  * En producción NO se define (no hay faucet) y en el E2E hermético tampoco, por lo que toda

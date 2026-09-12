@@ -1,0 +1,470 @@
+{
+  "app": {
+    "name": "Hotel Marina del Sol",
+    "description": "Book your night overlooking the Mediterranean as an NFT and transfer it whenever you want (Polygon network)."
+  },
+  "roomType": {
+    "simple": "Standard",
+    "doble": "Double",
+    "suite": "Suite"
+  },
+  "home": {
+    "title": "Hotel Marina del Sol",
+    "tagline": "Your night overlooking the Mediterranean, in your custody. Direct booking, no intermediaries."
+  },
+  "shell": {
+    "skipToContent": "Skip to content",
+    "brandTitle": "Marina del Sol",
+    "brandSubtitle": "Alicante · Mediterranean",
+    "brandHome": "Marina del Sol, home",
+    "navLabel": "Main navigation",
+    "navNights": "Nights",
+    "navMyNights": "My Nights",
+    "navHistory": "Sales History",
+    "navAssistant": "Assistant",
+    "menuOpen": "Open menu",
+    "menuClose": "Close menu",
+    "footerTagline": "Secure network · verified payments",
+    "footerSealAria": "Every sale is registered and verifiable on-chain. Check the public history.",
+    "footerNavLabel": "Legal and transparency links",
+    "footerAddress": "Hotel Marina del Sol · Promenade, Alicante",
+    "footerHistory": "Public sales history",
+    "footerTerms": "Terms",
+    "footerPrivacy": "Privacy"
+  },
+  "howItWorks": {
+    "title": "How it works",
+    "subtitle": "Booking a night by the Mediterranean is direct, paperwork-free, and without intermediaries.",
+    "steps": {
+      "connect": {
+        "title": "1 · Connect your wallet",
+        "body": "Use MetaMask or any Web3 wallet. We don't create accounts or ask for personal details."
+      },
+      "reserve": {
+        "title": "2 · Book with POL/ETH",
+        "body": "Choose your night, review the amount, and sign the payment. Nothing is charged until you sign."
+      },
+      "own": {
+        "title": "3 · Your night, transferable",
+        "body": "The night stays in your wallet as an NFT. If your plans change, you can resell it."
+      }
+    }
+  },
+  "hero": {
+    "eyebrow": "Direct booking · No intermediaries",
+    "titleLead": "Your night facing the",
+    "titleHighlight": "Mediterranean",
+    "titleTail": ", fully owned.",
+    "subcopy": "Every night belongs to you the moment you book it. And if your plans change, you can transfer it to another guest. Simple, secure, zero paperwork."
+  },
+  "catalog": {
+    "available": "Available",
+    "resale": "Resale",
+    "suite": "Suite",
+    "room": "Room {room}",
+    "imageAlt": "Room {type} {room} for {date}",
+    "ownershipNote": "The night becomes yours: you can resell it at any time.",
+    "sectionHeading": "Available nights",
+    "filtersLabel": "Catalog filters",
+    "filtersGroupLabel": "Filter nights by type and month",
+    "filterAll": "All",
+    "resultCount": "{count, plural, =0 {No nights} one {# night} other {# nights}}",
+    "searchLabel": "Search by room number",
+    "searchPlaceholder": "Room No.",
+    "maxPriceLabel": "Max price",
+    "maxPriceAny": "Any price",
+    "maxPriceOption": "Up to {price} POL",
+    "dateRangeLabel": "Date range",
+    "dateFromLabel": "From",
+    "dateToLabel": "To",
+    "empty": "No nights matching these filters",
+    "emptyHint": "Try different dates, room types, or higher price ceiling.",
+    "emptyNoListings": "No nights published yet",
+    "emptyNoListingsHint": "Check back soon: we are preparing new rooms by the sea.",
+    "clearFilters": "Clear filters",
+    "degraded": "Could not load the catalog. Check your connection and try again.",
+    "retry": "Retry",
+    "loadMore": "Load more nights",
+    "loadMoreAnnounce": "{count, plural, one {# night} other {# nights}} added to the catalog.",
+    "endOfList": "You have viewed all available nights in the next 90 days."
+  },
+  "wallet": {
+    "noWallet": "No Web3 wallet detected.",
+    "installMetamask": "Install MetaMask",
+    "connect": "Connect wallet",
+    "connecting": "Connecting…",
+    "wrongNetwork": "You are on the wrong network.",
+    "switchNetwork": "Switch network",
+    "switchingNetwork": "Switching network…",
+    "connectedAs": "Connected: {address}",
+    "switchError": {
+      "chainNotAdded": "Your wallet doesn't have this network yet. Please approve adding it.",
+      "rejected": "Network switch was cancelled.",
+      "failed": "Failed to switch network. Please switch manually in your wallet."
+    }
+  },
+  "faucet": {
+    "get": "Get test tokens",
+    "dispensing": "Dispensing tokens…",
+    "success": "Done! You received test tokens in your wallet.",
+    "cooldown": "You requested tokens recently. Try again after {time}.",
+    "empty": "Faucet is empty.",
+    "emptyShort": "Faucet empty",
+    "error": "Could not dispense test tokens."
+  },
+  "buy": {
+    "buy": "Book night",
+    "buyResale": "Book resale",
+    "needWallet": "Install a wallet",
+    "connectToBuy": "Connect to book",
+    "switchToBuy": "Switch network to book",
+    "processing": "Processing…",
+    "close": "Close",
+    "cancel": "Cancel",
+    "retry": "Try again",
+    "roomLabel": "Room {room}",
+    "review": "Review booking",
+    "reviewHint": "This is what you will sign. Verify the price and night before confirming.",
+    "reviewRoom": "Room",
+    "reviewDate": "Night",
+    "reviewAmount": "Amount",
+    "reviewToken": "Token",
+    "reviewContract": "Contract",
+    "confirmSign": "Confirm and sign",
+    "reverifyFailed": "The price has just changed on-chain. Please reopen the booking.",
+    "verifyingPrice": "Verifying on-chain price…",
+    "verifyFailed": "Could not verify price on-chain. Check your network.",
+    "verifyRetry": "Retry verification",
+    "noChargeUntilSign": "No charges will be made until you sign.",
+    "receipt": "Receipt",
+    "viewTransaction": "View transaction in block explorer",
+    "copyHash": "Copy",
+    "copied": "Copied!",
+    "viewMyNights": "Go to My Nights",
+    "pendingClosable": "You can close this modal: the booking is mining and will appear in My Nights.",
+    "insufficientBalance": "Insufficient balance for this booking.",
+    "insufficientBalanceDetail": "You need {missing} more {symbol} (have {have}, need {need}).",
+    "status": {
+      "signing": "Confirm in your wallet",
+      "pending": "Booking your night…",
+      "confirmed": "Night booked successfully!",
+      "reverted": "Booking failed"
+    },
+    "statusHint": {
+      "signing": "Review and sign the transaction in MetaMask.",
+      "pending": "Waiting for network confirmation…",
+      "confirmed": "The night is now yours. It will appear in My Nights.",
+      "reverted": "No funds were charged. You can try again."
+    },
+    "txError": {
+      "rejected": "Signature was cancelled.",
+      "failed": "Transaction failed. Please check network and try again."
+    }
+  },
+  "myNights": {
+    "title": "My Nights",
+    "tagline": "Manage your bookings: list for resale, cancel listing, or withdraw earnings.",
+    "connectPrompt": "Connect your wallet to view and manage your nights.",
+    "loading": "Loading your nights…",
+    "loadError": "Could not load nights. Please try again.",
+    "retry": "Retry",
+    "empty": "You do not own any nights yet.",
+    "emptyUpcoming": "No upcoming nights.",
+    "emptyPast": "No past nights.",
+    "tabsLabel": "Filter nights by date",
+    "tabUpcoming": "Upcoming",
+    "tabPast": "Past",
+    "tabStatus": "{tab}: {count, plural, =0 {no nights} one {# night} other {# nights}}",
+    "exploreNights": "Explore catalog",
+    "room": "Room {room}",
+    "imageAlt": "Room {type} {room} for {date}",
+    "listedBadge": "Listed for resale",
+    "ownedBadge": "Owned",
+    "listedPrice": "Resale price: {price}",
+    "priceLabel": "Resale price (POL)",
+    "list": "List for sale",
+    "changePrice": "Change price",
+    "saveNewPrice": "Save new price",
+    "cancelEdit": "Cancel",
+    "unlist": "Cancel resale",
+    "invalidPrice": "Enter a price greater than 0.",
+    "pendingTitle": "Pending balance",
+    "pendingHint": "You have funds from secondary sales ready to withdraw.",
+    "claim": "Withdraw {amount}",
+    "processing": "Processing…",
+    "txError": {
+      "rejected": "Signature cancelled.",
+      "failed": "Operation failed."
+    },
+    "resaleError": {
+      "NotOwner": "You are not the owner of this night.",
+      "InvalidPrice": "Price must be greater than 0.",
+      "NightExpired": "The night has expired and cannot be listed.",
+      "NotListed": "This night is not currently listed."
+    }
+  },
+  "history": {
+    "title": "Sales History",
+    "tagline": "All sales recorded on-chain, ordered from newest to oldest.",
+    "empty": "No sales recorded yet.",
+    "degraded": "Could not load history. Please try again.",
+    "retry": "Retry",
+    "colRoom": "Room",
+    "colDate": "Night",
+    "colType": "Type",
+    "colPrice": "Price",
+    "colSaleType": "Sale",
+    "colSeller": "Seller",
+    "colBuyer": "Buyer",
+    "colTx": "Transaction",
+    "viewTx": "View transaction in block explorer",
+    "primary": "Primary",
+    "secondary": "Resale"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "tagline": "On-chain hotel business metrics.",
+    "degraded": "Could not load metrics.",
+    "retry": "Retry",
+    "period": "Period: up to block {block}",
+    "asOf": "Approximate timestamp: {datetime}",
+    "primaryVolume": "Primary sales volume",
+    "royalties": "Accumulated royalties",
+    "secondaryVolume": "Resale volume",
+    "sold": "Nights sold",
+    "minted": "Nights minted",
+    "burned": "Nights burned",
+    "occupancy": "Commercial occupancy",
+    "formula": {
+      "primaryVolume": "Σ primary sales price",
+      "royalties": "Σ RoyaltyPaid (secondary only)",
+      "secondaryVolume": "Σ secondary sales price",
+      "sold": "No. of primary sales",
+      "minted": "No. of Mint events",
+      "burned": "No. of Burn events",
+      "occupancy": "sold / minted"
+    }
+  },
+  "admin": {
+    "brandTitle": "Dashboard · Marina del Sol",
+    "brandHome": "Back-office home",
+    "skipToContent": "Skip to content",
+    "loadingSession": "Checking session…",
+    "gateTitle": "Back-office · Role Access",
+    "connect": "Connect wallet",
+    "connectPrompt": "Connect your authorized wallet to access back-office.",
+    "wrongNetwork": "Wrong network.",
+    "switchNetwork": "Switch network",
+    "signInPrompt": "Sign SIWE challenge to log in with your roles.",
+    "signIn": "Sign In (SIWE)",
+    "signingIn": "Signing…",
+    "signInFailed": "Login failed. Try again.",
+    "noRole": "Your wallet has no back-office roles.",
+    "roleDenied": "Your session lacks the required role for this section.",
+    "accountChanged": "Account changed in wallet. Please sign in again.",
+    "resign": "Sign in again",
+    "logout": "Log out",
+    "rolesCount": "Roles ({count})",
+    "loadingValue": "Loading…",
+    "readError": "Could not read on-chain value.",
+    "processing": "Processing…",
+    "nav": {
+      "label": "Back-office sections",
+      "lockedHint": "You lack permissions for this section.",
+      "mint": "Mint night",
+      "dashboard": "Metrics",
+      "royalty": "Royalty",
+      "pause": "Emergency pause",
+      "funds": "Funds",
+      "expired": "Expired nights",
+      "roles": "Roles"
+    },
+    "mintTitle": "Back-office · Mint night",
+    "mintTagline": "Create an available night for sale: valid room, date, and price.",
+    "room": "Room (101–130, 201–220)",
+    "date": "Night date",
+    "price": "Price (POL)",
+    "mint": "Mint night",
+    "minting": "Minting…",
+    "minted": "Night minted: token {tokenId}",
+    "invalidDate": "Invalid date.",
+    "invalidRoom": "Room not found in catalog master.",
+    "dashboardTitle": "Dashboard",
+    "dashboardTagline": "On-chain hotel commercial metrics.",
+    "royaltyTitle": "Royalty",
+    "royaltyTagline": "Configure resale royalty percentage (CU-12).",
+    "royaltyCurrent": "Current royalty: {bps} bps ({percent} %).",
+    "royaltyField": "New royalty (bps, 0–2000)",
+    "royaltySet": "Set royalty",
+    "royaltyOutOfRange": "Royalty must be between {min} and {max} bps.",
+    "pauseTitle": "Emergency pause",
+    "pauseTagline": "Pause or unpause purchases, resales, minting, and burning (CU-14).",
+    "pauseActive": "System is ACTIVE.",
+    "pausePaused": "System is PAUSED.",
+    "pausePause": "Pause",
+    "pauseUnpause": "Unpause",
+    "fundsTitle": "Treasury & Funds",
+    "fundsTagline": "Withdraw contract revenue to treasury (CU-15).",
+    "fundsBalance": "Contract balance",
+    "fundsTreasury": "Target treasury",
+    "fundsResidualNote": "Withdraws residual balance to treasury while reserving seller pending funds.",
+    "fundsWithdraw": "Withdraw to treasury",
+    "expiredTitle": "Expired nights",
+    "expiredTagline": "Batch burn unsold past nights (CU-13).",
+    "expiredScan": "Scan expired",
+    "expiredScanning": "Scanning…",
+    "expiredScanError": "Scan error. Use manual token ID entry.",
+    "expiredCount": "{count, plural, =0 {No expired nights} one {# expired night} other {# expired nights}}.",
+    "expiredManual": "Token IDs to burn (separated by commas or newlines)",
+    "expiredBatchHint": "Current batch: {count} of max {max} tokens.",
+    "expiredBurn": "Burn batch ({count})",
+    "expiredEmptyBatch": "No tokens in batch.",
+    "expiredTooLarge": "Batch exceeds maximum {max} tokens.",
+    "rolesTitle": "Roles and ownership",
+    "rolesTagline": "Grant or revoke roles and initiate 2-step ownership transfer (CU-16).",
+    "rolesGrantTitle": "Grant / revoke role",
+    "rolesRole": "Role",
+    "rolesAccount": "Account address",
+    "rolesGrant": "Grant",
+    "rolesRevoke": "Revoke",
+    "rolesInvalidAddress": "Enter a valid 0x address.",
+    "rolesOwnershipTitle": "Ownership (Ownable2Step)",
+    "rolesOwner": "Current owner",
+    "rolesPendingOwner": "Pending owner",
+    "rolesNewOwner": "New owner",
+    "rolesTransfer": "Transfer ownership",
+    "rolesAccept": "Accept ownership",
+    "txError": {
+      "rejected": "Signature cancelled.",
+      "failed": "Operation failed.",
+      "noFunds": "No withdrawable funds.",
+      "paused": "System is currently paused."
+    },
+    "tx": {
+      "review": "Confirm operation",
+      "reviewHint": "Review data before signing.",
+      "signing": "Sign transaction",
+      "signingHint": "Sign the transaction in your wallet.",
+      "pending": "Waiting for confirmation",
+      "pendingHint": "Awaiting confirmation on the network…",
+      "confirmed": "Operation completed",
+      "confirmedHint": "Transaction confirmed on-chain.",
+      "reverted": "Operation reverted",
+      "revertedHint": "Transaction reverted."
+    },
+    "confirm": "Confirm and sign",
+    "cancel": "Cancel",
+    "pauseConfirm": "You are about to PAUSE the system.",
+    "unpauseConfirm": "You are about to RESUME the system.",
+    "fundsConfirm": "You are about to withdraw residual balance to treasury.",
+    "fundsWithdrawable": "Withdrawable now",
+    "fundsNoneWithdrawable": "No funds withdrawable right now.",
+    "pausedWarning": "System is paused.",
+    "expiredConfirm": "You are about to BURN {count} nights.",
+    "expiredConfirmTokens": "Tokens to burn:",
+    "rolesRevokeConfirm": "You are about to REVOKE role {role} from {account}.",
+    "rolesTransferConfirm": "You are about to designate {account} as pending owner.",
+    "scanConfigError": "Deployment block is higher than current head.",
+    "scanPartialError": "Scan was incomplete due to RPC error.",
+    "rolesAdminTitle": "Super-admin control",
+    "rolesAdminNote": "On-chain control is governed by DEFAULT_ADMIN_ROLE.",
+    "rolesOwnerInfoTitle": "Ownership metadata",
+    "rolesOwnerInfoNote": "Ownable2Step is informational only.",
+    "rolesHandoverTitle": "Hand over DEFAULT_ADMIN",
+    "fieldErrorPrefix": "Error:"
+  },
+  "legal": {
+    "terms": {
+      "title": "Terms of Service",
+      "intro": "Marina del Sol enables tokenized hotel room reservations as NFTs on Polygon network.",
+      "sections": {
+        "pilot": {
+          "heading": "Service nature",
+          "body": "This service provides digital reservations through cryptographic tokens on blockchain."
+        },
+        "ownership": {
+          "heading": "Token ownership",
+          "body": "Upon booking, you receive an NFT representing the reservation in your self-custody wallet."
+        },
+        "transfer": {
+          "heading": "Resale and transfer",
+          "body": "You can resell your reservation in the secondary marketplace according to smart contract rules."
+        },
+        "noWarranty": {
+          "heading": "Disclaimers",
+          "body": "Transactions on-chain are final and irreversible. Always verify details before signing."
+        }
+      },
+      "placeholderNote": "Standard terms for digital room pass reservations."
+    },
+    "privacy": {
+      "title": "Privacy Policy",
+      "intro": "We adhere to data minimization principles under GDPR.",
+      "sections": {
+        "noPii": {
+          "heading": "No personal data required for booking",
+          "body": "No accounts, emails, or names required on-chain to reserve rooms."
+        },
+        "onChain": {
+          "heading": "Public on-chain data",
+          "body": "Transactions and wallet addresses are public on the Polygon network."
+        },
+        "wallet": {
+          "heading": "Wallet connection",
+          "body": "Connecting your wallet only provides your public address to show your nights."
+        },
+        "contact": {
+          "heading": "Contact",
+          "body": "For privacy requests, contact hotel management at reception."
+        }
+      },
+      "placeholderNote": "GDPR-compliant anonymous reservation framework."
+    }
+  },
+  "assistant": {
+    "title": "AI Assistant",
+    "tagline": "Ask about availability and prepare your booking; you sign with your wallet.",
+    "intro": "Hello! I am the Hotel Marina del Sol concierge assistant. I can help check dates and prepare room bookings.",
+    "logLabel": "Conversation with assistant",
+    "placeholder": "e.g.: is there a suite available in June?",
+    "send": "Send",
+    "sending": "Thinking…",
+    "unavailable": "Assistant is temporarily offline. You can book directly from the catalog.",
+    "manualLink": "Go to catalog",
+    "errorReply": "Sorry, I could not respond right now. Please try again.",
+    "retry": "Retry",
+    "suggestionsLabel": "Suggestions",
+    "suggestions": {
+      "availability": "Show suites in June",
+      "myNights": "My bookings",
+      "buy": "Book a night"
+    },
+    "handoff": {
+      "title": "Booking prepared — review and sign",
+      "room": "Room",
+      "roomValue": "{room} ({type})",
+      "date": "Night",
+      "token": "Token",
+      "to": "Contract",
+      "value": "Amount",
+      "confirm": "Sign booking",
+      "connect": "Connect wallet to book",
+      "switchNetwork": "Switch network to book",
+      "signer": "Signing with wallet {address}",
+      "verifying": "Verifying on-chain price…",
+      "verifyFailed": "Could not verify price on-chain.",
+      "verifyRetry": "Retry",
+      "insufficientBalance": "You need {missing} more {symbol}.",
+      "reverifyFailed": "Transaction data does not match on-chain price.",
+      "successTitle": "Night booked!",
+      "successBody": "Your booking is confirmed. View it in My Nights.",
+      "viewMyNights": "View My Nights",
+      "pendingClosable": "You can close this window; the booking is mining.",
+      "retry": "Try again",
+      "txError": {
+        "rejected": "Signature cancelled.",
+        "failed": "Could not complete booking."
+      }
+    }
+  }
+}
