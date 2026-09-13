@@ -398,9 +398,17 @@
           "heading": "Reventa y traspaso",
           "body": "Puedes poner tu noche en reventa o traspasarla a otra wallet en cualquier momento, según las reglas del contrato. Las comisiones de royalty aplicables se muestran antes de firmar."
         },
+        "micaNonCustody": {
+          "heading": "Cláusula Expresa de No Custodia (Reglamento MiCA UE 2023/1114)",
+          "body": "Marina del Sol opera como software descentralizado y de auto-custodia. En ningún caso la entidad operadora accede, gestiona, bloquea ni custodia claves privadas ni fondos criptográficos de los usuarios. Los NFTs representan derechos de hospedaje consumibles y no constituyen instrumentos financieros ni tokens referenciados a activos (ART) o de dinero electrónico (EMT), quedando exenta de licencia de proveedor CASP bajo MiCA."
+        },
+        "travelerRegistry": {
+          "heading": "Registro Oficial de Viajeros (RD 933/2021)",
+          "body": "La reserva y transferencia de NFTs es técnica y criptográficamente anónima. Sin embargo, en estricto cumplimiento del Real Decreto 933/2021, todo viajero deberá identificarse presencialmente en recepción mediante DNI o pasaporte físico al momento de realizar el check-in presencial en el hotel."
+        },
         "noWarranty": {
           "heading": "Sin garantías",
-          "body": "El piloto se ofrece «tal cual», sin garantías de disponibilidad continua. Las transacciones on-chain son irreversibles: revisa siempre el importe y la noche antes de firmar."
+          "body": "El servicio opera sobre la red Polygon. Las transacciones on-chain son irreversibles: revisa siempre el importe y la noche antes de firmar."
         }
       },
       "placeholderNote": "Texto de muestra para el piloto. La versión definitiva se publicará antes de cualquier despliegue público."

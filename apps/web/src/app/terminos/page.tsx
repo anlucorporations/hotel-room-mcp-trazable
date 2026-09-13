@@ -3,7 +3,14 @@ import { PublicShell } from "@/components/layout/PublicShell";
 
 export const metadata = { title: "Términos" };
 
-const SECTIONS = ["pilot", "ownership", "transfer", "noWarranty"] as const;
+const SECTIONS = [
+  "pilot",
+  "ownership",
+  "transfer",
+  "micaNonCustody",
+  "travelerRegistry",
+  "noWarranty",
+] as const;
 
 /**
  * Página de Términos (UX#6/MINOR#40): contenido placeholder honesto para que el enlace

@@ -15,12 +15,15 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:contracts": "pnpm --filter @hotel/contracts test",
+    "test:k6": "node --experimental-strip-types scripts/load-tests/run-load-test.ts",
+    "test:e2e:amoy": "node --experimental-strip-types scripts/e2e/amoy-lifecycle.ts",
     "contracts:build": "pnpm --filter @hotel/contracts build",
     "deploy:anvil": "pnpm --filter @hotel/contracts deploy:anvil",
     "clean": "turbo run clean"
   },
   "devDependencies": {
     "turbo": "^2.3.3",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "viem": "^2.52.0"
   }
 }

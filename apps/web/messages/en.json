@@ -398,6 +398,14 @@
           "heading": "Resale and transfer",
           "body": "You can resell your reservation in the secondary marketplace according to smart contract rules."
         },
+        "micaNonCustody": {
+          "heading": "Express Non-Custody Clause (MiCA Regulation EU 2023/1114)",
+          "body": "Marina del Sol operates exclusively as decentralized self-custody software. The operator never accesses, manages, blocks, or custodies users' private keys or crypto funds. NFTs represent consumable utility rights for lodging and are not financial instruments under MiFID II nor asset-referenced tokens (ART) or e-money tokens (EMT), exempting the software from CASP licensing requirements under MiCA."
+        },
+        "travelerRegistry": {
+          "heading": "Official Traveler Registry (RD 933/2021)",
+          "body": "While booking and NFT transfers are pseudonymous on-chain, Spanish Royal Decree 933/2021 mandates in-person identity verification (ID/Passport) at hotel reception during physical check-in for mandatory registration in the hotel management system (PMS)."
+        },
         "noWarranty": {
           "heading": "Disclaimers",
           "body": "Transactions on-chain are final and irreversible. Always verify details before signing."
