@@ -1,8 +1,8 @@
 "use client";
 
 import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
-import { hotelNightsAbi } from "@hotel/shared/abi";
-import { contractAddress } from "@/config/chain";
+import { hotelMarketplaceAbi } from "@hotel/shared/abi";
+import { marketplaceAddress } from "@/config/chain";
 import { deriveTxStatus, type TxStatus } from "@/components/tx/txStatus";
 
 export interface UseListNightResult {
@@ -14,25 +14,25 @@ export interface UseListNightResult {
   error: Error | null;
 }
 
-/** Listar/cancelar la reventa de una noche con wagmi y estado de tx (CU-06). */
+/** Listar/cancelar la reventa de una noche en HotelMarketplace (US-15). */
 export function useListNight(): UseListNightResult {
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
   const receipt = useWaitForTransactionReceipt({ hash });
 
   function list(tokenId: string, priceWei: bigint): void {
     writeContract({
-      address: contractAddress,
-      abi: hotelNightsAbi,
-      functionName: "list",
+      address: marketplaceAddress,
+      abi: hotelMarketplaceAbi,
+      functionName: "listForSale",
       args: [BigInt(tokenId), priceWei],
     });
   }
 
   function unlist(tokenId: string): void {
     writeContract({
-      address: contractAddress,
-      abi: hotelNightsAbi,
-      functionName: "unlist",
+      address: marketplaceAddress,
+      abi: hotelMarketplaceAbi,
+      functionName: "cancelListing",
       args: [BigInt(tokenId)],
     });
   }

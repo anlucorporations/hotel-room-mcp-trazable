@@ -92,6 +92,30 @@ CREATE TABLE IF NOT EXISTS email_notifications (
 );
 
 CREATE INDEX IF NOT EXISTS idx_notifications_pending ON email_notifications(status, created_at);
+
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    endpoint TEXT UNIQUE NOT NULL,
+    keys_p256dh TEXT NOT NULL,
+    keys_auth TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_push_endpoint ON push_subscriptions(endpoint);
+
+CREATE TABLE IF NOT EXISTS checkin_contingency_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    token_id VARCHAR(66) NOT NULL REFERENCES nfts(token_id) ON DELETE CASCADE,
+    room_number INT NOT NULL,
+    check_in_date DATE NOT NULL,
+    possession_proof_type VARCHAR(50) NOT NULL,
+    possession_proof_value TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    pms_registered BOOLEAN NOT NULL DEFAULT TRUE,
+    processed_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_contingency_token ON checkin_contingency_logs(token_id);
 `;
 
 /**

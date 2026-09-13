@@ -1,8 +1,8 @@
 "use client";
 
 import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
-import { hotelNightsAbi } from "@hotel/shared/abi";
-import { contractAddress } from "@/config/chain";
+import { hotelMarketplaceAbi } from "@hotel/shared/abi";
+import { marketplaceAddress } from "@/config/chain";
 import { deriveTxStatus, type TxStatus } from "@/components/tx/txStatus";
 
 export interface UseClaimResult {
@@ -13,16 +13,16 @@ export interface UseClaimResult {
   error: Error | null;
 }
 
-/** Cobra (pull-payment) los saldos pendientes de reventas con wagmi y estado de tx (CU-07). */
+/** Retira (Pull-over-Push) los saldos pendientes de reventas en HotelMarketplace (US-15). */
 export function useClaim(): UseClaimResult {
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
   const receipt = useWaitForTransactionReceipt({ hash });
 
   function claim(): void {
     writeContract({
-      address: contractAddress,
-      abi: hotelNightsAbi,
-      functionName: "claim",
+      address: marketplaceAddress,
+      abi: hotelMarketplaceAbi,
+      functionName: "withdraw",
       args: [],
     });
   }

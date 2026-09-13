@@ -305,6 +305,138 @@ export class NFTsRepository {
     );
   }
 
+  /**
+   * Marca un NFT como CHECKED_IN de forma atómica optimista (US-14).
+   */
+  async markCheckedIn(tokenId: string): Promise<boolean> {
+    const res = await this.pool.query(
+      `UPDATE nfts 
+       SET status = 'CHECKED_IN', checked_in_at = NOW() 
+       WHERE token_id = $1 AND status IN ('SOLD', 'CONFIRMING', 'AVAILABLE')
+       RETURNING token_id`,
+      [tokenId],
+    );
+    return (res.rowCount ?? 0) > 0;
+  }
+
+  /**
+   * Busca un NFT por número de habitación y fecha de check-in (para contingencia asistida).
+   */
+  async findNFTByRoomAndDate(roomNumber: number, checkInDate: string): Promise<NFTRecord | null> {
+    const res = await this.pool.query(
+      `SELECT * FROM nfts WHERE room_number = $1 AND check_in_date = $2`,
+      [roomNumber, checkInDate],
+    );
+    if (res.rows.length === 0) return null;
+    return this.mapRowToNFT(res.rows[0]);
+  }
+
+  /**
+   * Registra la auditoría de un check-in asistido por contingencia (SRS §4.2, RD 933/2021).
+   */
+  async recordContingencyCheckIn(
+    tokenId: string,
+    data: {
+      roomNumber: number;
+      checkInDate: string;
+      possessionProofType: string;
+      possessionProofValue: string;
+      reason: string;
+    },
+  ): Promise<void> {
+    await this.pool.query(
+      `INSERT INTO checkin_contingency_logs 
+       (token_id, room_number, check_in_date, possession_proof_type, possession_proof_value, reason, pms_registered)
+       VALUES ($1, $2, $3, $4, $5, $6, TRUE)`,
+      [
+        tokenId,
+        data.roomNumber,
+        data.checkInDate,
+        data.possessionProofType,
+        data.possessionProofValue,
+        data.reason,
+      ],
+    );
+  }
+
+  /**
+   * Registra una suscripción Web Push anónima (opt-in LSSI-CE art. 21).
+   */
+  async addPushSubscription(endpoint: string, p256dh: string, auth: string): Promise<void> {
+    await this.pool.query(
+      `INSERT INTO push_subscriptions (endpoint, keys_p256dh, keys_auth)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (endpoint) DO UPDATE 
+       SET keys_p256dh = EXCLUDED.keys_p256dh, keys_auth = EXCLUDED.keys_auth`,
+      [endpoint, p256dh, auth],
+    );
+  }
+
+  /**
+   * Elimina una suscripción Web Push (opt-out).
+   */
+  async removePushSubscription(endpoint: string): Promise<void> {
+    await this.pool.query(`DELETE FROM push_subscriptions WHERE endpoint = $1`, [endpoint]);
+  }
+
+  /**
+   * Obtiene todas las suscripciones Web Push activas.
+   */
+  async getAllPushSubscriptions(): Promise<Array<{ endpoint: string; p256dh: string; auth: string }>> {
+    const res = await this.pool.query(
+      `SELECT endpoint, keys_p256dh as p256dh, keys_auth as auth FROM push_subscriptions`,
+    );
+    return res.rows;
+  }
+
+  /**
+   * Obtiene las 7 métricas comerciales y financieras del hotel calculadas on-chain/off-chain (US-16).
+   */
+  async getFinancialMetrics(): Promise<{
+    primaryVolumeWei: string;
+    secondaryVolumeWei: string;
+    accumulatedRoyaltiesWei: string;
+    soldCount: number;
+    mintedCount: number;
+    burnedCount: number;
+    commercialOccupancyPercent: number;
+  }> {
+    const [salesRes, nftsCountRes] = await Promise.all([
+      this.pool.query(`
+        SELECT 
+          COALESCE(SUM(CASE WHEN is_secondary = FALSE THEN price_in_wei ELSE 0 END), 0) as primary_volume,
+          COALESCE(SUM(CASE WHEN is_secondary = TRUE THEN price_in_wei ELSE 0 END), 0) as secondary_volume,
+          COALESCE(SUM(royalty_amount_wei), 0) as royalties,
+          COUNT(CASE WHEN is_secondary = FALSE THEN 1 END) as primary_sales_count
+        FROM sale_events
+      `),
+      this.pool.query(`
+        SELECT 
+          COUNT(*) as minted_count,
+          COUNT(CASE WHEN status = 'BURNED' THEN 1 END) as burned_count,
+          COUNT(CASE WHEN status IN ('SOLD', 'CHECKED_IN') THEN 1 END) as sold_count
+        FROM nfts
+      `),
+    ]);
+
+    const sales = salesRes.rows[0];
+    const nfts = nftsCountRes.rows[0];
+
+    const mintedCount = parseInt(nfts.minted_count, 10) || 0;
+    const soldCount = parseInt(nfts.sold_count, 10) || 0;
+    const burnedCount = parseInt(nfts.burned_count, 10) || 0;
+    const commercialOccupancyPercent = mintedCount > 0 ? (soldCount / mintedCount) * 100 : 0;
+
+    return {
+      primaryVolumeWei: sales.primary_volume.toString(),
+      secondaryVolumeWei: sales.secondary_volume.toString(),
+      accumulatedRoyaltiesWei: sales.royalties.toString(),
+      soldCount,
+      mintedCount,
+      burnedCount,
+      commercialOccupancyPercent: Number(commercialOccupancyPercent.toFixed(2)),
+    };
+  }
 
   private mapRowToNFT(row: any): NFTRecord {
     return {

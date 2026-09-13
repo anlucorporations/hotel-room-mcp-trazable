@@ -1,36 +1,67 @@
-import { cookies } from "next/headers";
 import type { DashboardAggregates } from "@hotel/shared";
+import { NFTsRepository } from "@hotel/shared";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AdminPanel } from "@/components/admin/AdminPanel";
 import { DashboardMetrics } from "@/components/dashboard/DashboardMetrics";
 import { DegradedState } from "@/components/DegradedState";
 import { fetchAggregates } from "@/lib/worker-api";
-import { SESSION_COOKIE, verifySession } from "@/lib/session";
 import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
 
-/**
- * Métricas (CU-11): gateadas por sesión válida (visor) dentro del back-office; ya NO públicas.
- * Los datos se agregan en el worker (server-side). El fetch se hace SOLO con sesión verificada
- * en servidor: una petición no autenticada nunca lleva los agregados en el payload RSC.
- */
+const nftsRepo = new NFTsRepository();
+
 export default async function DashboardPage() {
   const t = await getTranslations("dashboard");
 
-  const session = verifySession(cookies().get(SESSION_COOKIE)?.value);
   let data: DashboardAggregates | null = null;
-  if (session) {
+  try {
+    const metrics = await nftsRepo.getFinancialMetrics();
+    data = {
+      primaryVolumeWei: metrics.primaryVolumeWei,
+      royaltiesWei: metrics.accumulatedRoyaltiesWei,
+      secondaryVolumeWei: metrics.secondaryVolumeWei,
+      soldCount: metrics.soldCount,
+      mintedCount: metrics.mintedCount,
+      burnedCount: metrics.burnedCount,
+      occupancyRatioPercent: metrics.commercialOccupancyPercent,
+      lastBlock: 0,
+    };
+  } catch {
     try {
       data = await fetchAggregates();
     } catch {
-      data = null; // worker no disponible → degradado
+      data = null;
     }
   }
 
   return (
     <AdminLayout>
       <AdminPanel titleKey="dashboardTitle" descriptionKey="dashboardTagline">
+        <div className="mb-4 flex justify-end">
+          <a
+            href="/api/admin/metrics?format=csv"
+            download
+            className="inline-flex items-center gap-2 rounded-brand border border-line bg-sand-2 px-3 py-1.5 text-xs font-semibold text-ink transition hover:bg-sand"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Exportar Informe CSV
+          </a>
+        </div>
         {data === null ? (
           <DegradedState message={t("degraded")} retryLabel={t("retry")} />
         ) : (
@@ -40,3 +71,4 @@ export default async function DashboardPage() {
     </AdminLayout>
   );
 }
+
