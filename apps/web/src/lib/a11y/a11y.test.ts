@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getContrastRatio, verifyWcagAA } from './contrast';
+import { verifyWcagAA } from './contrast';
 
 describe('Accesibilidad Universal WCAG 2.1 AA (Fase 2)', () => {
   describe('Contraste Cromático de la Paleta Institucional', () => {

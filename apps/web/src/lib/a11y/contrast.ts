@@ -13,9 +13,13 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } {
 }
 
 export function getRelativeLuminance(rgb: { r: number; g: number; b: number }): number {
-  const [rs, gs, bs] = [rgb.r / 255, rgb.g / 255, rgb.b / 255].map((c) => {
-    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-  });
+  const transform = (c: number): number => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  const rs = transform(rgb.r);
+  const gs = transform(rgb.g);
+  const bs = transform(rgb.b);
   return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
 }
 

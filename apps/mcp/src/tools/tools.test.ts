@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Address } from "viem";
 import { encodeTokenId, verifyPurchaseTx } from "@hotel/shared";
 import type { ChainReader, MintRecord, NightSignals } from "../chain/chain-reader";
@@ -10,6 +10,15 @@ import {
   listAvailableNights,
   type ToolConfig,
 } from "./tools";
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-06-01T12:00:00Z"));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 const CONTRACT = "0x5FbDB2315678afecb367f032d93F642f64180aa3" as Address;
 const CONFIG: ToolConfig = { contractAddress: CONTRACT, chainId: 81234 };
