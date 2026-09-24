@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import type { NightType } from "@hotel/shared";
+import type { NightType } from "@hotel/shared/domain";
 
 /**
  * Imagen de la noche servida por host/CDN (ADR-12) vía `next/image` (UX#10): el contenedor
  * padre fija el ratio (`aspect-[4/3]`), así que se usa `fill` + `sizes` para reservar el hueco
  * y evitar CLS. `priority` activa carga ansiosa + `fetchPriority="high"` solo en las primeras
  * tarjetas (LCP); el resto carga `lazy` por defecto. Si la imagen no resuelve, cae a un
- * placeholder accesible (`img-fallback`, CU-04 04c) sin bloquear la compra.
+ * placeholder accesible (`img-fallback`, CU-04 04c, docs/SRS.md §9) sin bloquear la compra.
  */
 export function NightImage({
   type,

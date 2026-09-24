@@ -16,7 +16,7 @@ import type { ChainEvent, ChainSource, SaleEvent } from "./types";
  * `Chain` (anvil/besu) y la URL RPC por construcción (DIP: la elección de red la hace
  * `main.ts`, no este módulo).
  *
- * - `getSaleLogs`: solo eventos `Sale`, para el aviso por email (CU-10).
+ * - `getSaleLogs`: solo eventos `Sale`, para el aviso por email (CU-10, docs/SRS.md §9).
  * - `getDomainLogs`: `Mint`/`Sale`/`RoyaltyPaid`/`Burn`, para agregados/histórico (CU-09/11).
  */
 export interface ViemChainSourceOptions {
@@ -32,6 +32,39 @@ type LocatedLog = {
   readonly blockNumber: bigint;
 };
 
+/**
+ * Concurrencia máxima de lecturas `getBlock` en vuelo para resolver marcas temporales.
+ * Acotada para no saturar el RPC cuando un chunk trae eventos en muchos bloques distintos.
+ */
+const BLOCK_READ_CONCURRENCY = 6;
+
+/**
+ * Tamaño máximo de la caché de marcas temporales. Un bloque es inmutable, así que cachear es
+ * seguro; el tope evita que el proceso crezca sin límite durante un catch-up largo.
+ */
+const BLOCK_TIMESTAMP_CACHE_MAX = 2048;
+
+/**
+ * Limitador de concurrencia mínimo (estilo p-limit), sin dependencias externas: aplica `task` a
+ * cada elemento conservando el orden con, como mucho, `limit` tareas en paralelo.
+ */
+async function mapWithConcurrency<T, R>(
+  items: readonly T[],
+  limit: number,
+  task: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+  const worker = async (): Promise<void> => {
+    while (next < items.length) {
+      const index = next++;
+      results[index] = await task(items[index]!);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
+
 const isLocated = <T extends {
   transactionHash: `0x${string}` | null;
   logIndex: number | null;
@@ -46,6 +79,11 @@ const isLocated = <T extends {
 export class ViemChainSource implements ChainSource {
   private readonly client: PublicClient;
   private readonly contractAddress: `0x${string}`;
+  /**
+   * Marcas temporales por número de bloque (segundos UNIX). Un bloque es inmutable, así que la
+   * caché es correcta por construcción; se acota para que un catch-up largo no la haga crecer.
+   */
+  private readonly blockTimestamps = new Map<string, number>();
 
   constructor(options: ViemChainSourceOptions) {
     this.client = createPublicClient({
@@ -57,6 +95,21 @@ export class ViemChainSource implements ChainSource {
 
   async getHeadBlock(): Promise<bigint> {
     return this.client.getBlockNumber();
+  }
+
+  /**
+   * Marca temporal de un bloque (segundos UNIX), con la misma caché que usa `getDomainLogs`.
+   * Se usa para rellenar la fecha de las ventas del histórico anteriores a M7 (H6).
+   */
+  async getBlockTimestamp(blockNumber: bigint): Promise<number> {
+    const key = blockNumber.toString();
+    const cached = this.blockTimestamps.get(key);
+    if (cached !== undefined) return cached;
+
+    const header = await this.client.getBlock({ blockNumber });
+    const timestamp = Number(header.timestamp);
+    this.rememberBlock(key, timestamp);
+    return timestamp;
   }
 
   async getSaleLogs(fromBlock: bigint, toBlock: bigint): Promise<SaleEvent[]> {
@@ -145,10 +198,58 @@ export class ViemChainSource implements ChainSource {
     ];
 
     // Orden total determinista: por bloque asc y, en empate, por logIndex asc.
-    return events.sort((a, b) =>
+    const ordered = events.sort((a, b) =>
       a.blockNumber !== b.blockNumber
         ? Number(a.blockNumber - b.blockNumber)
         : a.logIndex - b.logIndex,
     );
+
+    return this.withBlockTimestamps(ordered);
+  }
+
+  /**
+   * Adjunta a cada evento la marca temporal de su bloque (la necesita la serie mensual de D-16).
+   *
+   * Se leen **solo los bloques que contienen eventos** (y una única vez por bloque, con caché), no
+   * el rango entero: un chunk de 5.000 bloques con dos ventas cuesta dos `getBlock`.
+   *
+   * Fail-closed a propósito: si la lectura de un bloque falla, el chunk **no se da por agregado**
+   * (`catchUp` propaga y no avanza `last_block`), así que se reintenta en el ciclo siguiente. La
+   * alternativa —persistir la venta sin fecha— la dejaría fuera de la serie mensual para siempre,
+   * porque la idempotencia por `txHash:logIndex` impide volver a procesarla.
+   */
+  private async withBlockTimestamps(events: readonly ChainEvent[]): Promise<ChainEvent[]> {
+    const missing = [
+      ...new Set(
+        events
+          .filter((event) => !this.blockTimestamps.has(event.blockNumber.toString()))
+          .map((event) => event.blockNumber.toString()),
+      ),
+    ];
+
+    if (missing.length > 0) {
+      const fetched = await mapWithConcurrency(missing, BLOCK_READ_CONCURRENCY, async (block) => {
+        const header = await this.client.getBlock({ blockNumber: BigInt(block) });
+        return { block, timestamp: Number(header.timestamp) };
+      });
+      for (const { block, timestamp } of fetched) {
+        this.rememberBlock(block, timestamp);
+      }
+    }
+
+    return events.map((event) => ({
+      ...event,
+      blockTimestamp: this.blockTimestamps.get(event.blockNumber.toString()),
+    }));
+  }
+
+  /** Guarda la marca temporal de un bloque en la caché acotada (FIFO). */
+  private rememberBlock(block: string, timestamp: number): void {
+    if (this.blockTimestamps.size >= BLOCK_TIMESTAMP_CACHE_MAX) {
+      // Desaloja la entrada más antigua: los bloques recientes son los que se repiten.
+      const oldest = this.blockTimestamps.keys().next().value;
+      if (oldest !== undefined) this.blockTimestamps.delete(oldest);
+    }
+    this.blockTimestamps.set(block, timestamp);
   }
 }

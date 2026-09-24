@@ -34,10 +34,9 @@ describe("ExchangeRateService (US-06)", () => {
   it("debe consultar CoinGecko y guardar en caché si Redis no tiene datos", async () => {
     vi.mocked(redisClient.getCachedEURRate).mockResolvedValueOnce(null);
 
-    const mockFetch = vi.spyOn(global, "fetch").mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ "matic-network": { eur: 1.78 } }),
-    } as any);
+    const mockFetch = vi.spyOn(global, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify({ "matic-network": { eur: 1.78 } }), { status: 200 }),
+    );
 
     const result = await service.getRate();
     expect(mockFetch).toHaveBeenCalledTimes(1);
@@ -53,10 +52,7 @@ describe("ExchangeRateService (US-06)", () => {
     const mockFetch = vi.spyOn(global, "fetch")
       .mockRejectedValueOnce(new Error("CoinGecko timeout"))
       // Binance responde exitoso
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ price: "2.00" }),
-      } as any);
+      .mockResolvedValueOnce(new Response(JSON.stringify({ price: "2.00" }), { status: 200 }));
 
     const result = await service.getRate();
     expect(mockFetch).toHaveBeenCalledTimes(2);

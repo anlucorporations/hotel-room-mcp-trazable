@@ -20,7 +20,7 @@ const DANGER =
 type PendingAction = "pause" | "unpause";
 
 /**
- * Pausa de emergencia (CU-14, PAUSER): muestra `paused()` y permite `pause`/`unpause`. Pausar
+ * Pausa de emergencia (CU-14, docs/SRS.md §9, PAUSER): muestra `paused()` y permite `pause`/`unpause`. Pausar
  * es una acción destructiva de servicio → variante `danger` (terracotta). Reanudar usa el sea.
  * Ambas son acciones de servicio críticas: exigen confirmación explícita en el `TxModal`
  * (fase `review`) antes de firmar (UX#21), con copy genérica del ciclo de tx (MAJOR#9).

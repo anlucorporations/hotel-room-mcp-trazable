@@ -21,10 +21,11 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(session, { status: 200 });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || 'Error al generar sesión de compra con tarjeta.' },
-      { status: 400 }
-    );
+  } catch (error) {
+    const message =
+      error instanceof Error && error.message
+        ? error.message
+        : 'Error al generar sesión de compra con tarjeta.';
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }

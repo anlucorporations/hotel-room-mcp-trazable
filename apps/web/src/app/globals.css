@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Sistema visual «Mediterráneo editorial» (DISEÑO-UX §2). */
+/* Sistema visual «Mediterráneo editorial» (docs/SRS.md §7). */
 :root {
   --sand: #fbf6ec;
   --sand-2: #f3ead8;
@@ -53,7 +53,7 @@
   }
 }
 
-/* Respeta la preferencia de movimiento reducido (DISEÑO-UX §2.3, RNF-20). */
+/* Respeta la preferencia de movimiento reducido (docs/SRS.md §7, RNF-20). */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

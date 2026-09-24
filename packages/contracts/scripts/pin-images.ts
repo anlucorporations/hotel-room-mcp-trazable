@@ -6,7 +6,7 @@
  *   ficheros de un solo bloque coincide con `ipfs add --raw-leaves --cid-version=1`, así que
  *   cualquiera puede reproducir y pinear el mismo CID.
  * - Con `PINATA_JWT`: además sube a Pinata (pinner gestionado, prod) — Decisión Pinata/Kubo
- *   (DISEÑO §16.3): Kubo en dev/CI, Pinata en staging/prod, con redundancia (Decisión 13).
+ *   (ADR-12): Kubo en dev/CI, Pinata en staging/prod, con redundancia (Decisión 13).
  *
  * Uso: pnpm --filter @hotel/contracts pin:images <simple> <doble> <suite>
  */

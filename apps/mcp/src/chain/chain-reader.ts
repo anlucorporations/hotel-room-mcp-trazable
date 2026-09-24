@@ -14,7 +14,7 @@ export interface MintRecord {
   readonly priceWei: bigint;
 }
 
-/** Señales on-chain de una noche para derivar su estado (CASOS §4) y su precio. */
+/** Señales on-chain de una noche para derivar su estado (docs/SRS.md §9) y su precio. */
 export interface NightSignals {
   readonly exists: boolean;
   readonly soldOnce: boolean;

@@ -9,18 +9,20 @@ import { isActiveRoute } from "./navigation";
 
 interface NavItem {
   readonly href: string;
-  readonly labelKey: "navNights" | "navMyNights" | "navHistory" | "navAssistant";
+  readonly labelKey: "navNights" | "navResale" | "navMyNights" | "navHistory" | "navAssistant";
 }
 
 const NAV_ITEMS: readonly NavItem[] = [
   { href: "/", labelKey: "navNights" },
+  // D-07: el mercado secundario es una vista propia; el catálogo solo ofrece primaria.
+  { href: "/reventa", labelKey: "navResale" },
   { href: "/mis-noches", labelKey: "navMyNights" },
   { href: "/historico", labelKey: "navHistory" },
   { href: "/asistente", labelKey: "navAssistant" },
 ];
 
 /**
- * Cabecera pública sticky (organismo Header, DISEÑO-UX §3/§4.1): marca con *mark* circular
+ * Cabecera pública sticky (organismo Header, docs/SRS.md §7): marca con *mark* circular
  * en gradiente, navegación con `aria-current` en el activo y la barra de wallet a la derecha.
  *
  * En tablet+ la navegación es horizontal; en móvil se sustituye por un botón hamburguesa

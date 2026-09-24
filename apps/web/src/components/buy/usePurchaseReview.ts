@@ -8,7 +8,7 @@ import {
   roomTypeOf,
   type NightType,
   type PurchaseTxData,
-} from "@hotel/shared";
+} from "@hotel/shared/domain";
 import { hotelNightsAbi } from "@hotel/shared/abi";
 import { activeChain, contractAddress } from "@/config/chain";
 import { reverifyPurchase, type ClientReverifyResult } from "@/components/assistant/reverify";

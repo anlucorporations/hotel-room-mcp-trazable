@@ -1,0 +1,67 @@
+{
+  "hito": "M5",
+  "premisa": "check-in con markCheckedIn on-chain, resguardo de un solo uso y contingencia sin PII",
+  "fecha": "2026-09-23T18:29:31.898Z",
+  "red": {
+    "chainId": 81234,
+    "rpc": "http://127.0.0.1:8545",
+    "contrato": "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+  },
+  "transacciones": {
+    "mint_105": "0x0434b44b4db167dc836d2de752c3564af2012ece8efd59eba47eb0c29e41c56b",
+    "buy_105": "0xd096ebbe0106f3a4b5d9e9828eba2f96b8cddc3c0b13bf35839242cfe804b663",
+    "markCheckedIn_onChain": "0xfe74fa20293da65f4e8ee87c73ff52c495202fcca60233cbd9c3f2be802dd567",
+    "mint_106": "0x1b4c62b2cc2047307be59e72d1a323fbb207015cba901d36027a8c888bc0ec1b",
+    "buy_106": "0x3e3189cfcc0dddc177b6b55854a5e3a2f79fef5f00886fc0da9f707ac7efdf07",
+    "markCheckedIn_contingency": "0xb836eace179d7562185fb952e99703253caeff6038f40eb935d8d56881de453e"
+  },
+  "comprobaciones": [
+    "La cadena responde y es la esperada",
+    "El contrato canónico tiene código desplegado",
+    "Recepción NO es administradora (solo RECEPTION_ROLE): separación de funciones",
+    "La noche 10520271003 es del huésped tras la compra primaria",
+    "La firma EIP-712 del titular valida (es lo que exige el pase)",
+    "El nonce de la autorización se consume una vez (Redis real)",
+    "Reutilizar el mismo nonce se rechaza (replay)",
+    "Check-in completado con ancla on-chain (19 ms)",
+    "El ancla on-chain se difundió en el mismo flujo",
+    "El recibo del ancla confirma la transacción",
+    "La cadena marca la noche como consumida (isCheckedIn)",
+    "Evento CheckedIn emitido por el contrato canónico",
+    "El ancla la firma la hot-wallet de recepción",
+    "El calldata del ancla es markCheckedIn(uint256)",
+    "El índice off-chain queda en CHECKED_IN",
+    "El segundo escaneo del MISMO resguardo falla",
+    "El segundo escaneo se rechaza con TICKET_YA_USADO (un solo uso)",
+    "Un resguardo nuevo de una noche ya consumida se rechaza con YA_CONSUMIDA",
+    "markCheckedIn revierte con AlreadyCheckedIn",
+    "list revierte con NightNotResellable",
+    "buyResale revierte con NotListed",
+    "La contingencia rechaza un DNI (no se admiten datos personales)",
+    "El rechazo por PII no consumió la noche",
+    "La contingencia rechaza «JuanPerezGarcia» como código de resguardo",
+    "La contingencia rechaza «600123456» como código de resguardo",
+    "La contingencia rechaza «12345678» como código de resguardo",
+    "Los rechazos no consumieron la noche",
+    "El recibo del ancla de contingencia confirma la transacción",
+    "La contingencia ancla el check-in on-chain",
+    "El índice off-chain también queda consumido por contingencia",
+    "list revierte con NightNotResellable",
+    "El PMS recibe la entrada sin generar ficha policial",
+    "La respuesta del PMS no contiene datos personales"
+  ],
+  "resultado": "COMPLETO",
+  "noches": {
+    "qr": {
+      "tokenId": "10520271003",
+      "room": "105",
+      "date": "2027-10-03"
+    },
+    "contingencia": {
+      "tokenId": "10620271001",
+      "room": "106",
+      "date": "2027-10-01"
+    }
+  },
+  "precioPrimarioWei": "110000000000000000"
+}

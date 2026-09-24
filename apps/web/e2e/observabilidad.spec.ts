@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 /**
  * FASE 3/4.5: el histórico (público) lee del worker → sin worker muestra estado degradado
- * (CU-09 09b). El dashboard pasa a ser del back-office (RF-10): sin sesión SIWE pide acceso
+ * (CU-09 09b, docs/SRS.md §9). El dashboard pasa a ser del back-office (RF-10): sin sesión SIWE pide acceso
  * (CU-01); su estado degradado por worker caído solo aplica ya autenticado.
  */
 test("el histórico muestra estado degradado si el worker no responde", async ({ page }) => {

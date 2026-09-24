@@ -1,38 +1,39 @@
 import type { DashboardAggregates } from "@hotel/shared";
-import { NFTsRepository } from "@hotel/shared";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AdminPanel } from "@/components/admin/AdminPanel";
+import { AdminSignInScreen } from "@/components/admin/AdminSignInScreen";
 import { DashboardMetrics } from "@/components/dashboard/DashboardMetrics";
 import { DegradedState } from "@/components/DegradedState";
+import { currentAdminSession } from "@/lib/admin-session";
 import { fetchAggregates } from "@/lib/worker-api";
 import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
 
-const nftsRepo = new NFTsRepository();
-
+/**
+ * Dashboard (CU-11 + D-16, docs/SRS.md §9).
+ *
+ * Fuente ÚNICA: los agregados que el worker calcula en PostgreSQL (`/aggregates`), los mismos que
+ * alimentan el histórico público. Hasta M7 esta página prefería un cálculo propio desde
+ * `sale_events`/`nfts` y solo caía al worker si aquel fallaba: dos verdades para la misma cifra.
+ * Ahora, si el worker no responde, la página lo dice (estado degradado) en vez de mostrar una
+ * cifra que quizá no cuadre con el histórico.
+ *
+ * **Sesión verificada ANTES de leer nada** (M7 · H1): en el App Router la página se renderiza
+ * aunque el layout decida no pintarla, así que sin esta comprobación el payload con las cifras
+ * viajaba en el flujo RSC a un cliente anónimo. Ver `@/lib/admin-session`.
+ */
 export default async function DashboardPage() {
+  const session = await currentAdminSession();
+  if (!session.ok) return <AdminSignInScreen />;
+
   const t = await getTranslations("dashboard");
 
   let data: DashboardAggregates | null = null;
   try {
-    const metrics = await nftsRepo.getFinancialMetrics();
-    data = {
-      primaryVolumeWei: metrics.primaryVolumeWei,
-      royaltiesWei: metrics.accumulatedRoyaltiesWei,
-      secondaryVolumeWei: metrics.secondaryVolumeWei,
-      soldCount: metrics.soldCount,
-      mintedCount: metrics.mintedCount,
-      burnedCount: metrics.burnedCount,
-      occupancyRatioPercent: metrics.commercialOccupancyPercent,
-      lastBlock: 0,
-    };
+    data = await fetchAggregates();
   } catch {
-    try {
-      data = await fetchAggregates();
-    } catch {
-      data = null;
-    }
+    data = null;
   }
 
   return (
@@ -42,7 +43,7 @@ export default async function DashboardPage() {
           <a
             href="/api/admin/metrics?format=csv"
             download
-            className="inline-flex items-center gap-2 rounded-brand border border-line bg-sand-2 px-3 py-1.5 text-xs font-semibold text-ink transition hover:bg-sand"
+            className="inline-flex min-h-touch items-center gap-2 rounded-brand border border-line bg-sand-2 px-3 text-micro font-semibold text-ink transition hover:bg-sand"
           >
             <svg
               width="14"
@@ -59,7 +60,7 @@ export default async function DashboardPage() {
               <polyline points="7 10 12 15 17 10" />
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
-            Exportar Informe CSV
+            {t("exportCsv")}
           </a>
         </div>
         {data === null ? (
@@ -71,4 +72,3 @@ export default async function DashboardPage() {
     </AdminLayout>
   );
 }
-

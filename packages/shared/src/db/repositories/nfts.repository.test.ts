@@ -1,15 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { Mock } from "vitest";
+import type { Pool } from "pg";
 import { NFTsRepository, type NFTRecord, type ListingRecord, type SaleEventRecord } from "./nfts.repository";
 
 describe("NFTsRepository (US-04, US-07b)", () => {
   let repository: NFTsRepository;
-  let mockPool: any;
+  // Doble parcial del pool: solo se ejercita `query`, por eso el mock se declara como intersección.
+  let mockPool: Pool & { query: Mock };
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockPool = {
       query: vi.fn(),
-    };
+    } as Pool & { query: Mock };
     repository = new NFTsRepository(mockPool);
   });
 

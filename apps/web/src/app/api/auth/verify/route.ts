@@ -16,7 +16,7 @@ interface VerifyBody {
 }
 
 /**
- * Verifica el reto SIWE (CU-01, EIP-4361):
+ * Verifica el reto SIWE (CU-01, docs/SRS.md §9, EIP-4361):
  *   1. binding de dominio y cadena (anti-phishing cross-domain/cross-chain),
  *   2. validez temporal: expiración (`expirationTime`) y «not before» (`notBefore`, MINOR#31),
  *   3. firma válida y coincidente con la dirección reclamada — `verifySiweMessage` de viem, que

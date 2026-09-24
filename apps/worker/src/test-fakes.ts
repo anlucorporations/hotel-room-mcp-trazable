@@ -1,4 +1,11 @@
 import { pino, type Logger } from "pino";
+import {
+  decodeTokenId,
+  roomTypeOf,
+  summarizeHistory,
+  type HistorySummary,
+  type NightType,
+} from "@hotel/shared";
 import { idempotencyKey } from "./aggregate-store";
 import type {
   AggregateCounters,
@@ -9,16 +16,20 @@ import type {
   HistoryRow,
   Mailer,
   MintEvent,
+  ProcessedLogLocation,
   RoyaltyPaidEvent,
   SaleAggregateEvent,
   SaleEvent,
   SaleNotification,
+  UndatedSaleRow,
 } from "./types";
 
 /**
  * Fakes para las pruebas del núcleo (T1.4). Permiten ejercitar `SaleProcessor`/`runWorker`
- * sin red ni SMTP reales (DIP). El `CheckpointStore` no se finge: se usa la impl real de
- * SQLite con fichero temporal o `:memory:` para probar persistencia/reinicio.
+ * sin red ni SMTP reales (DIP). Los stores en memoria sustituyen a PostgreSQL: los tests del
+ * worker NO necesitan una base de datos (en CI no hay PostgreSQL), y la persistencia real
+ * (SQL, transacciones, mocks de `pg`) se cubre en `checkpoint-store.test.ts` y
+ * `aggregate-store.test.ts`.
  */
 
 /** ChainSource fake: devuelve logs predefinidos y registra los rangos solicitados. */
@@ -40,6 +51,17 @@ export class FakeChainSource implements ChainSource {
 
   async getHeadBlock(): Promise<bigint> {
     return this.head;
+  }
+
+  /** Si se activa, la lectura de cabeceras falla (bloque histórico irrecuperable). */
+  failBlockTimestamp = false;
+
+  /**
+   * Marca temporal de bloque para el relleno del histórico (H6): determinista, `base + bloque`.
+   */
+  async getBlockTimestamp(blockNumber: bigint): Promise<number> {
+    if (this.failBlockTimestamp) throw new Error("cabecera no disponible (RPC)");
+    return 1_700_000_000 + Number(blockNumber);
   }
 
   async getSaleLogs(fromBlock: bigint, toBlock: bigint): Promise<SaleEvent[]> {
@@ -74,6 +96,10 @@ export class AggregateFailingChainSource implements ChainSource {
     return this.head;
   }
 
+  async getBlockTimestamp(): Promise<number> {
+    throw new Error("I/O de agregados caído");
+  }
+
   async getSaleLogs(): Promise<SaleEvent[]> {
     return [];
   }
@@ -86,6 +112,10 @@ export class AggregateFailingChainSource implements ChainSource {
 /** ChainSource fake cuya `getHeadBlock` siempre falla (simula caída del RPC). */
 export class FailingChainSource implements ChainSource {
   async getHeadBlock(): Promise<bigint> {
+    throw new Error("RPC caído");
+  }
+
+  async getBlockTimestamp(): Promise<number> {
     throw new Error("RPC caído");
   }
 
@@ -164,72 +194,121 @@ export class FlakyMailer implements Mailer {
   }
 }
 
+/** Estado persistente simulado del checkpoint/idempotencia (compartible entre stores). */
+export interface InMemoryCheckpointState {
+  readonly blocks: Map<string, number>;
+  readonly processed: Set<string>;
+}
+
+export const createCheckpointState = (): InMemoryCheckpointState => ({
+  blocks: new Map<string, number>(),
+  processed: new Set<string>(),
+});
+
 /**
  * CheckpointStore en memoria para tests. Opcionalmente fuerza un fallo NO-RPC al procesar un
  * evento (`markProcessed` lanza), útil para verificar que un fallo de procesamiento se aísla del
  * conteo de fallos del RPC (MAJOR 2).
+ *
+ * El estado se puede compartir entre instancias (`snapshot()` + constructor) para simular un
+ * reinicio del proceso sin base de datos real.
  */
 export class InMemoryCheckpointStore implements CheckpointStore {
-  private readonly blocks = new Map<string, number>();
-  private readonly processed = new Set<string>();
+  constructor(
+    private readonly failOnMarkProcessed = false,
+    private readonly state: InMemoryCheckpointState = createCheckpointState(),
+  ) {}
 
-  constructor(private readonly failOnMarkProcessed = false) {}
-
-  getLastBlock(contractAddress: string): number | null {
-    return this.blocks.get(contractAddress.toLowerCase()) ?? null;
+  /** Estado compartido: pásalo a un nuevo store para simular un reinicio. */
+  snapshot(): InMemoryCheckpointState {
+    return this.state;
   }
 
-  setLastBlock(contractAddress: string, block: number): void {
-    this.blocks.set(contractAddress.toLowerCase(), block);
+  async getLastBlock(contractAddress: string): Promise<number | null> {
+    return this.state.blocks.get(contractAddress.toLowerCase()) ?? null;
   }
 
-  isProcessed(idempotencyKey: string): boolean {
-    return this.processed.has(idempotencyKey);
+  async setLastBlock(contractAddress: string, block: number): Promise<void> {
+    this.state.blocks.set(contractAddress.toLowerCase(), block);
   }
 
-  markProcessed(idempotencyKey: string): void {
+  async isProcessed(idempotencyKey: string): Promise<boolean> {
+    return this.state.processed.has(idempotencyKey);
+  }
+
+  async markProcessed(
+    idempotencyKey: string,
+    _location?: ProcessedLogLocation,
+  ): Promise<void> {
     if (this.failOnMarkProcessed) {
       throw new Error("fallo de procesamiento no-RPC");
     }
-    this.processed.add(idempotencyKey);
+    this.state.processed.add(idempotencyKey);
   }
 
-  close(): void {
+  async close(): Promise<void> {
     // Sin recursos que liberar.
   }
 }
 
+/** Estado persistente simulado de agregados/histórico (compartible entre stores). */
+export interface InMemoryAggregateState {
+  applied: Set<string>;
+  primaryVolumeWei: bigint;
+  royaltiesWei: bigint;
+  secondaryVolumeWei: bigint;
+  soldCount: number;
+  mintedCount: number;
+  burnedCount: number;
+  lastBlock: number;
+  history: HistoryRow[];
+  boundAddress: string | null;
+}
+
+export const createAggregateState = (): InMemoryAggregateState => ({
+  applied: new Set<string>(),
+  primaryVolumeWei: 0n,
+  royaltiesWei: 0n,
+  secondaryVolumeWei: 0n,
+  soldCount: 0,
+  mintedCount: 0,
+  burnedCount: 0,
+  lastBlock: 0,
+  history: [],
+  boundAddress: null,
+});
+
 /**
- * AggregateStore en memoria para los tests de `runWorker` (cuando solo interesa que el agregado
- * se alimente). Las pruebas específicas de agregados/histórico usan el store real de SQLite.
+ * AggregateStore en memoria para los tests del núcleo de agregados (misma semántica que el store
+ * PostgreSQL: idempotencia por `txHash:logIndex`, primarias suman `soldCount`, royalties sólo de
+ * `RoyaltyPaid`, reset ante redeploy). El SQL real y la atomicidad se verifican con mocks de `pg`
+ * en `aggregate-store.test.ts`.
  */
 export class InMemoryAggregateStore implements AggregateStore {
-  private applied = new Set<string>();
-  private primaryVolumeWei = 0n;
-  private royaltiesWei = 0n;
-  private secondaryVolumeWei = 0n;
-  private soldCount = 0;
-  private mintedCount = 0;
-  private burnedCount = 0;
-  private lastBlock = 0;
-  private history: HistoryRow[] = [];
-  private boundAddress: string | null = null;
   /** Nº de veces que se ha llamado a `reset` (para verificar el rebind consciente, MAJOR 3). */
   resetCount = 0;
 
-  applyEvent(event: ChainEvent): boolean {
+  constructor(private readonly state: InMemoryAggregateState = createAggregateState()) {}
+
+  /** Estado compartido: pásalo a un nuevo store para simular un reinicio. */
+  snapshot(): InMemoryAggregateState {
+    return this.state;
+  }
+
+  async applyEvent(event: ChainEvent): Promise<boolean> {
     const key = idempotencyKey(event);
-    if (this.applied.has(key)) return false;
-    this.applied.add(key);
+    if (this.state.applied.has(key)) return false;
+    this.state.applied.add(key);
     switch (event.kind) {
       case "mint":
-        this.mintedCount += 1;
+        this.state.mintedCount += 1;
         break;
       case "burn":
-        this.burnedCount += 1;
+        this.state.burnedCount += 1;
         break;
       case "royaltyPaid":
-        this.royaltiesWei += event.amountWei;
+        // Royalties solo de RoyaltyPaid (ventas secundarias): nunca de ventas primarias.
+        this.state.royaltiesWei += event.amountWei;
         break;
       case "sale":
         this.applySale(event);
@@ -240,16 +319,17 @@ export class InMemoryAggregateStore implements AggregateStore {
 
   private applySale(event: SaleAggregateEvent): void {
     if (event.saleTypeRaw === 0) {
-      this.soldCount += 1;
-      this.primaryVolumeWei += event.priceWei;
+      this.state.soldCount += 1;
+      this.state.primaryVolumeWei += event.priceWei;
     } else {
-      this.secondaryVolumeWei += event.priceWei;
+      this.state.secondaryVolumeWei += event.priceWei;
     }
-    this.history.push({
+    const { room, dateYYYYMMDD } = decodeTokenId(event.tokenId);
+    this.state.history.push({
       tokenId: event.tokenId,
-      room: Number(event.tokenId / 100_000_000n),
-      dateYYYYMMDD: Number(event.tokenId % 100_000_000n),
-      roomType: "simple",
+      room,
+      dateYYYYMMDD,
+      roomType: roomTypeOf(room) ?? "desconocido",
       priceWei: event.priceWei,
       saleTypeRaw: event.saleTypeRaw,
       seller: event.seller,
@@ -257,51 +337,104 @@ export class InMemoryAggregateStore implements AggregateStore {
       blockNumber: Number(event.blockNumber),
       logIndex: event.logIndex,
       txHash: event.txHash,
+      blockTimestamp: event.blockTimestamp ?? null,
     });
   }
 
-  setLastBlock(block: number): void {
-    this.lastBlock = block;
+  async setLastBlock(block: number): Promise<void> {
+    this.state.lastBlock = block;
   }
 
-  getCounters(): AggregateCounters {
+  async getCounters(): Promise<AggregateCounters> {
     return {
-      primaryVolumeWei: this.primaryVolumeWei,
-      royaltiesWei: this.royaltiesWei,
-      secondaryVolumeWei: this.secondaryVolumeWei,
-      soldCount: this.soldCount,
-      mintedCount: this.mintedCount,
-      burnedCount: this.burnedCount,
-      lastBlock: this.lastBlock,
+      primaryVolumeWei: this.state.primaryVolumeWei,
+      royaltiesWei: this.state.royaltiesWei,
+      secondaryVolumeWei: this.state.secondaryVolumeWei,
+      soldCount: this.state.soldCount,
+      mintedCount: this.state.mintedCount,
+      burnedCount: this.state.burnedCount,
+      lastBlock: this.state.lastBlock,
     };
   }
 
-  getHistory(): HistoryRow[] {
-    return [...this.history];
+  async getHistory(): Promise<HistoryRow[]> {
+    return [...this.state.history];
   }
 
-  reset(deploymentBlock: number): void {
+  /**
+   * Misma semántica que el `GROUP BY` de PostgreSQL, reutilizando la derivación pura del dominio
+   * (`summarizeHistory`): así el núcleo se prueba sin base de datos y el SQL del store se verifica
+   * aparte con mocks de `pg` y, en el E2E de M7, contra PostgreSQL real.
+   */
+  async getHistorySummary(timeZone: string, topLimit: number): Promise<HistorySummary> {
+    return summarizeHistory(
+      this.state.history.map((row) => ({
+        tokenId: row.tokenId.toString(),
+        room: row.room,
+        dateYYYYMMDD: row.dateYYYYMMDD,
+        roomType: row.roomType as NightType,
+        priceWei: row.priceWei.toString(),
+        saleType: row.saleTypeRaw === 0 ? "PRIMARY" : "SECONDARY",
+        seller: row.seller,
+        buyer: row.buyer,
+        blockNumber: row.blockNumber,
+        logIndex: row.logIndex,
+        txHash: row.txHash,
+        blockTimestamp: row.blockTimestamp,
+      })),
+      timeZone,
+      topLimit,
+    );
+  }
+
+  async getUndatedSales(limit: number): Promise<UndatedSaleRow[]> {
+    return this.state.history
+      .filter((row) => row.blockTimestamp === null)
+      .sort((a, b) => a.blockNumber - b.blockNumber || a.logIndex - b.logIndex)
+      .slice(0, limit)
+      .map((row) => ({
+        txHash: row.txHash,
+        logIndex: row.logIndex,
+        blockNumber: row.blockNumber,
+      }));
+  }
+
+  async setSaleBlockTimestamp(
+    txHash: string,
+    logIndex: number,
+    timestampSeconds: number,
+  ): Promise<void> {
+    const row = this.state.history.find(
+      (candidate) => candidate.txHash === txHash && candidate.logIndex === logIndex,
+    );
+    // Solo rellena si estaba vacía: misma garantía que el `AND block_timestamp IS NULL` del SQL.
+    if (row !== undefined && row.blockTimestamp === null) {
+      (row as { blockTimestamp: number | null }).blockTimestamp = timestampSeconds;
+    }
+  }
+
+  async reset(deploymentBlock: number): Promise<void> {
     this.resetCount += 1;
-    this.applied = new Set<string>();
-    this.primaryVolumeWei = 0n;
-    this.royaltiesWei = 0n;
-    this.secondaryVolumeWei = 0n;
-    this.soldCount = 0;
-    this.mintedCount = 0;
-    this.burnedCount = 0;
-    this.lastBlock = deploymentBlock;
-    this.history = [];
+    this.state.applied = new Set<string>();
+    this.state.primaryVolumeWei = 0n;
+    this.state.royaltiesWei = 0n;
+    this.state.secondaryVolumeWei = 0n;
+    this.state.soldCount = 0;
+    this.state.mintedCount = 0;
+    this.state.burnedCount = 0;
+    this.state.lastBlock = deploymentBlock;
+    this.state.history = [];
   }
 
-  getBoundAddress(): string | null {
-    return this.boundAddress;
+  async getBoundAddress(): Promise<string | null> {
+    return this.state.boundAddress;
   }
 
-  setBoundAddress(contractAddress: string): void {
-    this.boundAddress = contractAddress.toLowerCase();
+  async setBoundAddress(contractAddress: string): Promise<void> {
+    this.state.boundAddress = contractAddress.toLowerCase();
   }
 
-  close(): void {
+  async close(): Promise<void> {
     // Sin recursos que liberar.
   }
 }

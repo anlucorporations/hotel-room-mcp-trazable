@@ -1,13 +1,19 @@
 import type { Pool } from "pg";
 import { getDbPool } from "../pool";
+import { hashSessionTrace } from "../../auth/crypto";
 
 export interface AdminSessionRecord {
   id: string;
   username: string;
   role: "DEFAULT_ADMIN_ROLE" | "RECEPTION_ROLE";
   refreshTokenHash: string;
-  ipAddress: string;
-  userAgent: string;
+  /**
+   * Traza pseudonimizada (`hmac-sha256:…`) de la IP del acceso, o `null` si no había nada que
+   * guardar. **Nunca** es la IP en claro (ADR-24). El `rate limiting` no usa este campo.
+   */
+  ipAddress: string | null;
+  /** Traza pseudonimizada del *user agent*, con el mismo criterio que `ipAddress`. */
+  userAgent: string | null;
   revoked: boolean;
   expiresAt: Date;
   createdAt: Date;
@@ -16,6 +22,11 @@ export interface AdminSessionRecord {
 export class SessionsRepository {
   constructor(private pool: Pool = getDbPool()) {}
 
+  /**
+   * Crea la sesión guardando la traza **pseudonimizada** (ADR-24): la IP y el *user agent* se pasan
+   * por `hashSessionTrace` (HMAC-SHA256 con clave) antes de tocar la base de datos. Se hace aquí, en
+   * el único punto de escritura, para que ningún llamante pueda saltárselo por descuido.
+   */
   async createSession(
     username: string,
     role: "DEFAULT_ADMIN_ROLE" | "RECEPTION_ROLE",
@@ -28,7 +39,14 @@ export class SessionsRepository {
       `INSERT INTO admin_sessions (username, role, refresh_token_hash, ip_address, user_agent, expires_at)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id`,
-      [username, role, refreshTokenHash, ipAddress, userAgent, expiresAt],
+      [
+        username,
+        role,
+        refreshTokenHash,
+        hashSessionTrace(ipAddress),
+        hashSessionTrace(userAgent),
+        expiresAt,
+      ],
     );
     return res.rows[0].id;
   }

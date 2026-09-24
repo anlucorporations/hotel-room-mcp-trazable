@@ -1,24 +1,43 @@
-import { NextRequest, NextResponse } from "next/server";
-import { AuthService, SessionsRepository } from "@hotel/shared";
+import type { NextRequest} from "next/server";
+import { NextResponse } from "next/server";
+import { AuthService } from "@hotel/shared";
+import {
+  ACCESS_TOKEN_COOKIE,
+  REFRESH_TOKEN_COOKIE,
+  accessTokenCookieOptions,
+  refreshTokenCookieOptions,
+} from "@/lib/guard";
 
 export const dynamic = "force-dynamic";
 
 const authService = new AuthService();
-const sessionsRepo = new SessionsRepository();
 
-// En el MVP el secret TOTP de los usuarios de prueba está anclado para validación
-const USER_TOTP_SECRETS: Record<string, string> = {
-  "admin@hotel.es": "JBSWY3DPEHPK3PXP",
-  "recepcion@hotel.es": "JBSWY3DPEHPK3PXQ",
-};
-
+/**
+ * POST /api/auth/mfa/verify
+ *
+ * Segundo factor obligatorio (D-04): código TOTP de 6 dígitos o un código de rescate de un solo
+ * uso. El reto (`sessionToken`) identifica al operador; el secreto TOTP se lee de
+ * `admin_users.totp_secret_enc` (cifrado con AES-256-GCM) y se descifra en memoria.
+ *
+ * Ya no existe el mapa `USER_TOTP_SECRETS` con semillas embebidas: cada operador tiene la suya,
+ * generada y persistida por el aprovisionamiento o por `POST /api/auth/mfa/setup`.
+ *
+ * En éxito emite access token (15 min) + refresh token (7 días con RTR) y los deja también en
+ * cookies HttpOnly, para que el panel pueda navegar y descargar el CSV sin exponer el token a
+ * JavaScript.
+ */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
-
     const userAgent = request.headers.get("user-agent") || "unknown";
-    const body = await request.json();
-    const { sessionToken, totpCode, recoveryCode } = body;
+
+    const body = (await request.json().catch(() => null)) as
+      | { sessionToken?: unknown; totpCode?: unknown; recoveryCode?: unknown }
+      | null;
+
+    const sessionToken = typeof body?.sessionToken === "string" ? body.sessionToken : "";
+    const totpCode = typeof body?.totpCode === "string" ? body.totpCode : undefined;
+    const recoveryCode = typeof body?.recoveryCode === "string" ? body.recoveryCode : undefined;
 
     if (!sessionToken || (!totpCode && !recoveryCode)) {
       return NextResponse.json(
@@ -27,7 +46,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // 1. Validar el token de reto
     let challenge: { username: string; role: "DEFAULT_ADMIN_ROLE" | "RECEPTION_ROLE" };
     try {
       challenge = await authService.verifyChallengeToken(sessionToken);
@@ -38,68 +56,67 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // 2. Verificar Rate Limiter para intentos TOTP (ID_V-10)
-    const rateLimitKey = `${ip}:mfa:${challenge.username}`;
-    const rateLimit = await authService.checkRateLimit(rateLimitKey);
+    const result = await authService.verifyMfa({
+      username: challenge.username,
+      totpCode,
+      recoveryCode,
+      ipAddress: ip,
+      userAgent,
+    });
 
-    if (rateLimit.limited) {
+    if (result.error === "RATE_LIMITED") {
       return NextResponse.json(
         {
           error: "TOO_MANY_REQUESTS",
-          message: `Demasiados intentos MFA fallidos. Bloqueado durante 15 minutos. Reintente en ${rateLimit.retryAfterSeconds}s`,
-          retryAfterSeconds: rateLimit.retryAfterSeconds,
+          message: "Demasiados intentos MFA fallidos. Bloqueado durante 15 minutos.",
         },
         { status: 429 },
       );
     }
 
-    let isMfaValid = false;
-
-    // Validación vía TOTP
-    if (totpCode) {
-      const secret = USER_TOTP_SECRETS[challenge.username] || "JBSWY3DPEHPK3PXP";
-      isMfaValid = authService.verifyTOTP(totpCode, secret);
-    }
-
-    // Validación alternativa vía código de rescate
-    if (!isMfaValid && recoveryCode) {
-      isMfaValid = await sessionsRepo.consumeRecoveryCode(
-        challenge.username,
-        recoveryCode,
-        authService.comparePassword.bind(authService),
+    if (result.error === "ACCOUNT_LOCKED") {
+      return NextResponse.json(
+        {
+          error: "ACCOUNT_LOCKED",
+          message: "Cuenta bloqueada temporalmente por intentos fallidos. Reintente en 15 minutos.",
+        },
+        { status: 423 },
       );
     }
 
-    if (!isMfaValid) {
-      const attempts = await authService.recordAuthFailure(rateLimitKey);
-      const remaining = Math.max(0, 5 - attempts);
+    if (!result.accessToken || !result.refreshToken || !result.role) {
       return NextResponse.json(
-        {
-          error: "UNAUTHORIZED",
-          message: "Código TOTP o de rescate inválido",
-          remainingAttempts: remaining,
-        },
+        { error: "UNAUTHORIZED", message: "Código TOTP o de rescate inválido" },
         { status: 401 },
       );
     }
 
-    // Resetear fallos de rate limit ante éxito
-    await authService.recordAuthSuccess(rateLimitKey);
-
-    // 3. Emitir Access Token (15 min) y Refresh Token (7 días) con RTR
-    const tokens = await authService.issueTokens(challenge.username, challenge.role, ip, userAgent);
-    const recoveryRemaining = await sessionsRepo.getRemainingRecoveryCodesCount(challenge.username);
-
-    return NextResponse.json({
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      roles: [challenge.role],
-      recoveryRemaining,
+    const response = NextResponse.json({
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+      roles: [result.role],
+      username: challenge.username,
+      recoveryRemaining: result.recoveryRemaining,
     });
-  } catch (error: any) {
+
+    response.cookies.set(
+      ACCESS_TOKEN_COOKIE,
+      result.accessToken,
+      accessTokenCookieOptions(authService.accessTokenTtlSeconds()),
+    );
+    response.cookies.set(
+      REFRESH_TOKEN_COOKIE,
+      result.refreshToken,
+      refreshTokenCookieOptions(authService.refreshTokenTtlSeconds()),
+    );
+    return response;
+  } catch (error: unknown) {
     console.error("[API /api/auth/mfa/verify] Error:", error);
     return NextResponse.json(
-      { error: "INTERNAL_SERVER_ERROR", message: error?.message || "Error al verificar MFA" },
+      {
+        error: "INTERNAL_SERVER_ERROR",
+        message: error instanceof Error ? error.message : "Error al verificar MFA",
+      },
       { status: 500 },
     );
   }

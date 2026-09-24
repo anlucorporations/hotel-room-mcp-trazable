@@ -1,15 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { Mock } from "vitest";
+import type { Pool } from "pg";
 import { SessionsRepository } from "./sessions.repository";
 
 describe("SessionsRepository (US-05)", () => {
   let repository: SessionsRepository;
-  let mockPool: any;
+  // Doble parcial del pool: solo se ejercita `query`.
+  let mockPool: Pool & { query: Mock };
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockPool = {
       query: vi.fn(),
-    };
+    } as Pool & { query: Mock };
     repository = new SessionsRepository(mockPool);
   });
 

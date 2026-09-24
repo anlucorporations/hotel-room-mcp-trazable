@@ -9,6 +9,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./domain": {
+      "types": "./dist/domain.d.ts",
+      "import": "./dist/domain.js"
+    },
     "./env": {
       "types": "./dist/env.d.ts",
       "import": "./dist/env.js"
@@ -40,7 +44,12 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
+    "provision:admin": "node --env-file=../../.env --import tsx scripts/create-admin.ts",
+    "provision:reception": "node --env-file=../../.env --import tsx scripts/create-admin.ts --role RECEPTION_ROLE",
+    "backfill:session-traces": "node --env-file=../../.env --import tsx scripts/backfill-session-traces.ts",
+    "reset:index": "node --env-file=../../.env --import tsx scripts/reset-index.ts",
     "clean": "rm -rf dist .turbo coverage *.tsbuildinfo"
   },
   "dependencies": {
@@ -59,9 +68,12 @@
     "@types/ioredis": "^5.0.0",
     "@types/node": "^22.10.2",
     "@types/pg": "^8.23.1",
+    "@types/qrcode": "^1.5.6",
     "@vitest/coverage-v8": "^2.1.8",
     "eslint": "^9.17.0",
+    "qrcode": "^1.5.4",
     "tsup": "^8.3.5",
+    "tsx": "^4.22.4",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
   }

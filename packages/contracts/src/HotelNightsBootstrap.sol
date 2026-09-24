@@ -14,7 +14,7 @@ library HotelNightsBootstrap {
     function grantRolesTo(HotelNights nft, address account) internal {
         nft.grantRole(nft.DEFAULT_ADMIN_ROLE(), account);
         nft.grantRole(nft.MINTER_ROLE(), account);
-        nft.grantRole(nft.ROYALTY_ADMIN_ROLE(), account);
+        nft.grantRole(nft.RECEPTION_ROLE(), account);
         nft.grantRole(nft.PAUSER_ROLE(), account);
         nft.grantRole(nft.BURNER_ROLE(), account);
         nft.grantRole(nft.TREASURER_ROLE(), account);

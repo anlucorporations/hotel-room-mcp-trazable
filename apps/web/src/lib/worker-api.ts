@@ -7,7 +7,7 @@ import {
 
 /**
  * Cliente de los agregados precomputados por el worker (ADR-09, §7): histórico y dashboard
- * leen del worker, no por RPC directo. Lecturas sin caché y con timeout (CU-09/11 degradado).
+ * leen del worker, no por RPC directo. Lecturas sin caché y con timeout (CU-09/11 degradado, docs/SRS.md §9).
  */
 const WORKER_BASE_URL = process.env.WORKER_BASE_URL ?? "http://127.0.0.1:8787";
 

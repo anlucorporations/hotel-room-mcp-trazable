@@ -21,6 +21,7 @@
     "navNights": "Nights",
     "navMyNights": "My Nights",
     "navHistory": "Sales History",
+    "navResale": "Resale market",
     "navAssistant": "Assistant",
     "menuOpen": "Open menu",
     "menuClose": "Close menu",
@@ -57,6 +58,15 @@
     "titleTail": ", fully owned.",
     "subcopy": "Every night belongs to you the moment you book it. And if your plans change, you can transfer it to another guest. Simple, secure, zero paperwork."
   },
+  "resale": {
+    "title": "Resale market",
+    "tagline": "Nights other guests already bought and now resell. The purchase is signed exactly like in the catalog: you review the on-chain price before confirming.",
+    "count": "{count, plural, =0 {No nights on resale} one {# night on resale} other {# nights on resale}}",
+    "empty": "There are no nights on resale right now",
+    "emptyHint": "When someone lists their night for sale it will appear here. In the meantime, see the hotel's available nights in the catalog.",
+    "backToCatalog": "See available nights",
+    "degraded": "The resale market could not be loaded. Check your connection and try again."
+  },
   "catalog": {
     "available": "Available",
     "resale": "Resale",
@@ -86,7 +96,8 @@
     "retry": "Retry",
     "loadMore": "Load more nights",
     "loadMoreAnnounce": "{count, plural, one {# night} other {# nights}} added to the catalog.",
-    "endOfList": "You have viewed all available nights in the next 90 days."
+    "endOfList": "You have viewed all available nights in the next 90 days.",
+    "buyPaused": "Sales paused"
   },
   "wallet": {
     "noWallet": "No Web3 wallet detected.",
@@ -200,8 +211,33 @@
       "NotOwner": "You are not the owner of this night.",
       "InvalidPrice": "Price must be greater than 0.",
       "NightExpired": "The night has expired and cannot be listed.",
-      "NotListed": "This night is not currently listed."
+      "NotListed": "This night is not currently listed.",
+      "PriceBelowMinimum": "The price is below the minimum resale price set by the hotel.",
+      "NightNotResellable": "This night was already used at reception and cannot be resold."
     }
+  },
+  "ticket": {
+    "title": "Check-in pass",
+    "hint": "Generate this night's pass to show at reception. We will ask for a signature to prove the night is yours.",
+    "generate": "Show my QR pass",
+    "generating": "Generating pass…",
+    "qrAlt": "QR code for the check-in pass of room {room} on {date}",
+    "qrUnavailable": "The QR image could not be drawn, but the pass is still valid: copy the token and show it at reception.",
+    "room": "Room {room}",
+    "validUntil": "Valid until {date}. Each pass works only once.",
+    "tokenLabel": "Pass token (for the manual path)",
+    "tokenHint": "Reception can paste this text if the scanner fails.",
+    "download": "Download the QR",
+    "open": "Open the reception screen",
+    "close": "Hide",
+    "checkinTitle": "Check-in pass",
+    "checkinHint": "Show this screen at reception. Staff will scan the code with their reader.",
+    "checkinMissing": "This page has no pass. Open the link you generated from \"My nights\".",
+    "checkinGoToMyNights": "Go to My nights",
+    "checkinDateLabel": "Night:",
+    "checkinQrAlt": "QR code of the check-in pass",
+    "checkinStaffHint": "Reception staff: scan the code or paste the token into the reception screen. The pass can only be redeemed once.",
+    "checkinManual": "Scanner not working? Show this token"
   },
   "history": {
     "title": "Sales History",
@@ -235,6 +271,53 @@
     "minted": "Nights minted",
     "burned": "Nights burned",
     "occupancy": "Commercial occupancy",
+    "exportCsv": "Export CSV report",
+    "timeZone": "Months grouped in the hotel time zone: {zone}",
+    "undatedWarning": "{count} sales in the history have no block timestamp: they count in the totals but stay out of the monthly series.",
+    "axis": {
+      "volume": "ETH"
+    },
+    "legend": {
+      "primary": "Primary sale (hotel)",
+      "secondary": "Resale"
+    },
+    "charts": {
+      "monthly": {
+        "title": "Sales per month",
+        "description": "Amount sold in each calendar month, in hotel local time. Each night counts in the month it was sold.",
+        "summary": "Bar chart of sales per month: {count} months with activity, {total} ETH in total. Exact figures are in the table below.",
+        "tableCaption": "Sales per month (accessible alternative to the chart)",
+        "colMonth": "Month",
+        "colPrimary": "Primary",
+        "colSecondary": "Resale",
+        "colSales": "No. of sales",
+        "empty": "No sales recorded yet."
+      },
+      "roomType": {
+        "title": "Breakdown by room type",
+        "description": "Volume sold per type (standard, double, suite), separating hotel sales from resales.",
+        "summary": "Bar chart of volume per room type: {count} types with activity, {total} ETH in total.",
+        "tableCaption": "Breakdown by room type (accessible alternative to the chart)",
+        "colType": "Type",
+        "colPrimary": "Primary",
+        "colSecondary": "Resale",
+        "colTotal": "Total",
+        "unknown": "Unclassified",
+        "empty": "No sales per type yet."
+      },
+      "topResold": {
+        "title": "Most resold nights",
+        "description": "Ranking by number of resales of the same night (room and date). Resold volume breaks ties.",
+        "tableCaption": "Ranking of most resold nights",
+        "colRank": "Rank",
+        "colRoom": "Room",
+        "colDate": "Date",
+        "colType": "Type",
+        "colResales": "Resales",
+        "colVolume": "Resold volume",
+        "empty": "No resales yet."
+      }
+    },
     "formula": {
       "primaryVolume": "Σ primary sales price",
       "royalties": "Σ RoyaltyPaid (secondary only)",
@@ -250,17 +333,17 @@
     "brandHome": "Back-office home",
     "skipToContent": "Skip to content",
     "loadingSession": "Checking session…",
-    "gateTitle": "Back-office · Role Access",
+    "gateTitle": "Back-office · Password and TOTP access",
     "connect": "Connect wallet",
     "connectPrompt": "Connect your authorized wallet to access back-office.",
     "wrongNetwork": "Wrong network.",
     "switchNetwork": "Switch network",
-    "signInPrompt": "Sign SIWE challenge to log in with your roles.",
-    "signIn": "Sign In (SIWE)",
-    "signingIn": "Signing…",
+    "signInPrompt": "Enter your username and password. The mandatory TOTP code is requested next.",
+    "signIn": "Continue",
+    "signingIn": "Checking…",
     "signInFailed": "Login failed. Try again.",
-    "noRole": "Your wallet has no back-office roles.",
-    "roleDenied": "Your session lacks the required role for this section.",
+    "noRole": "Your account has no back-office roles.",
+    "roleDenied": "Your session lacks the required role for this section. Sign in with an operator that has it.",
     "accountChanged": "Account changed in wallet. Please sign in again.",
     "resign": "Sign in again",
     "logout": "Log out",
@@ -300,11 +383,10 @@
     "dashboardTitle": "Dashboard",
     "dashboardTagline": "On-chain hotel commercial metrics.",
     "royaltyTitle": "Royalty",
-    "royaltyTagline": "Configure resale royalty percentage (CU-12).",
-    "royaltyCurrent": "Current royalty: {bps} bps ({percent} %).",
-    "royaltyField": "New royalty (bps, 0–2000)",
-    "royaltySet": "Set royalty",
-    "royaltyOutOfRange": "Royalty must be between {min} and {max} bps.",
+    "royaltyTagline": "See the resale royalty, fixed by the contract when each night is created (D-06).",
+    "royaltyImmutable": "The royalty is fixed when the night is created, according to the room type, and cannot be changed afterwards: it is immutable by construction and no governable parameter exists.",
+    "royaltyRatesTitle": "Royalty by room type",
+    "royaltySourceNote": "royaltyInfo(tokenId, salePrice) is the single source (ERC-2981): resales pay the listed percentage and the primary sale goes entirely to the treasury, with no royalty.",
     "pauseTitle": "Emergency pause",
     "pauseTagline": "Pause or unpause purchases, resales, minting, and burning (CU-14).",
     "pauseActive": "System is ACTIVE.",
@@ -379,7 +461,24 @@
     "rolesOwnerInfoTitle": "Ownership metadata",
     "rolesOwnerInfoNote": "Ownable2Step is informational only.",
     "rolesHandoverTitle": "Hand over DEFAULT_ADMIN",
-    "fieldErrorPrefix": "Error:"
+    "fieldErrorPrefix": "Error:",
+    "usernameLabel": "Username",
+    "passwordLabel": "Password",
+    "mfaPrompt": "Enter the 6-digit code from your authenticator app, or a recovery code.",
+    "totpCodeLabel": "TOTP code",
+    "recoveryCodeLabel": "Recovery code",
+    "mfaVerify": "Sign in",
+    "useRecoveryInstead": "Use a recovery code",
+    "useTotpInstead": "Use the TOTP code",
+    "recoveryRemaining": "Recovery codes left: {count}",
+    "authInvalidCredentials": "Incorrect username or password.",
+    "authMfaInvalid": "The TOTP or recovery code is not valid.",
+    "authLocked": "Account temporarily locked after failed attempts. Try again in 15 minutes.",
+    "authRateLimited": "Too many attempts. Wait 15 minutes before trying again.",
+    "authExpired": "Your session has expired. Please sign in again.",
+    "authFailed": "Could not complete authentication. Try again.",
+    "mintPendingAnchor": "Registered as pending on-chain anchoring: it will not appear in the catalogue until the mint transaction is confirmed.",
+    "fundsPausedWithdrawAllowed": "The contract is paused. Withdrawing the residual balance is still allowed and is the remediation path."
   },
   "legal": {
     "terms": {
@@ -482,5 +581,11 @@
         "failed": "Could not complete booking."
       }
     }
+  },
+  "contractPaused": {
+    "title": "The contract is paused",
+    "hint": "The hotel has paused operations: nights cannot be bought while the pause lasts.",
+    "unknownTitle": "Could not check whether the contract is paused",
+    "unknownHint": "The chain did not answer the status query; if you try to buy while the contract is paused, the transaction will be rejected."
   }
 }

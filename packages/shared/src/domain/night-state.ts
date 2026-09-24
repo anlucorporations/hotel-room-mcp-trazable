@@ -1,6 +1,6 @@
 import type { NightState } from "./types";
 
-/** Señales on-chain de una noche para derivar su estado (CASOS §4). */
+/** Señales on-chain de una noche para derivar su estado (docs/SRS.md §9). */
 export interface NightOnChainSignals {
   readonly exists: boolean;
   readonly soldOnce: boolean;
@@ -10,7 +10,7 @@ export interface NightOnChainSignals {
 
 /**
  * Deriva el estado del NFT-noche a partir de las señales on-chain (máquina de estados,
- * CASOS §4). La expiración es una condición superpuesta que prevalece sobre comprable/listada.
+ * docs/SRS.md §9). La expiración es una condición superpuesta que prevalece sobre comprable/listada.
  * Devuelve `null` si la noche no existe.
  */
 export function computeNightState(signals: NightOnChainSignals): NightState | null {

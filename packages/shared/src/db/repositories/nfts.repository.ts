@@ -1,10 +1,11 @@
-import type { Pool } from "pg";
+import type { Pool, QueryResultRow } from "pg";
 import { getDbPool } from "../pool";
+import type { RoomTypeDb } from "../../domain/room-master";
 
 export interface NFTRecord {
   tokenId: string;
   roomNumber: number;
-  roomType: "SIMPLE" | "SUITE";
+  roomType: RoomTypeDb;
   checkInDate: string; // YYYY-MM-DD
   basePriceWei: string;
   status: "AVAILABLE" | "CONFIRMING" | "SOLD" | "BURNED" | "CHECKED_IN";
@@ -14,7 +15,22 @@ export interface NFTRecord {
   checkedInAt?: Date | null;
   burnedAt?: Date | null;
   txHashMint: string;
+  /**
+   * ¿La fila procede de una transacción real? Por defecto `true` (las filas las escribe el
+   * worker a partir de eventos on-chain). El minteo masivo del back-office, que NO emite
+   * transacciones, persiste `false` y esas filas quedan fuera del catálogo.
+   */
+  onChainAnchored?: boolean;
 }
+
+/**
+ * Hash centinela para filas sin anclaje on-chain.
+ *
+ * Antes el minteo persistía `0xmint_<timestamp>_<tokenId>`, un hash INVENTADO que parecía una
+ * transacción real y rompía la trazabilidad (RF-01/RF-03). Los hashes ficticios ya no se
+ * escriben: una fila no anclada usa este centinela explícito y `on_chain_anchored = FALSE`.
+ */
+export const UNANCHORED_TX_HASH = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
 export interface ListingRecord {
   id?: string;
@@ -42,7 +58,8 @@ export interface SaleEventRecord {
 
 export interface CatalogFilters {
   status?: string;
-  roomType?: "SIMPLE" | "SUITE";
+  /** Tipo del maestro: `SIMPLE`, `DOBLE` o `SUITE` (M9: «doble» dejó de perderse al persistir). */
+  roomType?: RoomTypeDb;
   dateFrom?: string;
   dateTo?: string;
   priceMinWei?: string;
@@ -66,12 +83,13 @@ export class NFTsRepository {
     const query = `
       INSERT INTO nfts (
         token_id, room_number, room_type, check_in_date, base_price_wei,
-        status, current_owner, check_in_secret_enc, tx_hash_mint, minted_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, COALESCE($10, NOW()))
+        status, current_owner, check_in_secret_enc, tx_hash_mint, minted_at, on_chain_anchored
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, COALESCE($10, NOW()), COALESCE($11, TRUE))
       ON CONFLICT (token_id) DO UPDATE SET
         status = EXCLUDED.status,
         current_owner = EXCLUDED.current_owner,
         check_in_secret_enc = COALESCE(EXCLUDED.check_in_secret_enc, nfts.check_in_secret_enc),
+        on_chain_anchored = EXCLUDED.on_chain_anchored,
         checked_in_at = CASE WHEN EXCLUDED.status = 'CHECKED_IN' THEN NOW() ELSE nfts.checked_in_at END,
         burned_at = CASE WHEN EXCLUDED.status = 'BURNED' THEN NOW() ELSE nfts.burned_at END
       RETURNING *;
@@ -87,9 +105,32 @@ export class NFTsRepository {
       nft.checkInSecretEnc || null,
       nft.txHashMint,
       nft.mintedAt || null,
+      nft.onChainAnchored === undefined ? null : nft.onChainAnchored,
     ];
     const res = await this.pool.query(query, values);
     return this.mapRowToNFT(res.rows[0]);
+  }
+
+  /**
+   * Marca una fila como anclada on-chain tras confirmarse su transacción real.
+   * Es la operación que promueve al catálogo una noche minteada por el back-office.
+   */
+  async markAnchored(tokenId: string, txHashMint: string): Promise<boolean> {
+    const res = await this.pool.query(
+      `UPDATE nfts SET on_chain_anchored = TRUE, tx_hash_mint = $2
+       WHERE token_id = $1
+       RETURNING token_id`,
+      [tokenId, txHashMint],
+    );
+    return (res.rowCount ?? 0) > 0;
+  }
+
+  /** Noches minteadas sin anclaje on-chain (pendientes de que el worker las ancle). */
+  async getUnanchoredNFTs(): Promise<NFTRecord[]> {
+    const res = await this.pool.query(
+      `SELECT * FROM nfts WHERE on_chain_anchored = FALSE ORDER BY check_in_date ASC, room_number ASC`,
+    );
+    return res.rows.map((row) => this.mapRowToNFT(row));
   }
 
   async getNFTById(tokenId: string): Promise<NFTRecord | null> {
@@ -99,8 +140,10 @@ export class NFTsRepository {
   }
 
   async queryCatalog(filters: CatalogFilters = {}): Promise<CatalogResponse> {
-    const conditions: string[] = [];
-    const values: any[] = [];
+    // Las filas sin anclaje on-chain NO son ofertables: el catálogo es la superficie comercial
+    // y no puede mostrar noches cuya transacción de minteo no existe (RF-01, D-04).
+    const conditions: string[] = ["on_chain_anchored = TRUE"];
+    const values: unknown[] = [];
     let idx = 1;
 
     if (filters.status) {
@@ -129,7 +172,6 @@ export class NFTsRepository {
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
-
     // Conteo total
     const countRes = await this.pool.query(
       `SELECT COUNT(*)::INT as total FROM nfts ${whereClause}`,
@@ -238,37 +280,27 @@ export class NFTsRepository {
     };
   }
 
-  async getSalesHistory(limit = 20, offset = 0): Promise<{ items: SaleEventRecord[]; total: number }> {
-    const countRes = await this.pool.query("SELECT COUNT(*)::INT as total FROM sale_events");
-    const total = countRes.rows[0].total;
+  /**
+   * NOTA (M7, D-16): aquí vivía `getSalesHistory()`, la lectura paginada de `sale_events` que
+   * servía la tabla `/historico` y su CSV. El histórico público lee ahora del worker
+   * (`worker_sale_history`), la misma fuente que el dashboard: era el último camino paralelo que
+   * podía hacer que la tabla, el CSV y las cifras del dashboard discrepasen.
+   *
+   * `sale_events` sigue escribiéndose (vía `recordSaleEvent`) como registro auditable de ventas.
+   */
 
-    const res = await this.pool.query(
-      `SELECT * FROM sale_events 
-       ORDER BY block_timestamp DESC, block_number DESC
-       LIMIT $1 OFFSET $2`,
-      [limit, offset],
-    );
-
-    const items = res.rows.map((row) => ({
-      id: row.id,
-      tokenId: row.token_id,
-      seller: row.seller,
-      buyer: row.buyer,
-      priceInWei: row.price_in_wei.toString(),
-      royaltyAmountWei: row.royalty_amount_wei.toString(),
-      isSecondary: row.is_secondary,
-      txHash: row.tx_hash,
-      blockNumber: Number(row.block_number),
-      blockTimestamp: row.block_timestamp,
-    }));
-
-    return { items, total };
-  }
-
+  /**
+   * Noches impagas ya caducadas según la fecha indicada.
+   *
+   * El comparador es `<` y NO `<=`: el contrato considera caducada una noche cuando su fecha es
+   * **anterior** al día de la cadena (`_isExpired = tokenId % 1e8 < todayYYYYMMDD`). Con `<=`, la
+   * noche del propio día entraba como candidata y la quema la descartaba en la simulación
+   * (`NotExpired`), ensuciando los descartes del ciclo.
+   */
   async getUnsoldExpiredNFTs(beforeDate: string): Promise<NFTRecord[]> {
     const res = await this.pool.query(
       `SELECT * FROM nfts 
-       WHERE status = 'AVAILABLE' AND check_in_date <= $1 
+       WHERE status = 'AVAILABLE' AND check_in_date < $1 
        ORDER BY check_in_date ASC, room_number ASC`,
       [beforeDate],
     );
@@ -281,7 +313,7 @@ export class NFTsRepository {
     extra?: { currentOwner?: string; checkInSecretEnc?: string; burnedAt?: Date; checkedInAt?: Date },
   ): Promise<void> {
     const updates: string[] = ["status = $2"];
-    const values: any[] = [tokenId, status];
+    const values: unknown[] = [tokenId, status];
     let idx = 3;
 
     if (extra?.currentOwner) {
@@ -390,60 +422,19 @@ export class NFTsRepository {
   }
 
   /**
-   * Obtiene las 7 métricas comerciales y financieras del hotel calculadas on-chain/off-chain (US-16).
+   * NOTA (M7, D-16): aquí vivía `getFinancialMetrics()`, un segundo cálculo de las métricas
+   * financieras a partir de `sale_events` + `nfts`. Se retiró porque el dashboard y su exportación
+   * CSV leen ahora los agregados del worker (`worker_sale_history`, la MISMA fuente que alimenta
+   * el histórico público): dos caminos distintos para la misma cifra solo garantizan que algún día
+   * discrepen. `sale_events` sigue siendo el registro auditable de ventas que escribe el listener.
    */
-  async getFinancialMetrics(): Promise<{
-    primaryVolumeWei: string;
-    secondaryVolumeWei: string;
-    accumulatedRoyaltiesWei: string;
-    soldCount: number;
-    mintedCount: number;
-    burnedCount: number;
-    commercialOccupancyPercent: number;
-  }> {
-    const [salesRes, nftsCountRes] = await Promise.all([
-      this.pool.query(`
-        SELECT 
-          COALESCE(SUM(CASE WHEN is_secondary = FALSE THEN price_in_wei ELSE 0 END), 0) as primary_volume,
-          COALESCE(SUM(CASE WHEN is_secondary = TRUE THEN price_in_wei ELSE 0 END), 0) as secondary_volume,
-          COALESCE(SUM(royalty_amount_wei), 0) as royalties,
-          COUNT(CASE WHEN is_secondary = FALSE THEN 1 END) as primary_sales_count
-        FROM sale_events
-      `),
-      this.pool.query(`
-        SELECT 
-          COUNT(*) as minted_count,
-          COUNT(CASE WHEN status = 'BURNED' THEN 1 END) as burned_count,
-          COUNT(CASE WHEN status IN ('SOLD', 'CHECKED_IN') THEN 1 END) as sold_count
-        FROM nfts
-      `),
-    ]);
 
-    const sales = salesRes.rows[0];
-    const nfts = nftsCountRes.rows[0];
-
-    const mintedCount = parseInt(nfts.minted_count, 10) || 0;
-    const soldCount = parseInt(nfts.sold_count, 10) || 0;
-    const burnedCount = parseInt(nfts.burned_count, 10) || 0;
-    const commercialOccupancyPercent = mintedCount > 0 ? (soldCount / mintedCount) * 100 : 0;
-
-    return {
-      primaryVolumeWei: sales.primary_volume.toString(),
-      secondaryVolumeWei: sales.secondary_volume.toString(),
-      accumulatedRoyaltiesWei: sales.royalties.toString(),
-      soldCount,
-      mintedCount,
-      burnedCount,
-      commercialOccupancyPercent: Number(commercialOccupancyPercent.toFixed(2)),
-    };
-  }
-
-  private mapRowToNFT(row: any): NFTRecord {
+  private mapRowToNFT(row: QueryResultRow): NFTRecord {
     return {
       tokenId: row.token_id,
       roomNumber: row.room_number,
       roomType: row.room_type,
-      checkInDate: row.check_in_date instanceof Date ? row.check_in_date.toISOString().split("T")[0] : String(row.check_in_date),
+      checkInDate: row.check_in_date instanceof Date ? row.check_in_date.toISOString().slice(0, 10) : String(row.check_in_date),
       basePriceWei: row.base_price_wei.toString(),
       status: row.status,
       currentOwner: row.current_owner,
@@ -452,6 +443,7 @@ export class NFTsRepository {
       checkedInAt: row.checked_in_at,
       burnedAt: row.burned_at,
       txHashMint: row.tx_hash_mint,
+      onChainAnchored: row.on_chain_anchored ?? true,
     };
   }
 }

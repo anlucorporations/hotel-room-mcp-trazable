@@ -1,13 +1,28 @@
 "use client";
 
 import { useState } from "react";
+import { useReadContract } from "wagmi";
+import { hotelNightsAbi } from "@hotel/shared/abi";
 import { PublicShell } from "@/components/layout/PublicShell";
+import { contractAddress, txExplorerUrl } from "@/config/chain";
 
 interface CheckInSuccessData {
   tokenId: string;
   roomNumber: number;
   checkInDate: string;
   roomType: string;
+  /** Hash de la transacción `markCheckedIn` ya difundida (ancla on-chain obligatoria, D-05). */
+  onChainTxHash?: string;
+  executionTimeMs?: number;
+}
+
+/** Vocabulario cerrado (D-13) de factores de posesión admitidos por el protocolo de contingencia. */
+const PROOF_TYPES = ["WALLET_ADDRESS", "TX_HASH", "VOUCHER_CODE"] as const;
+type ProofType = (typeof PROOF_TYPES)[number];
+
+/** Estrechamiento seguro del `value` (string) del `<select>` al vocabulario cerrado. */
+function isProofType(value: string): value is ProofType {
+  return (PROOF_TYPES as readonly string[]).includes(value);
 }
 
 export default function ReceptionPage() {
@@ -20,9 +35,22 @@ export default function ReceptionPage() {
   // Formulario de contingencia
   const [roomNumber, setRoomNumber] = useState("");
   const [checkInDate, setCheckInDate] = useState("");
-  const [proofType, setProofType] = useState<"WALLET_ADDRESS" | "TX_HASH" | "VOUCHER_CODE">("WALLET_ADDRESS");
+  const [proofType, setProofType] = useState<ProofType>("WALLET_ADDRESS");
   const [proofValue, setProofValue] = useState("");
-  const [reason, setReason] = useState("Huésped sin dispositivo móvil / verificación física");
+  /** Vocabulario cerrado (D-13): el motivo se persiste y no admite texto libre. */
+  const [reason, setReason] = useState("SIN_DISPOSITIVO");
+
+  /**
+   * Pausa del contrato (M8 · cierra la deuda que la verificación de M7 dejó abierta en las
+   * pantallas de personal): `markCheckedIn` lleva `whenNotPaused`, así que con el sistema en pausa
+   * se avisa y se retiran los botones de confirmación en lugar de dejar que la transacción revierta.
+   */
+  const paused = useReadContract({
+    address: contractAddress,
+    abi: hotelNightsAbi,
+    functionName: "paused",
+  });
+  const isPaused = paused.data === true;
 
   async function handleScanSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -48,8 +76,8 @@ export default function ReceptionPage() {
 
       setResult(data);
       setTicketJws("");
-    } catch (err: any) {
-      setError(err.message || "Error desconocido");
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : "Error desconocido");
     } finally {
       setLoading(false);
     }
@@ -79,8 +107,8 @@ export default function ReceptionPage() {
 
       setResult(data);
       setProofValue("");
-    } catch (err: any) {
-      setError(err.message || "Error desconocido");
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : "Error desconocido");
     } finally {
       setLoading(false);
     }
@@ -102,6 +130,17 @@ export default function ReceptionPage() {
           <p className="text-body text-ink-soft">
             Valida los resguardos QR/JWS de los huéspedes o gestiona el protocolo de contingencia presencial.
           </p>
+          {isPaused && (
+            <p
+              data-testid="reception-paused"
+              role="status"
+              className="mt-3 rounded-brand border border-terracotta-text/40 bg-sand-2 px-4 py-3 text-small text-terracotta-text"
+            >
+              El contrato canónico está en pausa (`markCheckedIn` es `whenNotPaused`): no se puede
+              registrar ningún check-in on-chain hasta que el hotel reanude las operaciones. Avisa a
+              administración; el resguardo del huésped sigue siendo válido para reintentar.
+            </p>
+          )}
         </header>
 
         {/* Selector de Modo */}
@@ -138,24 +177,48 @@ export default function ReceptionPage() {
         {result && (
           <div
             data-testid="checkin-success-banner"
-            className="rounded-brand border border-emerald-300 bg-emerald-50 p-6 text-emerald-900"
+            className="rounded-brand border border-olive bg-sand-2 p-6 text-ink"
           >
             <div className="flex items-start gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-olive text-shell">
                 ✓
               </div>
               <div className="flex flex-col gap-1">
                 <h3 className="font-display text-body font-semibold">
                   ¡Check-in Confirmado Exitosamente!
                 </h3>
-                <p className="text-small text-emerald-800">
+                <p className="text-small text-ink-soft">
                   Habitación <strong>{result.roomNumber}</strong> ({result.roomType}) · Fecha:{" "}
                   <strong>{result.checkInDate}</strong>
                 </p>
-                <p className="text-xs text-emerald-700">
-                  Token ID: <span className="font-mono">{result.tokenId}</span> · Se ha
-                  despachado la confirmación on-chain y el registro en el PMS.
+                <p className="text-micro text-ink-soft">
+                  Token ID: <span className="font-mono">{result.tokenId}</span>
+                  {result.executionTimeMs !== undefined && <> · {result.executionTimeMs} ms</>}
                 </p>
+                {result.onChainTxHash ? (
+                  <p className="text-micro text-ink-soft">
+                    Anclado on-chain:{" "}
+                    {txExplorerUrl(result.onChainTxHash as `0x${string}`) ? (
+                      <a
+                        href={txExplorerUrl(result.onChainTxHash as `0x${string}`) as string}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-mono underline"
+                        data-testid="checkin-tx-hash"
+                      >
+                        {result.onChainTxHash.slice(0, 18)}…
+                      </a>
+                    ) : (
+                      <span className="font-mono" data-testid="checkin-tx-hash">
+                        {result.onChainTxHash.slice(0, 18)}…
+                      </span>
+                    )}
+                  </p>
+                ) : (
+                  <p className="text-micro text-ink-soft" data-testid="checkin-tx-hash">
+                    Sin ancla on-chain
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -164,7 +227,7 @@ export default function ReceptionPage() {
         {error && (
           <div
             data-testid="checkin-error-banner"
-            className="rounded-brand border border-red-300 bg-red-50 p-4 text-red-900"
+            className="rounded-brand border border-terracotta-text/40 bg-sand-2 p-4 text-terracotta-text"
           >
             <p className="text-small font-medium">{error}</p>
           </div>
@@ -177,7 +240,9 @@ export default function ReceptionPage() {
               Lectura de Resguardo Digital
             </h2>
             <p className="mt-1 text-small text-ink-soft">
-              Pega el contenido del código QR o el token JWS escaneado desde el lector de mano.
+              Pega el contenido del código QR o el token JWS escaneado desde el lector de mano. Cada
+              resguardo sirve <strong>una sola vez</strong>: al confirmarlo queda consumido y
+              anclado on-chain.
             </p>
 
             <form onSubmit={handleScanSubmit} className="mt-6 flex flex-col gap-4">
@@ -198,7 +263,7 @@ export default function ReceptionPage() {
 
               <button
                 type="submit"
-                disabled={loading || !ticketJws.trim()}
+                disabled={loading || !ticketJws.trim() || isPaused}
                 className="min-h-touch rounded-brand bg-sea px-6 py-3 font-semibold text-shell transition hover:bg-sea-deep disabled:opacity-50"
               >
                 {loading ? "Validando en < 500ms…" : "Confirmar Check-in Inmediato"}
@@ -258,12 +323,14 @@ export default function ReceptionPage() {
                   <select
                     id="proofType"
                     value={proofType}
-                    onChange={(e: any) => setProofType(e.target.value)}
+                    onChange={(e) => {
+                      if (isProofType(e.target.value)) setProofType(e.target.value);
+                    }}
                     className="mt-1 w-full rounded-brand border border-line bg-sand-2 p-2.5 text-small text-ink focus:border-sea focus:outline-none focus:ring-1 focus:ring-sea"
                   >
                     <option value="WALLET_ADDRESS">Dirección Wallet Compradora</option>
-                    <option value="TX_HASH">Hash de Transacción Polygonscan</option>
-                    <option value="VOUCHER_CODE">Código de Resguardo Impreso / Email</option>
+                    <option value="TX_HASH">Hash de Transacción (explorador)</option>
+                    <option value="VOUCHER_CODE">Código de Resguardo Emitido (MDS-…)</option>
                   </select>
                 </div>
 
@@ -277,9 +344,15 @@ export default function ReceptionPage() {
                     required
                     value={proofValue}
                     onChange={(e) => setProofValue(e.target.value)}
-                    placeholder="0x71C... o hash tx"
+                    placeholder="0x71C... (wallet) o 0x... (hash de tx)"
+                    aria-describedby="proofValueHint"
                     className="mt-1 w-full rounded-brand border border-line bg-sand-2 p-2.5 font-mono text-small text-ink focus:border-sea focus:outline-none focus:ring-1 focus:ring-sea"
                   />
+                  <p id="proofValueHint" className="mt-1 text-xs text-ink-soft">
+                    Solo dirección de wallet, hash de transacción o código de resguardo. No se
+                    admiten datos personales (DNI, nombre): el registro de viajeros se hace en el PMS
+                    del hotel.
+                  </p>
                 </div>
               </div>
 
@@ -287,14 +360,20 @@ export default function ReceptionPage() {
                 <label htmlFor="reason" className="block text-small font-medium text-ink">
                   Motivo de Contingencia
                 </label>
-                <input
+                <select
                   id="reason"
-                  type="text"
-                  required
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   className="mt-1 w-full rounded-brand border border-line bg-sand-2 p-2.5 text-small text-ink focus:border-sea focus:outline-none focus:ring-1 focus:ring-sea"
-                />
+                >
+                  <option value="SIN_DISPOSITIVO">Huésped sin dispositivo móvil</option>
+                  <option value="RESGUARDO_IMPRESO">Resguardo impreso o en papel</option>
+                  <option value="FALLO_TECNICO">Fallo técnico del dispositivo o la red</option>
+                  <option value="OTRO">Otro (se detalla en el PMS del hotel)</option>
+                </select>
+                <p className="mt-1 text-xs text-ink-soft">
+                  Lista cerrada: este campo queda registrado y no admite texto libre.
+                </p>
               </div>
 
               <div className="rounded-brand bg-sand-2 p-4 text-xs text-ink-soft">
@@ -305,7 +384,7 @@ export default function ReceptionPage() {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || isPaused}
                 className="min-h-touch rounded-brand bg-sea px-6 py-3 font-semibold text-shell transition hover:bg-sea-deep disabled:opacity-50"
               >
                 {loading ? "Procesando…" : "Validar y Autorizar Entrada"}

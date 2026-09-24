@@ -1,5 +1,5 @@
 import type { Logger } from "pino";
-import { rebindCheckpoint } from "./rebind";
+import { isCheckpointAheadOfChain, rebindCheckpoint } from "./rebind";
 import { SaleProcessor, type BackoffOptions } from "./sale-processor";
 import { AggregateProcessor } from "./aggregate-processor";
 import type { WorkerHealthState } from "./health";
@@ -11,7 +11,7 @@ import type {
 } from "./types";
 
 /**
- * Orquestación del mini-worker (T1.4 / CU-10 / RF-09): rebind del checkpoint si cambió la
+ * Orquestación del mini-worker (T1.4 / CU-10 / RF-09, docs/SRS.md §9): rebind del checkpoint si cambió la
  * dirección del contrato, catch-up histórico y bucle de polling.
  *
  * `runWorker` recibe sus colaboradores por parámetro (DIP): es ejecutable en tests con fakes,
@@ -55,7 +55,7 @@ const defaultSleep = (ms: number, signal: AbortSignal): Promise<void> =>
   });
 
 /**
- * Aplica el rebind del checkpoint ante un posible redeploy (DISEÑO §14) y mantiene coherente el
+ * Aplica el rebind del checkpoint ante un posible redeploy (ADR-09) y mantiene coherente el
  * agregado/histórico (MAJOR 3).
  *
  * Checkpoint del email: se indexa por dirección. Si no hay registro para la dirección actual, se
@@ -73,14 +73,15 @@ const defaultSleep = (ms: number, signal: AbortSignal): Promise<void> =>
  * Reutiliza la función pura `rebindCheckpoint` (T0.3) para decidir si hubo cambio en el checkpoint
  * del email, manteniendo una única fuente de verdad de la regla de rebind.
  */
-function applyRebind(
+async function applyRebind(
   store: CheckpointStore,
   aggregateStore: AggregateStore,
   contractAddress: string,
   deploymentBlock: number,
   logger: Logger,
-): void {
-  const last = store.getLastBlock(contractAddress);
+  headBlock: bigint | null,
+): Promise<void> {
+  const last = await store.getLastBlock(contractAddress);
   const current = last === null ? null : { contractAddress, lastProcessedBlock: last };
   const { changed } = rebindCheckpoint(current, {
     address: contractAddress,
@@ -93,7 +94,67 @@ function applyRebind(
     );
   }
 
-  rebindAggregates(aggregateStore, contractAddress, deploymentBlock, logger);
+  // Antes de tocar los agregados: si la cadena quedó por detrás del checkpoint, rebobinar.
+  if (headBlock !== null) {
+    await rewindIfChainRestarted(
+      store,
+      aggregateStore,
+      contractAddress,
+      deploymentBlock,
+      headBlock,
+      logger,
+    );
+  }
+
+  await rebindAggregates(aggregateStore, contractAddress, deploymentBlock, logger);
+}
+
+/**
+ * Rebobina el checkpoint (email) y los agregados/histórico cuando la cadena quedó **por detrás**
+ * de lo ya procesado: reiniciar Anvil conserva la dirección determinista del contrato, así que el
+ * reinicio de la cadena no se detecta como redeploy y el checkpoint de la cadena anterior dejaría
+ * al worker mudo para siempre (`lag` negativo, contadores congelados).
+ *
+ * Se rebobina al `deploymentBlock` —la misma convención que el rebind por redeploy— y el catch-up
+ * reprocesa la cadena nueva; la idempotencia (`worker_processed_logs`, claves `txHash:logIndex`)
+ * garantiza que nada se cuente dos veces. Los agregados se resetean porque describen una cadena
+ * que ya no existe.
+ */
+async function rewindIfChainRestarted(
+  store: CheckpointStore,
+  aggregateStore: AggregateStore,
+  contractAddress: string,
+  deploymentBlock: number,
+  headBlock: bigint,
+  logger: Logger,
+): Promise<void> {
+  const last = await store.getLastBlock(contractAddress);
+  if (last !== null && isCheckpointAheadOfChain(last, headBlock)) {
+    await store.setLastBlock(contractAddress, deploymentBlock);
+    logger.warn(
+      {
+        contractAddress: contractAddress.toLowerCase(),
+        checkpointLastBlock: last,
+        headBlock: Number(headBlock),
+        deploymentBlock,
+      },
+      "cadena reiniciada por detrás del checkpoint · checkpoint de email rebobinado al bloque de despliegue",
+    );
+  }
+
+  const counters = await aggregateStore.getCounters();
+  if (counters.lastBlock > 0 && isCheckpointAheadOfChain(counters.lastBlock, headBlock)) {
+    await aggregateStore.reset(deploymentBlock);
+    logger.warn(
+      {
+        contractAddress: contractAddress.toLowerCase(),
+        aggregateLastBlock: counters.lastBlock,
+        headBlock: Number(headBlock),
+        deploymentBlock,
+      },
+      "cadena reiniciada por detrás del checkpoint · agregados/histórico reseteados al bloque de despliegue",
+    );
+  }
 }
 
 /**
@@ -101,25 +162,25 @@ function applyRebind(
  * con la actual; si cambió, resetea el agregado y revincula. Si nunca se había vinculado, solo
  * registra la dirección (no hay estado anterior que limpiar).
  */
-function rebindAggregates(
+async function rebindAggregates(
   aggregateStore: AggregateStore,
   contractAddress: string,
   deploymentBlock: number,
   logger: Logger,
-): void {
-  const bound = aggregateStore.getBoundAddress();
+): Promise<void> {
+  const bound = await aggregateStore.getBoundAddress();
   const current = contractAddress.toLowerCase();
   if (bound === current) {
     return;
   }
   if (bound !== null) {
-    aggregateStore.reset(deploymentBlock);
+    await aggregateStore.reset(deploymentBlock);
     logger.info(
       { previous: bound, contractAddress: current, deploymentBlock },
       "redeploy detectado · agregados/histórico reseteados (MAJOR 3)",
     );
   }
-  aggregateStore.setBoundAddress(current);
+  await aggregateStore.setBoundAddress(current);
 }
 
 /**
@@ -138,12 +199,17 @@ export async function runWorker(
     deps;
   const sleep = deps.sleep ?? ((ms: number) => defaultSleep(ms, signal));
 
-  applyRebind(
+  // La cabeza se lee ANTES del rebind (best-effort): si el RPC no responde, el chequeo de
+  // reinicio de cadena se omite y el bucle de polling lo reintentará en el primer ciclo.
+  const headBlock = await chainSource.getHeadBlock().catch(() => null);
+
+  await applyRebind(
     store,
     aggregateStore,
     config.contractAddress,
     config.deploymentBlock,
     logger,
+    headBlock,
   );
 
   const processor = new SaleProcessor({
@@ -230,7 +296,7 @@ async function raceShutdown(
  *     con el retorno de `catchUp`. Así, si un email no se entregó (BLOCKER 1), el checkpoint queda
  *     detrás de `head` y el lag lo refleja de forma honesta tras un crash parcial.
  *   - Agregados (MAJOR 4): se observa el pipeline. Un `catchUp` correcto registra el último bloque
- *     agregado (lag de agregados); un fallo persistente (p. ej. I/O de SQLite) degrada `/health`
+ *     agregado (lag de agregados); un fallo persistente (p. ej. I/O de PostgreSQL) degrada `/health`
  *     tras N fallos consecutivos, en vez de quedar invisible.
  */
 export async function runCycle(
@@ -255,7 +321,7 @@ export async function runCycle(
     await processor.catchUp(head);
     // MINOR 13: reportamos el progreso PERSISTIDO (no el retorno de `catchUp`), que es el estado
     // real entregado tras un email no entregado o un crash parcial.
-    const persisted = processor.getPersistedLastBlock();
+    const persisted = await processor.getPersistedLastBlock();
     health.recordCycle(persisted ?? Number(head), Number(head));
   } catch (error: unknown) {
     health.recordRpcFailure();
@@ -263,12 +329,27 @@ export async function runCycle(
     return;
   }
 
-  // Agregados/histórico (CU-09/11): aislados del ciclo del email. Un fallo (p. ej. I/O de SQLite)
-  // NO se clasifica como fallo de RPC, pero SÍ se observa en `/health` (MAJOR 4): degrada tras N
-  // fallos consecutivos y publica el lag de agregados.
+  // Agregados/histórico (CU-09/11): aislados del ciclo del email. Un fallo (p. ej. I/O de
+  // PostgreSQL) NO se clasifica como fallo de RPC, pero SÍ se observa en `/health` (MAJOR 4):
+  // degrada tras N fallos consecutivos y publica el lag de agregados.
   try {
     await aggregateProcessor.catchUp(head);
-    health.recordAggregateCycle(aggregateProcessor.getAggregates().lastBlock);
+    // Relleno de fechas del histórico anterior a M7 (H6): sin marca temporal, esas ventas quedan
+    // fuera de la serie mensual y el dashboard mostraría menos volumen que su propio KPI. Es
+    // best-effort (un bloque irrecuperable se queda sin fecha y se declara), así que no puede
+    // tumbar el ciclo.
+    const backfill = await aggregateProcessor.backfillTimestamps();
+    if (backfill.backfilled > 0 || backfill.remaining > 0) {
+      logger.info(
+        {
+          backfilled: backfill.backfilled,
+          remaining: backfill.remaining,
+        },
+        "marcas temporales de bloque recuperadas para el histórico (serie mensual de D-16)",
+      );
+    }
+    const aggregates = await aggregateProcessor.getAggregates();
+    health.recordAggregateCycle(aggregates.lastBlock);
   } catch (error: unknown) {
     health.recordAggregateFailure();
     logger.error({ error }, "fallo al actualizar agregados/histórico (no es fallo de RPC)");

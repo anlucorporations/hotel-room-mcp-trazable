@@ -1,14 +1,21 @@
 import { Redis } from "ioredis";
+import { requireSecret } from "../env/index";
 
 let globalRedis: Redis | null = null;
 
 export function getRedisClient(): Redis {
   if (!globalRedis) {
-    const url = process.env.REDIS_URL || "redis://127.0.0.1:6379/0";
+    // `REDIS_URL` es OBLIGATORIA (sin valor por defecto): la blocklist de JWT y el rate limiter
+    // de D-04 no pueden degradar silenciosamente a un Redis local arbitrario.
+    const url = requireSecret("REDIS_URL");
+    // ioredis conecta al crear el cliente y ENCOLA los comandos hasta que la conexión está
+    // lista. Antes se usaba `lazyConnect: true` + `enableOfflineQueue: false`, lo que hacía
+    // fallar SIEMPRE la primera operación de Redis de cualquier proceso ("Stream isn't
+    // writeable and enableOfflineQueue options is false"): el health check reportaba Redis
+    // DOWN con Redis levantado y la blocklist de JWT no podía escribir. `maxRetriesPerRequest`
+    // acota los reintentos por comando.
     globalRedis = new Redis(url, {
       maxRetriesPerRequest: 3,
-      lazyConnect: true,
-      enableOfflineQueue: false,
     });
 
     globalRedis.on("error", (err) => {
@@ -18,10 +25,35 @@ export function getRedisClient(): Redis {
   return globalRedis;
 }
 
+/**
+ * Cliente de Redis para **conexiones bloqueantes** (BullMQ `Worker`/`QueueEvents`).
+ *
+ * BullMQ exige `maxRetriesPerRequest: null` en las conexiones que bloquean (BRPOPLPUSH y familia):
+ * con el cliente normal (`maxRetriesPerRequest: 3`) el `new Worker(...)` **lanza** y el consumidor
+ * de la cola de correo no arranca nunca — que es exactamente lo que ocurría: la infraestructura de
+ * la cola existía y no había forma de consumirla.
+ */
+let blockingRedis: Redis | null = null;
+
+export function getBlockingRedisClient(): Redis {
+  if (!blockingRedis) {
+    const url = requireSecret("REDIS_URL");
+    blockingRedis = new Redis(url, { maxRetriesPerRequest: null });
+    blockingRedis.on("error", (err) => {
+      console.error("[Redis Client] Error de conexión (bloqueante):", err);
+    });
+  }
+  return blockingRedis;
+}
+
 export async function closeRedisClient(): Promise<void> {
   if (globalRedis) {
     await globalRedis.quit().catch(() => {});
     globalRedis = null;
+  }
+  if (blockingRedis) {
+    await blockingRedis.quit().catch(() => {});
+    blockingRedis = null;
   }
 }
 
@@ -123,6 +155,39 @@ export async function getCachedEURRate(
   } catch {
     return null;
   }
+}
+
+/**
+ * Consumo **de un solo uso** de una clave (SET NX EX). Devuelve `true` la primera vez y `false`
+ * si ya se había consumido dentro del TTL.
+ *
+ * Uso (D-05): el `jti` de un resguardo de check-in y el `nonce` de una autorización EIP-712 se
+ * consumen aquí, de modo que el **mismo QR no puede usarse dos veces** —ni en dos peticiones
+ * simultáneas de dos puestos de recepción—. Es una garantía distribuida (multi-instancia), no un
+ * `Map` en memoria del proceso.
+ *
+ * Falla en **cerrado**: si Redis no está disponible, la operación lanza y el check-in no se da por
+ * bueno. Un registro de consumo caído no puede degradar silenciosamente a «sin protección».
+ */
+export async function consumeOnce(
+  key: string,
+  ttlSeconds: number,
+  redis = getRedisClient(),
+): Promise<boolean> {
+  const acquired = await redis.set(key, "1", "EX", Math.max(1, Math.ceil(ttlSeconds)), "NX");
+  return acquired === "OK";
+}
+
+/**
+ * Libera un consumo previo (compensación). Se usa cuando el paso siguiente al consumo falla por
+ * una causa de infraestructura: sin esto, un RPC caído «gastaría» el resguardo del huésped y no
+ * habría forma de reintentar el check-in con el mismo QR.
+ */
+export async function releaseOnce(
+  key: string,
+  redis = getRedisClient(),
+): Promise<void> {
+  await redis.del(key);
 }
 
 /**

@@ -1,0 +1,79 @@
+{
+  "prueba": "carga real por HTTP contra el sistema en marcha",
+  "decision": "D-08 (verificación reproducible) · RNF-05",
+  "generador": {
+    "tipo": "Node (fetch) en un solo proceso",
+    "version": "v24.16.0",
+    "nota": "k6 no está instalado en este entorno (bloqueante B-3); su perfil largo sigue en scripts/load-tests/catalog-load.js"
+  },
+  "parametros": {
+    "concurrencia": 50,
+    "duracionSegundos": 15,
+    "timeoutMs": 5000
+  },
+  "sla": {
+    "p95Ms": 500,
+    "tasaErrorMaxima": 0.01
+  },
+  "objetivosMedidos": [
+    "worker:/aggregates",
+    "worker:/history",
+    "worker:/health"
+  ],
+  "objetivosOmitidos": [
+    "web:/",
+    "web:/api/sales/history",
+    "web:/health/ready"
+  ],
+  "resultado": "CUMPLE",
+  "veredicto": {
+    "requests": 9119,
+    "rps": 606.4,
+    "p50Ms": 67.3,
+    "p95Ms": 172.2,
+    "p99Ms": 327.1,
+    "errorRate": 0,
+    "checks": {
+      "requestsMeasured": true,
+      "p95WithinSla": true,
+      "errorRateWithinSla": true,
+      "workerMeasured": true
+    }
+  },
+  "porEndpoint": [
+    {
+      "endpoint": "worker:/health",
+      "requests": 2972,
+      "rps": 197.6,
+      "p50Ms": 19.9,
+      "p95Ms": 103.4,
+      "p99Ms": 380,
+      "maxMs": 1061.8,
+      "errors": 0,
+      "firstError": null
+    },
+    {
+      "endpoint": "worker:/aggregates",
+      "requests": 3122,
+      "rps": 207.6,
+      "p50Ms": 113.1,
+      "p95Ms": 195.7,
+      "p99Ms": 293.9,
+      "maxMs": 1455.3,
+      "errors": 0,
+      "firstError": null
+    },
+    {
+      "endpoint": "worker:/history",
+      "requests": 3025,
+      "rps": 201.1,
+      "p50Ms": 61.6,
+      "p95Ms": 135.2,
+      "p99Ms": 339.7,
+      "maxMs": 1442.5,
+      "errors": 0,
+      "firstError": null
+    }
+  ],
+  "fecha": "2026-09-23T18:13:12.969Z"
+}

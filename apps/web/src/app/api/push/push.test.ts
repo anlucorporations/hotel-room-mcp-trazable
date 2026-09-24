@@ -2,9 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST as postSubscribe } from "./subscribe/route";
 import { POST as postUnsubscribe, DELETE as deleteUnsubscribe } from "./unsubscribe/route";
 import { NextRequest } from "next/server";
+import type * as SharedModule from "@hotel/shared";
 
 vi.mock("@hotel/shared", async () => {
-  const actual = await vi.importActual<any>("@hotel/shared");
+  const actual = await vi.importActual<typeof SharedModule>("@hotel/shared");
   return {
     ...actual,
     NFTsRepository: vi.fn().mockImplementation(() => ({})),

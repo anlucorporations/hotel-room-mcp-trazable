@@ -1,83 +1,114 @@
-# Plan de Recuperación ante Desastres y Continuidad de Negocio (Disaster Recovery)
-## Hotel Marina del Sol: Plataforma NFT de Reservas
+# Recuperación ante desastres y continuidad
 
-> **Versión**: 1.0.0  
-> **Fecha**: 2026-09-13  
-> **Alcance**: Fase 2 (Post-MVP)  
-> **Métricas Comprometidas**: **RPO < 1 hora** | **RTO < 4 horas**  
+> **Versión**: 2.0.0 (sustituye a la 1.0.0, cuyas cifras no eran reproducibles)
+> **Fecha**: 2026-09-23 · **Hito**: M8 · **Decisión de origen**: D-08
+> **Artefacto de la verificación**: [`RepoTecnico/evidencias/dr-verify.json`](../RepoTecnico/evidencias/dr-verify.json)
+> **Objetivos declarados**: **RPO** = último volcado disponible · **RTO medido** = **0,73 s**
+> en este entorno (el objetivo de 4 h era del plan antiguo y no tiene instrumento en el repositorio)
+
+## 0. Qué cambió respecto a la versión anterior
+
+La v1.0.0 describía volcados cifrados en Google Cloud Storage, snapshots horarios, recuperación de una
+VM en GCP y una prueba de recuperación **que «restauraba» un objeto en memoria**. Esa prueba se retiró
+como certificación falsa (hallazgo H-03). Lo que hay hoy es más modesto y **comprobable**: un volcado
+real, una restauración real y una comparación tabla por tabla, ejecutables con un comando.
+
+## 1. Qué es fuente de verdad y qué es índice
+
+| Dato | Dónde vive | ¿Necesita copia? |
+|---|---|---|
+| Propiedad de las noches, listados, ventas, check-in, royalties, saldos pendientes | **La cadena** (`HotelNights`) | No: se puede reconstruir leyendo la cadena desde el bloque de despliegue |
+| Índice de noches, histórico de ventas, agregados y contadores | PostgreSQL | **Sí**, pero es reconstruible desde la cadena |
+| Operadores (hash bcrypt, semilla TOTP cifrada), sesiones, códigos de rescate | PostgreSQL | **Sí, y es lo único que no se puede reconstruir** |
+| Cola de correo y suscripciones push | PostgreSQL | Sí (se pierden avisos, no dinero) |
+| Contingencia de check-in | PostgreSQL | Sí (auditoría, sin datos personales) |
+| Checkpoints y claves de idempotencia del worker | PostgreSQL | Sí, para no reprocesar |
+
+**Consecuencia práctica**: perder el índice no es perder el negocio. Lo que hay que proteger de verdad
+son las **credenciales de los operadores** (sin ellas nadie entra al panel ni a recepción) y el propio
+volcado.
+
+## 2. Cómo se hace una copia
+
+```bash
+# Volcado lógico de la base del proyecto (es lo que hace la verificación de DR)
+pg_dump --no-owner --no-privileges -d "$DATABASE_URL" -f hotel_backup.sql
+# Huella para comprobar que lo restaurado es lo volcado
+sha256sum hotel_backup.sql > hotel_backup.sql.sha256
+```
+
+Recomendaciones operativas (no automatizadas hoy en el repositorio):
+
+1. **Frecuencia**: diaria para las tablas de credenciales y de negocio; el histórico se puede regenerar.
+2. **Cifrado en reposo**: el volcado contiene correos y hashes; hay que cifrarlo (AES-256) o almacenarlo
+   en un destino cifrado, y guardar la clave **fuera** del mismo destino.
+3. **Retención**: al menos 7 días de diarios y 4 semanales; el histórico público no necesita retención.
+4. **Fuera del servidor**: una copia en otro proveedor o región. Un volcado que vive en la misma máquina
+   no protege del fallo que importa.
+5. **Verificación periódica**: una copia que nunca se ha restaurado no es una copia (ver §3).
+
+## 3. Verificación reproducible de la recuperación
+
+```bash
+pnpm test:dr     # requiere PostgreSQL en marcha con la base del proyecto
+```
+
+Qué hace, de verdad:
+
+1. Ejecuta **`pg_dump`** de la base real y anota su tamaño y su **SHA-256**.
+2. **Restaura** el volcado en un **esquema** de la misma base y cronometra la operación (**RTO medido:
+   0,73 s** en este entorno).
+3. Compara **tabla por tabla** entre origen y restaurada: recuentos y sumas de control.
+   Resultado de la última ejecución: **283 filas comparadas, 6/6 tablas idénticas**.
+4. Limpia el esquema de verificación **siempre**, incluso si algo falla, para no contaminar el siguiente
+   volcado.
+5. Escribe el artefacto `RepoTecnico/evidencias/dr-verify.json` con las cifras y las notas de alcance.
+
+**Nota de alcance declarada en el artefacto**: el rol de la aplicación **no tiene `CREATEDB`** (crear
+una base exige el superusuario), así que la restauración se hace en un esquema de la misma base, no en
+una base nueva. El volcado, la restauración y la comparación son reales; el aislamiento no es total.
+
+## 4. Runbook: se ha perdido la base de datos
+
+| Paso | Acción | Comprobación |
+|---|---|---|
+| 1 | Provisionar PostgreSQL y crear el rol `hotel_admin` y la base `hotel_nft_dev` (más la extensión `pgcrypto`, como superusuario) | `psql "$DATABASE_URL" -c '\dt'` |
+| 2 | Restaurar el último volcado | `psql -d "$DATABASE_URL" -f hotel_backup.sql` |
+| 3 | Verificar integridad contra la huella | `sha256sum -c hotel_backup.sql.sha256` |
+| 4 | Arrancar el worker: **aplica las migraciones que falten** y reindexar desde el bloque de despliegue | `/health` con `lag` pequeño y decreciente |
+| 5 | Comprobar que las cifras cuadran con la cadena | `/aggregates` (minteadas, vendidas, quemadas, royalties) |
+| 6 | Reaprovisionar los operadores que falten | `pnpm --filter @hotel/shared provision:admin -- --username …` |
+| 7 | Avisar a recepción y al propietario: las **sesiones anteriores ya no valen** | login con contraseña + TOTP |
+
+**Si el checkpoint del worker queda por delante de la cabeza de la cadena** (por ejemplo, tras
+redesplegar o reiniciar Anvil), el worker lo detecta, **rebobina** al bloque de despliegue, lo registra
+con un aviso y **degrada la salud** mientras el `lag` sea negativo. No hay que borrar nada a mano.
+
+## 5. Runbook: se ha perdido la cadena (o hay que redesplegar)
+
+El contrato es **inmutable**: un cambio de reglas es un **redespliegue con dirección nueva** (ADR-22).
+
+1. **Parar el worker** (si no, indexa a la vez que se cambia el contrato).
+2. Reiniciar Anvil (**borra el estado**) o desplegar en el nonce siguiente (**dirección nueva**).
+3. `forge script script/Deploy.s.sol:Deploy --rpc-url … --broadcast --slow` desde `packages/contracts`.
+4. `pnpm --filter @hotel/contracts sync` → registro nuevo en `packages/shared/deployments/<chainId>.json`.
+5. Actualizar `.env`: `CONTRACT_ADDRESS`, `NEXT_PUBLIC_CONTRACT_ADDRESS`, `NEXT_PUBLIC_DEPLOYMENT_BLOCK`
+   y, si aplica, `NEXT_PUBLIC_FAUCET_ADDRESS`.
+6. Arrancar el worker y comprobar `/health`: el checkpoint se rebobina al bloque de despliegue.
+7. **Re-mintear el inventario** que deba existir: el estado on-chain anterior ya no existe.
+
+## 6. Qué no está cubierto (deuda declarada)
+
+- **No hay automatización de copias** en el repositorio: es un procedimiento, no un cron. Se probó y
+  funcionó a mano; ponerlo en producción exige un planificador y un destino externo.
+- **No hay copia cifrada verificada** de extremo a extremo (cifrado, descifrado y restauración) como
+  parte de `pnpm test:dr`.
+- **No hay ensayo de recuperación total del sistema** (base + servicios + cadena) en un entorno limpio.
+- **No hay copia de las claves** de las hot-wallets ni del multisig: su custodia es una decisión
+  pendiente del cliente (B-7) y su pérdida es irrecuperable por diseño.
+- El **RTO de 0,73 s** es el de la restauración en un esquema local; no incluye aprovisionar una máquina
+  nueva, DNS, certificados ni el redespliegue del contrato.
 
 ---
 
-## 1. Arquitectura de Resiliencia y Datos Críticos
-
-La plataforma combina componentes **on-chain** (Polygon PoS) y **off-chain** (PostgreSQL, Redis, Next.js).
-
-1. **Datos On-Chain (Inmutables por Diseño)**:
-   - Propiedad de tokens NFT, estado de minteo, depósitos en marketplace y markCheckedIn() residen en Polygon PoS. La blockchain actúa como fuente definitiva de verdad (Source of Truth) descentralizada y no requiere backup convencional.
-2. **Datos Off-Chain (Sujetos a Backup y RPO < 1h)**:
-   - Tabla nfts: Contiene los secretos check_in_secret_enc cifrados con AES-256-GCM necesarios para validar el acceso en recepción.
-   - Tabla admin_sessions y mfa_recovery_codes: Gestión de sesiones administrativas protegidas con MFA.
-   - Tabla email_notifications y push_subscriptions: Registro de trazabilidad y comunicaciones a huéspedes.
-   - Tabla checkin_contingency_logs: Auditoría de check-ins asistidos para cumplimiento con la normativa policial (RD 933/2021).
-
----
-
-## 2. Estrategia de Backup Automatizado
-
-- **Frecuencia**: Volcados lógicos diarios programados (pg_dump) con snapshots de disco en GCP cada 1 hora.
-- **Cifrado en Reposo**: Los volcados se comprimen con gzip y se cifran simétricamente con AES-256 antes de salir de la instancia de base de datos.
-- **Almacenamiento Secundario**: Réplica inmediata en Google Cloud Storage (gsutil) en multirregión con política de retención inmutable de 30 días (Lifecycle Management).
-- **Control de Integridad**: Cada archivo de backup genera un fichero .sha256 emparejado. El sistema rechaza cualquier restauración cuyo hash no coincida exactamente.
-
----
-
-## 3. Runbook Operativo de Restauración (RTO < 4h)
-
-En caso de fallo catastrófico de la instancia GCP o corrupción de la base de datos:
-
-### Paso 1: Re-aprovisionamiento de Instancia (< 30 min)
-```bash
-# 1. Crear nueva VM en GCP con imagen Debian 12 / Docker
-gcloud compute instances create hotel-vm-recovery --zone=europe-west1-b --machine-type=e2-standard-2
-
-# 2. Re-asociar IP estática de producción
-gcloud compute instances add-access-config hotel-vm-recovery --address=HOTEL_STATIC_IP
-```
-
-### Paso 2: Descarga y Verificación Criptográfica (< 15 min)
-```bash
-# 3. Descargar el backup más reciente desde GCS
-gsutil cp gs://hotel-backup-bucket/hotel_backup_latest.sql.gz.enc .
-gsutil cp gs://hotel-backup-bucket/hotel_backup_latest.sql.gz.enc.sha256 .
-
-# 4. Verificar integridad SHA-256
-sha256sum -c hotel_backup_latest.sql.gz.enc.sha256
-
-# 5. Descifrar con la clave de Secret Manager
-openssl enc -d -aes-256-cbc -in hotel_backup_latest.sql.gz.enc -out hotel_backup.sql.gz -k "$BACKUP_ENCRYPTION_KEY"
-gunzip hotel_backup.sql.gz
-```
-
-### Paso 3: Restauración en PostgreSQL (< 20 min)
-```bash
-# 6. Restaurar tablas
-psql -h 127.0.0.1 -U hotel_user -d hotel_db < hotel_backup.sql
-```
-
-### Paso 4: Reconciliación con la Blockchain Polygon (< 15 min)
-```bash
-# 7. El Event Listener WebSocket lee automáticamente desde el último bloque indexado
-# y ejecuta eth_getLogs para re-sincronizar ventas o check-ins ocurridos durante la contingencia.
-pnpm --filter @hotel/worker start
-```
-
-**Tiempo Total Estimado de Recuperación**: ~1 hora y 20 minutos (**RTO < 4h holgadamente cumplido**).
-
----
-
-## 4. Script de Prueba y Simulación
-
-La verificación puede ejecutarse en cualquier momento mediante:
-```bash
-pnpm test:dr
-```
+*Disaster recovery v2.0.0 · reescrito en M8/M9 · reproduce con `pnpm test:dr`.*

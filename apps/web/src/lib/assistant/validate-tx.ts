@@ -4,7 +4,7 @@ import {
   verifyPurchaseTx,
   type PurchaseTxData,
   type SaleType,
-} from "@hotel/shared";
+} from "@hotel/shared/domain";
 
 /**
  * Validación server-side **independiente del LLM** de la tx de compra preparada (ADR-11,

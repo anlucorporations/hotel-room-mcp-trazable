@@ -21,11 +21,14 @@ export * from "./deployments/schema";
 export * from "./logger";
 
 // Módulos backend de persistencia, auth, redis, tasas y health checks
+export * from "./env/index";
 export * from "./db/pool";
 export * from "./db/migrator";
 export * from "./db/repositories/nfts.repository";
 export * from "./db/repositories/sessions.repository";
+export * from "./db/repositories/users.repository";
 export * from "./redis/client";
+export * from "./auth/crypto";
 export * from "./auth/service";
 export * from "./rates/exchange-service";
 export * from "./health/service";
@@ -35,5 +38,9 @@ export * from "./events/listener";
 export * from "./passes/jws";
 export * from "./reception/service";
 export * from "./push/service";
+export * from "./push/web-push";
 export * from "./backup/service";
-export * from "./fiat-onramp/service";export * from "./pms/adapter";
+export * from "./fiat-onramp/service";
+export * from "./pms/adapter";
+// Retención de datos (M9 · ADR-24): purga de sesiones caducadas, códigos huérfanos y correos viejos.
+export * from "./maintenance/retention";

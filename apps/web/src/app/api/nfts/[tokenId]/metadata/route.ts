@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest} from "next/server";
+import { NextResponse } from "next/server";
 import { NFTsRepository } from "@hotel/shared";
 
 export const dynamic = "force-dynamic";
@@ -62,10 +63,13 @@ export async function GET(
     };
 
     return NextResponse.json(metadata, { status: 200 });
-  } catch (error: any) {
+  } catch (error) {
     console.error(`[API /api/nfts/:tokenId/metadata] Error:`, error);
     return NextResponse.json(
-      { error: "INTERNAL_SERVER_ERROR", message: error?.message || "Error al obtener metadatos" },
+      {
+        error: "INTERNAL_SERVER_ERROR",
+        message: error instanceof Error && error.message ? error.message : "Error al obtener metadatos",
+      },
       { status: 500 },
     );
   }

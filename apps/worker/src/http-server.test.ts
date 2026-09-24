@@ -6,7 +6,7 @@ import type { HealthReport } from "@hotel/shared/health";
 import { startWorkerHttpServer } from "./http-server";
 
 /**
- * Tests del router HTTP del worker (FASE 3, CU-09/11). Verifican que `/health` mantiene su
+ * Tests del router HTTP del worker (FASE 3, CU-09/11, docs/SRS.md §9). Verifican que `/health` mantiene su
  * contrato (200/503 + COMPONENT_DOWN) y que `/aggregates` y `/history` sirven los datos con CORS.
  */
 const AGGREGATES: DashboardAggregates = {
@@ -18,6 +18,37 @@ const AGGREGATES: DashboardAggregates = {
   burnedCount: 1,
   occupancyRatioPercent: 30,
   lastBlock: 42,
+  timeZone: "Europe/Madrid",
+  undatedSalesCount: 0,
+  monthlySeries: [
+    {
+      month: "2026-06",
+      primaryVolumeWei: "1000000000000000000",
+      secondaryVolumeWei: "5000000000000000000",
+      primarySales: 3,
+      secondarySales: 2,
+    },
+  ],
+  roomTypeBreakdown: [
+    {
+      roomType: "simple",
+      primarySales: 3,
+      secondarySales: 2,
+      primaryVolumeWei: "1000000000000000000",
+      secondaryVolumeWei: "5000000000000000000",
+      totalVolumeWei: "6000000000000000000",
+    },
+  ],
+  topResold: [
+    {
+      tokenId: "10220260615",
+      room: 102,
+      dateYYYYMMDD: 20_260_615,
+      roomType: "simple",
+      resaleCount: 2,
+      resaleVolumeWei: "5000000000000000000",
+    },
+  ],
 };
 
 const HISTORY: SaleHistoryEntry[] = [
@@ -33,6 +64,7 @@ const HISTORY: SaleHistoryEntry[] = [
     blockNumber: 3,
     logIndex: 0,
     txHash: `0x${"ab".repeat(32)}`,
+    blockTimestamp: 1_780_000_000,
   },
 ];
 

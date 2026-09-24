@@ -4,7 +4,7 @@ import { AdminPanel } from "@/components/admin/AdminPanel";
 
 export const dynamic = "force-dynamic";
 
-/** Fondos (CU-15): retirar a tesorería, gateado por TREASURER_ROLE (UX). */
+/** Fondos (CU-15, docs/SRS.md §9): retirar a tesorería, gateado por TREASURER_ROLE (UX). */
 export default function AdminFundsPage() {
   return (
     <AdminLayout>

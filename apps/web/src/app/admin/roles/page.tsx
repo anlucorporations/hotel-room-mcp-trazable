@@ -4,7 +4,7 @@ import { AdminRoles } from "@/components/admin/AdminRoles";
 
 export const dynamic = "force-dynamic";
 
-/** Roles y ownership (CU-16): gateado por DEFAULT_ADMIN_ROLE. */
+/** Roles y ownership (CU-16, docs/SRS.md §9): gateado por DEFAULT_ADMIN_ROLE. */
 export default function AdminRolesPage() {
   return (
     <AdminLayout>

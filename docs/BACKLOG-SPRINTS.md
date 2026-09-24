@@ -1,359 +1,273 @@
-# Backlog de Sprints y Desglose de Historias de Usuario
-## Hotel Marina del Sol: Plataforma NFT de Reservas
+# Backlog de sprints e historias de usuario
 
-> **Versión**: 1.2.0  
-> **Fecha**: 2026-09-08  
-> **Estado**: Aprobado — Post-Auditoría v3 (21 hallazgos resueltos)  
-> **Alineación**: PRD v1.1.0 y SRS v1.3.0  
-> **Sprint Cadence**: Sprint 0 (1 semana) + 6 Sprints de 2 semanas = **13 semanas en total**  
+## Hotel Marina del Sol: plataforma de noches tokenizadas
 
----
+> **Versión**: 2.0.0 (reescritura completa; sustituye a la v1.2.0)
+> **Fecha**: 2026-09-23 · **Hito**: M9 · **Decisión de origen**: D-15
+> **Alineación**: [`docs/PRD.md`](PRD.md) v2.0.0 · [`docs/SRS.md`](SRS.md) v2.0.0 · [`docs/adr/`](adr/README.md)
+> **Estado del proyecto**: [`RepoTecnico/estado_proyecto.md`](../RepoTecnico/estado_proyecto.md)
 
-## 0. Definición de Hecho (DoD) — Global
+## 0. Cómo se lee este backlog
 
-Los siguientes criterios aplican de forma obligatoria a **todas** las historias de usuario:
+La v1.2.0 era un plan: seis sprints de dos semanas, 13 semanas, con historias que **nunca se ejecutaron
+como estaban escritas**. La realidad fue otra: los sprints se construyeron con dos generaciones de
+contratos conviviendo, y la auditoría V5 los declaró **NO CUMPLE** por eso. La terminación se hizo
+después, en **10 hitos verticales** (M0–M9) que cerraron los 22 hallazgos.
 
-- [ ] Código revisado en merge request por al menos 1 par.
-- [ ] Tests unitarios y de integración escritos y pasando en CI (pipeline GitLab).
-- [ ] **Cobertura de código ≥ 80%** (contratos: Foundry lcov; backend: Jest/Pytest).
-- [ ] **Análisis estático de contratos con `slither .` sin hallazgos HIGH o CRITICAL** obligatorio en el pipeline CI para cualquier cambio o pull request que afecte contratos inteligentes.
-- [ ] Despliegue en entorno correspondiente verificado (Anvil → Sprint 0/1/2, Polygon Amoy en GCP → Sprint 3+).
-- [ ] Criterios de aceptación de la historia validados manualmente o con test E2E.
-- [ ] Documentación técnica actualizada si el cambio modifica una interfaz pública o esquema de BD.
+Este documento conserva **los identificadores `US-*`** (el código y las pruebas los citan) y dice, para
+cada historia, **qué existe hoy de verdad**: su estado real, dónde se verifica y qué deuda arrastra.
+No hay historias «completadas» sin una ejecución o una prueba que lo demuestre.
 
----
+**Estados**: **OK** (cumplida y verificada) · **PAR** (cumplida en parte, con deuda declarada) ·
+**RETIRADA** (fuera del sistema por decisión) · **FASE POSTERIOR** (fuera del alcance entregado) ·
+**PENDIENTE** (bloqueada por el cliente o por el entorno).
 
-## 1. Resumen del Roadmap de Sprints
+### Definición de hecho (DoD) real
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           ROADMAP DE SPRINTS                            │
-├──────────┬──────────────────────────────────────────────┬───────────────┤
-│ Sprint   │ Objetivo Principal                           │ Story Points  │
-├──────────┼──────────────────────────────────────────────┼───────────────┤
-│ Sprint 0 │ DevOps, CI/CD, Observabilidad y Cimientos    │ 8 SP          │
-│ Sprint 1 │ Smart Contracts Core, Pausable y Precios     │ 21 SP         │
-│ Sprint 2 │ BD Indexada, Auth MFA, Health y Endpoints    │ 26 SP         │
-│ Sprint 3 │ Listener, Notif., Bot Burner y Deploy Amoy   │ 21 SP         │
-│ Sprint 4 │ Tienda Pública, Wallet, QR, Pases y E2E      │ 26 SP         │
-│ Sprint 5 │ Recepción (MFA + On-chain), Reventa y Panel  │ 24 SP         │
-│ Sprint 6 │ Pruebas Carga k6, Hardening y Compliance     │ 16 SP         │
-├──────────┴──────────────────────────────────────────────┴───────────────┤
-│ TOTAL: 142 Story Points                                                 │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+La DoD de la v1.2.0 pedía revisión por un par, cobertura ≥ 80 % y análisis Slither. La DoD **vigente**
+es la de [`docs/adr/ADR-23-verificacion-reproducible-y-gates.md`](adr/ADR-23-verificacion-reproducible-y-gates.md):
 
----
+- [ ] `pnpm typecheck`, `pnpm lint` y `pnpm test` en verde (turbo, sin caché).
+- [ ] La funcionalidad es **alcanzable desde la interfaz o la ruta**, no solo código que nadie invoca.
+- [ ] Hay una prueba o un E2E que la ejerce **contra el sistema en marcha** (no un doble del sistema).
+- [ ] Si toca la cadena, se ejecuta un E2E on-chain con **hashes** y artefacto en `RepoTecnico/evidencias/`.
+- [ ] Si publica una cifra de calidad, tiene **instrumento de medida** y artefacto; si no, se declara sin medir.
+- [ ] La deuda que queda se escribe (aquí y en `estado_proyecto.md`), no se esconde.
+- [ ] Ningún secreto nuevo en el repositorio (guardián en verde).
 
-## 2. Detalle de Sprints e Historias de Usuario
+## 1. Roadmap real
 
----
+| Fase | Contenido | Estado |
+|---|---|---|
+| **Sprints 0–6** (13 semanas planificadas) | Construcción inicial: dominio, contratos, API, web, recepción, worker, carga y compliance | **Entregado con reservas**: la auditoría V5 encontró 22 hallazgos (7 críticos) |
+| **Fase 2 — Resiliencia y alcance añadido** | DR, WAF, accesibilidad, fiat on-ramp y conector PMS | Entregado; PMS y fiat quedan **simulados** hasta tener credenciales/webhook |
+| **Fase 3 — Terminación vertical (M0–M9)** | Cerrar y consolidar: una red, un contrato, un acceso, una base de datos, verificación reproducible y documentación real | **M0–M8 cerrados y verificados; M9 en cierre** |
 
-### 🟣 SPRINT 0: DevOps, CI/CD, Observabilidad y Cimientos
-**Duración**: Semana 1 · **Capacidad**: 8 SP · **Meta**: Infraestructura de desarrollo, pipeline CI automático, Sentry y entorno Anvil configurados.
+Los hitos verticales sustituyen a la cadence de sprints para el trabajo de terminación porque cada uno
+es una **entrega operable y comprobable**, no una capa:
 
-#### US-00: Configuración del Monorepo, CI/CD y Observabilidad (8 SP)
-- **Criterios de Aceptación**:
-  - Monorepo inicializado: `packages/contracts`, `apps/api`, `apps/web`, `scripts/`.
-  - Pipeline CI ejecuta linting, formateo, tests y `slither .` bloqueando en severidad HIGH o CRITICAL.
-  - `docker-compose.yml` levanta PostgreSQL 16 y Redis 7 con un solo comando.
-  - Foundry (`foundry.toml`) y OpenZeppelin v5 instalados y compilando.
-  - Sentry integrado en backend y exportación de logs JSON estructurados configurada para GCP Cloud Logging.
-  - Instancia GCP aprovisionada con Foundry para despliegues en Polygon Amoy.
-- **Tareas Técnicas**:
-  - `TASK-00.1`: Estructura de monorepo, `.gitignore` y convenciones de ramas.
-  - `TASK-00.2`: `.gitlab-ci.yml` con stages: `lint` → `test` → `coverage` → `slither` → `deploy-preview`.
-  - `TASK-00.3`: `docker-compose.yml` con PostgreSQL 16 y Redis 7.
-  - `TASK-00.4`: Verificación de Foundry, OpenZeppelin v5 y Slither.
-  - `TASK-00.5`: Configuración de instancia GCP y conectividad RPC.
-  - `TASK-00.6`: Integración de Sentry y formato de logging estructurado.
+| Hito | Objetivo | Estado | Evidencia |
+|---|---|---|---|
+| **M0** | Entorno reproducible (PostgreSQL, Redis, Anvil, `.env`, migraciones) | ✅ | `/health/ready` con PostgreSQL, Redis y cadena `UP` |
+| **M1** | Contrato canónico completo (check-in, royalty por tipo, suelo) | ✅ | Foundry en verde y despliegue verificado con `cast` (tras retirar la generación legacy en M9: **13 suites / 125 pruebas**) |
+| **M2** | Una sola base de datos (SQLite fuera) | ✅ | 525 pruebas verdes y checkpoint avanzando en PostgreSQL |
+| **M3** | Acceso cerrado (contraseña + TOTP + guards, secretos fuera) | ✅ | 401/403 en cada ruta; 619 pruebas verdes |
+| **M4** | Compra y reventa operativas | ✅ | E2E M4 (39 comprobaciones) + verificación adversarial |
+| **M5** | Recepción con ancla on-chain y resguardo de un solo uso | ✅ | E2E M5 (33 comprobaciones) |
+| **M6** | Automatismos (quema, push, cola única, listener, monitor) | ✅ | E2E M6 (20 comprobaciones) |
+| **M7** | Dashboard con gráficas y accesibilidad real | ✅ | E2E M7 (33 comprobaciones) + axe en verde (16/16 tras añadir `/mis-noches` y `/checkin`) |
+| **M8** | Verificación reproducible y gates bloqueantes | ✅ | Carga real, DR real, pipeline sin `\|\| true` |
+| **M9** | Documentación y entrega | **En curso** | ADR, PRD/SRS/plan/backlog, respuesta al cliente y manuales |
 
----
+## 2. Historias de usuario
 
-### 🟢 SPRINT 1: Smart Contracts Core, Pausable y Protección Anti-evasión
-**Duración**: Semanas 2 y 3 · **Capacidad**: 21 SP · **Meta**: Contratos compilados, verificados en Foundry con cobertura ≥ 80% y desplegados en Anvil local.
+### Sprint 0 — Cimientos
 
-#### US-01: Contrato `HotelNFT.sol` con AccessControl, Pausable y `markCheckedIn` (8 SP)
-- **Criterios de Aceptación**:
-  - `DEFAULT_ADMIN_ROLE`: Configuración global, `setMarketplaceContract()` y pausado de emergencia (`pause()`/`unpause()`).
-  - `MINTER_ROLE`: Acuñación masiva (≤50 tokens/lote) mediante relayer backend.
-  - `BURNER_ROLE`: Quema exclusiva de tokens no vendidos (`burn` y `burnBatch`).
-  - `RECEPTION_ROLE`: Función `markCheckedIn(tokenId)` que marca la estancia y bloquea transferencias en `_update()`.
-  - `royaltyInfo` calcula 5% (simples/dobles) y 10% (suite).
-  - Slither en CI sin alertas HIGH ni CRITICAL.
-- **Tareas Técnicas**:
-  - `TASK-01.1`: Implementación de `HotelNFT.sol` con roles OpenZeppelin y Pausable.
-  - `TASK-01.2`: Lógica de `markCheckedIn()` y bloqueo de transferencias en `_update()`.
-  - `TASK-01.3`: Tests unitarios y fuzzing en Foundry (`HotelNFT.t.sol`).
+#### US-00 · Configuración del monorepo, CI/CD y observabilidad (8 SP) — **OK**
 
-#### US-02: Contrato `HotelMarketplace.sol` con Pull-over-Push y `minListingPrice` (8 SP)
-- **Criterios de Aceptación**:
-  - `minListingPrice` configurable por `DEFAULT_ADMIN_ROLE` para evitar ventas a 1 wei que evadan royalties.
-  - `listForSale(tokenId, price)` valida que el NFT no esté marcado como `isCheckedIn`.
-  - Liquidación mediante Pull-over-Push (`pendingWithdrawals` + `withdraw()`).
-  - Protección `nonReentrant` y control `whenNotPaused`.
-- **Tareas Técnicas**:
-  - `TASK-02.1`: Implementar `HotelMarketplace.sol` con `minListingPrice` y `withdraw()`.
-  - `TASK-02.2`: Tests en Foundry (`Marketplace.t.sol`) simulando wash trading y reentrancy.
+Monorepo pnpm + turbo con 6 paquetes; turbo ejecuta `typecheck`, `lint`, `test`, `build` y `coverage`;
+el pipeline de GitLab tiene etapas **bloqueantes** (`setup`, `static`, `test`, `coverage`, `chain-e2e`,
+`web-e2e`, `certifications`, `security`) sin `|| true` ni `allow_failure` (ADR-23). La observabilidad
+es **logging estructurado JSON**; Sentry se **retiró** del alcance (ADR-26).
 
-#### US-03: Entorno Local Anvil y Scripts de Despliegue Foundry (5 SP)
-- **Criterios de Aceptación**:
-  - Script `Deploy.s.sol` despliega `HotelNFT` y `HotelMarketplace`, enlaza contratos y exporta ABIs a `packages/shared`.
-- **Tareas Técnicas**:
-  - `TASK-03.1`: Script Foundry `Deploy.s.sol`.
-  - `TASK-03.2`: Exportación automatizada de ABIs y direcciones de contratos.
+### Sprint 1 — Contratos
 
----
+#### US-01 · Contrato con `AccessControl`, `Pausable` y check-in (8 SP) — **OK (reescrita)**
 
-### 🟢 SPRINT 2: Backend Core, Base de Datos, Health Checks y Endpoints Catálogo
-**Duración**: Semanas 4 y 5 · **Capacidad**: 26 SP · **Meta**: Base de datos indexada, endpoints de catálogo funcionales, health checks y autenticación protegida con MFA TOTP obligatorio.
+La historia pedía `HotelNFT.sol` con `markCheckedIn`. Se entregó **`HotelNights.sol`**, el contrato
+canónico único: ERC-721 + `AccessControl` + `Pausable`, `markCheckedIn` con `RECEPTION_ROLE` que exige
+venta previa (`NightNotSold`), `soldOnce`, `pendingWithdrawals`/`claim` y transferencias directas
+bloqueadas (ADR-05, ADR-07, ADR-15, ADR-16). `HotelNFT.sol` es **legacy** y sale del runtime (ADR-02).
 
-#### US-04: Esquema de Base de Datos Off-chain, Pool de Conexiones y Health Checks (5 SP)
-- **Criterios de Aceptación**:
-  - Tablas: `nfts` (con `check_in_secret_enc` AES-256-GCM y `NUMERIC(78,0)` para importes en wei), `listings`, `sale_events`, `admin_sessions`, `mfa_recovery_codes`, `email_notifications`.
-  - Configuración del pool de conexiones PostgreSQL (`max: 20`, `idleTimeout: 30s`, `connectionTimeout: 5s`) y cron de purga para notificaciones `SENT` > 90 días.
-  - Endpoints `GET /health/live` (200 OK) y `GET /health/ready` (comprobando PostgreSQL, Redis y RPC).
-- **Tareas Técnicas**:
-  - `TASK-04.1`: Migraciones DDL completas en PostgreSQL con tipos numéricos precisos.
-  - `TASK-04.2`: Configuración de pool de conexiones (`pg-pool`) y script de mantenimiento / purga.
-  - `TASK-04.3`: Creación de índices compuestos optimizados.
-  - `TASK-04.4`: Tests de integración de BD.
-  - `TASK-04.5`: Implementación de endpoints `/health/live` y `/health/ready`.
+#### US-02 · Contrato de mercado con *pull-over-push* y `minListingPrice` (8 SP) — **OK (reescrita)**
 
-#### US-05: Autenticación con MFA Obligatorio (Admin y Recepción), JWT Blocklist y Rate Limiting (13 SP)
-- **Criterios de Aceptación**:
-  - Cuentas de Administrador y Recepción exigen contraseña + MFA TOTP obligatorio.
-  - Rate limiting en Redis: máximo 5 intentos fallidos / 15 min en login y MFA antes de bloqueo temporal.
-  - Refresh Token Rotation (RTR) con hash SHA-256 en BD.
-  - Logout añade JWT a blocklist en Redis (TTL = expiración restante).
-  - `mintBatch` exige `confirmTotpCode` en el cuerpo de la petición.
-- **Tareas Técnicas**:
-  - `TASK-05.1`: Endpoints `/auth/login`, `/auth/mfa/verify`, `/auth/refresh`, `/auth/logout`.
-  - `TASK-05.2`: Middleware de validación TOTP y JWT blocklist.
-  - `TASK-05.3`: 8 códigos de rescate con hash bcrypt.
-  - `TASK-05.4`: Tests de seguridad de autenticación.
-  - `TASK-05.5`: Middleware de Rate Limiting con Redis para `/auth/login` y `/auth/mfa/verify` (5 intentos fallidos / 15 min con bloqueo temporal).
+La historia pedía `HotelMarketplace.sol`. El mercado vive **dentro** de `HotelNights`: `list`,
+`unlist`, `buyResale`, `claim` y `minListingPrice` que **nunca puede ser 0** (ADR-19), junto al royalty
+**por tipo, inmutable** derivado del maestro de habitaciones (ADR-18). Pruebas:
+`HotelNights.resale.t.sol`, `HotelNights.royalty.t.sol`, `HotelNights.buy.t.sol`,
+`HotelNights.invariants.t.sol`.
 
-#### US-06: Servicio Resiliente de Cotización EUR con Caché (<5ms) (3 SP)
-- **Criterios de Aceptación**:
-  - Worker actualiza MATIC/EUR cada 5 minutos en Redis; respuesta en < 5ms; fallback dinámico a Binance.
-- **Tareas Técnicas**:
-  - `TASK-06.1`: Worker de cotizaciones con circuit breaker.
-  - `TASK-06.2`: Tests de fallback y caché en memoria.
+#### US-03 · Entorno local, despliegue Foundry y registro sincronizado (5 SP) — **OK**
 
-#### US-07b: Endpoints Backend del Catálogo y Metadatos (5 SP)
-- **Criterios de Aceptación**:
-  - `GET /api/nfts` con filtros reactivos (< 500ms) y paginación.
-  - `GET /api/nfts/:tokenId/metadata` compatible con el estándar ERC-721.
-- **Tareas Técnicas**:
-  - `TASK-07b.1`: Implementación de `GET /api/nfts`.
-  - `TASK-07b.2`: Endpoint de metadatos `GET /api/nfts/:tokenId/metadata`.
+`Deploy.s.sol` despliega `HotelNights` con bootstrap de roles (revocando `DEFAULT_ADMIN_ROLE` al
+desplegador, ADR-06) y faucet opcional (ADR-13); `pnpm --filter @hotel/contracts sync` genera
+`packages/shared/deployments/<chainId>.json` validado contra el esquema, que es la **fuente única** del
+bloque de despliegue (ADR-09).
 
----
+### Sprint 2 — Datos, acceso y catálogo
 
-### 🟢 SPRINT 3: Event Listener, Bot Burner y Primer Deploy Amoy
-**Duración**: Semanas 6 y 7 · **Capacidad**: 21 SP · **Meta**: Sincronización continua de eventos on-chain, bot burner desatendido, alertas técnicas dirigidas y despliegue inicial en testnet.
+#### US-04 · Esquema de base de datos, pool y *health checks* (5 SP) — **OK**
 
-#### US-07: Sincronizador de Eventos On-chain con Alerta a DevOps y Protección Anti-Reorgs (8 SP)
-- **Criterios de Aceptación**:
-  - WebSocket con heartbeat cada 30s y timeout de respuesta de **5000ms**.
-  - Alerta por email a `DEVOPS_ALERT_EMAIL` si no se reciben bloques `newHeads` de Polygon en > 10 minutos.
-  - Profundidad de 32 bloques de confirmación contra reorganizaciones (reorgs) antes de consolidar el estado `SOLD` / `CHECKED_IN`, reportando `CONFIRMING` temporalmente.
-  - Persistencia de `lastBlockProcessed` y reconciliación con `eth_getLogs`.
-  - Rotación de `check_in_secret_enc` ante `NFTSold`.
-- **Tareas Técnicas**:
-  - `TASK-07.1`: EventListener con multi-RPC, heartbeat de 5000ms, buffer de 32 confirmaciones anti-reorgs y monitor de `newHeads` con alerta de silencio > 10 min.
-  - `TASK-07.2`: Transiciones de estado atómicas en BD (`CONFIRMING` -> `SOLD`).
-  - `TASK-07.3`: Paginación y reconciliación histórica con `eth_getLogs` (chunking de máximo 2.000 bloques y backoff exponencial) y tests de recuperación ante caída de red y reorganización.
+**13 tablas** y sus índices, migraciones incrementales e idempotentes aplicadas al arranque con el
+**orden** como invariante comprobado por guardián; pool compartido y `/health/ready` con PostgreSQL,
+Redis y cadena. Diccionario: [`RepoTecnico/diccionario_datos.md`](../RepoTecnico/diccionario_datos.md).
 
-#### US-08: Cola Asíncrona de Notificaciones con Resiliencia en BD (3 SP)
-- **Criterios de Aceptación**:
-  - Notificación de venta despachada a Carlos en < 60s.
-  - Registro previo en tabla `email_notifications` (PENDING) con cron de reconciliación ante caídas de Redis.
-  - Deduplicación nativa en BullMQ mediante `jobId = notification.id` para prevenir duplicación de envíos.
-- **Tareas Técnicas**:
-  - `TASK-08.1`: Cola BullMQ con deduplicación por `jobId = notification.id` y plantilla de email responsiva.
-  - `TASK-08.2`: Mecanismo de persistencia y reconciliación periódica de correos pendientes.
+#### US-05 · Autenticación con MFA obligatorio, blocklist y *rate limiting* (13 SP) — **OK**
 
-#### US-09: Bot Burner con Redlock y Alerta Técnica de Gas (5 SP)
-- **Criterios de Aceptación**:
-  - Ejecución a las **12:00 PM Europe/Madrid**.
-  - Redis Redlock (`hotel:burn:lock`, TTL 30s).
-  - Alerta enviada a `DEVOPS_ALERT_EMAIL` si el saldo es < 5 POL (cancela la ejecución).
-- **Tareas Técnicas**:
-  - `TASK-09.1`: Cron job con timezone `Europe/Madrid` y Redlock.
-  - `TASK-09.2`: Verificación de saldo y firma de transacciones con vault.
+Contraseña + **TOTP obligatorio** + JWT de 15 min con rotación de refresh y blocklist en Redis;
+operadores en base de datos con semilla TOTP **cifrada**; guards con 401/403 en todas las rutas de
+administración y recepción; aprovisionamiento por comando (ADR-04).
 
-#### US-17: Histórico Público de Ventas y Reventas (5 SP)
-- **Criterios de Aceptación**:
-  - `GET /api/sales/history` con filtros y exportación CSV.
-- **Tareas Técnicas**:
-  - `TASK-17.1`: Endpoint de histórico y exportador CSV.
+#### US-06 · Cotización EUR con caché (3 SP) — **PAR**
 
-#### US-20: Primer Despliegue en Polygon Amoy vía Foundry en GCP (0 SP — Hito)
-- **Criterios de Aceptación**:
-  - `HotelNFT` y `HotelMarketplace` desplegados y verificados en Polygonscan Amoy desde la instancia GCP.
-- **Tareas Técnicas**:
-  - `TASK-20.1`: Despliegue en Amoy y verificación on-chain.
+Caché y respaldo funcionan, pero el respaldo es un **factor fijo declarado** que envejece (ADR-14).
+No hay instrumento que mida el «< 5 ms» que pedía la historia.
 
----
+#### US-07b · Endpoints del catálogo y metadatos (5 SP) — **OK**
 
-### 🟢 SPRINT 4: Frontend Tienda Pública, Pases Wallet y Checkout Anónimo
-**Duración**: Semanas 8 y 9 · **Capacidad**: 26 SP · **Meta**: Tienda pública operativa, compra anónima Web3, generación de resguardos y pases móviles, y tests E2E.
+`GET /api/nfts` (catálogo **primario**) y `GET /api/nfts/[tokenId]/metadata`; la reventa tiene su
+propia vista y su propia lectura (ADR-02, ADR-11).
 
-#### US-10: Catálogo Público Responsivo en Tiempo Real e Histórico de Ventas (5 SP)
-- **Criterios de Aceptación**:
-  - Carga LCP < 2.5s; filtros combinables con respuesta < 500ms; mobile-first.
-  - Vista pública de Histórico de Ventas (RF-10) consumiendo `/api/sales/history`, paginada a 20 filas, ocultando eventos internos MINT/BURN, mostrando importe en cripto/EUR y wallets truncadas (0x1234...ABCD).
-- **Tareas Técnicas**:
-  - `TASK-10.1`: Componentes UI del catálogo y filtros reactivos.
-  - `TASK-10.2`: Consumo del endpoint `/api/nfts`.
-  - `TASK-10.3`: Vista de Histórico Público de Transacciones (RF-10) con paginación de 20 registros, tabla cronológica descendente y enlaces a Polygonscan.
+#### US-07 · Sincronizador de eventos con alerta y anti-reorgs (8 SP) — **OK**
 
-#### US-11: Conexión Wallet y Checkout Anónimo On-chain (8 SP)
-- **Criterios de Aceptación**:
-  - Integración wagmi/viem (MetaMask, WalletConnect v2); compra anónima directa.
-- **Tareas Técnicas**:
-  - `TASK-11.1`: Proveedor Web3 y modal de conexión.
-  - `TASK-11.2`: Hook de compra con `HotelMarketplace.buy()`.
+Listener cableado al runtime con *heartbeat*, alerta de silencio (una por episodio), consolidación del
+índice resolviendo el estado **on-chain**, deduplicación por `(txHash, logIndex)` y rebobinado cuando
+el checkpoint va por delante de la cabeza (ADR-09, ADR-26). **1 confirmación** en Anvil; el reorg real
+de Polygon es deuda de la fase pública (ADR-10).
 
-#### US-12: Resguardo QR Seguro y Pases Digitales Apple/Google Wallet (8 SP)
-- **Criterios de Aceptación**:
-  - QR criptográfico con payload en fragmento hash (`#ticket=<jws>`) firmado por el backend con secreto AES-256-GCM; re-descarga con firma EIP-712.
-  - Generación de pase `.pkpass` (Apple Wallet) con `passkit-generator` y pase Google Wallet mediante `GET /api/wallet/pass/:tokenId`.
-  - Opción de envío de resguardo a email efímero sin persistencia en base de datos ni vinculación a la wallet (cumplimiento RGPD art. 5.1.c).
-- **Tareas Técnicas**:
-  - `TASK-12.1`: Generación de QR criptográfico (token JWS en hash fragment para lector de recepción) y re-descarga con firma EIP-712.
-  - `TASK-12.2`: Descarga de resguardos en PNG/PDF.
-  - `TASK-12.2b`: Servicio de generación y firma de pases Apple y Google Wallet.
-  - `TASK-12.3`: Endpoint `POST /api/qr/:tokenId/send-email` y despacho efímero vía BullMQ sin persistencia en BD (RGPD).
+#### US-08 · Cola asíncrona de notificaciones (3 SP) — **OK (con defecto histórico corregido)**
 
-#### US-13: Internacionalización Multilingüe (ES / EN / RU) (3 SP)
-- **Criterios de Aceptación**:
-  - Soporte ES, EN, RU con selector en cabecera.
-- **Tareas Técnicas**:
-  - `TASK-13.1`: Configuración de framework i18n y archivos de traducción.
+La cola existía **sin consumidor** y el `Worker` de BullMQ no podía arrancar (`maxRetriesPerRequest`
+debía ser `null`). Ahora: **cola única** con `jobId` determinista, consumidor real, reconciliación de
+lo atascado y aviso a DevOps cuando un correo agota intentos (ADR-21).
 
-#### US-21: Tests E2E Frontend Sprint 4 con Playwright (2 SP)
-- **Criterios de Aceptación**:
-  - Cobertura de pruebas E2E deterministas para catálogo, checkout anónimo y descarga de pases.
-  - Ejecución fluida en CI sin dependencias de extensiones de navegador, mediante inyección de provider EIP-1193 programable.
-- **Tareas Técnicas**:
-  - `TASK-21.1`: Suite de pruebas E2E en Playwright con mock provider EIP-1193 inyectado vía `page.addInitScript()` y conectado al nodo Anvil local.
+#### US-09 · Bot *burner* con lock y alerta de gas (5 SP) — **OK**
 
----
+Planificador a las **12:00 de la zona del hotel** con cerrojo por día natural, `burnExpired` por lotes
+con simulación previa, reintento token a token, espera del recibo y marcado **solo** de lo confirmado;
+aviso si el saldo de la hot-wallet baja del umbral (ADR-21).
 
-### 🟢 SPRINT 5: Recepción (MFA + On-chain), Reventa y Back-office
-**Duración**: Semanas 10 y 11 · **Capacidad**: 24 SP · **Meta**: Módulo de recepción seguro con validación on-chain y contingencia, reventa y panel de Carlos.
+#### US-17 · Histórico público de ventas y reventas (5 SP) — **OK**
 
-#### US-14: Validación Segura en Recepción con MFA, On-chain y Contingencia (6 SP)
-- **Criterios de Aceptación**:
-  - Acceso a web de recepción protegido por MFA TOTP obligatorio.
-  - **Validación optimista**: Respuesta en pantalla en < 500ms (cumpliendo SLA RNF-03 < 3s) tras verificar el ticket JWS y marcar `CHECKED_IN` en BD, despachando la transacción `markCheckedIn(tokenId)` on-chain en segundo plano con notificación WebSocket si se produce un fallo.
-  - Cola secuencial transaccional para la hot-wallet con `RECEPTION_ROLE` previniendo colisiones de nonce ante check-ins concurrentes.
-  - Alerta inmediata a `DEVOPS_ALERT_EMAIL` si el balance de la hot-wallet de recepción cae por debajo de 5 POL.
-  - **Protocolo de contingencia**: Recepción puede buscar por habitación y fecha para ejecutar check-in asistido si el huésped no dispone de dispositivo móvil, requiriendo validación previa de un factor de posesión (dirección wallet compradora, hash de transacción en Polygonscan o resguardo físico/email).
-  - El cumplimiento del RD 933/2021 se registra físicamente en el PMS del hotel.
-- **Tareas Técnicas**:
-  - `TASK-14.1`: Interfaz web de recepción con lector de cámara y soporte MFA.
-  - `TASK-14.2`: Integración de validación optimista (< 500ms) con cola transaccional secuencial para llamada on-chain `markCheckedIn(tokenId)`, alerta de gas < 5 POL y notificación WebSocket reactiva en caso de reversión.
-  - `TASK-14.3`: Flujo de contingencia asistido con formulario de verificación de factor de posesión y registro en PMS.
+`/historico` y su CSV leen los agregados del worker (fuente única, ADR-25); sin PII: solo wallets,
+habitación, fecha e importe.
 
-#### US-15: Marketplace de Reventa Propio con Flujo Guiado y Retiro Pull-over-Push (7 SP)
-- **Criterios de Aceptación**:
-  - Vista "Mis Noches" con listado de estancias adquiridas; validación de precio `price >= minListingPrice`.
-  - Flujo guiado de reventa con pre-aprobación del contrato `HotelMarketplace`.
-  - **Módulo de Retiro Pull-over-Push**: Los vendedores pueden visualizar su saldo acumulado en `pendingWithdrawals(address)` y ejecutar la función `withdraw()` mediante un botón de reclamo con notificación de éxito o fallo y actualización reactiva del balance.
-- **Tareas Técnicas**:
-  - `TASK-15.1`: UI de gestión de reventa y listado de noches.
-  - `TASK-15.2`: Flujo guiado de `approve()` y `listForSale()`.
-  - `TASK-15.3`: Componente UI de consulta de saldo y botón de retiro Pull-over-Push (`withdraw()`).
+### Sprint 3 — Automatismos y despliegue
 
-#### US-16: Back-office Carlos: Minteo con Re-MFA y Dashboard Financiero (8 SP)
-- **Criterios de Aceptación**:
-  - Formulario de alta masiva con orquestación atómica: `mintBatch` → `approve` → `listForSale`.
-  - Re-confirmación obligatoria de TOTP antes de enviar la transacción de minteo.
-  - Dashboard de 7 métricas y exportador CSV.
-- **Tareas Técnicas**:
-  - `TASK-16.1`: Panel de minteo masivo con re-MFA.
-  - `TASK-16.2`: Componentes de gráficas y exportador CSV.
+#### US-20 · Primer despliegue en Polygon Amoy vía Foundry en GCP (hito) — **RETIRADA**
 
-#### US-18: Notificaciones Web Push Opt-in para Nuevos Lotes y Reventas (3 SP)
-- **Criterios de Aceptación**:
-  - Suscripción Web Push anónima (opt-in LSSI-CE art. 21) que alerta al navegador ante la puesta a la venta de nuevos lotes de habitaciones minteadas por el hotel y nuevas ofertas en reventa.
-  - Opción de opt-out y revocación accesible en todo momento desde la interfaz.
-- **Tareas Técnicas**:
-  - `TASK-18.1`: Worker Web Push (FCM / Web Push API) disparado ante eventos de nuevos lotes primarios y publicaciones de reventa.
-  - `TASK-18.2`: Toggle UI en frontend con modal de consentimiento y gestión de suscripción anónima.
+Se **eliminó** el guion que «certificaba» un ciclo de vida en Amoy sin firmar una sola transacción
+(incluso con el RPC caído decía «ciclo certificado»). La red canónica es local y Polygon es fase
+posterior con su dictamen (D-01, D-08, ADR-23).
 
-#### US-22: Tests E2E Frontend Sprint 5 con Playwright (0 SP — Hito)
-- **Criterios de Aceptación**:
-  - Pruebas E2E de check-in on-chain, contingencia y reventa ejecutadas en staging.
-- **Tareas Técnicas**:
-  - `TASK-22.1`: Suite Playwright para flujos operativos de recepción y reventa.
+### Sprint 4 — Tienda pública, resguardo y pases
+
+#### US-10 · Catálogo público responsivo e histórico (5 SP) — **OK**
+
+`/` con catálogo primario, filtros combinables (`FilterBar`), i18n real y estados degradados honestos;
+`/reventa` separada (ADR-11).
+
+#### US-11 · Conexión de wallet y checkout anónimo on-chain (8 SP) — **OK**
+
+Compra en tres pasos donde **la firma envía el objeto revisado**, con `verifiedTxRequest` fallando en
+cerrado si el destino no es el contrato canónico; compra anónima, sin datos personales (ADR-11,
+ADR-24). WalletConnect v2 queda **pendiente** del *project id* del cliente (B-4).
+
+#### US-12 · Resguardo QR seguro y pases digitales (8 SP) — **OK (pases en PAR)**
+
+El resguardo es un JWS con `jti` de un solo uso y **exige la firma EIP-712 del titular** contra
+`ownerOf` on-chain en los tres endpoints que lo emiten (ADR-05). La **superficie de compra** existe
+desde M9: la tarjeta de «Mis noches» pide la firma, muestra el QR **en pantalla**, lo ofrece
+**descargable en PNG** y deja el token en texto para el camino manual; `/checkin#ticket=…` es la
+pantalla que el huésped enseña en recepción. Los **pases Apple/Google** están implementados en el
+camino pero **pendientes de credenciales** del cliente para funcionar de verdad.
+
+#### US-13 · Internacionalización ES/EN/RU (3 SP) — **OK**
+
+Tres catálogos de mensajes completos.
+
+#### US-21 · Tests E2E de frontend con Playwright (2 SP) — **OK**
+
+Suite de accesibilidad con **axe en navegador real**: 8 rutas × `chromium`/`mobile`, **16/16 sin
+violaciones critical/serious** (incluidas `/mis-noches` y `/checkin`). Deuda: el escenario **con datos**
+(worker vivo y dashboard con sesión) no entra todavía en el escaneo.
+
+### Sprint 5 — Recepción, reventa y panel
+
+#### US-14 · Validación en recepción con MFA, on-chain y contingencia (6 SP) — **OK**
+
+Ancla `markCheckedIn` **obligatoria** con simulación previa; resguardo de un solo uso (409
+`TICKET_YA_USADO`); **cerrojo por noche** para que dos puestos no confirmen dos veces (409
+`CHECKIN_EN_PROCESO`); contingencia con **vocabulario cerrado** de motivo y sin PII (ADR-05, ADR-20).
+Medido: **~41 ms** en servidor frente al SLA de 500 ms.
+
+#### US-15 · Mercado de reventa propio con flujo guiado y cobro (7 SP) — **OK**
+
+`/reventa` descarta los listados que el contrato rechazaría (noche consumida, fuera de ventana,
+listado inactivo) y el vendedor cobra con `claim()` (ADR-15).
+
+#### US-16 · Back-office: minteo con re-MFA y dashboard (8 SP) — **OK**
+
+Minteo on-chain con re-confirmación TOTP contra la semilla cifrada del operador; dashboard con 7 KPIs,
+serie mensual, desglose por tipo, ranking de más revendidas y CSV, leyendo la **fuente única**
+(ADR-25). La página comprueba la **validez** de la sesión antes de leer nada (un defecto real: servía
+las cifras a un cliente anónimo).
+
+#### US-18 · Notificaciones web push *opt-in* (3 SP) — **OK**
+
+Protocolo real: cifrado `aes128gcm` (RFC 8291) y JWT VAPID ES256 (RFC 8292) con `node:crypto`,
+entrega HTTP y purga de suscripciones caducadas (404/410). Es *best-effort*: nunca bloquea una venta.
+
+#### US-22 · Tests E2E de frontend, Sprint 5 (hito) — **OK**
+
+Cubierto por la suite de axe y por los E2E on-chain M4–M7.
+
+### Sprint 6 — Carga, validación y compliance
+
+#### US-23 · Pruebas de carga k6 con 200 usuarios (6 SP) — **PAR (medido y declarado)**
+
+El «benchmark k6» original **levantaba su propio servidor de mentira** y medía ese. Ahora
+`pnpm test:load` mide por HTTP el sistema en marcha, valida el contenido de cada respuesta y aborta si
+el worker no responde: **50 concurrentes → 9.119 peticiones, 0 errores, p95 172 ms** (SLA: p95 < 500 ms,
+errores < 1 %). A **200 concurrentes en una sola máquina no se cumple** (31 % de *timeouts* por
+agotamiento del pool de la web): se declara con sus números y su destino operativo, en lugar de
+disfrazarlo. k6 sigue **pendiente de instalación** (B-3).
+
+#### US-24 · Validación integral y ciclo E2E completo (6 SP) — **OK (replanteada)**
+
+Sustituido por cuatro E2E on-chain reales sobre Anvil con hashes y fallo duro —M4 (compra, reventa y
+`claim`), M5 (check-in), M6 (automatismos), M7 (dashboard)— más la verificación de recuperación real
+(`pg_dump` + restauración + comparación tabla por tabla, RTO 0,73 s). Evidencias en
+`RepoTecnico/evidencias/`.
+
+#### US-25 · Formalización del hito regulatorio (`H-COMPLIANCE`) (4 SP) — **PAR**
+
+La obligación del RD 933/2021 se cumple **fuera de la plataforma** en el PMS/mostrador y la ruta
+rechaza datos de filiación (ADR-20). El **dictamen MiCA/fiscal** lo firma un abogado y es gate de la
+fase pública, no del MVP: no se declara certificado.
+
+## 3. Trabajo pendiente con su dueño
+
+| # | Pendiente | Estado | Dueño |
+|---|---|---|---|
+| 1 | Revocar y regenerar el token de GitLab retirado del remoto (B-0) | **Pendiente** (decisión de M9: se aplaza) | Responsable |
+| 2 | Rotar la contraseña del superusuario `postgres` y las claves del entorno compartido (VAPID, operador de pruebas) | **Pendiente** (decisión de M9: se aplaza) | Responsable |
+| 3 | Cobertura de `apps/web` (24,95 %): entorno DOM con jsdom + `@testing-library` y dobles de wagmi | **Pendiente** | Equipo |
+| 4 | Dimensionar el pool de la web y cachear el catálogo (o capa CDN) para el perfil de 200 concurrentes | **Pendiente** | Equipo / operación |
+| 5 | Cerrar el HTTP del worker (autenticación y CORS) antes de exponerlo | **Pendiente** | Equipo |
+| 6 | Unificar los dos indexadores de la misma noche (índice del listener y agregados) | **Pendiente** | Equipo |
+| 7 | Guardar el hash del ancla de check-in (`nfts.check_in_tx_hash`) | **Pendiente** | Equipo |
+| 8 | Escaneo axe **con datos** (worker vivo y dashboard con sesión) | **Pendiente** | Equipo |
+| 9 | `projectId` de WalletConnect Cloud (B-4) | **Pendiente** | Cliente |
+| 10 | Credenciales o certificado del PMS (B-5) y decisión sobre `SES.HOSPEDAJES` | **Pendiente** | Cliente |
+| 11 | 3 fotos definitivas de los tipos de habitación (B-6) | **Pendiente** | Cliente |
+| 12 | Dos firmantes para la multisig y política de custodia de claves (B-7) | **Pendiente** | Cliente |
+| 13 | Fecha de entrega (junio no es alcanzable) y validación de cifras de coste | **Pendiente** | Responsable + cliente |
+| 14 | `pnpm audit` triado y digest de la imagen de Slither fijado | **Pendiente** | Equipo |
+| 15 | Red pública: 32 confirmaciones, prueba de reorg real y dictamen MiCA/fiscal | **Fase posterior** | Cliente + abogado |
+
+### Trabajo cerrado tras la entrevista de M9
+
+Estas tres deudas estaban en la lista y **ya no lo están**: el responsable decidió cómo resolverlas y se
+implementaron con su prueba (ver [`../RepoTecnico/estado_proyecto.md`](../RepoTecnico/estado_proyecto.md)
+§9, «Cierre de las decisiones del responsable»).
+
+| Deuda | Cómo se cerró |
+|---|---|
+| Traza de sesiones de operadores en claro | **Pseudonimización con HMAC-SHA256** (`SESSION_TRACE_SECRET` con respaldo en `AES_SECRET_KEY`), en un único punto de escritura, con las filas anteriores migradas (`backfill:session-traces`) y sin poder revertirse por fuerza bruta |
+| Plazos de retención que no se ejecutaban | **Planificador en el worker** (cada 6 h, con cerrojo): borra sesiones caducadas, códigos de rescate huérfanos y correos enviados con más de 90 días |
+| Tipo «doble» que se perdía al persistir | Vocabulario de la base `SIMPLE`/`DOBLE`/`SUITE` con traducción en un único sitio, validación en la API de minteo y filtro del catálogo funcionando |
 
 ---
 
-### 🟢 SPRINT 6: Testing k6, Validación Integral Amoy y Compliance
-**Duración**: Semanas 12 y 13 · **Capacidad**: 16 SP · **Meta**: Pruebas de estrés con 200 usuarios, validación E2E en Polygon Amoy y cierre del hito regulatorio.
-
-#### US-23: Pruebas de Carga de Rendimiento k6 (200 Usuarios Concurrentes) (6 SP)
-- **Criterios de Aceptación**:
-  - 200 usuarios concurrentes × 10 min; p95 < 500ms; 0% errores 5xx.
-- **Tareas Técnicas**:
-  - `TASK-23.1`: Scripts k6 (`scripts/load-tests/catalog.js`).
-  - `TASK-23.2`: Ejecución y reporte de telemetría.
-
-#### US-24: Validación Integral en Polygon Amoy y Ciclo E2E Completo (6 SP)
-- **Criterios de Aceptación**:
-  - Ciclo completo verificado: minteo → compra → check-in on-chain (`markCheckedIn`) → retiro Pull-over-Push (`withdraw`).
-- **Tareas Técnicas**:
-  - `TASK-24.1`: Ejecución del ciclo E2E completo en testnet documentando hashes.
-
-#### US-25: Formalización del Hito Regulatorio `H-COMPLIANCE` (4 SP)
-- **Criterios de Aceptación**:
-  - Informe MiCA y guía fiscal anexados al repositorio (`docs/COMPLIANCE.md`).
-  - Cláusula legal expresa de no custodia bajo el Reglamento MiCA (UE) 2023/1114 en Términos y Condiciones, acreditando la naturaleza de software no custodial y exención de licencias CASP.
-  - Guía operativa de custodios multisig validada (`docs/GUIA-GNOSIS-SAFE.md`).
-- **Tareas Técnicas**:
-  - `TASK-25.1`: Documentación legal formalizada con dictamen MiCA, guía fiscal y cláusula de no custodia en `docs/COMPLIANCE.md`.
-
----
-
-## 3. Matriz de Trazabilidad Completa: Requisitos ↔ Historias
-
-> **Nota de Trazabilidad sobre Identificadores**: El identificador de historia `US-19` fue concebido para la capa visual frontend del Histórico de Ventas (RF-10) y se encuentra plenamente cubierto e integrado como `TASK-10.3` dentro de `US-10` en el Sprint 4, preservando intacta la correlatividad de los identificadores consolidados `US-20` a `US-25`.
-
-| Requisito PRD / SRS | Descripción del Requisito | Historia(s) de Usuario | Sprint |
-|---------------------|---------------------------|------------------------|--------|
-| **RF-01** | Catálogo Público de NFTs | `US-10`, `US-07b` | Sprint 4, 2 |
-| **RF-02** | Filtros y Buscador (<500ms) | `US-10`, `US-04` | Sprint 4, 2 |
-| **RF-03** | Back-office Gestión Inventario | `US-16`, `US-05` | Sprint 5, 2 |
-| **RF-04** | Compra de NFT Anónima | `US-11`, `US-02` | Sprint 4, 1 |
-| **RF-05** | Notificación Email al Propietario | `US-08` | Sprint 3 |
-| **RF-06** | Reventa Marketplace y Royalties | `US-15`, `US-02`, `US-01` | Sprint 5, 1 |
-| **RF-07** | Generación y Entrega de QR / Passes | `US-12` | Sprint 4 |
-| **RF-08** | Validación de QR en Recepción | `US-14` | Sprint 5 |
-| **RF-09** | Dashboard del Propietario (7 métricas) | `US-16` | Sprint 5 |
-| **RF-10** | Histórico de Ventas Público | `US-17`, `US-10` (TASK-10.3) | Sprint 3, 4 |
-| **RF-11** | Quema Automática de NFTs (Burn) | `US-09`, `US-01` | Sprint 3, 1 |
-| **RF-12** | Notificaciones Push Web (Opt-in) | `US-18` | Sprint 5 |
-| **RNF-01** | Carga móvil LCP < 2.5s / E2E | `US-10`, `US-21` | Sprint 4 |
-| **RNF-02** | Respuesta filtros < 500ms | `US-10`, `US-04` | Sprint 4, 2 |
-| **RNF-03** | Validación QR < 3s / On-chain | `US-14`, `US-22` | Sprint 5 |
-| **RNF-04** | Uptime ≥ 99.5% y Health Checks | `US-04`, `US-07` | Sprint 2, 3 |
-| **RNF-05** | Concurrencia 200 usuarios k6 | `US-23` | Sprint 6 |
-| **RNF-06** | Auth Admin/Recepción MFA + RTR | `US-05`, `US-14` | Sprint 2, 5 |
-| **RNF-07** | Tests Foundry (unitarios + fuzzing)| `US-01`, `US-02`, `US-03` | Sprint 1 |
-| **RNF-08** | Multi-RPC Failover y Deploy Amoy | `US-07`, `US-20`, `US-24` | Sprint 3, 6 |
-| **RNF-09** | Resiliencia Precios CoinGecko | `US-06` | Sprint 2 |
-| **RNF-10** | Heartbeat de Listener (5000ms) | `US-07` | Sprint 3 |
-| **RNF-11** | Privacidad RGPD (Compra anónima) | `US-11`, `US-12` | Sprint 4 |
-| **RNF-12** | Registro Viajeros RD 933/2021 (PMS) | `US-14` | Sprint 5 |
-| **RNF-13** | Multidioma ES / EN / RU | `US-13` | Sprint 4 |
-| **RNF-14** | Mobile-first Responsive | `US-10`, `US-11` | Sprint 4 |
-| **H-COMPLIANCE**| Dictamen MiCA y Fiscalidad | `US-25` | Sprint 6 |
-| **DevOps/CI** | CI/CD, Monorepo y Sentry | `US-00` | Sprint 0 |
-
----
-*Backlog de Sprints v1.2.0 — Post-Auditoría v3 · 142 Story Points · 13 semanas.*
+*Backlog v2.0.0 · reescrito en M9 · ninguna historia se marca cumplida sin una ejecución que lo demuestre.*

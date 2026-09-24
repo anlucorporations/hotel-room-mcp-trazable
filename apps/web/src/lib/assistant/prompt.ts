@@ -1,5 +1,5 @@
 /**
- * Prompt de sistema del asistente, **acotado al dominio** (RF-12, CU-08 08b/08c). Define el
+ * Prompt de sistema del asistente, **acotado al dominio** (RF-12, CU-08 08b/08c, docs/SRS.md §9). Define el
  * alcance, obliga a usar las herramientas para cualquier dato y fija los guardrails (rechazo
  * fuera de dominio, resistencia a prompt injection, no firma). El alcance también está
  * garantizado estructuralmente: el MCP no expone ninguna herramienta de firma ni de custodia.

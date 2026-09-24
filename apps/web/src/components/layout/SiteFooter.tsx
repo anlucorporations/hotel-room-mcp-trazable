@@ -2,7 +2,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 
 /**
- * Pie público (DISEÑO-UX §3/§4.1): marca, sello «red segura · pagos verificados»
+ * Pie público (docs/SRS.md §7): marca, sello «red segura · pagos verificados»
  * clicable hacia el histórico público (respaldado por su verificación on-chain, UX#41),
  * enlaces (histórico + términos/privacidad reales) y dirección del hotel.
  */

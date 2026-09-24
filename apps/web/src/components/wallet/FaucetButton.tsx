@@ -17,7 +17,7 @@ function formatTime(epochSeconds: number): string {
 }
 
 /**
- * Botón «Conseguir ETH de prueba» (RF-21 / CU-PR-01, UX#3). Solo se renderiza cuando el
+ * Botón «Conseguir ETH de prueba» (RF-21 / CU-PR-01, docs/SRS.md §9, UX#3). Solo se renderiza cuando el
  * faucet está configurado y la wallet está conectada en la red correcta — fuera de ahí (E2E
  * hermético, producción) devuelve `null` y no aparece nada. El resultado se anuncia por
  * `aria-live` (RNF-01); el área táctil cumple ≥44px.

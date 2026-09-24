@@ -3,13 +3,14 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useFormatter, useTranslations } from "next-intl";
 import { formatEther } from "viem";
-import type { NightType } from "@hotel/shared";
+import type { NightType } from "@hotel/shared/domain";
 import {
   FilterBar,
   type MonthOption,
   type PriceOption,
 } from "@/components/catalog/FilterBar";
 import { NightCard } from "@/components/NightCard";
+import { ContractPausedBanner } from "@/components/ContractPausedBanner";
 import { formatMonthLabel, monthKeyOf } from "@/lib/format";
 import type { NightView } from "@/lib/nights";
 
@@ -54,7 +55,7 @@ function isoToYYYYMMDD(iso: string): number | null {
   return year * 10_000 + month * 100 + day;
 }
 
-/** Icono de mapa/brújula para el estado vacío (stroke, DISEÑO-UX §3). */
+/** Icono de mapa/brújula para el estado vacío (stroke, docs/SRS.md §7). */
 function EmptyIcon() {
   return (
     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
@@ -64,8 +65,15 @@ function EmptyIcon() {
   );
 }
 
-/** Catálogo público con filtros completos (RF-14) y paginación load-more (CU-04). */
-export function CatalogClient({ nights }: { nights: readonly NightView[] }) {
+/** Catálogo público con filtros completos (RF-14) y paginación load-more (CU-04, docs/SRS.md §9). */
+export function CatalogClient({
+  nights,
+  paused,
+}: {
+  nights: readonly NightView[];
+  /** `true`/`false` = estado leído on-chain; `null` = no se pudo comprobar (M7). */
+  paused: boolean | null;
+}) {
   const t = useTranslations("catalog");
   const format = useFormatter();
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
@@ -196,6 +204,11 @@ export function CatalogClient({ nights }: { nights: readonly NightView[] }) {
       <div className="mx-auto w-full max-w-6xl px-5 py-8">
         <h2 className="sr-only">{t("sectionHeading")}</h2>
 
+        {/* Estado del contrato (M7): con el contrato en pausa NO se ofrecen compras que revertirían. */}
+        <div className="mb-6 empty:hidden">
+          <ContractPausedBanner paused={paused} />
+        </div>
+
         {shown.length === 0 ? (
           <div
             data-testid="empty-state"
@@ -243,6 +256,7 @@ export function CatalogClient({ nights }: { nights: readonly NightView[] }) {
                   night={night}
                   revealIndex={added === 0 ? index : undefined}
                   priority={index < PRIORITY_CARDS}
+                  paused={paused === true}
                 />
               </li>
             ))}

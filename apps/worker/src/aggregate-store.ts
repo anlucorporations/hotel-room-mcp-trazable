@@ -1,313 +1,345 @@
-import Database from "better-sqlite3";
-import { decodeTokenId, roomTypeOf } from "@hotel/shared";
+import type { Pool, PoolClient } from "pg";
+import {
+  asRoomTypeKey,
+  decodeTokenId,
+  ROOM_TYPE_ORDER,
+  roomTypeOf,
+  type HistorySummary,
+  type MonthlySalesPoint,
+  type RoomTypeBreakdownEntry,
+  type TopResoldNight,
+} from "@hotel/shared";
 import type {
   AggregateCounters,
   AggregateStore,
   ChainEvent,
   HistoryRow,
+  UndatedSaleRow,
 } from "./types";
 
+/** SQLSTATE de PostgreSQL para violación de restricción única / PRIMARY KEY. */
+const UNIQUE_VIOLATION = "23505";
+
 /**
- * Implementación de {@link AggregateStore} sobre better-sqlite3 (FASE 3, T3.1/T3.2).
+ * Implementación de {@link AggregateStore} sobre PostgreSQL (D-09, FASE 3, T3.1/T3.2).
  *
- * Persiste:
- *   - `aggregate_counters`: una única fila (id = 0) con los contadores acumulados. Los importes
- *     se guardan como TEXT/wei (sin pérdida de precisión).
- *   - `sale_history`: una fila por venta del histórico (campos de `SaleHistoryEntry`).
- *   - `aggregate_applied`: claves de idempotencia (`txHash:logIndex`) ya contabilizadas.
+ * Persiste en la MISMA base que la web/API (esquema creado por `runMigrations()`):
+ *   - `worker_aggregate_counters`: una única fila (id = 0) con los contadores acumulados. Los
+ *     importes se guardan como `NUMERIC(78, 0)` en wei (sin pérdida de precisión).
+ *   - `worker_sale_history`: una fila por venta (clave `(tx_hash, log_index)`) con la marca
+ *     temporal del bloque, que es lo que permite la serie mensual de D-16.
+ *   - `worker_processed_logs`: claves (`txHash:logIndex`) ya contabilizadas (idempotencia).
  *
- * Idempotencia (clave por `txHash:logIndex`): `applyEvent` registra la clave y muta el contador
- * o inserta la fila de histórico dentro de una **única transacción**. Si la clave ya existe, la
- * inserción en `aggregate_applied` (PRIMARY KEY) lanza, se aborta la transacción y NO se muta
- * nada → reprocesos/catch-up son seguros (cada evento cuenta una sola vez).
+ * Idempotencia y atomicidad: `applyEvent` abre una transacción con un **cliente dedicado del
+ * pool** (`pool.connect()` + `BEGIN`/`COMMIT`/`ROLLBACK` + `release()`), inserta la clave de
+ * idempotencia (PK) y muta contadores/histórico. Si la clave ya existía, PostgreSQL responde con
+ * `23505`, se hace `ROLLBACK` y la función devuelve `false` sin mutar nada → reprocesos y
+ * catch-up son seguros (cada evento cuenta una sola vez).
+ *
+ * Concurrencia: la fila única de contadores se lee con `SELECT ... FOR UPDATE` dentro de la
+ * transacción. Así las sumas en `bigint` (JS) no pierden actualizaciones: equivale a tener un
+ * único escritor serializado sobre los contadores.
  *
  * SRP: esta clase solo persiste estado; el cálculo del ratio y el orden total viven en el
  * `AggregateProcessor`.
  */
-export class SqliteAggregateStore implements AggregateStore {
-  private readonly db: Database.Database;
-  private readonly selectCounters: Database.Statement<[]>;
-  private readonly selectHistory: Database.Statement<[]>;
-  private readonly markApplied: Database.Statement<[string]>;
-  private readonly setLastBlockStmt: Database.Statement<[number]>;
-  private readonly applyMint: Database.Statement<[]>;
-  private readonly applyBurn: Database.Statement<[]>;
-  private readonly addPrimarySale: Database.Statement<[string]>;
-  private readonly addSecondaryVolume: Database.Statement<[string]>;
-  private readonly addRoyalty: Database.Statement<[string]>;
-  private readonly insertHistory: Database.Statement<{
-    tokenId: string;
-    room: number;
-    dateYYYYMMDD: number;
-    roomType: string;
-    priceWei: string;
-    saleTypeRaw: number;
-    seller: string;
-    buyer: string;
-    blockNumber: number;
-    logIndex: number;
-    txHash: string;
-  }>;
-  private readonly selectBoundAddress: Database.Statement<[]>;
-  private readonly upsertBoundAddress: Database.Statement<[string]>;
-  private readonly applyEventTx: (event: ChainEvent) => boolean;
-  private readonly resetTx: (deploymentBlock: number) => void;
+export class PgAggregateStore implements AggregateStore {
+  constructor(private readonly pool: Pool) {}
 
-  constructor(filePath: string) {
-    this.db = new Database(filePath);
-    // `:memory:` no soporta WAL; solo lo activamos para ficheros en disco.
-    if (filePath !== ":memory:") {
-      this.db.pragma("journal_mode = WAL");
-    }
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS aggregate_counters (
-        id INTEGER PRIMARY KEY CHECK (id = 0),
-        primary_volume_wei   TEXT    NOT NULL DEFAULT '0',
-        royalties_wei        TEXT    NOT NULL DEFAULT '0',
-        secondary_volume_wei TEXT    NOT NULL DEFAULT '0',
-        sold_count           INTEGER NOT NULL DEFAULT 0,
-        minted_count         INTEGER NOT NULL DEFAULT 0,
-        burned_count         INTEGER NOT NULL DEFAULT 0,
-        last_block           INTEGER NOT NULL DEFAULT 0
-      );
-      INSERT OR IGNORE INTO aggregate_counters (id) VALUES (0);
-
-      CREATE TABLE IF NOT EXISTS sale_history (
-        tx_hash        TEXT    NOT NULL,
-        log_index      INTEGER NOT NULL,
-        token_id       TEXT    NOT NULL,
-        room           INTEGER NOT NULL,
-        date_yyyymmdd  INTEGER NOT NULL,
-        room_type      TEXT    NOT NULL,
-        price_wei      TEXT    NOT NULL,
-        sale_type_raw  INTEGER NOT NULL,
-        seller         TEXT    NOT NULL,
-        buyer          TEXT    NOT NULL,
-        block_number   INTEGER NOT NULL,
-        PRIMARY KEY (tx_hash, log_index)
-      );
-
-      CREATE TABLE IF NOT EXISTS aggregate_applied (
-        idempotency_key TEXT PRIMARY KEY
-      );
-
-      -- Dirección de contrato vinculada al agregado actual (MAJOR 3): permite autodetectar un
-      -- redeploy y resetear el estado para no arrastrar datos del contrato anterior.
-      CREATE TABLE IF NOT EXISTS aggregate_binding (
-        id INTEGER PRIMARY KEY CHECK (id = 0),
-        contract_address TEXT
-      );
-      INSERT OR IGNORE INTO aggregate_binding (id, contract_address) VALUES (0, NULL);
-    `);
-
-    this.selectCounters = this.db.prepare(
-      `SELECT primary_volume_wei, royalties_wei, secondary_volume_wei,
-              sold_count, minted_count, burned_count, last_block
-       FROM aggregate_counters WHERE id = 0`,
-    );
-    this.selectHistory = this.db.prepare(
-      `SELECT token_id, room, date_yyyymmdd, room_type, price_wei, sale_type_raw,
-              seller, buyer, block_number, log_index, tx_hash
-       FROM sale_history`,
-    );
-    // INSERT (no OR IGNORE): si la clave existe, lanza y aborta la transacción (idempotencia).
-    this.markApplied = this.db.prepare(
-      "INSERT INTO aggregate_applied (idempotency_key) VALUES (?)",
-    );
-    this.setLastBlockStmt = this.db.prepare(
-      "UPDATE aggregate_counters SET last_block = ? WHERE id = 0",
-    );
-    this.applyMint = this.db.prepare(
-      "UPDATE aggregate_counters SET minted_count = minted_count + 1 WHERE id = 0",
-    );
-    this.applyBurn = this.db.prepare(
-      "UPDATE aggregate_counters SET burned_count = burned_count + 1 WHERE id = 0",
-    );
-    // Importes en wei como TEXT: la suma se hace en `bigint` (JS) y se persiste ya calculada,
-    // para no perder precisión con enteros de 64 bits de SQLite (los volúmenes pueden superarlos).
-    this.addPrimarySale = this.db.prepare(
-      `UPDATE aggregate_counters
-       SET sold_count = sold_count + 1, primary_volume_wei = ?
-       WHERE id = 0`,
-    );
-    this.addSecondaryVolume = this.db.prepare(
-      "UPDATE aggregate_counters SET secondary_volume_wei = ? WHERE id = 0",
-    );
-    this.addRoyalty = this.db.prepare(
-      "UPDATE aggregate_counters SET royalties_wei = ? WHERE id = 0",
-    );
-    this.insertHistory = this.db.prepare(
-      `INSERT INTO sale_history (
-         tx_hash, log_index, token_id, room, date_yyyymmdd, room_type,
-         price_wei, sale_type_raw, seller, buyer, block_number
-       ) VALUES (
-         @txHash, @logIndex, @tokenId, @room, @dateYYYYMMDD, @roomType,
-         @priceWei, @saleTypeRaw, @seller, @buyer, @blockNumber
-       )`,
-    );
-    this.selectBoundAddress = this.db.prepare(
-      "SELECT contract_address FROM aggregate_binding WHERE id = 0",
-    );
-    this.upsertBoundAddress = this.db.prepare(
-      "UPDATE aggregate_binding SET contract_address = ? WHERE id = 0",
-    );
-
-    // Transacción atómica: marca de idempotencia + mutación. better-sqlite3 ejecuta el callback
-    // dentro de BEGIN/COMMIT y hace ROLLBACK si lanza (p. ej. clave duplicada).
-    this.applyEventTx = this.db.transaction((event: ChainEvent): boolean => {
-      this.markApplied.run(idempotencyKey(event));
-      this.mutate(event);
-      return true;
-    });
-
-    // Reset atómico del agregado ante un redeploy (MAJOR 3): trunca contadores, histórico e
-    // idempotencia, y fija `last_block = deploymentBlock`. Todo dentro de una única transacción.
-    this.resetTx = this.db.transaction((deploymentBlock: number): void => {
-      this.db.exec("DELETE FROM sale_history; DELETE FROM aggregate_applied;");
-      this.db
-        .prepare(
-          `UPDATE aggregate_counters
-           SET primary_volume_wei = '0', royalties_wei = '0', secondary_volume_wei = '0',
-               sold_count = 0, minted_count = 0, burned_count = 0, last_block = ?
-           WHERE id = 0`,
-        )
-        .run(deploymentBlock);
-    });
-  }
-
-  applyEvent(event: ChainEvent): boolean {
+  async applyEvent(event: ChainEvent): Promise<boolean> {
+    const client = await this.pool.connect();
     try {
-      return this.applyEventTx(event);
+      await client.query("BEGIN");
+      // 1) Clave de idempotencia (PK). Un duplicado aborta la transacción (23505) → `false`.
+      //    `contract_address` se toma de la fila de contadores (el store no conoce la dirección).
+      await client.query(
+        `INSERT INTO worker_processed_logs (log_key, block_number, contract_address, processed_at)
+         VALUES ($1, $2,
+                 (SELECT contract_address FROM worker_aggregate_counters WHERE id = 0),
+                 NOW())`,
+        [idempotencyKey(event), Number(event.blockNumber)],
+      );
+      // 2) Bloqueo de la fila única: serializa los `applyEvent` concurrentes.
+      const counters = await lockCounters(client);
+      await mutate(client, event, counters);
+      await client.query("COMMIT");
+      return true;
     } catch (error: unknown) {
+      await rollback(client);
       // Clave duplicada (idempotencia): el evento ya estaba contabilizado, no es un error.
-      if (isUniqueConstraintError(error)) {
+      if (isUniqueViolation(error)) {
         return false;
       }
       throw error;
+    } finally {
+      client.release();
     }
   }
 
-  setLastBlock(block: number): void {
-    this.setLastBlockStmt.run(block);
+  async setLastBlock(block: number): Promise<void> {
+    await this.pool.query(
+      "UPDATE worker_aggregate_counters SET last_block = $1 WHERE id = 0",
+      [block],
+    );
   }
 
-  getCounters(): AggregateCounters {
-    const row = this.selectCounters.get() as CountersRow;
-    return {
-      primaryVolumeWei: BigInt(row.primary_volume_wei),
-      royaltiesWei: BigInt(row.royalties_wei),
-      secondaryVolumeWei: BigInt(row.secondary_volume_wei),
-      soldCount: row.sold_count,
-      mintedCount: row.minted_count,
-      burnedCount: row.burned_count,
-      lastBlock: row.last_block,
-    };
+  async getCounters(): Promise<AggregateCounters> {
+    const { rows } = await this.pool.query<CountersRow>(
+      `SELECT primary_volume_wei, royalties_wei, secondary_volume_wei,
+              sold_count, minted_count, burned_count, last_block
+       FROM worker_aggregate_counters WHERE id = 0`,
+    );
+    const row = rows[0];
+    if (row === undefined) {
+      throw new Error(
+        "falta la fila semilla id = 0 de worker_aggregate_counters: ¿se ejecutó runMigrations()?",
+      );
+    }
+    return toCounters(row);
   }
 
-  getHistory(): HistoryRow[] {
-    const rows = this.selectHistory.all() as HistorySqlRow[];
+  async getHistory(): Promise<HistoryRow[]> {
+    const { rows } = await this.pool.query<HistorySqlRow>(
+      `SELECT token_id, room, date_yyyymmdd, room_type, price_wei, sale_type_raw,
+              seller, buyer, block_number, log_index, tx_hash,
+              EXTRACT(EPOCH FROM block_timestamp)::BIGINT AS block_timestamp_epoch
+       FROM worker_sale_history`,
+    );
     return rows.map((row) => ({
       tokenId: BigInt(row.token_id),
-      room: row.room,
-      dateYYYYMMDD: row.date_yyyymmdd,
+      room: Number(row.room),
+      dateYYYYMMDD: Number(row.date_yyyymmdd),
       roomType: row.room_type,
       priceWei: BigInt(row.price_wei),
-      saleTypeRaw: row.sale_type_raw,
+      saleTypeRaw: Number(row.sale_type_raw),
       seller: row.seller,
       buyer: row.buyer,
-      blockNumber: row.block_number,
-      logIndex: row.log_index,
+      blockNumber: Number(row.block_number),
+      logIndex: Number(row.log_index),
       txHash: row.tx_hash,
+      blockTimestamp:
+        row.block_timestamp_epoch === null ? null : Number(row.block_timestamp_epoch),
     }));
   }
 
-  reset(deploymentBlock: number): void {
-    this.resetTx(deploymentBlock);
-  }
-
-  getBoundAddress(): string | null {
-    const row = this.selectBoundAddress.get() as
-      | { contract_address: string | null }
-      | undefined;
-    return row?.contract_address ?? null;
-  }
-
-  setBoundAddress(contractAddress: string): void {
-    this.upsertBoundAddress.run(contractAddress.toLowerCase());
-  }
-
-  close(): void {
-    this.db.close();
-  }
-
-  /** Muta los contadores/histórico según el tipo de evento (ya dentro de la transacción). */
-  private mutate(event: ChainEvent): void {
-    switch (event.kind) {
-      case "mint":
-        this.applyMint.run();
-        return;
-      case "burn":
-        this.applyBurn.run();
-        return;
-      case "royaltyPaid":
-        // Royalties solo de RoyaltyPaid (ventas secundarias): nunca de ventas primarias.
-        this.addRoyalty.run(this.sumWei("royalties_wei", event.amountWei));
-        return;
-      case "sale":
-        this.applySale(event);
-        return;
-    }
-  }
-
-  /** Suma `delta` (wei) al importe actual de la columna, en `bigint`, y devuelve el total. */
-  private sumWei(column: WeiColumn, delta: bigint): string {
-    const row = this.selectCounters.get() as CountersRow;
-    const current = BigInt(row[column]);
-    return (current + delta).toString();
-  }
-
-  private applySale(event: Extract<ChainEvent, { kind: "sale" }>): void {
-    const isPrimary = event.saleTypeRaw === 0;
-    if (isPrimary) {
-      this.addPrimarySale.run(this.sumWei("primary_volume_wei", event.priceWei));
-    } else {
-      this.addSecondaryVolume.run(
-        this.sumWei("secondary_volume_wei", event.priceWei),
+  /**
+   * Agregados de D-16 calculados EN PostgreSQL (D-09): cuatro consultas de agregación
+   * (`GROUP BY`/`FILTER`) que nunca traen las filas a memoria. El mes natural se calcula con
+   * `date_trunc('month', block_timestamp AT TIME ZONE $1)`, es decir, en la zona del hotel: la
+   * misma definición que `monthInTimeZone()` en el dominio, que es lo que permite contrastar las
+   * dos vías.
+   *
+   * Las filas sin marca temporal (`block_timestamp IS NULL`: histórico anterior a la migración de
+   * M7) quedan fuera de la serie mensual y se cuentan aparte (`undatedSalesCount`) en lugar de
+   * desaparecer sin dejar rastro.
+   *
+   * **Instantánea coherente**: las cuatro consultas se ejecutan en UNA transacción
+   * `REPEATABLE READ`. Sin ella, el worker puede confirmar una venta entre dos de las consultas y
+   * el payload saldría mezclando dos instantes (una venta en la serie mensual y no en el desglose),
+   * que es justo el tipo de incoherencia que el criterio de M7 prohíbe. Es una lectura: no bloquea
+   * a los escritores (MVCC) y no hay riesgo de deadlock.
+   */
+  async getHistorySummary(timeZone: string, topLimit: number): Promise<HistorySummary> {
+    const client = await this.pool.connect();
+    let months: { rows: MonthlySqlRow[] };
+    let types: { rows: RoomTypeSqlRow[] };
+    let resold: { rows: TopResoldSqlRow[] };
+    let undated: { rows: { undated: number }[] };
+    try {
+      await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ");
+      months = await client.query<MonthlySqlRow>(
+        `SELECT to_char(date_trunc('month', block_timestamp AT TIME ZONE $1), 'YYYY-MM') AS month,
+                COALESCE(SUM(price_wei) FILTER (WHERE sale_type_raw = 0), 0) AS primary_volume_wei,
+                COALESCE(SUM(price_wei) FILTER (WHERE sale_type_raw = 1), 0) AS secondary_volume_wei,
+                COUNT(*) FILTER (WHERE sale_type_raw = 0)::INT AS primary_sales,
+                COUNT(*) FILTER (WHERE sale_type_raw = 1)::INT AS secondary_sales
+         FROM worker_sale_history
+         WHERE block_timestamp IS NOT NULL
+         GROUP BY 1
+         ORDER BY 1`,
+        [timeZone],
       );
+      types = await client.query<RoomTypeSqlRow>(
+        `SELECT room_type,
+                COALESCE(SUM(price_wei) FILTER (WHERE sale_type_raw = 0), 0) AS primary_volume_wei,
+                COALESCE(SUM(price_wei) FILTER (WHERE sale_type_raw = 1), 0) AS secondary_volume_wei,
+                COUNT(*) FILTER (WHERE sale_type_raw = 0)::INT AS primary_sales,
+                COUNT(*) FILTER (WHERE sale_type_raw = 1)::INT AS secondary_sales
+         FROM worker_sale_history
+         GROUP BY room_type`,
+      );
+      resold = await client.query<TopResoldSqlRow>(
+        `SELECT token_id, room, date_yyyymmdd, room_type,
+                COUNT(*)::INT AS resale_count,
+                SUM(price_wei) AS resale_volume_wei
+         FROM worker_sale_history
+         WHERE sale_type_raw = 1
+         GROUP BY token_id, room, date_yyyymmdd, room_type
+         ORDER BY resale_count DESC, resale_volume_wei DESC, token_id::NUMERIC ASC
+         LIMIT $1`,
+        [topLimit],
+      );
+      undated = await client.query<{ undated: number }>(
+        `SELECT COUNT(*)::INT AS undated
+         FROM worker_sale_history
+         WHERE block_timestamp IS NULL`,
+      );
+      await client.query("COMMIT");
+    } catch (error: unknown) {
+      await rollback(client);
+      throw error;
+    } finally {
+      client.release();
     }
-    // El histórico deriva del evento `Sale` (no de `ownerOf`): una venta de un token luego
-    // quemado SIGUE en el histórico.
-    const { room, dateYYYYMMDD } = decodeTokenId(event.tokenId);
-    this.insertHistory.run({
-      txHash: event.txHash,
-      logIndex: event.logIndex,
-      tokenId: event.tokenId.toString(),
-      room,
-      dateYYYYMMDD,
-      roomType: roomTypeOf(room) ?? "desconocido",
-      priceWei: event.priceWei.toString(),
-      saleTypeRaw: event.saleTypeRaw,
-      seller: event.seller,
-      buyer: event.buyer,
-      blockNumber: Number(event.blockNumber),
+
+    const monthlySeries: MonthlySalesPoint[] = months.rows.map((row) => ({
+      month: row.month,
+      primaryVolumeWei: row.primary_volume_wei,
+      secondaryVolumeWei: row.secondary_volume_wei,
+      primarySales: Number(row.primary_sales),
+      secondarySales: Number(row.secondary_sales),
+    }));
+
+    const byType = new Map(types.rows.map((row) => [asRoomTypeKey(row.room_type), row]));
+    const roomTypeBreakdown: RoomTypeBreakdownEntry[] = ROOM_TYPE_ORDER.filter((type) =>
+      byType.has(type),
+    ).map((roomType) => {
+      const row = byType.get(roomType)!;
+      return {
+        roomType,
+        primarySales: Number(row.primary_sales),
+        secondarySales: Number(row.secondary_sales),
+        primaryVolumeWei: row.primary_volume_wei,
+        secondaryVolumeWei: row.secondary_volume_wei,
+        totalVolumeWei: (BigInt(row.primary_volume_wei) + BigInt(row.secondary_volume_wei)).toString(),
+      };
     });
+
+    const topResold: TopResoldNight[] = resold.rows.map((row) => ({
+      tokenId: row.token_id,
+      room: Number(row.room),
+      dateYYYYMMDD: Number(row.date_yyyymmdd),
+      roomType: asRoomTypeKey(row.room_type),
+      resaleCount: Number(row.resale_count),
+      resaleVolumeWei: row.resale_volume_wei,
+    }));
+
+    return {
+      monthlySeries,
+      roomTypeBreakdown,
+      topResold,
+      undatedSalesCount: Number(undated.rows[0]?.undated ?? 0),
+    };
+  }
+
+  /**
+   * Ventas SIN marca temporal (histórico anterior a M7), por orden de bloque. Permiten recuperar su
+   * fecha leyendo la cabecera del bloque: es un hecho inmutable, no un dato inventado (H6).
+   */
+  async getUndatedSales(limit: number): Promise<UndatedSaleRow[]> {
+    const { rows } = await this.pool.query<{ tx_hash: string; log_index: number; block_number: string }>(
+      `SELECT tx_hash, log_index, block_number
+       FROM worker_sale_history
+       WHERE block_timestamp IS NULL
+       ORDER BY block_number ASC, log_index ASC
+       LIMIT $1`,
+      [limit],
+    );
+    return rows.map((row) => ({
+      txHash: row.tx_hash,
+      logIndex: Number(row.log_index),
+      blockNumber: Number(row.block_number),
+    }));
+  }
+
+  /**
+   * Rellena la marca temporal de una venta **solo si estaba vacía**: `AND block_timestamp IS NULL`
+   * hace la operación idempotente y garantiza que nunca se sobrescribe una fecha ya conocida.
+   */
+  async setSaleBlockTimestamp(
+    txHash: string,
+    logIndex: number,
+    timestampSeconds: number,
+  ): Promise<void> {
+    await this.pool.query(
+      `UPDATE worker_sale_history
+       SET block_timestamp = to_timestamp($3)
+       WHERE tx_hash = $1 AND log_index = $2 AND block_timestamp IS NULL`,
+      [txHash, logIndex, timestampSeconds],
+    );
+  }
+
+  /**
+   * Reset atómico del agregado ante un redeploy (MAJOR 3): vacía histórico e idempotencia y
+   * devuelve los contadores a su base con `last_block = deploymentBlock`, todo en una única
+   * transacción. El checkpoint de email (`worker_checkpoints`, por dirección) NO se toca: los
+   * avisos ya entregados no se reenvían.
+   */
+  async reset(deploymentBlock: number): Promise<void> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("DELETE FROM worker_sale_history");
+      await client.query("DELETE FROM worker_processed_logs");
+      await client.query(
+        `UPDATE worker_aggregate_counters
+         SET primary_volume_wei = 0, royalties_wei = 0, secondary_volume_wei = 0,
+             sold_count = 0, minted_count = 0, burned_count = 0, last_block = $1
+         WHERE id = 0`,
+        [deploymentBlock],
+      );
+      await client.query("COMMIT");
+    } catch (error: unknown) {
+      await rollback(client);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async getBoundAddress(): Promise<string | null> {
+    const { rows } = await this.pool.query<{ contract_address: string | null }>(
+      "SELECT contract_address FROM worker_aggregate_counters WHERE id = 0",
+    );
+    return rows[0]?.contract_address ?? null;
+  }
+
+  async setBoundAddress(contractAddress: string): Promise<void> {
+    await this.pool.query(
+      "UPDATE worker_aggregate_counters SET contract_address = $1 WHERE id = 0",
+      [contractAddress.toLowerCase()],
+    );
+  }
+
+  /** El pool es compartido e inyectado: su cierre lo hace `main` (`closeDbPool`), no el store. */
+  async close(): Promise<void> {
+    // Intencionadamente vacío (el store no es propietario del pool).
   }
 }
 
-interface CountersRow {
+/** Contadores leídos con `FOR UPDATE`, ya convertidos a `bigint`/`number` para operar en JS. */
+type LockedCounters = {
+  readonly primaryVolumeWei: bigint;
+  readonly royaltiesWei: bigint;
+  readonly secondaryVolumeWei: bigint;
+  readonly soldCount: number;
+  readonly mintedCount: number;
+  readonly burnedCount: number;
+};
+
+/** Fila cruda de `worker_aggregate_counters` (NUMERIC/BIGINT llegan como string en `pg`). */
+type CountersRow = {
   readonly primary_volume_wei: string;
   readonly royalties_wei: string;
   readonly secondary_volume_wei: string;
   readonly sold_count: number;
   readonly minted_count: number;
   readonly burned_count: number;
-  readonly last_block: number;
-}
+  readonly last_block: string;
+};
 
-/** Columnas de `CountersRow` cuyo valor es un importe en wei (TEXT). */
-type WeiColumn = "primary_volume_wei" | "royalties_wei" | "secondary_volume_wei";
-
-interface HistorySqlRow {
+/** Fila cruda de `worker_sale_history`. */
+type HistorySqlRow = {
   readonly token_id: string;
   readonly room: number;
   readonly date_yyyymmdd: number;
@@ -316,9 +348,162 @@ interface HistorySqlRow {
   readonly sale_type_raw: number;
   readonly seller: string;
   readonly buyer: string;
-  readonly block_number: number;
+  readonly block_number: string;
   readonly log_index: number;
   readonly tx_hash: string;
+  /** Segundos UNIX del bloque, o `null` si la fila no tiene marca temporal. */
+  readonly block_timestamp_epoch: string | null;
+};
+
+/** Fila cruda de la serie mensual (`SUM(NUMERIC)` y `COUNT` llegan como string en `pg`). */
+type MonthlySqlRow = {
+  readonly month: string;
+  readonly primary_volume_wei: string;
+  readonly secondary_volume_wei: string;
+  readonly primary_sales: number;
+  readonly secondary_sales: number;
+};
+
+/** Fila cruda del desglose por tipo de habitación. */
+type RoomTypeSqlRow = {
+  readonly room_type: string;
+  readonly primary_volume_wei: string;
+  readonly secondary_volume_wei: string;
+  readonly primary_sales: number;
+  readonly secondary_sales: number;
+};
+
+/** Fila cruda del ranking de más revendidas. */
+type TopResoldSqlRow = {
+  readonly token_id: string;
+  readonly room: number;
+  readonly date_yyyymmdd: number;
+  readonly room_type: string;
+  readonly resale_count: number;
+  readonly resale_volume_wei: string;
+};
+
+/**
+ * Lee la fila única de contadores y la bloquea hasta el `COMMIT`/`ROLLBACK` (`FOR UPDATE`), de
+ * modo que la suma en `bigint` de dos transacciones concurrentes no pierda actualizaciones.
+ */
+async function lockCounters(client: PoolClient): Promise<LockedCounters> {
+  const { rows } = await client.query<CountersRow>(
+    `SELECT primary_volume_wei, royalties_wei, secondary_volume_wei,
+            sold_count, minted_count, burned_count, last_block
+     FROM worker_aggregate_counters
+     WHERE id = 0
+     FOR UPDATE`,
+  );
+  const row = rows[0];
+  if (row === undefined) {
+    throw new Error(
+      "falta la fila semilla id = 0 de worker_aggregate_counters: ¿se ejecutó runMigrations()?",
+    );
+  }
+  return {
+    primaryVolumeWei: BigInt(row.primary_volume_wei),
+    royaltiesWei: BigInt(row.royalties_wei),
+    secondaryVolumeWei: BigInt(row.secondary_volume_wei),
+    soldCount: Number(row.sold_count),
+    mintedCount: Number(row.minted_count),
+    burnedCount: Number(row.burned_count),
+  };
+}
+
+/** Muta los contadores/histórico según el tipo de evento (ya dentro de la transacción). */
+async function mutate(
+  client: PoolClient,
+  event: ChainEvent,
+  counters: LockedCounters,
+): Promise<void> {
+  switch (event.kind) {
+    case "mint":
+      await client.query(
+        "UPDATE worker_aggregate_counters SET minted_count = $1 WHERE id = 0",
+        [counters.mintedCount + 1],
+      );
+      return;
+    case "burn":
+      await client.query(
+        "UPDATE worker_aggregate_counters SET burned_count = $1 WHERE id = 0",
+        [counters.burnedCount + 1],
+      );
+      return;
+    case "royaltyPaid":
+      // Royalties solo de RoyaltyPaid (ventas secundarias): nunca de ventas primarias.
+      await client.query(
+        "UPDATE worker_aggregate_counters SET royalties_wei = $1 WHERE id = 0",
+        [(counters.royaltiesWei + event.amountWei).toString()],
+      );
+      return;
+    case "sale":
+      await applySale(client, event, counters);
+      return;
+  }
+}
+
+/**
+ * Aplica una venta: volumen primario/secundario en wei (sumado en `bigint` en JS, persistido ya
+ * calculado como NUMERIC), `sold_count` solo para primarias y una fila de histórico.
+ */
+async function applySale(
+  client: PoolClient,
+  event: Extract<ChainEvent, { kind: "sale" }>,
+  counters: LockedCounters,
+): Promise<void> {
+  const isPrimary = event.saleTypeRaw === 0;
+  if (isPrimary) {
+    await client.query(
+      `UPDATE worker_aggregate_counters
+       SET sold_count = $1, primary_volume_wei = $2
+       WHERE id = 0`,
+      [counters.soldCount + 1, (counters.primaryVolumeWei + event.priceWei).toString()],
+    );
+  } else {
+    await client.query(
+      "UPDATE worker_aggregate_counters SET secondary_volume_wei = $1 WHERE id = 0",
+      [(counters.secondaryVolumeWei + event.priceWei).toString()],
+    );
+  }
+
+  // El histórico deriva del evento `Sale` (no de `ownerOf`): una venta de un token luego
+  // quemado SIGUE en el histórico. La marca temporal del bloque se persiste tal cual llega de la
+  // cadena (`NULL` si la fuente no la aportó): es la que decide el mes en la serie de D-16.
+  const { room, dateYYYYMMDD } = decodeTokenId(event.tokenId);
+  await client.query(
+    `INSERT INTO worker_sale_history (
+       tx_hash, log_index, token_id, room, date_yyyymmdd, room_type,
+       price_wei, sale_type_raw, seller, buyer, block_number, block_timestamp
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, to_timestamp($12))`,
+    [
+      event.txHash,
+      event.logIndex,
+      event.tokenId.toString(),
+      room,
+      dateYYYYMMDD,
+      roomTypeOf(room) ?? "desconocido",
+      event.priceWei.toString(),
+      event.saleTypeRaw,
+      event.seller,
+      event.buyer,
+      Number(event.blockNumber),
+      event.blockTimestamp ?? null,
+    ],
+  );
+}
+
+/** Convierte la fila cruda de contadores al contrato de dominio (importes en `bigint`). */
+function toCounters(row: CountersRow): AggregateCounters {
+  return {
+    primaryVolumeWei: BigInt(row.primary_volume_wei),
+    royaltiesWei: BigInt(row.royalties_wei),
+    secondaryVolumeWei: BigInt(row.secondary_volume_wei),
+    soldCount: Number(row.sold_count),
+    mintedCount: Number(row.minted_count),
+    burnedCount: Number(row.burned_count),
+    lastBlock: Number(row.last_block),
+  };
 }
 
 /** Clave de idempotencia estable: `txHash:logIndex` (único por log on-chain). */
@@ -328,12 +513,20 @@ export function idempotencyKey(
   return `${event.txHash}:${event.logIndex}`;
 }
 
-/** ¿El error es una violación de PRIMARY KEY/UNIQUE de SQLite (clave ya aplicada)? */
-function isUniqueConstraintError(error: unknown): boolean {
+/** ¿El error es una violación de PK/UNIQUE de PostgreSQL (clave ya aplicada)? */
+function isUniqueViolation(error: unknown): boolean {
   return (
-    error instanceof Error &&
-    "code" in error &&
-    typeof error.code === "string" &&
-    error.code.startsWith("SQLITE_CONSTRAINT")
+    typeof error === "object" &&
+    error !== null &&
+    (error as { code?: unknown }).code === UNIQUE_VIOLATION
   );
+}
+
+/** `ROLLBACK` defensivo: nunca debe enmascarar el error original que provocó el aborto. */
+async function rollback(client: PoolClient): Promise<void> {
+  try {
+    await client.query("ROLLBACK");
+  } catch {
+    // La transacción ya podía estar cerrada/abortada: se ignora para preservar el error original.
+  }
 }

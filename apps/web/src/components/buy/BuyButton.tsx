@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { formatEther } from "viem";
 import { useBalance } from "wagmi";
-import { buildPurchaseTxData, type SaleType } from "@hotel/shared";
+import { buildPurchaseTxData, type SaleType } from "@hotel/shared/domain";
 import { activeChain, contractAddress, faucetAddress } from "@/config/chain";
 import { useOnboarding } from "@/components/wallet/useOnboarding";
 import { FaucetButton } from "@/components/wallet/FaucetButton";
@@ -22,7 +22,7 @@ const GHOST_BTN =
   "min-h-touch w-full rounded-brand border border-line px-4 py-2 font-semibold text-ink disabled:opacity-60";
 
 /**
- * CTA de reserva (primaria/reventa) del catálogo (CU-05/07, §3/§5.3):
+ * CTA de reserva (primaria/reventa) del catálogo (CU-05/07, docs/SRS.md §7/§9):
  * onboarding (CU-17) → «Reservar» abre el modal en «Revisar» con la tx DECODIFICADA y
  * re-verificada contra el precio on-chain → «Firmar» dispara la compra →
  * firmar → minando → hecho (recibo) / error (reintentar). Estado «sin saldo» (CU-05 05a).
@@ -40,7 +40,7 @@ export function BuyButton({
   const router = useRouter();
   const { hasWallet, isConnected, isWrongNetwork, address, connect, switchToAppChain } =
     useOnboarding();
-  const { buy, buyResale, reset, status, hash, error } = useBuyNight();
+  const { send, reset, status, hash, error } = useBuyNight();
   const [reviewing, setReviewing] = useState(false);
   // Tras confirmar hay que refrescar el catálogo (RSC), pero NO durante el `confirmed` (eso
   // destruye el disparador antes de devolverle el foco, MAJOR#6). Se difiere a `onClose`.
@@ -105,8 +105,8 @@ export function BuyButton({
 
   function onSign(): void {
     if (!canSign) return;
-    if (saleType === "SECONDARY") buyResale(tokenId, priceWei);
-    else buy(tokenId, priceWei);
+    // D-07: se firma EXACTAMENTE el objeto que `usePurchaseReview` decodificó y re-verificó.
+    send(tx);
   }
 
   function onRetry(): void {

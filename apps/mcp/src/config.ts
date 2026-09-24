@@ -1,5 +1,5 @@
 import { CHAIN_ID } from "@hotel/shared";
-import { env, loadEnv, z, type EnvSource } from "@hotel/shared/env";
+import { emptyAsUndefined, env, loadEnv, z, type EnvSource } from "@hotel/shared/env";
 
 /**
  * Configuración del MCP server (T0.3). Valida el entorno con fail-fast al arrancar.
@@ -36,7 +36,7 @@ const mcpEnvSchema = z.object({
   /** Orígenes permitidos (Origin header) para la protección DNS-rebinding; CSV. Vacío ⇒ sin filtro. */
   MCP_ALLOWED_ORIGINS: csvList,
   /** Bloque de despliegue del contrato; si falta, se resuelve del registro o se usa 0. */
-  DEPLOYMENT_BLOCK: z.coerce.number().int().nonnegative().optional(),
+  DEPLOYMENT_BLOCK: emptyAsUndefined(z.coerce.number().int().nonnegative()),
 });
 
 export type McpConfig = z.infer<typeof mcpEnvSchema>;

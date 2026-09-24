@@ -13,6 +13,26 @@ export interface HealthCheckResult {
   details?: Record<string, string>;
 }
 
+/** Límite de tiempo de la comprobación de Redis (ms). */
+const REDIS_TIMEOUT_MS = 2_000;
+
+/** Resuelve `promise`, o rechaza si tarda más de `ms` (evita colgar el health check). */
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
+
 export async function checkLiveness(): Promise<{ status: "ALIVE" }> {
   return { status: "ALIVE" };
 }
@@ -35,20 +55,21 @@ export async function checkReadiness(
   try {
     await pool.query("SELECT 1");
     postgresStatus = "UP";
-  } catch (err: any) {
-    details.postgres = err?.message || "Conexión a PostgreSQL fallida";
+  } catch (err) {
+    details.postgres = err instanceof Error && err.message ? err.message : "Conexión a PostgreSQL fallida";
   }
 
-  // 2. Redis check
+  // 2. Redis check (con límite de tiempo: el cliente encola comandos mientras conecta, así
+  //    que sin timeout un Redis caído colgaría el readiness en lugar de degradarlo).
   try {
-    const pong = await redis.ping();
+    const pong = await withTimeout(redis.ping(), REDIS_TIMEOUT_MS, "Tiempo de espera de Redis");
     if (pong === "PONG") {
       redisStatus = "UP";
     } else {
       details.redis = "Respuesta Redis inesperada";
     }
-  } catch (err: any) {
-    details.redis = err?.message || "Conexión a Redis fallida";
+  } catch (err) {
+    details.redis = err instanceof Error && err.message ? err.message : "Conexión a Redis fallida";
   }
 
   // 3. Polygon RPC check
@@ -68,8 +89,8 @@ export async function checkReadiness(
     }).finally(() => clearTimeout(timeout));
 
     if (res.ok) {
-      const data = (await res.json()) as any;
-      if (data?.result) {
+      const data: unknown = await res.json();
+      if (typeof data === "object" && data !== null && "result" in data && data.result) {
         rpcStatus = "UP";
       } else {
 
@@ -78,8 +99,8 @@ export async function checkReadiness(
     } else {
       details.polygonRPC = `RPC HTTP ${res.status}`;
     }
-  } catch (err: any) {
-    details.polygonRPC = err?.message || "Conexión a RPC fallida";
+  } catch (err) {
+    details.polygonRPC = err instanceof Error && err.message ? err.message : "Conexión a RPC fallida";
   }
 
   const isReady = postgresStatus === "UP" && redisStatus === "UP" && rpcStatus === "UP";

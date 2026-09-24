@@ -10,7 +10,7 @@ import {
 } from "./constants";
 
 /**
- * Configuración de red para viem/wagmi (ADR-17, DISEÑO §9).
+ * Configuración de red para viem/wagmi (ADR-17).
  *
  * `baseFee = 0` en Besu ⇒ los consumidores deben construir transacciones con fees
  * explícitos (`FEE_MODE`); no usar la auto-estimación EIP-1559.

@@ -6,7 +6,7 @@ import {
 } from "./night-state";
 
 /**
- * Matriz de señales on-chain → estado del NFT-noche (CASOS §4).
+ * Matriz de señales on-chain → estado del NFT-noche (docs/SRS.md §9).
  *
  * Precedencia (fija el contrato, no un detalle de implementación):
  *   1. !exists           → null (la noche no existe todavía)

@@ -1,11 +1,21 @@
+import { fileURLToPath } from "node:url";
 import { EmailAlerter } from "./alerter";
+import { startChainMonitor } from "./chain-monitor";
 import { loadMonitorConfig } from "./config";
 import { createLogger } from "./logger";
 import { MonitorCore } from "./monitor-core";
 import { FetchHealthProbe } from "./probe";
 
+// Node no carga `.env` por si solo (Next.js si lo hace): en desarrollo lo cargamos desde la
+// raiz del monorepo. Si el fichero no existe se usan las variables del entorno (CI/contenedor),
+// que es el caso de produccion; por eso no es un error.
+try {
+  process.loadEnvFile(fileURLToPath(new URL("../../../.env", import.meta.url)));
+} catch {
+  // Sin fichero .env: no es un error.
+}
 /**
- * Punto de entrada del monitor de observabilidad (T3.3 / RNF-17 / CU-16).
+ * Punto de entrada del monitor de observabilidad (T3.3 / RNF-17 / CU-16, docs/SRS.md §9).
  *
  * Carga la configuración (fail-fast), crea las implementaciones concretas (fetch, nodemailer)
  * y lanza el bucle de sondeo. Maneja SIGINT/SIGTERM para un cierre limpio del bucle.
@@ -34,6 +44,23 @@ async function main(): Promise<void> {
   };
   process.once("SIGINT", () => shutdown("SIGINT"));
   process.once("SIGTERM", () => shutdown("SIGTERM"));
+
+  // Vigilancia de cadena y gas (D-12): el monitor ya no depende de que cada servicio avise de su
+  // propio saldo. Sin RPC configurado usa el de la aplicación.
+  const chainMonitor = startChainMonitor({
+    config: {
+      rpcUrl: config.CHAIN_RPC_URL ?? process.env.RPC_URL ?? "http://127.0.0.1:8545",
+      chainId: config.CHAIN_ID,
+      pollIntervalMs: config.POLL_INTERVAL_MS,
+      wallets: config.GAS_WALLETS,
+      minNative: config.MIN_GAS_NATIVE,
+      stallCycles: config.STALL_CYCLES,
+    },
+    alerter,
+    logger,
+    signal: controller.signal,
+  });
+  controller.signal.addEventListener("abort", () => chainMonitor.stop());
 
   logger.info(
     {

@@ -31,7 +31,7 @@ const fail = (message: string): CallToolResult => ({
 });
 
 /**
- * Crea el MCP server del contrato (RF-12, CU-08): 3 herramientas read-only + `buildPurchaseTx`
+ * Crea el MCP server del contrato (RF-12, CU-08, docs/SRS.md §9): 3 herramientas read-only + `buildPurchaseTx`
  * (sin firma). Las herramientas delegan en el núcleo (`tools/`), que depende del puerto
  * {@link ChainReader}. El MCP **nunca firma ni custodia claves** (§8, ADR-11).
  */

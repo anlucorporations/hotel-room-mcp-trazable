@@ -8,7 +8,7 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {HotelNights} from "../src/HotelNights.sol";
 import {IHotelNights} from "../src/IHotelNights.sol";
 
-/// @notice Tesorería reentrante: al recibir ETH reintenta withdraw (CU-15 reentrancy).
+/// @notice Tesorería reentrante: al recibir ETH reintenta withdraw (CU-15 reentrancy, docs/SRS.md §9).
 contract ReentrantTreasury {
     HotelNights private immutable NFT;
 
@@ -25,7 +25,7 @@ contract ReentrantTreasury {
     }
 }
 
-/// @notice CU-12/14/15/16 — royalty, pausa, withdraw, setTreasury.
+/// @notice CU-12/14/15/16 — royalty inmutable (D-06), pausa, withdraw, setTreasury.
 contract HotelNightsAdminTest is Test {
     HotelNights internal nft;
 
@@ -40,42 +40,35 @@ contract HotelNightsAdminTest is Test {
 
     function setUp() public {
         vm.warp(BASE_TS);
-        nft = new HotelNights(treasury, 1000);
+        // El 2.º argumento (bps) es heredado y NO tiene efecto (D-06).
+        nft = new HotelNights(treasury);
         // address(this) es DEFAULT_ADMIN: se concede el resto de roles a sí mismo.
         nft.grantRole(nft.MINTER_ROLE(), minter);
-        nft.grantRole(nft.ROYALTY_ADMIN_ROLE(), address(this));
         nft.grantRole(nft.PAUSER_ROLE(), address(this));
         nft.grantRole(nft.TREASURER_ROLE(), address(this));
         vm.prank(minter);
         nft.mint(102, 20_260_615, PRICE, "ipfs://x");
     }
 
-    // ── CU-12: royalty ────────────────────────────────────────────────────────
-    function test_SetRoyaltyBpsBounds() public {
-        nft.setRoyaltyBps(0);
-        assertEq(nft.royaltyBps(), 0);
-        nft.setRoyaltyBps(2000);
-        assertEq(nft.royaltyBps(), 2000);
-        (, uint256 amount) = nft.royaltyInfo(TOKEN_ID, 10_000);
-        assertEq(amount, 2000); // 20 %
-    }
+    // ── CU-12: royalty inmutable por construcción (D-06) ──────────────────────
+    /// @notice No queda superficie de gobernanza del royalty: ni setter, ni getter de bps,
+    ///         ni rol que lo administre. Cualquier llamada a esas firmas revierte (no existe
+    ///         la función, así que no hay `fallback` que la atienda).
+    function test_RoyaltyHasNoGovernanceSurface() public {
+        (bool setterOk,) =
+            address(nft).call(abi.encodeWithSignature("setRoyaltyBps(uint96)", uint96(1000)));
+        assertFalse(setterOk, "setRoyaltyBps no debe existir");
 
-    function test_SetRoyaltyOutOfRangeReverts() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(IHotelNights.RoyaltyOutOfRange.selector, uint96(2001))
-        );
-        nft.setRoyaltyBps(2001);
-    }
+        (bool getterOk,) = address(nft).staticcall(abi.encodeWithSignature("royaltyBps()"));
+        assertFalse(getterOk, "royaltyBps no debe existir");
 
-    function test_SetRoyaltyRequiresRole() public {
-        bytes32 role = nft.ROYALTY_ADMIN_ROLE();
-        vm.prank(stranger);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, stranger, role
-            )
-        );
-        nft.setRoyaltyBps(500);
+        (bool roleOk,) = address(nft).staticcall(abi.encodeWithSignature("ROYALTY_ADMIN_ROLE()"));
+        assertFalse(roleOk, "ROYALTY_ADMIN_ROLE no debe existir");
+
+        // Y el royalty sigue siendo el derivado del tipo (hab. 102 = simple ⇒ 5 %).
+        (address receiver, uint256 amount) = nft.royaltyInfo(TOKEN_ID, 1 ether);
+        assertEq(receiver, treasury);
+        assertEq(amount, 0.05 ether);
     }
 
     // ── CU-14: pausa ──────────────────────────────────────────────────────────

@@ -13,7 +13,7 @@ const REVEAL_STEP_MS = 45;
 // NOTA (MINOR#17): el mockup mostraba un botón «Guardar» (favorito) por tarjeta. Queda FUERA
 // del MVP; no se implementa aquí y se documenta para evitar un GAP de paridad con el diseño.
 
-/** Icono de calendario (stroke 2px, set propio DISEÑO-UX §3). */
+/** Icono de calendario (stroke 2px, set propio docs/SRS.md §7). */
 function CalendarIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -23,7 +23,7 @@ function CalendarIcon() {
   );
 }
 
-/** Badge superpuesto según el estado de la noche (DISEÑO-UX §5.2). */
+/** Badge superpuesto según el estado de la noche (docs/SRS.md §7). */
 function StatusBadge({ night, t }: { night: NightView; t: ReturnType<typeof useTranslations> }) {
   if (night.saleType === "SECONDARY") {
     return (
@@ -48,7 +48,7 @@ function StatusBadge({ night, t }: { night: NightView; t: ReturnType<typeof useT
 }
 
 /**
- * Tarjeta de una noche del catálogo (CU-04, DISEÑO-UX §4.1).
+ * Tarjeta de una noche del catálogo (CU-04, docs/SRS.md §7/§9).
  *
  * `revealIndex` activa el reveal escalonado de entrada (MINOR#18): solo lo pasa la primera
  * tanda del catálogo (no en cada load-more). La animación es opacidad + leve desplazamiento,
@@ -59,11 +59,17 @@ export function NightCard({
   night,
   revealIndex,
   priority = false,
+  paused = false,
 }: {
   night: NightView;
   revealIndex?: number;
   /** Carga ansiosa + `fetchPriority="high"` de la imagen (solo primeras tarjetas, LCP). */
   priority?: boolean;
+  /**
+   * Contrato canónico en pausa (M7): la compra se retira de la tarjeta en vez de ofrecerse para
+   * que la cadena la revierta con `EnforcedPause`.
+   */
+  paused?: boolean;
 }) {
   const t = useTranslations("catalog");
   const reveals = revealIndex !== undefined;
@@ -123,7 +129,16 @@ export function NightCard({
             No mostramos una conversión a € porque el piloto no integra un oráculo de precio. */}
         <p className="mt-1.5 text-micro text-ink-soft">{t("ownershipNote")}</p>
         <div className="mt-3">
-          <BuyButton tokenId={night.tokenId} priceWei={night.priceWei} saleType={night.saleType} />
+          {paused ? (
+            <p
+              data-testid="night-paused"
+              className="rounded-pill border border-line bg-sand-2 px-4 py-2.5 text-center text-small font-semibold text-ink-soft"
+            >
+              {t("buyPaused")}
+            </p>
+          ) : (
+            <BuyButton tokenId={night.tokenId} priceWei={night.priceWei} saleType={night.saleType} />
+          )}
         </div>
       </div>
     </article>

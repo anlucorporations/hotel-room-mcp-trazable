@@ -89,7 +89,7 @@ function returnFocusTo(trigger: HTMLElement | null): void {
 }
 
 /**
- * Modal accesible del flujo de compra (DISEÑO-UX §5.3, WCAG 2.4.3/4.1.2/1.3.1):
+ * Modal accesible del flujo de compra (docs/SRS.md §7, WCAG 2.4.3/4.1.2/1.3.1):
  * `role="dialog" aria-modal`, `aria-labelledby` (título) + `aria-describedby` (resumen
  * decodificado), foco inicial al primer control, focus trap, Escape cierra (salvo durante la
  * FIRMA), retorno de foco al disparador. Una región `aria-live` persistente anuncia los cambios

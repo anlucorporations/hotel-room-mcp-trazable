@@ -1,6 +1,6 @@
 /**
  * Preset de Tailwind compartido (mobile-first, RNF-01) + sistema visual «Mediterráneo
- * editorial» (DISEÑO-UX §2).
+ * editorial» (docs/SRS.md §7).
  * Breakpoints: móvil <768 / tablet 768–1024 / desktop >1024.
  * Áreas táctiles mínimas de 44px (utilidades `*-touch`).
  *
@@ -18,7 +18,7 @@ module.exports = {
       desktop: "1024px",
     },
     extend: {
-      // Paleta de marca (DISEÑO-UX §2.1). Contraste verificado en el doc.
+      // Paleta de marca (docs/SRS.md §7). Contraste verificado en el doc.
       colors: {
         sand: "#FBF6EC",
         "sand-2": "#F3EAD8",
@@ -37,7 +37,7 @@ module.exports = {
         display: ["var(--font-fraunces)", "Georgia", "serif"],
         sans: ["var(--font-hanken)", "system-ui", "-apple-system", "sans-serif"],
       },
-      // Escala tipográfica con clamp (móvil → desktop, DISEÑO-UX §2.2).
+      // Escala tipográfica con clamp (móvil → desktop, docs/SRS.md §7).
       fontSize: {
         h1: ["clamp(2.3rem, 1.55rem + 3.2vw, 4.1rem)", { lineHeight: "1.04", letterSpacing: "-0.02em" }],
         h2: ["clamp(1.6rem, 1.25rem + 1.6vw, 2.2rem)", { lineHeight: "1.1", letterSpacing: "-0.01em" }],

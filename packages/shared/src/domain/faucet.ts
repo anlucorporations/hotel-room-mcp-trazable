@@ -2,7 +2,7 @@ import { decodeErrorResult, type Hex } from "viem";
 import { faucetAbi } from "../abi/faucet";
 
 /**
- * Lógica PURA del faucet de pruebas (RF-21 / CU-PR-01): cálculo de cooldown, derivación de
+ * Lógica PURA del faucet de pruebas (RF-21 / CU-PR-01, docs/SRS.md §9): cálculo de cooldown, derivación de
  * estado y decodificación del revert `FaucetCooldownActive`. Sin React ni wagmi → testeable
  * en aislamiento y reutilizable por el hook de la web. La capa de UI solo orquesta.
  */

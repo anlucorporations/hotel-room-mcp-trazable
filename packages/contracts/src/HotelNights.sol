@@ -26,11 +26,18 @@ import {RoomMaster} from "./libraries/RoomMaster.sol";
  * storage (EIP-1153, ADR-07) que bloquea `transferFrom` directos (`DirectTransferDisabled`);
  * validación de inputs en `mint`; `Pausable`.
  *
+ * @dev D-06 (royalty inmutable por construcción): `royaltyInfo` NO lee configuración alguna;
+ *      deriva el tipo de la habitación del `tokenId` con `RoomMaster` y aplica 500 bps (5 %) a
+ *      simple/doble (101–130) y 1000 bps (10 %) a suite (201–220), con `treasury` como
+ *      receptor. No existe almacenamiento, setter ni rol de royalty: nadie puede alterarlo.
+ *      El suelo de reventa (`minListingPrice`) sí es gobernable por `DEFAULT_ADMIN_ROLE`.
+ *
  * @dev AUTORIDAD (MAJOR#1, opción B): `owner()` (de `Ownable2Step`) es **meramente
  *      informativo** y NO gobierna ninguna función de negocio — ninguna usa el modificador
  *      `onlyOwner`. El control real recae en `AccessControl`: `DEFAULT_ADMIN_ROLE` administra
- *      todos los roles y `setTreasury`, y cada operación restringida exige su rol específico
- *      (`MINTER_ROLE`, `ROYALTY_ADMIN_ROLE`, `PAUSER_ROLE`, `BURNER_ROLE`, `TREASURER_ROLE`).
+ *      todos los roles, `setTreasury` y `setMinListingPrice`, y cada operación restringida
+ *      exige su rol específico (`MINTER_ROLE`, `RECEPTION_ROLE`, `PAUSER_ROLE`,
+ *      `BURNER_ROLE`, `TREASURER_ROLE`).
  *      Por tanto, `transferOwnership`/`acceptOwnership` NO ceden el control del contrato: la
  *      cesión REAL de gobernanza se hace concediendo `DEFAULT_ADMIN_ROLE` al nuevo admin
  *      (`grantRole`) y renunciando el antiguo (`renounceRole`). Se conserva `Ownable2Step`
@@ -50,14 +57,24 @@ contract HotelNights is
 
     // ── Roles (ADR-06) ────────────────────────────────────────────────────────
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-    bytes32 public constant ROYALTY_ADMIN_ROLE = keccak256("ROYALTY_ADMIN_ROLE");
+    bytes32 public constant RECEPTION_ROLE = keccak256("RECEPTION_ROLE"); // D-05: check-in
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
     bytes32 public constant TREASURER_ROLE = keccak256("TREASURER_ROLE");
 
     // ── Límites de configuración ───────────────────────────────────────────────
-    uint96 public constant ROYALTY_MAX_BPS = 2000; // 20 % (RF-08)
-    uint256 public constant BURN_BATCH_MAX = 50; // CU-13
+    uint256 public constant BURN_BATCH_MAX = 50; // CU-13 (docs/SRS.md §9)
+
+    /// @dev D-06: suelo inicial de reventa, fijado por construcción. El valor vigente
+    ///      (`minListingPrice`) arranca aquí; `DEFAULT_ADMIN_ROLE` puede ajustarlo después.
+    uint256 public constant DEFAULT_MIN_LISTING_PRICE = 0.01 ether;
+
+    /// @dev D-06: royalty por TIPO de habitación (RF-08), inmutable por construcción.
+    uint96 private constant ROYALTY_BPS_STANDARD = 500; // 5 %: simple y doble (101–130)
+    uint96 private constant ROYALTY_BPS_SUITE = 1000; // 10 %: suite (201–220)
+
+    /// @dev Tipo "suite" del maestro (RF-18a/ADR-02), resuelto vía `RoomMaster.roomType`.
+    bytes32 private constant SUITE_TYPE_HASH = keccak256("suite");
 
     /// @dev `tokenId = room · ROOM_MULTIPLIER + AAAAMMDD` (Decisión 3).
     uint256 private constant ROOM_MULTIPLIER = 100_000_000;
@@ -71,31 +88,39 @@ contract HotelNights is
     /// @inheritdoc IHotelNights
     address public override treasury;
 
-    uint96 private _royaltyBps;
+    /// @inheritdoc IHotelNights
+    uint256 public override minListingPrice = DEFAULT_MIN_LISTING_PRICE;
+
     mapping(uint256 tokenId => uint256 priceWei) private _price;
     mapping(uint256 tokenId => bool sold) private _soldOnce;
+
+    /// @dev D-05: noche consumida por check-in on-chain (RECEPTION). Una vez marcada no se
+    ///      puede listar ni revender: es el ancla irreversible anti-doble-gasto del hotel.
+    mapping(uint256 tokenId => bool checkedIn) private _checkedIn;
 
     // Mercado secundario (FASE 2)
     mapping(uint256 tokenId => Listing) private _listings;
     mapping(address account => uint256 amount) private _pending; // pull payments (ADR-15)
     uint256 private _totalPending; // suma de _pending: protege los fondos de usuarios en withdraw
 
-    constructor(address treasury_, uint96 royaltyBps_)
+    /**
+     * @param treasury_ Receptor de la venta primaria y del royalty ERC-2981.
+     * @dev El segundo argumento (bps de royalty) que existía por compatibilidad **se eliminó**:
+     *      el royalty se deriva del tipo de habitación y es inmutable (D-06), así que un
+     *      parámetro que no hacía nada era una trampa para quien leyera el despliegue.
+     */
+    constructor(address treasury_)
         ERC721("Hotel Marina del Sol Nights", "HMSN")
         Ownable(msg.sender)
     {
         if (treasury_ == address(0)) {
             revert ZeroAddress();
         }
-        if (royaltyBps_ > ROYALTY_MAX_BPS) revert RoyaltyOutOfRange(royaltyBps_);
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
         treasury = treasury_;
         emit TreasuryUpdated(address(0), treasury_);
-
-        _royaltyBps = royaltyBps_;
-        _setDefaultRoyalty(treasury_, royaltyBps_);
     }
 
     // ── Minteo (CU-02) ──────────────────────────────────────────────────────────
@@ -127,6 +152,11 @@ contract HotelNights is
     function buy(uint256 tokenId) external payable override nonReentrant whenNotPaused {
         address seller = _ownerOf(tokenId);
         if (seller == address(0) || _soldOnce[tokenId]) revert NightNotAvailable(tokenId);
+        // D-05: una noche ya consumida (check-in) no vuelve a venderse ni siquiera como primaria.
+        // Sin este guard, recepción podía cerrar una noche de inventario (walk-in) y esa misma
+        // noche seguía siendo comprable en la tienda: la garantía de "no doble uso" quedaba a
+        // medias. `list`/`buyResale` ya la bloquean por la vía secundaria.
+        if (_checkedIn[tokenId]) revert NightNotAvailable(tokenId);
         if (_isExpired(tokenId)) revert NightExpired(tokenId);
 
         uint256 price = _price[tokenId];
@@ -151,14 +181,43 @@ contract HotelNights is
         if (!ok) revert EthTransferFailed();
     }
 
+    // ── Check-in on-chain (D-05) ───────────────────────────────────────────────
+    /**
+     * @inheritdoc IHotelNights
+     * @dev Ancla irreversible: recepción marca la noche como consumida. A partir de ahí la
+     *      noche no puede listarse ni revenderse (ver `list`/`buyResale`). El token debe
+     *      existir (mismo patrón que `buy`: `NightNotAvailable` si no hay dueño) **y haber
+     *      tenido venta primaria**: el check-in acredita el consumo de una noche vendida, no es
+     *      una vía para bloquear inventario del hotel, que quedaría invendible para siempre
+     *      porque el marcado es irreversible.
+     */
+    function markCheckedIn(uint256 tokenId)
+        external
+        override
+        onlyRole(RECEPTION_ROLE)
+        whenNotPaused
+    {
+        if (_ownerOf(tokenId) == address(0)) revert NightNotAvailable(tokenId);
+        if (!_soldOnce[tokenId]) revert NightNotSold(tokenId);
+        if (_checkedIn[tokenId]) revert AlreadyCheckedIn(tokenId);
+
+        _checkedIn[tokenId] = true;
+        emit CheckedIn(tokenId, msg.sender, block.timestamp);
+    }
+
     // ── Mercado secundario (CU-06/07) ─────────────────────────────────────────
     /// @inheritdoc IHotelNights
     function list(uint256 tokenId, uint256 price) external override {
         if (_ownerOf(tokenId) != msg.sender) revert NotOwner();
-        // Solo se revende desde EN_PODER_CLIENTE (MINOR#5, CASOS §4): una noche que aún no tuvo
+        // D-05: una noche ya consumida (check-in) no vuelve al mercado.
+        if (_checkedIn[tokenId]) revert NightNotResellable(tokenId);
+        // Solo se revende desde EN_PODER_CLIENTE (MINOR#5, docs/SRS.md §9): una noche que aún no tuvo
         // venta primaria es inventario DISPONIBLE del hotel y NO debe entrar por la vía SECONDARY.
         if (!_soldOnce[tokenId]) revert NightNotResellable(tokenId);
         if (price == 0) revert InvalidPrice();
+        // D-06: suelo anti-evasión de royalty. Se evalúa al listar (el precio del listado queda
+        // congelado hasta que el vendedor lo sobrescriba).
+        if (price < minListingPrice) revert PriceBelowMinimum(price, minListingPrice);
         if (_isExpired(tokenId)) revert NightExpired(tokenId);
 
         _listings[tokenId] = Listing({price: price, active: true});
@@ -178,11 +237,15 @@ contract HotelNights is
     function buyResale(uint256 tokenId) external payable override nonReentrant whenNotPaused {
         Listing memory listing = _listings[tokenId];
         if (!listing.active) revert NotListed(tokenId);
+        // D-05: si la noche se consumió (check-in) después de listarse, la reventa se bloquea
+        // (mismo error que `list`: la noche ha dejado de ser revendible).
+        if (_checkedIn[tokenId]) revert NightNotResellable(tokenId);
         if (_isExpired(tokenId)) revert NightExpired(tokenId);
         if (msg.value != listing.price) revert IncorrectPayment(listing.price, msg.value);
 
         address seller = _ownerOf(tokenId);
-        // Royalty fuente única (ERC-2981). Invariante: royalty + proceeds == price (sin wei atrapados).
+        // Royalty fuente única (ERC-2981, D-06): la MISMA función pública `royaltyInfo` que
+        // consultan los marketplaces externos. `buyResale` no duplica la fórmula ni el tipo.
         (address royaltyReceiver, uint256 royaltyAmount) = royaltyInfo(tokenId, listing.price);
         uint256 sellerProceeds = listing.price - royaltyAmount;
 
@@ -235,12 +298,12 @@ contract HotelNights is
 
     // ── Administración (CU-12/14/15/16) ───────────────────────────────────────
     /// @inheritdoc IHotelNights
-    function setRoyaltyBps(uint96 bps) external override onlyRole(ROYALTY_ADMIN_ROLE) {
-        if (bps > ROYALTY_MAX_BPS) revert RoyaltyOutOfRange(bps);
-        uint96 oldBps = _royaltyBps;
-        _royaltyBps = bps;
-        _setDefaultRoyalty(treasury, bps);
-        emit RoyaltyUpdated(oldBps, bps);
+    function setMinListingPrice(uint256 newPrice) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        // Cota inferior: un suelo de 0 equivaldría a desactivar la protección anti-elusión de
+        // royalties (D-06) con una sola transacción, que es justo lo que se quiere evitar.
+        if (newPrice == 0) revert InvalidPrice();
+        minListingPrice = newPrice;
+        emit MinListingPriceUpdated(newPrice);
     }
 
     /// @inheritdoc IHotelNights
@@ -269,7 +332,8 @@ contract HotelNights is
         if (newTreasury == address(0)) revert ZeroAddress();
         address oldTreasury = treasury;
         treasury = newTreasury;
-        _setDefaultRoyalty(newTreasury, _royaltyBps);
+        // El royalty no se almacena: `royaltyInfo` lee `treasury` en cada consulta, así que el
+        // cambio de receptor es inmediato y no requiere sincronizar nada (D-06).
         emit TreasuryUpdated(oldTreasury, newTreasury);
     }
 
@@ -288,6 +352,11 @@ contract HotelNights is
     /// @inheritdoc IHotelNights
     function soldOnce(uint256 tokenId) external view override returns (bool) {
         return _soldOnce[tokenId];
+    }
+
+    /// @inheritdoc IHotelNights
+    function isCheckedIn(uint256 tokenId) external view override returns (bool) {
+        return _checkedIn[tokenId];
     }
 
     /// @inheritdoc IHotelNights
@@ -311,13 +380,19 @@ contract HotelNights is
     }
 
     /// @inheritdoc IHotelNights
-    function royaltyBps() public view override returns (uint96) {
-        return _royaltyBps;
+    function burnBatchMax() public pure override returns (uint256) {
+        return BURN_BATCH_MAX;
     }
 
     /// @inheritdoc IHotelNights
-    function burnBatchMax() public pure override returns (uint256) {
-        return BURN_BATCH_MAX;
+    function royaltyInfo(uint256 tokenId, uint256 salePrice)
+        public
+        view
+        override(ERC2981, IHotelNights)
+        returns (address receiver, uint256 royaltyAmount)
+    {
+        receiver = treasury;
+        royaltyAmount = (salePrice * _royaltyBpsOf(tokenId)) / _feeDenominator();
     }
 
     function tokenURI(uint256 tokenId)
@@ -364,6 +439,20 @@ contract HotelNights is
 
     function _isExpired(uint256 tokenId) private view returns (bool) {
         return (tokenId % ROOM_MULTIPLIER) < _todayYYYYMMDD();
+    }
+
+    /**
+     * @dev D-06: bps del royalty derivados del TIPO de la habitación, con `RoomMaster` como
+     *      fuente única del maestro (no se duplican rangos). Un `tokenId` cuya habitación no
+     *      pertenece al maestro (p. ej. inexistente) devuelve 0 bps en vez de revertir:
+     *      `royaltyInfo` es una vista ERC-2981 que los marketplaces pueden consultar con
+     *      cualquier id.
+     */
+    function _royaltyBpsOf(uint256 tokenId) private pure returns (uint96) {
+        uint256 room = tokenId / ROOM_MULTIPLIER;
+        if (!room.isInMaster()) return 0;
+        if (keccak256(bytes(room.roomType())) == SUITE_TYPE_HASH) return ROYALTY_BPS_SUITE;
+        return ROYALTY_BPS_STANDARD; // simple y doble comparten 5 % (RF-08/D-06)
     }
 
     function _unlockTransfer() private {

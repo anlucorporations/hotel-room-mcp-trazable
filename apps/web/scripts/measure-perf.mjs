@@ -11,7 +11,7 @@
  *   - Tiempo de renderizado: hasta que el grid (`catalog-grid`) o un estado del catálogo
  *     (`empty-state` / `degraded-state` / primera `night-card-…`) es visible.
  *
- * Compara con los objetivos de `@hotel/shared` (DISEÑO-TECNICO §13):
+ * Compara con los objetivos de `@hotel/shared`:
  *   - RENDER_TARGET_MS = 1000  (P75 hasta que el catálogo es visible)
  *   - LCP_TARGET_MS    = 2500  (P75, 4G, catálogo 50×90)
  * Se documentan aquí como literales para no acoplar el script al build de `@hotel/shared`;

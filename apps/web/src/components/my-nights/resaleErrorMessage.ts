@@ -1,10 +1,20 @@
 import { classifyTxError } from "@/components/tx/txError";
 
 /**
- * Errores REVERT del contrato relevantes para la reventa (CU-06, DISEÑO-UX §4.3).
+ * Errores REVERT del contrato relevantes para la reventa (CU-06, docs/SRS.md §7/§9).
  * Cada uno mapea a una clave de i18n bajo `myNights.resaleError.*`.
  */
-const RESALE_ERRORS = ["NotOwner", "InvalidPrice", "NightExpired", "NotListed"] as const;
+const RESALE_ERRORS = [
+  "NotOwner",
+  "InvalidPrice",
+  "NightExpired",
+  "NotListed",
+  // D-06: el listado queda por debajo del suelo anti-evasión de royalty (`PriceBelowMinimum`) o
+  // la noche ya se consumió con el check-in (`NightNotResellable`, D-05). Sin estos dos nombres
+  // el usuario solo veía el genérico «no se pudo completar» sin saber qué corregir.
+  "PriceBelowMinimum",
+  "NightNotResellable",
+] as const;
 
 export type ResaleErrorName = (typeof RESALE_ERRORS)[number];
 

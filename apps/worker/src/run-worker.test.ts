@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { SqliteCheckpointStore } from "./checkpoint-store";
 import { createWorkerHealthState } from "./health";
 import { runCycle, runWorker } from "./run-worker";
 import { SaleProcessor } from "./sale-processor";
@@ -7,6 +6,7 @@ import { AggregateProcessor } from "./aggregate-processor";
 import {
   AggregateFailingChainSource,
   AlwaysFailingMailer,
+  createAggregateState,
   FailingChainSource,
   FakeChainSource,
   FakeMailer,
@@ -36,7 +36,7 @@ const OTHER = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
 
 describe("runWorker · ciclo y salud", () => {
   it("procesa un ciclo, avanza checkpoint y actualiza la salud (lag 0)", async () => {
-    const store = new SqliteCheckpointStore(":memory:");
+    const store = new InMemoryCheckpointStore();
     const mailer = new FakeMailer();
     const chain = new FakeChainSource(5n, [makeSaleEvent({ blockNumber: 3n })]);
     const health = createWorkerHealthState();
@@ -67,12 +67,11 @@ describe("runWorker · ciclo y salud", () => {
     );
 
     expect(mailer.sent).toHaveLength(1);
-    expect(store.getLastBlock(CONTRACT)).toBe(5);
+    expect(await store.getLastBlock(CONTRACT)).toBe(5);
     expect(health.lastBlock).toBe(5);
     expect(health.headBlock).toBe(5);
     expect(health.lag).toBe(0);
     expect(health.toReport().status).toBe("ok");
-    store.close();
   });
 
   it("marca salud down tras N fallos consecutivos del RPC", async () => {
@@ -80,7 +79,7 @@ describe("runWorker · ciclo y salud", () => {
     const processor = new SaleProcessor({
       chainSource: new FailingChainSource(),
       mailer: new FakeMailer(),
-      store: new SqliteCheckpointStore(":memory:"),
+      store: new InMemoryCheckpointStore(),
       logger: silentLogger(),
       contractAddress: CONTRACT,
       deploymentBlock: 0,
@@ -103,9 +102,9 @@ describe("runWorker · ciclo y salud", () => {
   });
 
   it("rebind: reinicia el checkpoint al deploymentBlock si cambió la dirección del contrato", async () => {
-    const store = new SqliteCheckpointStore(":memory:");
+    const store = new InMemoryCheckpointStore();
     // Estado previo de OTRO contrato.
-    store.setLastBlock(OTHER, 1234);
+    await store.setLastBlock(OTHER, 1234);
 
     const controller = new AbortController();
     const chain = new FakeChainSource(50n);
@@ -127,15 +126,62 @@ describe("runWorker · ciclo y salud", () => {
 
     // El nuevo contrato arranca su checkpoint en el deploymentBlock y procesa desde ahí.
     expect(chain.requestedRanges[0]?.from).toBe(40n);
-    expect(store.getLastBlock(CONTRACT)).toBe(50);
-    expect(store.getLastBlock(OTHER)).toBe(1234); // el estado del antiguo no se borra
-    store.close();
+    expect(await store.getLastBlock(CONTRACT)).toBe(50);
+    expect(await store.getLastBlock(OTHER)).toBe(1234); // el estado del antiguo no se borra
+  });
+
+  /**
+   * Caso real encontrado al verificar M4: se reinició Anvil y el contrato volvió a la MISMA
+   * dirección determinista, así que no hubo redeploy que detectar y el checkpoint de la cadena
+   * anterior (bloque 1890) quedó por delante de la cabeza nueva (367). El worker arrancaba en
+   * 1891, no encontraba bloques y se quedaba mudo con `/aggregates` a cero.
+   */
+  it("cadena reiniciada con la misma dirección: rebobina el checkpoint y vuelve a indexar", async () => {
+    const store = new InMemoryCheckpointStore();
+    await store.setLastBlock(CONTRACT, 1890);
+    const aggregateState = createAggregateState();
+    aggregateState.boundAddress = CONTRACT.toLowerCase();
+    aggregateState.lastBlock = 1890;
+    aggregateState.mintedCount = 7;
+    const aggregateStore = new InMemoryAggregateStore(aggregateState);
+
+    const controller = new AbortController();
+    // Cadena nueva: cabeza 50, con una venta en el bloque 45 que debe volver a agregarse.
+    const chain = new FakeChainSource(50n, [makeSaleEvent({ blockNumber: 45n })]);
+    const health = createWorkerHealthState();
+
+    await runWorker(
+      { contractAddress: CONTRACT, deploymentBlock: 40, pollIntervalMs: 1 },
+      {
+        chainSource: chain,
+        mailer: new FakeMailer(),
+        store,
+        aggregateStore,
+        logger: silentLogger(),
+        health,
+        signal: controller.signal,
+        sleep: async () => {
+          controller.abort();
+        },
+      },
+    );
+
+    // El checkpoint de email se rebobinó al bloque de despliegue y el catch-up llegó a la cabeza.
+    expect(chain.requestedRanges[0]?.from).toBe(41n);
+    expect(await store.getLastBlock(CONTRACT)).toBe(50);
+    // Los agregados de la cadena desaparecida no se arrastran: reset + reproceso de la nueva.
+    expect(aggregateStore.resetCount).toBe(1);
+    expect((await aggregateStore.getCounters()).mintedCount).toBe(0);
+    expect((await aggregateStore.getCounters()).lastBlock).toBe(50);
+    // Y la salud no miente con un lag negativo.
+    expect(health.lag).toBe(0);
+    expect(health.toReport().status).toBe("ok");
   });
 });
 
 describe("runWorker · salud de email se rearma tras recuperación SMTP (MAJOR 1)", () => {
   it("down tras agotar reintentos y vuelve a ok tras un envío posterior correcto", async () => {
-    const store = new SqliteCheckpointStore(":memory:");
+    const store = new InMemoryCheckpointStore();
     const health = createWorkerHealthState();
     const emailHooks = {
       onEmailDegraded: () => health.markEmailDegraded(),
@@ -189,7 +235,6 @@ describe("runWorker · salud de email se rearma tras recuperación SMTP (MAJOR 1
     expect(ok.sent).toHaveLength(1);
     expect(health.toReport().status).toBe("ok");
     expect(health.toReport().details?.emailDegraded).toBe(false);
-    store.close();
   });
 });
 
@@ -234,14 +279,13 @@ describe("runWorker · fallo de procesamiento NO se clasifica como fallo de RPC 
     // Sí queda degradado por "processing" (señal distinta del RPC).
     expect(report.details?.processingDegraded).toBe(true);
     // El checkpoint avanza pese al evento defectuoso (sin head-of-line blocking).
-    expect(store.getLastBlock(CONTRACT)).toBe(5);
+    expect(await store.getLastBlock(CONTRACT)).toBe(5);
     // La idempotencia se preserva: el evento que falló nunca se marcó como procesado.
-    expect(store.isProcessed("0xignored")).toBe(false);
-    store.close();
+    expect(await store.isProcessed("0xignored")).toBe(false);
   });
 
   it("un fallo de procesamiento puntual se recupera (processing vuelve a ok)", async () => {
-    const store = new SqliteCheckpointStore(":memory:");
+    const store = new InMemoryCheckpointStore();
     const event = makeSaleEvent({ blockNumber: 3n });
     const health = createWorkerHealthState();
 
@@ -273,7 +317,6 @@ describe("runWorker · fallo de procesamiento NO se clasifica como fallo de RPC 
 
     expect(health.toReport().details?.processingDegraded).toBe(false);
     expect(health.toReport().status).toBe("ok");
-    store.close();
   });
 });
 
@@ -290,7 +333,7 @@ describe("runWorker · rebind consciente de agregados (MAJOR 3)", () => {
       {
         chainSource: chain,
         mailer: new FakeMailer(),
-        store: new SqliteCheckpointStore(":memory:"),
+        store: new InMemoryCheckpointStore(),
         aggregateStore,
         logger: silentLogger(),
         health: createWorkerHealthState(),
@@ -305,41 +348,41 @@ describe("runWorker · rebind consciente de agregados (MAJOR 3)", () => {
   it("redeploy (cambia la dirección) → resetea el agregado a base y last_block=deploymentBlock", async () => {
     const aggregateStore = new InMemoryAggregateStore();
     // Estado previo del contrato ANTIGUO: agregado vinculado con una venta contabilizada.
-    aggregateStore.setBoundAddress(OTHER);
-    aggregateStore.applyEvent(makeSaleAggregateEvent({ saleTypeRaw: 0, blockNumber: 41n }));
-    aggregateStore.setLastBlock(45);
-    expect(aggregateStore.getCounters().soldCount).toBe(1);
+    await aggregateStore.setBoundAddress(OTHER);
+    await aggregateStore.applyEvent(makeSaleAggregateEvent({ saleTypeRaw: 0, blockNumber: 41n }));
+    await aggregateStore.setLastBlock(45);
+    expect((await aggregateStore.getCounters()).soldCount).toBe(1);
 
     // Arranque con el contrato NUEVO (sin ventas en el rango): debe resetear el agregado.
     await runOneCycle(CONTRACT, aggregateStore, new FakeChainSource(50n));
 
     expect(aggregateStore.resetCount).toBe(1);
-    expect(aggregateStore.getCounters().soldCount).toBe(0);
-    expect(aggregateStore.getCounters().primaryVolumeWei).toBe(0n);
-    expect(aggregateStore.getHistory()).toHaveLength(0);
-    expect(aggregateStore.getBoundAddress()).toBe(CONTRACT.toLowerCase());
+    expect((await aggregateStore.getCounters()).soldCount).toBe(0);
+    expect((await aggregateStore.getCounters()).primaryVolumeWei).toBe(0n);
+    expect(await aggregateStore.getHistory()).toHaveLength(0);
+    expect(await aggregateStore.getBoundAddress()).toBe(CONTRACT.toLowerCase());
   });
 
   it("misma dirección (sin redeploy) → NO resetea el agregado", async () => {
     const aggregateStore = new InMemoryAggregateStore();
-    aggregateStore.setBoundAddress(CONTRACT);
-    aggregateStore.applyEvent(makeSaleAggregateEvent({ saleTypeRaw: 0, blockNumber: 41n }));
-    aggregateStore.setLastBlock(45);
+    await aggregateStore.setBoundAddress(CONTRACT);
+    await aggregateStore.applyEvent(makeSaleAggregateEvent({ saleTypeRaw: 0, blockNumber: 41n }));
+    await aggregateStore.setLastBlock(45);
 
     await runOneCycle(CONTRACT, aggregateStore, new FakeChainSource(50n));
 
     expect(aggregateStore.resetCount).toBe(0);
-    expect(aggregateStore.getCounters().soldCount).toBe(1);
+    expect((await aggregateStore.getCounters()).soldCount).toBe(1);
   });
 
   it("primer arranque (sin vínculo previo) → NO resetea, sólo registra la dirección", async () => {
     const aggregateStore = new InMemoryAggregateStore();
-    expect(aggregateStore.getBoundAddress()).toBeNull();
+    expect(await aggregateStore.getBoundAddress()).toBeNull();
 
     await runOneCycle(CONTRACT, aggregateStore, new FakeChainSource(50n));
 
     expect(aggregateStore.resetCount).toBe(0);
-    expect(aggregateStore.getBoundAddress()).toBe(CONTRACT.toLowerCase());
+    expect(await aggregateStore.getBoundAddress()).toBe(CONTRACT.toLowerCase());
   });
 });
 
@@ -353,7 +396,7 @@ describe("runWorker · /health observa el pipeline de agregados (MAJOR 4)", () =
     const processor = new SaleProcessor({
       chainSource: aggChain,
       mailer: new FakeMailer(),
-      store: new SqliteCheckpointStore(":memory:"),
+      store: new InMemoryCheckpointStore(),
       logger: silentLogger(),
       contractAddress: CONTRACT,
       deploymentBlock: 0,
@@ -378,7 +421,7 @@ describe("runWorker · /health observa el pipeline de agregados (MAJOR 4)", () =
     const processor = new SaleProcessor({
       chainSource: chain,
       mailer: new FakeMailer(),
-      store: new SqliteCheckpointStore(":memory:"),
+      store: new InMemoryCheckpointStore(),
       logger: silentLogger(),
       contractAddress: CONTRACT,
       deploymentBlock: 0,
@@ -414,7 +457,7 @@ describe("runWorker · lag/health refleja el progreso persistido (MINOR 13)", ()
     // reflejar el progreso persistido (4), no el head ni un avance espurio.
     const ev1 = makeSaleEvent({ txHash: `0x${"a1".repeat(32)}`, blockNumber: 3n });
     const ev2 = makeSaleEvent({ txHash: `0x${"b2".repeat(32)}`, blockNumber: 5n });
-    const store = new SqliteCheckpointStore(":memory:");
+    const store = new InMemoryCheckpointStore();
     const chain = new FakeChainSource(6n, [ev1, ev2]);
     const health = createWorkerHealthState({ lagThreshold: 100 });
     const processor = new SaleProcessor({
@@ -434,10 +477,9 @@ describe("runWorker · lag/health refleja el progreso persistido (MINOR 13)", ()
       health,
     });
 
-    expect(store.getLastBlock(CONTRACT)).toBe(4);
+    expect(await store.getLastBlock(CONTRACT)).toBe(4);
     expect(health.lastBlock).toBe(4); // progreso PERSISTIDO, no el head (6)
     expect(health.headBlock).toBe(6);
     expect(health.lag).toBe(2);
-    store.close();
   });
 });

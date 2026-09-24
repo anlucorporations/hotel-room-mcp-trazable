@@ -1,76 +1,72 @@
-import Database from "better-sqlite3";
-import type { CheckpointStore } from "./types";
+import type { Pool } from "pg";
+import type { CheckpointStore, ProcessedLogLocation } from "./types";
 
 /**
- * Implementación de {@link CheckpointStore} sobre better-sqlite3 (T1.4).
+ * Implementación de {@link CheckpointStore} sobre PostgreSQL (D-09).
  *
- * Modo WAL para lecturas concurrentes y durabilidad razonable. La dirección de contrato se
- * normaliza a minúsculas (clave canónica). El fichero es configurable: en tests se usa un
- * fichero temporal o `:memory:`.
+ * El worker comparte la MISMA base que la web/API (una sola verdad); el esquema lo crea
+ * `runMigrations()` al arrancar:
+ *   - `worker_checkpoints`: última fila procesada por contrato (clave normalizada a minúsculas).
+ *   - `worker_processed_logs`: claves de idempotencia ya contabilizadas (PK `log_key`).
  *
  * SRP: esta clase sólo persiste estado; el cálculo de idempotencia (la clave) y el flujo de
  * negocio viven en el `SaleProcessor`.
+ *
+ * El `Pool` se inyecta (DIP) y es compartido por los stores del proceso: la clase no lo cierra
+ * (`close()` no libera el pool; lo cierra su propietario, `main`).
  */
-export class SqliteCheckpointStore implements CheckpointStore {
-  private readonly db: Database.Database;
-  private readonly selectBlock: Database.Statement<[string]>;
-  private readonly upsertBlock: Database.Statement<[string, number]>;
-  private readonly selectProcessed: Database.Statement<[string]>;
-  private readonly insertProcessed: Database.Statement<[string]>;
+export class PgCheckpointStore implements CheckpointStore {
+  constructor(private readonly pool: Pool) {}
 
-  constructor(filePath: string) {
-    this.db = new Database(filePath);
-    // `:memory:` no soporta WAL; sólo lo activamos para ficheros en disco.
-    if (filePath !== ":memory:") {
-      this.db.pragma("journal_mode = WAL");
-    }
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS checkpoint (
-        contract_address TEXT PRIMARY KEY,
-        last_block INTEGER NOT NULL
-      );
-      CREATE TABLE IF NOT EXISTS processed (
-        idempotency_key TEXT PRIMARY KEY
-      );
-    `);
+  async getLastBlock(contractAddress: string): Promise<number | null> {
+    const { rows } = await this.pool.query<{ last_block: string }>(
+      "SELECT last_block FROM worker_checkpoints WHERE contract_address = $1",
+      [normalize(contractAddress)],
+    );
+    const row = rows[0];
+    // `BIGINT` llega como string en `pg`; el dominio del worker lo usa como `number`.
+    return row === undefined ? null : Number(row.last_block);
+  }
 
-    this.selectBlock = this.db.prepare(
-      "SELECT last_block FROM checkpoint WHERE contract_address = ?",
-    );
-    this.upsertBlock = this.db.prepare(
-      `INSERT INTO checkpoint (contract_address, last_block) VALUES (?, ?)
-       ON CONFLICT(contract_address) DO UPDATE SET last_block = excluded.last_block`,
-    );
-    this.selectProcessed = this.db.prepare(
-      "SELECT 1 FROM processed WHERE idempotency_key = ?",
-    );
-    this.insertProcessed = this.db.prepare(
-      "INSERT OR IGNORE INTO processed (idempotency_key) VALUES (?)",
+  async setLastBlock(contractAddress: string, block: number): Promise<void> {
+    await this.pool.query(
+      `INSERT INTO worker_checkpoints (contract_address, last_block, updated_at)
+       VALUES ($1, $2, NOW())
+       ON CONFLICT (contract_address)
+       DO UPDATE SET last_block = EXCLUDED.last_block, updated_at = NOW()`,
+      [normalize(contractAddress), block],
     );
   }
 
-  getLastBlock(contractAddress: string): number | null {
-    const row = this.selectBlock.get(normalize(contractAddress)) as
-      | { last_block: number }
-      | undefined;
-    return row?.last_block ?? null;
+  async isProcessed(idempotencyKey: string): Promise<boolean> {
+    const { rows } = await this.pool.query(
+      "SELECT 1 FROM worker_processed_logs WHERE log_key = $1",
+      [idempotencyKey],
+    );
+    return rows.length > 0;
   }
 
-  setLastBlock(contractAddress: string, block: number): void {
-    this.upsertBlock.run(normalize(contractAddress), block);
+  async markProcessed(
+    idempotencyKey: string,
+    location?: ProcessedLogLocation,
+  ): Promise<void> {
+    await this.pool.query(
+      `INSERT INTO worker_processed_logs (log_key, block_number, contract_address, processed_at)
+       VALUES ($1, $2, $3, NOW())
+       ON CONFLICT (log_key) DO NOTHING`,
+      [
+        idempotencyKey,
+        location?.blockNumber ?? null,
+        location === undefined ? null : normalize(location.contractAddress),
+      ],
+    );
   }
 
-  isProcessed(idempotencyKey: string): boolean {
-    return this.selectProcessed.get(idempotencyKey) !== undefined;
-  }
-
-  markProcessed(idempotencyKey: string): void {
-    this.insertProcessed.run(idempotencyKey);
-  }
-
-  close(): void {
-    this.db.close();
+  /** El pool es compartido e inyectado: su cierre lo hace `main` (`closeDbPool`), no el store. */
+  async close(): Promise<void> {
+    // Intencionadamente vacío (el store no es propietario del pool).
   }
 }
 
+/** Dirección de contrato canónica (minúsculas). */
 const normalize = (address: string): string => address.toLowerCase();

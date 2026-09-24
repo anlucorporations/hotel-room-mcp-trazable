@@ -10,6 +10,7 @@ import {
   GETLOGS_MAX_RANGE,
   decodeTokenId,
   roomTypeOf,
+  toNightType,
   NFTsRepository,
   type NightType,
   type SaleType,
@@ -21,9 +22,18 @@ import { serverPublicClient } from "@/lib/server-client";
 const nftsRepo = new NFTsRepository();
 
 /**
- * Lectura del catálogo:
- *   1. Prioridad: Consulta rápida a base de datos PostgreSQL indexada vía NFTsRepository.
- *   2. Resiliencia: Fallback a lectura RPC sin indexador (ADR-09).
+ * Lectura de la tienda, en **dos fuentes separadas** (D-07):
+ *
+ *   - `fetchCatalog()`     → catálogo PRIMARIO: inventario `DISPONIBLE` del hotel (RF-01).
+ *   - `fetchResaleMarket()`→ mercado SECUNDARIO: solo listados de reventa vigentes.
+ *
+ * Hasta M4 la misma función mezclaba ambas y el catálogo mostraba reventas con una etiqueta;
+ * D-07 lo prohíbe: cada flujo vive en su vista y construye su propio calldata (`buy` vs
+ * `buyResale`). Comparten el escaneo paginado de logs y la ventana de fechas (DRY).
+ *
+ * Fuente primaria: base de datos PostgreSQL indexada vía `NFTsRepository`; si no está
+ * disponible, degradación elegante a lectura RPC sin indexador (ADR-09). El mercado secundario
+ * se lee siempre on-chain: `listingOf` es el estado autoritativo y no admite caché intermedia.
  */
 export interface NightView {
   readonly tokenId: string;
@@ -107,8 +117,36 @@ function windowBounds(): { today: number; end: number } {
 const inWindow = (date: number, today: number, end: number): boolean =>
   date >= today && date <= end;
 
-/** Noches comprables (DISPONIBLE + LISTADA_SECUNDARIO) en la ventana, ordenadas por fecha. */
+/**
+ * ¿El contrato canónico está en pausa? (`Pausable`, M7).
+ *
+ * `buy`, `buyResale`, `mint`, `markCheckedIn` y `burnExpired` llevan `whenNotPaused`: con el
+ * contrato en pausa revierten con `EnforcedPause`. Hasta M7 ninguna vista lo miraba, así que `/` y
+ * `/reventa` seguían ofreciendo compras que la cadena iba a rechazar (deuda anotada por la
+ * verificación adversarial de M4 y asignada a este hito).
+ *
+ * Falla en ABIERTO hacia el llamante (lanza): quien decide es la vista, que puede distinguir «el
+ * contrato está en pausa» de «no se pudo comprobar» y decir la verdad en cada caso.
+ */
+export async function fetchContractPaused(): Promise<boolean> {
+  const client = serverPublicClient();
+  const paused = await client.readContract({
+    address: contractAddress,
+    abi: hotelNightsAbi,
+    functionName: "paused",
+  });
+  return paused === true;
+}
+
+/**
+ * Catálogo PRIMARIO (RF-01, D-07): noches `DISPONIBLE` del hotel dentro de la ventana.
+ *
+ * Ya NO incorpora los listados de reventa: esos viven en `fetchResaleMarket()` y en su propia
+ * vista. Una noche vendida en primaria deja de ofrecerse aquí aunque después se revenda.
+ */
 export async function fetchCatalog(): Promise<NightView[]> {
+  const { today, end } = windowBounds();
+
   // 1. Intento primario vía base de datos off-chain
   try {
     const catalog = await nftsRepo.queryCatalog({ status: "AVAILABLE", limit: 100 });
@@ -120,7 +158,11 @@ export async function fetchCatalog(): Promise<NightView[]> {
           const m = parts[1] ?? 7;
           const d = parts[2] ?? 20;
           const dateYYYYMMDD = y * 10_000 + m * 100 + d;
-          const type: NightType = nft.roomType.toLowerCase() === "suite" ? "suite" : "simple";
+          // El tipo del índice es el del maestro (`SIMPLE`/`DOBLE`/`SUITE`). Antes esto era
+          // `=== "suite" ? "suite" : "simple"`, así que una habitación doble se servía como simple:
+          // el tipo que el cliente pidió desaparecía al pasar por la base de datos (M9).
+          const type: NightType =
+            toNightType(nft.roomType) ?? roomTypeOf(Number(nft.roomNumber)) ?? "simple";
           return {
             tokenId: nft.tokenId,
             room: nft.roomNumber,
@@ -130,6 +172,10 @@ export async function fetchCatalog(): Promise<NightView[]> {
             saleType: "PRIMARY" as SaleType,
           };
         })
+        // La ventana se aplica TAMBIÉN al camino de BD (hallazgo de la verificación de M4): el
+        // índice puede contener noches caducadas o fuera de los 90 días, y `buy` las rechazaría
+        // con `NightExpired`. El catálogo no debe ofrecer lo que la cadena va a revertir.
+        .filter((night) => inWindow(night.dateYYYYMMDD, today, end))
         .sort((a, b) => a.dateYYYYMMDD - b.dateYYYYMMDD);
     }
   } catch (dbErr) {
@@ -142,13 +188,11 @@ export async function fetchCatalog(): Promise<NightView[]> {
   const address = contractAddress;
   const head = await client.getBlockNumber();
 
-  const [mints, sales, listed] = await Promise.all([
+  const [mints, sales] = await Promise.all([
     paginatedLogs(client, address, MINT_EVENT, deploymentBlock, head),
     paginatedLogs(client, address, SALE_EVENT, deploymentBlock, head),
-    paginatedLogs(client, address, LISTED_EVENT, deploymentBlock, head),
   ]);
 
-  const { today, end } = windowBounds();
   const sold = new Set(sales.map((log) => (log.args.tokenId ?? 0n).toString()));
   const byToken = new Map<string, NightView>();
 
@@ -166,31 +210,79 @@ export async function fetchCatalog(): Promise<NightView[]> {
     byToken.set(id, { tokenId: id, room: Number(room), dateYYYYMMDD: date, type, priceWei: price.toString(), saleType: "PRIMARY" });
   }
 
-  // LISTADA_SECUNDARIO: candidatas de `Listed`, confirmadas con `listingOf` (estado actual).
-  // Cada lectura se aísla: un revert puntual no debe tumbar todo el catálogo (resiliencia).
+  return [...byToken.values()].sort((a, b) => a.dateYYYYMMDD - b.dateYYYYMMDD);
+}
+
+/**
+ * Mercado SECUNDARIO (D-07): listados de reventa vigentes, con su propio flujo de compra
+ * (`buyResale`). La fuente es on-chain y el estado autoritativo es `listingOf`.
+ *
+ * Se descartan las noches que el contrato rechazaría al comprarlas, para no ofrecer una compra
+ * imposible (la UI no debe anunciar lo que la cadena va a revertir):
+ *   - `active == false`  → listado cancelado o ya vendido (`NotListed`).
+ *   - `isCheckedIn`      → noche consumida en recepción después de listarse (`NightNotResellable`).
+ *   - fuera de ventana   → fecha pasada (`NightExpired`).
+ */
+export async function fetchResaleMarket(): Promise<NightView[]> {
+  const client = serverPublicClient();
+  const address = contractAddress;
+  const head = await client.getBlockNumber();
+
+  const listed = await paginatedLogs(client, address, LISTED_EVENT, deploymentBlock, head);
   const candidates = [...new Set(listed.map((log) => (log.args.tokenId ?? 0n).toString()))];
-  // Concurrencia acotada también en las lecturas `listingOf` (MAJOR#5).
-  const listings = await mapWithConcurrency(candidates, RPC_CONCURRENCY, async (id) => {
+
+  // Cada lectura se aísla: un revert puntual no debe tumbar todo el mercado (resiliencia).
+  const states = await mapWithConcurrency(candidates, RPC_CONCURRENCY, async (id) => {
     try {
-      return await client.readContract({
+      const listing = await client.readContract({
         address,
         abi: hotelNightsAbi,
         functionName: "listingOf",
         args: [BigInt(id)],
       });
+      if (!listing?.active) return null;
+      const checkedIn = await client.readContract({
+        address,
+        abi: hotelNightsAbi,
+        functionName: "isCheckedIn",
+        args: [BigInt(id)],
+      });
+      return { listing, checkedIn: checkedIn === true };
     } catch {
       return null;
     }
   });
+
+  const { today, end } = windowBounds();
+  const byToken = new Map<string, NightView>();
   candidates.forEach((id, i) => {
-    const listing = listings[i];
-    if (!listing?.active) return;
+    const state = states[i];
+    if (!state || state.checkedIn) return;
     const { room, dateYYYYMMDD: date } = decodeTokenId(BigInt(id));
     if (!inWindow(date, today, end)) return;
     const type = roomTypeOf(room);
     if (!type) return;
-    byToken.set(id, { tokenId: id, room, dateYYYYMMDD: date, type, priceWei: listing.price.toString(), saleType: "SECONDARY" });
+    byToken.set(id, {
+      tokenId: id,
+      room,
+      dateYYYYMMDD: date,
+      type,
+      priceWei: state.listing.price.toString(),
+      saleType: "SECONDARY",
+    });
   });
+
+  /**
+   * Si había listados que leer y NINGUNA lectura respondió, el problema no es «no hay reventa»
+   * sino que no se pudo consultar la cadena: devolver una lista vacía sería una mentira que
+   * oculta noches comprables (hallazgo de la verificación de M4). Se propaga para que la vista
+   * muestre su estado degradado, que sí es honesto.
+   */
+  if (candidates.length > 0 && states.every((state) => state === null)) {
+    throw new Error(
+      `No se pudo leer ninguno de los ${candidates.length} listados de reventa (¿RPC caído?).`,
+    );
+  }
 
   return [...byToken.values()].sort((a, b) => a.dateYYYYMMDD - b.dateYYYYMMDD);
 }

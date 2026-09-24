@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { isAddress, type Address } from "viem";
 import { useReadContract } from "wagmi";
-import { ALL_ROLE_NAMES, ROLES, type RoleName } from "@hotel/shared";
+import { ALL_ROLE_NAMES, ROLES, type RoleName } from "@hotel/shared/domain";
 import { hotelNightsAbi } from "@hotel/shared/abi";
 import { contractAddress } from "@/config/chain";
 import { TxModal } from "@/components/buy/TxModal";
@@ -22,7 +22,7 @@ const FIELD = "min-h-touch w-full rounded-brand border border-line bg-shell px-3
 const ROLE_LABEL: Readonly<Record<RoleName, string>> = {
   DEFAULT_ADMIN_ROLE: "DEFAULT_ADMIN",
   MINTER_ROLE: "MINTER",
-  ROYALTY_ADMIN_ROLE: "ROYALTY_ADMIN",
+  RECEPTION_ROLE: "RECEPTION",
   PAUSER_ROLE: "PAUSER",
   BURNER_ROLE: "BURNER",
   TREASURER_ROLE: "TREASURER",
@@ -34,7 +34,7 @@ type Pending =
   | { kind: "transfer"; account: Address };
 
 /**
- * Roles y ownership (CU-16, DEFAULT_ADMIN). El control REAL del contrato lo gobierna
+ * Roles y ownership (CU-16, docs/SRS.md §9, DEFAULT_ADMIN). El control REAL del contrato lo gobierna
  * `DEFAULT_ADMIN_ROLE` (super-admin), no `owner()` (Ownable2Step), que es solo informativo: por
  * eso la UI separa visualmente «Propiedad (informativa)» del super-admin real y guía el handover
  * REAL (grant DEFAULT_ADMIN al nuevo + renounce del antiguo) (UX#25). Las acciones destructivas o

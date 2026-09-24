@@ -6,7 +6,7 @@ import {
   decodeCooldownAvailableAt,
   deriveFaucetAvailability,
   type FaucetAvailability,
-} from "@hotel/shared";
+} from "@hotel/shared/domain";
 import { faucetAbi } from "@hotel/shared/abi";
 import { faucetAddress } from "@/config/chain";
 import { deriveTxStatus, type TxStatus } from "@/components/tx/txStatus";
@@ -46,7 +46,7 @@ const DISABLED: Omit<UseFaucetResult, "dispense" | "reset"> = {
 };
 
 /**
- * Estado del faucet de pruebas (RF-21 / CU-PR-01) para la wallet conectada. Responsabilidad
+ * Estado del faucet de pruebas (RF-21 / CU-PR-01, docs/SRS.md §9) para la wallet conectada. Responsabilidad
  * única: leer el estado on-chain (cooldown/saldo) y orquestar `dispense()`. Toda la lógica
  * pura (disponibilidad, decodificación del revert de cooldown) vive en `@hotel/shared`.
  *

@@ -89,7 +89,7 @@ const unavailable = (reason: string): NextResponse => {
 };
 
 /**
- * Orquestación del asistente IA server-side (RF-12, CU-08). El LLM (Anthropic) conversa con el
+ * Orquestación del asistente IA server-side (RF-12, CU-08, docs/SRS.md §9). El LLM (Anthropic) conversa con el
  * MCP por HTTP; el secreto `ANTHROPIC_API_KEY` solo vive aquí. Toda compra preparada se valida
  * server-side antes de devolverse. Cualquier fallo (sin clave, MCP/RPC caídos) → 503 para que
  * la UI muestre `assistant-unavailable` y ofrezca la navegación manual (08e).

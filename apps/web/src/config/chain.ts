@@ -1,8 +1,8 @@
-import { anvilChain, besuChain, CHAIN_ID } from "@hotel/shared";
+import { anvilChain, besuChain, CHAIN_ID } from "@hotel/shared/domain";
 import { defineChain, type Address, type Chain } from "viem";
 
 /**
- * Configuración de cadena/contrato para el cliente (CU-17). Dirigida por `NEXT_PUBLIC_*`
+ * Configuración de cadena/contrato para el cliente (CU-17, docs/SRS.md §9). Dirigida por `NEXT_PUBLIC_*`
  * (inyectadas en build); por defecto el proyecto usa la chainId canónica (81234, espejo de
  * Besu). En dev se puede apuntar a otra Anvil local (p. ej. 31337) vía `NEXT_PUBLIC_CHAIN_ID`.
  */
@@ -13,8 +13,12 @@ export const rpcUrl: string = process.env.NEXT_PUBLIC_RPC_URL ?? "http://127.0.0
 export const contractAddress: Address =
   (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS as Address | undefined) ?? DEV_CONTRACT;
 
-export const marketplaceAddress: Address =
-  (process.env.NEXT_PUBLIC_MARKETPLACE_ADDRESS as Address | undefined) ?? contractAddress;
+/**
+ * NOTA (D-07): aquí vivía la dirección del marketplace de la generación legacy y su variable
+ * de entorno. Se retiró junto con su ABI: existe un único destino posible para comprar,
+ * revender y cobrar —`contractAddress` (`HotelNights`)— y un guardián de pruebas
+ * (`legacy-target-guardian.test.ts`) impide que vuelva a colarse un segundo destino.
+ */
 
 /**
  * Faucet de pruebas (RF-21, ADR-13): `null` si no se configura `NEXT_PUBLIC_FAUCET_ADDRESS`.

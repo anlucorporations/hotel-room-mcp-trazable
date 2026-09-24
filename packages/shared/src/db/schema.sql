@@ -59,13 +59,16 @@ CREATE INDEX IF NOT EXISTS idx_sales_buyer ON sale_events(buyer);
 CREATE INDEX IF NOT EXISTS idx_sales_timestamp ON sale_events(block_timestamp DESC);
 
 -- 4. Tabla: admin_sessions (Sesiones y Refresh Token Rotation)
+-- Traza PSEUDONIMIZADA (ADR-24, decisión de M9): ip_address y user_agent guardan un HMAC-SHA256 con
+-- clave ("hmac-sha256:" + 64 hex), nunca el valor en claro. Nulas: un acceso sin datos de origen no
+-- tiene nada que guardar.
 CREATE TABLE IF NOT EXISTS admin_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     username VARCHAR(100) NOT NULL,
     role VARCHAR(30) NOT NULL, -- DEFAULT_ADMIN_ROLE, RECEPTION_ROLE
     refresh_token_hash VARCHAR(64) NOT NULL, -- SHA-256 del refresh token
-    ip_address VARCHAR(45) NOT NULL,
-    user_agent TEXT NOT NULL,
+    ip_address VARCHAR(80) NULL,
+    user_agent VARCHAR(80) NULL,
     revoked BOOLEAN NOT NULL DEFAULT FALSE,
     expires_at TIMESTAMP NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
@@ -73,6 +76,7 @@ CREATE TABLE IF NOT EXISTS admin_sessions (
 
 CREATE INDEX IF NOT EXISTS idx_sessions_refresh ON admin_sessions(refresh_token_hash);
 CREATE INDEX IF NOT EXISTS idx_sessions_user_active ON admin_sessions(username, revoked, expires_at);
+CREATE INDEX IF NOT EXISTS idx_sessions_expiry ON admin_sessions(expires_at);
 
 -- 5. Tabla: mfa_recovery_codes (Códigos de rescate de respaldo de un solo uso)
 CREATE TABLE IF NOT EXISTS mfa_recovery_codes (

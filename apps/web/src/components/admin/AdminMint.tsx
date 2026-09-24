@@ -3,14 +3,19 @@
 import { useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { parseEther } from "viem";
+import { useReadContract } from "wagmi";
+import { hotelNightsAbi } from "@hotel/shared/abi";
+import { contractAddress } from "@/config/chain";
 import {
   buildNightMetadata,
   dateToYYYYMMDD,
   isRoomInMaster,
   isValidCalendarDate,
   roomTypeOf,
+  toRoomTypeDb,
   encodeTokenId,
-} from "@hotel/shared";
+  type RoomTypeDb,
+} from "@hotel/shared/domain";
 import { TxModal } from "@/components/buy/TxModal";
 import { AdminCard } from "./AdminPanel";
 import { useMintNight } from "./useMintNight";
@@ -31,9 +36,10 @@ function parseDateInput(value: string): { yyyymmdd: number; valid: boolean } {
 }
 
 /**
- * Publicar noche (CU-02): formulario de minteo dentro del AdminLayout. El acceso/sesión SIWE y
- * el gating por rol MINTER los gobierna el AdminLayout; aquí solo se valida (maestro/fecha/precio)
- * y se firma la tx, con confirmación legible en `TxModal`.
+ * Publicar noche (CU-02, docs/SRS.md §9): formulario de minteo dentro del AdminLayout. La sesión canónica
+ * (usuario + contraseña + TOTP, D-04) y el gating por rol los gobierna el AdminLayout; aquí se
+ * valida (maestro/fecha/precio), se re-confirma el TOTP y se firma la tx, con confirmación
+ * legible en `TxModal`.
  */
 export function AdminMint() {
   const t = useTranslations("admin");
@@ -45,6 +51,7 @@ export function AdminMint() {
   const [priceEth, setPriceEth] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [mintedTokenId, setMintedTokenId] = useState<string | null>(null);
+  const [pendingAnchor, setPendingAnchor] = useState(false);
 
   // Batch minting states
   const [isBatchMode, setIsBatchMode] = useState(false);
@@ -57,6 +64,14 @@ export function AdminMint() {
   const [isSubmittingMfa, setIsSubmittingMfa] = useState(false);
 
   const busy = status === "signing" || status === "pending" || isSubmittingMfa;
+  // Pausa del contrato (M8): `mint` lleva `whenNotPaused`; con el contrato en pausa el botón se
+  // retira para no ofrecer una transacción que la cadena va a revertir con `EnforcedPause`.
+  const paused = useReadContract({
+    address: contractAddress,
+    abi: hotelNightsAbi,
+    functionName: "paused",
+  });
+  const isPaused = paused.data === true;
   const txErrorKind = mintError ? classifyAdminTxError(mintError) : null;
   const errorId = "mint-form-error";
   const hasFormError = Boolean(formError);
@@ -65,6 +80,7 @@ export function AdminMint() {
     event.preventDefault();
     setFormError(null);
     setMintedTokenId(null);
+    setPendingAnchor(false);
     reset();
 
     const roomNum = Number(room);
@@ -99,7 +115,7 @@ export function AdminMint() {
       // Build batch items
       const items: Array<{
         roomNumber: number;
-        roomType: "SIMPLE" | "SUITE";
+        roomType: RoomTypeDb;
         checkInDate: string;
         basePriceWei: string;
       }> = [];
@@ -115,19 +131,25 @@ export function AdminMint() {
 
         items.push({
           roomNumber: roomNum,
-          roomType: (type === "suite" ? "SUITE" : "SIMPLE"),
+          // El tipo lo decide el maestro y se traduce a su vocabulario. Antes era
+          // `=== "suite" ? "SUITE" : "SIMPLE"`, así que una habitación doble entraba como simple
+          // (M9): ahora persiste su tipo y el catálogo puede filtrarlo.
+          roomType: toRoomTypeDb(type) ?? "SIMPLE",
           checkInDate: dateStr,
           basePriceWei,
         });
       }
 
-      const res = await fetch("/api/admin/mint", {
+      // `allowUnanchored=true` es EXPLÍCITO: esta llamada registra la noche antes de que la
+      // wallet firme el minteo, así que todavía no existe hash de transacción. El servidor
+      // persiste la fila como PENDIENTE DE ANCLAJE (`on_chain_anchored = FALSE`, hash centinela
+      // cero) y la excluye del catálogo hasta que se ancle; nunca se escribe un hash inventado.
+      const res = await fetch("/api/admin/mint?allowUnanchored=true", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-mfa-token": mfaCode.trim(),
         },
-        body: JSON.stringify({ items }),
+        body: JSON.stringify({ items, confirmTotpCode: mfaCode.trim(), allowUnanchored: true }),
       });
 
       const data = await res.json();
@@ -140,6 +162,7 @@ export function AdminMint() {
       // Close MFA Modal
       setIsMfaOpen(false);
       setIsSubmittingMfa(false);
+      setPendingAnchor(data.onChainAnchored === false);
 
       // Trigger on-chain single mint if 1 item
       const { yyyymmdd } = parseDateInput(date);
@@ -151,8 +174,8 @@ export function AdminMint() {
         JSON.stringify(metadata),
       )}`;
       mint(roomNum, yyyymmdd, parseEther(priceEth || "0"), metadataURI);
-    } catch (err: any) {
-      setMfaError(err?.message || t("mfaError"));
+    } catch (err: unknown) {
+      setMfaError(err instanceof Error ? err.message : t("mfaError"));
       setIsSubmittingMfa(false);
     }
   }
@@ -236,11 +259,19 @@ export function AdminMint() {
           />
         </label>
 
+        {/* Pausa del contrato (M8 · H4 de la verificación de M7): `mint` es `whenNotPaused`, así
+            que con el sistema en pausa no se ofrece la operación en lugar de dejar que revierta. */}
+        {isPaused && (
+          <p data-testid="mint-paused" role="status" className="text-small text-terracotta-text">
+            {t("pausedWarning")}
+          </p>
+        )}
+
         <button
           type="submit"
           data-testid="mint-action"
           id="mint-submit"
-          disabled={busy}
+          disabled={busy || isPaused}
           className={SUBMIT}
         >
           {busy ? t("minting") : t("mint")}
@@ -259,6 +290,11 @@ export function AdminMint() {
         {mintedTokenId && (
           <p data-testid="mint-success" className="text-sea-deep font-semibold">
             {t("minted", { tokenId: mintedTokenId })}
+          </p>
+        )}
+        {mintedTokenId && pendingAnchor && (
+          <p data-testid="mint-pending-anchor" role="status" className="text-small text-ink-soft">
+            {t("mintPendingAnchor")}
           </p>
         )}
       </form>

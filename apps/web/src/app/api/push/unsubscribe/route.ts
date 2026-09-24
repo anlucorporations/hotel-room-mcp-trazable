@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest} from "next/server";
+import { NextResponse } from "next/server";
 import { WebPushService, NFTsRepository } from "@hotel/shared";
 
 export const dynamic = "force-dynamic";
@@ -38,10 +39,14 @@ async function handleUnsubscribe(request: NextRequest): Promise<NextResponse> {
       status: "UNSUBSCRIBED",
       message: "Suscripción a notificaciones cancelada exitosamente",
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("[API /api/push/unsubscribe] Error:", error);
     return NextResponse.json(
-      { error: "UNSUBSCRIBE_FAILED", message: error?.message || "Error al cancelar suscripción push" },
+      {
+        error: "UNSUBSCRIBE_FAILED",
+        message:
+          error instanceof Error && error.message ? error.message : "Error al cancelar suscripción push",
+      },
       { status: 500 },
     );
   }

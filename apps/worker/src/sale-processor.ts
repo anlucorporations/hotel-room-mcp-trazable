@@ -11,7 +11,7 @@ import type {
 } from "./types";
 
 /**
- * Núcleo del mini-worker (T1.4 / CU-10 / RF-09): convierte eventos `Sale` en avisos por email,
+ * Núcleo del mini-worker (T1.4 / CU-10 / RF-09, docs/SRS.md §9): convierte eventos `Sale` en avisos por email,
  * de forma idempotente y resistente a reinicios.
  *
  * Garantía de entrega: at-least-once con ventana mínima de duplicado. En la práctica se envía
@@ -24,7 +24,7 @@ import type {
  * reintentar en el siguiente. Como sólo se marca `markProcessed` tras una entrega correcta, en el
  * reintento los eventos ya entregados se saltan (idempotencia) y sólo se reenvía el fallido.
  *
- * No conoce viem, nodemailer ni SQLite: recibe sus colaboradores por construcción (DIP), por
+ * No conoce viem, nodemailer ni `pg`: recibe sus colaboradores por construcción (DIP), por
  * lo que es testeable con fakes sin red ni SMTP reales.
  */
 export interface BackoffOptions {
@@ -42,7 +42,7 @@ export interface SaleProcessorDeps {
   readonly store: CheckpointStore;
   readonly logger: Logger;
   readonly contractAddress: string;
-  /** Bloque de despliegue: límite inferior del catch-up (DISEÑO §14). */
+  /** Bloque de despliegue: límite inferior del catch-up (ADR-09). */
   readonly deploymentBlock: number;
   /** Configuración del backoff ante fallo SMTP. */
   readonly backoff?: BackoffOptions;
@@ -144,7 +144,7 @@ export class SaleProcessor {
    * progreso real entregado tras un crash parcial: si un email no se entregó, el checkpoint queda
    * detrás de `head` y el lag de `/health` lo muestra honestamente. `null` si nunca se persistió.
    */
-  getPersistedLastBlock(): number | null {
+  getPersistedLastBlock(): Promise<number | null> {
     return this.store.getLastBlock(this.contractAddress);
   }
 
@@ -169,7 +169,7 @@ export class SaleProcessor {
    * email no entregado en mitad del rango).
    */
   async catchUp(headBlock: bigint): Promise<bigint> {
-    const checkpoint = this.store.getLastBlock(this.contractAddress);
+    const checkpoint = await this.store.getLastBlock(this.contractAddress);
     const resumeFrom = checkpoint === null ? this.deploymentBlock : checkpoint + 1;
     let fromBlock = BigInt(Math.max(resumeFrom, this.deploymentBlock));
 
@@ -192,12 +192,15 @@ export class SaleProcessor {
           // No entregado: el checkpoint no debe pasar de aquí. Lo dejamos en el bloque anterior
           // (puede contener eventos previos ya entregados) y terminamos para reintentar el ciclo.
           const safeBlock = Number(event.blockNumber) - 1;
-          this.store.setLastBlock(this.contractAddress, Math.max(safeBlock, 0));
+          await this.store.setLastBlock(
+            this.contractAddress,
+            Math.max(safeBlock, 0),
+          );
           return event.blockNumber - 1n;
         }
       }
 
-      this.store.setLastBlock(this.contractAddress, Number(toBlock));
+      await this.store.setLastBlock(this.contractAddress, Number(toBlock));
       fromBlock = toBlock + 1n;
     }
 
@@ -245,7 +248,7 @@ export class SaleProcessor {
    */
   async processSale(event: SaleEvent): Promise<ProcessOutcome> {
     const key = idempotencyKey(event);
-    if (this.store.isProcessed(key)) {
+    if (await this.store.isProcessed(key)) {
       return "delivered";
     }
 
@@ -260,7 +263,11 @@ export class SaleProcessor {
     // Envío correcto: rearma la salud de email (MAJOR 1). Tras `markProcessed` queda la ventana
     // mínima de duplicado: si el proceso cae aquí, el email ya salió pero la clave no se marcó.
     this.health.onEmailRecovered?.();
-    this.store.markProcessed(key);
+    // El bloque y el contrato son metadatos de trazabilidad del log ya contabilizado (D-09).
+    await this.store.markProcessed(key, {
+      blockNumber: Number(event.blockNumber),
+      contractAddress: this.contractAddress,
+    });
     this.logger.info(
       { tokenId: notification.tokenId.toString(), txHash: notification.txHash },
       "aviso de venta enviado",

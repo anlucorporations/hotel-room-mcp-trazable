@@ -3,7 +3,7 @@ pragma solidity 0.8.24;
 
 /**
  * @title RoomMaster
- * @notice Maestro de habitaciones on-chain (RF-18a, DISEÑO §5). Fuente única on-chain del
+ * @notice Maestro de habitaciones on-chain (RF-18a, ADR-02). Fuente única on-chain del
  *         mismo criterio que el paquete shared (room-master.ts): planta baja 101-130,
  *         primera 201-220 (50 habitaciones); tipo por rango.
  */

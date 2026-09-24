@@ -1,13 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
-import type { Address } from "viem";
+import type { NextRequest} from "next/server";
+import { NextResponse } from "next/server";
 import {
   NFTsRepository,
   NotificationQueueService,
   createTicketJWS,
-  verifyEIP712TicketRequest,
-  QR_REDOWNLOAD_DOMAIN,
 } from "@hotel/shared";
-import { contractAddress, activeChain } from "@/config/chain";
+import { requireTicketOwnership } from "@/lib/ticket-ownership";
 
 export const dynamic = "force-dynamic";
 
@@ -25,11 +23,12 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 /**
  * POST /api/qr/:tokenId/send-email
  *
- * Headers opcionales/recomendados de titularidad:
+ * Headers OBLIGATORIOS de titularidad (D-05):
  *   - x-wallet-address: Dirección Ethereum del titular
  *   - x-signature: Firma EIP-712
- *   - x-nonce: Nonce aleatorio
- *   - x-expires-at: Timestamp Unix de expiración de la firma
+ *   - x-nonce: Nonce aleatorio (de un solo uso)
+ *   - x-expires-at: Timestamp Unix de expiración (máximo 5 minutos)
+ * Sin ellos la respuesta es 401 y no se envía ningún resguardo.
  *
  * Body JSON:
  *   - email: Correo de destino efímero
@@ -68,37 +67,12 @@ export async function POST(
       );
     }
 
-    // Verificación de posesión mediante EIP-712 si se proveen las cabeceras
-    const walletAddress = request.headers.get("x-wallet-address") as Address | null;
-    const signature = request.headers.get("x-signature") as `0x${string}` | null;
-    const nonce = request.headers.get("x-nonce");
-    const expiresAtHeader = request.headers.get("x-expires-at");
+    // Titularidad OBLIGATORIA (D-05) y ON-CHAIN (M7): no se envía ningún resguardo sin la firma
+    // del propietario, y el propietario lo decide la cadena (`ownerOf`), no el índice.
+    const ownership = await requireTicketOwnership(request, tokenId, nft.currentOwner);
+    if (!ownership.ok) return ownership.response;
 
-    if (walletAddress && signature && nonce && expiresAtHeader) {
-      const domain = {
-        ...QR_REDOWNLOAD_DOMAIN,
-        chainId: activeChain.id,
-        verifyingContract: contractAddress,
-      };
-
-      const isValid = await verifyEIP712TicketRequest(
-        walletAddress,
-        signature,
-        BigInt(tokenId),
-        nonce,
-        BigInt(expiresAtHeader),
-        domain,
-      );
-
-      if (!isValid || nft.currentOwner.toLowerCase() !== walletAddress.toLowerCase()) {
-        return NextResponse.json(
-          { error: "UNAUTHORIZED", message: "Firma EIP-712 inválida o wallet no coincide con el propietario" },
-          { status: 401 },
-        );
-      }
-    }
-
-    // Emisión del ticket JWS
+    // Emisión del ticket JWS (de un solo uso: lleva su propio `jti`) con el dueño on-chain.
     const nowSec = Math.floor(Date.now() / 1000);
     const expiresAtSec = nowSec + 3600 * 24 * 7; // Validez de 7 días
 
@@ -107,7 +81,7 @@ export async function POST(
       roomNumber: nft.roomNumber,
       checkInDate: nft.checkInDate,
       roomType: nft.roomType,
-      guestWallet: nft.currentOwner,
+      guestWallet: ownership.onChainOwner,
       issuedAt: nowSec,
       expiresAt: expiresAtSec,
     });
@@ -133,10 +107,14 @@ export async function POST(
       status: "QUEUED",
       message: "Resguardo enviado satisfactoriamente",
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("[API /api/qr/:tokenId/send-email] Error:", error);
     return NextResponse.json(
-      { error: "INTERNAL_SERVER_ERROR", message: error?.message || "Error al procesar envío de resguardo" },
+      {
+        error: "INTERNAL_SERVER_ERROR",
+        message:
+          error instanceof Error && error.message ? error.message : "Error al procesar envío de resguardo",
+      },
       { status: 500 },
     );
   }

@@ -4,14 +4,14 @@ import { AdminRoyalty } from "@/components/admin/AdminRoyalty";
 
 export const dynamic = "force-dynamic";
 
-/** Royalty (CU-12): fijar el porcentaje de royalty, gateado por ROYALTY_ADMIN_ROLE. */
+/** Royalty (D-06): panel informativo e inmutable, gateado por DEFAULT_ADMIN_ROLE (gobierno del propietario). */
 export default function AdminRoyaltyPage() {
   return (
     <AdminLayout>
       <AdminPanel
         titleKey="royaltyTitle"
         descriptionKey="royaltyTagline"
-        requiredRole="ROYALTY_ADMIN_ROLE"
+        requiredRole="DEFAULT_ADMIN_ROLE"
       >
         <AdminRoyalty />
       </AdminPanel>

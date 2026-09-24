@@ -2,7 +2,7 @@ import { createServer, type Server } from "node:http";
 import type { HealthableComponent } from "../domain/types";
 
 /**
- * Servidor `/health` reutilizable (RNF-17, DISEÑO §12). Cada componente (worker, mcp,
+ * Servidor `/health` reutilizable (RNF-17, ADR-26). Cada componente (worker, mcp,
  * faucet) inyecta un `HealthProvider`; el servidor traduce el reporte a HTTP:
  *   - `ok`   → 200 con el reporte
  *   - `down` → 503 con marcador `COMPONENT_DOWN`

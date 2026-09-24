@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import type { Address } from "viem";
 import { anvilChain, besuChain } from "@hotel/shared";
 import { tryReadDeployment } from "@hotel/shared/deployments";
@@ -7,8 +8,16 @@ import { mcpHealthProvider } from "./health";
 import { startMcpHttpServer } from "./http-server";
 import { createLogger } from "./logger";
 
+// Node no carga `.env` por si solo (Next.js si lo hace): en desarrollo lo cargamos desde la
+// raiz del monorepo. Si el fichero no existe se usan las variables del entorno (CI/contenedor),
+// que es el caso de produccion; por eso no es un error.
+try {
+  process.loadEnvFile(fileURLToPath(new URL("../../../.env", import.meta.url)));
+} catch {
+  // Sin fichero .env: no es un error.
+}
 /**
- * Punto de entrada del MCP server del contrato (RF-12, CU-08, T4.1).
+ * Punto de entrada del MCP server del contrato (RF-12, CU-08, docs/SRS.md §9, T4.1).
  *
  * Valida la configuración (fail-fast), construye el lector de cadena (solo lectura) y arranca
  * el HTTP server con `/health` (RNF-17) y `/mcp` (transporte Streamable HTTP). El MCP nunca

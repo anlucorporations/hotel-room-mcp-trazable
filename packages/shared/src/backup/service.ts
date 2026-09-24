@@ -38,7 +38,7 @@ export class DisasterRecoveryService {
    * Si se proporciona una encryptionKey, los datos se cifran con AES-256-GCM.
    */
   public static createBackup(
-    tablesData: Record<string, any[]>,
+    tablesData: Record<string, unknown[]>,
     encryptionKey?: string
   ): BackupPayload {
     const backupId = `bkp_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
@@ -100,7 +100,7 @@ export class DisasterRecoveryService {
   public static restoreAndVerify(
     payload: BackupPayload,
     encryptionKey?: string
-  ): { data: Record<string, any[]>; isValid: boolean } {
+  ): { data: Record<string, unknown[]>; isValid: boolean } {
     let serializedData: string;
 
     if (payload.metadata.encrypted) {
@@ -136,7 +136,7 @@ export class DisasterRecoveryService {
       throw new Error(`DisasterRecoveryService: Checksum inválido. Esperado: ${payload.metadata.sha256Checksum}, Calculado: ${calculatedChecksum}`);
     }
 
-    const data = JSON.parse(serializedData);
+    const data: Record<string, unknown[]> = JSON.parse(serializedData);
     return { data, isValid: true };
   }
 

@@ -26,6 +26,23 @@ export interface StructuredLogMessage {
   };
 }
 
+/**
+ * Superficie mínima del SDK de Sentry que este logger utiliza.
+ *
+ * Se declara aquí (en vez de leer `globalThis` con un `any`) para que el hook de reporte quede
+ * tipado sin arrastrar el SDK completo como dependencia del paquete compartido.
+ */
+interface SentryHook {
+  captureException?: (err: unknown, hint?: { extra?: LogContext }) => void;
+  captureMessage?: (message: string, hint?: { level?: string; extra?: LogContext }) => void;
+}
+
+declare global {
+  // `declare global` exige `var` para ampliar la superficie de `globalThis`; no es una variable
+  // real, solo describe la propiedad que el runtime añade cuando inicializa Sentry.
+  var __SENTRY__: SentryHook | undefined;
+}
+
 class Logger {
   private serviceName: string;
 
@@ -67,11 +84,13 @@ class Logger {
 
   public debug(message: string, context?: LogContext): void {
     if (process.env.LOG_LEVEL === "debug") {
+      // eslint-disable-next-line no-console -- este módulo ES la frontera de logging: es el único sitio que escribe en consola
       console.debug(this.formatMessage("debug", message, context));
     }
   }
 
   public info(message: string, context?: LogContext): void {
+    // eslint-disable-next-line no-console -- este módulo ES la frontera de logging: es el único sitio que escribe en consola
     console.info(this.formatMessage("info", message, context));
   }
 
@@ -82,12 +101,13 @@ class Logger {
   public error(message: string, context?: LogContext, err?: unknown): void {
     console.error(this.formatMessage("error", message, context, err));
     // Sentry hook: si Sentry está inicializado globalmente, capturamos la excepción
-    if (typeof globalThis !== "undefined" && (globalThis as any).__SENTRY__) {
+    if (typeof globalThis !== "undefined" && globalThis.__SENTRY__) {
+      const sentry = globalThis.__SENTRY__;
       try {
         if (err) {
-          (globalThis as any).__SENTRY__.captureException?.(err, { extra: context });
+          sentry.captureException?.(err, { extra: context });
         } else {
-          (globalThis as any).__SENTRY__.captureMessage?.(message, { level: "error", extra: context });
+          sentry.captureMessage?.(message, { level: "error", extra: context });
         }
       } catch {
         // Fallback silencioso si falla el reporte a Sentry
