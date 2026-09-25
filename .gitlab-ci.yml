@@ -1,91 +1,731 @@
 # =============================================================================
-# Pipeline de GitLab CI/CD — Hotel Marina del Sol (hotel-room-mcp-trazable)
-# Monorepo: Node.js 24 + pnpm 10 + Foundry + Slither + Playwright
+# Pipeline GitLab CI/CD — Hotel Marina del Sol (hotel-room-mcp-trazable)
+# Hito M8 · «gates de CI bloqueantes» (decisión D-08)
+# =============================================================================
+#
+# OBJETIVO DE ESTE FICHERO
+# -----------------------
+# El pipeline anterior tenía la estructura pero NO bloqueaba nada: usaba
+# `forge coverage --report lcov || true`, `pnpm --filter @hotel/web test:e2e || true`
+# y `allow_failure: true`, y no ejecutaba los E2E on-chain reales. Aquí se reescribe
+# para que sea reproducible y **bloqueante de verdad**: ningún `|| true`, ningún
+# `allow_failure: true` (el único `|| true` que queda es el de limpieza de procesos
+# en segundo plano, que no puede enmascarar el resultado de ningún gate; ver el
+# comentario en `chain-e2e`). Un fallo real de test, cobertura, accesibilidad,
+# despliegue o certificación tumba el pipeline.
+#
+# ORDEN DE ETAPAS (y por qué)
+# ---------------------------
+#   setup      → instala dependencias una vez y las publica como artefacto.
+#   static     → typecheck + lint + `forge fmt --check`. Barato y primero: si el
+#                código no compila de tipos o no está formateado, no se gasta CI
+#                en pruebas.
+#   test       → `pnpm test` (vitest de los 6 paquetes + `forge test`) = la suite
+#                funcional completa (806 pruebas vitest + 146 de contrato en local).
+#   coverage   → vitest con umbrales + `forge coverage`, con artefactos lcov.
+#   chain-e2e  → los CUATRO E2E on-chain reales (M4, M5, M6, M7) contra Anvil
+#                81234 + PostgreSQL + Redis, con despliegue real del contrato.
+#   web-e2e    → Playwright + axe sobre el build de producción de la web.
+#   certifications → prueba de carga real con artefacto y verificación de
+#                backup/DR con artefacto.
+#   security   → Slither (se conserva del pipeline anterior como gate adicional
+#                de severidad HIGH; no forma parte de las 7 etapas de M8).
+#
+# QUÉ GATE CORRESPONDE A CADA DECISIÓN
+# ------------------------------------
+#   D-08 (verificación: E2E real, cobertura ≥ umbral, gates bloqueantes)
+#       · job `test`              → suite funcional completa, sin bypass.
+#       · job `coverage`          → `test:coverage` de los 5 paquetes con vitest
+#                                   (umbrales declarados en cada vitest.config.ts,
+#                                   resumen en `RepoTecnico/cobertura.md`) y
+#                                   `forge coverage` de los contratos.
+#       · job `chain-e2e`         → M4/M5/M6/M7 reales: firman y envían
+#                                   transacciones a Anvil y fallan con salida ≠ 0
+#                                   si una sola aserción falla. Evidencia en
+#                                   `RepoTecnico/evidencias/*.json`.
+#       · job `web-e2e`           → E2E de navegador (Playwright).
+#   D-11 (accesibilidad verificable WCAG 2.1 AA)
+#       · job `web-e2e`           → `apps/web/e2e/a11y.spec.ts` con axe: 0
+#                                   violaciones critical/serious en las vistas
+#                                   públicas. Gate bloqueante.
+#   D-12 (resiliencia y observabilidad)
+#       · job `certifications`    → `pnpm test:dr` (backup cifrado AES-256-GCM,
+#                                   checksum SHA-256, RPO/RTO) y su aserción de
+#                                   certificado en el log.
+#       · servicios `postgres`/`redis` de `chain-e2e` → paridad con el runtime
+#                                   (el E2E ejerce el anclaje real, no un mock).
+#
+# QUÉ **NO** CUBRE ESTE PIPELINE (declarado, no escondido)
+# --------------------------------------------------------
+#   1. Polygon / Amoy REAL: no hay red pública, ni faucet, ni claves de producción.
+#      Los E2E corren contra Anvil local (chain 81234). El lanzamiento público es
+#      una fase posterior sujeta al dictamen de D-11 (MiCA/fiscal).
+#   2. k6 REAL: el repositorio no tiene k6 instalado (pendiente B-3 de la
+#      auditoría). `pnpm test:load` ejecuta un generador Node propio que mide por
+#      HTTP el SISTEMA EN MARCHA (worker y, si está levantada, la web), valida el
+#      contenido de cada respuesta y falla en duro si no cumple el SLA; el perfil
+#      de 200 usuarios concurrentes exige k6 desde otra máquina para ser justo
+#      (el generador co-locado compite con los servicios). `pnpm test:load:k6`
+#      ejecuta el guion de k6 (`catalog-load.js`) cuando k6 esté disponible.
+#   3. SMTP / push reales (SendGrid, VAPID, Wallet) y el asistente Anthropic: son
+#      dependencias externas de pago; sin ellas el sistema degrada en cerrado y
+#      así se prueba (estado degradado determinista en `web-e2e`).
+#   4. La prueba de carga mide el worker real (`/aggregates`, `/history`, `/health`) y,
+#      si el job levanta la web, también su API y su página SSR; NO usa ningún mock
+#      (el runner anterior simulaba el servidor que medía). Para incluir la web en el
+#      job basta con arrancar `next start` y exportar `LOAD_WEB_URL`.
+#   5. Multisig 2-of-3 (Gnosis Safe) y custodia de claves: alcance D-11, sin
+#      runtime todavía; el pipeline despliega con un EOA de Anvil.
+#   6. `pnpm audit` (SCA) no está como gate: el inventario de vulnerabilidades
+#      aún no está triado (defecto infra #45 del informe de optimización).
+#
+# REQUISITOS DEL RUNNER
+# ---------------------
+#   · Ejecutor **Docker** (obligatorio: `services:` solo funciona con Docker/K8s).
+#   · `privileged` no es necesario; basta con el executor Docker estándar.
+#   · Red con salida a registry.npmjs.org, github.com (tarball de Foundry) y
+#     registry.gitlab.com. Si el runner es hermético, precarga la imagen de
+#     Foundry y ejecuta el `before_script` con `foundryup` ya instalado.
+#   · Variables CI: ver el bloque `variables:` y las notas de `chain-e2e`. Todas
+#     las claves que aquí aparecen son las CUENTAS PÚBLICAS DE DESARROLLO DE
+#     ANVIL (no son secretos); ningún secreto real entra en este fichero.
 # =============================================================================
 
 default:
   image: node:24-bookworm
+  # Un fallo real debe tumbar el pipeline: `allow_failure` se deja explícitamente
+  # a false en todos los jobs de gate para que quede escrito en el fichero.
+  allow_failure: false
 
 variables:
+  # Estrategia de submódulos: `packages/contracts/lib` (OpenZeppelin v5, forge-std)
+  # son submódulos git; sin `recursive` el contrato no compila.
   GIT_SUBMODULE_STRATEGY: recursive
+  GIT_DEPTH: "20"
+  # pnpm: la versión es la de `packageManager` en package.json (fuente única).
   PNPM_VERSION: "10.32.1"
+  PNPM_HOME: "$CI_PROJECT_DIR/.pnpm-home"
+  PNPM_STORE_DIR: "$CI_PROJECT_DIR/.pnpm-store"
+  # Foundry: versión fijada para que el pipeline sea reproducible.
   FOUNDRY_VERSION: "v1.7.1"
+  # Playwright no debe descargarse a sí mismo fuera del paso explícito.
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+  # `next build`/`tsc` no deben competir por memoria en runners pequeños.
+  NODE_OPTIONS: "--max-old-space-size=4096"
+  # Docker de GitLab: desactiva la limpieza de contenedores entre pasos dentro de
+  # un job (los E2E necesitan Anvil vivo durante todo el job).
+  FF_NETWORK_PER_BUILD: "true"
+  # Entorno de la plataforma: los configs de Vitest/Playwright lo leen.
+  CI: "true"
 
-stages:
-  - lint
-  - test
-  - coverage
-  - slither
-  - e2e
-
+# ── Caché ─────────────────────────────────────────────────────────────────────
+# Se cachean node_modules/.pnpm-store (fallback del artefacto de `setup`) y los
+# artefactos de compilación de Foundry (`out` y `cache`, que .gitignore excluye).
 cache:
   key:
     files:
       - pnpm-lock.yaml
   paths:
-    - .pnpm-store
+    - .pnpm-store/
+    - .pnpm-home/
+    - node_modules/
+    # Foundry: `forge test`/`forge coverage` compilan; sin caché se paga la
+    # compilación completa en cada job y en cada etapa.
+    - packages/contracts/out/
+    - packages/contracts/cache/
+    # Registro de despliegue generado por los tests de contrato (evita recompilar
+    # y reescribir ficheros en cada job).
+    - packages/contracts/broadcast/
 
-.setup_pnpm_and_foundry: &setup_pnpm_and_foundry
+# ── Plantillas compartidas ────────────────────────────────────────────────────
+
+# Instalación de pnpm (corepack) + dependencias. Idempotente: si el artefacto de
+# `setup` ya trajo `node_modules`, `pnpm install` es casi instantáneo (solo
+# valida el lockfile). `--frozen-lockfile` hace fallar el job si el lockfile no
+# corresponde a los package.json: es parte del gate de reproducibilidad.
+.install:
+  before_script: &install
+    - |
+      set -eu
+      if ! command -v node >/dev/null 2>&1; then
+        echo "El job necesita una imagen con Node; usa default.image = node:24-bookworm." >&2
+        exit 1
+      fi
+      corepack enable
+      corepack prepare "pnpm@${PNPM_VERSION}" --activate
+      pnpm config set store-dir "${PNPM_STORE_DIR}"
+      pnpm install --frozen-lockfile
+
+# Instalación de Foundry FIJADA POR VERSIÓN usando el tarball oficial de GitHub
+# (más reproducible que `curl https://foundry.paradigm.xyz | bash`, que descarga
+# un instalador móvil). `$FOUNDRY_VERSION` se usa tanto en la URL como en el
+# directorio de instalación, así que actualizar la variable es todo lo necesario.
+# Si el runner no tiene salida a GitHub, alternativas: usar la imagen
+# `ghcr.io/foundry-rs/foundry:v1.7.1` (ver nota al final del fichero) o
+# preinstalar foundry en la imagen del runner.
+.foundry: &foundry_install
+  - |
+    set -eu
+    if command -v forge >/dev/null 2>&1; then
+      echo "Foundry ya presente: $(forge --version)"; exit 0
+    fi
+    apt-get update
+    apt-get install -y --no-install-recommends curl ca-certificates tar git
+    FOUNDRY_HOME="/opt/foundry/${FOUNDRY_VERSION}"
+    if [ ! -x "${FOUNDRY_HOME}/forge" ]; then
+      mkdir -p "${FOUNDRY_HOME}"
+      URL="https://github.com/foundry-rs/foundry/releases/download/${FOUNDRY_VERSION}/foundry_${FOUNDRY_VERSION}_linux_amd64.tar.gz"
+      echo "Descargando Foundry ${FOUNDRY_VERSION} de ${URL}"
+      curl -fsSL "${URL}" | tar -xz -C "${FOUNDRY_HOME}"
+    fi
+    export PATH="${FOUNDRY_HOME}:${PATH}"
+    echo "export PATH=\"${FOUNDRY_HOME}:\${PATH}\"" > /tmp/foundry-env.sh
+    forge --version
+
+# ── Reglas ────────────────────────────────────────────────────────────────────
+# El pipeline corre en merge requests y en la rama por defecto, además de en
+# lanzamientos manuales. Se excluye `schedule`: el nightly de rendimiento de
+# `.github/workflows/ci.yml` es informativo y no debe duplicar este pipeline
+# bloqueante.
+.rules: &default_rules
+  - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+  - if: '$CI_PIPELINE_SOURCE == "web"'
+  - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    when: never
+
+stages:
+  - setup
+  - static
+  - test
+  - coverage
+  - chain-e2e
+  - web-e2e
+  - certifications
+  - security
+
+# ── ETAPA 1 · setup ───────────────────────────────────────────────────────────
+# Única instalación de dependencias del pipeline. El artefacto `node_modules/` se
+# hereda automáticamente en las etapas siguientes (barrier de etapas de GitLab),
+# de modo que los jobs de static/test/coverage se ahorran el `pnpm install`.
+# Nota de coste: subir `node_modules` como artefacto es pesado; la alternativa
+# (reinstalar en cada job) es más lenta y más frágil. Si el runner tiene caché
+# local de pnpm, quitar `node_modules/` de `artifacts.paths` acelera el pipeline.
+setup:
+  stage: setup
+  rules: *default_rules
   before_script:
-    - apt-get update && apt-get install -y --no-install-recommends curl git unzip
-    - corepack enable && corepack prepare "pnpm@${PNPM_VERSION}" --activate
-    - curl -L https://foundry.paradigm.xyz | bash
-    - export PATH="$HOME/.foundry/bin:$PATH"
-    - foundryup --install "${FOUNDRY_VERSION}"
-    - pnpm config set store-dir "$CI_PROJECT_DIR/.pnpm-store"
-    - pnpm install --frozen-lockfile
-
-# ── 1. Etapa de Linting y Tipado Estático ──────────────────────────────────────
-lint:
-  stage: lint
-  <<: *setup_pnpm_and_foundry
+    - apt-get update && apt-get install -y --no-install-recommends curl ca-certificates tar git
   script:
-    - export PATH="$HOME/.foundry/bin:$PATH"
-    - pnpm typecheck
-    - pnpm lint
+    - *install
+    # Foundry se instala aquí y viaja en la caché (.foundry no está en .gitignore
+    # y el tarball es de ~95 MB: se cachea por versión). Los jobs que lo necesitan
+    # llaman a `foundryup`-equivalente solo si falta.
+    - *foundry_install
+    - pnpm --version
+    - node --version
+    - forge --version
+  artifacts:
+    name: "setup-$CI_COMMIT_SHORT_SHA"
+    expire_in: 1 day
+    paths:
+      - node_modules/
+      - .pnpm-store/
+      - .pnpm-home/
 
-# ── 2. Etapa de Pruebas Unitarias y de Integración ───────────────────────────
+# ── ETAPA 2 · static ──────────────────────────────────────────────────────────
+# Tres jobs independientes en paralelo. `pnpm typecheck` y `pnpm lint` van por
+# turbo (turbo construye `@hotel/shared` antes: `dependsOn: ["^build"]`).
+typecheck:
+  stage: static
+  rules: *default_rules
+  before_script: *install
+  script:
+    - echo "== Gate estático: tipos (6/6 paquetes) =="
+    - pnpm typecheck
+  allow_failure: false
+
+lint:
+  stage: static
+  rules: *default_rules
+  before_script: *install
+  script:
+    - echo "== Gate estático: ESLint (turbo run lint) =="
+    # M8 exige `lint` en verde; el trabajo previo de limpieza lo deja bloqueante.
+    - pnpm lint
+  allow_failure: false
+
+# Formato Solidity. Usa `forge fmt --check` del propio paquete (script `fmt:check`
+# de packages/contracts/package.json) para que la invocación sea la del repo.
+contracts-fmt:
+  stage: static
+  rules: *default_rules
+  before_script:
+    - *foundry_install
+  script:
+    - echo "== Gate estático: forge fmt --check =="
+    - pnpm --filter @hotel/contracts fmt:check
+  allow_failure: false
+
+# ── ETAPA 3 · test ────────────────────────────────────────────────────────────
+# `pnpm test` = `turbo run test`: vitest de shared/worker/mcp/monitor/web (806
+# pruebas) + `forge test -vvv` de @hotel/contracts (146 pruebas). Sin `|| true`.
 test:
   stage: test
-  <<: *setup_pnpm_and_foundry
+  rules: *default_rules
+  before_script:
+    - *install
+    - *foundry_install
   script:
-    - export PATH="$HOME/.foundry/bin:$PATH"
+    - echo "== Gate funcional: vitest (monorepo) + forge test =="
     - pnpm test
-
-# ── 3. Etapa de Cobertura de Código (Foundry + Vitest) ────────────────────────
-coverage:
-  stage: coverage
-  <<: *setup_pnpm_and_foundry
-  script:
-    - export PATH="$HOME/.foundry/bin:$PATH"
-    - cd packages/contracts
-    - forge coverage --report lcov || true
   artifacts:
     when: always
+    expire_in: 7 days
     paths:
-      - packages/contracts/lcov.info
-    expire_in: 14 days
+      - "**/coverage/"
+    exclude:
+      - "**/node_modules/**"
+  allow_failure: false
 
-# ── 4. Análisis Estático de Smart Contracts con Slither ────────────────────────
+# ── ETAPA 4 · coverage (D-08) ─────────────────────────────────────────────────
+# Los umbrales viven en cada `vitest.config.ts` (ratchet medido, ver
+# `RepoTecnico/cobertura.md`): si un paquete baja del umbral, vitest sale ≠ 0 y el
+# job muere. Aquí NO hay `|| true` ni `allow_failure`.
+#
+# `test:coverage` existe en los 5 paquetes con vitest (shared, worker, mcp,
+# monitor, web). Se ejecuta con `pnpm -r` (topológico, nativo de pnpm) en lugar de
+# `turbo run test:coverage` para no depender de que turbo.json declare la tarea:
+# el contrato con CI es que el script exista en el paquete, y `pnpm -r` falla si
+# un paquete con tests no lo define… salvo que se declare aquí. Por eso se
+# enumera explícitamente el conjunto de paquetes: si mañana se añade un paquete
+# con tests, este job debe fallar a propósito (guardián de cobertura completa).
+coverage:
+  stage: coverage
+  rules: *default_rules
+  before_script:
+    - *install
+    - *foundry_install
+  script:
+    - echo "== Gate D-08: cobertura vitest con umbrales =="
+    - pnpm --filter @hotel/shared build
+    - |
+      set -eu
+      for pkg in @hotel/shared @hotel/worker @hotel/mcp @hotel/monitor @hotel/web; do
+        echo "--- test:coverage de ${pkg} ---"
+        pnpm --filter "${pkg}" run test:coverage
+      done
+    - echo "== Gate D-08: cobertura de contratos (forge coverage) =="
+    - cd packages/contracts
+    # Sin `|| true`: si forge coverage falla (compilación, tests que revierten),
+    # el job falla. `forge coverage` no aplica umbral propio; el umbral de
+    # contratos se declara en RepoTecnico/cobertura.md y se revisa en MR.
+    - forge coverage --report lcov --report summary
+  artifacts:
+    when: always
+    expire_in: 30 days
+    name: "coverage-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - "**/coverage/lcov.info"
+      - "**/coverage/coverage-summary.json"
+      - "**/coverage/**"
+      - packages/contracts/lcov.info
+    exclude:
+      - "**/node_modules/**"
+    # GitLab muestra el % de cobertura del job en la UI y en el MR.
+    # `receives` el último valor impreso por el job (vitest resumen + forge).
+  coverage: '/Lines\s*:\s*([0-9]{1,3}(?:\.[0-9]+)?)%/'
+  allow_failure: false
+
+# ── ETAPA 5 · chain-e2e (D-08): E2E on-chain REALES ───────────────────────────
+# Un solo job (no cuatro): los cuatro hitos comparten el MISMO Anvil y el MISMO
+# despliegue; separarlos obligaría a desplegar cuatro veces y a coordinar la
+# dirección del contrato entre jobs. El script encadena con `&&`, así que el
+# primer E2E que falle corta el job: no hay ruta que publique éxito sin evidencia.
+#
+# SERVICIOS: PostgreSQL 16 y Redis 7. GitLab los expone en los alias de red
+# `postgres` y `redis` (los mismos nombres que usa docker-compose.yml en local).
+# Los E2E on-chain de M4-M7 no consultan la base de datos todavía (son on-chain
+# puros), pero se levantan igualmente por dos motivos: (1) es la topología real
+# del sistema y el anclaje del worker se apoya en ella, (2) cualquier E2E futuro
+# que indexe eventos encuentra el entorno ya montado. El coste es de segundos.
+#
+# ANVIL: `--chain-id 81234` (D-01) y `--block-time 2` (paridad con la cadencia de
+# bloque declarada en DECISIONES/D-12). Se arranca en segundo plano; el arranque
+# se verifica leyendo el chainId con `node` (no con `sleep`), y se completa con
+# `wait-for-it` propio (Node, sin dependencias externas).
+#
+# VARIABLES QUE EL JOB NECESITA (todas son cuentas públicas de desarrollo de
+# Anvil, NINGUNA es un secreto real; no hace falta declararlas en la UI de
+# GitLab, están aquí para que el pipeline sea autocontenido y auditable):
+#   RPC_URL                      http://127.0.0.1:8545      (Anvil del propio job)
+#   CHAIN_ID                     81234
+#   CONTRACT_ADDRESS             lo DESCUBRE el job del broadcast del despliegue
+#   DEPLOYER_PRIVATE_KEY         clave de la cuenta 0 de Anvil
+#   MINTER_RELAYER_PRIVATE_KEY   cuenta 1 (MINTER_ROLE, ADMIN, PAUSER)
+#   BURNER_WALLET_PRIVATE_KEY    cuenta 2 (BURNER_ROLE)
+#   RECEPTION_WALLET_PRIVATE_KEY cuenta 3 (RECEPTION_ROLE)
+#   ADMIN_ADDRESS / TREASURY_ADDRESS / MINTER_ADDRESS / BURNER_ADDRESS /
+#   RECEPTION_ADDRESS            direcciones que el script de despliegue graba en
+#                                los roles; coinciden con las cuentas de arriba.
+#   DATABASE_URL / REDIS_URL     apuntan a los servicios `postgres` / `redis`.
+#   JWT_SECRET / SESSION_SECRET / TICKET_SIGNING_SECRET / AES_SECRET_KEY /
+#   CHECKIN_SECRET_KEY           rellenos con valores de PRUEBA efímeros: los
+#                                E2E on-chain no los usan, pero `loadEnv` de los
+#                                paquetes falla en cerrado si faltan, y así el job
+#                                queda preparado. En un pipeline con secretos
+#                                reales deben venir de la UI de GitLab (masked) y
+#                                NO de este fichero.
+#
+# CUENTAS DE ANVIL (mnemonic de desarrollo "test test … junk"):
+#   0 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266  deployer / treasury
+#   1 0x70997970C51812dc3A010C7d01b50e0d17dc79C8  admin + minter + pauser
+#   2 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC  burner
+#   3 0x90F79bf6EB2c4f870365E785982E1f101E93b906  reception
+chain-e2e:
+  stage: chain-e2e
+  rules: *default_rules
+  services:
+    - name: postgres:16
+      alias: postgres
+      # Healthcheck del servicio (además del sondeo del job, que es el gate real:
+      # el runner no espera al healthcheck antes de lanzar el script).
+      options:
+        health-cmd: "pg_isready -U hotel_admin -d hotel_nft_dev"
+        health-interval: 5s
+        health-timeout: 5s
+        health-retries: 12
+        health-start-period: 10s
+    - name: redis:7
+      alias: redis
+      options:
+        health-cmd: "redis-cli ping"
+        health-interval: 5s
+        health-timeout: 3s
+        health-retries: 12
+        health-start-period: 5s
+  variables:
+    # --- Servicios (alias de red de GitLab) ---------------------------------
+    POSTGRES_DB: hotel_nft_dev
+    POSTGRES_USER: hotel_admin
+    POSTGRES_PASSWORD: hotel_secret_2026
+    POSTGRES_HOST_AUTH_METHOD: trust
+    DATABASE_URL: "postgresql://hotel_admin:hotel_secret_2026@postgres:5432/hotel_nft_dev"
+    REDIS_URL: "redis://redis:6379/0"
+    # --- Cadena --------------------------------------------------------------
+    RPC_URL: "http://127.0.0.1:8545"
+    CHAIN_ID: "81234"
+    ANVIL_CHAIN_ID: "81234"
+    ANVIL_BLOCK_TIME: "2"
+    # Cuentas de desarrollo de Anvil (públicas; ver cabecera).
+    DEPLOYER_PRIVATE_KEY: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+    MINTER_RELAYER_PRIVATE_KEY: "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+    BURNER_WALLET_PRIVATE_KEY: "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+    RECEPTION_WALLET_PRIVATE_KEY: "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
+    ADMIN_ADDRESS: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+    TREASURY_ADDRESS: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+    MINTER_ADDRESS: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+    PAUSER_ADDRESS: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+    BURNER_ADDRESS: "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+    RECEPTION_ADDRESS: "0x90F79bf6EB2c4f870365E785982E1f101E93b906"
+    TREASURER_ADDRESS: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+    # --- Secretos de PRUEBA (efímeros; nunca válidos fuera de este job) -------
+    JWT_SECRET: "ci-only-jwt-secret-not-for-any-real-environment-0001"
+    SESSION_SECRET: "ci-only-session-secret-not-for-any-real-environment-0002"
+    TICKET_SIGNING_SECRET: "ci-only-ticket-signing-secret-not-for-real-env-003"
+    AES_SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    CHECKIN_SECRET_KEY: "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210"
+  before_script:
+    - *install
+    - *foundry_install
+  script:
+    # 1) Servicios: se espera de verdad a que escuchen (sin `sleep` fijo).
+    - |
+      set -eu
+      node -e '
+        const net = require("net");
+        const wait = (port, host) => new Promise((resolve, reject) => {
+          let tries = 0;
+          const attempt = () => {
+            tries += 1;
+            const socket = net.connect(port, host);
+            socket.setTimeout(2000);
+            const done = (ok) => { socket.destroy(); ok ? resolve() : retry(); };
+            const retry = () => {
+              if (tries >= 60) return reject(new Error(`timeout esperando ${host}:${port}`));
+              setTimeout(attempt, 2000);
+            };
+            socket.once("connect", () => done(true));
+            socket.once("timeout", () => done(false));
+            socket.once("error", () => done(false));
+          };
+          attempt();
+        });
+        Promise.all([wait(5432, "postgres"), wait(6379, "redis")])
+          .then(() => console.log("postgres:5432 y redis:6379 escuchan"))
+          .catch((error) => { console.error(error.message); process.exit(1); });
+      '
+    # 2) Anvil en segundo plano (chain 81234, bloque cada 2 s).
+    - |
+      set -eu
+      anvil --chain-id "${ANVIL_CHAIN_ID}" --block-time "${ANVIL_BLOCK_TIME}" --host 127.0.0.1 --port 8545 > anvil.log 2>&1 &
+      echo "$!" > anvil.pid
+      node -e '
+        const { createPublicClient, http } = require("viem");
+        const client = createPublicClient({ transport: http(process.env.RPC_URL) });
+        (async () => {
+          for (let i = 0; i < 60; i += 1) {
+            try {
+              const id = await client.getChainId();
+              if (id === Number(process.env.ANVIL_CHAIN_ID)) {
+                console.log(`Anvil listo: chainId=${id}`);
+                return;
+              }
+              throw new Error(`chainId inesperado: ${id}`);
+            } catch (error) {
+              await new Promise((r) => setTimeout(r, 1000));
+            }
+          }
+          console.error("Anvil no respondió con el chainId esperado");
+          process.exit(1);
+        })();
+      '
+    # 3) `.env` de la raíz: los E2E hacen `process.loadEnvFile("<raíz>/.env")`, que
+    #    lanza si el fichero no existe. Se genera aquí con los valores de CI (el
+    #    `.env` real está en .gitignore). CONTRACT_ADDRESS queda vacío a propósito:
+    #    se rellena con la dirección REAL que devuelva el despliegue (paso 5).
+    - |
+      set -eu
+      cat > .env <<ENVEOF
+      # Generado por .gitlab-ci.yml (job chain-e2e). NO versionar, NO usar fuera de CI.
+      CHAIN_ID=${CHAIN_ID}
+      RPC_URL=${RPC_URL}
+      DATABASE_URL=${DATABASE_URL}
+      REDIS_URL=${REDIS_URL}
+      DEPLOYER_PRIVATE_KEY=${DEPLOYER_PRIVATE_KEY}
+      MINTER_RELAYER_PRIVATE_KEY=${MINTER_RELAYER_PRIVATE_KEY}
+      BURNER_WALLET_PRIVATE_KEY=${BURNER_WALLET_PRIVATE_KEY}
+      RECEPTION_WALLET_PRIVATE_KEY=${RECEPTION_WALLET_PRIVATE_KEY}
+      ADMIN_ADDRESS=${ADMIN_ADDRESS}
+      TREASURY_ADDRESS=${TREASURY_ADDRESS}
+      MINTER_ADDRESS=${MINTER_ADDRESS}
+      PAUSER_ADDRESS=${PAUSER_ADDRESS}
+      BURNER_ADDRESS=${BURNER_ADDRESS}
+      RECEPTION_ADDRESS=${RECEPTION_ADDRESS}
+      TREASURER_ADDRESS=${TREASURER_ADDRESS}
+      JWT_SECRET=${JWT_SECRET}
+      SESSION_SECRET=${SESSION_SECRET}
+      TICKET_SIGNING_SECRET=${TICKET_SIGNING_SECRET}
+      AES_SECRET_KEY=${AES_SECRET_KEY}
+      CHECKIN_SECRET_KEY=${CHECKIN_SECRET_KEY}
+      NEXT_PUBLIC_CHAIN_ID=${CHAIN_ID}
+      NEXT_PUBLIC_RPC_URL=${RPC_URL}
+      LOG_LEVEL=info
+      NODE_ENV=test
+      ENVEOF
+      grep -q '^CONTRACT_ADDRESS=$' .env || { echo "El .env generado no tiene CONTRACT_ADDRESS vacío" >&2; exit 1; }
+      # Normaliza a LF: el shell del runner puede haber generado CRLF y las
+      # comprobaciones posteriores son ancladas (^...$).
+      tr -d '\r' < .env > .env.lf && mv .env.lf .env
+      echo "CONTRACT_ADDRESS=" >> .env
+      echo "✓ .env de CI generado ($(wc -l < .env) líneas)"
+    # 4) Artefactos de @hotel/shared: los E2E y `sync` importan
+    #    `@hotel/shared/domain` y `@hotel/shared/abi` (dist/, no src/).
+    - pnpm --filter @hotel/shared build
+    # 5) Despliegue REAL del contrato canónico + sincronización del registro.
+    #    `deploy:local` = `forge script script/Deploy.s.sol:Deploy --rpc-url $RPC_URL
+    #    --broadcast --slow` (script del propio repo). El `--slow` del script es
+    #    importante con `--block-time 2`: espera el recibo de cada transacción, de
+    #    modo que los grants de rol no se encolan ni se reordenan.
+    - echo "== Despliegue del contrato en Anvil 81234 =="
+    - pnpm --filter @hotel/contracts deploy:local
+    - pnpm --filter @hotel/contracts sync
+    # 6) La dirección REAL del despliegue manda: se lee del broadcast de Foundry
+    #    (fuente fiable, igual que hace sync-deployment.ts) y se escribe en el
+    #    `.env` que consumen los E2E. Si el broadcast no existe, el job falla:
+    #    nunca se cae a una dirección fija que podría apuntar a otro contrato.
+    - |
+      set -eu
+      ADDRESS=$(node -e '
+        const { readFileSync } = require("node:fs");
+        const id = process.env.CHAIN_ID;
+        const broadcast = JSON.parse(readFileSync(`packages/contracts/broadcast/Deploy.s.sol/${id}/run-latest.json`, "utf8"));
+        const create = broadcast.transactions.find((tx) => tx.transactionType === "CREATE" && tx.contractName === "HotelNights");
+        if (!create || !create.contractAddress) { console.error("El broadcast no contiene el CREATE de HotelNights"); process.exit(1); }
+        process.stdout.write(create.contractAddress);
+      ')
+      test -n "${ADDRESS}"
+      case "${ADDRESS}" in 0x*) ;; *) echo "Dirección inválida: ${ADDRESS}" >&2; exit 1;; esac
+      # Reescribe la línea CONTRACT_ADDRESS= (vacía) con la dirección desplegada.
+      node -e '
+        const { readFileSync, writeFileSync } = require("node:fs");
+        const address = process.argv[1];
+        const text = readFileSync(".env", "utf8");
+        if (!text.includes("CONTRACT_ADDRESS=")) { console.error("No hay CONTRACT_ADDRESS= en .env"); process.exit(1); }
+        writeFileSync(".env", text.replace("CONTRACT_ADDRESS=", `CONTRACT_ADDRESS=${address}`));
+        console.log(`✓ CONTRACT_ADDRESS=${address} escrito en .env`);
+      ' "${ADDRESS}"
+      grep -q "^CONTRACT_ADDRESS=${ADDRESS}$" .env
+      echo "Registro sincronizado:"; cat packages/shared/deployments/${CHAIN_ID}.json
+    # 7) Siembra del registro (datos de demo). Es determinista y no toca la base
+    #    de datos; el E2E de M4 elige fechas libres por sí mismo, así que la
+    #    siembra no puede hacerle fallar por colisión de noches.
+    - echo "== Siembra del catálogo de demo (seed) =="
+    - pnpm --filter @hotel/contracts seed
+    # 8) Los CUATRO E2E on-chain reales. Cada paso es una línea independiente del
+    #    `script`: GitLab aborta el job en el primer comando con salida ≠ 0 (mismo
+    #    efecto que encadenar con `&&`) y no hay ningún `|| true` que lo evite.
+    - echo "== E2E M4: compra primaria + reventa + claim (D-07) =="
+    - pnpm test:e2e:m4
+    - echo "== E2E M5: check-in real con resguardo firmado =="
+    - pnpm test:e2e:m5
+    - echo "== E2E M6: automatismos (quema programada, reconciliación de correo) =="
+    - pnpm test:e2e:m6
+    - echo "== E2E M7: dashboard con cifras trazables y pausa =="
+    - pnpm test:e2e:m7
+    - echo "== Los cuatro E2E on-chain han pasado y han escrito su evidencia =="
+    - ls -l RepoTecnico/evidencias/
+  after_script:
+    # Limpieza del proceso en segundo plano. El `|| true` de aquí NO enmascara
+    # ningún gate: solo evita que un `kill` sobre un Anvil ya muerto convierta en
+    # rojo un job verde (el exit code del job lo fijan los `script`).
+    - if [ -f anvil.pid ]; then kill "$(cat anvil.pid)" 2>/dev/null || true; fi
+    - tail -n 50 anvil.log || true
+  artifacts:
+    when: always
+    expire_in: 30 days
+    name: "chain-e2e-$CI_COMMIT_SHORT_SHA"
+    paths:
+      # Evidencia JSON de cada hito (M4, M5, M6, M7): hashes, importes y
+      # direcciones. Es el artefacto que M8 exige para declarar la verificación.
+      - RepoTecnico/evidencias/*.json
+      - packages/shared/deployments/*.json
+      - packages/contracts/deployments/latest.json
+      - anvil.log
+    exclude:
+      - "**/node_modules/**"
+  allow_failure: false
+
+# ── ETAPA 6 · web-e2e (D-08 navegador + D-11 accesibilidad) ───────────────────
+# Playwright sobre el build de PRODUCCIÓN (`next start`, levantado por el
+# `webServer` de playwright.config.ts, con retries solo en CI). Incluye
+# `apps/web/e2e/a11y.spec.ts` (axe): 0 violaciones critical/serious en /,
+# /reventa, /historico, /admin/dashboard, /admin/mint y /asistente → gate de D-11.
+# El entorno es hermético a propósito (RPC y worker apuntan a 127.0.0.1:1), así
+# que se prueban los estados degradados de forma determinista.
+web-e2e:
+  stage: web-e2e
+  rules: *default_rules
+  before_script:
+    - *install
+  script:
+    - echo "== Build del monorepo (shared → web) =="
+    - pnpm --filter @hotel/shared build
+    - pnpm --filter @hotel/web build
+    - echo "== Navegador de Playwright (Chromium; los proyectos son Desktop Chrome y Pixel 5) =="
+    # Sin `|| true`: si el navegador no se instala, el job debe caer aquí con un
+    # error claro en vez de fallar más tarde dentro de Playwright.
+    - pnpm --filter @hotel/web exec playwright install --with-deps chromium
+    - echo "== Gate D-08/D-11: Playwright + axe (accesibilidad WCAG 2.1 AA) =="
+    - pnpm --filter @hotel/web test:e2e
+  artifacts:
+    when: always
+    expire_in: 14 days
+    name: "web-e2e-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - apps/web/playwright-report/
+      - apps/web/test-results/
+    exclude:
+      - "**/node_modules/**"
+  allow_failure: false
+
+# ── ETAPA 7 · certifications (D-08 carga + DR) ────────────────────────────────
+# Dos artefactos declarados por M8, ambos con **fallo duro por código de salida**:
+#   · `test:load` → prueba de carga real por HTTP contra el sistema en marcha
+#     (`scripts/load-tests/run-load-test.ts`): valida el CONTENIDO de cada respuesta
+#     (no solo el 200), aborta si el worker no responde y sale ≠ 0 si no cumple el
+#     SLA declarado (p95 < 500 ms · errores < 1 %).
+#   · `test:dr` → volcado `pg_dump`, restauración real y comparación tabla por tabla
+#     del contenido (`scripts/backup/restore-verify.ts`); sale ≠ 0 si algo no cuadra.
+#
+# Perfil de carga del pipeline: 50 usuarios concurrentes durante 20 s. Es el perfil
+# que un runner COMPARTIDO sostiene sin que el propio generador (que corre en la
+# misma máquina que los servicios) contamine la medida; el perfil de 200 usuarios de
+# RNF-05 se ejecuta a mano con `LOAD_CONCURRENCY=200` y su resultado medido está
+# documentado en `RepoTecnico/estado_proyecto.md` (hallazgo: con 200 concurrentes en
+# una sola máquina, el pool de PostgreSQL de la web se agota y la página SSR supera
+# los 5 s; el plano de datos del worker no da errores pero pasa de 500 ms de p95).
+# Para medir de verdad los 200 usuarios hace falta k6 desde otra máquina (B-3).
+certifications:
+  stage: certifications
+  rules: *default_rules
+  before_script:
+    - *install
+  script:
+    - set -o pipefail
+    - mkdir -p RepoTecnico/certificaciones
+    - echo "== Certificación de carga real (D-08 · RNF-05) =="
+    - pnpm --filter @hotel/shared build
+    # `tee` guarda el informe completo como artefacto; `set -o pipefail` propaga el
+    # código de salida del runner (sin él lo daría `tee`, que siempre es 0).
+    - LOAD_CONCURRENCY="${LOAD_CONCURRENCY:-50}" LOAD_DURATION_S="${LOAD_DURATION_S:-20}" pnpm test:load 2>&1 | tee RepoTecnico/certificaciones/load-test.txt
+    - echo "== Verificación real de backup y restauración (D-08 · D-09) =="
+    - pnpm test:dr 2>&1 | tee RepoTecnico/certificaciones/dr-verify.txt
+    - |
+      set -eu
+      {
+        echo "Certificaciones generadas por el pipeline (job certifications)"
+        echo "commit: ${CI_COMMIT_SHA}"
+        echo "pipeline: ${CI_PIPELINE_ID}"
+        echo "fecha: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        echo "perfil de carga: ${LOAD_CONCURRENCY:-50} usuarios concurrentes"
+      } > RepoTecnico/certificaciones/resumen.txt
+      ls -l RepoTecnico/certificaciones/
+  artifacts:
+    when: always
+    expire_in: 30 days
+    name: "certifications-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - RepoTecnico/certificaciones/
+      - RepoTecnico/evidencias/
+    exclude:
+      - "**/node_modules/**"
+  allow_failure: false
+
+# ── ETAPA 8 · security (se conserva del pipeline anterior) ────────────────────
+# Slither con `--fail-high`: hallazgos HIGH o superiores tumban el pipeline; los
+# MEDIUM se triajan a mano (mismo criterio que el job `slither` de
+# .github/workflows/ci.yml). No es una de las siete etapas de M8; se mantiene
+# porque es un gate útil y ya existía.
+#
+# ÚNICA relajación del fichero, y es deliberada: la imagen
+# `ghcr.io/trailofbits/eth-security-toolbox` NO es reproducible por naturaleza
+# (no publica tags por versión de Slither; `:latest` cambia). Mitigación: si la
+# imagen pinea slither, fijar la digest con `image: ghcr.io/…@sha256:…`. Para
+# quitar cualquier ambigüedad, la alternativa es instalarlo por pip con versión
+# fija (`pip install slither-analyzer==0.10.4`) en un job con Node.
 slither:
-  stage: slither
+  stage: security
+  rules: *default_rules
   image: ghcr.io/trailofbits/eth-security-toolbox:latest
   before_script: []
   script:
     - cd packages/contracts
+    - forge build
     - slither . --config-file slither.config.json --fail-high
   allow_failure: false
 
-# ── 5. Pruebas E2E con Playwright ─────────────────────────────────────────────
-e2e:
-  stage: e2e
-  before_script:
-    - corepack enable && corepack prepare "pnpm@${PNPM_VERSION}" --activate
-    - pnpm config set store-dir "$CI_PROJECT_DIR/.pnpm-store"
-    - pnpm install --frozen-lockfile
-  script:
-    - pnpm --filter @hotel/shared build
-    - pnpm --filter @hotel/web build || true
-    - pnpm --filter @hotel/web exec playwright install --with-deps chromium || true
-    - pnpm --filter @hotel/web test:e2e || true
-  allow_failure: true
+# ─────────────────────────────────────────────────────────────────────────────
+# NOTA sobre la imagen de Foundry (alternativa a `foundryup`/tarball)
+# ─────────────────────────────────────────────────────────────────────────────
+# Si el runner no puede descargar el tarball de GitHub, la vía más simple es usar
+# la imagen oficial en los jobs que necesitan `forge`:
+#
+#   contracts-fmt:
+#     image: ghcr.io/foundry-rs/foundry:v1.7.1   # versión fija, no `latest`
+#     before_script: []                          # la imagen ya trae forge/anvil
+#
+# No se usa por defecto porque los jobs de esta etapa también necesitan Node
+# (turbo, pnpm, viem para los E2E) y mantener una sola imagen base evita dos
+# toolchains y dos cachés. La imagen sí es la vía recomendada si se prefiere
+# arrancar Anvil como servicio en lugar de en segundo plano.

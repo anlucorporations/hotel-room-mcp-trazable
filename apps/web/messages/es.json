@@ -21,7 +21,9 @@
     "navNights": "Noches",
     "navMyNights": "Mis noches",
     "navHistory": "Histórico",
+    "navResale": "Reventa",
     "navAssistant": "Asistente",
+    "navHelp": "Ayuda",
     "menuOpen": "Abrir el menú",
     "menuClose": "Cerrar el menú",
     "footerTagline": "Red segura · pagos verificados",
@@ -30,7 +32,21 @@
     "footerAddress": "Hotel Marina del Sol · Paseo Marítimo, Alicante",
     "footerHistory": "Histórico público",
     "footerTerms": "Términos",
+    "footerHelp": "Ayuda y manuales",
     "footerPrivacy": "Privacidad"
+  },
+  "help": {
+    "title": "Ayuda y manuales",
+    "tagline": "Los tres manuales del sistema, tal y como funciona hoy.",
+    "manualsLabel": "Manuales disponibles",
+    "read": "Leer el manual",
+    "topicsLabel": "Contenido del manual",
+    "sectionsLabel": "Secciones de este manual",
+    "downloadPdf": "Descargar en PDF",
+    "downloadPdfAria": "Descargar este manual en PDF",
+    "backToIndex": "Todos los manuales",
+    "spanishOnly": "Los manuales están escritos en español.",
+    "testNetworkNote": "El sistema funciona hoy en una red de pruebas privada: sirve para demostrar y validar el sistema, no para vender al público."
   },
   "howItWorks": {
     "title": "Cómo funciona",
@@ -56,6 +72,15 @@
     "titleHighlight": "Mediterráneo",
     "titleTail": ", en propiedad.",
     "subcopy": "Cada noche es tuya desde el momento en que la reservas. Y si tus planes cambian, puedes traspasarla a otro viajero. Sencillo, seguro, sin papeleo."
+  },
+  "resale": {
+    "title": "Mercado de reventa",
+    "tagline": "Noches que otras personas ya compraron y ahora revenden. La compra se firma igual que en el catálogo: revisas el precio on-chain antes de confirmar.",
+    "count": "{count, plural, =0 {Sin noches en reventa} one {# noche en reventa} other {# noches en reventa}}",
+    "empty": "Ahora mismo no hay noches en reventa",
+    "emptyHint": "Cuando alguien ponga su noche a la venta aparecerá aquí. Mientras tanto, consulta las noches disponibles del hotel en el catálogo.",
+    "backToCatalog": "Ver noches disponibles",
+    "degraded": "No se pudo cargar el mercado de reventa. Revisa tu conexión e inténtalo de nuevo."
   },
   "catalog": {
     "available": "Disponible",
@@ -86,7 +111,8 @@
     "retry": "Reintentar",
     "loadMore": "Cargar más noches",
     "loadMoreAnnounce": "Se han añadido {count, plural, one {# noche} other {# noches}} al catálogo.",
-    "endOfList": "Has visto todas las noches disponibles en los próximos 90 días."
+    "endOfList": "Has visto todas las noches disponibles en los próximos 90 días.",
+    "buyPaused": "Ventas en pausa"
   },
   "wallet": {
     "noWallet": "No detectamos una wallet web3.",
@@ -200,8 +226,33 @@
       "NotOwner": "No eres la propietaria de esta noche.",
       "InvalidPrice": "El precio debe ser mayor que 0.",
       "NightExpired": "La noche ha expirado y no puede listarse.",
-      "NotListed": "Esta noche no está en reventa."
+      "NotListed": "Esta noche no está en reventa.",
+      "PriceBelowMinimum": "El precio está por debajo del mínimo de reventa que fija el hotel.",
+      "NightNotResellable": "Esta noche ya se consumió en recepción y no puede revenderse."
     }
+  },
+  "ticket": {
+    "title": "Resguardo de check-in",
+    "hint": "Genera el resguardo de esta noche para enseñarlo en recepción. Te pediremos una firma para comprobar que la noche es tuya.",
+    "generate": "Ver mi resguardo QR",
+    "generating": "Generando resguardo…",
+    "qrAlt": "Código QR del resguardo de la habitación {room} para el {date}",
+    "qrUnavailable": "No se pudo dibujar el código QR, pero el resguardo sigue valiendo: copia el token y enséñalo en recepción.",
+    "room": "Habitación {room}",
+    "validUntil": "Válido hasta el {date}. Cada resguardo sirve una sola vez.",
+    "tokenLabel": "Token del resguardo (para el camino manual)",
+    "tokenHint": "Recepción puede pegar este texto si el escáner no funciona.",
+    "download": "Descargar el QR",
+    "open": "Abrir la pantalla de recepción",
+    "close": "Ocultar",
+    "checkinTitle": "Resguardo de check-in",
+    "checkinHint": "Muestra esta pantalla en recepción. El personal escaneará el código con su lector.",
+    "checkinMissing": "Esta página no tiene ningún resguardo. Abre el enlace que generaste desde «Mis noches».",
+    "checkinGoToMyNights": "Ir a Mis noches",
+    "checkinDateLabel": "Noche:",
+    "checkinQrAlt": "Código QR del resguardo de check-in",
+    "checkinStaffHint": "Personal de recepción: escanee el código o pegue el token en la pantalla de recepción. El resguardo solo se puede canjear una vez.",
+    "checkinManual": "¿No funciona el escáner? Muestra este token"
   },
   "history": {
     "title": "Histórico de ventas",
@@ -235,6 +286,53 @@
     "minted": "Noches minteadas",
     "burned": "Noches quemadas",
     "occupancy": "Ocupación comercial",
+    "exportCsv": "Exportar informe CSV",
+    "timeZone": "Meses agrupados en la zona horaria del hotel: {zone}",
+    "undatedWarning": "{count} ventas del histórico no tienen fecha de bloque: se contabilizan en los totales pero quedan fuera de la serie mensual.",
+    "axis": {
+      "volume": "ETH"
+    },
+    "legend": {
+      "primary": "Venta primaria (hotel)",
+      "secondary": "Reventa"
+    },
+    "charts": {
+      "monthly": {
+        "title": "Ventas por mes",
+        "description": "Importe vendido en cada mes natural, según la hora del hotel. Cada noche cuenta en el mes en que se vendió.",
+        "summary": "Gráfica de barras de ventas por mes: {count} meses con actividad, {total} ETH en total. Los datos exactos están en la tabla siguiente.",
+        "tableCaption": "Ventas por mes (alternativa accesible de la gráfica)",
+        "colMonth": "Mes",
+        "colPrimary": "Primaria",
+        "colSecondary": "Reventa",
+        "colSales": "Nº de ventas",
+        "empty": "Todavía no hay ventas registradas."
+      },
+      "roomType": {
+        "title": "Desglose por tipo de habitación",
+        "description": "Volumen vendido por tipo (simple, doble, suite), separando la venta del hotel de la reventa.",
+        "summary": "Gráfica de barras del volumen por tipo de habitación: {count} tipos con actividad, {total} ETH en total.",
+        "tableCaption": "Desglose por tipo de habitación (alternativa accesible de la gráfica)",
+        "colType": "Tipo",
+        "colPrimary": "Primaria",
+        "colSecondary": "Reventa",
+        "colTotal": "Total",
+        "unknown": "Sin clasificar",
+        "empty": "Todavía no hay ventas por tipo."
+      },
+      "topResold": {
+        "title": "Noches más revendidas",
+        "description": "Ranking por número de reventas de la misma noche (habitación y fecha). Desempata el volumen revendido.",
+        "tableCaption": "Ranking de noches más revendidas",
+        "colRank": "Puesto",
+        "colRoom": "Habitación",
+        "colDate": "Fecha",
+        "colType": "Tipo",
+        "colResales": "Reventas",
+        "colVolume": "Volumen revendido",
+        "empty": "Todavía no hay reventas."
+      }
+    },
     "formula": {
       "primaryVolume": "Σ precio de ventas primarias",
       "royalties": "Σ RoyaltyPaid (solo secundarias)",
@@ -250,17 +348,17 @@
     "brandHome": "Back-office, inicio",
     "skipToContent": "Saltar al contenido",
     "loadingSession": "Comprobando tu sesión…",
-    "gateTitle": "Back-office · acceso por rol",
+    "gateTitle": "Back-office · acceso con contraseña y TOTP",
     "connect": "Conectar wallet",
     "connectPrompt": "Conecta tu wallet para acceder al back-office.",
     "wrongNetwork": "Estás en la red equivocada.",
     "switchNetwork": "Cambiar de red",
-    "signInPrompt": "Firma el reto SIWE para iniciar sesión con tus roles.",
-    "signIn": "Iniciar sesión (SIWE)",
-    "signingIn": "Firmando…",
+    "signInPrompt": "Introduce tu usuario y contraseña. Después se pedirá el código TOTP obligatorio.",
+    "signIn": "Continuar",
+    "signingIn": "Comprobando…",
     "signInFailed": "No se pudo iniciar sesión. Inténtalo de nuevo.",
-    "noRole": "Tu wallet no tiene ningún rol del back-office.",
-    "roleDenied": "Tu sesión no incluye el rol necesario para este panel. Inicia sesión con una wallet que lo tenga.",
+    "noRole": "Tu usuario no tiene ningún rol del back-office.",
+    "roleDenied": "Tu sesión no incluye el rol necesario para este panel. Inicia sesión con un operador que lo tenga.",
     "accountChanged": "Has cambiado de cuenta en la wallet. Las acciones las firmaría esta cuenta, que quizá no tenga los roles de tu sesión. Vuelve a iniciar sesión con la cuenta autorizada.",
     "resign": "Volver a iniciar sesión",
     "logout": "Cerrar sesión",
@@ -300,11 +398,10 @@
     "dashboardTitle": "Dashboard",
     "dashboardTagline": "Métricas comerciales del hotel calculadas on-chain (solo back-office).",
     "royaltyTitle": "Royalty",
-    "royaltyTagline": "Configura el porcentaje de royalty de reventa (CU-12).",
-    "royaltyCurrent": "Royalty actual: {bps} bps ({percent} %).",
-    "royaltyField": "Nuevo royalty (bps, 0–2000)",
-    "royaltySet": "Fijar royalty",
-    "royaltyOutOfRange": "El royalty debe ser un entero entre {min} y {max} bps.",
+    "royaltyTagline": "Consulta el royalty de reventa, fijado por el contrato al crear cada noche (D-06).",
+    "royaltyImmutable": "El royalty se fija al crear la noche según el tipo de habitación y no puede modificarse después: es inmutable por construcción y no existe ningún parámetro gobernable.",
+    "royaltyRatesTitle": "Royalty por tipo de habitación",
+    "royaltySourceNote": "royaltyInfo(tokenId, salePrice) es la fuente única (ERC-2981): la reventa paga el porcentaje indicado y la venta primaria va íntegra a la tesorería, sin royalty.",
     "pauseTitle": "Pausa de emergencia",
     "pauseTagline": "Pausa o reanuda compras, reventas, mint y burn (CU-14).",
     "pauseActive": "El sistema está ACTIVO.",
@@ -379,7 +476,24 @@
     "rolesOwnerInfoTitle": "Propiedad (informativa)",
     "rolesOwnerInfoNote": "El campo «owner» (Ownable2Step) es informativo: transferirlo NO cede el control on-chain del contrato. Úsalo solo como etiqueta de titularidad.",
     "rolesHandoverTitle": "Ceder el control real (DEFAULT_ADMIN)",
-    "fieldErrorPrefix": "Error:"
+    "fieldErrorPrefix": "Error:",
+    "usernameLabel": "Usuario",
+    "passwordLabel": "Contraseña",
+    "mfaPrompt": "Introduce el código de 6 dígitos de tu aplicación de autenticación o un código de rescate.",
+    "totpCodeLabel": "Código TOTP",
+    "recoveryCodeLabel": "Código de rescate",
+    "mfaVerify": "Entrar",
+    "useRecoveryInstead": "Usar un código de rescate",
+    "useTotpInstead": "Usar el código TOTP",
+    "recoveryRemaining": "Códigos de rescate disponibles: {count}",
+    "authInvalidCredentials": "Usuario o contraseña incorrectos.",
+    "authMfaInvalid": "El código TOTP o de rescate no es válido.",
+    "authLocked": "Cuenta bloqueada temporalmente por intentos fallidos. Reinténtalo en 15 minutos.",
+    "authRateLimited": "Demasiados intentos. Espera 15 minutos antes de volver a intentarlo.",
+    "authExpired": "Tu sesión ha caducado. Vuelve a iniciar sesión.",
+    "authFailed": "No se pudo completar la autenticación. Inténtalo de nuevo.",
+    "mintPendingAnchor": "Registrada como pendiente de anclaje on-chain: no aparecerá en el catálogo hasta que la transacción de minteo se confirme.",
+    "fundsPausedWithdrawAllowed": "El contrato está en pausa. Retirar el saldo residual sigue permitido y es la vía de remediación."
   },
   "legal": {
     "terms": {
@@ -482,5 +596,11 @@
         "failed": "No se pudo completar la reserva. Revisa la red y vuelve a intentarlo."
       }
     }
+  },
+  "contractPaused": {
+    "title": "El contrato está en pausa",
+    "hint": "El hotel ha pausado las operaciones: no se pueden comprar noches mientras dure la pausa.",
+    "unknownTitle": "No se pudo comprobar si el contrato está en pausa",
+    "unknownHint": "La cadena no respondió a la consulta de estado; si intentas comprar y el contrato está en pausa, la transacción se rechazará."
   }
 }

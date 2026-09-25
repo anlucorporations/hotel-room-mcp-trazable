@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Esquemas de entrada de las herramientas del MCP (RF-12, DISEÑO §6). Se definen como
+ * Esquemas de entrada de las herramientas del MCP (RF-12, ADR-11). Se definen como
  * *raw shapes* de Zod para registrarlos directamente en el `McpServer` (`registerTool`) y, a
  * la vez, validar la entrada en el orquestador (fuente única → DRY).
  */
@@ -15,7 +15,7 @@ const tokenId = z.union([z.string(), z.number()]).transform((v) => String(v));
 export const listAvailableNightsShape = {
   /** Ventana de fechas (AAAAMMDD); por defecto [hoy, hoy+ventana de catálogo]. */
   window: z.object({ from: yyyymmdd.optional(), to: yyyymmdd.optional() }).optional(),
-  /** Filtro por tipo de habitación (alternativas del mismo tipo, CU-08 08a). */
+  /** Filtro por tipo de habitación (alternativas del mismo tipo, CU-08 08a, docs/SRS.md §9). */
   type: z.enum(["simple", "doble", "suite"]).optional(),
 } as const;
 

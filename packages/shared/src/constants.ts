@@ -1,11 +1,11 @@
 /**
- * Constantes y umbrales del sistema (DISEÑO-TECNICO §13, valores del spike de Besu).
+ * Constantes y umbrales del sistema (ADR-01/17, valores del spike de Besu).
  *
  * Fuente única para todo el monorepo. Los valores monetarios y de gas se expresan en
  * `wei` como `bigint`; los tiempos en la unidad indicada por el sufijo del nombre.
  */
 
-// ── Red Besu / Anvil (DISEÑO §9, ADR-01/17) ──────────────────────────────────
+// ── Red Besu / Anvil (ADR-01, ADR-17) ──────────────────────────────────
 export const CHAIN_ID = 81234 as const;
 export const NETWORK_NAME = "Codecrypto Besu" as const;
 export const CURRENCY_SYMBOL = "ETH" as const;
@@ -26,19 +26,22 @@ export const MIN_GAS_PRICE_WEI = 1000n;
  */
 export const FEE_MODE = "eip1559-explicit" as const;
 
-// ── Worker / lectura de eventos (DISEÑO §7/§9, ADR-09/10) ────────────────────
+// ── Worker / lectura de eventos (ADR-09, ADR-10) ────────────────────
 /** QBFT: finalidad inmediata ⇒ 1 confirmación basta (spike). */
 export const CONFIRMATIONS_N = 1 as const;
 /** Máximo de bloques por consulta `getLogs` (spike). */
 export const GETLOGS_MAX_RANGE = 5000 as const;
 
-// ── Royalty (RF-08, Decisión 17) ─────────────────────────────────────────────
-export const ROYALTY_DEFAULT_BPS = 1000 as const; // 10 %
-export const ROYALTY_MIN_BPS = 0 as const;
-export const ROYALTY_MAX_BPS = 2000 as const; // 20 %
+// ── Royalty (D-06) ───────────────────────────────────────────────────────────
+// El royalty es INMUTABLE y se deriva del tipo de habitación en el contrato:
+// 5 % para simple y doble (habitaciones 101-130) y 10 % para suite (201-220). NO existe
+// ningún parámetro gobernable, así que estas constantes solo reflejan el contrato para la
+// UI y las pruebas; el cambio de valores se hace en `HotelNights._royaltyBpsOf`.
+export const ROYALTY_BPS_STANDARD = 500 as const; // 5 %: simple y doble
+export const ROYALTY_BPS_SUITE = 1000 as const; // 10 %: suite
 export const BPS_DENOMINATOR = 10_000 as const;
 
-// ── Inventario / burn (CU-13) ────────────────────────────────────────────────
+// ── Inventario / burn (CU-13, docs/SRS.md §9) ────────────────────────────────────────────────
 export const BURN_BATCH_MAX = 50 as const;
 
 // ── Catálogo y rendimiento (Decisión 23, RNF-02/11) ──────────────────────────
@@ -57,7 +60,7 @@ export const LLM_OOD_REJECT_RATE = 0.96 as const; // ≥ 48/50
 export const FAUCET_COOLDOWN_SECONDS = 86_400 as const; // 1 dispensación / 24 h
 /**
  * Valores monetarios provisionales de desarrollo. El precio máximo real de una noche se
- * fija con el hotel (DISEÑO §16.6); de él se deriva `FAUCET_AMOUNT_WEI`.
+ * fija con el hotel (ADR-19); de él se deriva `FAUCET_AMOUNT_WEI`.
  */
 export const MAX_PRICE_NIGHT_WEI = 10n * 10n ** 18n; // 10 ETH (dev)
 export const FAUCET_AMOUNT_WEI = 3n * MAX_PRICE_NIGHT_WEI; // 30 ETH (dev)

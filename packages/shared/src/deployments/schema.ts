@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Registro de despliegue por cadena (DISEÑO §14): `deployments/<chainId>.json`.
+ * Registro de despliegue por cadena (ADR-09): `deployments/<chainId>.json`.
  * Es isomórfico (sin acceso a disco); el lector con `fs` vive en el subpath `./deployments`.
  */
 export const deploymentSchema = z.object({

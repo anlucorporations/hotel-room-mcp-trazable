@@ -15,6 +15,10 @@ packages/contracts/out/
 
 # registros de despliegue (generados por deploy/sync; efímeros por entorno)
 packages/contracts/deployments/latest.json
+# Registros crudos por cadena y salida de las pruebas: artefactos generados, no fuente.
+# El registro canonico y validado es packages/shared/deployments/<chainId>.json
+packages/contracts/deployments/*.json
+packages/contracts/deployments/test/
 packages/shared/deployments/*.json
 
 # env & secrets
@@ -22,6 +26,9 @@ packages/shared/deployments/*.json
 .env.*
 .env.vault
 !.env.example
+
+# despliegue local (scripts/dev/deploy-local.ps1): logs, PIDs y entorno generado
+.deploy-logs/
 
 # docker local data
 postgres_data/

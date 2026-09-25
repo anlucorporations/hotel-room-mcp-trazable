@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { NightType } from "@hotel/shared";
+import type { NightType } from "@hotel/shared/domain";
 import { TYPE_LABEL } from "@/lib/format";
 
 /** Mes disponible en el catálogo (clave `AAAAMM` + etiqueta editorial). */
@@ -67,7 +67,7 @@ function Chip({
 }
 
 /**
- * Barra de filtros del catálogo (DISEÑO-UX §3/§4.1, RF-14). Fila de chips toggle accesibles
+ * Barra de filtros del catálogo (docs/SRS.md §7, RF-14). Fila de chips toggle accesibles
  * (tipo de habitación y mes) más una fila de controles completos: buscador por nº de
  * habitación, selector de precio máximo (umbral i18n, MINOR#19) y rango de fechas «desde/hasta».
  * Contador de resultados con `aria-live`. Todo el estado vive en `CatalogClient` (useMemo).

@@ -1,0 +1,16 @@
+# Normaliza los finales de línea a LF dentro del repositorio.
+# El workspace de origen venía en CRLF (Windows); sin esto, cada edición
+# generaría ruido de fin de línea en el diff.
+* text=auto eol=lf
+
+# Binarios: sin conversión de contenido.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.zip binary

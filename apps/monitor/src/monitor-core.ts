@@ -4,7 +4,7 @@ import type { MonitorConfig, MonitorTarget } from "./config";
 import type { Alerter, HealthProbe, ProbeResult } from "./types";
 
 /**
- * Núcleo del monitor de observabilidad (T3.3 / RNF-17 / CU-16, TC-NF-020).
+ * Núcleo del monitor de observabilidad (T3.3 / RNF-17 / CU-16, docs/SRS.md §9, TC-NF-020).
  *
  * Por cada target mantiene un contador de fallos consecutivos. Un "fallo" en un ciclo es:
  *   - respuesta no-ok (HTTP ≠ 200 / 503 / error de red), o

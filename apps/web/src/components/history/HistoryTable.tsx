@@ -1,5 +1,5 @@
 import { useTranslations } from "next-intl";
-import type { SaleHistoryEntry } from "@hotel/shared";
+import type { SaleHistoryEntry } from "@hotel/shared/domain";
 import { txExplorerUrl } from "@/config/chain";
 import { formatEth, formatNightDate, useRoomTypeLabel } from "@/lib/format";
 
@@ -33,7 +33,7 @@ function TxProof({ hash, label }: { hash: string; label: string }) {
   );
 }
 
-/** Histórico público de ventas (CU-09): orden total, sin PII (solo wallets). */
+/** Histórico público de ventas (CU-09, docs/SRS.md §9): orden total, sin PII (solo wallets). */
 export function HistoryTable({ entries }: { entries: readonly SaleHistoryEntry[] }) {
   const t = useTranslations("history");
   const roomTypeLabel = useRoomTypeLabel();

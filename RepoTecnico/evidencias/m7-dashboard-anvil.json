@@ -1,0 +1,310 @@
+{
+  "hito": "M7",
+  "premisa": "serie mensual, desglose por tipo y ranking de más revendidas cuadrando con el histórico real; accesibilidad sobre la paleta real (D-11, D-16)",
+  "fecha": "2026-09-23T18:30:18.984Z",
+  "red": {
+    "chainId": 81234,
+    "rpc": "http://127.0.0.1:8545",
+    "contrato": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+    "operadorAdmin": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+  },
+  "transacciones": {
+    "mint-103-simple": "0x4fcd66411f505d9a9243ff87faf5a81b41af41b3f3cf0db847b2286290855f82",
+    "buy-103-simple": "0x339e4098a7b1595f95834d321c1b15875f116c24e59f7581fbe54613d3e9823b",
+    "list-103-reventa": "0xdf683c86c575c825f9170dbadd9d2f6be33fcaf191cce05f2ab2766eec1fb6f3",
+    "buyResale-103-reventa": "0xb1deab3cb43136b99aa9f629bc13ba7724194d67794a3fa14e370ab625ca7055",
+    "mint-119-doble": "0x5b2650097419ef17cf6d65119753674cfa98a9d44b3a5f1300c49df8358b962c",
+    "buy-119-doble": "0xf2a3a4afac102aea4108f84ddd0ff79f633a6b09d39958d3b20ec76c7a919eb3",
+    "mint-204-suite": "0x9e01834bbdbb8addb2984f1634eff0d13338de2209542eb4256b77216b56fbda",
+    "buy-204-suite": "0xd12db203fa06637e2d4de3cf74b77ec383ade5879cbe082b1c98974a2381e479",
+    "list-119-reventa": "0x231ae5d05e6fa53b107526a5fce2b1292a2a958de4b3106ba2d9648629d8f4bc",
+    "buyResale-119-reventa": "0x1f08a2bd3a6b955eb87a8ec106f1a106665cc578394d3fa0428173596b4dc8f7",
+    "mint-105-frontera": "0xe1ef890d3ac9ea4d85029477a814433055dd03bb16069c6869b76f2bea084ee9",
+    "buy-105-frontera": "0x3c3ee002371295366b835ce084509a5ce1d2139b706a888c2e9ab2f0d250f225"
+  },
+  "comprobaciones": [
+    "La cadena responde y es la esperada",
+    "La cuenta de operación tiene PAUSER_ROLE (puede pausar el contrato de verdad)",
+    "El reloj de la cadena cruza de mes: 2027-10 → 2027-11",
+    "La frontera elegida separa el mes del hotel (2027-12) del de UTC (2027-11)",
+    "Ventas de esta corrida: 4 primaria(s) y 2 reventa(s) en los meses 2027-10/2027-11 (bloque 27689)",
+    "Las 6 ventas de esta corrida están en el histórico con su precio, tipo y comprador exactos",
+    "Los contadores incluyen el volumen de esta corrida (primaria 0.65 POL, reventa 0.4 POL, royalties 0.02 POL)",
+    "La serie mensual del SQL es idéntica a la derivada del histórico (12 meses)",
+    "El desglose por tipo del SQL es idéntico al derivado del histórico (3 tipos)",
+    "El ranking de más revendidas del SQL es idéntico al derivado del histórico (10 noches)",
+    "Tras el relleno, NINGUNA venta del histórico queda fuera de la serie mensual (0 sin fecha)",
+    "La serie mensual contiene los dos meses reales del E2E (2026-09, 2026-12, 2027-03, 2027-04, 2027-05, 2027-06, 2027-07, 2027-08, 2027-09, 2027-10, 2027-11, 2027-12)",
+    "La fila de frontera está a caballo de dos meses: hotel 2027-12 vs UTC 2027-11",
+    "La serie mensual cuenta esa venta en el mes del HOTEL (2027-12), no en el de UTC (2027-11)",
+    "El desglose por tipo cubre simple, doble y suite (los tres tipos del maestro)",
+    "La venta primaria de la suite se atribuye al tipo suite",
+    "La reventa de una noche simple se atribuye al tipo simple",
+    "La reventa de una noche doble se atribuye al tipo doble",
+    "El ranking encabeza con la noche 11920270413 (1 reventa(s))",
+    "El ranking incluye las noches revendidas en esta corrida",
+    "Las ventas sin marca temporal se declaran (0) y coinciden con el SQL",
+    "Toda venta del histórico está datada o declarada sin fecha (58 en total)",
+    "El payload HTTP /aggregates es el mismo objeto que el del proceso (sin pérdida en JSON)",
+    "El histórico HTTP trae las mismas 58 ventas que el proceso",
+    "El contrato queda EN PAUSA (las vistas leen este mismo `paused()`)",
+    "Con el contrato en pausa, `buy` revierte con EnforcedPause (lo que la vista ya no ofrece)",
+    "El contrato vuelve a estar operativo (`paused()` = false)",
+    "Sin pausa, la misma compra simula correctamente (la diferencia es la pausa)",
+    "Tras la reventa, el dueño on-chain de la noche 11920271122 es el comprador (0x976EA7…)",
+    "Se ha localizado una noche quemada en la cadena (10820271006)",
+    "`ownerOf` de una noche quemada revierte: la clasificación «no existe» (404) es real",
+    "`ownerOf` de un token nunca emitido también revierte (misma vía de fallo)"
+  ],
+  "resultado": "COMPLETO",
+  "meses": {
+    "mesAnterior": "2027-10",
+    "mesSiguiente": "2027-11",
+    "fronteraHotel": "2027-12",
+    "fronteraUtc": "2027-11",
+    "fronteraComprada": true
+  },
+  "ventasDeEstaCorrida": [
+    {
+      "etiqueta": "103-simple",
+      "tipo": "primary",
+      "tokenId": "10320271023",
+      "precioWei": "100000000000000000",
+      "royaltyWei": "0",
+      "comprador": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+      "txHash": "0x339e4098a7b1595f95834d321c1b15875f116c24e59f7581fbe54613d3e9823b"
+    },
+    {
+      "etiqueta": "103-reventa",
+      "tipo": "secondary",
+      "tokenId": "10320271023",
+      "precioWei": "150000000000000000",
+      "royaltyWei": "7500000000000000",
+      "comprador": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+      "txHash": "0xb1deab3cb43136b99aa9f629bc13ba7724194d67794a3fa14e370ab625ca7055"
+    },
+    {
+      "etiqueta": "119-doble",
+      "tipo": "primary",
+      "tokenId": "11920271122",
+      "precioWei": "200000000000000000",
+      "royaltyWei": "0",
+      "comprador": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+      "txHash": "0xf2a3a4afac102aea4108f84ddd0ff79f633a6b09d39958d3b20ec76c7a919eb3"
+    },
+    {
+      "etiqueta": "204-suite",
+      "tipo": "primary",
+      "tokenId": "20420271126",
+      "precioWei": "300000000000000000",
+      "royaltyWei": "0",
+      "comprador": "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
+      "txHash": "0xd12db203fa06637e2d4de3cf74b77ec383ade5879cbe082b1c98974a2381e479"
+    },
+    {
+      "etiqueta": "119-reventa",
+      "tipo": "secondary",
+      "tokenId": "11920271122",
+      "precioWei": "250000000000000000",
+      "royaltyWei": "12500000000000000",
+      "comprador": "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
+      "txHash": "0x1f08a2bd3a6b955eb87a8ec106f1a106665cc578394d3fa0428173596b4dc8f7"
+    },
+    {
+      "etiqueta": "105-frontera",
+      "tipo": "primary",
+      "tokenId": "10520271214",
+      "precioWei": "50000000000000000",
+      "royaltyWei": "0",
+      "comprador": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+      "txHash": "0x3c3ee002371295366b835ce084509a5ce1d2139b706a888c2e9ab2f0d250f225"
+    }
+  ],
+  "filasDeEstaCorrida": {
+    "ventas": 6,
+    "minteadas": 4,
+    "verificadasEnElHistorico": 6
+  },
+  "rellenoDeFechas": {
+    "backfilled": 0,
+    "remaining": 0
+  },
+  "contadoresTrasLaCorrida": {
+    "primariaWei": "6090000000000000000",
+    "reventaWei": "3000000000000000000",
+    "royaltiesWei": "150000000000000000",
+    "vendidas": 43,
+    "minteadas": 51
+  },
+  "agregados": {
+    "lastBlock": 27689,
+    "timeZone": "Europe/Madrid",
+    "ventasSinFecha": 0,
+    "serieMensual": [
+      {
+        "month": "2026-09",
+        "primaryVolumeWei": "2180000000000000000",
+        "secondaryVolumeWei": "800000000000000000",
+        "primarySales": 18,
+        "secondarySales": 4
+      },
+      {
+        "month": "2026-12",
+        "primaryVolumeWei": "320000000000000000",
+        "secondaryVolumeWei": "200000000000000000",
+        "primarySales": 3,
+        "secondarySales": 1
+      },
+      {
+        "month": "2027-03",
+        "primaryVolumeWei": "100000000000000000",
+        "secondaryVolumeWei": "150000000000000000",
+        "primarySales": 1,
+        "secondarySales": 1
+      },
+      {
+        "month": "2027-04",
+        "primaryVolumeWei": "600000000000000000",
+        "secondaryVolumeWei": "400000000000000000",
+        "primarySales": 3,
+        "secondarySales": 2
+      },
+      {
+        "month": "2027-05",
+        "primaryVolumeWei": "600000000000000000",
+        "secondaryVolumeWei": "400000000000000000",
+        "primarySales": 3,
+        "secondarySales": 2
+      },
+      {
+        "month": "2027-06",
+        "primaryVolumeWei": "500000000000000000",
+        "secondaryVolumeWei": "250000000000000000",
+        "primarySales": 2,
+        "secondarySales": 1
+      },
+      {
+        "month": "2027-07",
+        "primaryVolumeWei": "150000000000000000",
+        "secondaryVolumeWei": "150000000000000000",
+        "primarySales": 2,
+        "secondarySales": 1
+      },
+      {
+        "month": "2027-08",
+        "primaryVolumeWei": "500000000000000000",
+        "secondaryVolumeWei": "250000000000000000",
+        "primarySales": 2,
+        "secondarySales": 1
+      },
+      {
+        "month": "2027-09",
+        "primaryVolumeWei": "490000000000000000",
+        "secondaryVolumeWei": "0",
+        "primarySales": 5,
+        "secondarySales": 0
+      },
+      {
+        "month": "2027-10",
+        "primaryVolumeWei": "100000000000000000",
+        "secondaryVolumeWei": "150000000000000000",
+        "primarySales": 1,
+        "secondarySales": 1
+      },
+      {
+        "month": "2027-11",
+        "primaryVolumeWei": "500000000000000000",
+        "secondaryVolumeWei": "250000000000000000",
+        "primarySales": 2,
+        "secondarySales": 1
+      },
+      {
+        "month": "2027-12",
+        "primaryVolumeWei": "50000000000000000",
+        "secondaryVolumeWei": "0",
+        "primarySales": 1,
+        "secondarySales": 0
+      }
+    ],
+    "desglosePorTipo": [
+      {
+        "roomType": "simple",
+        "primarySales": 32,
+        "secondarySales": 10,
+        "primaryVolumeWei": "3290000000000000000",
+        "secondaryVolumeWei": "1750000000000000000",
+        "totalVolumeWei": "5040000000000000000"
+      },
+      {
+        "roomType": "doble",
+        "primarySales": 5,
+        "secondarySales": 5,
+        "primaryVolumeWei": "1000000000000000000",
+        "secondaryVolumeWei": "1250000000000000000",
+        "totalVolumeWei": "2250000000000000000"
+      },
+      {
+        "roomType": "suite",
+        "primarySales": 6,
+        "secondarySales": 0,
+        "primaryVolumeWei": "1800000000000000000",
+        "secondaryVolumeWei": "0",
+        "totalVolumeWei": "1800000000000000000"
+      }
+    ],
+    "rankingRevendidas": [
+      {
+        "tokenId": "11920270413",
+        "room": 119,
+        "dateYYYYMMDD": 20270413,
+        "roomType": "doble",
+        "resaleCount": 1,
+        "resaleVolumeWei": "250000000000000000"
+      },
+      {
+        "tokenId": "11920270515",
+        "room": 119,
+        "dateYYYYMMDD": 20270515,
+        "roomType": "doble",
+        "resaleCount": 1,
+        "resaleVolumeWei": "250000000000000000"
+      },
+      {
+        "tokenId": "11920270616",
+        "room": 119,
+        "dateYYYYMMDD": 20270616,
+        "roomType": "doble",
+        "resaleCount": 1,
+        "resaleVolumeWei": "250000000000000000"
+      },
+      {
+        "tokenId": "11920270811",
+        "room": 119,
+        "dateYYYYMMDD": 20270811,
+        "roomType": "doble",
+        "resaleCount": 1,
+        "resaleVolumeWei": "250000000000000000"
+      },
+      {
+        "tokenId": "11920271122",
+        "room": 119,
+        "dateYYYYMMDD": 20271122,
+        "roomType": "doble",
+        "resaleCount": 1,
+        "resaleVolumeWei": "250000000000000000"
+      }
+    ],
+    "totalVentasHistorico": 58
+  },
+  "verificacionComplementaria": {
+    "accesibilidad": {
+      "suite": "apps/web/src/lib/a11y/a11y.test.ts",
+      "queVerifica": "contraste AA de las combinaciones declaradas y de los pares texto/fondo realmente usados, calculado sobre la paleta REAL (igualdad comprobada contra packages/config/tailwind/preset.cjs)"
+    },
+    "guardianes": [
+      "apps/web/src/lib/paused-guardian.test.ts (ninguna vista de compra ofrece lo que revertiría por pausa)",
+      "apps/web/src/lib/reception-guardian.test.ts (los tres endpoints del pase usan el dueño on-chain)",
+      "apps/web/src/lib/boundaries.test.ts (los módulos de cliente no arrastran el barril de servidor)"
+    ]
+  }
+}

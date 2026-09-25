@@ -1,95 +1,91 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest} from "next/server";
+import { NextResponse } from "next/server";
 import { AuthService } from "@hotel/shared";
 
 export const dynamic = "force-dynamic";
 
 const authService = new AuthService();
 
-// Usuarios iniciales del MVP para verificación de credenciales (Admin y Recepción)
-// En producción estos valores vienen de la base de datos o env configurados con hash bcrypt
-const SYSTEM_USERS: Record<string, { role: "DEFAULT_ADMIN_ROLE" | "RECEPTION_ROLE"; passwordHash: string }> = {
-  // admin: Hotel2026Admin!
-  "admin@hotel.es": {
-    role: "DEFAULT_ADMIN_ROLE",
-    passwordHash: "$2a$10$wE9K2j3Pfx9XqM9GqgKzeOmX9Qk6T.j7wL7xZ.JgKjW2oM6N9P9.O",
-  },
-  // recepcion: Hotel2026Recepcion!
-  "recepcion@hotel.es": {
-    role: "RECEPTION_ROLE",
-    passwordHash: "$2a$10$tZ2E7f3A9y7BqP1Wk9LmduZ1A0S8d7Q6e5R4T3Y2U1I0O9P8A7S6D",
-  },
-};
-
+/**
+ * POST /api/auth/login
+ *
+ * Primer factor del sistema canónico (D-04): usuario + contraseña.
+ * NO emite tokens de sesión: devuelve un `sessionToken` (JWT de reto, 10 min) que acredita que
+ * la contraseña ya se validó y que debe canjearse en `POST /api/auth/mfa/verify` con el código
+ * TOTP o un código de rescate. Sin segundo factor no hay sesión.
+ *
+ * El usuario sale de la tabla `admin_users`: ya no existen `SYSTEM_USERS` ni contraseñas
+ * embebidas en el código.
+ *
+ * Códigos de estado:
+ *   200 reto MFA emitido · 400 body inválido · 401 credenciales inválidas
+ *   423 cuenta bloqueada temporalmente · 429 rate limiting (5 intentos / 15 min)
+ */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
+    const body = (await request.json().catch(() => null)) as
+      | { username?: unknown; email?: unknown; password?: unknown }
+      | null;
 
-    const body = await request.json();
-    const { email, password } = body;
+    // `email` se acepta como alias histórico de `username` (los usuarios del piloto son emails).
+    const rawUsername = body?.username ?? body?.email;
+    const username = typeof rawUsername === "string" ? rawUsername.trim() : "";
+    const password = typeof body?.password === "string" ? body.password : "";
 
-    if (!email || !password) {
+    if (!username || !password) {
       return NextResponse.json(
-        { error: "BAD_REQUEST", message: "Email y contraseña requeridos" },
+        { error: "BAD_REQUEST", message: "Usuario y contraseña requeridos" },
         { status: 400 },
       );
     }
 
-    const rateLimitKey = `${ip}:${email.toLowerCase()}`;
-    const rateLimit = await authService.checkRateLimit(rateLimitKey);
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
+    const result = await authService.loginWithPassword({ username, password, ipAddress: ip });
 
-    if (rateLimit.limited) {
+    if (result.error === "RATE_LIMITED") {
       return NextResponse.json(
         {
           error: "TOO_MANY_REQUESTS",
-          message: `Demasiados intentos fallidos. Bloqueado durante 15 minutos. Reintente en ${rateLimit.retryAfterSeconds}s`,
-          retryAfterSeconds: rateLimit.retryAfterSeconds,
+          message: `Demasiados intentos fallidos. Bloqueado durante 15 minutos. Reintente en ${result.retryAfterSeconds}s`,
+          retryAfterSeconds: result.retryAfterSeconds,
         },
         { status: 429 },
       );
     }
 
-    const user = SYSTEM_USERS[email.toLowerCase()];
-
-    // Comprobación de existencia y contraseña
-    let isValid = false;
-    if (user) {
-      // Para entornos dev donde las contraseñas coinciden en texto claro o bcrypt:
-      if (password === "Hotel2026Admin!" && user.role === "DEFAULT_ADMIN_ROLE") {
-        isValid = true;
-      } else if (password === "Hotel2026Recepcion!" && user.role === "RECEPTION_ROLE") {
-        isValid = true;
-      } else {
-        isValid = await authService.comparePassword(password, user.passwordHash).catch(() => false);
-      }
+    if (result.error === "ACCOUNT_LOCKED") {
+      return NextResponse.json(
+        {
+          error: "ACCOUNT_LOCKED",
+          message: "Cuenta bloqueada temporalmente por intentos fallidos. Reintente en 15 minutos.",
+        },
+        { status: 423 },
+      );
     }
 
-    if (!isValid || !user) {
-      const attempts = await authService.recordAuthFailure(rateLimitKey);
-      const remaining = Math.max(0, 5 - attempts);
+    if (!result.challengeRequired || !result.sessionToken) {
       return NextResponse.json(
         {
           error: "UNAUTHORIZED",
           message: "Credenciales inválidas",
-          remainingAttempts: remaining,
+          remainingAttempts: result.remainingAttempts,
         },
         { status: 401 },
       );
     }
 
-    // Credenciales correctas: reiniciar contador de fallos
-    await authService.recordAuthSuccess(rateLimitKey);
-
-    // Emisión del sessionToken para el desafío MFA (10 minutos)
-    const sessionToken = await authService.createChallengeToken(email.toLowerCase(), user.role);
-
     return NextResponse.json({
       challengeRequired: true,
-      sessionToken,
+      sessionToken: result.sessionToken,
+      username: result.username,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[API /api/auth/login] Error:", error);
     return NextResponse.json(
-      { error: "INTERNAL_SERVER_ERROR", message: error?.message || "Error de autenticación" },
+      {
+        error: "INTERNAL_SERVER_ERROR",
+        message: error instanceof Error ? error.message : "Error de autenticación",
+      },
       { status: 500 },
     );
   }

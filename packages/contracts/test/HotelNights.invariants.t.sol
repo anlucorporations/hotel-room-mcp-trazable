@@ -98,7 +98,9 @@ contract HotelNightsHandler is Test, IERC721Receiver {
 
         address owner = _ownerOrZero(tokenId);
         if (owner == address(0)) return;
-        uint256 price = bound(priceSeed, 1, 5 ether);
+        // D-06: el precio debe respetar el suelo vigente o `list` revertiría siempre y la
+        // campaña perdería cobertura de reventas.
+        uint256 price = bound(priceSeed, NFT.minListingPrice(), 5 ether);
         vm.prank(owner);
         try NFT.list(tokenId, price) {} catch {}
     }
@@ -178,12 +180,11 @@ contract HotelNightsInvariantsTest is StdInvariant, Test {
     HotelNightsHandler internal handler;
 
     address internal treasury = makeAddr("treasuryInv");
-    uint96 internal constant ROYALTY_BPS = 1000; // 10 %
     uint256 internal constant BASE_TS = 1_780_272_000; // 2026-06-01
 
     function setUp() public {
         vm.warp(BASE_TS);
-        nft = new HotelNights(treasury, ROYALTY_BPS);
+        nft = new HotelNights(treasury);
         handler = new HotelNightsHandler(nft, treasury);
 
         // El handler actúa como MINTER (mintea) y TREASURER (withdraw).

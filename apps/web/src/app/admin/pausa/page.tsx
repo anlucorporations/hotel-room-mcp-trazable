@@ -4,7 +4,7 @@ import { AdminPause } from "@/components/admin/AdminPause";
 
 export const dynamic = "force-dynamic";
 
-/** Pausa de emergencia (CU-14): gateada por PAUSER_ROLE. */
+/** Pausa de emergencia (CU-14, docs/SRS.md §9): gateada por PAUSER_ROLE. */
 export default function AdminPausePage() {
   return (
     <AdminLayout>

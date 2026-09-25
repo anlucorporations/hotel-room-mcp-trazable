@@ -72,7 +72,7 @@ export async function listAvailableNights(
 ): Promise<NightDescriptor[]> {
   const today = todayYYYYMMDD();
   // La ventana nunca incluye fechas pasadas: una noche con fecha < hoy está EXPIRADA y no es
-  // comprable (CASOS §4), aunque el llamante pida un `from` anterior.
+  // comprable (docs/SRS.md §9), aunque el llamante pida un `from` anterior.
   const from = Math.max(input.window?.from ?? today, today);
   const to = input.window?.to ?? defaultWindowEnd();
   const inWindow = (date: number): boolean => date >= from && date <= to;

@@ -3,7 +3,7 @@ import type { DashboardAggregates, SaleHistoryEntry } from "@hotel/shared";
 import type { HealthProvider } from "@hotel/shared/health";
 
 /**
- * Servidor HTTP del worker (FASE 3, CU-09/11). Amplía el `/health` de `@hotel/shared` con dos
+ * Servidor HTTP del worker (FASE 3, CU-09/11, docs/SRS.md §9). Amplía el `/health` de `@hotel/shared` con dos
  * rutas de datos para la web:
  *   - `GET /health`     → 200 (ok) / 503 (down + `COMPONENT_DOWN`). Comportamiento idéntico al de
  *     `@hotel/shared/health`: reutiliza el mismo `HealthProvider`/estado del worker.
@@ -15,10 +15,17 @@ import type { HealthProvider } from "@hotel/shared/health";
  * provider y los datos los aporta `data`; este módulo solo enruta y serializa.
  */
 export interface WorkerHttpData {
-  /** Snapshot de los agregados del dashboard (CU-11). */
-  readonly getAggregates: () => DashboardAggregates;
-  /** Histórico de ventas con orden total (CU-09). */
-  readonly getHistory: () => SaleHistoryEntry[];
+  /**
+   * Snapshot de los agregados del dashboard (CU-11). Puede ser asíncrono: la fuente es
+   * PostgreSQL (`pg`), cuyo acceso es inherentemente asíncrono (D-09).
+   */
+  readonly getAggregates:
+    | (() => DashboardAggregates)
+    | (() => Promise<DashboardAggregates>);
+  /** Histórico de ventas con orden total (CU-09); síncrono o asíncrono (D-09). */
+  readonly getHistory:
+    | (() => SaleHistoryEntry[])
+    | (() => Promise<SaleHistoryEntry[]>);
 }
 
 export interface WorkerHttpServerOptions {
@@ -116,21 +123,27 @@ function handleHealth(
     });
 }
 
-/** Sirve una ruta de datos (CORS) serializando el resultado del proveedor inyectado. */
+/**
+ * Sirve una ruta de datos (CORS) serializando el resultado del proveedor inyectado. El proveedor
+ * puede ser asíncrono (PostgreSQL, D-09): se resuelve antes de serializar y, si falla, se
+ * responde 500 `DATA_UNAVAILABLE`.
+ */
 function handleData<T>(
-  produce: () => T,
+  produce: () => T | Promise<T>,
   res: ServerResponse,
   onError?: (error: unknown) => void,
 ): void {
-  try {
-    const payload = produce();
-    res.writeHead(200, CORS_HEADERS);
-    res.end(JSON.stringify(payload));
-  } catch (error: unknown) {
-    onError?.(error);
-    res.writeHead(500, CORS_HEADERS);
-    res.end(JSON.stringify({ error: "DATA_UNAVAILABLE" }));
-  }
+  void Promise.resolve()
+    .then(produce)
+    .then((payload) => {
+      res.writeHead(200, CORS_HEADERS);
+      res.end(JSON.stringify(payload));
+    })
+    .catch((error: unknown) => {
+      onError?.(error);
+      res.writeHead(500, CORS_HEADERS);
+      res.end(JSON.stringify({ error: "DATA_UNAVAILABLE" }));
+    });
 }
 
 function sendNotFound(res: ServerResponse): void {

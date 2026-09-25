@@ -1,6 +1,6 @@
 import { formatEther } from "viem";
 import { useTranslations } from "next-intl";
-import { splitYYYYMMDD, type NightType } from "@hotel/shared";
+import { splitYYYYMMDD, type NightType } from "@hotel/shared/domain";
 
 /** Locale activo de la app (next-intl). Centralizado para los formateadores `Intl`. */
 const APP_LOCALE = "es-ES";
@@ -25,7 +25,7 @@ const utcDateOf = (yyyymmdd: number): Date => {
 
 /**
  * Fecha editorial larga («Domingo, 15 de junio de 2026») para la NightCard
- * (DISEÑO-UX §3/§4.1). Usa `Intl.DateTimeFormat` con el locale activo en UTC para
+ * (docs/SRS.md §7). Usa `Intl.DateTimeFormat` con el locale activo en UTC para
  * casar con la codificación del `tokenId` (MINOR#43).
  */
 export function formatNightDateLong(yyyymmdd: number): string {

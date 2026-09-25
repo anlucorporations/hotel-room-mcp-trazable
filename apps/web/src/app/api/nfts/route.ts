@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { NFTsRepository, ExchangeRateService } from "@hotel/shared";
+import type { NextRequest} from "next/server";
+import { NextResponse } from "next/server";
+import { NFTsRepository, ExchangeRateService, toRoomTypeDb } from "@hotel/shared";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const searchParams = request.nextUrl.searchParams;
 
     const status = searchParams.get("status") || undefined;
-    const roomType = (searchParams.get("roomType") as "SIMPLE" | "SUITE") || undefined;
+    // El filtro admite el vocabulario del maestro (`SIMPLE`, `DOBLE`, `SUITE`), en cualquier caja.
+    // Un valor que no sea un tipo conocido se ignora en vez de traducirse a «simple» por defecto.
+    const roomType = toRoomTypeDb(searchParams.get("roomType")) ?? undefined;
     const dateFrom = searchParams.get("dateFrom") || undefined;
     const dateTo = searchParams.get("dateTo") || undefined;
     const priceMinWei = searchParams.get("priceMinWei") || undefined;
@@ -44,10 +47,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       exchangeRateUpdatedAt: rateInfo.updatedAt,
       exchangeRateSource: rateInfo.source,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("[API /api/nfts] Error al obtener catálogo:", error);
     return NextResponse.json(
-      { error: "INTERNAL_SERVER_ERROR", message: error?.message || "Error al consultar catálogo" },
+      {
+        error: "INTERNAL_SERVER_ERROR",
+        message: error instanceof Error && error.message ? error.message : "Error al consultar catálogo",
+      },
       { status: 500 },
     );
   }

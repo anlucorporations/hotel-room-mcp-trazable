@@ -8,11 +8,11 @@ import {
   type GetLogsReturnType,
   type PublicClient,
 } from "viem";
-import { GETLOGS_MAX_RANGE, decodeTokenId, roomTypeOf, type NightType } from "@hotel/shared";
+import { GETLOGS_MAX_RANGE, decodeTokenId, roomTypeOf, type NightType } from "@hotel/shared/domain";
 import { hotelNightsAbi } from "@hotel/shared/abi";
 import { contractAddress, deploymentBlock } from "@/config/chain";
 
-/** Una noche que el usuario posee actualmente, con su estado de reventa (CU-06/07). */
+/** Una noche que el usuario posee actualmente, con su estado de reventa (CU-06/07, docs/SRS.md §9). */
 export interface OwnedNight {
   readonly tokenId: string;
   readonly room: number;

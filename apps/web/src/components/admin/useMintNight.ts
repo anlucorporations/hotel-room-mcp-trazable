@@ -13,7 +13,7 @@ export interface UseMintNightResult {
   error: Error | null;
 }
 
-/** Minteo de una noche por el rol MINTER (CU-02). */
+/** Minteo de una noche por el rol MINTER (CU-02, docs/SRS.md §9). */
 export function useMintNight(): UseMintNightResult {
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
   const receipt = useWaitForTransactionReceipt({ hash });

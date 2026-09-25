@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800" role="img" aria-labelledby="rq-titulo rq-desc">
+  <title id="rq-titulo">El resguardo de la noche: código QR en el móvil y código corto en papel</title>
+  <desc id="rq-desc">Dos mitades. A la izquierda, un móvil con un código QR grande y el texto «Enséñalo en recepción». A la derecha, una tarjeta de papel con el código corto MDS-A1B2C3D4 y el texto «Plan B: apúntalo». Abajo, en una franja, el aviso «Cada resguardo sirve una sola vez».</desc>
+  <defs>
+    <filter id="rq-sombra" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0E5A63" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="800" fill="#FBF6EC"/>
+  <text x="60" y="90" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="40" font-weight="700" fill="#08424A">El resguardo de tu noche</text>
+
+  <!-- mitad izquierda: QR en el móvil -->
+  <g filter="url(#rq-sombra)">
+    <rect x="60" y="130" width="520" height="460" rx="20" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+  </g>
+  <text x="90" y="175" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#1B2327">En el móvil</text>
+  <rect x="250" y="200" width="140" height="330" rx="20" fill="#08424A"/>
+  <rect x="258" y="212" width="124" height="306" rx="14" fill="#FFFFFF"/>
+  <g fill="#1B2327">
+    <rect x="272" y="250" width="24" height="24" rx="3"/>
+    <rect x="276" y="254" width="16" height="16" fill="#FFFFFF"/>
+    <rect x="280" y="258" width="8" height="8"/>
+    <rect x="344" y="250" width="24" height="24" rx="3"/>
+    <rect x="348" y="254" width="16" height="16" fill="#FFFFFF"/>
+    <rect x="352" y="258" width="8" height="8"/>
+    <rect x="272" y="322" width="24" height="24" rx="3"/>
+    <rect x="276" y="326" width="16" height="16" fill="#FFFFFF"/>
+    <rect x="280" y="330" width="8" height="8"/>
+    <path d="M304 250h8v8h-8zM320 250h8v8h-8zM312 258h8v8h-8zM304 266h8v8h-8zM336 266h8v8h-8zM288 274h8v8h-8zM304 274h8v8h-8zM320 274h8v8h-8zM352 274h8v8h-8zM296 282h8v8h-8zM312 282h8v8h-8zM328 282h8v8h-8zM360 282h8v8h-8zM304 290h8v8h-8zM336 290h8v8h-8zM352 290h8v8h-8zM296 298h8v8h-8zM312 298h8v8h-8zM344 298h8v8h-8zM360 298h8v8h-8zM304 306h8v8h-8zM336 306h8v8h-8zM296 314h8v8h-8zM312 314h8v8h-8zM328 314h8v8h-8zM360 314h8v8h-8zM304 322h8v8h-8zM320 322h8v8h-8zM336 322h8v8h-8zM312 330h8v8h-8zM328 330h8v8h-8zM304 338h8v8h-8zM336 338h8v8h-8z"/>
+  </g>
+  <text x="320" y="392" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#1B2327">12 jun 2026</text>
+  <text x="320" y="420" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">Hab. 118</text>
+  <text x="320" y="570" text-anchor="middle" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="28" font-weight="700" fill="#0E5A63" textLength="330" lengthAdjust="spacingAndGlyphs">Enséñalo en recepción</text>
+
+  <!-- mitad derecha: código corto en papel -->
+  <g filter="url(#rq-sombra)">
+    <rect x="620" y="130" width="520" height="460" rx="20" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+  </g>
+  <text x="650" y="175" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#1B2327">En papel</text>
+  <rect x="680" y="200" width="400" height="240" rx="14" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2" stroke-dasharray="10 8"/>
+  <text x="880" y="250" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Código corto</text>
+  <rect x="710" y="270" width="340" height="70" rx="12" fill="#FFFFFF" stroke="#0E5A63" stroke-width="2"/>
+  <text x="880" y="317" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="36" font-weight="700" letter-spacing="2" fill="#08424A" textLength="290" lengthAdjust="spacingAndGlyphs">MDS-A1B2C3D4</text>
+  <text x="880" y="390" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">Código de un solo uso</text>
+  <text x="880" y="510" text-anchor="middle" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="28" font-weight="700" fill="#0E5A63">Plan B: apúntalo</text>
+  <text x="880" y="545" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">sirve si te quedas sin batería</text>
+
+  <!-- franja de aviso -->
+  <rect x="60" y="630" width="1080" height="90" rx="16" fill="#C0542E"/>
+  <text x="600" y="687" text-anchor="middle" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="32" font-weight="700" fill="#FFFFFF" textLength="620" lengthAdjust="spacingAndGlyphs">Cada resguardo sirve una sola vez</text>
+  <text x="600" y="760" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" fill="#4C575C">Si no vas a poder ir, revende la noche.</text>
+</svg>

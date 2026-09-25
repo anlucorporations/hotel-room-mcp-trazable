@@ -1,44 +1,59 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { PmsAdapter } from './adapter';
 
-describe('PmsAdapter (Fase 2: Integración PMS & RD 933/2021)', () => {
-  it('debe generar la ficha de viajero oficial cumpliendo con los campos del RD 933/2021', () => {
-    const report = PmsAdapter.generatePoliceReport({
+/**
+ * Adaptador del PMS (D-13).
+ *
+ * Lo que estas pruebas fijan es un **cambio de alcance**: la plataforma comunica la entrada al PMS
+ * y **no** genera el registro de viajeros del RD 933/2021 (ni acepta nombre o documento). El estado
+ * auditado afirmaba haber emitido el parte policial con DNI y nombre del huésped sin enviarlo a
+ * ningún sitio.
+ */
+describe('PmsAdapter (D-13: entrada al PMS sin PII)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('comunica la entrada al PMS sin generar ficha policial ni datos personales', async () => {
+    const result = await PmsAdapter.syncCheckIn({
       tokenId: 105,
       roomNumber: 204,
       checkInDate: '2026-09-22',
       checkOutDate: '2026-09-23',
       checkInMethod: 'QR',
-      documentType: 'DNI',
-      documentNumber: '12345678Z',
-      guestName: 'JUAN PEREZ GARCIA',
-      guestNationality: 'ESP',
-    });
-
-    expect(report.establishmentCode).toBe('HOTEL-MARINA-MICA-001');
-    expect(report.roomNumber).toBe(204);
-    expect(report.documentType).toBe('DNI');
-    expect(report.documentNumber).toBe('12345678Z');
-    expect(report.travelerFullName).toBe('JUAN PEREZ GARCIA');
-    expect(report.tokenVerificationHash).toBe('token_105_QR');
-    expect(report.checkInTimestamp).toBeDefined();
-  });
-
-  it('debe sincronizar exitosamente con el PMS mock y emitir ID de trazabilidad', async () => {
-    const result = await PmsAdapter.syncCheckIn({
-      tokenId: 105,
-      roomNumber: 204,
-      checkInDate: '2026-09-22',
-      checkInMethod: 'QR',
     });
 
     expect(result.success).toBe(true);
     expect(result.pmsSyncId).toContain('pms_');
-    expect(result.policeReportGenerated).toBe(true);
-    expect(result.message).toContain('RD 933/2021 emitido');
+    expect(result.policeReportGenerated).toBe(false);
+    expect(result.message).toContain('registro de viajeros');
+    // Ni el resultado ni su serialización contienen PII ni ficha policial.
+    expect(JSON.stringify(result)).not.toMatch(/documentNumber|travelerFullName|guestName|policeReport"/);
   });
 
-  it('debe manejar degradación elegante y reportar fallo controlado si el endpoint PMS no responde', async () => {
+  it('la petición al PMS remoto no incluye campos personales', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), { status: 200 })
+    );
+
+    await PmsAdapter.syncCheckIn(
+      {
+        tokenId: 106,
+        roomNumber: 301,
+        checkInDate: '2026-09-22',
+        checkInMethod: 'CONTINGENCY',
+      },
+      'OPERA',
+      'https://pms.example.test/checkin'
+    );
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    const body = String((fetchSpy.mock.calls[0]?.[1] as RequestInit).body);
+    expect(body).not.toMatch(/document|guestName|nationality|traveler/i);
+    expect(body).toContain('"checkInMethod":"CONTINGENCY"');
+  });
+
+  it('degrada con honestidad si el endpoint del PMS no responde (sin afirmar que registró)', async () => {
     const result = await PmsAdapter.syncCheckIn(
       {
         tokenId: 106,
@@ -51,7 +66,7 @@ describe('PmsAdapter (Fase 2: Integración PMS & RD 933/2021)', () => {
     );
 
     expect(result.success).toBe(false);
-    expect(result.policeReportGenerated).toBe(true); // La ficha se genera localmente de todas formas
-    expect(result.message).toContain('cola local para reintento');
+    expect(result.policeReportGenerated).toBe(false);
+    expect(result.message).toContain('pendiente de reintento');
   });
 });

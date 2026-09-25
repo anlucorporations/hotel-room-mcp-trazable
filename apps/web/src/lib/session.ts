@@ -1,32 +1,27 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { ALL_ROLE_NAMES, type RoleName } from "@hotel/shared";
+import { requireSecret } from "@hotel/shared/env";
+import { ALL_ROLE_NAMES, type RoleName } from "@hotel/shared/domain";
 
 /**
- * Sesión del back-office firmada con HMAC en una cookie (CU-01). Sin dependencias externas.
- * `SESSION_SECRET` se inyecta por entorno; es OBLIGATORIO en producción (fail-fast, CWE-798);
- * en dev cae a un valor inseguro y marcado.
+ * Sesión del back-office firmada con HMAC en una cookie (CU-01, docs/SRS.md §9, vía SIWE).
  *
- * La sesión es una INSTANTÁNEA de los roles on-chain en el momento de autenticar (CU-01): se
- * usa solo para habilitar/deshabilitar UI. La autoridad sigue siendo el contrato (cada tx
- * revierte con `AccessControlUnauthorizedAccount` si la cuenta carece del rol, ADR-06).
+ * D-04: este módulo ya NO autoriza el back-office ni protege ninguna API. La sesión canónica es
+ * contraseña + TOTP + JWT (`/api/auth/*` + `@/lib/guard`). SIWE se conserva únicamente como
+ * vía secundaria de identificación con wallet.
+ *
+ * `SESSION_SECRET` es OBLIGATORIO: el antiguo valor de desarrollo permitía forjar cookies de
+ * sesión en cualquier despliegue al que le faltase la variable (CWE-798). Ahora `requireSecret`
+ * falla en cerrado.
  */
-let cachedSecret: string | undefined;
-
-// Lazy: se resuelve en el primer uso (runtime), no al importar el módulo, para no romper el
-// build de Next. Falla fail-fast solo si en producción se usa sin SESSION_SECRET.
 function secret(): string {
-  if (cachedSecret !== undefined) return cachedSecret;
-  const fromEnv = process.env.SESSION_SECRET;
-  if (!fromEnv && process.env.NODE_ENV === "production") {
-    throw new Error("SESSION_SECRET es obligatorio en producción");
-  }
-  cachedSecret = fromEnv ?? "dev-insecure-session-secret-change-me";
-  return cachedSecret;
+  return requireSecret("SESSION_SECRET");
 }
+
 const SESSION_TTL_MS = 60 * 60 * 1000; // 1 h
 
-export const SESSION_COOKIE = "hotel_admin_session";
+/** Nombre de la cookie de sesión SIWE (configurable por entorno). */
+export const SESSION_COOKIE = process.env.SESSION_COOKIE || "hotel_admin_session";
 
 export interface Session {
   readonly address: string;

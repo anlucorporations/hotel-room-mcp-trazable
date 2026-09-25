@@ -6,7 +6,7 @@ import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { Providers } from "./providers";
 import "./globals.css";
 
-// Tipografías de marca (DISEÑO-UX §2.2): serif editorial (display) + grotesca (UI).
+// Tipografías de marca (docs/SRS.md §7): serif editorial (display) + grotesca (UI).
 const fraunces = Fraunces({
   subsets: ["latin"],
   variable: "--font-fraunces",
@@ -41,7 +41,7 @@ export default async function RootLayout({
       <body>
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-emerald-700 focus:text-white focus:rounded-md focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-sea-deep focus:text-shell focus:rounded-brand-sm focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sea"
         >
           Saltar al contenido principal
         </a>

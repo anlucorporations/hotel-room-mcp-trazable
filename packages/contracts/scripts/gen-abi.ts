@@ -2,6 +2,10 @@
  * Codegen de ABIs tipados hacia `packages/shared/src/abi` (TASK-03.2).
  * Lo consumen web, backend y workers con inferencia de tipos de viem (`as const`).
  * Ejecutar tras `forge build`.
+ *
+ * Solo se generan los contratos del runtime: `HotelNights` (canónico, D-02) y `Faucet`. La
+ * generación legacy (`HotelNFT` + `HotelMarketplace`) ya no existe en el repositorio, así que no
+ * hay nada que emitir para ella; este script no debe volver a nombrarla.
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -26,7 +30,5 @@ function writeAbiModule(file: string, exportName: string, contract: string): voi
 }
 
 mkdirSync(sharedAbiDir, { recursive: true });
-writeAbiModule("hotel-nft.ts", "hotelNftAbi", "HotelNFT");
-writeAbiModule("hotel-marketplace.ts", "hotelMarketplaceAbi", "HotelMarketplace");
 writeAbiModule("hotel-nights.ts", "hotelNightsAbi", "HotelNights");
 writeAbiModule("faucet.ts", "faucetAbi", "Faucet");

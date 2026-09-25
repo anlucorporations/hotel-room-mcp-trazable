@@ -1,6 +1,6 @@
 /**
  * Sincroniza el registro de despliegue hacia `packages/shared/deployments/<chainId>.json`
- * (DISEÑO §14): toma `{address, deploymentBlock}` que escribió el script de Foundry y le
+ * (ADR-09): toma `{address, deploymentBlock}` que escribió el script de Foundry y le
  * añade el `abiHash` calculado desde el artefacto compilado.
  *
  * Ejecutar tras `forge script ... --broadcast` (ver `scripts/smoke-deploy.sh`).

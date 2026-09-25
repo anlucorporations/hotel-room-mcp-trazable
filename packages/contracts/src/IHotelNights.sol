@@ -4,7 +4,7 @@ pragma solidity 0.8.24;
 /**
  * @title IHotelNights
  * @notice Superficie canónica del contrato de noches-NFT: eventos, errores y getters de
- *         configuración (CASOS-DE-USO §2/§3, DISEÑO §4). Fuente única que consumen el
+ *         configuración (docs/SRS.md §9, ADR-02). Fuente única que consumen el
  *         worker, el histórico, el dashboard y el back-office.
  *
  * @dev En FASE 0 se declara la superficie completa para fijar el contrato de integración;
@@ -17,7 +17,7 @@ interface IHotelNights {
         SECONDARY
     }
 
-    // ── Eventos canónicos (CASOS §2) ─────────────────────────────────────────
+    // ── Eventos canónicos (docs/SRS.md §9) ─────────────────────────────────────────
     event Mint(
         uint256 indexed tokenId,
         uint256 indexed room,
@@ -36,11 +36,14 @@ interface IHotelNights {
     event Listed(uint256 indexed tokenId, address indexed seller, uint256 price);
     event Unlisted(uint256 indexed tokenId);
     event Burn(uint256 indexed tokenId);
-    event RoyaltyUpdated(uint96 oldBps, uint96 newBps);
     event Withdrawn(address indexed treasury, uint256 amount);
     event TreasuryUpdated(address indexed oldTreasury, address indexed newTreasury);
+    /// @notice D-05: check-in on-chain ejecutado por RECEPTION (consume la noche).
+    event CheckedIn(uint256 indexed tokenId, address indexed by, uint256 timestamp);
+    /// @notice D-06: nuevo suelo de precio de reventa.
+    event MinListingPriceUpdated(uint256 newPrice);
 
-    // ── Errores canónicos (CASOS §3) ─────────────────────────────────────────
+    // ── Errores canónicos (docs/SRS.md §9) ─────────────────────────────────────────
     error DuplicateNight(uint256 tokenId);
     error RoomNotInMaster(uint256 room);
     error InvalidPrice();
@@ -53,10 +56,18 @@ interface IHotelNights {
     error NotListed(uint256 tokenId);
     /// @dev Solo una noche EN_PODER_CLIENTE (ya vendida en primaria) puede listarse en
     ///      reventa. Listar inventario DISPONIBLE del hotel rompería la máquina de estados
-    ///      (CASOS §4) y distorsionaría las métricas PRIMARY vs SECONDARY (CU-09/CU-11).
+    ///      (docs/SRS.md §9) y distorsionaría las métricas PRIMARY vs SECONDARY (CU-09/CU-11).
+    ///      D-05: también se usa cuando la noche ya fue consumida por check-in (deja de ser
+    ///      revendible, tanto al listar como al comprar una reventa vigente).
     error NightNotResellable(uint256 tokenId);
     error DirectTransferDisabled();
-    error RoyaltyOutOfRange(uint96 bps);
+    /// @dev D-05: la noche ya tiene check-in marcado (ancla irreversible).
+    error AlreadyCheckedIn(uint256 tokenId);
+    /// @dev D-05: la noche no tuvo venta primaria; el check-in acredita el consumo de una noche
+    ///      vendida, no bloquea inventario del hotel (el marcado es irreversible).
+    error NightNotSold(uint256 tokenId);
+    /// @dev D-06: el precio de listado queda por debajo del suelo de reventa.
+    error PriceBelowMinimum(uint256 price, uint256 minimum);
     error NotExpired(uint256 tokenId);
     error AlreadySold(uint256 tokenId);
     error BatchTooLarge(uint256 size, uint256 max);
@@ -85,6 +96,14 @@ interface IHotelNights {
 
     /// @notice ¿La noche ya tuvo su venta primaria? (ADR-16).
     function soldOnce(uint256 tokenId) external view returns (bool);
+
+    /// @notice D-05: marca irreversiblemente la noche como consumida (check-in en recepción).
+    /// @dev Exige `RECEPTION_ROLE`, token existente y no marcado previamente; bloquea además
+    ///      `list`/`buyResale` de esa noche.
+    function markCheckedIn(uint256 tokenId) external;
+
+    /// @notice D-05: ¿la noche ya fue consumida por check-in on-chain?
+    function isCheckedIn(uint256 tokenId) external view returns (bool);
 
     /// @notice ¿La noche está expirada por umbral UTC? (ADR-08).
     function isExpired(uint256 tokenId) external view returns (bool);
@@ -119,10 +138,10 @@ interface IHotelNights {
     function totalPending() external view returns (uint256);
 
     // ── Administración (FASE 2) ───────────────────────────────────────────────
-    /// @notice Ajusta el royalty en bps (0–2000), ROYALTY_ADMIN (CU-12).
-    function setRoyaltyBps(uint96 bps) external;
+    /// @notice D-06: ajusta el suelo de precio de reventa (DEFAULT_ADMIN).
+    function setMinListingPrice(uint256 newPrice) external;
 
-    /// @notice Pausa de emergencia: bloquea compra/reventa/mint/burn (PAUSER, CU-14).
+    /// @notice Pausa de emergencia: bloquea compra/reventa/mint/burn/check-in (PAUSER, CU-14).
     function pause() external;
 
     /// @notice Reanuda el sistema (PAUSER, CU-14).
@@ -138,8 +157,16 @@ interface IHotelNights {
     function setTreasury(address newTreasury) external;
 
     // ── Getters de configuración ──────────────────────────────────────────────
-    /// @notice Royalty actual en basis points (RF-08).
-    function royaltyBps() external view returns (uint96);
+    /// @notice D-06: royalty ERC-2981 inmutable, derivado del TIPO de la habitación del
+    ///         `tokenId` (500 bps = 5 % simple/doble 101–130; 1000 bps = 10 % suite 201–220)
+    ///         y con `treasury` como receptor. No existe setter ni rol que lo altere.
+    function royaltyInfo(uint256 tokenId, uint256 salePrice)
+        external
+        view
+        returns (address receiver, uint256 royaltyAmount);
+
+    /// @notice D-06: suelo vigente de precio para listar en reventa.
+    function minListingPrice() external view returns (uint256);
 
     /// @notice Tamaño máximo de lote para `burnExpired` (CU-13).
     function burnBatchMax() external view returns (uint256);

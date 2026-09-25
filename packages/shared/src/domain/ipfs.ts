@@ -7,7 +7,7 @@ import { splitYYYYMMDD } from "./token-id";
  * Las 3 imágenes (una por tipo) se pinnean una sola vez y su CID se fija aquí. La metadata
  * por token referencia el CID del tipo.
  *
- * Decisión Pinata vs Kubo (DISEÑO §16.3): **Kubo (nodo local)** en dev/CI y **Pinata** como
+ * Decisión Pinata vs Kubo (ADR-12): **Kubo (nodo local)** en dev/CI y **Pinata** como
  * pinner gestionado en staging/producción, con redundancia (Decisión 13).
  *
  * CIDs reales (CIDv1 raw, sha2-256) de las 3 imágenes del cliente, calculados con

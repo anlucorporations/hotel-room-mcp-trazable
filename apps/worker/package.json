@@ -12,20 +12,22 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "clean": "rm -rf dist .turbo coverage *.tsbuildinfo"
   },
   "dependencies": {
     "@hotel/shared": "workspace:*",
-    "better-sqlite3": "^11.7.0",
     "nodemailer": "^6.9.16",
+    "pg": "^8.23.0",
     "pino": "^9.5.0",
     "viem": "^2.21.55"
   },
   "devDependencies": {
     "@hotel/config": "workspace:*",
-    "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^22.10.2",
     "@types/nodemailer": "^6.4.17",
+    "@types/pg": "^8.23.1",
+    "@vitest/coverage-v8": "^2.1.9",
     "eslint": "^9.17.0",
     "tsup": "^8.3.5",
     "typescript": "^5.7.2",

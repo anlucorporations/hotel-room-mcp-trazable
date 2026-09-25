@@ -8,7 +8,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {HotelNights} from "../src/HotelNights.sol";
 import {IHotelNights} from "../src/IHotelNights.sol";
 
-/// @notice Comprador malicioso que reintenta `buy` al recibir el NFT (CU-05 reentrancy).
+/// @notice Comprador malicioso que reintenta `buy` al recibir el NFT (CU-05 reentrancy, docs/SRS.md §9).
 contract ReentrantBuyer is IERC721Receiver {
     HotelNights private immutable NFT;
     uint256 private tokenId;
@@ -46,8 +46,6 @@ contract HotelNightsBuyTest is Test {
     address internal treasury = makeAddr("treasury");
     address internal minter = makeAddr("minter");
     address internal buyer = makeAddr("buyer");
-
-    uint96 internal constant ROYALTY_BPS = 1000;
     uint256 internal constant ROOM = 102;
     uint256 internal constant DATE = 20_260_615;
     uint256 internal constant PRICE = 0.5 ether;
@@ -59,7 +57,7 @@ contract HotelNightsBuyTest is Test {
 
     function setUp() public {
         vm.warp(BASE_TS);
-        nft = new HotelNights(treasury, ROYALTY_BPS);
+        nft = new HotelNights(treasury);
         nft.grantRole(nft.MINTER_ROLE(), minter);
         vm.prank(minter);
         nft.mint(ROOM, DATE, PRICE, URI);
@@ -156,7 +154,7 @@ contract HotelNightsBuyTest is Test {
         // MINOR#7: si la tesorería revierte al recibir ETH, la primaria revierte
         // `EthTransferFailed` y la venta NO se materializa (CEI + revert atómico).
         RejectingTreasury rejecter = new RejectingTreasury();
-        HotelNights local = new HotelNights(address(rejecter), ROYALTY_BPS);
+        HotelNights local = new HotelNights(address(rejecter));
         local.grantRole(local.MINTER_ROLE(), minter);
         vm.prank(minter);
         local.mint(ROOM, DATE, PRICE, URI); // minteada al inventario (rejecter)

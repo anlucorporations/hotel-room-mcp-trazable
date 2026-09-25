@@ -41,6 +41,29 @@ describe("buildPurchaseTxData", () => {
     expect(tx.data.startsWith(toFunctionSelector("buyResale(uint256)"))).toBe(true);
     expect(decodePurchaseTx(tx.data)).toEqual({ functionName: "buyResale", tokenId: TOKEN });
   });
+
+  /**
+   * D-07: el calldata viaja de la revisión a la firma sin recalcularse. Si el viaje
+   * codificar→decodificar→codificar cambiara un byte, lo revisado y lo firmado divergirían.
+   */
+  it("el calldata sobrevive al viaje codificar→decodificar→codificar byte a byte", () => {
+    for (const saleType of ["PRIMARY", "SECONDARY"] as const) {
+      const tx = buildPurchaseTxData({
+        tokenId: TOKEN,
+        priceWei: PRICE,
+        saleType,
+        contractAddress: CONTRACT,
+        chainId: CHAIN_ID,
+      });
+      const decoded = decodePurchaseTx(tx.data);
+      const reencoded = encodeFunctionData({
+        abi: hotelNightsAbi,
+        functionName: decoded.functionName,
+        args: [decoded.tokenId],
+      });
+      expect(reencoded).toBe(tx.data);
+    }
+  });
 });
 
 describe("decodePurchaseTx", () => {

@@ -11,11 +11,11 @@ import {
   type GetLogsReturnType,
   type PublicClient,
 } from "viem";
-import { GETLOGS_MAX_RANGE } from "@hotel/shared";
+import { GETLOGS_MAX_RANGE } from "@hotel/shared/domain";
 import { hotelNightsAbi } from "@hotel/shared/abi";
 import { contractAddress, deploymentBlock } from "@/config/chain";
 
-/** Una noche del hotel candidata a `burn`: minteada, no vendida y expirada (CU-13). */
+/** Una noche del hotel candidata a `burn`: minteada, no vendida y expirada (CU-13, docs/SRS.md §9). */
 export interface ExpiredNight {
   readonly tokenId: string;
   readonly dateYYYYMMDD: number;

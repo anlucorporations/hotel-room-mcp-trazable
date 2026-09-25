@@ -5,7 +5,7 @@ import { SiteHeader } from "./SiteHeader";
 import { SkipLink } from "./SkipLink";
 
 /**
- * Plantilla pública (PublicLayout, DISEÑO-UX §3): skip-link de accesibilidad +
+ * Plantilla pública (PublicLayout, docs/SRS.md §7): skip-link de accesibilidad +
  * cabecera + `<main id="contenido">` + pie. Envuelve todas las vistas públicas.
  */
 export function PublicShell({ children }: { children: ReactNode }) {

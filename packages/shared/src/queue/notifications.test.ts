@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { NotificationQueueService, EMAIL_QUEUE_NAME } from "./notifications";
+import type { Mock } from "vitest";
+import type { Pool } from "pg";
+import { NotificationQueueService } from "./notifications";
 
 const mockQueueAdd = vi.fn().mockResolvedValue({ id: "job-1" });
 
@@ -11,6 +13,8 @@ vi.mock("bullmq", () => {
     Worker: vi.fn().mockImplementation((_name, handler) => ({
       process: handler,
     })),
+    // Adaptador oficial de la librería: en las pruebas se dobla por identidad.
+    createIORedisClient: vi.fn((client: unknown) => client),
   };
 });
 
@@ -20,13 +24,14 @@ vi.mock("../redis/client", () => ({
 
 describe("NotificationQueueService (US-08)", () => {
   let service: NotificationQueueService;
-  let mockPool: any;
+  // Doble parcial del pool: solo se ejercita `query`.
+  let mockPool: Pool & { query: Mock };
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockPool = {
       query: vi.fn(),
-    };
+    } as Pool & { query: Mock };
     service = new NotificationQueueService(mockPool);
   });
 

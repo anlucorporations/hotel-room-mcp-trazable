@@ -1,7 +1,7 @@
 import { useTranslations } from "next-intl";
 
 /**
- * Hero editorial de la home (DISEÑO-UX §4.1): eyebrow en terracota, titular en serif
+ * Hero editorial de la home (docs/SRS.md §7): eyebrow en terracota, titular en serif
  * con la palabra «Mediterráneo» en teal y subcopy en tono secundario. Mobile-first.
  *
  * El `<h1>` conserva «Hotel Marina del Sol» (sr-only) como título del documento por

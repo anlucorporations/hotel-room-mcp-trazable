@@ -1,12 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import type { Address } from "viem";
-import {
-  NFTsRepository,
-  createTicketJWS,
-  verifyEIP712TicketRequest,
-  QR_REDOWNLOAD_DOMAIN,
-} from "@hotel/shared";
-import { contractAddress, activeChain } from "@/config/chain";
+import type { NextRequest} from "next/server";
+import { NextResponse } from "next/server";
+import { NFTsRepository, createTicketJWS } from "@hotel/shared";
+import { requireTicketOwnership } from "@/lib/ticket-ownership";
 
 export const dynamic = "force-dynamic";
 
@@ -21,11 +16,12 @@ interface RouteParams {
 /**
  * GET /api/wallet/pass/:tokenId?type=apple|google
  *
- * Headers opcionales de titularidad EIP-712:
+ * Headers OBLIGATORIOS de titularidad (D-05):
  *   - x-wallet-address
  *   - x-signature
- *   - x-nonce
- *   - x-expires-at
+ *   - x-nonce (de un solo uso)
+ *   - x-expires-at (máximo 5 minutos)
+ * Sin ellos la respuesta es 401 y no se entrega ningún pase.
  *
  * Entrega el pase digital formateado para Apple Wallet (.pkpass / JSON PassKit) o Google Wallet (Save Link/Object).
  */
@@ -52,37 +48,12 @@ export async function GET(
       );
     }
 
-    // Verificación de posesión mediante EIP-712 si se proveen las cabeceras
-    const walletAddress = request.headers.get("x-wallet-address") as Address | null;
-    const signature = request.headers.get("x-signature") as `0x${string}` | null;
-    const nonce = request.headers.get("x-nonce");
-    const expiresAtHeader = request.headers.get("x-expires-at");
+    // Titularidad OBLIGATORIA (D-05) y ON-CHAIN (M7): el pase de wallet solo se entrega a su
+    // titular, y el titular lo decide `ownerOf` (el índice puede ir retrasado).
+    const ownership = await requireTicketOwnership(request, tokenId, nft.currentOwner);
+    if (!ownership.ok) return ownership.response;
 
-    if (walletAddress && signature && nonce && expiresAtHeader) {
-      const domain = {
-        ...QR_REDOWNLOAD_DOMAIN,
-        chainId: activeChain.id,
-        verifyingContract: contractAddress,
-      };
-
-      const isValid = await verifyEIP712TicketRequest(
-        walletAddress,
-        signature,
-        BigInt(tokenId),
-        nonce,
-        BigInt(expiresAtHeader),
-        domain,
-      );
-
-      if (!isValid || nft.currentOwner.toLowerCase() !== walletAddress.toLowerCase()) {
-        return NextResponse.json(
-          { error: "UNAUTHORIZED", message: "Firma EIP-712 inválida o wallet no coincide con el propietario" },
-          { status: 401 },
-        );
-      }
-    }
-
-    // Generar ticket JWS
+    // Generar ticket JWS (de un solo uso: lleva su propio `jti`) con el propietario de la cadena.
     const nowSec = Math.floor(Date.now() / 1000);
     const expiresAtSec = nowSec + 3600 * 24 * 7; // Validez 7 días
     const checkOutDate = new Date(new Date(nft.checkInDate).getTime() + 86400000).toISOString().split("T")[0];
@@ -92,7 +63,7 @@ export async function GET(
       roomNumber: nft.roomNumber,
       checkInDate: nft.checkInDate,
       roomType: nft.roomType,
-      guestWallet: nft.currentOwner,
+      guestWallet: ownership.onChainOwner,
       issuedAt: nowSec,
       expiresAt: expiresAtSec,
     });
@@ -215,10 +186,13 @@ export async function GET(
       qrPayload,
       downloadUrl: `/api/wallet/pass/${nft.tokenId}?type=apple&download=true`,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("[API /api/wallet/pass/:tokenId] Error:", error);
     return NextResponse.json(
-      { error: "INTERNAL_SERVER_ERROR", message: error?.message || "Error al generar pase digital" },
+      {
+        error: "INTERNAL_SERVER_ERROR",
+        message: error instanceof Error && error.message ? error.message : "Error al generar pase digital",
+      },
       { status: 500 },
     );
   }

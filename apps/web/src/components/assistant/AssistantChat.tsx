@@ -10,7 +10,7 @@ import { PurchaseHandoff } from "./PurchaseHandoff";
 /** Altura máxima (px) del `<textarea>` autoexpandible antes de mostrar scroll interno (UX#16). */
 const TEXTAREA_MAX_PX = 160;
 
-/** Panel de chat del asistente IA (CU-08): conversación + handoff a firma + estado 08e. */
+/** Panel de chat del asistente IA (CU-08, docs/SRS.md §9): conversación + handoff a firma + estado 08e. */
 export function AssistantChat() {
   const t = useTranslations("assistant");
   const { address } = useOnboarding();

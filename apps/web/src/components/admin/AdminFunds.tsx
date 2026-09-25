@@ -16,12 +16,17 @@ const SUBMIT =
   "min-h-touch rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60";
 
 /**
- * Fondos (CU-15, TREASURER): muestra el balance BRUTO del contrato (`getBalance`/`useBalance`),
+ * Fondos (CU-15, docs/SRS.md §9, TREASURER): muestra el balance BRUTO del contrato (`getBalance`/`useBalance`),
  * el residual REALMENTE retirable (`totalPending()` reservado de reventas → retirable = bruto −
  * pendiente, MINOR#32) y la tesorería destino, y permite `withdraw`. Si el residual es 0 el botón
- * se deshabilita (evita el revert `NoFunds`). Como `withdraw` es `whenNotPaused`, lee `paused()` y
- * se deshabilita con aviso si el sistema está en pausa (MINOR#33). La retirada transfiere ETH y es
- * irreversible: exige confirmación explícita en el `TxModal` (UX#21) con copy genérica (MAJOR#9).
+ * se deshabilita (evita el revert `NoFunds`).
+ *
+ * CORREGIDO en M7 (H5): esta pantalla bloqueaba `withdraw` con el contrato en pausa «porque es
+ * `whenNotPaused`», y **no lo es**: `HotelNights.withdraw()` solo lleva `onlyRole(TREASURER_ROLE)
+ * nonReentrant` y el propio test del contrato lo declara permitido en pausa («remediación»). Se
+ * retira el bloqueo: durante una pausa, retirar el residual es precisamente la vía de escape. La
+ * retirada transfiere ETH y es irreversible: exige confirmación explícita en el `TxModal` (UX#21)
+ * con copy genérica (MAJOR#9).
  */
 export function AdminFunds() {
   const t = useTranslations("admin");
@@ -115,18 +120,19 @@ export function AdminFunds() {
       <p className="mt-3 text-micro text-ink-soft">{t("fundsResidualNote")}</p>
 
       {isPaused && (
-        <p data-testid="funds-paused" role="alert" className="mt-3 text-small text-terracotta-text">
-          {t("pausedWarning")}
+        // Informativo, NO bloqueante: `withdraw` sigue disponible durante la pausa (H5, M7).
+        <p data-testid="funds-paused" role="status" className="mt-3 text-small text-ink-soft">
+          {t("fundsPausedWithdrawAllowed")}
         </p>
       )}
-      {nothingToWithdraw && !isPaused && (
+      {nothingToWithdraw && (
         <p className="mt-3 text-small text-ink-soft">{t("fundsNoneWithdrawable")}</p>
       )}
 
       <button
         type="button"
         data-testid="funds-withdraw"
-        disabled={busy || nothingToWithdraw || isPaused}
+        disabled={busy || nothingToWithdraw}
         onClick={() => setConfirming(true)}
         className={`${SUBMIT} mt-4`}
       >

@@ -21,7 +21,7 @@ contract RejectingDispenseTarget {
     }
 }
 
-/// @notice CU-PR-01 — Faucet de pruebas (dispensación + cooldown + saldo bajo).
+/// @notice CU-PR-01 (docs/SRS.md §9) — Faucet de pruebas (dispensación + cooldown + saldo bajo).
 contract FaucetTest is Test {
     Faucet internal faucet;
 

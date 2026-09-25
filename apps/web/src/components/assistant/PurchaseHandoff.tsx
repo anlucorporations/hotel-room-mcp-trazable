@@ -10,6 +10,8 @@ import { deriveTxStatus } from "@/components/tx/txStatus";
 import { classifyTxError } from "@/components/tx/txError";
 import { TxModal } from "@/components/buy/TxModal";
 import { usePurchaseReview } from "@/components/buy/usePurchaseReview";
+import { verifiedTxRequest } from "@/components/buy/verifiedTxRequest";
+import { contractAddress } from "@/config/chain";
 import { useOnboarding } from "@/components/wallet/useOnboarding";
 import type { PreparedPurchase } from "@/lib/assistant/types";
 
@@ -22,7 +24,7 @@ function shortAddress(address: string): string {
 }
 
 /**
- * Handoff de la compra preparada por el asistente a la firma del usuario (CU-08, RNF-19).
+ * Handoff de la compra preparada por el asistente a la firma del usuario (CU-08, docs/SRS.md §9, RNF-19).
  * Reutiliza `usePurchaseReview` (mismo punto de verdad que el catálogo): decodifica el
  * `tokenId` REAL del calldata, lee precio on-chain y re-verifica `value == precio`/`to`/`chainId`.
  *
@@ -74,7 +76,9 @@ export function PurchaseHandoff({ purchase }: { purchase: PreparedPurchase }) {
 
   function sign(): void {
     if (!canSign) return;
-    sendTransaction({ to: tx.to, data: tx.data, value: BigInt(tx.value) });
+    // Mismo punto único que el catálogo (D-07): se envía el objeto verificado, byte a byte,
+    // contra el contrato canónico (el calldata por sí solo no distingue la generación legacy).
+    sendTransaction(verifiedTxRequest(tx, contractAddress));
   }
 
   // Al confirmar se COLAPSA el panel de firma (UX#18): solo éxito + CTA, sin botón de firmar.

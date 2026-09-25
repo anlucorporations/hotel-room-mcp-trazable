@@ -10,7 +10,7 @@ export interface NightDescriptor {
   readonly saleType: SaleType;
 }
 
-/** Salida de `checkAvailability` (CU-08): existencia + comprabilidad + precio si aplica. */
+/** Salida de `checkAvailability` (CU-08, docs/SRS.md §9): existencia + comprabilidad + precio si aplica. */
 export interface AvailabilityResult {
   readonly exists: boolean;
   readonly available: boolean;

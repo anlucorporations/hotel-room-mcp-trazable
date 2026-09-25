@@ -22,7 +22,7 @@ export interface OnboardingState {
   switchToAppChain: () => void;
 }
 
-/** Estado de onboarding web3 (CU-17, RF-04): wallet, conexión, red correcta y cambio de red. */
+/** Estado de onboarding web3 (CU-17, docs/SRS.md §9, RF-04): wallet, conexión, red correcta y cambio de red. */
 export function useOnboarding(): OnboardingState {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPurchaseTxData } from "@hotel/shared";
+import { buildPurchaseTxData } from "@hotel/shared/domain";
 import { runAssistant, type ValidatePreparedTx } from "./orchestrator";
 import { SYSTEM_PROMPT } from "./prompt";
 import type { LlmClient } from "./llm";

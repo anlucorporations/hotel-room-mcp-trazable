@@ -24,11 +24,19 @@ export function getRelativeLuminance(rgb: { r: number; g: number; b: number }): 
 }
 
 export function getContrastRatio(hex1: string, hex2: string): number {
+  return Number(contrastRatioRaw(hex1, hex2).toFixed(2));
+}
+
+/**
+ * Ratio de contraste SIN redondear. Es el valor con el que se decide el cumplimiento: redondear
+ * antes de comparar declaraba apto un contraste real de 4,4994 (lo señaló la verificación de M7).
+ */
+export function contrastRatioRaw(hex1: string, hex2: string): number {
   const l1 = getRelativeLuminance(hexToRgb(hex1));
   const l2 = getRelativeLuminance(hexToRgb(hex2));
   const lighter = Math.max(l1, l2);
   const darker = Math.min(l1, l2);
-  return Number(((lighter + 0.05) / (darker + 0.05)).toFixed(2));
+  return (lighter + 0.05) / (darker + 0.05);
 }
 
 export function verifyWcagAA(
@@ -36,11 +44,12 @@ export function verifyWcagAA(
   bgColorHex: string,
   isLargeText = false
 ): { ratio: number; passes: boolean; minRequired: number } {
-  const ratio = getContrastRatio(textColorHex, bgColorHex);
+  // El veredicto usa el ratio exacto; `ratio` va redondeado solo para mostrarlo.
+  const raw = contrastRatioRaw(textColorHex, bgColorHex);
   const minRequired = isLargeText ? 3.0 : 4.5;
   return {
-    ratio,
-    passes: ratio >= minRequired,
+    ratio: Number(raw.toFixed(2)),
+    passes: raw >= minRequired,
     minRequired,
   };
 }

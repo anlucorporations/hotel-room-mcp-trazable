@@ -3,7 +3,7 @@ import { CatalogClient } from "@/components/CatalogClient";
 import { Hero } from "@/components/catalog/Hero";
 import { DegradedState } from "@/components/DegradedState";
 import { PublicShell } from "@/components/layout/PublicShell";
-import { fetchCatalog, type NightView } from "@/lib/nights";
+import { fetchCatalog, fetchContractPaused, type NightView } from "@/lib/nights";
 
 // Lectura por RPC en cada request (la caché vive en TanStack en cliente, ADR-09).
 export const dynamic = "force-dynamic";
@@ -53,12 +53,16 @@ async function HowItWorks() {
 }
 
 export default async function HomePage() {
-  let nights: NightView[] | null = null;
-  try {
-    nights = await fetchCatalog();
-  } catch {
-    nights = null; // RPC caído → estado degradado
-  }
+  // Las dos lecturas van en paralelo pero se resuelven por separado (M7 · H9): si fallara la pausa
+  // dentro del mismo `Promise.all`, el catálogo entero caería a estado degradado y el tercer estado
+  // del aviso («no se pudo comprobar») sería inalcanzable.
+  const [catalogResult, pausedResult] = await Promise.allSettled([
+    fetchCatalog(),
+    fetchContractPaused(),
+  ]);
+  const nights: NightView[] | null =
+    catalogResult.status === "fulfilled" ? catalogResult.value : null;
+  const paused: boolean | null = pausedResult.status === "fulfilled" ? pausedResult.value : null;
 
   return (
     <PublicShell>
@@ -69,7 +73,7 @@ export default async function HomePage() {
           <DegradedState />
         </div>
       ) : (
-        <CatalogClient nights={nights} />
+        <CatalogClient nights={nights} paused={paused} />
       )}
     </PublicShell>
   );

@@ -1,0 +1,8 @@
+# El directorio solo contiene scripts IaC; ninguna credencial se versiona.
+# Las claves JSON de cuenta de servicio están prohibidas por la política de la
+# organización (constraints/iam.disableServiceAccountKeyCreation): la CI usa
+# Workload Identity Federation.
+*.key
+*.pem
+service-account*.json
+*-credentials.json

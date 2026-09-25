@@ -2,9 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GET as getLive } from "./live/route";
 import { GET as getReady } from "./ready/route";
 import * as shared from "@hotel/shared";
+import type * as SharedModule from "@hotel/shared";
 
 vi.mock("@hotel/shared", async () => {
-  const actual = await vi.importActual<any>("@hotel/shared");
+  const actual = await vi.importActual<typeof SharedModule>("@hotel/shared");
   return {
     ...actual,
     checkLiveness: vi.fn().mockResolvedValue({ status: "ALIVE" }),

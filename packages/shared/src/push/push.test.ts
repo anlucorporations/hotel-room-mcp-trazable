@@ -1,8 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { Mock } from "vitest";
 import { WebPushService } from "./service";
+import { generateVapidKeys } from "./web-push";
+import type { NFTsRepository } from "../db/repositories/nfts.repository";
 
-describe("WebPushService (US-18)", () => {
-  let mockNftsRepo: any;
+/**
+ * Opt-in/opt-out del push (US-18) y emisión del broadcast.
+ *
+ * Antes, `broadcastNotification` incrementaba un contador y daba por enviado cualquier endpoint con
+ * `http`: ningún navegador recibía nada. El viaje real (cifrado + VAPID + entrega HTTP) se prueba en
+ * `web-push.test.ts` con un servicio de push local; aquí se comprueba el contrato del servicio y
+ * que un fallo de entrega **no** se cuenta como éxito.
+ */
+describe("WebPushService (US-18 · D-03)", () => {
+  /** Doble parcial del repositorio: solo los métodos que ejercitan estas pruebas. */
+  let mockNftsRepo: NFTsRepository & {
+    addPushSubscription: Mock;
+    removePushSubscription: Mock;
+    getAllPushSubscriptions: Mock;
+  };
   let service: WebPushService;
 
   beforeEach(() => {
@@ -11,18 +27,11 @@ describe("WebPushService (US-18)", () => {
     mockNftsRepo = {
       addPushSubscription: vi.fn().mockResolvedValue(undefined),
       removePushSubscription: vi.fn().mockResolvedValue(undefined),
-      getAllPushSubscriptions: vi.fn().mockResolvedValue([
-        {
-          endpoint: "https://fcm.googleapis.com/fcm/send/sub1",
-          p256dh: "key_p256dh_1",
-          auth: "key_auth_1",
-        },
-        {
-          endpoint: "https://updates.push.services.mozilla.com/wpush/v2/sub2",
-          p256dh: "key_p256dh_2",
-          auth: "key_auth_2",
-        },
-      ]),
+      getAllPushSubscriptions: vi.fn().mockResolvedValue([]),
+    } as NFTsRepository & {
+      addPushSubscription: Mock;
+      removePushSubscription: Mock;
+      getAllPushSubscriptions: Mock;
     };
 
     service = new WebPushService(mockNftsRepo);
@@ -55,15 +64,28 @@ describe("WebPushService (US-18)", () => {
     );
   });
 
-  it("despacha broadcast de notificaciones a suscriptores", async () => {
-    const res = await service.broadcastNotification({
-      title: "¡Nuevas habitaciones disponibles!",
-      body: "Lote de 30 noches de verano publicado por el Hotel Marina del Sol.",
-      url: "https://hotel.marinadelsol.es",
+  it("sin suscriptores no hay envíos (ni contadores inventados)", async () => {
+    vi.spyOn(service, "getVapidConfig").mockReturnValue({
+      ...generateVapidKeys(),
+      subject: "mailto:devops@hotel.es",
     });
 
-    expect(res.total).toBe(2);
-    expect(res.sent).toBe(2);
-    expect(res.failed).toBe(0);
+    const res = await service.broadcastNotification({ title: "Nuevas noches", body: "Lote de verano" });
+
+    expect(res).toEqual({ sent: 0, failed: 0, pruned: 0, total: 0 });
+  });
+
+  it("una entrega fallida cuenta como fallo, no como éxito", async () => {
+    const keys = generateVapidKeys();
+    mockNftsRepo.getAllPushSubscriptions.mockResolvedValue([
+      { endpoint: "https://fcm.googleapis.com/fcm/send/sub1", p256dh: "no-es-una-clave", auth: "x" },
+    ]);
+    vi.spyOn(service, "getVapidConfig").mockReturnValue({ ...keys, subject: "mailto:a@b.c" });
+
+    const res = await service.broadcastNotification({ title: "Nuevas noches", body: "Lote de verano" });
+
+    expect(res.total).toBe(1);
+    expect(res.sent).toBe(0);
+    expect(res.failed).toBe(1);
   });
 });

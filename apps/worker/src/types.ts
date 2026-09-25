@@ -1,11 +1,14 @@
-import type { SaleType } from "@hotel/shared";
+import type { HistorySummary, SaleType } from "@hotel/shared";
 
 /**
- * Contratos de dominio del mini-worker (T1.4 / CU-10 / RF-09).
+ * Contratos de dominio del mini-worker (T1.4 / CU-10 / RF-09, docs/SRS.md §9).
  *
  * Estas interfaces son la frontera de inversión de dependencias (DIP): el núcleo
- * (`SaleProcessor`) depende sólo de estas abstracciones, nunca de viem, nodemailer o
- * better-sqlite3. Así el núcleo es testeable con fakes, sin red ni SMTP reales.
+ * (`SaleProcessor`) depende sólo de estas abstracciones, nunca de viem, nodemailer o `pg`.
+ * Así el núcleo es testeable con fakes, sin red, sin SMTP y sin base de datos reales.
+ *
+ * Todas las operaciones de persistencia son **asíncronas** (D-09): el motor es PostgreSQL
+ * (`pg`), cuyo acceso a base de datos es inherentemente asíncrono.
  */
 
 /**
@@ -49,6 +52,12 @@ export interface EventLocation {
   readonly txHash: string;
   readonly logIndex: number;
   readonly blockNumber: bigint;
+  /**
+   * Marca temporal del bloque en segundos UNIX (UTC), o `undefined` si la fuente no la aporta.
+   * La serie mensual del dashboard (D-16) necesita saber a qué mes pertenece cada venta, y el mes
+   * lo decide el **reloj de la cadena**, no el de la máquina (misma lección que la quema de M6).
+   */
+  readonly blockTimestamp?: number;
 }
 
 /**
@@ -110,6 +119,12 @@ export type ChainEvent =
 export interface ChainSource {
   /** Último bloque de la cadena (finalidad inmediata, `CONFIRMATIONS_N = 1`). */
   getHeadBlock(): Promise<bigint>;
+  /**
+   * Marca temporal (segundos UNIX) de un bloque concreto. La usa el relleno de fechas del histórico
+   * anterior a M7 (`backfillTimestamps`): la fecha de una venta antigua es un hecho inmutable de su
+   * bloque y se puede recuperar sin volver a procesar eventos (M7 · H6).
+   */
+  getBlockTimestamp(blockNumber: bigint): Promise<number>;
   /** Logs `Sale` en el rango ya acotado, en orden cronológico ascendente (email, CU-10). */
   getSaleLogs(fromBlock: bigint, toBlock: bigint): Promise<SaleEvent[]>;
   /**
@@ -125,20 +140,37 @@ export interface Mailer {
 }
 
 /**
- * Persistencia del checkpoint e idempotencia (DIP sobre SQLite).
+ * Metadatos opcionales del log procesado (trazabilidad en `worker_processed_logs`). La clave de
+ * idempotencia sigue siendo la PK; estos campos sólo enriquecen la fila (bloque y contrato) para
+ * poder auditar el estado por contrato+bloque.
+ */
+export interface ProcessedLogLocation {
+  readonly blockNumber: number;
+  readonly contractAddress: string;
+}
+
+/**
+ * Persistencia del checkpoint e idempotencia (DIP sobre PostgreSQL, D-09).
  *
  * - El checkpoint guarda el último bloque procesado por dirección de contrato.
- * - La idempotencia (`processed`) garantiza at-least-once con ventana mínima: normalmente 1
- *   email por clave (duplicado sólo si el proceso cae justo tras el envío y antes de
- *   `markProcessed`).
+ * - La idempotencia (`worker_processed_logs`) garantiza at-least-once con ventana mínima:
+ *   normalmente 1 email por clave (duplicado sólo si el proceso cae justo tras el envío y antes
+ *   de `markProcessed`).
  */
 export interface CheckpointStore {
-  getLastBlock(contractAddress: string): number | null;
-  setLastBlock(contractAddress: string, block: number): void;
-  isProcessed(idempotencyKey: string): boolean;
-  markProcessed(idempotencyKey: string): void;
-  /** Cierre limpio de recursos (fichero SQLite). */
-  close(): void;
+  getLastBlock(contractAddress: string): Promise<number | null>;
+  setLastBlock(contractAddress: string, block: number): Promise<void>;
+  isProcessed(idempotencyKey: string): Promise<boolean>;
+  /** Marca la clave como procesada; `location` es metadato opcional de trazabilidad. */
+  markProcessed(
+    idempotencyKey: string,
+    location?: ProcessedLogLocation,
+  ): Promise<void>;
+  /**
+   * Cierre limpio de recursos. El pool de PostgreSQL es inyectado y compartido (una sola base,
+   * D-09), así que su cierre corresponde al propietario del pool, no a cada store.
+   */
+  close(): Promise<void>;
 }
 
 /**
@@ -172,10 +204,22 @@ export interface HistoryRow {
   readonly blockNumber: number;
   readonly logIndex: number;
   readonly txHash: string;
+  /** Marca temporal del bloque (segundos UNIX, UTC) o `null` si la fila no la tiene. */
+  readonly blockTimestamp: number | null;
 }
 
 /**
- * Persistencia de agregados e histórico de ventas (DIP sobre SQLite), FASE 3.
+ * Venta del histórico que NO tiene marca temporal de bloque (anterior a la migración de M7). Basta
+ * con su localización on-chain para recuperar la fecha de su bloque (M7 · H6).
+ */
+export interface UndatedSaleRow {
+  readonly txHash: string;
+  readonly logIndex: number;
+  readonly blockNumber: number;
+}
+
+/**
+ * Persistencia de agregados e histórico de ventas (DIP sobre PostgreSQL), FASE 3.
  *
  * Idempotencia: cada evento on-chain se contabiliza una sola vez. La clave de idempotencia
  * (`txHash:logIndex`) se registra de forma atómica junto a la mutación del contador o la fila
@@ -186,27 +230,50 @@ export interface AggregateStore {
    * Aplica un evento de dominio si su clave no se había aplicado antes. Devuelve `true` si el
    * evento se contabilizó ahora (primera vez), `false` si ya estaba aplicado (duplicado).
    */
-  applyEvent(event: ChainEvent): boolean;
+  applyEvent(event: ChainEvent): Promise<boolean>;
   /** Fija el último bloque agregado (periodo deploymentBlock..lastBlock). */
-  setLastBlock(block: number): void;
+  setLastBlock(block: number): Promise<void>;
   /** Snapshot de los contadores acumulados. */
-  getCounters(): AggregateCounters;
+  getCounters(): Promise<AggregateCounters>;
   /** Histórico de ventas persistido (sin ordenar; el orden total lo aplica el procesador). */
-  getHistory(): HistoryRow[];
+  getHistory(): Promise<HistoryRow[]>;
+  /**
+   * Agregados de D-16 derivados del histórico **en PostgreSQL** (`GROUP BY`, sin traer las filas a
+   * memoria): serie mensual, desglose por tipo, ranking de más revendidas y cuántas ventas no
+   * tienen marca temporal de bloque. `timeZone` fija el mes natural (el del hotel, no UTC).
+   */
+  getHistorySummary(timeZone: string, topLimit: number): Promise<HistorySummary>;
+  /**
+   * Ventas del histórico SIN marca temporal (las anteriores a M7), ordenadas por bloque, para
+   * rellenarla leyendo la cabecera de su bloque (M7 · H6).
+   */
+  getUndatedSales(limit: number): Promise<UndatedSaleRow[]>;
+  /**
+   * Fija la marca temporal de una venta **solo si no la tenía** (idempotente y sin sobrescribir un
+   * dato ya conocido).
+   */
+  setSaleBlockTimestamp(
+    txHash: string,
+    logIndex: number,
+    timestampSeconds: number,
+  ): Promise<void>;
   /**
    * Reinicia por completo el agregado ante un redeploy (MAJOR 3): trunca los contadores a su base
-   * (id = 0, importes a 0, recuentos a 0), vacía `sale_history` y `aggregate_applied`, y fija
-   * `last_block = deploymentBlock`. Tras `reset`, el catch-up reprocesa desde el nuevo contrato sin
-   * arrastrar datos del anterior.
+   * (id = 0, importes a 0, recuentos a 0), vacía `worker_sale_history` y la idempotencia de
+   * agregados, y fija `last_block = deploymentBlock`. Tras `reset`, el catch-up reprocesa desde el
+   * nuevo contrato sin arrastrar datos del anterior.
    */
-  reset(deploymentBlock: number): void;
+  reset(deploymentBlock: number): Promise<void>;
   /**
    * Dirección de contrato a la que está vinculado el agregado actual (en minúsculas), o `null` si
    * nunca se ha vinculado. Permite autodetectar un redeploy comparando con la dirección activa.
    */
-  getBoundAddress(): string | null;
+  getBoundAddress(): Promise<string | null>;
   /** Persiste la dirección de contrato vinculada al agregado actual (se normaliza a minúsculas). */
-  setBoundAddress(contractAddress: string): void;
-  /** Cierre limpio de recursos (fichero SQLite). */
-  close(): void;
+  setBoundAddress(contractAddress: string): Promise<void>;
+  /**
+   * Cierre limpio de recursos. El pool de PostgreSQL es inyectado y compartido (una sola base,
+   * D-09), así que su cierre corresponde al propietario del pool, no a cada store.
+   */
+  close(): Promise<void>;
 }

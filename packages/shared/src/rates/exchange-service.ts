@@ -7,6 +7,15 @@ export interface RateResponse {
   stale: boolean;
 }
 
+/**
+ * `true` si `value` es un objeto JSON indexable (descarta `null`, arrays y primitivos).
+ * Las respuestas de las APIs externas llegan como `unknown`: se estrechan campo a campo antes
+ * de leerlas en lugar de confiar en un `any`.
+ */
+function isJsonObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
 export class ExchangeRateService {
   private static readonly DEFAULT_RATE = 1.7; // 1 POL ≈ 1.70 EUR (default de emergencia)
   private coingeckoFailures = 0;
@@ -119,8 +128,9 @@ export class ExchangeRateService {
     try {
       const res = await fetch(this.coingeckoUrl, { signal: controller.signal });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = (await res.json()) as any;
-      const val = data?.["matic-network"]?.eur;
+      const data: unknown = await res.json();
+      const entry = isJsonObject(data) ? data["matic-network"] : undefined;
+      const val = isJsonObject(entry) ? entry.eur : undefined;
       if (typeof val !== "number" || isNaN(val) || val <= 0) {
         throw new Error("Respuesta inválida de CoinGecko");
       }
@@ -137,8 +147,8 @@ export class ExchangeRateService {
       // POL/USDT en Binance (asumiendo 1 USDT ≈ 0.92 EUR de referencia o usando conversión directa)
       const res = await fetch(this.binanceUrl, { signal: controller.signal });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = (await res.json()) as any;
-      const priceUsd = parseFloat(data?.price);
+      const data: unknown = await res.json();
+      const priceUsd = parseFloat(String(isJsonObject(data) ? data.price : undefined));
 
       if (isNaN(priceUsd) || priceUsd <= 0) {
         throw new Error("Respuesta inválida de Binance");

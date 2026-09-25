@@ -4,7 +4,7 @@ import { AdminPanel } from "@/components/admin/AdminPanel";
 
 export const dynamic = "force-dynamic";
 
-/** Publicar noche (CU-02): minteo gateado por rol MINTER dentro del back-office. */
+/** Publicar noche (CU-02, docs/SRS.md §9): minteo gateado por rol MINTER dentro del back-office. */
 export default function AdminMintPage() {
   return (
     <AdminLayout>

@@ -10,14 +10,18 @@ import type { HealthProvider, HealthReport } from "@hotel/shared/health";
  *   - la entrega de email queda degradada (`EMAIL_DELIVERY_FAILED`), o
  *   - el procesamiento de un evento falla por una causa no-RPC (`PROCESSING_FAILED`), o
  *   - el `catchUp` de agregados falla `aggregateFailureThreshold` veces consecutivas (MAJOR 4), o
- *   - el lag de agregados (`headBlock - aggregateLastBlock`) supera `lagThreshold` (MAJOR 4).
+ *   - el lag de agregados (`headBlock - aggregateLastBlock`) supera `lagThreshold` (MAJOR 4), o
+ *   - **el checkpoint está POR DELANTE de la cabeza** (`lag` negativo): la cadena se reinició o
+ *     revirtió por detrás de lo procesado y el worker no puede avanzar. Antes este caso reportaba
+ *     `ok` —un lag negativo no cruzaba ningún umbral— y el fallo era silencioso: `/aggregates` se
+ *     quedaba congelado sin que el monitor alertara.
  *
  * Importante: los fallos del RPC (cabecera/logs) y los fallos al procesar un evento concreto
  * son señales distintas (ver MAJOR 2): un fallo de procesamiento NO incrementa el contador de
  * fallos del RPC ni atasca el checkpoint; sólo degrada la salud por "processing" hasta que un
  * ciclo posterior procese eventos sin error.
  *
- * Pipeline de agregados (MAJOR 4): el `catchUp` de agregados puede fallar por I/O de SQLite sin
+ * Pipeline de agregados (MAJOR 4): el `catchUp` de agregados puede fallar por I/O de PostgreSQL sin
  * que sea un fallo de RPC. Antes quedaba invisible en `/health`. Ahora se observa de dos formas:
  * por fallos consecutivos del propio `catchUp` y por el lag de agregados (head − aggregateLastBlock).
  *
@@ -80,7 +84,7 @@ export class WorkerHealthState {
     this.consecutiveAggregateFailures = 0;
   }
 
-  /** Registra un fallo del `catchUp` de agregados (p. ej. I/O de SQLite), MAJOR 4. */
+  /** Registra un fallo del `catchUp` de agregados (p. ej. I/O de PostgreSQL), MAJOR 4. */
   recordAggregateFailure(): void {
     this.consecutiveAggregateFailures += 1;
   }
@@ -128,6 +132,8 @@ export class WorkerHealthState {
       return true;
     if (this.emailDegraded) return true;
     if (this.processingDegraded) return true;
+    if (isAheadOfChain(this.lag)) return true;
+    if (isAheadOfChain(this.aggregateLag)) return true;
     if (overThreshold(this.lag, this.lagThreshold)) return true;
     return overThreshold(this.aggregateLag, this.lagThreshold);
   }
@@ -154,6 +160,13 @@ export class WorkerHealthState {
 /** `true` si `value` no es `null` y supera el umbral dado (lag por encima de tolerancia). */
 const overThreshold = (value: number | null, threshold: number): boolean =>
   value !== null && value > threshold;
+
+/**
+ * `true` si el checkpoint va por delante de la cabeza (`lag` negativo). Es una **inconsistencia**,
+ * no un retraso: la cadena quedó detrás de lo ya procesado (reinicio/reorg) y el pipeline no puede
+ * avanzar, así que la salud debe degradarse en vez de reportar `ok` con un lag imposible.
+ */
+const isAheadOfChain = (lag: number | null): boolean => lag !== null && lag < 0;
 
 export function createWorkerHealthState(
   options: WorkerHealthOptions = {},

@@ -1,7 +1,7 @@
 import type { HealthReport } from "@hotel/shared/health";
 
 /**
- * Contratos de dominio del monitor (T3.3 / RNF-17 / CU-16).
+ * Contratos de dominio del monitor (T3.3 / RNF-17 / CU-16, docs/SRS.md §9).
  *
  * Estas interfaces son la frontera de inversión de dependencias (DIP): el núcleo
  * (`MonitorCore`) depende sólo de estas abstracciones, nunca de `fetch` ni de nodemailer. Así

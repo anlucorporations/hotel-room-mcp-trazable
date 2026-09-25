@@ -1,0 +1,49 @@
+{
+  "hito": "M6",
+  "premisa": "quema programada con evidencia, cola única de correo, push real y alerta de silencio (D-03, D-12)",
+  "fecha": "2026-09-23T18:30:05.716Z",
+  "red": {
+    "chainId": 81234,
+    "rpc": "http://127.0.0.1:8545",
+    "contrato": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+    "operadorQuema": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+  },
+  "transacciones": {
+    "mint": "0xb54b34bef1368b40d3370520b7f60c91330f490a45e33579145785daefab2c86",
+    "burnExpired": "0xf4aec22681c49f97945ab14ae7c772a63633a11bae6b7d89c871584a3bdec2d1"
+  },
+  "comprobaciones": [
+    "La cadena responde y es la esperada",
+    "El operador de quema tiene BURNER_ROLE en el contrato canónico",
+    "Noche minteada para el E2E (inventario impago del hotel)",
+    "El listener escribió la fila del índice desde el evento Mint (sin sembrarla a mano)",
+    "Cadena viajada en el tiempo: ahora es 2027-10-11T00:19:43.000Z (la noche queda caducada)",
+    "El planificador ejecutó la quema (COMPLETED)",
+    "Noches quemadas: 4",
+    "El planificador devolvió el hash de la quema",
+    "El recibo de la quema confirma la transacción",
+    "Evento Burn emitido por el contrato canónico",
+    "La noche quemada ya no existe on-chain (ownerOf revierte)",
+    "El índice off-chain queda en BURNED tras confirmar la quema",
+    "La quema encoló el aviso BURN_EXECUTED en la cola única (fila PENDING)",
+    "El consumidor entregó el correo y la fila pasó a SENT",
+    "El sumidero SMTP recibió el aviso de quema (entrega real por SMTP)",
+    "La reconciliación re-encoló 1 notificación(es) PENDING atascada(s)",
+    "Push entregado al servicio de push (enviados: 1)",
+    "El servicio de push verificó el JWT VAPID y descifró el contenido (RFC 8291/8292)",
+    "El listener detecta el silencio y avisa (alerta disparada)",
+    "La alerta de silencio quedó encolada en la cola única de correo"
+  ],
+  "resultado": "COMPLETO",
+  "noche": {
+    "tokenId": "10820271006",
+    "room": "108",
+    "date": "2027-10-06",
+    "priceWei": "120000000000000000"
+  },
+  "quema": {
+    "reason": "COMPLETED",
+    "nochesQuemadas": 4,
+    "hash": "0xf4aec22681c49f97945ab14ae7c772a63633a11bae6b7d89c871584a3bdec2d1"
+  }
+}

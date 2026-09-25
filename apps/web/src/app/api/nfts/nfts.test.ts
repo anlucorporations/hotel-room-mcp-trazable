@@ -2,10 +2,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GET as getNFTs } from "./route";
 import { GET as getNFTMetadata } from "./[tokenId]/metadata/route";
 import { NextRequest } from "next/server";
+import type * as SharedModule from "@hotel/shared";
 
 
 vi.mock("@hotel/shared", async () => {
-  const actual = await vi.importActual<any>("@hotel/shared");
+  const actual = await vi.importActual<typeof SharedModule>("@hotel/shared");
   return {
     ...actual,
     NFTsRepository: vi.fn().mockImplementation(() => ({
@@ -82,7 +83,10 @@ describe("NFT Catalog & Metadata Endpoints (US-07b)", () => {
       const data = await res.json();
       expect(data.name).toContain("Habitación 101");
       expect(data.attributes).toBeDefined();
-      expect(data.attributes.find((a: any) => a.trait_type === "Habitación").value).toBe(101);
+      const roomAttribute = (data.attributes as Array<{ trait_type: string; value: unknown }>).find(
+        (a) => a.trait_type === "Habitación",
+      );
+      expect(roomAttribute?.value).toBe(101);
     });
 
     it("debe retornar 404 si el token no existe", async () => {

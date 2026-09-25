@@ -7,15 +7,13 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 import {HotelNights} from "../src/HotelNights.sol";
 import {IHotelNights} from "../src/IHotelNights.sol";
 
-/// @notice CU-02 — Mintear una noche-habitación.
+/// @notice CU-02 (docs/SRS.md §9) — Mintear una noche-habitación.
 contract HotelNightsMintTest is Test {
     HotelNights internal nft;
 
     address internal treasury = makeAddr("treasury");
     address internal minter = makeAddr("minter");
     address internal stranger = makeAddr("stranger");
-
-    uint96 internal constant ROYALTY_BPS = 1000;
     uint256 internal constant ROOM = 102;
     uint256 internal constant DATE = 20_260_615;
     uint256 internal constant PRICE = 0.5 ether;
@@ -27,7 +25,7 @@ contract HotelNightsMintTest is Test {
 
     function setUp() public {
         vm.warp(BASE_TS);
-        nft = new HotelNights(treasury, ROYALTY_BPS);
+        nft = new HotelNights(treasury);
         nft.grantRole(nft.MINTER_ROLE(), minter);
     }
 
@@ -37,7 +35,7 @@ contract HotelNightsMintTest is Test {
     }
 
     function test_MintSuccess() public {
-        // Hab. 102 ∈ [101,115] ⇒ "simple" según el maestro (DISEÑO §5).
+        // Hab. 102 ∈ [101,115] ⇒ "simple" según el maestro (ADR-02).
         vm.expectEmit(true, true, false, true, address(nft));
         emit IHotelNights.Mint(TOKEN_ID, ROOM, DATE, "simple", PRICE);
 

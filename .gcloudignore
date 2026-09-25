@@ -1,0 +1,24 @@
+# Lista de exclusión para la subida de código a Cloud Build.
+# Es explícita (no deriva de .gitignore) porque .gitignore excluye el registro
+# de despliegues packages/shared/deployments/*.json, que la imagen SÍ necesita.
+.gcloudignore
+.gcloudignore
+.git
+**/node_modules
+**/.next
+**/dist
+**/.turbo
+**/coverage
+**/test-results
+**/playwright-report
+.env
+.env.*
+!.env.example
+.deploy-logs
+packages/contracts/lib
+packages/contracts/out
+packages/contracts/cache
+packages/contracts/broadcast
+docs
+RepoTecnico
+*.log

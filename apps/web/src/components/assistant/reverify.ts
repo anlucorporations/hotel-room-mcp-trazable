@@ -1,4 +1,4 @@
-import { decodePurchaseTx, verifyPurchaseTx, type PurchaseTxData } from "@hotel/shared";
+import { decodePurchaseTx, verifyPurchaseTx, type PurchaseTxData } from "@hotel/shared/domain";
 
 /**
  * Re-verificación **en cliente** de la tx de compra antes de firmar (RNF-19, ADR-11, TC-E2E-030).

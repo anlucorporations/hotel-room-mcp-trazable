@@ -3,8 +3,8 @@ import { randomBytes } from "node:crypto";
 import { SESSION_NONCE_TTL_SECONDS } from "@hotel/shared";
 
 /**
- * Almacén de nonces SIWE de un solo uso con caducidad (CU-01, `SESSION_NONCE_TTL`). En
- * memoria: válido para un runtime único (piloto, DISEÑO §16). Rechaza replays (consumo único)
+ * Almacén de nonces SIWE de un solo uso con caducidad (CU-01, docs/SRS.md §9, `SESSION_NONCE_TTL`). En
+ * memoria: válido para un runtime único (piloto, ADR-04). Rechaza replays (consumo único)
  * y nonces caducados (CWE-294).
  */
 const nonces = new Map<string, number>();

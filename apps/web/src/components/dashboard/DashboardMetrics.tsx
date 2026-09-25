@@ -2,8 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import type { DashboardAggregates } from "@hotel/shared";
+import type { DashboardAggregates } from "@hotel/shared/domain";
 import { formatEth } from "@/lib/format";
+import {
+  toMonthlyChartData,
+  toRoomTypeChartData,
+  toTopResoldRows,
+} from "@/lib/dashboard-data";
+import { MonthlySalesChart } from "./MonthlySalesChart";
+import { RoomTypeChart } from "./RoomTypeChart";
+import { TopResoldTable } from "./TopResoldTable";
 
 interface Metric {
   readonly key: string;
@@ -13,10 +21,14 @@ interface Metric {
 }
 
 /**
- * Métricas del dashboard (CU-11). Cada KPI es un ESCALAR autoexplicativo (volumen, conteo, %),
- * por lo que NO se muestran mini-barras: comparar magnitudes heterogéneas (ETH vs conteo vs %)
- * inducía a error sin aportar información (UX#34). El corte temporal se comunica con el último
- * bloque agregado + la hora aproximada de lectura.
+ * Dashboard (CU-11 + D-16, docs/SRS.md §9): KPIs escalares + serie mensual, desglose por tipo y ranking de más
+ * revendidas.
+ *
+ * Cada KPI es un ESCALAR autoexplicativo (volumen, conteo, %), por lo que NO se muestran
+ * mini-barras: comparar magnitudes heterogéneas (ETH vs conteo vs %) inducía a error sin aportar
+ * información (UX#34). El corte temporal se comunica con el último bloque agregado + la hora
+ * aproximada de lectura, y la zona horaria con la que se agrupan los meses se declara de forma
+ * explícita (los meses no son UTC «porque sí»).
  */
 export function DashboardMetrics({ data }: { data: DashboardAggregates }) {
   const t = useTranslations("dashboard");
@@ -42,11 +54,18 @@ export function DashboardMetrics({ data }: { data: DashboardAggregates }) {
     { key: "occupancy", label: t("occupancy"), value: `${pct} %`, formula: t("formula.occupancy") },
   ];
 
+  const monthly = toMonthlyChartData(data.monthlySeries);
+  const roomTypes = toRoomTypeChartData(data.roomTypeBreakdown);
+  const topResold = toTopResoldRows(data.topResold);
+
   return (
-    <section className="flex flex-col gap-4">
+    <section className="flex flex-col gap-6">
       <div className="flex flex-col gap-0.5">
         <p data-testid="dashboard-period" className="text-small text-ink-soft">
           {t("period", { block: data.lastBlock })}
+        </p>
+        <p data-testid="dashboard-timezone" className="text-micro text-ink-soft">
+          {t("timeZone", { zone: data.timeZone })}
         </p>
         {asOf && (
           <p data-testid="dashboard-asof" className="text-micro text-ink-soft">
@@ -67,6 +86,23 @@ export function DashboardMetrics({ data }: { data: DashboardAggregates }) {
           </li>
         ))}
       </ul>
+
+      {data.undatedSalesCount > 0 && (
+        <p
+          data-testid="dashboard-undated"
+          role="status"
+          className="rounded-brand border border-terracotta-text/40 bg-sand-2 px-4 py-3 text-small text-terracotta-text"
+        >
+          {t("undatedWarning", { count: data.undatedSalesCount })}
+        </p>
+      )}
+
+      <MonthlySalesChart points={monthly} />
+
+      <div className="grid grid-cols-1 gap-6 desktop:grid-cols-2">
+        <RoomTypeChart points={roomTypes} />
+        <TopResoldTable rows={topResold} />
+      </div>
     </section>
   );
 }

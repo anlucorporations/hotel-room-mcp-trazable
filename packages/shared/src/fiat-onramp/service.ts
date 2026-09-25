@@ -128,7 +128,11 @@ export class FiatOnrampService {
           message: `Pago de ${payload.fiatAmountEur} EUR rechazado por el emisor de la tarjeta.`,
         };
       default:
-        throw new Error(`FiatOnrampService: Tipo de evento no reconocido: ${(payload as any).type}`);
+        // En esta rama `payload` está agotado por el discriminante, pero el valor real puede venir
+        // de una integración con un tipo de evento nuevo: se estrecha para poder reportarlo.
+        throw new Error(
+          `FiatOnrampService: Tipo de evento no reconocido: ${(payload as { type: string }).type}`,
+        );
     }
   }
 }

@@ -5,7 +5,9 @@ import { classifyTxError } from "@/components/tx/txError";
  * clave de i18n bajo `admin.txError.*`:
  *  - `NoFunds`: `withdraw()` sin saldo retirable, aunque el balance bruto mostrado sea > 0
  *    (el residual reservado de reventas no es retirable).
- *  - `EnforcedPause`: acción `whenNotPaused` (burnExpired/withdraw) con el sistema en pausa.
+ *  - `EnforcedPause`: acción `whenNotPaused` con el sistema en pausa (`mint`, `buy`, `buyResale`,
+ *    `markCheckedIn` y `burnExpired`). OJO: `withdraw` NO lleva `whenNotPaused` —se permite en
+ *    pausa a propósito, como vía de remediación—, así que no se bloquea por pausa (M7 · H5).
  */
 const ADMIN_ERRORS = ["NoFunds", "EnforcedPause"] as const;
 

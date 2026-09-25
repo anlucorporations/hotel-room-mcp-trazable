@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 /**
- * Estado degradado reutilizable cuando una fuente (RPC/worker) no responde (CU-04/09/11).
+ * Estado degradado reutilizable cuando una fuente (RPC/worker) no responde (CU-04/09/11, docs/SRS.md §9).
  * Por defecto usa los textos del catálogo; cada página puede pasar los suyos.
  */
 export function DegradedState({

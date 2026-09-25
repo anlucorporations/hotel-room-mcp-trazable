@@ -7,6 +7,7 @@ import { NightImage } from "@/components/NightImage";
 import { TxModal } from "@/components/buy/TxModal";
 import { formatEth, formatNightDate, TYPE_LABEL } from "@/lib/format";
 import { resaleErrorMessage } from "./resaleErrorMessage";
+import { TicketView } from "./TicketView";
 import { useListNight } from "./useListNight";
 import type { OwnedNight } from "./useMyNights";
 
@@ -15,7 +16,7 @@ const PRIMARY_BTN =
 const GHOST_BTN =
   "min-h-touch w-full rounded-brand border border-line px-4 py-2 font-semibold text-ink disabled:opacity-60";
 
-/** Tarjeta de una noche poseída: listar para reventa o cancelar el listado (CU-06). */
+/** Tarjeta de una noche poseída: listar para reventa o cancelar el listado (CU-06, docs/SRS.md §9). */
 export function MyNightCard({
   night,
   onConfirmed,
@@ -103,6 +104,9 @@ export function MyNightCard({
         ) : (
           <span className="text-micro font-semibold text-sea-deep">{t("ownedBadge")}</span>
         )}
+
+        {/* Resguardo de check-in (RF-07): solo tiene sentido en una noche no consumida ni revendida. */}
+        <TicketView night={night} />
 
         <div className="mt-auto flex flex-col gap-2 pt-2">
           {isListed && (

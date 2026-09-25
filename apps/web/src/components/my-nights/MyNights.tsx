@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { dateToYYYYMMDD } from "@hotel/shared";
+import { dateToYYYYMMDD } from "@hotel/shared/domain";
 import { WalletBar } from "@/components/wallet/WalletBar";
 import { useOnboarding } from "@/components/wallet/useOnboarding";
 import { ClaimPanel } from "./ClaimPanel";
@@ -29,7 +29,7 @@ const SEG_ON = "bg-sea text-shell";
 const SEG_OFF = "text-ink-soft hover:text-sea";
 
 /**
- * Página «Mis noches» (CU-06/07): la wallet conectada ve sus NFTs-noche y puede listarlos
+ * Página «Mis noches» (CU-06/07, docs/SRS.md §9): la wallet conectada ve sus NFTs-noche y puede listarlos
  * para reventa, cancelar el listado y cobrar los saldos pendientes. El gating de
  * conexión/red se delega en `useOnboarding`/`WalletBar` (CU-17, DRY).
  */

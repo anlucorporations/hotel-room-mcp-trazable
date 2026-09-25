@@ -2,13 +2,14 @@
 pragma solidity 0.8.24;
 
 import {Test} from "forge-std/Test.sol";
+import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import {HotelNights} from "../src/HotelNights.sol";
 import {IHotelNights} from "../src/IHotelNights.sol";
 
-/// @notice Reintenta `buyResale` al recibir el NFT (CU-07 reentrancy).
+/// @notice Reintenta `buyResale` al recibir el NFT (CU-07 reentrancy, docs/SRS.md §9).
 contract ReentrantResaleBuyer is IERC721Receiver {
     HotelNights private immutable NFT;
     uint256 private tokenId;
@@ -88,8 +89,6 @@ contract HotelNightsResaleTest is Test {
     address internal seller = makeAddr("seller");
     address internal buyer = makeAddr("buyer");
     address internal stranger = makeAddr("stranger");
-
-    uint96 internal constant ROYALTY_BPS = 1000; // 10 %
     uint256 internal constant ROOM = 102;
     uint256 internal constant DATE = 20_260_615;
     uint256 internal constant PRICE = 0.5 ether;
@@ -101,7 +100,7 @@ contract HotelNightsResaleTest is Test {
 
     function setUp() public {
         vm.warp(BASE_TS);
-        nft = new HotelNights(treasury, ROYALTY_BPS);
+        nft = new HotelNights(treasury);
         nft.grantRole(nft.MINTER_ROLE(), minter);
         vm.prank(minter);
         nft.mint(ROOM, DATE, PRICE, URI);
@@ -143,6 +142,76 @@ contract HotelNightsResaleTest is Test {
         vm.prank(seller);
         vm.expectRevert(IHotelNights.InvalidPrice.selector);
         nft.list(TOKEN_ID, 0);
+    }
+
+    // ── D-06: suelo de precio en reventa ──────────────────────────────────────
+    function test_MinListingPriceStartsAtDefaultConstant() public view {
+        assertEq(nft.minListingPrice(), nft.DEFAULT_MIN_LISTING_PRICE());
+        assertEq(nft.minListingPrice(), 0.01 ether);
+    }
+
+    function test_ListBelowMinListingPriceReverts() public {
+        uint256 min = nft.minListingPrice();
+        vm.prank(seller);
+        vm.expectRevert(
+            abi.encodeWithSelector(IHotelNights.PriceBelowMinimum.selector, min - 1, min)
+        );
+        nft.list(TOKEN_ID, min - 1);
+        assertFalse(nft.listingOf(TOKEN_ID).active);
+    }
+
+    function test_ListAtMinListingPriceSucceeds() public {
+        uint256 min = nft.minListingPrice();
+        _list(min); // el suelo es inclusivo (price >= minListingPrice)
+        assertEq(nft.listingOf(TOKEN_ID).price, min);
+    }
+
+    function test_AdminCanChangeMinListingPrice() public {
+        uint256 newMin = 0.25 ether; // address(this) es DEFAULT_ADMIN
+        vm.expectEmit(false, false, false, true, address(nft));
+        emit IHotelNights.MinListingPriceUpdated(newMin);
+        nft.setMinListingPrice(newMin);
+        assertEq(nft.minListingPrice(), newMin);
+    }
+
+    /// @notice D-06: el suelo no puede bajarse a 0, porque desactivaría con una sola transacción
+    ///         la protección anti-elusión de royalties que el propio suelo existe para dar.
+    function test_SetMinListingPriceRejectsZero() public {
+        uint256 before = nft.minListingPrice();
+
+        vm.expectRevert(IHotelNights.InvalidPrice.selector);
+        nft.setMinListingPrice(0);
+
+        assertEq(nft.minListingPrice(), before, "el suelo no cambia");
+    }
+
+    function test_SetMinListingPriceRequiresAdmin() public {
+        bytes32 role = nft.DEFAULT_ADMIN_ROLE();
+        vm.prank(stranger);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, stranger, role
+            )
+        );
+        nft.setMinListingPrice(1 ether);
+    }
+
+    function test_PreviouslyValidPriceRevertsAfterRaise() public {
+        _list(RESALE); // 1 ether: válido con el suelo inicial (0.01 ether)
+
+        uint256 newMin = 2 ether;
+        nft.setMinListingPrice(newMin);
+
+        // Un precio antes válido (1 ether) queda por debajo del nuevo suelo.
+        vm.prank(seller);
+        vm.expectRevert(
+            abi.encodeWithSelector(IHotelNights.PriceBelowMinimum.selector, RESALE, newMin)
+        );
+        nft.list(TOKEN_ID, RESALE);
+
+        // El revert no altera el listado vigente (sigue a 1 ether).
+        assertEq(nft.listingOf(TOKEN_ID).price, RESALE);
+        assertTrue(nft.listingOf(TOKEN_ID).active);
     }
 
     function test_ListExpiredReverts() public {
@@ -190,7 +259,7 @@ contract HotelNightsResaleTest is Test {
         assertTrue(nft.listingOf(freshTokenId).active);
     }
 
-    // ── MINOR#8: re-listar (sobrescribir listado) y cambio de royalty entre list y buyResale ──
+    // ── MINOR#8: re-listar (sobrescribir listado) y royalty inmutable entre list y buyResale ──
     function test_RelistOverwritesPrice() public {
         _list(RESALE);
         assertEq(nft.listingOf(TOKEN_ID).price, RESALE);
@@ -215,21 +284,24 @@ contract HotelNightsResaleTest is Test {
         nft.buyResale{value: RESALE}(TOKEN_ID);
     }
 
-    function test_RoyaltyChangeBetweenListAndBuyResaleAppliesAtBuyTime() public {
+    /// @notice D-06: el royalty ya no es gobernable, así que no puede cambiar entre `list` y
+    ///         `buyResale`: lo fija el tipo de la habitación (102 ⇒ simple ⇒ 5 %).
+    function test_RoyaltyCannotBeChangedBetweenListAndBuyResale() public {
         _list(RESALE);
-        // El admin sube el royalty al 20 % DESPUÉS de listar (address(this) es ROYALTY_ADMIN).
-        nft.grantRole(nft.ROYALTY_ADMIN_ROLE(), address(this));
-        nft.setRoyaltyBps(2000);
+
+        // No queda ninguna superficie de gobernanza del royalty que un admin pueda invocar.
+        (bool setterOk,) =
+            address(nft).call(abi.encodeWithSignature("setRoyaltyBps(uint96)", uint96(2000)));
+        assertFalse(setterOk, "setRoyaltyBps no debe existir");
 
         vm.deal(buyer, RESALE);
         vm.expectEmit(true, true, false, true, address(nft));
-        emit IHotelNights.RoyaltyPaid(TOKEN_ID, treasury, 0.2 ether); // 20 % del precio
+        emit IHotelNights.RoyaltyPaid(TOKEN_ID, treasury, 0.05 ether); // 5 % de 1 ether
         vm.prank(buyer);
         nft.buyResale{value: RESALE}(TOKEN_ID);
 
-        // El reparto usa el royalty vigente AL COMPRAR, no al listar.
-        assertEq(nft.pendingWithdrawals(treasury), 0.2 ether);
-        assertEq(nft.pendingWithdrawals(seller), 0.8 ether);
+        assertEq(nft.pendingWithdrawals(treasury), 0.05 ether);
+        assertEq(nft.pendingWithdrawals(seller), 0.95 ether);
         assertEq(nft.pendingWithdrawals(treasury) + nft.pendingWithdrawals(seller), RESALE);
     }
 
@@ -247,7 +319,7 @@ contract HotelNightsResaleTest is Test {
         vm.expectEmit(true, true, true, true, address(nft));
         emit IHotelNights.Sale(TOKEN_ID, seller, buyer, RESALE, IHotelNights.SaleType.SECONDARY);
         vm.expectEmit(true, true, false, true, address(nft));
-        emit IHotelNights.RoyaltyPaid(TOKEN_ID, treasury, 0.1 ether);
+        emit IHotelNights.RoyaltyPaid(TOKEN_ID, treasury, 0.05 ether); // 5 % (hab. 102 = simple)
 
         vm.prank(buyer);
         nft.buyResale{value: RESALE}(TOKEN_ID);
@@ -256,22 +328,22 @@ contract HotelNightsResaleTest is Test {
         assertTrue(nft.soldOnce(TOKEN_ID));
         assertFalse(nft.listingOf(TOKEN_ID).active);
         // Pull: acreditado, no enviado.
-        assertEq(nft.pendingWithdrawals(seller), 0.9 ether);
-        assertEq(nft.pendingWithdrawals(treasury), 0.1 ether);
+        assertEq(nft.pendingWithdrawals(seller), 0.95 ether);
+        assertEq(nft.pendingWithdrawals(treasury), 0.05 ether);
         assertEq(address(nft).balance, RESALE);
 
         // claim del vendedor.
         uint256 before = seller.balance;
         vm.prank(seller);
         nft.claim();
-        assertEq(seller.balance, before + 0.9 ether);
+        assertEq(seller.balance, before + 0.95 ether);
         assertEq(nft.pendingWithdrawals(seller), 0);
     }
 
     /// @notice MAJOR#2 — Fuzz del reparto: para cualquier precio, royalty + proceeds == price
     ///         (incluidos precios en wei no divisibles por bps). Sin wei atrapados.
     function testFuzz_BuyResaleSplit(uint256 price) public {
-        price = bound(price, 1, 1_000_000 ether);
+        price = bound(price, nft.minListingPrice(), 1_000_000 ether);
         _list(price);
 
         (, uint256 expectedRoyalty) = nft.royaltyInfo(TOKEN_ID, price);
@@ -288,16 +360,21 @@ contract HotelNightsResaleTest is Test {
     }
 
     function test_RoyaltyNonDivisibleKeepsExactSum() public {
-        _list(333); // wei
-        vm.deal(buyer, 333);
+        // Precio por encima del suelo y NO divisible exactamente por 20 (5 % en simple): el
+        // truncado debe dejar el reparto exacto, sin wei atrapados en el contrato.
+        uint256 price = nft.minListingPrice() + 1; // 0.01 ether + 1 wei
+        _list(price);
+        vm.deal(buyer, price);
         vm.prank(buyer);
-        nft.buyResale{value: 333}(TOKEN_ID);
+        nft.buyResale{value: price}(TOKEN_ID);
 
         uint256 royalty = nft.pendingWithdrawals(treasury);
         uint256 proceeds = nft.pendingWithdrawals(seller);
-        assertEq(royalty, 33); // 333 * 1000 / 10000 truncado
-        assertEq(proceeds, 300);
-        assertEq(royalty + proceeds, 333); // sin wei atrapados
+        assertEq(royalty, (price * 500) / 10_000); // truncado
+        assertEq(royalty, 500_000_000_000_000); // (1e16 + 1) / 20 ⇒ se descarta 1 wei
+        assertEq(proceeds, price - royalty);
+        assertEq(royalty + proceeds, price); // sin wei atrapados
+        assertEq(address(nft).balance, price);
     }
 
     function test_BuyResaleIncorrectPaymentReverts() public {
@@ -363,7 +440,7 @@ contract HotelNightsResaleTest is Test {
         uint256 owed = nft.pendingWithdrawals(address(hostile));
         assertGt(owed, 0);
 
-        // `totalPending` incluye también el royalty del treasury (0.1) además del proceeds (0.9).
+        // `totalPending` incluye también el royalty del treasury (0.05) además del proceeds (0.95).
         uint256 totalBefore = nft.totalPending();
         assertEq(totalBefore, owed + nft.pendingWithdrawals(treasury));
 
@@ -403,6 +480,7 @@ contract HotelNightsResaleTest is Test {
         nft.buyResale{value: RESALE}(TOKEN_ID); // no revierte
 
         assertEq(nft.ownerOf(TOKEN_ID), buyer);
-        assertEq(nft.pendingWithdrawals(address(rejecter)), 0.1 ether); // acreditado (aunque no pueda cobrar)
+        // Acreditado (aunque no pueda cobrar): 5 % de 1 ether (hab. 102 = simple).
+        assertEq(nft.pendingWithdrawals(address(rejecter)), 0.05 ether);
     }
 }

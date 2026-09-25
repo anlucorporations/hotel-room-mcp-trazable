@@ -45,7 +45,7 @@ describe('DisasterRecoveryService (Fase 2: Resiliencia & DR)', () => {
     const { data, isValid } = DisasterRecoveryService.restoreAndVerify(backup, key);
     expect(isValid).toBe(true);
     expect(data.nfts).toHaveLength(2);
-    expect(data.nfts[1].status).toBe('CHECKED_IN');
+    expect(data.nfts![1]).toMatchObject({ status: 'CHECKED_IN' });
   });
 
   it('debe rechazar la restauración si la clave de descifrado es incorrecta', () => {

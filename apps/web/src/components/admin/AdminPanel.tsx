@@ -2,11 +2,11 @@
 
 import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import type { RoleName } from "@hotel/shared";
+import type { RoleName } from "@hotel/shared/domain";
 import { useAdminContext } from "./AdminLayout";
 
 /**
- * Encabezado + tarjeta de un panel del back-office, con gating por rol (CU-01). Si la sesión
+ * Encabezado + tarjeta de un panel del back-office, con gating por rol (CU-01, docs/SRS.md §9). Si la sesión
  * no ostenta `requiredRole`, muestra un aviso accesible en lugar de la acción (UX); la
  * autoridad real sigue siendo el contrato. `requiredRole` ausente = cualquier sesión válida.
  */
@@ -22,7 +22,7 @@ export function AdminPanel({
   children: ReactNode;
 }) {
   const t = useTranslations("admin");
-  const { hasRole, accountMismatch, signIn } = useAdminContext();
+  const { hasRole, sessionUsername, signOut } = useAdminContext();
   const allowed = !requiredRole || hasRole(requiredRole);
 
   return (
@@ -39,21 +39,21 @@ export function AdminPanel({
         >
           {t("roleDenied")}
         </p>
-      ) : accountMismatch ? (
-        // La cuenta activa de la wallet difiere de la autenticada: bloquea las acciones para
-        // no firmar con otra cuenta y exige re-autenticar (la tx revertiría on-chain igualmente).
+      ) : !sessionUsername ? (
+        // La sesión ya no es válida (token caducado o revocado): se pide volver a entrar en lugar
+        // de dejar el panel con acciones que fallarían con 401 (D-04).
         <div
-          data-testid="account-mismatch-block"
+          data-testid="session-expired-block"
           role="alert"
           className="flex flex-col items-start gap-3 rounded-brand-lg border border-line bg-sand-2 px-5 py-8 text-ink"
         >
-          <p className="text-terracotta-text">{t("accountChanged")}</p>
+          <p className="text-terracotta-text">{t("authExpired")}</p>
           <button
             type="button"
-            onClick={() => void signIn()}
+            onClick={() => void signOut()}
             className="min-h-touch rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep"
           >
-            {t("resign")}
+            {t("logout")}
           </button>
         </div>
       ) : (

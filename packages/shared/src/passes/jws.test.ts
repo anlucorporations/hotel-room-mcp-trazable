@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import crypto from "node:crypto";
 import { privateKeyToAccount } from "viem/accounts";
 import {
   createTicketJWS,
   verifyTicketJWS,
   decryptSecret,
+  encryptSecret,
   verifyEIP712TicketRequest,
   QR_REDOWNLOAD_DOMAIN,
   QR_REDOWNLOAD_TYPES,
@@ -42,20 +42,23 @@ describe("Ticket JWS & AES Cryptography", () => {
 
   it("descifra secretos AES-256-GCM correctamente", () => {
     const rawSecret = "HOTEL_SECRET_TOKEN_XYZ_12345";
-    const key = crypto
-      .createHash("sha256")
-      .update(process.env.CHECKIN_SECRET_KEY || "hotel_master_aes_key_32_bytes_2026")
-      .digest();
+    // Ciframos con la MISMA clave de entorno (`CHECKIN_SECRET_KEY`) que usa `decryptSecret`,
+    // sin duplicar la derivación en la prueba: antes la prueba replicaba el literal de clave
+    // retirado, así que habría seguido pasando con una clave distinta a la de producción.
+    const storedEncrypted = encryptSecret(rawSecret);
+    const parts = storedEncrypted.split(":");
+    expect(parts).toHaveLength(3);
+    expect(parts[0]).toHaveLength(24); // 12 bytes de IV
+    expect(parts[1]).toHaveLength(32); // 16 bytes de etiqueta GCM
 
-    const iv = crypto.randomBytes(12);
-    const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
-    let enc = cipher.update(rawSecret, "utf8", "hex");
-    enc += cipher.final("hex");
-    const tag = cipher.getAuthTag();
+    expect(decryptSecret(storedEncrypted)).toBe(rawSecret);
+  });
 
-    const storedEncrypted = `${iv.toString("hex")}:${tag.toString("hex")}:${enc}`;
-    const decrypted = decryptSecret(storedEncrypted);
-    expect(decrypted).toBe(rawSecret);
+  it("rechaza un criptograma manipulado (la etiqueta GCM no valida)", () => {
+    const storedEncrypted = encryptSecret("HOTEL_SECRET_TOKEN_XYZ_12345");
+    const [iv, tag, data] = storedEncrypted.split(":");
+    const tampered = `${iv}:${tag}:${data.slice(0, -2)}00`;
+    expect(() => decryptSecret(tampered)).toThrow();
   });
 
   it("lanza error con formato de secreto cifrado inválido", () => {
@@ -73,7 +76,7 @@ describe("EIP-712 Ticket Redownload Verification", () => {
   it("valida una firma EIP-712 legítima", async () => {
     const tokenId = 10120260720n;
     const nonce = "test-nonce-1234";
-    const expiresAt = BigInt(Math.floor(Date.now() / 1000) + 3600);
+    const expiresAt = BigInt(Math.floor(Date.now() / 1000) + 120);
 
     const signature = await account.signTypedData({
       domain: QR_REDOWNLOAD_DOMAIN,
@@ -96,6 +99,30 @@ describe("EIP-712 Ticket Redownload Verification", () => {
     );
 
     expect(isValid).toBe(true);
+  });
+
+  it("rechaza una vigencia declarada mayor que el máximo permitido (D-05)", async () => {
+    const tokenId = 10120260720n;
+    const nonce = "test-nonce-long-ttl";
+    const expiresAt = BigInt(Math.floor(Date.now() / 1000) + 3600); // 1 h > 5 min
+
+    const signature = await account.signTypedData({
+      domain: QR_REDOWNLOAD_DOMAIN,
+      types: QR_REDOWNLOAD_TYPES,
+      primaryType: "DownloadTicket",
+      message: { tokenId, nonce, expiresAt },
+    });
+
+    const isValid = await verifyEIP712TicketRequest(
+      account.address,
+      signature,
+      tokenId,
+      nonce,
+      expiresAt,
+      QR_REDOWNLOAD_DOMAIN,
+    );
+
+    expect(isValid).toBe(false);
   });
 
   it("rechaza si la firma ha expirado", async () => {
@@ -132,7 +159,7 @@ describe("EIP-712 Ticket Redownload Verification", () => {
     );
     const tokenId = 10120260720n;
     const nonce = "test-nonce-diff";
-    const expiresAt = BigInt(Math.floor(Date.now() / 1000) + 3600);
+    const expiresAt = BigInt(Math.floor(Date.now() / 1000) + 120);
 
     const signature = await account.signTypedData({
       domain: QR_REDOWNLOAD_DOMAIN,

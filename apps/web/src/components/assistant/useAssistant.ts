@@ -24,7 +24,7 @@ interface AssistantApiResponse {
 }
 
 /**
- * Estado de la conversación con el asistente (CU-08). Habla con `/api/assistant` server-side.
+ * Estado de la conversación con el asistente (CU-08, docs/SRS.md §9). Habla con `/api/assistant` server-side.
  * `walletAddress` (la cuenta conectada, opcional) se envía como contexto para que el asistente
  * pueda, por ejemplo, consultar las noches del usuario sin pedirle la dirección.
  *

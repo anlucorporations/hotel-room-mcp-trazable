@@ -1,11 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import {
-  decodeTokenId,
-  roomTypeOf,
-  NFTsRepository,
-  type NightType,
-  type SaleHistoryEntry,
-} from "@hotel/shared";
+import type { SaleHistoryEntry } from "@hotel/shared/domain";
 import { DegradedState } from "@/components/DegradedState";
 import { HistoryTable } from "@/components/history/HistoryTable";
 import { PublicShell } from "@/components/layout/PublicShell";
@@ -13,50 +7,23 @@ import { fetchHistory } from "@/lib/worker-api";
 
 export const dynamic = "force-dynamic";
 
-const nftsRepo = new NFTsRepository();
-
+/**
+ * Histórico público (CU-09, docs/SRS.md §9).
+ *
+ * Lee del worker —la MISMA fuente que el dashboard (D-16)— y no del índice propio: hasta M7 esta
+ * página prefería `nftsRepo.getSalesHistory()` (tabla `sale_events`, escrita por el listener) y
+ * solo caía al worker si aquello venía vacío. Eran dos caminos para el mismo histórico, cada uno
+ * con su checkpoint, así que podían mostrar cifras distintas: exactamente lo que el criterio de
+ * aceptación de M7 («las cifras del dashboard cuadran con el histórico») prohíbe.
+ */
 export default async function HistoricoPage() {
   const t = await getTranslations("history");
 
   let entries: SaleHistoryEntry[] | null = null;
   try {
-    const { items } = await nftsRepo.getSalesHistory(20, 0);
-    if (items && items.length > 0) {
-      entries = items.map((s, index) => {
-        let room = 101;
-        let dateYYYYMMDD = 20260720;
-        let roomType: NightType = "simple";
-        try {
-          const decoded = decodeTokenId(BigInt(s.tokenId));
-          room = decoded.room;
-          dateYYYYMMDD = decoded.dateYYYYMMDD;
-          roomType = (roomTypeOf(room) || "simple") as NightType;
-        } catch {
-          // fallback
-        }
-        return {
-          tokenId: s.tokenId,
-          room,
-          dateYYYYMMDD,
-          roomType,
-          priceWei: s.priceInWei,
-          saleType: s.isSecondary ? ("SECONDARY" as const) : ("PRIMARY" as const),
-          seller: s.seller,
-          buyer: s.buyer,
-          blockNumber: s.blockNumber,
-          logIndex: index,
-          txHash: s.txHash,
-        };
-      });
-    } else {
-      entries = await fetchHistory();
-    }
+    entries = await fetchHistory();
   } catch {
-    try {
-      entries = await fetchHistory();
-    } catch {
-      entries = null; // degradado
-    }
+    entries = null; // worker caído → estado degradado honesto
   }
 
   return (

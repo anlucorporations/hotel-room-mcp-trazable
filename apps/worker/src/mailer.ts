@@ -3,7 +3,7 @@ import { createTransport, type Transporter } from "nodemailer";
 import type { Mailer, SaleNotification } from "./types";
 
 /**
- * Implementación de {@link Mailer} sobre nodemailer/SMTP (T1.4 / CU-10).
+ * Implementación de {@link Mailer} sobre nodemailer/SMTP (T1.4 / CU-10, docs/SRS.md §9).
  *
  * Compone un aviso de venta legible (sin PII, RNF-05) a partir de la notificación ya
  * derivada. El transporte SMTP se inyecta por construcción para poder sustituirlo en pruebas
@@ -26,12 +26,7 @@ export class NodemailerMailer implements Mailer {
   private readonly to: string;
 
   constructor(config: SmtpConfig) {
-    this.transporter = createTransport({
-      host: config.host,
-      port: config.port,
-      secure: config.port === 465,
-      auth: { user: config.user, pass: config.pass },
-    });
+    this.transporter = createSmtpTransporter(config);
     this.from = config.from;
     this.to = config.to;
   }
@@ -44,6 +39,23 @@ export class NodemailerMailer implements Mailer {
       text: buildBody(notification),
     });
   }
+}
+
+/**
+ * Transporte SMTP compartido.
+ *
+ * Lo usa el **consumidor de la cola única** (D-03): el envío directo desde el pipeline de ventas se
+ * sustituyó por `QueuedMailer` + consumidor, pero el transporte sigue siendo el mismo.
+ */
+export function createSmtpTransporter(config: SmtpConfig): Transporter {
+  return createTransport({
+    host: config.host,
+    port: config.port,
+    secure: config.port === 465,
+    // Sin contraseña no se ofrece AUTH: en desarrollo/demo hay servidores SMTP locales que no lo
+    // admiten y nodemailer intentaría autenticarse contra ellos.
+    auth: config.pass ? { user: config.user, pass: config.pass } : undefined,
+  });
 }
 
 const SALE_TYPE_LABEL: Record<SaleNotification["saleType"], string> = {

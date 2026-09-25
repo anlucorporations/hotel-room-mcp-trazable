@@ -23,6 +23,17 @@ CREATE INDEX IF NOT EXISTS idx_nfts_query ON nfts(status, check_in_date, room_ty
 CREATE INDEX IF NOT EXISTS idx_nfts_room ON nfts(room_number);
 CREATE INDEX IF NOT EXISTS idx_nfts_owner ON nfts(current_owner);
 
+-- Anclaje on-chain (D-04/RF-03): una fila solo es válida si su tx_hash_mint procede de una
+-- transacción real. El minteo masivo del back-office NO emite transacciones, así que sus filas
+-- se persisten marcadas como no ancladas (FALSE), con el hash centinela cero en tx_hash_mint, y
+-- quedan EXCLUIDAS del catálogo público. El worker las promueve a TRUE cuando ancla el lote.
+-- El DEFAULT TRUE es la opción conservadora: las filas preexistentes (escritas por el worker a
+-- partir de eventos on-chain) conservan su significado y no desaparecen del catálogo.
+ALTER TABLE nfts ADD COLUMN IF NOT EXISTS on_chain_anchored BOOLEAN NOT NULL DEFAULT TRUE;
+
+CREATE INDEX IF NOT EXISTS idx_nfts_anchored ON nfts(on_chain_anchored)
+    WHERE on_chain_anchored = FALSE;
+
 CREATE TABLE IF NOT EXISTS listings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     token_id VARCHAR(66) NOT NULL REFERENCES nfts(token_id) ON DELETE CASCADE,
@@ -59,15 +70,50 @@ CREATE TABLE IF NOT EXISTS admin_sessions (
     username VARCHAR(100) NOT NULL,
     role VARCHAR(30) NOT NULL,
     refresh_token_hash VARCHAR(64) NOT NULL,
-    ip_address VARCHAR(45) NOT NULL,
-    user_agent TEXT NOT NULL,
+    -- Traza del acceso PSEUDONIMIZADA (ADR-24, decisión de M9): aquí ya NO va la IP ni el
+    -- user agent en claro, sino un HMAC-SHA256 con clave: "hmac-sha256:" + 64 hex (77 caracteres).
+    -- Nulas porque un acceso sin IP ni user agent no tiene nada que guardar.
+    ip_address VARCHAR(80) NULL,
+    user_agent VARCHAR(80) NULL,
     revoked BOOLEAN NOT NULL DEFAULT FALSE,
     expires_at TIMESTAMP NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+-- Las columnas nacieron como VARCHAR(45)/TEXT NOT NULL con el dato en claro; una base ya creada no
+-- cambia de tipo por CREATE TABLE IF NOT EXISTS, así que se ajustan aquí de forma idempotente.
+-- El orden importa: primero ensanchar y permitir nulos, después escribir los valores nuevos.
+ALTER TABLE admin_sessions ALTER COLUMN ip_address TYPE VARCHAR(80);
+ALTER TABLE admin_sessions ALTER COLUMN ip_address DROP NOT NULL;
+ALTER TABLE admin_sessions ALTER COLUMN user_agent TYPE VARCHAR(80);
+ALTER TABLE admin_sessions ALTER COLUMN user_agent DROP NOT NULL;
+
 CREATE INDEX IF NOT EXISTS idx_sessions_refresh ON admin_sessions(refresh_token_hash);
 CREATE INDEX IF NOT EXISTS idx_sessions_user_active ON admin_sessions(username, revoked, expires_at);
+-- La purga periódica (M9) borra por caducidad: sin índice, cada ciclo recorrería la tabla entera.
+CREATE INDEX IF NOT EXISTS idx_sessions_expiry ON admin_sessions(expires_at);
+
+-- ============================================================================
+-- Operadores del back-office (D-04): sistema canónico de autenticación.
+-- Contraseña (bcrypt) + TOTP obligatorio. La semilla TOTP NUNCA se guarda en claro:
+-- va cifrada con AES-256-GCM usando AES_SECRET_KEY (sin valor por defecto en el código).
+-- El rol es uno de los que gobiernan el back-office (DEFAULT_ADMIN_ROLE | RECEPTION_ROLE).
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS admin_users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username VARCHAR(100) UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    totp_secret_enc TEXT NOT NULL,
+    role VARCHAR(30) NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    failed_attempts INT NOT NULL DEFAULT 0,
+    locked_until TIMESTAMP NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_users_username ON admin_users(username);
+CREATE INDEX IF NOT EXISTS idx_admin_users_lock ON admin_users(active, locked_until);
 
 CREATE TABLE IF NOT EXISTS mfa_recovery_codes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -116,6 +162,79 @@ CREATE TABLE IF NOT EXISTS checkin_contingency_logs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_contingency_token ON checkin_contingency_logs(token_id);
+
+-- ============================================================================
+-- Estado del mini-worker (D-09): checkpoints, idempotencia, agregados e histórico
+-- viven en PostgreSQL, la MISMA base que usa la web/API (una sola verdad).
+-- Importes en wei como NUMERIC(78, 0): cubren uint256 sin pérdida de precisión.
+-- ============================================================================
+
+-- Checkpoint de sincronización por contrato (estado del worker).
+CREATE TABLE IF NOT EXISTS worker_checkpoints (
+    contract_address VARCHAR(42) PRIMARY KEY,
+    last_block BIGINT NOT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Idempotencia por log on-chain: la PK es la clave del log (txHash:logIndex para los
+-- agregados, keccak256(txHash, logIndex) para el aviso por email).
+CREATE TABLE IF NOT EXISTS worker_processed_logs (
+    log_key VARCHAR(120) PRIMARY KEY,
+    block_number BIGINT NULL,
+    contract_address VARCHAR(42) NULL,
+    processed_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_worker_processed_contract_block
+    ON worker_processed_logs(contract_address, block_number);
+
+-- Agregados del dashboard: una UNICA fila (id = 0). contract_address detecta el redeploy
+-- para resetear el estado y no arrastrar datos del contrato anterior.
+CREATE TABLE IF NOT EXISTS worker_aggregate_counters (
+    id INTEGER PRIMARY KEY CHECK (id = 0),
+    primary_volume_wei NUMERIC(78, 0) NOT NULL DEFAULT 0,
+    royalties_wei NUMERIC(78, 0) NOT NULL DEFAULT 0,
+    secondary_volume_wei NUMERIC(78, 0) NOT NULL DEFAULT 0,
+    sold_count INTEGER NOT NULL DEFAULT 0,
+    minted_count INTEGER NOT NULL DEFAULT 0,
+    burned_count INTEGER NOT NULL DEFAULT 0,
+    last_block BIGINT NOT NULL DEFAULT 0,
+    contract_address VARCHAR(42) NULL
+);
+
+INSERT INTO worker_aggregate_counters (id) VALUES (0) ON CONFLICT (id) DO NOTHING;
+
+-- Histórico de ventas: una fila por venta (PK compuesta tx_hash + log_index).
+CREATE TABLE IF NOT EXISTS worker_sale_history (
+    tx_hash VARCHAR(66) NOT NULL,
+    log_index INTEGER NOT NULL,
+    token_id VARCHAR(66) NOT NULL,
+    room INT NOT NULL,
+    date_yyyymmdd INT NOT NULL,
+    room_type VARCHAR(20) NOT NULL,
+    price_wei NUMERIC(78, 0) NOT NULL,
+    sale_type_raw INT NOT NULL,
+    seller VARCHAR(42) NOT NULL,
+    buyer VARCHAR(42) NOT NULL,
+    block_number BIGINT NOT NULL,
+    -- Marca temporal del bloque (reloj de la cadena), base de la serie mensual de D-16.
+    -- NULLABLE a propósito: las filas anteriores a esta migración no tienen el dato y quedan
+    -- fuera de la serie, declaradas en el contador undatedSalesCount en lugar de inventar fecha.
+    block_timestamp TIMESTAMPTZ NULL,
+    PRIMARY KEY (tx_hash, log_index)
+);
+
+CREATE INDEX IF NOT EXISTS idx_worker_sale_history_block
+    ON worker_sale_history(block_number DESC, log_index DESC);
+
+-- Migración incremental para bases ya creadas (M7). El ORDEN importa: en PostgreSQL el
+-- CREATE TABLE IF NOT EXISTS NO añade columnas a una tabla que ya existía, así que el índice
+-- sobre block_timestamp tiene que ir DESPUÉS del ALTER (si no, falla con «no existe la columna»
+-- justo en el arranque del worker).
+ALTER TABLE worker_sale_history ADD COLUMN IF NOT EXISTS block_timestamp TIMESTAMPTZ NULL;
+
+CREATE INDEX IF NOT EXISTS idx_worker_sale_history_ts
+    ON worker_sale_history(block_timestamp);
 `;
 
 /**
@@ -149,9 +268,16 @@ export async function purgeOldNotifications(
 export async function resetDatabase(customPool?: Pool): Promise<void> {
   const pool = customPool || getDbPool();
   await pool.query(`
+    DROP TABLE IF EXISTS worker_sale_history CASCADE;
+    DROP TABLE IF EXISTS worker_aggregate_counters CASCADE;
+    DROP TABLE IF EXISTS worker_processed_logs CASCADE;
+    DROP TABLE IF EXISTS worker_checkpoints CASCADE;
     DROP TABLE IF EXISTS email_notifications CASCADE;
+    DROP TABLE IF EXISTS push_subscriptions CASCADE;
+    DROP TABLE IF EXISTS checkin_contingency_logs CASCADE;
     DROP TABLE IF EXISTS mfa_recovery_codes CASCADE;
     DROP TABLE IF EXISTS admin_sessions CASCADE;
+    DROP TABLE IF EXISTS admin_users CASCADE;
     DROP TABLE IF EXISTS sale_events CASCADE;
     DROP TABLE IF EXISTS listings CASCADE;
     DROP TABLE IF EXISTS nfts CASCADE;

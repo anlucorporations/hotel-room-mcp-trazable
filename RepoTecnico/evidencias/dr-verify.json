@@ -1,0 +1,102 @@
+{
+  "prueba": "backup y restauración reales de PostgreSQL, con comparación de contenido",
+  "decision": "D-08 · D-09 (PostgreSQL como única persistencia)",
+  "origen": {
+    "host": "127.0.0.1",
+    "port": "5432",
+    "database": "hotel_nft_dev"
+  },
+  "esquemaDeVerificacion": "dr_verify",
+  "notaAlcance": "La restauración se verifica en un esquema de la misma base porque el rol de la aplicación no tiene CREATEDB (crear una base exige el superusuario, dependencia B-1). El volcado y la restauración son reales",
+  "volcado": {
+    "fichero": "C:\\Users\\lucci\\AppData\\Local\\Temp\\hotel-dr-verify\\hotel_nft_dev-1790187077241.sql",
+    "tamanoBytes": 192910,
+    "sha256": "61b7579844f03aa5e500ad48df7cca82cc123f88715da3a72174756c3c30649d",
+    "duracionSegundos": 0.77,
+    "rpo": "2026-09-23T18:11:17.634Z",
+    "formato": "pg_dump --format=plain --no-owner --no-privileges"
+  },
+  "restauracion": {
+    "rtoSegundos": 0.73,
+    "comando": "psql -v ON_ERROR_STOP=1 -f <volcado reescrito al esquema de verificación>",
+    "sentenciasDeExtensionOmitidas": 2
+  },
+  "comparacion": [
+    {
+      "table": "nfts",
+      "origen": {
+        "count": 42,
+        "checksum": "5800000000000000000"
+      },
+      "restaurada": {
+        "count": 42,
+        "checksum": "5800000000000000000"
+      },
+      "coincide": true
+    },
+    {
+      "table": "worker_sale_history",
+      "origen": {
+        "count": 48,
+        "checksum": "7600000000000000000"
+      },
+      "restaurada": {
+        "count": 48,
+        "checksum": "7600000000000000000"
+      },
+      "coincide": true
+    },
+    {
+      "table": "worker_aggregate_counters",
+      "origen": {
+        "count": 1,
+        "checksum": "7730000000000000000"
+      },
+      "restaurada": {
+        "count": 1,
+        "checksum": "7730000000000000000"
+      },
+      "coincide": true
+    },
+    {
+      "table": "email_notifications",
+      "origen": {
+        "count": 190,
+        "checksum": "190"
+      },
+      "restaurada": {
+        "count": 190,
+        "checksum": "190"
+      },
+      "coincide": true
+    },
+    {
+      "table": "push_subscriptions",
+      "origen": {
+        "count": 0,
+        "checksum": "0"
+      },
+      "restaurada": {
+        "count": 0,
+        "checksum": "0"
+      },
+      "coincide": true
+    },
+    {
+      "table": "admin_users",
+      "origen": {
+        "count": 2,
+        "checksum": "35"
+      },
+      "restaurada": {
+        "count": 2,
+        "checksum": "35"
+      },
+      "coincide": true
+    }
+  ],
+  "filasComparadas": 283,
+  "esquemaConservado": false,
+  "resultado": "CUMPLE",
+  "fecha": "2026-09-23T18:11:25.133Z"
+}

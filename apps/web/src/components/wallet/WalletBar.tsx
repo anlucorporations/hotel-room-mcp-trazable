@@ -10,7 +10,7 @@ function short(address: string): string {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
-/** Barra de onboarding/estado de wallet (CU-17, RF-04, RNF-19). */
+/** Barra de onboarding/estado de wallet (CU-17, docs/SRS.md §9, RF-04, RNF-19). */
 export function WalletBar() {
   const t = useTranslations("wallet");
   const {

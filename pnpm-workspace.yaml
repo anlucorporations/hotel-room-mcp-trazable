@@ -6,7 +6,6 @@ packages:
 # Solo ejecutar scripts de instalación nativos para estos paquetes.
 onlyBuiltDependencies:
   - esbuild
-  - better-sqlite3
 
 overrides:
   viem: "2.52.0"

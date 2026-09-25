@@ -1,5 +1,6 @@
 import pg from "pg";
 import type { Pool, PoolClient, PoolConfig, QueryResult, QueryResultRow } from "pg";
+import { requireSecret } from "../env/index";
 
 const { Pool: PgPool } = pg;
 
@@ -13,11 +14,17 @@ export interface DatabaseConfig extends PoolConfig {
   connectionTimeoutMillis?: number;
 }
 
+/**
+ * Configuración por defecto del pool.
+ *
+ * `DATABASE_URL` es OBLIGATORIA (CWE-798): la cadena de conexión anterior llevaba usuario y
+ * contraseña embebidos en el código, lo que publicaba las credenciales del entorno local y
+ * permitía que un despliegue mal configurado se conectase a una base inesperada en silencio.
+ * `requireSecret` lanza `MissingSecretError` en el primer uso si la variable no está definida.
+ */
 export function getDefaultDbConfig(): DatabaseConfig {
   return {
-    connectionString:
-      process.env.DATABASE_URL ||
-      "postgresql://hotel_admin:hotel_secret_2026@127.0.0.1:5432/hotel_nft_dev",
+    connectionString: requireSecret("DATABASE_URL"),
     max: Number(process.env.DATABASE_POOL_MAX || 20),
     min: Number(process.env.DATABASE_POOL_MIN || 2),
     idleTimeoutMillis: 30000,
@@ -52,10 +59,14 @@ export async function closeDbPool(): Promise<void> {
 
 /**
  * Ejecuta una consulta tipada en el pool de PostgreSQL.
+ *
+ * El valor por defecto del genérico es `QueryResultRow` (el propio tipo de `pg` para una fila
+ * genérica) en lugar de `any`: los llamantes que no declaran la forma de la fila siguen pudiendo
+ * leer cualquier columna, pero el tipo deja de ser un `any` sin control.
  */
-export async function query<R extends QueryResultRow = any>(
+export async function query<R extends QueryResultRow = QueryResultRow>(
   text: string,
-  values?: any[],
+  values?: unknown[],
 ): Promise<QueryResult<R>> {
   const pool = getDbPool();
   if (values !== undefined) {

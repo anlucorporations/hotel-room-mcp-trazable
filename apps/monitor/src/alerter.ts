@@ -2,7 +2,7 @@ import { createTransport, type Transporter } from "nodemailer";
 import type { Alerter } from "./types";
 
 /**
- * Implementación de {@link Alerter} sobre nodemailer/SMTP (T3.3 / RNF-17 / CU-16).
+ * Implementación de {@link Alerter} sobre nodemailer/SMTP (T3.3 / RNF-17 / CU-16, docs/SRS.md §9).
  *
  * El transporte SMTP se construye a partir de la configuración del monitor. El núcleo
  * (`MonitorCore`) compone el asunto y el cuerpo del aviso; esta clase sólo lo entrega (SRP).

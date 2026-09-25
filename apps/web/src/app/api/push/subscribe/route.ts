@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest} from "next/server";
+import { NextResponse } from "next/server";
 import { WebPushService, NFTsRepository } from "@hotel/shared";
 
 export const dynamic = "force-dynamic";
@@ -29,10 +30,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       status: "SUBSCRIBED",
       message: "Suscripción a notificaciones Web Push registrada exitosamente",
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("[API /api/push/subscribe] Error:", error);
     return NextResponse.json(
-      { error: "SUBSCRIPTION_FAILED", message: error?.message || "Error al registrar suscripción push" },
+      {
+        error: "SUBSCRIPTION_FAILED",
+        message:
+          error instanceof Error && error.message ? error.message : "Error al registrar suscripción push",
+      },
       { status: 500 },
     );
   }

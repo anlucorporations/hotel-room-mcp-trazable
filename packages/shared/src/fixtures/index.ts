@@ -10,7 +10,7 @@ import type { NightType } from "../domain/types";
  */
 const ONE_ETH = 10n ** 18n;
 
-/** Precios de ejemplo por tipo (dev). El precio real lo fija el hotel (DISEÑO §16.6). */
+/** Precios de ejemplo por tipo (dev). El precio real lo fija el hotel (ADR-19). */
 export const SEED_PRICE_BY_TYPE: Readonly<Record<NightType, bigint>> = Object.freeze({
   simple: ONE_ETH / 20n, // 0,05 ETH
   doble: ONE_ETH / 10n, // 0,1 ETH

@@ -9,7 +9,7 @@ import { useClaim } from "./useClaim";
 const BTN =
   "min-h-touch rounded-pill bg-sea px-5 py-2 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60";
 
-/** Panel de cobro (pull-payment) del saldo pendiente de reventas (CU-07). */
+/** Panel de cobro (pull-payment) del saldo pendiente de reventas (CU-07, docs/SRS.md §9). */
 export function ClaimPanel({
   pendingWei,
   onConfirmed,

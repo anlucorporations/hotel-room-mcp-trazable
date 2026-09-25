@@ -1,9 +1,9 @@
-import type { PurchaseTxData } from "@hotel/shared";
+import type { PurchaseTxData } from "@hotel/shared/domain";
 
 /**
- * Tipos neutrales del asistente (RF-12, CU-08). No dependen del proveedor LLM ni del MCP:
+ * Tipos neutrales del asistente (RF-12, CU-08, docs/SRS.md §9). No dependen del proveedor LLM ni del MCP:
  * los adaptadores (Anthropic, MCP) los traducen. Así el orquestador y sus guardrails se
- * prueban de forma determinista con dobles (harness de replay, DISEÑO §test).
+ * prueban de forma determinista con dobles (harness de replay, ADR-23).
  */
 
 /** Bloque de uso de herramienta emitido por el LLM. */

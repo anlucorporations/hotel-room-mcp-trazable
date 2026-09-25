@@ -3,7 +3,7 @@ import type { HealthProvider, HealthReport } from "@hotel/shared/health";
 import type { ChainReader } from "./chain/chain-reader";
 
 /**
- * Provider de salud del MCP (RNF-17, CU-08 08e). Sondea el RPC (`getHeadBlock`) con timeout:
+ * Provider de salud del MCP (RNF-17, CU-08 08e, docs/SRS.md §9). Sondea el RPC (`getHeadBlock`) con timeout:
  * si la cadena no responde, el MCP no puede servir sus herramientas → `down` (503), de modo
  * que el monitor (TC-NF-020) refleje la indisponibilidad de la dependencia.
  */

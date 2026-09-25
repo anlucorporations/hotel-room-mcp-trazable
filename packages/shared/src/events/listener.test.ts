@@ -1,30 +1,45 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { Mock } from "vitest";
 import { EventListenerService } from "./listener";
+import type { NFTsRepository } from "../db/repositories/nfts.repository";
+import type { NotificationQueueService } from "../queue/notifications";
 
 describe("EventListenerService (US-07)", () => {
   let service: EventListenerService;
-  let mockNftsRepo: any;
-  let mockNotificationQueue: any;
+  /** Dobles parciales: solo los métodos que ejercitan estas pruebas. */
+  let mockNftsRepo: NFTsRepository & {
+    updateNFTStatus: Mock;
+    recordSaleEvent: Mock;
+    createListing: Mock;
+  };
+  let mockNotificationQueue: NotificationQueueService & { enqueueNotification: Mock };
+  /** Reloj congelado: el monitor de silencio se prueba avanzándolo, sin tocar estado privado. */
+  let nowMs: number;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    nowMs = Date.now();
     mockNftsRepo = {
       updateNFTStatus: vi.fn().mockResolvedValue(undefined),
       recordSaleEvent: vi.fn().mockResolvedValue(undefined),
       createListing: vi.fn().mockResolvedValue(undefined),
+    } as NFTsRepository & {
+      updateNFTStatus: Mock;
+      recordSaleEvent: Mock;
+      createListing: Mock;
     };
     mockNotificationQueue = {
       enqueueNotification: vi.fn().mockResolvedValue("notif-1"),
-    };
+    } as NotificationQueueService & { enqueueNotification: Mock };
 
     service = new EventListenerService(
       {
         nftAddress: "0x1111111111111111111111111111111111111111",
-        marketplaceAddress: "0x2222222222222222222222222222222222222222",
         carlosEmail: "carlos@hotel.es",
         devopsEmail: "devops@hotel.es",
         reorgConfirmations: 32,
         silenceThresholdMs: 600000,
+        now: () => nowMs,
       },
       mockNftsRepo,
       mockNotificationQueue,
@@ -89,9 +104,8 @@ describe("EventListenerService (US-07)", () => {
 
   describe("Monitor de Silencio (> 10 min)", () => {
     it("debe alertar a DevOps si no se reciben bloques en > 10 min", async () => {
-      // Simular bloque antiguo recibido hace 11 minutos
-      const elevenMinutesAgo = Date.now() - 660000;
-      (service as any).lastBlockTimestamp = elevenMinutesAgo;
+      // Simular bloque antiguo recibido hace 11 minutos (reloj inyectado)
+      nowMs += 660000;
 
       const alerted = await service.checkSilenceAlert();
       expect(alerted).toBe(true);

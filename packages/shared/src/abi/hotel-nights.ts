@@ -9,11 +9,6 @@ export const hotelNightsAbi = [
         "name": "treasury_",
         "type": "address",
         "internalType": "address"
-      },
-      {
-        "name": "royaltyBps_",
-        "type": "uint96",
-        "internalType": "uint96"
       }
     ],
     "stateMutability": "nonpayable"
@@ -59,6 +54,19 @@ export const hotelNightsAbi = [
   },
   {
     "type": "function",
+    "name": "DEFAULT_MIN_LISTING_PRICE",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "MINTER_ROLE",
     "inputs": [],
     "outputs": [
@@ -85,26 +93,13 @@ export const hotelNightsAbi = [
   },
   {
     "type": "function",
-    "name": "ROYALTY_ADMIN_ROLE",
+    "name": "RECEPTION_ROLE",
     "inputs": [],
     "outputs": [
       {
         "name": "",
         "type": "bytes32",
         "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "ROYALTY_MAX_BPS",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint96",
-        "internalType": "uint96"
       }
     ],
     "stateMutability": "view"
@@ -331,6 +326,25 @@ export const hotelNightsAbi = [
   },
   {
     "type": "function",
+    "name": "isCheckedIn",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "isExpired",
     "inputs": [
       {
@@ -393,6 +407,32 @@ export const hotelNightsAbi = [
             "internalType": "bool"
           }
         ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "markCheckedIn",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "minListingPrice",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -592,19 +632,6 @@ export const hotelNightsAbi = [
   },
   {
     "type": "function",
-    "name": "royaltyBps",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint96",
-        "internalType": "uint96"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "royaltyInfo",
     "inputs": [
       {
@@ -625,7 +652,7 @@ export const hotelNightsAbi = [
         "internalType": "address"
       },
       {
-        "name": "amount",
+        "name": "royaltyAmount",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -703,12 +730,12 @@ export const hotelNightsAbi = [
   },
   {
     "type": "function",
-    "name": "setRoyaltyBps",
+    "name": "setMinListingPrice",
     "inputs": [
       {
-        "name": "bps",
-        "type": "uint96",
-        "internalType": "uint96"
+        "name": "newPrice",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [],
@@ -970,6 +997,31 @@ export const hotelNightsAbi = [
   },
   {
     "type": "event",
+    "name": "CheckedIn",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "by",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "timestamp",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "Listed",
     "inputs": [
       {
@@ -999,6 +1051,19 @@ export const hotelNightsAbi = [
     "inputs": [
       {
         "name": "_tokenId",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "MinListingPriceUpdated",
+    "inputs": [
+      {
+        "name": "newPrice",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
@@ -1196,25 +1261,6 @@ export const hotelNightsAbi = [
   },
   {
     "type": "event",
-    "name": "RoyaltyUpdated",
-    "inputs": [
-      {
-        "name": "oldBps",
-        "type": "uint96",
-        "indexed": false,
-        "internalType": "uint96"
-      },
-      {
-        "name": "newBps",
-        "type": "uint96",
-        "indexed": false,
-        "internalType": "uint96"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
     "name": "Sale",
     "inputs": [
       {
@@ -1357,6 +1403,17 @@ export const hotelNightsAbi = [
         "name": "neededRole",
         "type": "bytes32",
         "internalType": "bytes32"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "AlreadyCheckedIn",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ]
   },
@@ -1646,6 +1703,17 @@ export const hotelNightsAbi = [
   },
   {
     "type": "error",
+    "name": "NightNotSold",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
     "name": "NoFunds",
     "inputs": []
   },
@@ -1705,6 +1773,22 @@ export const hotelNightsAbi = [
   },
   {
     "type": "error",
+    "name": "PriceBelowMinimum",
+    "inputs": [
+      {
+        "name": "price",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "minimum",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
     "name": "ReentrancyGuardReentrantCall",
     "inputs": []
   },
@@ -1716,17 +1800,6 @@ export const hotelNightsAbi = [
         "name": "room",
         "type": "uint256",
         "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "RoyaltyOutOfRange",
-    "inputs": [
-      {
-        "name": "bps",
-        "type": "uint96",
-        "internalType": "uint96"
       }
     ]
   },

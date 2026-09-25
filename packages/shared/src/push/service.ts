@@ -1,10 +1,12 @@
 import { NFTsRepository } from "../db/repositories/nfts.repository";
+import { requireSecret } from "../env/index";
+import { sendWebPush, type VapidKeys } from "./web-push";
 
 export interface PushNotificationPayload {
   title: string;
   body: string;
   url?: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
 }
 
 export interface PushSubscriptionItem {
@@ -13,22 +15,28 @@ export interface PushSubscriptionItem {
   auth: string;
 }
 
+export interface BroadcastResult {
+  /** Entregas aceptadas por el servicio de push del navegador. */
+  sent: number;
+  failed: number;
+  /** Suscripciones purgadas porque el navegador ya no las reconoce (404/410). */
+  pruned: number;
+  total: number;
+}
+
+export interface WebPushServiceOptions {
+  /** `fetch` inyectable (pruebas/E2E con un servicio de push local). */
+  readonly fetchImpl?: typeof fetch;
+  readonly now?: () => Date;
+}
+
 export class WebPushService {
   private nftsRepo: NFTsRepository;
-  public vapidPublicKey: string;
-  private vapidPrivateKey: string;
-  private vapidSubject: string;
+  private readonly options: WebPushServiceOptions;
 
-  constructor(
-    nftsRepo: NFTsRepository = new NFTsRepository(),
-    vapidPublicKey = process.env.VAPID_PUBLIC_KEY || "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgD zkL-bH2XzWjFf7gYt0-74V1lZzZ_3M3J1Wl3_4wY=",
-    vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || "hotel_vapid_private_key_secret_2026",
-    vapidSubject = process.env.VAPID_SUBJECT || "mailto:devops@marinadelsol.es",
-  ) {
+  constructor(nftsRepo: NFTsRepository = new NFTsRepository(), options: WebPushServiceOptions = {}) {
     this.nftsRepo = nftsRepo;
-    this.vapidPublicKey = vapidPublicKey;
-    this.vapidPrivateKey = vapidPrivateKey;
-    this.vapidSubject = vapidSubject;
+    this.options = options;
   }
 
   /**
@@ -49,40 +57,63 @@ export class WebPushService {
     await this.nftsRepo.removePushSubscription(endpoint);
   }
 
+  /**
+   * Configuración VAPID para el envío real (D-03).
+   *
+   * Las tres claves son OBLIGATORIAS y se resuelven aquí, no al construir el servicio: el
+   * repositorio traía una clave pública de ejemplo inválida (con un espacio) y una privada
+   * inventada, de modo que cualquier despliegue enviaba con material conocido. Sin claves
+   * configuradas esta llamada falla en cerrado en lugar de usar un literal (CWE-798).
+   */
   getVapidConfig(): { publicKey: string; privateKey: string; subject: string } {
     return {
-      publicKey: this.vapidPublicKey,
-      privateKey: this.vapidPrivateKey,
-      subject: this.vapidSubject,
+      publicKey: requireSecret("VAPID_PUBLIC_KEY"),
+      privateKey: requireSecret("VAPID_PRIVATE_KEY"),
+      subject: requireSecret("VAPID_SUBJECT"),
     };
   }
 
   /**
-   * Despacha una notificación push a todos los suscriptores activos.
+   * Despacha una notificación push **real** a todos los suscriptores activos (D-03).
+   *
+   * A diferencia del contador simulado anterior, aquí se cifra (RFC 8291) y se entrega por HTTP con
+   * VAPID (RFC 8292). Las suscripciones que el servicio de push ya no reconoce (404/410) se purgan:
+   * es el opt-out que aplica el propio navegador cuando el usuario revoca el permiso.
    */
-  async broadcastNotification(
-    payload: PushNotificationPayload,
-  ): Promise<{ sent: number; failed: number; total: number }> {
+  async broadcastNotification(payload: PushNotificationPayload): Promise<BroadcastResult> {
     const subscriptions = await this.nftsRepo.getAllPushSubscriptions();
+    const vapid = this.getVapidConfig();
+    const vapidKeys: VapidKeys = {
+      publicKey: vapid.publicKey,
+      privateKey: vapid.privateKey,
+      subject: vapid.subject,
+    };
+
     let sent = 0;
     let failed = 0;
+    let pruned = 0;
 
     for (const sub of subscriptions) {
-      try {
-        // En entorno real se envía la trama cifrada HTTP ECE RFC 8291 con cabeceras VAPID
-        // Aquí simulamos el envío o enviamos mediante fetch al endpoint del push service
-        if (sub.endpoint.startsWith("http") && payload.title) {
-          // Despacho simulado / stub controlado para tests y producción
-          sent++;
-        } else {
-          failed++;
-        }
-      } catch (err) {
-        console.error(`[WebPush] Error enviando notificación a ${sub.endpoint}:`, err);
-        failed++;
+      const result = await sendWebPush(
+        { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
+        payload,
+        vapidKeys,
+        { fetchImpl: this.options.fetchImpl, now: this.options.now?.() },
+      );
+
+      if (result.ok) {
+        sent += 1;
+        continue;
       }
+      if (result.subscriptionGone) {
+        pruned += 1;
+        await this.nftsRepo.removePushSubscription(sub.endpoint).catch(() => undefined);
+        continue;
+      }
+      failed += 1;
+      console.error(`[WebPush] Fallo al entregar a ${sub.endpoint}: ${result.error ?? "desconocido"}`);
     }
 
-    return { sent, failed, total: subscriptions.length };
+    return { sent, failed, pruned, total: subscriptions.length };
   }
 }

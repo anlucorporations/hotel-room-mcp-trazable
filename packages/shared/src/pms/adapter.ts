@@ -1,3 +1,15 @@
+/**
+ * Adaptador del PMS del hotel (D-13).
+ *
+ * Alcance real de la plataforma: **comunica la entrada** al PMS del establecimiento (token, noche,
+ * método de check-in). El **registro de viajeros del RD 933/2021 no lo emite esta plataforma**: lo
+ * cumplimenta el personal del hotel en su PMS/mostrador, que es donde vive la identidad del
+ * huésped.
+ *
+ * Por eso este adaptador **no acepta ni devuelve datos personales** (nombre, documento,
+ * nacionalidad) y **no genera ninguna ficha policial**: la versión auditada (H-13) decía haber
+ * emitido el parte policial con DNI y nombre del viajero, sin enviarlo a ningún sitio.
+ */
 export type PmsType = 'OPERA' | 'CLOUDBEDS' | 'SIHOT' | 'MOCK';
 
 export interface PmsCheckInSyncParams {
@@ -6,91 +18,61 @@ export interface PmsCheckInSyncParams {
   checkInDate: string; // YYYY-MM-DD
   checkOutDate?: string;
   checkInMethod: 'QR' | 'CONTINGENCY';
-  documentType?: 'DNI' | 'PASSPORT' | 'NIE';
-  documentNumber?: string;
-  guestName?: string;
-  guestNationality?: string;
   pmsReservationId?: string;
-}
-
-export interface PoliceReportEntry {
-  establishmentCode: string; // Código asignado por Policía/Guardia Civil
-  roomNumber: number;
-  checkInTimestamp: string; // ISO
-  checkOutDate: string;
-  documentType: string;
-  documentNumber: string;
-  travelerFullName: string;
-  nationality: string;
-  tokenVerificationHash: string; // Hash del NFT para trazabilidad Web3
 }
 
 export interface PmsSyncResult {
   success: boolean;
   pmsSyncId: string;
   pmsType: PmsType;
-  policeReportGenerated: boolean;
-  policeReport?: PoliceReportEntry;
+  /**
+   * Siempre `false`: la plataforma no genera el parte de viajeros. Se mantiene el campo para que
+   * cualquier consumidor que lo leyera vea explícitamente que no lo hace (en vez de un `true`
+   * simulado).
+   */
+  policeReportGenerated: false;
   timestamp: string;
   message: string;
 }
 
 export class PmsAdapter {
-  private static readonly ESTABLISHMENT_CODE = 'HOTEL-MARINA-MICA-001';
-
   /**
-   * Genera el registro de viajero en estricto cumplimiento con el RD 933/2021
-   */
-  public static generatePoliceReport(params: PmsCheckInSyncParams): PoliceReportEntry {
-    const checkOut = params.checkOutDate || params.checkInDate;
-    const docType = params.documentType || 'DNI';
-    const docNum = params.documentNumber || 'ANONYMOUS_VERIFIED_ONCHAIN';
-    const name = params.guestName || 'TITULAR WALLET NFT';
-    const nationality = params.guestNationality || 'ESP';
-
-    return {
-      establishmentCode: this.ESTABLISHMENT_CODE,
-      roomNumber: params.roomNumber,
-      checkInTimestamp: new Date().toISOString(),
-      checkOutDate: checkOut,
-      documentType: docType,
-      documentNumber: docNum,
-      travelerFullName: name,
-      nationality,
-      tokenVerificationHash: `token_${params.tokenId}_${params.checkInMethod}`,
-    };
-  }
-
-  /**
-   * Sincroniza la entrada con el PMS y genera la ficha policial del viajero
+   * Sincroniza la entrada con el PMS. Sin datos personales en la petición ni en la respuesta.
    */
   public static async syncCheckIn(
     params: PmsCheckInSyncParams,
     pmsType: PmsType = 'MOCK',
     pmsEndpoint?: string
   ): Promise<PmsSyncResult> {
-    const policeReport = this.generatePoliceReport(params);
     const pmsSyncId = `pms_${Date.now()}_${params.tokenId}`;
+    const payload = {
+      pmsSyncId,
+      tokenId: params.tokenId,
+      roomNumber: params.roomNumber,
+      checkInDate: params.checkInDate,
+      checkOutDate: params.checkOutDate ?? params.checkInDate,
+      checkInMethod: params.checkInMethod,
+      pmsReservationId: params.pmsReservationId,
+    };
 
-    // En entorno MOCK o cuando no se define endpoint externo
     if (pmsType === 'MOCK' || !pmsEndpoint) {
       return {
         success: true,
         pmsSyncId,
         pmsType,
-        policeReportGenerated: true,
-        policeReport,
+        policeReportGenerated: false,
         timestamp: new Date().toISOString(),
-        message: `Sincronización PMS (${pmsType}) exitosa para Habitación ${params.roomNumber} (Token ${params.tokenId}). Registro RD 933/2021 emitido.`,
+        message:
+          `Entrada comunicada al PMS (${pmsType}) para la habitación ${params.roomNumber} ` +
+          `(noche ${params.tokenId}). El registro de viajeros se cumplimenta en el PMS del hotel.`,
       };
     }
 
     try {
-      // Simulación o llamada HTTP real hacia la API del PMS (Opera / Cloudbeds)
       const res = await fetch(pmsEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pmsSyncId, policeReport, params }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -101,21 +83,20 @@ export class PmsAdapter {
         success: true,
         pmsSyncId,
         pmsType,
-        policeReportGenerated: true,
-        policeReport,
+        policeReportGenerated: false,
         timestamp: new Date().toISOString(),
-        message: `Sincronización remota con ${pmsType} en ${pmsEndpoint} completada con éxito.`,
+        message: `Sincronización con ${pmsType} en ${pmsEndpoint} completada.`,
       };
-    } catch (err: any) {
-      // Degradación elegante: almacena en cola de contingencia local
+    } catch (err: unknown) {
+      const detail = err instanceof Error ? err.message : 'error desconocido';
+      // Degradación honesta: la entrada queda pendiente de reintento, sin afirmar que se registró.
       return {
         success: false,
         pmsSyncId,
         pmsType,
-        policeReportGenerated: true,
-        policeReport,
+        policeReportGenerated: false,
         timestamp: new Date().toISOString(),
-        message: `Fallo de conexión con PMS (${err.message}). Registro retenido en cola local para reintento automático.`,
+        message: `No se pudo comunicar la entrada al PMS (${detail}). Queda pendiente de reintento.`,
       };
     }
   }

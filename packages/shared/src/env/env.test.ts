@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { EnvironmentValidationError, env, loadEnv } from "./index";
+import { EnvironmentValidationError, emptyAsUndefined, env, loadEnv } from "./index";
 
 const schema = z.object({
   RPC_URL: env.httpUrl,
@@ -63,5 +63,36 @@ describe("env.httpUrl (MINOR#10 — sólo esquemas http/https)", () => {
     "no-es-una-url",
   ])("rechaza esquemas no-http (%s)", (url) => {
     expect(() => parse(url)).toThrow(EnvironmentValidationError);
+  });
+});
+
+describe("emptyAsUndefined (M7: una variable vacía NO es un valor inválido)", () => {
+  const schema = z.object({
+    BURN_INTERVAL_MS: emptyAsUndefined(z.coerce.number().int().positive()),
+    BURNER_KEY: emptyAsUndefined(z.string().regex(/^0x[0-9a-f]{64}$/)),
+    DEPLOYMENT_BLOCK: emptyAsUndefined(z.coerce.number().int().nonnegative()),
+  });
+
+  it("trata `VAR=` (y solo espacios) como «no definida»", () => {
+    const config = loadEnv(schema, { BURN_INTERVAL_MS: "", BURNER_KEY: "   ", DEPLOYMENT_BLOCK: "" });
+    expect(config.BURN_INTERVAL_MS).toBeUndefined();
+    expect(config.BURNER_KEY).toBeUndefined();
+    expect(config.DEPLOYMENT_BLOCK).toBeUndefined();
+  });
+
+  it("acepta la ausencia de la variable", () => {
+    expect(loadEnv(schema, {}).DEPLOYMENT_BLOCK).toBeUndefined();
+  });
+
+  it("sigue rechazando un valor presente pero inválido (vacío ≠ mal escrito)", () => {
+    expect(() => loadEnv(schema, { BURN_INTERVAL_MS: "0" })).toThrow(EnvironmentValidationError);
+    expect(() => loadEnv(schema, { BURNER_KEY: "0x123" })).toThrow(EnvironmentValidationError);
+    expect(() => loadEnv(schema, { DEPLOYMENT_BLOCK: "-1" })).toThrow(EnvironmentValidationError);
+  });
+
+  it("lee el valor cuando está definido", () => {
+    const config = loadEnv(schema, { BURN_INTERVAL_MS: "60000", DEPLOYMENT_BLOCK: "0" });
+    expect(config.BURN_INTERVAL_MS).toBe(60_000);
+    expect(config.DEPLOYMENT_BLOCK).toBe(0);
   });
 });

@@ -26,6 +26,18 @@ describe("resaleErrorMessage (mapeo de errores de reventa, CU-06)", () => {
     expect(resaleErrorMessage(viemRevert("NotListed"))).toBe("resaleError.NotListed");
   });
 
+  it("mapea PriceBelowMinimum (suelo anti-evasión, D-06) a su mensaje específico", () => {
+    expect(resaleErrorMessage(viemRevert("PriceBelowMinimum"))).toBe(
+      "resaleError.PriceBelowMinimum",
+    );
+  });
+
+  it("mapea NightNotResellable (noche consumida, D-05) a su mensaje específico", () => {
+    expect(resaleErrorMessage(viemRevert("NightNotResellable"))).toBe(
+      "resaleError.NightNotResellable",
+    );
+  });
+
   it("detecta el error aunque aparezca en un nivel profundo de cause", () => {
     const deep = { cause: { cause: { message: "execution reverted: NightExpired(123)" } } };
     expect(resaleErrorMessage(deep)).toBe("resaleError.NightExpired");

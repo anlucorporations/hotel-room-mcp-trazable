@@ -5,7 +5,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
- * @title Faucet — utilidad de ETH para entornos de pruebas (ADR-13, CU-PR-01)
+ * @title Faucet — utilidad de ETH para entornos de pruebas (ADR-13, CU-PR-01, docs/SRS.md §9)
  * @notice **NO se despliega en producción.** Dispensa `amount` por wallet con una ventana
  *         mínima `cooldown`. Expone `lowBalance()` para la alerta de saldo bajo (RNF-17).
  * @dev CEI + `nonReentrant` en la dispensación. El operador financia con `fund()`/`receive`.

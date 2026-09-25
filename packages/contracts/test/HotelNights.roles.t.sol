@@ -19,14 +19,12 @@ contract HotelNightsRolesTest is Test {
     address internal treasury = makeAddr("treasury");
     address internal stranger = makeAddr("stranger");
 
-    uint96 internal constant ROYALTY_BPS = 1000;
-
     // Interfaces ERC para `supportsInterface`.
     bytes4 internal constant IID_ERC721 = 0x80ac58cd;
     bytes4 internal constant IID_ERC2981 = 0x2a55205a;
 
     function setUp() public {
-        nft = new HotelNights(treasury, ROYALTY_BPS);
+        nft = new HotelNights(treasury);
     }
 
     function test_DeployerStartsAsSoleAdmin() public view {
@@ -34,6 +32,8 @@ contract HotelNightsRolesTest is Test {
         assertEq(nft.owner(), address(this));
     }
 
+    /// @notice DoD T0.2: el bootstrap concede los 6 roles vigentes (D-05 añade RECEPTION y
+    ///         D-06 retira ROYALTY_ADMIN) y el EOA desplegador queda revocado.
     function test_BootstrapGrantsSixRolesToAdminAndRevokesDeployer() public {
         HotelNightsBootstrap.grantRolesTo(nft, admin);
         nft.renounceRole(nft.DEFAULT_ADMIN_ROLE(), address(this));
@@ -41,7 +41,7 @@ contract HotelNightsRolesTest is Test {
         // El admin definitivo tiene los 6 roles.
         assertTrue(nft.hasRole(nft.DEFAULT_ADMIN_ROLE(), admin), "DEFAULT_ADMIN");
         assertTrue(nft.hasRole(nft.MINTER_ROLE(), admin), "MINTER");
-        assertTrue(nft.hasRole(nft.ROYALTY_ADMIN_ROLE(), admin), "ROYALTY_ADMIN");
+        assertTrue(nft.hasRole(nft.RECEPTION_ROLE(), admin), "RECEPTION");
         assertTrue(nft.hasRole(nft.PAUSER_ROLE(), admin), "PAUSER");
         assertTrue(nft.hasRole(nft.BURNER_ROLE(), admin), "BURNER");
         assertTrue(nft.hasRole(nft.TREASURER_ROLE(), admin), "TREASURER");
@@ -52,7 +52,7 @@ contract HotelNightsRolesTest is Test {
 
     function test_RoleIdsMatchKeccakOfName() public view {
         assertEq(nft.MINTER_ROLE(), keccak256("MINTER_ROLE"));
-        assertEq(nft.ROYALTY_ADMIN_ROLE(), keccak256("ROYALTY_ADMIN_ROLE"));
+        assertEq(nft.RECEPTION_ROLE(), keccak256("RECEPTION_ROLE"));
         assertEq(nft.PAUSER_ROLE(), keccak256("PAUSER_ROLE"));
         assertEq(nft.BURNER_ROLE(), keccak256("BURNER_ROLE"));
         assertEq(nft.TREASURER_ROLE(), keccak256("TREASURER_ROLE"));
@@ -76,11 +76,11 @@ contract HotelNightsRolesTest is Test {
 
     function test_TreasuryAndRoyaltyConfigured() public view {
         assertEq(nft.treasury(), treasury);
-        assertEq(nft.royaltyBps(), ROYALTY_BPS);
 
-        (address receiver, uint256 amount) = nft.royaltyInfo(1, 10_000);
+        // D-06: el royalty se deriva del tipo de la habitación del tokenId (sin configuración).
+        (address receiver, uint256 amount) = nft.royaltyInfo(101 * 1e8 + 20_260_615, 10_000);
         assertEq(receiver, treasury);
-        assertEq(amount, 1000); // 10 % de 10_000
+        assertEq(amount, 500); // 5 % simple
     }
 
     function test_SupportsExpectedInterfaces() public view {
@@ -91,13 +91,16 @@ contract HotelNightsRolesTest is Test {
 
     function test_ConstructorRejectsZeroTreasury() public {
         vm.expectRevert(IHotelNights.ZeroAddress.selector);
-        new HotelNights(address(0), ROYALTY_BPS);
+        new HotelNights(address(0));
     }
 
-    function test_ConstructorRejectsRoyaltyOutOfRange() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(IHotelNights.RoyaltyOutOfRange.selector, uint96(2001))
-        );
-        new HotelNights(treasury, 2001);
+    /// @notice D-06: el royalty no es gobernable; lo fija el tipo de habitación en el alta.
+    ///         El constructor ya solo recibe la tesorería (el compilador garantiza la aridad).
+    function test_RoyaltyIsNotGovernable() public view {
+        (, uint256 simpleAmount) = nft.royaltyInfo(101 * 1e8 + 20_260_615, 10_000);
+        (, uint256 suiteAmount) = nft.royaltyInfo(201 * 1e8 + 20_260_615, 10_000);
+
+        assertEq(simpleAmount, 500, "5 % simple");
+        assertEq(suiteAmount, 1000, "10 % suite");
     }
 }

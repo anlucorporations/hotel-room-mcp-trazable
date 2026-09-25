@@ -9,7 +9,7 @@ import {IERC721Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.s
 import {HotelNights} from "../src/HotelNights.sol";
 import {IHotelNights} from "../src/IHotelNights.sol";
 
-/// @notice CU-13 — Caducidad lógica + burn en lote de noches no vendidas del hotel.
+/// @notice CU-13 (docs/SRS.md §9) — Caducidad lógica + burn en lote de noches no vendidas del hotel.
 contract HotelNightsBurnTest is Test {
     HotelNights internal nft;
 
@@ -27,7 +27,7 @@ contract HotelNightsBurnTest is Test {
 
     function setUp() public {
         vm.warp(BASE_TS);
-        nft = new HotelNights(treasury, 1000);
+        nft = new HotelNights(treasury); // 2.º arg heredado: SIN efecto (D-06)
         nft.grantRole(nft.MINTER_ROLE(), minter);
         nft.grantRole(nft.BURNER_ROLE(), burner);
         vm.prank(minter);

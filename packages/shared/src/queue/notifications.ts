@@ -1,13 +1,13 @@
-import { Queue, Worker, type Job } from "bullmq";
+import { Queue, Worker, createIORedisClient, type Job } from "bullmq";
 import type { Pool } from "pg";
 import { getDbPool } from "../db/pool";
-import { getRedisClient } from "../redis/client";
+import { getBlockingRedisClient, getRedisClient } from "../redis/client";
 
 export interface EmailNotificationPayload {
   id?: string;
   eventType: "NFT_SOLD" | "CHECK_IN_CONFIRMED" | "BURN_EXECUTED" | "DEVOPS_ALERT";
   recipientEmail: string;
-  payload: Record<string, any>;
+  payload: Record<string, unknown>;
   status?: "PENDING" | "SENT" | "FAILED";
   attempts?: number;
   createdAt?: Date;
@@ -28,14 +28,26 @@ export class NotificationQueueService {
     if (!this.queue) {
       const redis = getRedisClient();
       this.queue = new Queue(EMAIL_QUEUE_NAME, {
-        connection: redis as any,
+        // BullMQ 6 tipa la conexión con su propia interfaz `IRedisClient` (opciones estructuradas),
+        // incompatible con la API varargs de ioredis. `createIORedisClient` es el adaptador oficial
+        // de la librería: es exactamente la envoltura que BullMQ aplica internamente a un cliente
+        // ioredis crudo, así que el comportamiento no cambia.
+        connection: createIORedisClient(redis),
         defaultJobOptions: {
           attempts: 3,
           backoff: {
             type: "exponential",
             delay: 1000,
           },
-          removeOnComplete: true,
+          /**
+           * Los trabajos COMPLETADOS se conservan un rato (1 h / 1000 entradas) en vez de borrarse.
+           * Es lo que hace que la reconciliación sea idempotente: si el proceso cae justo después
+           * de entregar por SMTP y antes de marcar la fila como `SENT`, la fila queda `PENDING` y la
+           * reconciliación re-encola con el MISMO `jobId`; con el trabajo completado aún presente,
+           * BullMQ lo ignora y **no se envía dos veces**. Con `removeOnComplete: true` (estado
+           * anterior) ese duplicado era el camino feliz.
+           */
+          removeOnComplete: { age: 3600, count: 1000 },
           removeOnFail: false,
         },
       });
@@ -49,7 +61,7 @@ export class NotificationQueueService {
   async enqueueNotification(
     eventType: "NFT_SOLD" | "CHECK_IN_CONFIRMED" | "BURN_EXECUTED" | "DEVOPS_ALERT",
     recipientEmail: string,
-    payload: Record<string, any>,
+    payload: Record<string, unknown>,
   ): Promise<string> {
     // 1. Persistencia atómica previa en BD
     const res = await this.pool.query(
@@ -82,7 +94,7 @@ export class NotificationQueueService {
    */
   async enqueueEphemeralEmail(
     recipientEmail: string,
-    payload: Record<string, any>,
+    payload: Record<string, unknown>,
   ): Promise<string> {
     const ephemeralId = `ephemeral_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     const q = this.getQueue();
@@ -164,9 +176,10 @@ export class NotificationQueueService {
    * Crea un worker de BullMQ para procesar correos.
    */
   createWorker(
-    handler: (job: Job<{ notificationId: string; eventType: string; recipientEmail: string; payload: any; isEphemeral?: boolean }>) => Promise<void>,
+    handler: (job: Job<{ notificationId: string; eventType: string; recipientEmail: string; payload: Record<string, unknown>; isEphemeral?: boolean }>) => Promise<void>,
   ): Worker {
-    const redis = getRedisClient();
+    // Conexión BLOQUEANTE: BullMQ exige `maxRetriesPerRequest: null` para workers.
+    const redis = getBlockingRedisClient();
     return new Worker(
       EMAIL_QUEUE_NAME,
       async (job) => {
@@ -176,13 +189,18 @@ export class NotificationQueueService {
             await this.markAsSent(job.data.notificationId);
           }
         } catch (err) {
-          if (!job.data.isEphemeral) {
+          // `FAILED` se marca solo cuando se agotan los intentos: marcarlo en cada intento dejaba
+          // la fila en `FAILED` mientras BullMQ todavía iba a reintentar (y la reconciliación,
+          // que solo mira `PENDING`, no la habría recuperado si el reintento no llegaba).
+          const attempts = job.opts?.attempts ?? 1;
+          const exhausted = job.attemptsMade + 1 >= attempts;
+          if (!job.data.isEphemeral && exhausted) {
             await this.markAsFailed(job.data.notificationId);
           }
           throw err;
         }
       },
-      { connection: redis as any, concurrency: 5 },
+      { connection: createIORedisClient(redis), concurrency: 5 },
     );
   }
 }

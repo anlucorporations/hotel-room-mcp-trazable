@@ -12,6 +12,10 @@ bytecode_hash = "none"
 # Permite a los scripts escribir el registro de despliegue.
 fs_permissions = [{ access = "read-write", path = "./deployments" }]
 ffi = false
+# Ejecución en serie de las pruebas: las suites de despliegue escriben un fichero compartido
+# (`deployments/latest.json`) y configuran el entorno con `vm.setEnv`, que persiste entre
+# funciones de prueba. En paralelo se producen carreras y contaminación entre casos.
+threads = 1
 
 [profile.ci]
 verbosity = 3

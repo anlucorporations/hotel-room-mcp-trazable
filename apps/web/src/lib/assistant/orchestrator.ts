@@ -1,4 +1,4 @@
-import type { PurchaseTxData } from "@hotel/shared";
+import type { PurchaseTxData } from "@hotel/shared/domain";
 import type { LlmClient } from "./llm";
 import type { ToolGateway } from "./tools-gateway";
 import type { PreparedTxCheck } from "./validate-tx";
@@ -28,7 +28,7 @@ const BUILD_PURCHASE_TOOL = "buildPurchaseTx";
 const DEFAULT_MAX_ROUNDS = 4;
 
 /**
- * Orquesta la conversación del asistente (CU-08): ofrece al LLM las herramientas del MCP,
+ * Orquesta la conversación del asistente (CU-08, docs/SRS.md §9): ofrece al LLM las herramientas del MCP,
  * ejecuta las que pida y le devuelve los resultados, hasta que responde sin más herramientas.
  *
  * Guardrails: el alcance lo fija el prompt (rechazo fuera de dominio, no exponer instrucciones)

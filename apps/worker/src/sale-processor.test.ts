@@ -1,41 +1,28 @@
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { GETLOGS_MAX_RANGE } from "@hotel/shared";
-import { SqliteCheckpointStore } from "./checkpoint-store";
-import {
-  buildNotification,
-  idempotencyKey,
-  SaleProcessor,
-} from "./sale-processor";
+import { idempotencyKey, SaleProcessor, buildNotification } from "./sale-processor";
 import {
   AlwaysFailingMailer,
   FakeChainSource,
   FakeMailer,
+  InMemoryCheckpointStore,
   makeSaleEvent,
   noSleep,
   SelectiveFailingMailer,
   silentLogger,
 } from "./test-fakes";
-import type { Mailer, SaleEvent } from "./types";
+import type { CheckpointStore, Mailer, SaleEvent } from "./types";
 
+/**
+ * Tests del `SaleProcessor` (CU-10, docs/SRS.md §9, at-least-once). El checkpoint/idempotencia se ejercita con el
+ * `CheckpointStore` en memoria (compartiendo estado entre instancias para simular un reinicio):
+ * los tests del worker NO necesitan base de datos. La persistencia real en PostgreSQL se cubre con
+ * mocks de `pg` en `checkpoint-store.test.ts` (D-09).
+ */
 const CONTRACT = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
-let tmpDir: string;
-let dbPath: string;
-
-beforeEach(() => {
-  tmpDir = mkdtempSync(join(tmpdir(), "worker-test-"));
-  dbPath = join(tmpDir, "checkpoint.sqlite");
-});
-
-afterEach(() => {
-  rmSync(tmpDir, { recursive: true, force: true });
-});
-
 const newProcessor = (
-  store: SqliteCheckpointStore,
+  store: CheckpointStore,
   chainSource: FakeChainSource,
   mailer: Mailer,
   opts: {
@@ -62,7 +49,7 @@ const newProcessor = (
 
 describe("SaleProcessor · idempotencia (TC-WK-001)", () => {
   it("procesar el mismo Sale dos veces → un solo email", async () => {
-    const store = new SqliteCheckpointStore(dbPath);
+    const store = new InMemoryCheckpointStore();
     const mailer = new FakeMailer();
     const processor = newProcessor(store, new FakeChainSource(10n), mailer);
     const event = makeSaleEvent();
@@ -71,40 +58,37 @@ describe("SaleProcessor · idempotencia (TC-WK-001)", () => {
     await processor.processSale(event);
 
     expect(mailer.sent).toHaveLength(1);
-    store.close();
   });
 
-  it("reinicio (nuevo SaleProcessor, mismo store) con los mismos logs → 0 emails nuevos", async () => {
+  it("reinicio (nuevo SaleProcessor, mismo estado persistido) con los mismos logs → 0 emails nuevos", async () => {
     const event = makeSaleEvent();
 
-    const store1 = new SqliteCheckpointStore(dbPath);
+    const store1 = new InMemoryCheckpointStore();
     const mailer1 = new FakeMailer();
     await newProcessor(store1, new FakeChainSource(10n, [event]), mailer1).catchUp(
       10n,
     );
     expect(mailer1.sent).toHaveLength(1);
-    store1.close();
 
-    // Reinicio: mismo fichero, nuevo store y procesador, mismos logs.
-    const store2 = new SqliteCheckpointStore(dbPath);
+    // Reinicio: nuevo store sobre el MISMO estado persistido, mismos logs.
+    const store2 = new InMemoryCheckpointStore(false, store1.snapshot());
     const mailer2 = new FakeMailer();
     const chain = new FakeChainSource(10n, [event]);
     await newProcessor(store2, chain, mailer2).catchUp(10n);
 
     expect(mailer2.sent).toHaveLength(0);
-    store2.close();
   });
 });
 
 describe("SaleProcessor · catch-up paginado (TC-WK-002)", () => {
   it("rango grande (> GETLOGS_MAX_RANGE) se consulta en varios chunks ≤ límite", async () => {
-    const store = new SqliteCheckpointStore(dbPath);
+    const store = new InMemoryCheckpointStore();
     const chain = new FakeChainSource(BigInt(GETLOGS_MAX_RANGE * 2 + 100));
     const processor = newProcessor(store, chain, new FakeMailer(), {
       deploymentBlock: 0,
     });
 
-    await processor.catchUp(chain.getHeadBlock ? await chain.getHeadBlock() : 0n);
+    await processor.catchUp(await chain.getHeadBlock());
 
     // Varios chunks (3 para 2·max + 101 bloques).
     expect(chain.requestedRanges.length).toBeGreaterThan(1);
@@ -115,25 +99,23 @@ describe("SaleProcessor · catch-up paginado (TC-WK-002)", () => {
     // Cobertura contigua de [0, head] sin huecos ni solapes.
     expect(chain.requestedRanges[0]?.from).toBe(0n);
     expect(chain.requestedRanges.at(-1)?.to).toBe(BigInt(GETLOGS_MAX_RANGE * 2 + 100));
-    store.close();
   });
 });
 
 describe("SaleProcessor · checkpoint (TC-WK-003)", () => {
   it("avanza el checkpoint tras procesar cada chunk", async () => {
-    const store = new SqliteCheckpointStore(dbPath);
+    const store = new InMemoryCheckpointStore();
     const head = BigInt(GETLOGS_MAX_RANGE + 10);
     const chain = new FakeChainSource(head);
     const processor = newProcessor(store, chain, new FakeMailer());
 
     await processor.catchUp(head);
 
-    expect(store.getLastBlock(CONTRACT)).toBe(Number(head));
-    store.close();
+    expect(await store.getLastBlock(CONTRACT)).toBe(Number(head));
   });
 
   it("arranca desde deploymentBlock cuando no hay checkpoint previo", async () => {
-    const store = new SqliteCheckpointStore(dbPath);
+    const store = new InMemoryCheckpointStore();
     const chain = new FakeChainSource(100n);
     const processor = newProcessor(store, chain, new FakeMailer(), {
       deploymentBlock: 90,
@@ -142,7 +124,6 @@ describe("SaleProcessor · checkpoint (TC-WK-003)", () => {
     await processor.catchUp(100n);
 
     expect(chain.requestedRanges[0]?.from).toBe(90n);
-    store.close();
   });
 });
 
@@ -172,7 +153,7 @@ describe("SaleProcessor · contenido del email (TC-WK-004)", () => {
 
 describe("SaleProcessor · fallo SMTP (TC-WK-005)", () => {
   it("agota reintentos → no marca processed → degrada salud → reintenta en otro ciclo", async () => {
-    const store = new SqliteCheckpointStore(dbPath);
+    const store = new InMemoryCheckpointStore();
     const failing = new AlwaysFailingMailer();
     let degraded = false;
     const processor = newProcessor(store, new FakeChainSource(10n), failing, {
@@ -187,15 +168,14 @@ describe("SaleProcessor · fallo SMTP (TC-WK-005)", () => {
 
     expect(failing.attempts).toBe(3); // 1 + 2 reintentos
     expect(degraded).toBe(true);
-    expect(store.isProcessed(idempotencyKey(event))).toBe(false);
+    expect(await store.isProcessed(idempotencyKey(event))).toBe(false);
 
     // Recuperación: el mailer ahora entrega; el segundo intento debe enviar exactamente 1 email.
     const ok = new FakeMailer();
     const recovered = newProcessor(store, new FakeChainSource(10n), ok);
     await recovered.processSale(event);
     expect(ok.sent).toHaveLength(1);
-    expect(store.isProcessed(idempotencyKey(event))).toBe(true);
-    store.close();
+    expect(await store.isProcessed(idempotencyKey(event))).toBe(true);
   });
 });
 
@@ -207,7 +187,7 @@ describe("SaleProcessor · reconexión / catch-up tras caída (TC-WK-006)", () =
       makeSaleEvent({ txHash: `0x${"33".repeat(32)}`, logIndex: 0, blockNumber: 7n }),
     ];
 
-    const store = new SqliteCheckpointStore(dbPath);
+    const store = new InMemoryCheckpointStore();
     const mailer = new FakeMailer();
 
     // Primer ciclo: sólo había avanzado la cadena hasta el bloque 3 (dos ventas).
@@ -215,7 +195,7 @@ describe("SaleProcessor · reconexión / catch-up tras caída (TC-WK-006)", () =
     const processor = newProcessor(store, chainEarly, mailer);
     await processor.catchUp(3n);
     expect(mailer.sent).toHaveLength(2);
-    expect(store.getLastBlock(CONTRACT)).toBe(3);
+    expect(await store.getLastBlock(CONTRACT)).toBe(3);
 
     // "Caída" y reanudación: la cadena ahora está en el bloque 8 (una venta más, bloque 7).
     const chainAfter = new FakeChainSource(8n, events);
@@ -225,8 +205,7 @@ describe("SaleProcessor · reconexión / catch-up tras caída (TC-WK-006)", () =
     expect(mailer.sent).toHaveLength(3);
     // El catch-up reanuda desde checkpoint+1 = 4.
     expect(chainAfter.requestedRanges[0]?.from).toBe(4n);
-    expect(store.getLastBlock(CONTRACT)).toBe(8);
-    store.close();
+    expect(await store.getLastBlock(CONTRACT)).toBe(8);
   });
 });
 
@@ -238,7 +217,7 @@ describe("SaleProcessor · at-least-once del email (BLOCKER 1)", () => {
     const ev2 = makeSaleEvent({ txHash: `0x${"b2".repeat(32)}`, logIndex: 0, blockNumber: 5n });
     const ev3 = makeSaleEvent({ txHash: `0x${"c3".repeat(32)}`, logIndex: 0, blockNumber: 6n });
 
-    const store = new SqliteCheckpointStore(dbPath);
+    const store = new InMemoryCheckpointStore();
     const mailer = new SelectiveFailingMailer(ev2.txHash);
     const processor = newProcessor(store, new FakeChainSource(6n, [ev1, ev2, ev3]), mailer);
 
@@ -248,13 +227,13 @@ describe("SaleProcessor · at-least-once del email (BLOCKER 1)", () => {
     expect(mailer.sent.map((n) => n.txHash)).toEqual([ev1.txHash]);
     // El checkpoint NO pasa del bloque del fallo: queda en blockNumber(ev2) - 1 = 4.
     expect(reached).toBe(4n);
-    expect(store.getLastBlock(CONTRACT)).toBe(4);
+    expect(await store.getLastBlock(CONTRACT)).toBe(4);
     // Idempotencia: sólo el entregado quedó marcado.
-    expect(store.isProcessed(idempotencyKey(ev1))).toBe(true);
-    expect(store.isProcessed(idempotencyKey(ev2))).toBe(false);
-    expect(store.isProcessed(idempotencyKey(ev3))).toBe(false);
+    expect(await store.isProcessed(idempotencyKey(ev1))).toBe(true);
+    expect(await store.isProcessed(idempotencyKey(ev2))).toBe(false);
+    expect(await store.isProcessed(idempotencyKey(ev3))).toBe(false);
 
-    // Recuperación SMTP + reintento (nuevo procesador, mismo store): reanuda desde checkpoint+1 = 5.
+    // Recuperación SMTP + reintento (nuevo procesador, mismo estado): reanuda desde checkpoint+1 = 5.
     mailer.mendTxHash();
     const chainRetry = new FakeChainSource(6n, [ev1, ev2, ev3]);
     const retried = newProcessor(store, chainRetry, mailer);
@@ -263,18 +242,17 @@ describe("SaleProcessor · at-least-once del email (BLOCKER 1)", () => {
     // El previo (ev1) NO se duplica; sólo se reenvían el fallido (ev2) y el siguiente (ev3).
     expect(mailer.sent.map((n) => n.txHash)).toEqual([ev1.txHash, ev2.txHash, ev3.txHash]);
     expect(reached2).toBe(6n);
-    expect(store.getLastBlock(CONTRACT)).toBe(6);
+    expect(await store.getLastBlock(CONTRACT)).toBe(6);
     // El catch-up del reintento arrancó en checkpoint+1 = 5 (no reprocesa el bloque 3 ya entregado).
     expect(chainRetry.requestedRanges[0]?.from).toBe(5n);
-    expect(store.isProcessed(idempotencyKey(ev2))).toBe(true);
-    expect(store.isProcessed(idempotencyKey(ev3))).toBe(true);
-    store.close();
+    expect(await store.isProcessed(idempotencyKey(ev2))).toBe(true);
+    expect(await store.isProcessed(idempotencyKey(ev3))).toBe(true);
   });
 
   it("primer evento del rango no entregado → checkpoint no retrocede por debajo de 0", async () => {
     // Una única venta en el bloque 0 que no se entrega: el checkpoint nunca debe quedar negativo.
     const ev = makeSaleEvent({ txHash: `0x${"d4".repeat(32)}`, logIndex: 0, blockNumber: 0n });
-    const store = new SqliteCheckpointStore(dbPath);
+    const store = new InMemoryCheckpointStore();
     const mailer = new SelectiveFailingMailer(ev.txHash);
     const processor = newProcessor(store, new FakeChainSource(0n, [ev]), mailer, {
       deploymentBlock: 0,
@@ -283,13 +261,12 @@ describe("SaleProcessor · at-least-once del email (BLOCKER 1)", () => {
     await processor.catchUp(0n);
 
     expect(mailer.sent).toHaveLength(0);
-    expect(store.getLastBlock(CONTRACT)).toBe(0);
-    expect(store.isProcessed(idempotencyKey(ev))).toBe(false);
-    store.close();
+    expect(await store.getLastBlock(CONTRACT)).toBe(0);
+    expect(await store.isProcessed(idempotencyKey(ev))).toBe(false);
   });
 
   it("processSale distingue 'delivered' de 'not-delivered'", async () => {
-    const store = new SqliteCheckpointStore(dbPath);
+    const store = new InMemoryCheckpointStore();
     const okEvent = makeSaleEvent({ txHash: `0x${"ee".repeat(32)}`, blockNumber: 2n });
     const koEvent = makeSaleEvent({ txHash: `0x${"ff".repeat(32)}`, blockNumber: 3n });
     const mailer = new SelectiveFailingMailer(koEvent.txHash);
@@ -300,13 +277,12 @@ describe("SaleProcessor · at-least-once del email (BLOCKER 1)", () => {
     // Ya procesado ⇒ idempotente ⇒ 'delivered' sin reenviar.
     expect(await processor.processSale(okEvent)).toBe("delivered");
     expect(mailer.sent).toHaveLength(1);
-    store.close();
   });
 });
 
 describe("SaleProcessor · cierre limpio del backoff (MINOR 12)", () => {
   it("la señal abortada corta el backoff SMTP y devuelve no-entregado sin degradar email", async () => {
-    const store = new SqliteCheckpointStore(dbPath);
+    const store = new InMemoryCheckpointStore();
     const failing = new AlwaysFailingMailer();
     const controller = new AbortController();
     controller.abort(); // ya abortada: el backoff debe rendirse en el primer intento.
@@ -329,6 +305,5 @@ describe("SaleProcessor · cierre limpio del backoff (MINOR 12)", () => {
     expect(outcome).toBe("not-delivered");
     expect(failing.attempts).toBe(0);
     expect(degraded).toBe(false);
-    store.close();
   });
 });

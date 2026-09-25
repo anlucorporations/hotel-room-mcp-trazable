@@ -5,7 +5,7 @@ const CONTRACT = "0x5FbDB2315678afecb367f032d93F642f64180aa3" as const;
 const TOKEN = "12920260622";
 
 /**
- * E2E del asistente IA (CU-08). En el entorno E2E no hay `ANTHROPIC_API_KEY` ni MCP, así que
+ * E2E del asistente IA (CU-08, docs/SRS.md §9). En el entorno E2E no hay `ANTHROPIC_API_KEY` ni MCP, así que
  * `/api/assistant` responde 503 y la UI debe mostrar el estado `assistant-unavailable` con
  * acceso a la navegación manual (TC-E2E-031). El flujo completo de preparación+firma (TC-E2E-030)
  * se cubre con los tests deterministas del orquestador y la re-verificación cliente (`reverify`).
