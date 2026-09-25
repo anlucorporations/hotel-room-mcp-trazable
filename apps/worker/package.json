@@ -20,7 +20,7 @@
     "nodemailer": "^6.9.16",
     "pg": "^8.23.0",
     "pino": "^9.5.0",
-    "viem": "^2.21.55"
+    "viem": "^2.56.8"
   },
   "devDependencies": {
     "@hotel/config": "workspace:*",
