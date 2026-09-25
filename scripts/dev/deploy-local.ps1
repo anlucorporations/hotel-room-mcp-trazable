@@ -13,6 +13,8 @@
 # Notas:
 #   - Mantener este fichero en ASCII puro: PowerShell 5.1 lee los .ps1 sin BOM como ANSI y los
 #     acentos rompen el analisis sintactico.
+#   - En esta maquina puede no existir `pwsh` (solo Windows PowerShell 5.1). En ese caso, invocalo
+#     con:  powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dev/deploy-local.ps1 -Status
 #   - Los servicios se lanzan como procesos independientes (no turbo watch) para que sobrevivan a
 #     este script y se puedan parar con -Stop usando el fichero de PIDs.
 # =============================================================================

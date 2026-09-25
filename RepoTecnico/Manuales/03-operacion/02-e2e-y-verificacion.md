@@ -197,13 +197,19 @@ esquema, no en una base nueva. Detalle y runbook: [02 · Base de datos](../02-in
 pnpm --filter @hotel/web exec playwright test
 ```
 
-Escanea seis rutas (`/`, `/reventa`, `/historico`, `/admin/dashboard`, `/admin/mint`, `/asistente`) en
-los proyectos `chromium` y `mobile`: **12/12 sin violaciones critical/serious** sobre el HTML real y la
-paleta real.
+Escanea doce rutas (`/`, `/reventa`, `/historico`, `/mis-noches`, `/checkin`, `/admin/dashboard`,
+`/admin/mint`, `/asistente`, `/ayuda` y los tres manuales) en los proyectos `chromium` y `mobile`:
+**24/24 sin violaciones critical/serious** sobre el HTML real y la paleta real. La medición se hace con
+**movimiento reducido** (RNF-20): el catálogo revela las tarjetas con una transición de opacidad y, sin
+esa preferencia, `axe` medía el texto a mitad del fundido y reportaba contrastes que no eran los
+finales. Antes de ejecutarlo hay que **reconstruir** (`pnpm --filter @hotel/web build`): el spec arranca
+`next start` sobre el build.
 
-**Deuda declarada**: el escenario **con datos** no entra todavía en el análisis — el spec fuerza
-`WORKER_BASE_URL` a un puerto muerto (vistas degradadas) y el dashboard exige sesión, así que las
-gráficas y tablas con cifras reales no se escanean.
+**Deuda declarada**: el escenario **con datos** no está garantizado por el spec. Fuerza `RPC_URL` y
+`WORKER_BASE_URL` a puertos muertos, pero **no** `DATABASE_URL` ni `REDIS_URL`: si la PostgreSQL local
+está viva y poblada, el catálogo sirve noches reales y esas tarjetas también se escanean (hoy pasan);
+si no lo está, se escanea el estado degradado. Las gráficas y tablas del dashboard con cifras reales
+siguen fuera (el dashboard exige sesión).
 
 ## 10. Qué **no** está verificado (y por tanto no se declara)
 

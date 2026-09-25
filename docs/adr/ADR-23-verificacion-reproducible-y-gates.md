@@ -28,8 +28,9 @@ medido, no el deseado) porque el 80 % global no se alcanza todavía.
   agotamiento del pool de PostgreSQL al competir con el generador) y se documenta con sus números en vez
   de disfrazarse.
 - La medición real a 50 concurrentes da 9.119 peticiones, 0 errores y p95 172 ms.
-- El escaneo de accesibilidad con axe corre en navegador real (12/12 sin violaciones
-  critical/serious).
+- El escaneo de accesibilidad con axe corre en navegador real (hoy 12 rutas × `chromium`/`mobile`,
+  24/24 sin violaciones critical/serious, medido con movimiento reducido para no capturar las
+  tarjetas a mitad de su animación de entrada).
 
 ## Dónde se ve
 

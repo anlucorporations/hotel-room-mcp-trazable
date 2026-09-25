@@ -6,6 +6,8 @@
 > Hoy todo funciona en una **red de pruebas**: sirve para practicar y validar, no para vender al
 > público todavía.
 
+![Portada: el Hotel Marina del Sol visto desde el paseo marítimo](imagenes/portada-hotel.svg)
+
 ---
 
 ## 1. Cómo entrar
@@ -29,6 +31,8 @@ Pasos:
 Si la pantalla dice **«Tu sesión ha caducado. Vuelve a iniciar sesión.»**, es la protección
 normal: la sesión dura 15 minutos. Vuelve a entrar (usuario, contraseña y código). No hay nada
 roto.
+
+![Acceso con doble factor: tres llaves para entrar](imagenes/acceso-doble-factor.svg)
 
 ---
 
@@ -55,6 +59,8 @@ Y dos avisos que pueden aparecer:
   puede registrar ningún check-in** hasta que se reanude, y te pide que avises a administración.
   En ese caso el botón de confirmar queda desactivado a propósito (mejor eso que dejarte pulsar y
   que la operación falle).
+
+![Pantalla de recepción: validación del resguardo y cartel verde de check-in](imagenes/pantalla-recepcion.svg)
 
 ---
 
@@ -90,6 +96,10 @@ por **`MDS-`**). **Cada resguardo sirve una sola vez**: al confirmarlo queda gas
   no es un fallo: es la garantía de que una noche no se usa dos veces.
 - **No inventes ni teclees** un resguardo a mano si no lo tienes delante.
 - **No apuntes datos personales** en ningún campo de la pantalla (ver apartado 5).
+
+![Pantalla de recepción: validación del resguardo y cartel verde de check-in](imagenes/pantalla-recepcion.svg)
+
+![Resguardo de la noche: código QR en el móvil y código corto en papel](imagenes/resguardo-qr-codigo.svg)
 
 ---
 

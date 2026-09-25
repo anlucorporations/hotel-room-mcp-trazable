@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Manual de recepción — Hotel Marina del Sol</title>
+<style>
+  :root {
+    --sand: #fbf6ec;
+    --sand-2: #f3ead8;
+    --shell: #ffffff;
+    --line: #e7dcc6;
+    --ink: #1b2327;
+    --ink-soft: #4c575c;
+    --sea: #0e5a63;
+    --sea-deep: #08424a;
+    --terracotta: #c0542e;
+    --olive: #5e6b45;
+    --gold: #c68a2e;
+  }
+  @page { size: A4; }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    margin: 0;
+    background: var(--sand);
+    color: var(--ink);
+    font-family: "Hanken Grotesk", "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-size: 11.5pt;
+    line-height: 1.55;
+  }
+  h1, h2, h3 { font-family: "Fraunces", Georgia, "Times New Roman", serif; color: var(--ink); }
+  a { color: var(--sea-deep); text-decoration: underline; text-decoration-thickness: 0.5px; }
+
+  .cover {
+    page-break-after: always;
+    break-after: page;
+    /* Ocupa exactamente la caja útil de una A4 (297 mm − 18 mm de margen superior) para que la
+       portada no se mezcle con el índice y no desborde a una segunda página. */
+    height: 277mm;
+    padding: 16mm 18mm 12mm;
+    background: var(--sand);
+    border-bottom: 6mm solid var(--sea);
+  }
+  .cover .eyebrow {
+    font-size: 9.5pt;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--terracotta);
+    margin: 0 0 8mm;
+  }
+  .cover h1 { font-size: 28pt; line-height: 1.08; margin: 0 0 5mm; letter-spacing: -0.01em; }
+  .cover .rule { width: 32mm; height: 3px; background: var(--gold); margin: 0 0 6mm; }
+  .cover .subtitle { font-size: 12pt; color: var(--sea-deep); margin: 0 0 3mm; font-weight: 600; }
+  .cover .date { font-size: 10.5pt; color: var(--ink-soft); margin: 0; }
+  .cover .lead {
+    margin-top: 10mm;
+    padding: 5mm 6mm;
+    background: var(--shell);
+    border-left: 3px solid var(--sea);
+    border-radius: 3px;
+    color: var(--ink-soft);
+    font-size: 10.5pt;
+  }
+  .cover .lead p { margin: 0 0 3mm; }
+  .cover .lead p:last-child { margin-bottom: 0; }
+  /* La ilustración de portada (segundo bloque del preámbulo) va tras la cita. */
+  .cover .lead blockquote { margin-bottom: 4mm; }
+  .cover .lead figure { margin: 0; }
+  .cover .lead figcaption { font-style: italic; }
+
+  .toc { page-break-after: always; break-after: page; padding: 18mm; }
+  .toc h2 { font-size: 20pt; margin: 0 0 8mm; border-bottom: 2px solid var(--line); padding-bottom: 3mm; }
+  .toc ol { list-style: none; margin: 0; padding: 0; }
+  .toc li { margin: 0 0 2.4mm; }
+  .toc li.level-3 { margin-left: 8mm; font-size: 10.5pt; color: var(--ink-soft); }
+  .toc a { text-decoration: none; }
+  .toc .num { color: var(--terracotta); font-weight: 700; margin-right: 2mm; }
+
+  .content { padding: 0 18mm 18mm; }
+  .manual-section { break-inside: auto; }
+  .manual-section.level-2 { page-break-before: auto; }
+  h2.section {
+    font-size: 17pt;
+    margin: 12mm 0 4mm;
+    padding-top: 3mm;
+    border-top: 2px solid var(--line);
+    color: var(--sea-deep);
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+  h2.section:first-of-type { margin-top: 0; }
+  h3.section {
+    font-size: 13pt;
+    margin: 8mm 0 3mm;
+    color: var(--terracotta);
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+  p { margin: 0 0 3.4mm; }
+  strong { color: var(--ink); }
+  code {
+    font-family: "DejaVu Sans Mono", "Consolas", monospace;
+    font-size: 0.92em;
+    background: var(--sand-2);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 0 0.3em;
+    white-space: nowrap;
+  }
+  blockquote {
+    margin: 0 0 4mm;
+    padding: 3mm 5mm;
+    background: var(--shell);
+    border-left: 3px solid var(--gold);
+    color: var(--ink-soft);
+  }
+  blockquote p { margin: 0; }
+  ul, ol { margin: 0 0 4mm; padding-left: 7mm; }
+  li { margin: 0 0 1.6mm; }
+  ul ul, ol ol, ul ol, ol ul { margin: 1.6mm 0 0; }
+  hr { border: 0; border-top: 1px solid var(--line); margin: 7mm 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 5mm;
+    font-size: 10pt;
+    background: var(--shell);
+  }
+  thead { display: table-header-group; }
+  tr { break-inside: avoid; page-break-inside: avoid; }
+  th {
+    background: var(--sea-deep);
+    color: #ffffff;
+    text-align: left;
+    font-weight: 600;
+    padding: 2.4mm 3mm;
+    border: 1px solid var(--sea-deep);
+  }
+  td {
+    padding: 2.4mm 3mm;
+    border: 1px solid var(--line);
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) td { background: var(--sand); }
+  figure { margin: 0 0 5mm; break-inside: avoid; page-break-inside: avoid; }
+  p > img { max-width: 100%; height: auto; }
+  figure img {
+    display: block;
+    max-width: 100%;
+    max-height: 150mm;
+    height: auto;
+    margin: 0 auto;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: var(--shell);
+  }
+  figcaption {
+    font-size: 9pt;
+    color: var(--ink-soft);
+    text-align: center;
+    margin-top: 2mm;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+  <header class="cover">
+    <p class="eyebrow">Manuales · Hotel Marina del Sol</p>
+    <h1>Manual de recepción — Hotel Marina del Sol</h1>
+    <div class="rule"></div>
+    <p class="subtitle">Hotel Marina del Sol · plataforma de noches tokenizadas</p>
+    <p class="date">Generado el 24 de septiembre de 2026</p>
+    <div class="lead"><blockquote><p>Para el personal del mostrador. Explica cómo se hace el <strong>check-in</strong> de una noche comprada en la web del hotel y qué significa cada mensaje que aparece en pantalla. Escrito en lenguaje llano, con las palabras exactas que verás en la pantalla. Hoy todo funciona en una <strong>red de pruebas</strong>: sirve para practicar y validar, no para vender al público todavía.</p></blockquote>
+<figure><img src="../imagenes/portada-hotel.svg" alt="Portada: el Hotel Marina del Sol visto desde el paseo marítimo" /><figcaption>Portada: el Hotel Marina del Sol visto desde el paseo marítimo</figcaption></figure></div>
+  </header>
+
+  <nav class="toc">
+    <h2>Índice</h2>
+    <ol>
+      <li class="level-2"><a href="#1-como-entrar">1. Cómo entrar</a></li>
+      <li class="level-2"><a href="#2-que-se-ve-al-abrir-la-pantalla">2. Qué se ve al abrir la pantalla</a></li>
+      <li class="level-2"><a href="#3-escanear-un-resguardo-paso-a-paso">3. Escanear un resguardo, paso a paso</a></li>
+      <li class="level-3"><a href="#antes-de-empezar">Antes de empezar</a></li>
+      <li class="level-3"><a href="#el-procedimiento">El procedimiento</a></li>
+      <li class="level-3"><a href="#lo-que-nunca-debes-hacer-en-esta-pantalla">Lo que nunca debes hacer en esta pantalla</a></li>
+      <li class="level-2"><a href="#4-que-significa-cada-mensaje">4. Qué significa cada mensaje</a></li>
+      <li class="level-2"><a href="#5-check-in-cuando-el-cliente-no-tiene-el-qr-contingencia">5. Check-in cuando el cliente no tiene el QR (contingencia)</a></li>
+      <li class="level-3"><a href="#que-se-admite-como-prueba">Qué se admite como prueba</a></li>
+      <li class="level-3"><a href="#pasos">Pasos</a></li>
+      <li class="level-3"><a href="#lo-que-nunca-se-escribe-en-esta-pantalla">Lo que NUNCA se escribe en esta pantalla</a></li>
+      <li class="level-2"><a href="#6-si-el-sistema-no-responde">6. Si el sistema no responde</a></li>
+      <li class="level-2"><a href="#7-recordatorio-que-hace-la-web-y-que-no">7. Recordatorio: qué hace la web y qué no</a></li>
+    </ol>
+  </nav>
+
+  <main class="content">
+<section class="manual-section level-2" id="1-como-entrar">
+<h2 class="section">1. Cómo entrar</h2>
+<p>La pantalla de recepción está en la dirección del hotel seguida de <strong><code>/recepcion</code></strong>.</p>
+<p>Se entra con <strong>tres cosas</strong> (doble factor: algo que sabes y algo que tienes):</p>
+<ol><li><strong>Tu usuario y tu contraseña</strong> de recepción (son tuyos; no los compartas).</li><li><strong>Un código de 6 dígitos</strong> de la aplicación de autenticación del móvil del puesto de trabajo.</li><li><strong>La cartera del hotel</strong> conectada en la barra superior. La pantalla lo pide al principio: pulsa <strong>Conectar wallet</strong> y acepta en el puesto.</li></ol>
+<p>Pasos:</p>
+<ol><li>Abre <code>/recepcion</code>.</li><li>Escribe <strong>usuario</strong> y <strong>contraseña</strong>. Pulsa <strong>Continuar</strong>.</li><li>Escribe el <strong>código de 6 dígitos</strong> y pulsa <strong>Entrar</strong>.</li><li>Comprueba arriba a la derecha que aparece tu sesión (usuario) y la cartera conectada.</li></ol>
+<p>Si la pantalla dice <strong>«Tu sesión ha caducado. Vuelve a iniciar sesión.»</strong>, es la protección normal: la sesión dura 15 minutos. Vuelve a entrar (usuario, contraseña y código). No hay nada roto.</p>
+<figure><img src="../imagenes/acceso-doble-factor.svg" alt="Acceso con doble factor: tres llaves para entrar" /><figcaption>Acceso con doble factor: tres llaves para entrar</figcaption></figure>
+<hr />
+</section>
+<section class="manual-section level-2" id="2-que-se-ve-al-abrir-la-pantalla">
+<h2 class="section">2. Qué se ve al abrir la pantalla</h2>
+<p>Arriba, el título <strong>«Validación de Recepción &amp; Check-in»</strong> y una frase que resume para qué sirve: validar los resguardos de los huéspedes o usar el protocolo de contingencia cuando no tienen móvil.</p>
+<p>Debajo hay <strong>dos pestañas</strong>:</p>
+<table>
+<thead><tr><th>Pestaña</th><th>Cuándo se usa</th></tr></thead>
+<tbody>
+<tr><td><strong>Escaneo QR / JWS</strong></td><td>El camino normal: el huésped te enseña el código QR de su resguardo.</td></tr>
+<tr><td><strong>Protocolo de Contingencia (Sin Móvil)</strong></td><td>El huésped <strong>no puede</strong> mostrar el QR: se le ha muerto el móvil, no lo trae, o el aparato falla.</td></tr>
+</tbody></table>
+<p>Y dos avisos que pueden aparecer:</p>
+<ul><li><strong>Banner verde de éxito</strong> («¡Check-in Confirmado Exitosamente!»): el check-in se ha registrado. Muestra la habitación, la fecha, el número de la noche, cuántos milisegundos ha tardado y el <strong>código de la operación que quedó anotada en la cadena</strong>. Ese código es la prueba de que el check-in existe de verdad y no solo en la pantalla.</li><li><strong>Banner en pausa</strong>: si el hotel ha pausado el sistema, aparece un aviso que dice que <strong>no se puede registrar ningún check-in</strong> hasta que se reanude, y te pide que avises a administración. En ese caso el botón de confirmar queda desactivado a propósito (mejor eso que dejarte pulsar y que la operación falle).</li></ul>
+<figure><img src="../imagenes/pantalla-recepcion.svg" alt="Pantalla de recepción: validación del resguardo y cartel verde de check-in" /><figcaption>Pantalla de recepción: validación del resguardo y cartel verde de check-in</figcaption></figure>
+<hr />
+</section>
+<section class="manual-section level-2" id="3-escanear-un-resguardo-paso-a-paso">
+<h2 class="section">3. Escanear un resguardo, paso a paso</h2>
+
+</section>
+<section class="manual-section level-3" id="antes-de-empezar">
+<h3 class="section">Antes de empezar</h3>
+<p>El resguardo del huésped es un <strong>código QR</strong> (o su versión impresa en papel, un código que empieza por <strong><code>MDS-</code></strong>). <strong>Cada resguardo sirve una sola vez</strong>: al confirmarlo queda gastado.</p>
+</section>
+<section class="manual-section level-3" id="el-procedimiento">
+<h3 class="section">El procedimiento</h3>
+<ol><li>Pide al huésped el resguardo (móvil o papel).</li><li>Comprueba que la pestaña activa es <strong>Escaneo QR / JWS</strong>.</li><li>Lee el código QR con el lector de mano. El texto del resguardo aparece en la caja <strong>«Token JWS o URL del Resguardo»</strong>. Si el lector no lo pega solo, puedes pegar ahí el texto completo que te muestre el huésped.</li><li>Pulsa <strong>Confirmar Check-in Inmediato</strong>.</li><li>Espera un instante. La pantalla pone <strong>«Validando en &lt; 500ms…»</strong> y normalmente tarda mucho menos (en las pruebas, unos 40 milisegundos).</li><li><strong>Mira el resultado antes de dar la llave:</strong><ul><li>Si sale el <strong>banner verde</strong>, el check-in está hecho: verás la <strong>habitación</strong>, la <strong>fecha</strong> y, si todo ha ido bien, la línea <strong>«Anclado on-chain: 0x…»</strong>. <strong>Anotado en la cadena</strong> significa que la noche queda marcada como usada de forma definitiva.</li><li>Si sale un <strong>mensaje de error</strong>, <strong>no hay check-in</strong>: mira la tabla del apartado 4 y sigue lo que dice. El error se queda en pantalla hasta que hagas la siguiente operación.</li></ul></li><li>Si el banner verde no muestra la línea del ancla y en su lugar dice <strong>«Sin ancla on-chain»</strong>, <strong>no des el check-in por bueno</strong>: avisa a administración y repite la operación.</li></ol>
+</section>
+<section class="manual-section level-3" id="lo-que-nunca-debes-hacer-en-esta-pantalla">
+<h3 class="section">Lo que nunca debes hacer en esta pantalla</h3>
+<ul><li><strong>No escanees dos veces el mismo resguardo</strong> para &quot;asegurarte&quot;. La segunda vez dará error. Eso no es un fallo: es la garantía de que una noche no se usa dos veces.</li><li><strong>No inventes ni teclees</strong> un resguardo a mano si no lo tienes delante.</li><li><strong>No apuntes datos personales</strong> en ningún campo de la pantalla (ver apartado 5).</li></ul>
+<figure><img src="../imagenes/pantalla-recepcion.svg" alt="Pantalla de recepción: validación del resguardo y cartel verde de check-in" /><figcaption>Pantalla de recepción: validación del resguardo y cartel verde de check-in</figcaption></figure>
+<figure><img src="../imagenes/resguardo-qr-codigo.svg" alt="Resguardo de la noche: código QR en el móvil y código corto en papel" /><figcaption>Resguardo de la noche: código QR en el móvil y código corto en papel</figcaption></figure>
+<hr />
+</section>
+<section class="manual-section level-2" id="4-que-significa-cada-mensaje">
+<h2 class="section">4. Qué significa cada mensaje</h2>
+<p>Estos son los mensajes que puede devolver el sistema, explicados en lenguaje llano.</p>
+<table>
+<thead><tr><th>Mensaje en pantalla</th><th>Qué ha pasado</th><th>Qué hacer</th></tr></thead>
+<tbody>
+<tr><td>«Este resguardo ya se utilizó para un check-in; cada pase sirve una sola vez»</td><td>Ese resguardo <strong>ya se usó</strong>. El sistema lo tiene apuntado.</td><td><strong>No es un error del sistema.</strong> Comprueba en el listado del hotel si esa noche ya tiene entrada hecha. Si el huésped insiste, avisa a administración: no se puede repetir.</td></tr>
+<tr><td>«Otro puesto está procesando el check-in de esta noche; espera unos segundos y reinténtalo»</td><td><strong>Otro puesto de recepción</strong> está haciendo el check-in de la misma noche en este mismo momento.</td><td>Espera unos segundos y repite la operación. El resguardo del huésped <strong>no se ha gastado</strong>.</td></tr>
+<tr><td>«El contrato canónico está en pausa: el hotel ha detenido las operaciones y el check-in no puede registrarse on-chain hasta reanudarlo»</td><td>El hotel ha <strong>pausado el sistema</strong> de forma deliberada. No es una avería.</td><td>Avisa a administración. El resguardo del huésped <strong>sigue siendo válido</strong> para cuando se reanude. No lo tires.</td></tr>
+<tr><td>«No se pudo comprobar la titularidad en la cadena; el check-in no se registra hasta poder verificarla»</td><td>La red <strong>no ha respondido</strong> a la consulta de quién es el dueño de la noche.</td><td>No es culpa del huésped. Espera un momento y reintenta. Si sigue igual, avisa a administración.</td></tr>
+<tr><td>«El resguardo corresponde a un propietario anterior de la noche; el titular actual debe emitir uno nuevo»</td><td>El huésped enseña un resguardo <strong>antiguo</strong>: la noche se revendió después y ya no es suya.</td><td>Pide al titular actual su resguardo. Si el que está delante dice ser el comprador, que consulte con quien le vendió.</td></tr>
+<tr><td>«La habitación X ya ha realizado el check-in (noche Y consumida)»</td><td>La noche <strong>ya está usada</strong> en el sistema.</td><td>Como en el primer caso: no se puede repetir. Avisa a administración si hay duda.</td></tr>
+<tr><td>«La noche Y fue quemada por expiración»</td><td>Esa noche <strong>caducó sin venderse</strong> y el sistema la retiró a las 12:00. Por tanto lo que trae el huésped no es válido.</td><td>Avisa a administración antes de alojar. No es una noche vendida.</td></tr>
+<tr><td>«La noche no tiene venta primaria registrada: solo puede hacerse check-in de noches vendidas»</td><td>Ese número de noche <strong>no se vendió nunca</strong> por el hotel.</td><td>Comprueba el resguardo con administración.</td></tr>
+<tr><td>«No se pudo anclar el check-in on-chain: …»</td><td>El sistema <strong>no ha podido anotar</strong> el check-in en la cadena (problema de red o de la cartera del puesto).</td><td><strong>No hay check-in.</strong> Reintenta pasados unos segundos. Si vuelve a fallar, avisa a administración. El resguardo no se ha gastado.</td></tr>
+<tr><td>«Resguardo inválido o corrupto» o «El resguardo no identifica una noche válida»</td><td>El código leído <strong>no es un resguardo</strong> o se ha leído mal.</td><td>Vuelve a escanear con cuidado. Si el huésped lo tiene en el móvil, pídele que suba el brillo de la pantalla.</td></tr>
+<tr><td>«La prueba debe ser un código de resguardo emitido por el hotel (MDS-XXXXXXXX)»</td><td>En contingencia has escrito algo que <strong>no tiene el formato</strong> del código del hotel.</td><td>Revisa el código: empieza por <code>MDS-</code> y sigue con letras y números en mayúsculas.</td></tr>
+<tr><td>«No se admiten documentos de identidad: el registro de viajeros (RD 933/2021) se hace en el PMS del hotel, fuera de la plataforma»</td><td>Has escrito un DNI, un NIE o un pasaporte en el campo de la prueba. El sistema <strong>lo rechaza a propósito</strong>.</td><td>Escribe un código de resguardo, un hash o una dirección de cartera. El documento se anota donde siempre: en el PMS del hotel.</td></tr>
+<tr><td>«Motivo de contingencia no admitido»</td><td>El motivo elegido no es uno de la lista.</td><td>Elige uno de la lista desplegable. <strong>No se escribe texto libre.</strong></td></tr>
+<tr><td>«No se encontró reserva para la habitación X en fecha Y»</td><td>No hay ninguna noche vendida con esa habitación y esa fecha.</td><td>Revisa la habitación y la fecha (formato año-mes-día).</td></tr>
+<tr><td>«Cuenta bloqueada temporalmente por intentos fallidos. Reinténtalo en 15 minutos.»</td><td>Demasiados intentos de acceso fallidos.</td><td>Espera 15 minutos. Si no recuerdas la contraseña, pide que te la renueven.</td></tr>
+</tbody></table>
+<p><strong>Regla de oro:</strong> si no ves el banner verde con la habitación y la fecha, <strong>el check-in no está hecho</strong>. No lo des por bueno de palabra.</p>
+<hr />
+</section>
+<section class="manual-section level-2" id="5-check-in-cuando-el-cliente-no-tiene-el-qr-contingencia">
+<h2 class="section">5. Check-in cuando el cliente no tiene el QR (contingencia)</h2>
+<p>Se usa cuando el huésped <strong>no puede</strong> mostrar el QR. Está en la pestaña <strong>Protocolo de Contingencia (Sin Móvil)</strong>. La contingencia cambia <strong>cómo se demuestra</strong> que la noche es suya; <strong>no</strong> cambia la garantía: el check-in se anota en la cadena exactamente igual.</p>
+</section>
+<section class="manual-section level-3" id="que-se-admite-como-prueba">
+<h3 class="section">Qué se admite como prueba</h3>
+<p>Pide <strong>una sola</strong> prueba de posesión, por este orden de preferencia:</p>
+<ol><li><strong>El código de resguardo impreso</strong> que emitió el hotel (empieza por <code>MDS-</code>, mayúsculas).</li><li><strong>El código de la operación de compra</strong> (el hash de la transacción, una cadena larga que empieza por <code>0x</code>).</li><li><strong>La dirección de la cartera del comprador</strong> (también empieza por <code>0x</code>, y es más corta que el hash).</li></ol>
+</section>
+<section class="manual-section level-3" id="pasos">
+<h3 class="section">Pasos</h3>
+<ol><li>Abre la pestaña <strong>Protocolo de Contingencia (Sin Móvil)</strong>.</li><li>Rellena:<ul><li><strong>Número de Habitación</strong> (por ejemplo 101).</li><li><strong>Fecha de Entrada</strong> (formato año-mes-día).</li><li><strong>Factor de Posesión a Verificar</strong>: elige cuál de las tres pruebas vas a usar.</li><li><strong>Valor de Prueba / Dato de Cotejo</strong>: escribe la prueba (el código <code>MDS-…</code>, el hash o la dirección de la cartera).</li><li><strong>Motivo de Contingencia</strong>: elige de la lista (huésped sin dispositivo, resguardo impreso, fallo técnico, u otro).</li></ul></li><li><strong>Antes de confirmar</strong>, comprueba con el huésped que la habitación y la fecha son las suyas.</li><li>Pulsa <strong>Validar y Autorizar Entrada</strong>.</li><li>Mira el resultado igual que en el camino del QR: <strong>sin banner verde no hay check-in</strong>.</li></ol>
+<p>Ten en cuenta el sistema avisa de que, al confirmar, declaras haber registrado el parte de entrada de viajeros en el programa oficial del hotel. Es decir: <strong>la parte legal la sigues haciendo en el PMS</strong>, no aquí.</p>
+</section>
+<section class="manual-section level-3" id="lo-que-nunca-se-escribe-en-esta-pantalla">
+<h3 class="section">Lo que NUNCA se escribe en esta pantalla</h3>
+<ul><li><strong>Nunca</strong> el <strong>nombre</strong> del huésped.</li><li><strong>Nunca</strong> su <strong>DNI, NIE o pasaporte</strong>.</li><li><strong>Nunca</strong> su <strong>teléfono</strong>, su <strong>correo</strong> ni su <strong>nacionalidad</strong>.</li><li><strong>Nunca</strong> un texto libre: ni &quot;viene con su mujer&quot;, ni &quot;es cliente habitual&quot;, ni nada parecido. El motivo es una <strong>lista cerrada</strong> y el sistema rechaza lo que no esté en ella.</li></ul>
+<p>Todo eso <strong>no entra en la web</strong>. Si necesitas dejar constancia, se anota donde siempre: en el registro de viajeros del hotel. <strong>La web no guarda DNI ni nombres.</strong></p>
+<hr />
+</section>
+<section class="manual-section level-2" id="6-si-el-sistema-no-responde">
+<h2 class="section">6. Si el sistema no responde</h2>
+<p>Puede pasar: la red va lenta, el puesto se queda sin conexión o la cartera del hotel no puede firmar. Qué hacer, en orden:</p>
+<ol><li><strong>No hagas el check-in &quot;de palabra&quot;.</strong> La plataforma no tiene un modo sin conexión: <strong>lo que no queda anotado en la cadena, no está registrado</strong>, y no aparece en ningún listado.</li><li><strong>Atiende al huésped mientras tanto.</strong> No le dejes esperando de pie: explícale que hay una incidencia técnica y que lo estás resolviendo. La parte del registro de viajeros se hace como siempre, en el PMS del hotel.</li><li><strong>Espera y reintenta</strong> pasados unos segundos: pulsa otra vez el botón. El resguardo del huésped <strong>no se gasta</strong> si el check-in no llega a registrarse, así que puedes reintentar con el mismo resguardo. Si te dice <strong>«ya se utilizó»</strong>, entonces sí se registró antes: comprueba el listado antes de repetir.</li><li><strong>Avisa a administración</strong> con estos tres datos: habitación, fecha y lo que decía la pantalla.</li><li><strong>Si el sistema no vuelve en un rato</strong>, deja constancia en el <strong>parte de incidencias del hotel</strong> (en papel o en el PMS, donde el hotel lo tenga por costumbre): fecha, hora, habitación, nombre del huésped y el código <code>MDS-…</code> si lo tiene. Ese parte es del hotel, no de la plataforma: la web no guarda nada de esto.</li><li><strong>Cuando el sistema vuelva</strong>, haz el check-in normal y avisa a administración de que ya está hecho, para que no quede ninguna noche sin anotar.</li></ol>
+<p>Si la pantalla muestra el aviso de <strong>contrato en pausa</strong>, no es una avería: el hotel ha detenido las operaciones. Avisa a administración y guarda el resguardo del huésped para reintentarlo.</p>
+<hr />
+</section>
+<section class="manual-section level-2" id="7-recordatorio-que-hace-la-web-y-que-no">
+<h2 class="section">7. Recordatorio: qué hace la web y qué no</h2>
+<table>
+<thead><tr><th>La web <strong>sí</strong> hace</th><th>La web <strong>no</strong> hace</th></tr></thead>
+<tbody>
+<tr><td>Validar el resguardo del huésped y <strong>anotar el check-in en la cadena</strong></td><td>Pedir o guardar el nombre, el DNI, el teléfono o la nacionalidad</td></tr>
+<tr><td>Aceptar una prueba de posesión (código <code>MDS-…</code>, código de operación o dirección de cartera)</td><td>Enviar nada al registro oficial de viajeros ni generar una ficha policial</td></tr>
+<tr><td>Registrar el <strong>motivo</strong> de la contingencia de una lista cerrada</td><td>Guardar texto libre donde se pueda escribir un DNI</td></tr>
+<tr><td>Avisar al programa de gestión del hotel de que la estancia se ha validado (sin datos personales)</td><td>Guardar el contenido de la conversación con el huésped</td></tr>
+</tbody></table>
+<p>El <strong>registro de viajeros (RD 933/2021)</strong> es responsabilidad del establecimiento y se sigue haciendo <strong>en el mostrador</strong>, como hoy.</p>
+<hr />
+<p><em>Manual de recepción · Hotel Marina del Sol · cualquier duda con un mensaje que no aparezca aquí: avisa a administración antes de improvisar.</em></p>
+</section>
+  </main>
+</body>
+</html>

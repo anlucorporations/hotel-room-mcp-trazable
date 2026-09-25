@@ -178,9 +178,11 @@ Tres catálogos de mensajes completos.
 
 #### US-21 · Tests E2E de frontend con Playwright (2 SP) — **OK**
 
-Suite de accesibilidad con **axe en navegador real**: 8 rutas × `chromium`/`mobile`, **16/16 sin
-violaciones critical/serious** (incluidas `/mis-noches` y `/checkin`). Deuda: el escenario **con datos**
-(worker vivo y dashboard con sesión) no entra todavía en el escaneo.
+Suite de accesibilidad con **axe en navegador real**: 12 rutas × `chromium`/`mobile`, **24/24 sin
+violaciones critical/serious** (incluidas `/mis-noches`, `/checkin` y la sección de Ayuda `/ayuda`,
+añadidas en M9; la medición se hace con movimiento reducido para no capturar las tarjetas del catálogo
+a mitad de su animación de entrada). Deuda: el escenario **con datos** (worker vivo y dashboard con
+sesión) no está garantizado por el spec.
 
 ### Sprint 5 — Recepción, reventa y panel
 

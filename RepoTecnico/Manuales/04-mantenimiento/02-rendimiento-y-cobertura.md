@@ -81,7 +81,7 @@ sus números. **No se baja el perfil para que la certificación salga verde.**
 |---|---|---|
 | Validación del resguardo + ancla de check-in en servidor | **~41 ms** (SLA de recepción < 500 ms) | E2E M5 |
 | Recuperación ante desastre (RTO) | **0,73 s** | [`../../evidencias/dr-verify.json`](../../evidencias/dr-verify.json) |
-| Accesibilidad en navegador real | **16/16** sin violaciones critical/serious | `apps/web/e2e/a11y.spec.ts` |
+| Accesibilidad en navegador real | **24/24** sin violaciones critical/serious (12 rutas × `chromium`/`mobile`, con movimiento reducido) | `apps/web/e2e/a11y.spec.ts` |
 | Contrato | **13 suites / 125 pruebas** al cerrar M9 (con la generación legacy retirada) | `pnpm test:contracts` |
 | Cobertura de `@hotel/shared` (M9) | statements **79,58 %** · branches **80,59 %** · functions **75,29 %** | `pnpm --filter @hotel/shared test:coverage` |
 

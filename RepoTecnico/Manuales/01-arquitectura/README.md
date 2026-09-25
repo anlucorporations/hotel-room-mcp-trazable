@@ -13,7 +13,7 @@
 │  /mis-noches  noches propias + claim   /historico histórico público          │
 │  /recepcion   mostrador                /asistente chat → MCP                 │
 │  /admin/*     7 pantallas de back-office                                     │
-│  25 rutas de API bajo /api/**   ·   /health/live  ·  /health/ready           │
+│  24 rutas de API bajo /api/**   ·   /health/live  ·  /health/ready           │
 └───────┬────────────────────────────────────────────────┬─────────────────────┘
         │ HTTPS/REST (fetch)                             │ RPC JSON (viem/wagmi)
 ┌───────▼──────────────────────────┐        ┌────────────▼─────────────────────┐
@@ -32,6 +32,11 @@
                     apps/monitor — /health + viveza de cadena + gas (SMTP propio)
 ```
 
+Además del catálogo, el back-office y el histórico, `apps/web` sirve el **pase de check-in**
+(`/checkin`: lo que el huésped enseña en recepción) y la **Ayuda** (`/ayuda` y `/ayuda/<manual>`),
+que publica los tres manuales de `docs/` con sus ilustraciones y el PDF descargable. Ese contenido
+**no** se copia a mano: lo genera `apps/web/scripts/build-manuals.mjs` desde `docs/manual-*.md`.
+
 | Componente | Responsabilidad | No hace |
 |---|---|---|
 | `apps/web` | Interfaz pública y back-office, rutas de API, lectura de cadena desde el navegador | No indexa eventos ni quema |
@@ -42,8 +47,9 @@
 | PostgreSQL | Única persistencia: índice, operadores, cola de correo, agregados (ADR-03) | No decide verdad: la cadena decide |
 | Redis | Cola BullMQ, locks distribuidos y blocklist de JWT | No es fuente de verdad duradera |
 
-**Los cuatro servicios propios**: web **3000**, worker **8787**, MCP **8788**, monitor (sin puerto
-propio; es un sondeador). Infraestructura: PostgreSQL **5432**, Redis **6379**, Anvil **8545**.
+**Los cuatro servicios propios**: web **3000**, worker **8787**, MCP **8788** por defecto (**8790** en
+este entorno: el 8788 lo ocupa un proceso ajeno), monitor (sin puerto propio; es un sondeador).
+Infraestructura: PostgreSQL **5432**, Redis **6379**, Anvil **8545**.
 
 ## 2. Superficie del contrato `HotelNights`
 

@@ -1,8 +1,8 @@
 # Certificación y Directrices de Accesibilidad Web (WCAG 2.1 Nivel AA)
 ## Hotel Marina del Sol: Plataforma NFT de Reservas
 
-> **Versión**: 1.1.0 (verificación sobre la paleta real · M7)  
-> **Fecha**: 2026-09-23  
+> **Versión**: 1.2.0 (escaneo ampliado a la Ayuda y medición con movimiento reducido · M9)  
+> **Fecha**: 2026-09-24  
 > **Alcance**: Fase 2 (Post-MVP)  
 > **Estándar**: W3C Web Content Accessibility Guidelines (WCAG) 2.1 AA  
 
@@ -102,18 +102,38 @@ Qué comprueba (M7, D-11):
 
 **Estado del escaneo con navegador real (M8, ampliado en M9)**: `axe` **ya corre** sobre el navegador
 real. Con `pnpm --filter @hotel/web exec playwright install chromium-headless-shell` quedó resuelto el
-binario que faltaba y la suite **pasa 16/16 sin violaciones critical/serious** (8 rutas —`/`, `/reventa`,
-`/historico`, `/mis-noches`, `/checkin`, `/admin/dashboard`, `/admin/mint`, `/asistente`— × los
-proyectos `chromium` y `mobile`). En M9 se añadieron las dos rutas nuevas del resguardo: `/mis-noches`
-es donde el titular lo genera y `/checkin` es la pantalla que se enseña en recepción, que aquí se
-escanea en su estado «sin resguardo».
+binario que faltaba y la suite **pasa 24/24 sin violaciones critical/serious** (12 rutas —`/`, `/reventa`,
+`/historico`, `/mis-noches`, `/checkin`, `/admin/dashboard`, `/admin/mint`, `/asistente`, `/ayuda`,
+`/ayuda/cliente`, `/ayuda/comprador`, `/ayuda/recepcion`— × los proyectos `chromium` y `mobile`).
+En M9 se añadieron las dos rutas del resguardo (`/mis-noches` es donde el titular lo genera y
+`/checkin` es la pantalla que se enseña en recepción, escaneada en su estado «sin resguardo») y las
+cuatro de la **Ayuda**, que es texto largo con tablas e ilustraciones: justo donde una regresión de
+jerarquía o de estructura de listas se cuela.
 
-**Lo que falta (deuda declarada)**: el escenario **con datos**. El spec fuerza `WORKER_BASE_URL` a un
-puerto muerto (vistas degradadas) y el dashboard exige sesión, así que las gráficas y las tablas con
-cifras reales **todavía no entran** en el análisis. Y `apps/web` no tiene entorno DOM en las pruebas de
-unidad (Vitest corre en Node), de modo que los invariantes de color y estructura se comprueban sobre el
-código y la paleta, no renderizando componentes: para eso hacen falta `jsdom` + `@testing-library` y
-dobles de wagmi.
+**Dos mediciones que hubo que corregir para que el escaneo dijera la verdad (M9):**
+
+1. **El escaneo se hacía a mitad de la animación de entrada del catálogo.** Las tarjetas de noche se
+   revelan con una transición de opacidad (`opacity-0 → opacity-100`) y con `transition-delay` en
+   línea, así que `axe` medía colores intermedios: el 24-09-2026 `/` daba `color-contrast` serious con
+   4,37:1 y 1,26:1 sobre tarjetas que ya estaban apareciendo. La verificación pasa a ejecutarse con
+   **movimiento reducido** (`emulateMedia({ reducedMotion: "reduce" })`, RNF-20) y la preferencia
+   anula también el retardo (`transition-delay: 0ms !important` en `globals.css`): con eso `/` mide
+   los colores finales y queda verde. La mejora es de producto, no solo de prueba: quien pide menos
+   movimiento ya no ve las tarjetas aparecer escalonadas.
+2. **La estructura de las listas del manual.** El conversor de la Ayuda emitía sublistas como listas
+   hermanas (`<ol>…</ol><ul><ul>…`), lo que `axe` caza con la regla `list` (y con `listitem` si se
+   pierde el contenedor). Corregido con un árbol explícito de profundidad y **blindado por el guardián**
+   `manuals-sync.test.ts` (ningún `<li>` sin padre de lista, ningún `<ul>`/`<ol>` hijo directo de otro,
+   ninguna lista vacía y balanceo de etiquetas).
+
+**Lo que falta (deuda declarada)**: el escenario **con datos** sigue sin cubrirse de forma explícita.
+El spec fuerza `WORKER_BASE_URL` a un puerto muerto (vistas degradadas) y el dashboard exige sesión, así
+que las gráficas y las tablas con cifras reales **no** son el objeto de la medición; cuando la
+PostgreSQL local está viva y poblada, el catálogo sí sirve noches reales y esas tarjetas entran en el
+escaneo (y hoy pasan), pero eso depende del entorno y no está garantizado por el spec. Y `apps/web` no
+tiene entorno DOM en las pruebas de unidad (Vitest corre en Node), de modo que los invariantes de color
+y estructura se comprueban sobre el código y la paleta, no renderizando componentes: para eso hacen
+falta `jsdom` + `@testing-library` y dobles de wagmi.
 
 ---
 
@@ -123,7 +143,7 @@ dobles de wagmi.
 # Invariantes de paleta, uso real del color y estructura (Vitest, entorno Node)
 pnpm --filter @hotel/web test src/lib/a11y/a11y.test.ts
 
-# Escaneo en navegador real con axe (Playwright, 6 rutas x chromium/mobile)
+# Escaneo en navegador real con axe (Playwright, 12 rutas x chromium/mobile)
 pnpm --filter @hotel/web exec playwright test e2e/a11y.spec.ts
 ```
 

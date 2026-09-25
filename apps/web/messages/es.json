@@ -23,6 +23,7 @@
     "navHistory": "Histórico",
     "navResale": "Reventa",
     "navAssistant": "Asistente",
+    "navHelp": "Ayuda",
     "menuOpen": "Abrir el menú",
     "menuClose": "Cerrar el menú",
     "footerTagline": "Red segura · pagos verificados",
@@ -31,7 +32,21 @@
     "footerAddress": "Hotel Marina del Sol · Paseo Marítimo, Alicante",
     "footerHistory": "Histórico público",
     "footerTerms": "Términos",
+    "footerHelp": "Ayuda y manuales",
     "footerPrivacy": "Privacidad"
+  },
+  "help": {
+    "title": "Ayuda y manuales",
+    "tagline": "Los tres manuales del sistema, tal y como funciona hoy.",
+    "manualsLabel": "Manuales disponibles",
+    "read": "Leer el manual",
+    "topicsLabel": "Contenido del manual",
+    "sectionsLabel": "Secciones de este manual",
+    "downloadPdf": "Descargar en PDF",
+    "downloadPdfAria": "Descargar este manual en PDF",
+    "backToIndex": "Todos los manuales",
+    "spanishOnly": "Los manuales están escritos en español.",
+    "testNetworkNote": "El sistema funciona hoy en una red de pruebas privada: sirve para demostrar y validar el sistema, no para vender al público."
   },
   "howItWorks": {
     "title": "Cómo funciona",

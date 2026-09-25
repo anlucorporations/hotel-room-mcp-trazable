@@ -1,7 +1,7 @@
 # Estado del proyecto — Hotel Marina del Sol
 
 > **Proyecto**: `hotel-room-mcp-trazable` · **Rama**: `main` (upstream `origin/main`) · **Fecha**: 2026-09-23
-> **Fase del proceso**: Fase 1 reconstruida (este documento + `requerimientos.md`, `diccionario_datos.md`, `entornos_globales.md`) · Fase 2 con auditoría ya ejecutada · **Fase 3: M0–M8 cerrados y verificados; M9 (documentación y entrega) en cierre — registro de ADR, PRD/SRS/PLAN/BACKLOG reescritos, guías operativas corregidas y guardianes de documentación y de arquitectura**
+> **Fase del proceso**: Fase 1 reconstruida (este documento + `requerimientos.md`, `diccionario_datos.md`, `entornos_globales.md`) · Fase 2 con auditoría ya ejecutada · **Fase 3 cerrada (M0–M9 verificados)** · **Fase 5 cerrada (manuales técnicos y literales, 9 ilustraciones, PDF y sección de Ayuda `/ayuda`)** — la entrega está lista para presentar
 > **Memoria de trabajo**: este archivo. Se actualiza de forma incremental en cada ciclo.
 
 ---
@@ -861,19 +861,83 @@ enlace al catálogo. Es una dependencia de pago no presupuestada (RF-20, «PAR»
   desaparece, el MCP puede volver al 8788 actualizando `MCP_PORT`, `MCP_BASE_URL`, `MONITOR_TARGETS` y
   `MCP_ALLOWED_HOSTS`.
 
+### 2026-09-24 — Cierre de la entrega: manuales, ilustraciones, PDF y sección de Ayuda
+
+**Qué cambió.** La documentación deja de ser un conjunto de ficheros sueltos y pasa a ser un producto
+verificable **dentro de la plataforma**:
+
+- **Sección de Ayuda** (`/ayuda` y `/ayuda/<manual>`): los tres manuales (cliente, comprador, recepción)
+  navegables por temas → secciones → sub-secciones, con sus ilustraciones y la **descarga en PDF**;
+  enlace en la cabecera y en el pie, rótulos en ES/EN/RU y las cuatro rutas nuevas dentro del escaneo
+  de accesibilidad.
+- **Contenido sin duplicar**: `apps/web/scripts/build-manuals.mjs` convierte `docs/manual-*.md` en el
+  módulo que sirve la web (`apps/web/src/lib/help/manuals.generated.ts`), en HTML imprimible y en los
+  tres **PDF** (`docs/pdf/`, copiados a `apps/web/public/manual/` para la descarga). El manual del
+  repositorio sigue siendo la única fuente; editarlo a mano pone el guardián en rojo.
+- **Nueve ilustraciones** (`docs/imagenes/*.svg` + `portada-hotel.png`): SVG puro y autocontenido, con la
+  paleta y las tipografías del proyecto, `role="img"` + `title` + `desc` y el texto literal que pedía el
+  índice; insertadas en los apartados que indica `docs/imagenes/README.md`.
+- **PDF** de 12 / 12 / 13 páginas (323 / 406 / 383 KB), A4, con portada, índice, tablas e ilustraciones.
+- **Documentación alineada**: SRS v2.1.0, `ACCESIBILIDAD-WCAG.md` v1.2.0, PRD/SRS/plan/backlog/manuales y
+  las guías operativas corregidas con las cifras remedidas (incluido el puerto real del MCP y el número
+  real de rutas de API: **24**, no 25).
+- **El trabajo está asegurado en Git**: commit `389d577` («cierre-auditoria-v5: M0–M9 terminados y
+  verificados», 412 ficheros) y el de esta entrega. **Sin `push`**, como manda la regla del repositorio.
+
+**Verificación de cierre (ejecutada por el orquestador sobre el árbol final, con la máquina libre):**
+
+| Verificación | Resultado |
+|---|---|
+| `pnpm test` (workspace) | **7/7 tareas, 851 pruebas, 0 rojos** (contracts 125 · shared 277 · web 258 · worker 119 · mcp 38 · monitor 34) |
+| `pnpm typecheck` | **6/6** |
+| `pnpm lint` | **6/6, 0 errores** (54 warnings `no-console` en los CLI de aprovisionamiento + 2 en la web: `no-img-element` y la directiva del fichero generado) |
+| `forge test` | **13 suites / 125 pruebas**, 0 fallos |
+| `pnpm --filter @hotel/web build` | verde; `/ayuda` y `/ayuda/{cliente,comprador,recepcion}` prerenderizadas |
+| axe en navegador real (Playwright) | **24/24 sin violaciones critical/serious** (12 rutas × `chromium`/`mobile`) |
+| Guardián `manuals-sync.test.ts` | **8/8**: el módulo servido no puede divergir del manual (secciones, imágenes y estructura de listas) |
+| Contenido servido | 39 secciones · 14 figuras · 137 `<li>` · **0** listas mal formadas · portada en los tres manuales |
+
+**Defectos reales encontrados al verificar** (ninguno detectable con `typecheck` ni con las pruebas de
+quien escribió el código):
+
+1. **La ilustración de portada se perdía**: 0 apariciones en el módulo y en los HTML/PDF, porque el
+   conversor descartaba todo el preámbulo salvo la cita inicial. Corregido, y el guardián ahora cuenta
+   las imágenes del `.md` contra las del módulo (se demostró que caza el defecto reintroduciéndolo).
+2. **Listas anidadas mal formadas** (`<ul>` como hijo directo de otro `<ul>`): lo cazó `axe` con la regla
+   `list` en `/ayuda/cliente` y `/ayuda/recepcion`. Corregido con un árbol de profundidad explícito y
+   blindado por el guardián. Un primer intento dejó `<li>` huérfanos (y `axe` los habría cazado con
+   `listitem`): se detectó en la revisión de integración y se corrigió antes de dar nada por bueno.
+3. **La portada del PDF se partía en dos páginas** al entrar la ilustración (1174–1197 px contra 1123 de
+   A4): ajustada la caja de portada a la altura útil de A4 (1047 px).
+4. **El escaneo de accesibilidad medía a mitad de la animación de entrada del catálogo**: `/` daba
+   `color-contrast` serious con 4,37:1 y 1,26:1 sobre tarjetas que estaban apareciendo. Ahora se mide con
+   **movimiento reducido** y la preferencia anula también el retardo escalonado
+   (`transition-delay: 0ms !important`): es mejora de producto (RNF-20), no solo de la prueba.
+5. **Un test de TOTP de `@hotel/shared`** (`auth.test.ts`) falló al ejecutar la suite completa con la
+   máquina cargada (ventana de 30 s) y pasó aislado y en la repetición con la máquina libre: queda
+   anotado como **flake de frontera temporal**, no como fallo del producto.
+
+**Deuda que se añade o se confirma:**
+
+- El escenario «con datos» del escaneo **no está garantizado** por el spec: fuerza `RPC_URL` y
+  `WORKER_BASE_URL` a puertos muertos, pero **no** PostgreSQL/Redis. Si la base local está viva y
+  poblada, las tarjetas reales entran en el escaneo (hoy pasan); si no, se mide el estado degradado.
+- Los PDF y el módulo se regeneran con `pnpm build:manuals`; el guardián detecta **pérdidas de imágenes y
+  listas mal formadas, pero no cambios de dibujo** en las ilustraciones.
+- Siguen abiertas las rotaciones que el responsable aplazó (B-0 incluido).
+
 ### Pendiente inmediato
 
-1. **M9 está cerrado**: la verificación de arriba está en verde. Lo que sigue es **entregar y presentar**
-   (PRD/SRS/plan/backlog, ADR, manuales técnicos y de usuario, y la carta al cliente).
+1. **La entrega está cerrada en el repositorio**: manuales, ilustraciones, PDF, sección de Ayuda y
+   documentación alineada con lo que el sistema hace. Lo que sigue es **completar y enviar la carta**
+   (`docs/RESPUESTA-CLIENTE-BORRADOR.md` v3.0.0) con tarifa, importes y fechas, y **confirmar con el
+   cliente** lo que no depende del equipo: suelo de reventa, royalty por tipo, custodia de claves,
+   **fotos definitivas**, PMS y la persona de recepción para probar el check-in.
 2. **Revocar y regenerar el token de GitLab** retirado del remoto (B-0): el antiguo sigue siendo válido
-   hasta que el responsable lo haga. **Decisión de M9: se aplaza** (junto con el resto de rotaciones).
-3. **Completar la carta** (`docs/RESPUESTA-CLIENTE-BORRADOR.md` v3.0.0) con tarifa, importes y fechas, y
-   enviarla. La red privada ya es el entregable; Polygon es el bloque H6 presupuestado aparte.
-4. **Confirmar con el cliente** lo que no depende del equipo: suelo de reventa, royalty por tipo,
-   custodia de claves, **fotos definitivas**, PMS y la persona de recepción para probar el check-in.
-5. Deuda viva con destino: cobertura de `apps/web`, perfil de 200 concurrentes, cierre del HTTP del
+   hasta que el responsable lo haga. **Decisión vigente: aplazado** (junto con el resto de rotaciones).
+3. Deuda viva con destino: cobertura de `apps/web`, perfil de 200 concurrentes, cierre del HTTP del
    worker, hash del ancla de check-in, unificación de los dos indexadores de la misma noche, `pnpm audit`
-   sin triar y digest de Slither sin fijar.
+   sin triar, digest de Slither sin fijar y el flake de TOTP de `auth.test.ts`.
 
 ---
 

@@ -77,7 +77,7 @@ cumplir un deseo del cliente) · `EXT` = añadido sin base en el brief (mantenid
 | RNF-12 | Cumplimiento | Registro de viajeros resuelto | CLI | **Fuera de la plataforma** (ADR-20) |
 | RNF-13 | Usabilidad | ES / EN / RU completos | CLI | **OK** |
 | RNF-14 | Usabilidad | Diseño móvil primero | CLI | **PAR**: escaneo axe en `chromium` y `mobile`; sin matriz de dispositivos físicos |
-| RNF-15 | Accesibilidad | WCAG 2.1 AA verificable | EXT | **OK sobre la paleta real**: ratio exacto, sin colores fuera de paleta, gráficas con tabla equivalente, **axe 16/16** (8 rutas × chromium/mobile) sin violaciones critical/serious. Deuda: escenario con datos |
+| RNF-15 | Accesibilidad | WCAG 2.1 AA verificable | EXT | **OK sobre la paleta real**: ratio exacto, sin colores fuera de paleta, gráficas con tabla equivalente, **axe 24/24** (12 rutas × chromium/mobile, medido con movimiento reducido) sin violaciones critical/serious. Deuda: escenario con datos |
 | RNF-16 | Portabilidad | Distribución por CDN | EXT | **FASE POSTERIOR** (mantenido en alcance) |
 | RNF-17 | Mantenibilidad | Cobertura de pruebas ≥ 80 % | ANA | **NO ALCANZADO, MEDIDO Y CON GATE**: `mcp` 93,97 · `monitor` 91,12 · `worker` 80,68 · `shared` 79,61 · `web` 24,95 → global 49,51 %. Umbrales en trinquete |
 | RNF-18 | Mantenibilidad | Documentación coherente con el código | ANA | **OK en M9**: ADR + PRD/SRS/plan/backlog reescritos y guardián de documentación en verde |

@@ -21,6 +21,7 @@
 | La emisión del resguardo | `apps/web/src/lib/ticket-ownership.ts`, `packages/shared/src/passes/` | `qr.test.ts`, `pass.test.ts` | `reception-guardian` |
 | Las gráficas o el CSV del dashboard | `apps/web/src/components/dashboard/**`, `apps/worker/src/aggregate-store.ts` | E2E M7 | — |
 | Los colores o el contraste | `apps/web/src/**` + `packages/config/tailwind/preset.cjs` | `apps/web/src/lib/a11y/a11y.test.ts` | `a11y` (paleta real) |
+| Los manuales, la sección de Ayuda o los PDF | `docs/manual-*.md` (**fuente única**) → `pnpm build:manuals` | `apps/web/src/lib/help/manuals-sync.test.ts` | `manuals-sync` + `documentation-guardian` |
 | Los metadatos de un paquete | `<paquete>/package.json` | `pnpm build` / `pnpm test` | — |
 
 ## 2. Cómo añadir una migración
@@ -136,6 +137,7 @@ Después de un cambio de contrato, además: **redespliegue** y **resincronizaci�
 | `apps/web/src/lib/secrets-guardian.test.ts` | Ningún secreto literal en la web; los secretos se leen del entorno y fallan en cerrado |
 | `apps/web/src/lib/a11y/a11y.test.ts` | La paleta que se mide es la del **preset real** (si divergen, la suite falla); ningún `className` con color fuera de paleta; el contraste se compara con el **ratio exacto** antes de redondear |
 | `apps/web/src/lib/guard.test.ts` | El guard de autorización responde 401 sin sesión, 403 con rol ajeno y **no confunde una caída de infraestructura con credencial inválida** |
+| `apps/web/src/lib/help/manuals-sync.test.ts` | Lo que sirve la Ayuda **no puede divergir** de `docs/manual-*.md`: las mismas secciones (número y orden) y **las mismas imágenes** (cada `![](imagenes/x.svg)` del manual aparece en el módulo). El módulo `manuals.generated.ts` se regenera con `pnpm build:manuals`; editarlo a mano pone el guardián en rojo |
 
 ## 8. Reglas del repositorio que un cambio no debe romper
 

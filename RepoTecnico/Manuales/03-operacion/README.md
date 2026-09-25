@@ -19,6 +19,10 @@ pwsh scripts/dev/deploy-local.ps1 -SkipBuild   # arranca sin reconstruir
 pwsh scripts/dev/deploy-local.ps1 -NoSmtp      # sin sumidero de correo (el worker quedará degradado)
 ```
 
+Si la máquina **no tiene `pwsh`** (esta tiene solo Windows PowerShell 5.1), el mismo comando se lanza
+con `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dev/deploy-local.ps1 <opciones>`; el
+script está en ASCII puro precisamente para funcionar en las dos versiones.
+
 Qué hace, y por qué:
 
 1. **Comprueba las dependencias** (PostgreSQL, Redis y Anvil) y **se niega a seguir** si falta alguna,
@@ -132,7 +136,7 @@ contrato desplegado; la web necesita el worker para los agregados; el monitor ne
 | Worker | `curl.exe http://127.0.0.1:8787/health` | `{"status":"ok", …}` con `lag`, `aggregateLag`, `emailDegraded` |
 | Agregados (fuente única del dashboard) | `curl.exe http://127.0.0.1:8787/aggregates` | 7 KPIs, serie mensual, desglose por tipo, ranking, `undatedSalesCount`, `timeZone` |
 | Histórico | `curl.exe http://127.0.0.1:8787/history` | Lista de ventas con `tx_hash`, precio, tipo y comprador |
-| MCP | `curl.exe http://127.0.0.1:8788/health` | 200 |
+| MCP | `curl.exe http://127.0.0.1:8790/health` | 200 |
 | Cadena | `cast block-number --rpc-url http://127.0.0.1:8545` | Un número que **crece** cada pocos segundos |
 | Contrato | `cast code <address> --rpc-url http://127.0.0.1:8545` | Código distinto de `0x` |
 

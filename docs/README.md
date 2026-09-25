@@ -10,12 +10,17 @@ Una tienda propia del hotel donde se compran noches pagando con una cartera de c
 el programa del móvil que guarda tu dinero digital), sin pasar por intermediarios, y donde esas
 noches se pueden revender con un porcentaje para el hotel.
 
+![Esquema del recorrido: comprar, resguardo, check-in, reventa y cobro](imagenes/esquema-compra-reventa.svg)
+
 ## Por dónde empezar
 
 - **Si eres el dueño del hotel (Carlos)** → `docs/manual-cliente.md`.
 - **Si trabajas en recepción** → `docs/manual-recepcion.md`.
 - **Si quieres comprar o revender una noche** → `docs/manual-comprador.md`.
-- **Si vas a dibujar las ilustraciones de los manuales** → `docs/imagenes/README.md`.
+- **Si quieres leerlos dentro de la web** → sección **Ayuda** (`/ayuda`), que sirve estos mismos
+  manuales con sus ilustraciones y la descarga en PDF.
+- **Si vas a retocar las ilustraciones de los manuales** → `docs/imagenes/README.md` (las 9 están
+  dibujadas; ese índice dice qué muestra cada una y dónde se usa).
 
 Los tres manuales están escritos en lenguaje llano, sin jerga, y describen lo que el sistema
 hace **hoy**. Si algo no está terminado, lo dicen con claridad.
@@ -48,7 +53,8 @@ sistema, no para el hotel ni para el comprador.
 | Ver cómo trata la web los datos personales | [`COMPLIANCE.md`](COMPLIANCE.md) · [`PMS-INTEGRATION.md`](PMS-INTEGRATION.md) |
 | Ver qué accesibilidad cumple la web | [`ACCESIBILIDAD-WCAG.md`](ACCESIBILIDAD-WCAG.md) |
 | Ver cómo funciona el pago con tarjeta | [`FIAT-ONRAMP.md`](FIAT-ONRAMP.md) (hoy **no** operativo) |
-| Ver las ilustraciones que faltan por dibujar | [`imagenes/README.md`](imagenes/README.md) |
+| Ver las ilustraciones de los manuales y dónde se usan | [`imagenes/README.md`](imagenes/README.md) |
+| Leer los manuales dentro de la propia web (con PDF descargable) | `/ayuda` — servido desde [`manual-cliente.md`](manual-cliente.md), [`manual-comprador.md`](manual-comprador.md) y [`manual-recepcion.md`](manual-recepcion.md) |
 | Poblar el entorno con datos de prueba (cuentas, roles, noches, ventas) | [`inyeccion-datos.md`](inyeccion-datos.md) |
 
 ## Aviso importante antes de leer

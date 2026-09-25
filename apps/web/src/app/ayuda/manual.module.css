@@ -1,0 +1,142 @@
+/*
+ * Estilos del contenido de los manuales (HTML generado desde `docs/manual-*.md` por
+ * `apps/web/scripts/build-manuals.mjs`).
+ *
+ * Tailwind resetea la jerarquía de títulos, así que el HTML inyectado necesita su propia
+ * tipografía y sus propios márgenes: se limita a la sección de Ayuda (CSS module) para no
+ * alterar ninguna otra vista. Se usan los tokens de marca de `globals.css`.
+ */
+.manual {
+  color: var(--ink);
+}
+
+.manual > :first-child {
+  margin-top: 0;
+}
+
+.manual h2 {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 2.5rem 0 0.75rem;
+  /* El encabezado no debe quedar oculto bajo la cabecera sticky al saltar a un ancla. */
+  scroll-margin-top: 92px;
+}
+
+.manual h3 {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-size: 1.175rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 1.75rem 0 0.5rem;
+  scroll-margin-top: 92px;
+}
+
+.manual h2:first-child,
+.manual h3:first-child {
+  margin-top: 0;
+}
+
+.manual p {
+  margin: 0.75rem 0;
+}
+
+.manual ul,
+.manual ol {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0.75rem 0 0.75rem 1.35rem;
+}
+
+.manual ul {
+  list-style: disc;
+}
+
+.manual ol {
+  list-style: decimal;
+}
+
+.manual li > ul,
+.manual li > ol {
+  margin-top: 0.4rem;
+}
+
+.manual strong {
+  font-weight: 600;
+}
+
+.manual em {
+  font-style: italic;
+}
+
+.manual code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.92em;
+  background: var(--sand-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.05em 0.35em;
+  overflow-wrap: anywhere;
+}
+
+.manual blockquote {
+  margin: 1rem 0;
+  border-left: 3px solid var(--sea);
+  background: var(--sand-2);
+  border-radius: 0 10px 10px 0;
+  padding: 0.85rem 1rem;
+  color: var(--ink-soft);
+}
+
+.manual blockquote p {
+  margin: 0.35rem 0;
+}
+
+.manual hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 2rem 0;
+}
+
+/* Las tablas del manual llevan hasta tres columnas de texto; con `break-word` y un tamaño
+   algo menor caben en móvil sin desbordar la página (RNF-18). */
+.manual table {
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  margin: 1rem 0;
+  width: 100%;
+}
+
+.manual th,
+.manual td {
+  border: 1px solid var(--line);
+  overflow-wrap: anywhere;
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.manual th {
+  background: var(--sand-2);
+  font-weight: 600;
+}
+
+.manual img {
+  background: var(--shell);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  height: auto;
+  margin: 1.25rem 0;
+  max-width: 100%;
+}
+
+.manual a {
+  color: var(--sea-deep);
+  text-decoration: underline;
+}
+
+.manual a:hover {
+  color: var(--terracotta-text);
+}

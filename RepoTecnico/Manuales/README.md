@@ -4,7 +4,11 @@
 > **Ámbito**: documentación **técnica** de operación y mantenimiento del sistema construido.
 > **Fuentes normativas**: [`docs/adr/`](../../docs/adr/README.md) (26 ADR), [`docs/SRS.md`](../../docs/SRS.md),
 > [`docs/PRD.md`](../../docs/PRD.md), [`docs/PLAN-CONSTRUCCION.md`](../../docs/PLAN-CONSTRUCCION.md).
-> **Estado de partida**: M0–M8 cerrados y verificados; M9 (documentación y entrega) en curso.
+> **Estado de partida**: M0–M9 cerrados y verificados y la entrega de manuales hecha (manuales
+> técnicos, manuales literales en `docs/`, las 9 ilustraciones, los PDF y la sección de Ayuda
+> `/ayuda` de la plataforma). Lo que queda es lo que depende del cliente y del responsable
+> (rotaciones de credenciales, fotos definitivas, PMS, decisión de red): ver
+> [`../estado_proyecto.md`](../estado_proyecto.md).
 
 ## Qué hay aquí y a quién sirve
 
@@ -30,7 +34,8 @@
 `chainId 81234`. Comprueba con `node --version`, `pnpm --version`, `psql --version`, `forge --version`
 y `cast chain-id --rpc-url http://127.0.0.1:8545`.
 
-**Puertos**: web **3000**, worker **8787**, MCP **8788**, PostgreSQL **5432**, Redis **6379**.
+**Puertos**: web **3000**, worker **8787**, MCP **8788** por defecto (**8790** en este entorno,
+porque el 8788 lo ocupa un servidor HTTP ajeno), PostgreSQL **5432**, Redis **6379**.
 Detalle de entornos y variables: [`../entornos_globales.md`](../entornos_globales.md).
 
 ## Quiero hacer X → ve a este documento
@@ -49,6 +54,7 @@ Detalle de entornos y variables: [`../entornos_globales.md`](../entornos_globale
 | Entender autenticación, roles o firma EIP-712 | [04 · Seguridad](04-mantenimiento/01-seguridad.md) |
 | Reproducir las cifras de carga y de cobertura | [04 · Rendimiento y cobertura](04-mantenimiento/02-rendimiento-y-cobertura.md) |
 | Saber por qué una pieza es como es | [`docs/adr/README.md`](../../docs/adr/README.md) |
+| Leer los manuales de usuario dentro de la web (con PDF) | `/ayuda` — se generan desde `docs/manual-*.md` con `pnpm build:manuals` |
 
 ## Reglas del repositorio que afectan a estos manuales
 

@@ -28,6 +28,9 @@ export function SiteFooter() {
           <Link href="/historico" className="transition-colors hover:text-ink">
             {t("footerHistory")}
           </Link>
+          <Link href="/ayuda" className="transition-colors hover:text-ink">
+            {t("footerHelp")}
+          </Link>
           <Link href="/terminos" className="transition-colors hover:text-ink">
             {t("footerTerms")}
           </Link>

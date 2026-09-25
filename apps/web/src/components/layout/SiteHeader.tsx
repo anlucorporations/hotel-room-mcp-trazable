@@ -9,7 +9,13 @@ import { isActiveRoute } from "./navigation";
 
 interface NavItem {
   readonly href: string;
-  readonly labelKey: "navNights" | "navResale" | "navMyNights" | "navHistory" | "navAssistant";
+  readonly labelKey:
+    | "navNights"
+    | "navResale"
+    | "navMyNights"
+    | "navHistory"
+    | "navAssistant"
+    | "navHelp";
 }
 
 const NAV_ITEMS: readonly NavItem[] = [
@@ -19,6 +25,8 @@ const NAV_ITEMS: readonly NavItem[] = [
   { href: "/mis-noches", labelKey: "navMyNights" },
   { href: "/historico", labelKey: "navHistory" },
   { href: "/asistente", labelKey: "navAssistant" },
+  // M9 (D-14/D-17): la ayuda sirve los manuales del repositorio desde la propia web.
+  { href: "/ayuda", labelKey: "navHelp" },
 ];
 
 /**

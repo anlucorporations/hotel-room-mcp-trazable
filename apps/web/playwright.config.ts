@@ -25,6 +25,12 @@ export default defineConfig({
     // E2E hermético: sin backend (RPC/worker/LLM). Las vistas muestran su estado degradado y
     // `/api/assistant` responde 503 de forma determinista, independientemente de cualquier demo
     // local en marcha (TC-E2E-031, a11y de estados degradados).
+    //
+    // OJO: **no** es hermético frente a PostgreSQL/Redis. Si la base local está viva y poblada,
+    // el catálogo sirve noches reales y el escaneo mide también las tarjetas de noche (con datos
+    // y en su animación de entrada), no solo el estado degradado. Es deliberado: así el escaneo
+    // cubre los dos escenarios; la medición se hace con movimiento reducido para que no se
+    // capture a mitad de la transición (`apps/web/e2e/a11y.spec.ts`).
     env: {
       SESSION_SECRET: "e2e-test-secret",
       ANTHROPIC_API_KEY: "",

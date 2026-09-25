@@ -10,6 +10,7 @@
   },
   "scripts": {
     "build": "turbo run build",
+    "build:manuals": "pnpm --filter @hotel/web run manuals",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",

@@ -2,8 +2,8 @@
 
 ## Hotel Marina del Sol: plataforma de noches tokenizadas
 
-> **Versión**: 2.0.0 (reescritura completa; sustituye a la v1.3.0)
-> **Fecha**: 2026-09-23 · **Hito**: M9 · **Decisión de origen**: D-15
+> **Versión**: 2.1.0 (añade la sección de Ayuda; la v2.0.0 fue la reescritura completa)
+> **Fecha**: 2026-09-24 · **Hito**: M9 · **Decisión de origen**: D-14, D-15, D-17
 > **Referencia de producto**: [`docs/PRD.md`](PRD.md) v2.0.0
 > **Decisiones normativas**: [`docs/adr/`](adr/README.md)
 > **Origen de requisitos**: [`docs/BRIEF-CLIENTE-INICIAL.md`](BRIEF-CLIENTE-INICIAL.md)
@@ -15,6 +15,16 @@ La v1.3.0 describía otra arquitectura: Polygon Amoy/PoS como red del MVP, `Hote
 JWT RS256. **Nada de eso es el sistema que se ejecuta.** Esta versión documenta el sistema real y
 mantiene los identificadores (`RF-*`, `RNF-*`, `RT-*`, `CU-*`, `US-*`) porque el código y las
 pruebas los citan: cambiarlos rompería la trazabilidad que este documento existe para dar.
+
+### 0.1 Qué cambia en la v2.1.0
+
+Se documenta la **sección de Ayuda** de la plataforma (`/ayuda` y `/ayuda/<manual>`): sirve los
+tres manuales que ya vivían en `docs/` —cliente, comprador y recepción— navegables por temas,
+secciones y sub-secciones, con sus ilustraciones y la **descarga en PDF** de cada uno. El
+contenido **no** se duplica: `apps/web/scripts/build-manuals.mjs` lo genera desde
+`docs/manual-*.md`, y `manuals-sync.test.ts` falla si el módulo servido se queda obsoleto respecto
+al manual del repositorio. Se corrigen además dos datos desalineados con el entorno real (puerto
+del MCP y recuento del escaneo de accesibilidad).
 
 ---
 
@@ -64,7 +74,7 @@ paleta real, y verificación reproducible con artefactos.
 │ apps/web (Next.js, App Router, RSC)                                              │
 │  Catálogo / · Reventa /reventa · Mis noches · Histórico /historico               │
 │  Recepción /recepcion · Asistente · Back-office /admin/* (7 pantallas)           │
-│  25 rutas de API bajo /api/** (auth, admin, reception, qr, wallet, nfts, push…)  │
+│  24 rutas de API bajo /api/** (auth, admin, reception, qr, wallet, nfts, push…)  │
 │  Agregados: lee el worker · Cadena: viem/wagmi (cliente) y viem (servidor)       │
 └───────────┬──────────────────────────────────────────────────────────────────────┘
             │ HTTPS/REST                              │ RPC JSON (viem)
@@ -305,8 +315,11 @@ igualdad con el SQL del worker **es** el criterio de aceptación del dashboard (
 
 ## 7. Interfaz y accesibilidad
 
-- **Rutas**: `/` (catálogo), `/reventa`, `/mis-noches`, `/historico`, `/recepcion`, `/asistente` y las
-  7 pantallas de administración (minteo, dashboard, fondos, roles, royalty, pausa, caducadas).
+- **Rutas**: `/` (catálogo), `/reventa`, `/mis-noches`, `/historico`, `/recepcion`, `/asistente`,
+  `/checkin` (el resguardo que se enseña en recepción) y las 7 pantallas de administración
+  (minteo, dashboard, fondos, roles, royalty, pausa, caducadas). La **Ayuda** vive en `/ayuda`
+  (índice de manuales) y `/ayuda/<manual>` (`cliente`, `comprador`, `recepcion`), con el manual
+  navegable por temas → secciones → sub-secciones, sus ilustraciones y la descarga en PDF.
 - **Idiomas**: ES / EN / RU con catálogos de mensajes reales.
 - **Compra en tres pasos**: seleccionar → **revisar** (calldata, importe y destino) → firmar el objeto
   revisado. Nunca se firma un objeto reconstruido (ADR-11).
@@ -315,8 +328,10 @@ igualdad con el SQL del worker **es** el criterio de aceptación del dashboard (
 - **Accesibilidad**: `lang`, enlace de salto al contenido, un `h1` por ruta, iconos decorativos
   ocultos a lectores, gráficas con `role="img"` y nombre accesible **más tabla de datos equivalente**;
   contraste ≥ 4.5:1 con el **ratio exacto** y sin colores fuera de la paleta del preset. Escaneo axe:
-  **16/16 sin violaciones critical/serious** (8 rutas —`/`, `/reventa`, `/historico`, `/mis-noches`,
-  `/checkin`, `/admin/dashboard`, `/admin/mint`, `/asistente`— × `chromium`/`mobile`). Detalle:
+  **24/24 sin violaciones critical/serious** (12 rutas —`/`, `/reventa`, `/historico`, `/mis-noches`,
+  `/checkin`, `/admin/dashboard`, `/admin/mint`, `/asistente`, `/ayuda`, `/ayuda/cliente`,
+  `/ayuda/comprador`, `/ayuda/recepcion`— × `chromium`/`mobile`), medido con **movimiento reducido**
+  para no capturar las tarjetas a mitad de su animación de entrada. Detalle:
   [`docs/ACCESIBILIDAD-WCAG.md`](ACCESIBILIDAD-WCAG.md).
 
 ---
@@ -329,7 +344,7 @@ igualdad con el SQL del worker **es** el criterio de aceptación del dashboard (
 | Despliegue | `forge script script/Deploy.s.sol:Deploy --broadcast --slow` + bootstrap de roles |
 | Registro | `packages/shared/deployments/81234.json` (`address`, `block`, `abiHash`) validado por esquema |
 | Sincronización | `pnpm --filter @hotel/contracts sync` |
-| Servicios locales | PostgreSQL 18 (5432), Redis-compatible (6379), web (3000), worker (8787), mcp (8788) |
+| Servicios locales | PostgreSQL 18 (5432), Redis-compatible (6379), web (3000), worker (8787), mcp (8788 por defecto; **8790** en este entorno, porque el 8788 lo ocupa un proceso ajeno) |
 | Configuración | `.env` en la raíz; **contrato de variables** en `.env.example`; cada componente carga el fichero y valida con zod |
 | Contrato inmutable | Un cambio de reglas = redespliegue + resincronización; **no** hay *proxy* (ADR-22) |
 
@@ -390,7 +405,7 @@ esta es la vista de verificación, con el artefacto que lo demuestra.
 | RNF-06, RNF-19 | CU-01 | US-13 | `auth.test.ts`, `secrets-guardian.test.ts`, `admin-auth-guardian.test.ts` |
 | RNF-07 | — | US-02 | `forge test`: 13 suites / 125 pruebas |
 | RNF-10, RNF-20 | — | US-15 | `listener-events.test.ts`, `chain-monitor.test.ts`, ADR-26 |
-| RNF-13, RNF-14, RNF-15 | — | US-22 | `apps/web/e2e/a11y.spec.ts` (axe, 16/16: 8 rutas × `chromium`/`mobile`), `lib/a11y/*` |
+| RNF-13, RNF-14, RNF-15 | — | US-22 | `apps/web/e2e/a11y.spec.ts` (axe, 24/24: 12 rutas × `chromium`/`mobile`, con movimiento reducido), `lib/a11y/*` |
 | RNF-17 | — | US-20 | `pnpm test:coverage` + `RepoTecnico/cobertura.md` |
 | RNF-18 | — | US-21 | `docs/adr/` + guardián de documentación |
 | RT-01…RT-12 | CU-PR-02 | US-01 | `Deploy.s.sol`, `sync-deployment`, `.env.example`, `entornos_globales.md` |

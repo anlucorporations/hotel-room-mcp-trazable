@@ -92,7 +92,7 @@ Anvil en el `after_script`):
 pnpm typecheck && pnpm lint && pnpm test        # estático + pruebas
 pnpm test:coverage                              # cobertura con umbrales
 pnpm test:e2e:m4 && pnpm test:e2e:m5 && pnpm test:e2e:m6 && pnpm test:e2e:m7
-pnpm --filter @hotel/web exec playwright test    # axe, 12/12
+pnpm --filter @hotel/web exec playwright test    # axe, 24/24 (12 rutas x 2 proyectos)
 pnpm test:load && pnpm test:dr                   # certificaciones con artefacto
 ```
 

@@ -248,10 +248,10 @@ En la base solo quedan el hash bcrypt y la semilla TOTP cifrada con AES-256-GCM 
 |---|---|
 | `docs/` | Especificaciones (PRD, SRS, plan, backlog), guías operativas y el brief del cliente |
 | `RepoTecnico/` | Documentación de gestión del proyecto: estado, requerimientos, diccionario de datos, entornos, informes de auditoría, decisiones y planes de implementación |
-| `packages/contracts/src/` | `HotelNights.sol` (canónico), `IHotelNights.sol`, `Faucet.sol`, librerías; `HotelNFT.sol`/`HotelMarketplace.sol` son legacy |
-| `packages/contracts/script/` | `Deploy.s.sol` (hoy solo despliega la generación legacy) |
+| `packages/contracts/src/` | `HotelNights.sol` (**único** contrato), `IHotelNights.sol`, `Faucet.sol` y librerías; la generación `HotelNFT`/`HotelMarketplace` se retiró en M9 |
+| `packages/contracts/script/` | `Deploy.s.sol` (despliega el canónico `HotelNights` con bootstrap de roles; faucet opcional) |
 | `packages/shared/src/` | Dominio, ABIs, base de datos, autenticación, eventos, colas, servicios |
-| `apps/web/src/app/api/` | 25 rutas de API |
+| `apps/web/src/app/api/` | 24 rutas de API |
 | `apps/worker/src/` | Listener, procesadores, correo y servidor HTTP |
 | `scripts/` | Operación: respaldo, E2E, carga |
 | `.data/` | Ignorado por git; hoy contiene los SQLite del worker (desaparecen en M2) |

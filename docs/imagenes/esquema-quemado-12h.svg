@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 600" width="1400" height="600" role="img" aria-labelledby="eq-titulo eq-desc">
+  <title id="eq-titulo">Quemado diario de las 12:00: las noches no vendidas se retiran solas</title>
+  <desc id="eq-desc">Un reloj marca las 12:00 en el centro. A la izquierda hay tres tarjetas de noche con la etiqueta «no vendida» y una flecha hacia el reloj. A la derecha, esas mismas tarjetas llevan un sello «retirada» y debajo el texto «Sin intervención humana». Abajo, un cartel destacado dice «Una noche ya vendida a un cliente NUNCA se retira».</desc>
+  <defs>
+    <filter id="eq-sombra" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#0E5A63" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="1400" height="600" fill="#FBF6EC"/>
+  <text x="700" y="66" text-anchor="middle" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="32" font-weight="700" fill="#08424A" textLength="580" lengthAdjust="spacingAndGlyphs">El quemado diario de las 12:00</text>
+
+  <!-- noches sin vender -->
+  <g>
+    <rect x="50" y="140" width="340" height="70" rx="12" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
+    <text x="66" y="172" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#1B2327">Noche 118</text>
+    <text x="66" y="198" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">12 jun 2026</text>
+    <rect x="244" y="158" width="130" height="34" rx="17" fill="#FFFFFF" stroke="#C0542E" stroke-width="2"/>
+    <text x="309" y="181" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" font-weight="700" fill="#C0542E">no vendida</text>
+  </g>
+  <g>
+    <rect x="50" y="224" width="340" height="70" rx="12" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
+    <text x="66" y="256" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#1B2327">Noche 119</text>
+    <text x="66" y="282" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">13 jun 2026</text>
+    <rect x="244" y="242" width="130" height="34" rx="17" fill="#FFFFFF" stroke="#C0542E" stroke-width="2"/>
+    <text x="309" y="265" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" font-weight="700" fill="#C0542E">no vendida</text>
+  </g>
+  <g>
+    <rect x="50" y="308" width="340" height="70" rx="12" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
+    <text x="66" y="340" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#1B2327">Noche 120</text>
+    <text x="66" y="366" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">14 jun 2026</text>
+    <rect x="244" y="326" width="130" height="34" rx="17" fill="#FFFFFF" stroke="#C0542E" stroke-width="2"/>
+    <text x="309" y="349" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" font-weight="700" fill="#C0542E">no vendida</text>
+  </g>
+
+  <!-- flecha izquierda -->
+  <path d="M404 250 H562" stroke="#C0542E" stroke-width="5" fill="none"/>
+  <polygon points="586,250 562,240 562,260" fill="#C0542E"/>
+  <text x="487" y="232" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#C0542E">sin vender</text>
+
+  <!-- reloj -->
+  <g filter="url(#eq-sombra)">
+    <circle cx="700" cy="250" r="104" fill="#FFFFFF" stroke="#0E5A63" stroke-width="6"/>
+  </g>
+  <path d="M700 152 V162 M749 165 L744 174 M785 201 L776 206 M798 250 H788 M785 299 L776 294 M749 335 L744 326 M700 348 V338 M651 335 L656 326 M615 299 L624 294 M602 250 H612 M615 201 L624 206 M651 165 L656 174" stroke="#0E5A63" stroke-width="4" fill="none"/>
+  <path d="M700 250 V196" stroke="#08424A" stroke-width="10" stroke-linecap="round" fill="none"/>
+  <path d="M700 250 V168" stroke="#08424A" stroke-width="5" stroke-linecap="round" fill="none"/>
+  <circle cx="700" cy="250" r="6" fill="#08424A"/>
+  <text x="700" y="404" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="38" font-weight="700" fill="#1B2327">12:00</text>
+
+  <!-- flecha derecha -->
+  <path d="M814 250 H972" stroke="#5E6B45" stroke-width="5" fill="none"/>
+  <polygon points="996,250 972,240 972,260" fill="#5E6B45"/>
+  <text x="897" y="232" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#5E6B45">se retiran</text>
+
+  <!-- noches retiradas -->
+  <g>
+    <rect x="1010" y="140" width="340" height="70" rx="12" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
+    <text x="1026" y="172" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#4C575C">Noche 118</text>
+    <text x="1026" y="198" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">12 jun 2026</text>
+    <g transform="rotate(-8 1255 177)">
+      <rect x="1180" y="153" width="150" height="44" rx="8" fill="#FFFFFF" stroke="#C0542E" stroke-width="4"/>
+      <text x="1255" y="182" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#C0542E">retirada</text>
+    </g>
+  </g>
+  <g>
+    <rect x="1010" y="224" width="340" height="70" rx="12" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
+    <text x="1026" y="256" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#4C575C">Noche 119</text>
+    <text x="1026" y="282" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">13 jun 2026</text>
+    <g transform="rotate(-8 1255 261)">
+      <rect x="1180" y="237" width="150" height="44" rx="8" fill="#FFFFFF" stroke="#C0542E" stroke-width="4"/>
+      <text x="1255" y="266" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#C0542E">retirada</text>
+    </g>
+  </g>
+  <g>
+    <rect x="1010" y="308" width="340" height="70" rx="12" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
+    <text x="1026" y="340" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#4C575C">Noche 120</text>
+    <text x="1026" y="366" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">14 jun 2026</text>
+    <g transform="rotate(-8 1255 345)">
+      <rect x="1180" y="321" width="150" height="44" rx="8" fill="#FFFFFF" stroke="#C0542E" stroke-width="4"/>
+      <text x="1255" y="350" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#C0542E">retirada</text>
+    </g>
+  </g>
+
+  <!-- etiquetas inferiores -->
+  <rect x="50" y="400" width="340" height="52" rx="14" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="220" y="434" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" fill="#4C575C">Se revisan cada día</text>
+  <rect x="1010" y="400" width="340" height="52" rx="14" fill="#5E6B45" fill-opacity="0.14" stroke="#5E6B45" stroke-width="2"/>
+  <text x="1180" y="434" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#08424A" textLength="300" lengthAdjust="spacingAndGlyphs">Sin intervención humana</text>
+
+  <!-- cartel destacado -->
+  <rect x="140" y="488" width="1120" height="80" rx="18" fill="#08424A"/>
+  <text x="700" y="538" text-anchor="middle" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="30" font-weight="700" fill="#FFFFFF" textLength="830" lengthAdjust="spacingAndGlyphs">Una noche ya vendida a un cliente NUNCA se retira</text>
+</svg>

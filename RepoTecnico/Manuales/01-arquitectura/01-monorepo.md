@@ -26,12 +26,12 @@
 
 | Ruta | Qué hay |
 |---|---|
-| `src/app/**/page.tsx` | Rutas públicas: `/`, `/reventa`, `/mis-noches`, `/historico`, `/recepcion`, `/asistente`, `/privacidad`, `/terminos` |
+| `src/app/**/page.tsx` | Rutas públicas: `/`, `/reventa`, `/mis-noches`, `/historico`, `/recepcion`, `/asistente`, `/checkin`, `/ayuda` y `/ayuda/<manual>`, `/privacidad`, `/terminos` |
 | `src/app/admin/**` | Siete pantallas de back-office: minteo, dashboard, fondos, roles, royalty, pausa, caducadas |
-| `src/app/api/**` | Las **25** rutas de API (`auth`, `admin`, `reception`, `qr`, `wallet`, `nfts`, `sales`, `push`, `fiat`, `assistant`, `health`) |
+| `src/app/api/**` | Las **24** rutas de API (`auth`, `admin`, `reception`, `qr`, `wallet`, `nfts`, `sales`, `push`, `fiat`, `assistant`, `health`) |
 | `src/app/health/**` | `live` y `ready` (esta última devuelve `READY`/`DEGRADED` con `postgres`, `redis`, `polygonRPC`) |
 | `src/components/**` | UI por dominio: `buy/`, `catalog/`, `my-nights/`, `resale/`, `dashboard/`, `admin/`, `assistant/`, `layout/`, `wallet/`, `tx/` |
-| `src/lib/**` | Servidor: guard de sesión, `verifiedTxRequest` vive en `components/buy/`, `ticket-ownership`, `worker-api`, `a11y/` |
+| `src/lib/**` | Servidor: guard de sesión, `verifiedTxRequest` vive en `components/buy/`, `ticket-ownership`, `worker-api`, `a11y/`, `help/` (manuales generados para la Ayuda) |
 | `src/config/chain.ts` | **Único** sitio con la dirección y el `chainId` del cliente |
 | `src/i18n/` | Catálogos de mensajes ES / EN / RU |
 | `e2e/` | Specs de Playwright: `a11y.spec.ts` (axe), `home.spec.ts`, `asistente.spec.ts`, `observabilidad.spec.ts` |
@@ -122,11 +122,14 @@
 | `@hotel/mcp` | `pnpm --filter @hotel/mcp build` | `pnpm --filter @hotel/mcp test` | `pnpm --filter @hotel/mcp test:coverage` |
 | `@hotel/monitor` | `pnpm --filter @hotel/monitor build` | `pnpm --filter @hotel/monitor test` | `pnpm --filter @hotel/monitor test:coverage` |
 
-Referencia de cierre de **M9** (árbol final): `pnpm typecheck` 6/6 · `pnpm lint` 6/6 (0 errores, 19
-warnings `no-console` documentados) · `pnpm test` 7/7 tareas con **827 pruebas** (contracts 125,
-shared 266, web 250, worker 114, mcp 38, monitor 34) · `forge test` **13 suites / 125 pruebas** ·
-`next build` 21/21 páginas · axe 16/16. (El cierre de M8 dio 835 pruebas y 16 suites / 146 pruebas:
-la diferencia es la retirada de la generación legacy y las pruebas nuevas del resguardo.)
+Referencia de cierre de **M9** (árbol final, remedido el 24-09 con la Ayuda dentro): `pnpm typecheck`
+**6/6** · `pnpm lint` **6/6 (0 errores**; 54 warnings `no-console` en los scripts CLI de
+aprovisionamiento y 2 en la web —`no-img-element` y la directiva `eslint-disable` del fichero
+generado—) · `pnpm test` **7/7 tareas con 851 pruebas** (contracts 125, shared 277, web 258, worker
+119, mcp 38, monitor 34) · `forge test` **13 suites / 125 pruebas** · `next build` verde con `/ayuda`
+y los tres manuales prerenderizados · axe **24/24** (12 rutas × `chromium`/`mobile`, con movimiento
+reducido). (El cierre de M8 dio 835 pruebas y 16 suites / 146 pruebas: la diferencia es la retirada de
+la generación legacy y las pruebas nuevas del resguardo, de la Ayuda y de los guardianes.)
 
 ### Comandos operativos de la raíz
 

@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Guía del comprador — Hotel Marina del Sol</title>
+<style>
+  :root {
+    --sand: #fbf6ec;
+    --sand-2: #f3ead8;
+    --shell: #ffffff;
+    --line: #e7dcc6;
+    --ink: #1b2327;
+    --ink-soft: #4c575c;
+    --sea: #0e5a63;
+    --sea-deep: #08424a;
+    --terracotta: #c0542e;
+    --olive: #5e6b45;
+    --gold: #c68a2e;
+  }
+  @page { size: A4; }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    margin: 0;
+    background: var(--sand);
+    color: var(--ink);
+    font-family: "Hanken Grotesk", "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-size: 11.5pt;
+    line-height: 1.55;
+  }
+  h1, h2, h3 { font-family: "Fraunces", Georgia, "Times New Roman", serif; color: var(--ink); }
+  a { color: var(--sea-deep); text-decoration: underline; text-decoration-thickness: 0.5px; }
+
+  .cover {
+    page-break-after: always;
+    break-after: page;
+    /* Ocupa exactamente la caja útil de una A4 (297 mm − 18 mm de margen superior) para que la
+       portada no se mezcle con el índice y no desborde a una segunda página. */
+    height: 277mm;
+    padding: 16mm 18mm 12mm;
+    background: var(--sand);
+    border-bottom: 6mm solid var(--sea);
+  }
+  .cover .eyebrow {
+    font-size: 9.5pt;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--terracotta);
+    margin: 0 0 8mm;
+  }
+  .cover h1 { font-size: 28pt; line-height: 1.08; margin: 0 0 5mm; letter-spacing: -0.01em; }
+  .cover .rule { width: 32mm; height: 3px; background: var(--gold); margin: 0 0 6mm; }
+  .cover .subtitle { font-size: 12pt; color: var(--sea-deep); margin: 0 0 3mm; font-weight: 600; }
+  .cover .date { font-size: 10.5pt; color: var(--ink-soft); margin: 0; }
+  .cover .lead {
+    margin-top: 10mm;
+    padding: 5mm 6mm;
+    background: var(--shell);
+    border-left: 3px solid var(--sea);
+    border-radius: 3px;
+    color: var(--ink-soft);
+    font-size: 10.5pt;
+  }
+  .cover .lead p { margin: 0 0 3mm; }
+  .cover .lead p:last-child { margin-bottom: 0; }
+  /* La ilustración de portada (segundo bloque del preámbulo) va tras la cita. */
+  .cover .lead blockquote { margin-bottom: 4mm; }
+  .cover .lead figure { margin: 0; }
+  .cover .lead figcaption { font-style: italic; }
+
+  .toc { page-break-after: always; break-after: page; padding: 18mm; }
+  .toc h2 { font-size: 20pt; margin: 0 0 8mm; border-bottom: 2px solid var(--line); padding-bottom: 3mm; }
+  .toc ol { list-style: none; margin: 0; padding: 0; }
+  .toc li { margin: 0 0 2.4mm; }
+  .toc li.level-3 { margin-left: 8mm; font-size: 10.5pt; color: var(--ink-soft); }
+  .toc a { text-decoration: none; }
+  .toc .num { color: var(--terracotta); font-weight: 700; margin-right: 2mm; }
+
+  .content { padding: 0 18mm 18mm; }
+  .manual-section { break-inside: auto; }
+  .manual-section.level-2 { page-break-before: auto; }
+  h2.section {
+    font-size: 17pt;
+    margin: 12mm 0 4mm;
+    padding-top: 3mm;
+    border-top: 2px solid var(--line);
+    color: var(--sea-deep);
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+  h2.section:first-of-type { margin-top: 0; }
+  h3.section {
+    font-size: 13pt;
+    margin: 8mm 0 3mm;
+    color: var(--terracotta);
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+  p { margin: 0 0 3.4mm; }
+  strong { color: var(--ink); }
+  code {
+    font-family: "DejaVu Sans Mono", "Consolas", monospace;
+    font-size: 0.92em;
+    background: var(--sand-2);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 0 0.3em;
+    white-space: nowrap;
+  }
+  blockquote {
+    margin: 0 0 4mm;
+    padding: 3mm 5mm;
+    background: var(--shell);
+    border-left: 3px solid var(--gold);
+    color: var(--ink-soft);
+  }
+  blockquote p { margin: 0; }
+  ul, ol { margin: 0 0 4mm; padding-left: 7mm; }
+  li { margin: 0 0 1.6mm; }
+  ul ul, ol ol, ul ol, ol ul { margin: 1.6mm 0 0; }
+  hr { border: 0; border-top: 1px solid var(--line); margin: 7mm 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 5mm;
+    font-size: 10pt;
+    background: var(--shell);
+  }
+  thead { display: table-header-group; }
+  tr { break-inside: avoid; page-break-inside: avoid; }
+  th {
+    background: var(--sea-deep);
+    color: #ffffff;
+    text-align: left;
+    font-weight: 600;
+    padding: 2.4mm 3mm;
+    border: 1px solid var(--sea-deep);
+  }
+  td {
+    padding: 2.4mm 3mm;
+    border: 1px solid var(--line);
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) td { background: var(--sand); }
+  figure { margin: 0 0 5mm; break-inside: avoid; page-break-inside: avoid; }
+  p > img { max-width: 100%; height: auto; }
+  figure img {
+    display: block;
+    max-width: 100%;
+    max-height: 150mm;
+    height: auto;
+    margin: 0 auto;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: var(--shell);
+  }
+  figcaption {
+    font-size: 9pt;
+    color: var(--ink-soft);
+    text-align: center;
+    margin-top: 2mm;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+  <header class="cover">
+    <p class="eyebrow">Manuales · Hotel Marina del Sol</p>
+    <h1>Guía del comprador — Hotel Marina del Sol</h1>
+    <div class="rule"></div>
+    <p class="subtitle">Hotel Marina del Sol · plataforma de noches tokenizadas</p>
+    <p class="date">Generado el 24 de septiembre de 2026</p>
+    <div class="lead"><blockquote><p>Para quien quiere <strong>comprar una noche</strong> en la web del Hotel Marina del Sol y para quien quiera revenderla después. Escrito sin tecnicismos: cuando aparece una palabra rara, va explicada entre paréntesis. <strong>Importante:</strong> hoy todo funciona en una <strong>red de pruebas</strong>, así que puedes practicar el proceso completo sin arriesgar dinero de verdad (apartado 10).</p></blockquote>
+<figure><img src="../imagenes/portada-hotel.svg" alt="Portada: el Hotel Marina del Sol visto desde el paseo marítimo" /><figcaption>Portada: el Hotel Marina del Sol visto desde el paseo marítimo</figcaption></figure></div>
+  </header>
+
+  <nav class="toc">
+    <h2>Índice</h2>
+    <ol>
+      <li class="level-2"><a href="#1-que-es-una-noche-tokenizada-y-que-compras-exactamente">1. Qué es una noche tokenizada y qué compras exactamente</a></li>
+      <li class="level-2"><a href="#2-preparar-la-cartera-y-la-red">2. Preparar la cartera y la red</a></li>
+      <li class="level-2"><a href="#3-comprar-paso-a-paso">3. Comprar paso a paso</a></li>
+      <li class="level-3"><a href="#elegir">Elegir</a></li>
+      <li class="level-3"><a href="#revisar">Revisar</a></li>
+      <li class="level-3"><a href="#firmar">Firmar</a></li>
+      <li class="level-2"><a href="#4-que-mirar-en-la-pantalla-de-revision-antes-de-firmar">4. Qué mirar en la pantalla de revisión antes de firmar</a></li>
+      <li class="level-2"><a href="#5-como-recibes-el-resguardo">5. Cómo recibes el resguardo</a></li>
+      <li class="level-2"><a href="#6-revender-una-noche-que-no-vas-a-usar">6. Revender una noche que no vas a usar</a></li>
+      <li class="level-2"><a href="#7-como-cobrar-el-dinero-de-una-reventa">7. Cómo cobrar el dinero de una reventa</a></li>
+      <li class="level-2"><a href="#8-cuando-llegas-al-hotel-check-in">8. Cuando llegas al hotel (check-in)</a></li>
+      <li class="level-2"><a href="#9-preguntas-frecuentes">9. Preguntas frecuentes</a></li>
+      <li class="level-2"><a href="#10-limites-honestos-de-hoy">10. Límites honestos de hoy</a></li>
+    </ol>
+  </nav>
+
+  <main class="content">
+<section class="manual-section level-2" id="1-que-es-una-noche-tokenizada-y-que-compras-exactamente">
+<h2 class="section">1. Qué es una noche tokenizada y qué compras exactamente</h2>
+<p>Cada noche de cada habitación del hotel se vende como una <strong>ficha digital única</strong>. Esa ficha se llama <em>token</em> y se guarda en una <em>blockchain</em> (un libro de cuentas público y compartido donde lo apuntado no se puede borrar). La ficha hace la misma función que una reserva: <strong>quien la tiene, tiene esa noche</strong>.</p>
+<p>El hotel tiene 50 habitaciones: <strong>101 a 130</strong> en la planta baja y <strong>201 a 220</strong> en la primera. Hay tres tipos: <strong>simple, doble y suite</strong>.</p>
+<p>Comprar son <strong>tres pasos</strong>: <strong>elegir → revisar → firmar</strong>. Se firma exactamente lo que has revisado, ni más ni menos. Lo que compras es <strong>una noche</strong>: entras el día de la fecha y sales al día siguiente.</p>
+<p>La ficha llega a <strong>tu cartera</strong> y es tuya: puedes <strong>usarla</strong> (llegas al hotel, enseñas el resguardo y haces el check-in), <strong>revenderla</strong> a otra persona en la propia web del hotel, o <strong>regalarla o pasarla</strong> a otra cartera.</p>
+<p><strong>Nunca se te va a pedir</strong> tu nombre, tu DNI, tu teléfono ni tu correo. La compra es <strong>anónima</strong>. Solo se te pedirá un correo si tú quieres recibir el resguardo por email o avisos; en ese caso se usa para enviarte el mensaje y <strong>se descarta</strong>, no se guarda junto a tu compra.</p>
+<figure><img src="../imagenes/esquema-compra-reventa.svg" alt="Esquema del recorrido: comprar, resguardo, check-in, reventa y cobro" /><figcaption>Esquema del recorrido: comprar, resguardo, check-in, reventa y cobro</figcaption></figure>
+<hr />
+</section>
+<section class="manual-section level-2" id="2-preparar-la-cartera-y-la-red">
+<h2 class="section">2. Preparar la cartera y la red</h2>
+<p>Necesitas una <strong>cartera de cripto</strong> (<em>wallet</em>: el programa que guarda tu dinero digital y firma tus pagos cuando tú lo apruebas). La más conocida es <strong>MetaMask</strong>, y también funcionan otras.</p>
+<ol><li><strong>Instálala</strong> solo desde la web oficial de la cartera o la tienda oficial de tu móvil o navegador.</li><li><strong>Crea una cartera nueva</strong> y <strong>apunta la frase de recuperación en papel</strong>. Esa frase es la llave de todo tu dinero: quien la tenga puede vaciarte la cartera. No la fotografíes, no la guardes en una nota del móvil y no se la mandes a nadie. <strong>Nadie del hotel te la va a pedir nunca.</strong></li><li><strong>Añade la red del hotel.</strong> Si estás en la red equivocada verás el aviso <strong>«Estás en la red equivocada.»</strong> con un botón <strong>Cambiar de red</strong>. Púlsalo y acepta en la cartera.</li><li><strong>Consigue dinero de prueba.</strong> Como hoy es una red de pruebas, hay un botón <strong>«Conseguir ETH de prueba»</strong> que te manda saldo para practicar. Verás <strong>«¡Listo! Recibiste ETH de prueba en tu wallet.»</strong>. Solo se puede pedir <strong>una vez cada 24 horas</strong>.</li><li><strong>Conecta la cartera</strong> con <strong>Conectar wallet</strong> y acepta. Verás «Conectado: 0x…» con tu dirección.</li></ol>
+<p>Si algo de este apartado falla, la propia pantalla lo dice: <strong>«No detectamos una wallet web3.»</strong> (instálala y recarga), <strong>«Estás en la red equivocada.»</strong> (pulsa <strong>Cambiar de red</strong>), <strong>«Tu wallet aún no tiene esta red…»</strong> (acepta el aviso de la cartera y repite) o <strong>«Has cancelado el cambio de red…»</strong> (vuelve a pulsar el botón).</p>
+<hr />
+</section>
+<section class="manual-section level-2" id="3-comprar-paso-a-paso">
+<h2 class="section">3. Comprar paso a paso</h2>
+<p><strong>Dos pantallas distintas, no las confundas:</strong> <strong>la portada</strong> muestra <strong>solo las noches nuevas</strong>, las que vende el hotel, y <strong>la pantalla «Reventa»</strong> muestra las noches que <strong>otras personas</strong> compraron y ahora revenden. Las dos se compran igual, pero el dinero va a sitios distintos: en la portada pagas al hotel; en la reventa pagas al cliente que la revende (y el hotel se lleva su porcentaje).</p>
+</section>
+<section class="manual-section level-3" id="elegir">
+<h3 class="section">Elegir</h3>
+<ol><li>Entra en la web. Puedes leerla en <strong>español, inglés y ruso</strong> (selector de idioma arriba) y funciona en el móvil.</li><li>Recorre las <strong>Noches disponibles</strong>: cada tarjeta muestra foto, número de habitación, tipo, fecha y precio. Si quieres, afina con los <strong>filtros</strong>: tipo de habitación, mes, <strong>precio máximo</strong>, <strong>rango de fechas</strong> y <strong>búsqueda por número de habitación</strong>.</li><li>Pulsa <strong>Reservar</strong> (en la pantalla de reventa el botón dice <strong>Reservar reventa</strong>). Si aún no has conectado la cartera, el botón te pedirá <strong>Conectar para reservar</strong> o <strong>Cambia de red para reservar</strong>.</li><li>El catálogo muestra las noches de los próximos <strong>90 días</strong>. Al llegar al final, la página lo dice.</li></ol>
+<p><em>También puedes pedirla hablando:</em> en la pantalla <strong>Asistente</strong> le escribes lo que buscas (por ejemplo «¿hay alguna suite disponible en junio?»). El asistente <strong>prepara</strong> la reserva, pero <strong>la firma la haces tú</strong> en tu cartera.</p>
+</section>
+<section class="manual-section level-3" id="revisar">
+<h3 class="section">Revisar</h3>
+<p>Se abre la ventana <strong>«Revisar tu reserva»</strong>, con este aviso: <strong>«Esto es lo que vas a firmar. Comprueba el importe y la noche antes de confirmar.»</strong></p>
+<table>
+<thead><tr><th>Línea</th><th>Qué es</th></tr></thead>
+<tbody>
+<tr><td><strong>Habitación</strong></td><td>El número de habitación que estás comprando.</td></tr>
+<tr><td><strong>Noche</strong></td><td>La fecha.</td></tr>
+<tr><td><strong>Importe</strong></td><td>Lo que vas a pagar, en ETH.</td></tr>
+<tr><td><strong>Token</strong></td><td>El identificador de la noche en la cadena.</td></tr>
+<tr><td><strong>Contrato</strong></td><td>El destino del pago: la dirección del programa del hotel.</td></tr>
+</tbody></table>
+<p>Antes de dejarte firmar, el sistema <strong>vuelve a comprobar el precio en la cadena</strong> («Verificando el precio on-chain…»). Si el precio hubiera cambiado justo entonces, verás <strong>«El precio de esta noche acaba de cambiar; por tu seguridad no la firmamos con un importe antiguo.»</strong> y no se firma nada: vuelves a abrir la reserva y ya está.</p>
+</section>
+<section class="manual-section level-3" id="firmar">
+<h3 class="section">Firmar</h3>
+<ol><li>Comprueba lo anterior con calma y pulsa <strong>Confirmar y firmar</strong>. Recuerda: <strong>«No se cobrará nada hasta que firmes.»</strong></li><li>Se abre tu cartera. <strong>Mira en la cartera lo que te muestra</strong> y apruébalo.</li><li>Verás el avance: <strong>«Confirma en tu wallet» → «Reservando tu noche…» → «¡Noche reservada!»</strong>, y después <strong>«La noche ya es tuya. Aparecerá en “Mis noches”.»</strong></li></ol>
+<table>
+<thead><tr><th>Lo que ves</th><th>Qué significa</th><th>Qué hacer</th></tr></thead>
+<tbody>
+<tr><td>«Has cancelado la firma. Puedes intentarlo de nuevo cuando quieras.»</td><td>Cerraste el aviso de tu cartera. No se ha cobrado nada.</td><td>Repite la compra.</td></tr>
+<tr><td>«Saldo insuficiente para reservar esta noche.»</td><td>No tienes bastante ETH para la noche <strong>más</strong> el pequeño coste de la operación.</td><td>Pide saldo de prueba o elige una noche más barata. Te dice cuánto te falta.</td></tr>
+<tr><td>«No se pudo completar la reserva…» / «No se completó la reserva.» / «No se realizó ningún cargo…»</td><td>La operación no salió. No se ha cobrado nada.</td><td>Comprueba la red y repite.</td></tr>
+<tr><td>«Puedes cerrar: la reserva continúa y aparecerá en “Mis noches”.»</td><td>La operación ya está en marcha.</td><td>Si cierras, no se pierde. Espera y mira en <strong>Mis noches</strong>.</td></tr>
+<tr><td>«Ventas en pausa»</td><td>El hotel ha detenido las ventas.</td><td>No es un error tuyo. Vuelve más tarde.</td></tr>
+</tbody></table>
+<figure><img src="../imagenes/compra-tres-pasos.svg" alt="Comprar una noche en tres pasos: elegir, revisar y firmar" /><figcaption>Comprar una noche en tres pasos: elegir, revisar y firmar</figcaption></figure>
+<hr />
+</section>
+<section class="manual-section level-2" id="4-que-mirar-en-la-pantalla-de-revision-antes-de-firmar">
+<h2 class="section">4. Qué mirar en la pantalla de revisión antes de firmar</h2>
+<p>Cinco comprobaciones, siempre, aunque tengas prisa:</p>
+<ol><li><strong>La habitación</strong> es la que querías. Un número distinto es otra habitación.</li><li><strong>La fecha</strong> es la noche correcta: fíjate en el día y el mes.</li><li><strong>El importe</strong> es el que viste en la tarjeta, sin sorpresas.</li><li><strong>El destino</strong> (la línea «Contrato») es <strong>siempre el mismo</strong> en todas las compras del hotel. Si alguna vez ves ahí otra dirección, <strong>cancela y avisa al hotel</strong>: podría ser un fraude.</li><li><strong>La cartera que firma</strong> es la tuya. Y la regla que vale para todo: <strong>lo que firma tu cartera tiene que coincidir con lo que leíste</strong>.</li></ol>
+<hr />
+</section>
+<section class="manual-section level-2" id="5-como-recibes-el-resguardo">
+<h2 class="section">5. Cómo recibes el resguardo</h2>
+<p>El <strong>resguardo</strong> es lo que demuestra que esa noche es tuya. Al comprar, el sistema lo emite <strong>atado a tu cartera</strong>: por eso nadie más puede generar un resguardo por ti. Lo tienes de tres formas: <strong>en pantalla</strong> (el código <strong>QR</strong>, para enseñarlo en recepción desde el móvil), <strong>por email</strong> (si quieres, puedes pedir que te lo envíen a un correo: ese correo <strong>no se guarda</strong> en la base de datos del hotel ni se asocia a tu cartera, se usa para el envío y se descarta) o <strong>impreso o apuntado</strong> (el resguardo lleva también un <strong>código corto que empieza por <code>MDS-</code></strong>, por ejemplo <code>MDS-A1B2C3D4</code>, que sirve si te quedas sin batería; <strong>apúntalo en un sitio seguro</strong>: es tu plan B).</p>
+<p><strong>El resguardo es de un solo uso.</strong> En cuanto recepción lo escanea, queda gastado para siempre. Si no vas a poder ir, lo que hay que hacer es <strong>revender la noche</strong>.</p>
+<figure><img src="../imagenes/resguardo-qr-codigo.svg" alt="Resguardo de la noche: código QR en el móvil y código corto en papel" /><figcaption>Resguardo de la noche: código QR en el móvil y código corto en papel</figcaption></figure>
+<hr />
+</section>
+<section class="manual-section level-2" id="6-revender-una-noche-que-no-vas-a-usar">
+<h2 class="section">6. Revender una noche que no vas a usar</h2>
+<p>Se hace en la pantalla <strong>Mis noches</strong>, con la cartera conectada.</p>
+<ol><li>Entra en <strong>Mis noches</strong> (verás tus noches en dos pestañas: <strong>Próximas</strong> y <strong>Pasadas</strong>).</li><li>Escribe el <strong>precio de reventa</strong> en ETH para la noche que no vas a usar.</li><li>Pulsa <strong>Listar</strong> y firma en la cartera. Verás la etiqueta <strong>«En reventa»</strong>.</li><li>Tu noche aparecerá en la pantalla <strong>Reventa</strong>, visible para cualquiera. Cuando alguien la compre, la noche pasa a ser suya y <strong>a ti se te abona el dinero</strong>.</li></ol>
+<p><strong>Tres reglas que conviene saber:</strong></p>
+<ul><li><strong>El hotel se lleva un porcentaje</strong> de cada reventa: <strong>5 %</strong> en simple y doble, <strong>10 %</strong> en suite. Se descuenta de lo que cobras tú; el comprador paga el precio que anunciaste.</li><li><strong>Hay un precio mínimo.</strong> No se puede revender a un precio simbólico: si pones un precio demasiado bajo, verás <strong>«El precio está por debajo del mínimo de reventa que fija el hotel.»</strong> y el anuncio no se crea. En la red de pruebas el mínimo es de <strong>0,01 ETH</strong>.</li><li><strong>Una noche ya usada no se puede revender</strong>: <strong>«Esta noche ya se consumió en recepción y no puede revenderse.»</strong> Puedes <strong>cambiar el precio</strong> (<strong>Cambiar precio</strong>) o <strong>quitar el anuncio</strong> (<strong>Cancelar reventa</strong>).</li></ul>
+<table>
+<thead><tr><th>Mensaje</th><th>Qué significa</th><th>Qué hacer</th></tr></thead>
+<tbody>
+<tr><td>«El precio debe ser mayor que 0.»</td><td>Precio vacío o en cero.</td><td>Escribe un precio mayor que cero.</td></tr>
+<tr><td>«El precio está por debajo del mínimo de reventa que fija el hotel.»</td><td>No llega al mínimo.</td><td>Sube el precio.</td></tr>
+<tr><td>«Esta noche ya se consumió en recepción y no puede revenderse.»</td><td>Ya se hizo el check-in.</td><td>No se puede revender.</td></tr>
+<tr><td>«La noche ha expirado y no puede listarse.»</td><td>La fecha ya pasó.</td><td>No se puede revender.</td></tr>
+<tr><td>«No eres la propietaria de esta noche.»</td><td>La noche no está en la cartera conectada.</td><td>Conecta la cartera con la que la compraste.</td></tr>
+<tr><td>«Esta noche no está en reventa.»</td><td>Cancelas un anuncio que ya no existe.</td><td>Recarga la página.</td></tr>
+</tbody></table>
+<figure><img src="../imagenes/pantalla-reventa.svg" alt="Pantalla de reventa con las noches a la venta y la tarjeta Mis noches" /><figcaption>Pantalla de reventa con las noches a la venta y la tarjeta Mis noches</figcaption></figure>
+<hr />
+</section>
+<section class="manual-section level-2" id="7-como-cobrar-el-dinero-de-una-reventa">
+<h2 class="section">7. Cómo cobrar el dinero de una reventa</h2>
+<p>Cuando alguien compra tu noche, el dinero <strong>no llega solo a tu cartera</strong>: queda a tu nombre esperando a que lo reclames. Es a propósito, para que lo cobres cuando te interese.</p>
+<ol><li>Entra en <strong>Mis noches</strong> con tu cartera conectada.</li><li>Si tienes dinero pendiente verás <strong>«Saldo pendiente»</strong> con el aviso <strong>«Tienes fondos de reventas listos para cobrar.»</strong> Pulsa <strong>«Cobrar …»</strong> (te dice el importe exacto) y firma en tu cartera.</li></ol>
+<p>Si el cobro falla, verás <strong>«No se pudo completar la operación. Revisa la red y vuelve a intentarlo.»</strong>. No se pierde nada: el saldo sigue esperándote. Cada vendedor cobra el suyo por separado y <strong>el hotel no toca ese dinero</strong>.</p>
+<hr />
+</section>
+<section class="manual-section level-2" id="8-cuando-llegas-al-hotel-check-in">
+<h2 class="section">8. Cuando llegas al hotel (check-in)</h2>
+<ol><li>Preséntate en recepción y enseña tu <strong>resguardo</strong>: el QR desde el móvil o el <strong>código que empieza por <code>MDS-</code></strong> si lo llevas impreso o apuntado.</li><li>Recepción lo escanea y en unos segundos <strong>el check-in queda anotado en la cadena</strong>, es decir, registrado de forma definitiva. La pantalla de recepción muestra la habitación, la fecha y el código de la operación.</li><li><strong>El mismo resguardo no sirve dos veces</strong>: si alguien intentara usarlo otra vez, el sistema responde <strong>«ya usado»</strong>. Es tu protección. Y si dos puestos lo escanean a la vez, el segundo recibe <strong>«check-in en proceso»</strong> y espera unos segundos.</li><li><strong>Si revendiste la noche</strong>, tu resguardo antiguo ya no sirve: la noche es de quien te la compró. El sistema lo detecta y pide el resguardo del titular actual.</li><li><strong>En el mostrador, como siempre</strong>, se identifica al viajero con DNI o pasaporte para el registro de viajeros que exige la ley. Eso <strong>no</strong> lo hace la web y no se guarda en la web.</li></ol>
+<hr />
+</section>
+<section class="manual-section level-2" id="9-preguntas-frecuentes">
+<h2 class="section">9. Preguntas frecuentes</h2>
+<p><strong>¿Puedo cancelar una compra?</strong> No. La compra se firma en la cadena y <strong>no se puede deshacer</strong>: no hay botón de cancelación ni devolución. Lo que sí puedes hacer es <strong>revender la noche</strong> en la pantalla <strong>Reventa</strong>: si alguien la compra, recuperas tu dinero (menos el porcentaje del hotel).</p>
+<p><strong>¿Puedo revenderla a cualquier precio?</strong> No: hay un <strong>precio mínimo</strong> y el hotel se lleva su porcentaje (ver el apartado 6). <strong>¿Qué pasa si pierdo el resguardo?</strong> Nada grave, si la noche sigue siendo tuya: el resguardo se puede <strong>volver a emitir</strong> para el dueño de la noche, y solo para él, porque el sistema exige la firma de tu cartera para generarlo. Por eso conviene no perder el acceso a tu cartera. Si conservas el código <code>MDS-</code> apuntado, recepción también puede usarlo.</p>
+<p><strong>¿Por qué me piden un código de 6 dígitos en la web del hotel?</strong> A ti, <strong>no</strong>. El código de 6 dígitos es para el <strong>personal</strong> del hotel (el dueño y recepción) como segunda llave de su acceso. Tú te identificas con tu cartera. Si alguna web o algún mensaje te pide ese código diciendo que es del hotel, <strong>desconfía</strong>: nadie del hotel debe pedirte códigos ni tu frase de recuperación.</p>
+<p><strong>¿La web guarda mis datos?</strong> No pide ninguno: <strong>no hay registro, ni nombre, ni DNI, ni teléfono</strong>. Lo que sí es público por diseño es lo que queda en la cadena: el movimiento de la noche entre direcciones de cartera, el importe y la fecha. Tu <strong>dirección de cartera es pública</strong> (como un número de cuenta) pero <strong>no dice quién eres</strong>. Si pides el resguardo por correo, ese correo se usa para el envío y se descarta.</p>
+<p><strong>¿Puede el hotel quitarme la noche que he comprado?</strong> No. Las noches que el hotel retira a las 12:00 son <strong>solo las suyas, las que no se vendieron</strong>. Una noche ya vendida <strong>no se puede retirar</strong>.</p>
+<hr />
+</section>
+<section class="manual-section level-2" id="10-limites-honestos-de-hoy">
+<h2 class="section">10. Límites honestos de hoy</h2>
+<ul><li><strong>Todo funciona en una red de pruebas.</strong> Sirve para practicar y validar el sistema; <strong>no</strong> es todavía una red donde el hotel pueda vender al público. Es una decisión pendiente del dueño.</li><li><strong>Con mucha gente a la vez, la web se queda corta</strong>: aguanta bien unas 50 personas comprando a la vez (medido); con 200 a la vez en un solo servidor falla parte de las peticiones. Está identificado y tiene arreglo.</li><li><strong>El pago con tarjeta no está operativo</strong>: hoy solo se paga con cartera de cripto.</li><li><strong>Los pases para el móvil</strong> (los de las carteras de Apple o Google) necesitan credenciales que aún no están; hoy el resguardo es el QR o el código <code>MDS-</code>. <strong>Las fotos de las habitaciones son provisionales</strong> y <strong>los avisos al móvil</strong> solo llegan si los aceptas (y nunca bloquean una compra).</li></ul>
+<hr />
+<p><em>Guía del comprador · Hotel Marina del Sol · si algo de esta guía no coincide con lo que ves en pantalla, haz caso a la pantalla y avisa al hotel.</em></p>
+</section>
+  </main>
+</body>
+</html>

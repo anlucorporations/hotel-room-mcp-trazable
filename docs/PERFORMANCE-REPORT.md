@@ -78,7 +78,7 @@ sus números. **No se baja el perfil para que la certificación salga verde.**
 |---|---|---|
 | Validación del resguardo y ancla de check-in en servidor | **~41 ms** (SLA de recepción < 500 ms) | E2E M5 |
 | Recuperación ante desastre (RTO) | **0,73 s** (`pg_dump` + restauración real + comparación) | `RepoTecnico/evidencias/dr-verify.json` |
-| Accesibilidad (axe, navegador real) | **12/12 sin violaciones critical/serious** | `apps/web/e2e/a11y.spec.ts` |
+| Accesibilidad (axe, navegador real) | **24/24 sin violaciones critical/serious** (12 rutas × 2 proyectos, con movimiento reducido) | `apps/web/e2e/a11y.spec.ts` |
 | Cobertura | global 49,51 % · `web` 24,95 % (hueco declarado) | `RepoTecnico/cobertura.md` |
 
 ## 5. Límites de esta medición (declarados, no escondidos)

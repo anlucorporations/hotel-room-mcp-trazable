@@ -23,6 +23,7 @@
     "navHistory": "Sales History",
     "navResale": "Resale market",
     "navAssistant": "Assistant",
+    "navHelp": "Help",
     "menuOpen": "Open menu",
     "menuClose": "Close menu",
     "footerTagline": "Secure network · verified payments",
@@ -31,7 +32,21 @@
     "footerAddress": "Hotel Marina del Sol · Promenade, Alicante",
     "footerHistory": "Public sales history",
     "footerTerms": "Terms",
+    "footerHelp": "Help and manuals",
     "footerPrivacy": "Privacy"
+  },
+  "help": {
+    "title": "Help and manuals",
+    "tagline": "The three manuals of the system, as it works today.",
+    "manualsLabel": "Available manuals",
+    "read": "Read the manual",
+    "topicsLabel": "Manual contents",
+    "sectionsLabel": "Sections of this manual",
+    "downloadPdf": "Download as PDF",
+    "downloadPdfAria": "Download this manual as a PDF",
+    "backToIndex": "All manuals",
+    "spanishOnly": "The manuals are written in Spanish.",
+    "testNetworkNote": "The system currently runs on a private test network: it is meant to demonstrate and validate the system, not to sell to the public."
   },
   "howItWorks": {
     "title": "How it works",
