@@ -935,4 +935,19 @@ enlace al catálogo. Es una dependencia de pago no presupuestada (RF-20, «PAR»
 - **Tests de UI**: los componentes de recepción y reventa se validan con typecheck y pruebas de las
   funciones puras/API; falta E2E Playwright sobre el flujo completo (Anvil + PostgreSQL reales).
 
+### Despliegue en GCP del incremento v2 (2026-09-26)
+
+- Imágenes `web:v2` y `worker:v2` construidas con Cloud Build; revisiones
+  `hotel-mcp-{worker,mcp,web}-00002` al 100 %. Detalle en `despliegue_gcp.md` §12.
+- La migración (tablas de recepción y `nfts.recovery_code`) la aplicó el **worker al arrancar**.
+- **Web Push operativo**: secreto `hotel-vapid-private-key` + `VAPID_*` en worker y web.
+- El `Dockerfile` volvió a `--frozen-lockfile` (**P-1 cerrado**) y el script de despliegue publica
+  el worker con `--allow-unauthenticated` (**P-3 corregido**: antes lo dejaba privado y la web
+  perdía `/aggregates` y `/history`).
+- Verificación E2E real: login MFA de `recepcion@hotel.es` y de `admin@hotel.es`; panel del día con
+  **50 habitaciones**; reserva 108 con `recoveryCode MDS-PNEKH8K6`; búsqueda por código 200; owner
+  con acceso a recepción (D-30/D-37); worker `lag: 0`.
+- **Regla de repositorios**: solo se sube a los remotos de `anlucorporations` y solo a la rama
+  `Hotel-DSH-GCP`; `codecrypto` queda excluido del `push` por indicación del responsable.
+
 

@@ -145,9 +145,9 @@ por `--build-arg APP=<web|worker|mcp|monitor>` y
 - `.gcloudignore` explícito (no deriva de `.gitignore`: el registro
   `packages/shared/deployments/*.json` está en `.gitignore` pero la imagen lo
   necesita).
-- **Deuda detectada**: `pnpm-lock.yaml` está desincronizado con algún
-  `package.json` (`ERR_PNPM_OUTDATED_LOCKFILE`), así que la imagen instala con
-  `--no-frozen-lockfile`. Regenerar el lockfile y volver a congelarlo.
+- **Deuda cerrada en el incremento v2**: `pnpm-lock.yaml` se sincronizó con `pnpm@10.32.1`, así
+  que el `Dockerfile` volvió a `pnpm install --frozen-lockfile` (un `package.json` sin lockfile
+  rompe el build en lugar de resolver versiones nuevas en silencio).
 - La SA por defecto de Compute necesitó `roles/storage.admin` y
   `roles/artifactregistry.writer` para poder construir y publicar.
 
@@ -220,9 +220,9 @@ Otras políticas que condicionaron el diseño (ya documentadas en
 
 | # | Punto |
 |---|---|
-| P-1 | **Regenerar `pnpm-lock.yaml`** y volver a `--frozen-lockfile` en la imagen (deuda previa del repo). |
+| P-1 | ✅ **Cerrado (incremento v2)**: lockfile sincronizado y `--frozen-lockfile` restaurado en el `Dockerfile`. |
 | P-2 | El placeholder `hotel-mcp-health` puede retirarse. |
-| P-3 | `worker` y `mcp` son públicos para que la web pueda llamarlos (la app no implementa *ID tokens* de servicio a servicio). En producción conviene un LB interno o auth explícita. |
+| P-3 | El `worker` y el `mcp` son invocables sin autenticación para que la web pueda llamarlos (la app no implementa *ID tokens* de servicio a servicio). El script ya despliega **ambos** con `--allow-unauthenticated` (antes el worker se desplegaba privado y la web perdía `/aggregates` y `/history`). Cerrarlo exige firmar con el ID token de la SA en `lib/worker-api.ts`. |
 | P-4 | El monitor usa `besuChain` (id 81234) cuando el chainId no es 81234; conviene derivarlo de `CHAIN_ID` igual que en la siembra. |
 | P-5 | Anvil **compartido** con `mcc-ecommerce`: su estado y su ciclo de reinicios afectan a este despliegue. |
 | P-6 | Credenciales de operador en `~/.config/hotel-mcp/inject-data-output.txt`; rotarlas antes de cualquier uso real. |
@@ -257,4 +257,36 @@ gcloud run jobs execute hotel-mcp-inject-data --region=europe-west1
 
 ---
 
-*Despliegue GCP · hotelMCP · 2026-09-25*
+## 12. Actualización · incremento v2 (2026-09-26)
+
+Se redesplegó la plataforma con el incremento v2 (owner, recepción y reventa) sin recrear
+infraestructura.
+
+| Paso | Detalle |
+|---|---|
+| Imágenes | Cloud Build `web:v2` (con `NEXT_PUBLIC_CHAIN_ID=31337`, contrato `0x70bD…605B`, bloque 288) y `worker:v2`; `mcp:v2` se mantuvo |
+| Revisión | `hotel-mcp-worker-00002`, `hotel-mcp-mcp-00002`, `hotel-mcp-web-00002` (100 % de tráfico) |
+| Migración | La aplica el **worker al arrancar** (`runMigrations`): crea `additional_charges`, `stay_checkouts`, `checkout_incidents` y `nfts.recovery_code` |
+| Web Push | Nuevo secreto `hotel-vapid-private-key` en Secret Manager; `VAPID_PUBLIC_KEY`/`VAPID_SUBJECT` como env en worker y web (el script los inyecta) |
+| Script | `70-deploy-apps.sh` despliega el worker con `--allow-unauthenticated` (P-3) y exige el secreto VAPID; el `Dockerfile` usa `--frozen-lockfile` (P-1 cerrado) |
+
+### Verificación (sobre el despliegue real)
+
+| Comprobación | Resultado |
+|---|---|
+| Home de la web | HTTP 200 |
+| `/health/ready` | `READY` (postgres, redis y RPC `UP`) |
+| `/api/push/vapid` | HTTP 200 con la clave pública VAPID |
+| `/api/reception/overview` sin sesión | HTTP **401** (protegido) |
+| `/api/reception/overview` con sesión de **recepción** | HTTP 200 · **50 habitaciones**, reserva 108 (`SOLD`) con `recoveryCode MDS-PNEKH8K6` |
+| `GET /api/reception/reservations/lookup?code=MDS-PNEKH8K6` | HTTP 200 con la reserva |
+| `/api/reception/overview` con **owner** (`DEFAULT_ADMIN_ROLE`) | HTTP 200 (D-30/D-37) |
+| `/api/sales/history` (web → worker) | HTTP 200 con datos (worker invocable) |
+| `/health` del worker | `status: ok`, `lag: 0`, sin degradación |
+
+El login E2E se hizo con las cuentas sembradas (`recepcion@hotel.es` y `admin@hotel.es`) usando
+su TOTP; las credenciales siguen solo en `~/.config/hotel-mcp/inject-data-output.txt` (permisos 600).
+
+---
+
+*Despliegue GCP · hotelMCP · 2026-09-26*

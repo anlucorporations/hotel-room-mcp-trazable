@@ -23,10 +23,10 @@ COPY apps/monitor/package.json apps/monitor/
 COPY packages/config/package.json packages/config/
 COPY packages/contracts/package.json packages/contracts/
 COPY packages/shared/package.json packages/shared/
-# NOTA: el repositorio trae pnpm-lock.yaml desincronizado con algún package.json
-# (ERR_PNPM_OUTDATED_LOCKFILE), así que la imagen no puede usar --frozen-lockfile.
-# Deuda a salvo: regenerar el lockfile con pnpm 10.32.1 y volver a congelarlo.
-RUN pnpm install --no-frozen-lockfile
+# El lockfile se sincronizó con pnpm 10.32.1 (incremento v2), así que la imagen ya
+# puede instalar en modo congelado; así un `package.json` sin lockfile rompe el build
+# en lugar de resolver versiones nuevas en silencio.
+RUN pnpm install --frozen-lockfile
 
 # 2) Código fuente (lo excluido está en .gcloudignore / .dockerignore)
 COPY . .

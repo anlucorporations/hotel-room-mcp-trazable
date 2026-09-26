@@ -41,15 +41,30 @@ COMMON_ENV="RPC_URL=${ANVIL_URL},CHAIN_ID=${CHAIN_ID},CONTRACT_ADDRESS=${CONTRAC
 COMMON_SECRETS="DATABASE_URL=hotel-database-url:latest,REDIS_URL=hotel-redis-url:latest"
 SMTP_ENV="SMTP_HOST=smtp.invalid,SMTP_PORT=587,SMTP_USER=hotel@example.com,SMTP_PASS=,SMTP_FROM=no-reply@example.com"
 
+# Web Push (RF-37): la pública es pública (el navegador la necesita para suscribirse);
+# la privada vive SOLO en Secret Manager. Sin ella el push falla en cerrado (no se envía).
+VAPID_PUBLIC_KEY="${GCP_VAPID_PUBLIC_KEY:-BFyl-lGLbqXJkTrSwW3EECx-Gk7Suhg0JU02P5CqJYihOFAkcuSSME9sU0bKCXAxG4LM9tFisNIjp0-JEqniZ-M}"
+VAPID_SUBJECT="${GCP_VAPID_SUBJECT:-mailto:soporte@hotelmarinadelsol.es}"
+if ! gcloud secrets describe hotel-vapid-private-key --project="$GCP_PROJECT_ID" >/dev/null 2>&1; then
+  echo "ERROR: falta el secreto hotel-vapid-private-key (Web Push)." >&2
+  echo "       Créalo con:  printf '%s' '<VAPID_PRIVATE_KEY>' | gcloud secrets create hotel-vapid-private-key --project=$GCP_PROJECT_ID --data-file=-" >&2
+  exit 1
+fi
+VAPID_ENV="VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY},VAPID_SUBJECT=${VAPID_SUBJECT}"
+VAPID_SECRETS="VAPID_PRIVATE_KEY=hotel-vapid-private-key:latest"
+
 echo "==> Desplegando worker"
+# P-3 / SRS §deuda: la web NO implementa ID tokens de servicio a servicio y llama al worker
+# por HTTP; por eso el worker se publica igual que el mcp. Cerrarlo exige que `lib/worker-api.ts`
+# firme con el ID token de la SA de Cloud Run.
 gcloud run deploy hotel-mcp-worker \
   --project="$GCP_PROJECT_ID" --region="$GCP_REGION" \
   --image="${REGISTRY}/worker:${IMAGE_TAG}" \
   --service-account="$GCP_RUN_SA" \
   --port=8080 --no-cpu-throttling --min-instances=1 --max-instances=1 \
-  --no-allow-unauthenticated \
-  --set-env-vars="${COMMON_ENV},WORKER_HOST=0.0.0.0,WORKER_PORT=8080,${SMTP_ENV},ADMIN_EMAIL=admin@example.com" \
-  --set-secrets="${COMMON_SECRETS}" \
+  --allow-unauthenticated \
+  --set-env-vars="${COMMON_ENV},WORKER_HOST=0.0.0.0,WORKER_PORT=8080,${SMTP_ENV},${VAPID_ENV},ADMIN_EMAIL=admin@example.com" \
+  --set-secrets="${COMMON_SECRETS},${VAPID_SECRETS}" \
   --network="$NETWORK" --subnet="$SUBNET" --vpc-egress=private-ranges-only \
   --quiet
 WORKER_URL="$(gcloud run services describe hotel-mcp-worker --project="$GCP_PROJECT_ID" \
@@ -78,8 +93,8 @@ gcloud run deploy hotel-mcp-web \
   --service-account="$GCP_RUN_SA" \
   --port=3000 --allow-unauthenticated \
   --min-instances=0 --max-instances=3 --cpu=1 --memory=1Gi \
-  --set-env-vars="${COMMON_ENV},MCP_BASE_URL=${MCP_URL}/mcp,WORKER_BASE_URL=${WORKER_URL},LOG_LEVEL=info" \
-  --set-secrets="${COMMON_SECRETS},SESSION_SECRET=hotel-session-secret:latest,JWT_SECRET=hotel-jwt-secret:latest,TICKET_SIGNING_SECRET=hotel-ticket-signing-secret:latest,CHECKIN_SECRET_KEY=hotel-checkin-secret-key:latest,AES_SECRET_KEY=hotel-aes-secret-key:latest,MCP_SHARED_SECRET=hotel-mcp-shared-secret:latest" \
+  --set-env-vars="${COMMON_ENV},MCP_BASE_URL=${MCP_URL}/mcp,WORKER_BASE_URL=${WORKER_URL},LOG_LEVEL=info,${VAPID_ENV}" \
+  --set-secrets="${COMMON_SECRETS},${VAPID_SECRETS},SESSION_SECRET=hotel-session-secret:latest,JWT_SECRET=hotel-jwt-secret:latest,TICKET_SIGNING_SECRET=hotel-ticket-signing-secret:latest,CHECKIN_SECRET_KEY=hotel-checkin-secret-key:latest,AES_SECRET_KEY=hotel-aes-secret-key:latest,MCP_SHARED_SECRET=hotel-mcp-shared-secret:latest" \
   --network="$NETWORK" --subnet="$SUBNET" --vpc-egress=private-ranges-only \
   --quiet
 WEB_URL="$(gcloud run services describe hotel-mcp-web --project="$GCP_PROJECT_ID" \
