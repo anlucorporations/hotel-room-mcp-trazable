@@ -950,4 +950,47 @@ enlace al catálogo. Es una dependencia de pago no presupuestada (RF-20, «PAR»
 - **Regla de repositorios**: solo se sube a los remotos de `anlucorporations` y solo a la rama
   `Hotel-DSH-GCP`; `codecrypto` queda excluido del `push` por indicación del responsable.
 
+---
+
+## 11. Incremento v3 — menú de cuenta/wallet y sección Sistemas (2026-09-26)
+
+> **Origen**: petición del responsable. **Documentación**: `RepoTecnico/incremento_v3/`
+> (requerimientos, casos de uso Gherkin/EARS y plan). **Decisiones**: D-40…D-45.
+
+### Qué se ha construido
+
+| Hito | Entrega | Ficheros clave |
+|---|---|---|
+| **H1 · Menú desplegable** | Un único `WalletMenu` en el **back-office** y en la **cabecera pública**: título usuario+rol (o wallet), Seguridad, Usuarios/Roles (solo owner), Salir y acciones de wallet; accesible por teclado. | `components/wallet/WalletMenu.tsx`, `lib/wallet-menu-items.ts`, `WalletBar`/`useOnboarding` |
+| **H2 · Sistemas** | Grupo de navegación **solo owner** con Contratos, Usuarios, Finanzas y Operaciones; portada con tarjetas y **gate server-side** propio. | `adminNav.ts`, `AdminLayout`, `app/admin/sistemas/layout.tsx` |
+| **H3 · Usuarios** | Listar operadores (sin secretos), **crear/rotar** credenciales (contraseña+TOTP+rescate una sola vez) y activar/desactivar (con revocación de sesiones y sin auto-desactivación). | `UsersRepository.listAll`, `/api/admin/system/users`, `SystemUsers` |
+| **H4 · Contratos y Finanzas** | Estado on-chain en solo lectura + gobernanza (roles y pausa) y resumen de agregados + retirada, reutilizando los componentes existentes. | `SystemContractState`, `SystemFinances`, `AdminRoles`/`AdminPause`/`AdminFunds` |
+| **H5 · Operaciones** | Salud del worker (lag, agregados, degradaciones) con estado degradado explícito si no responde. | `/api/admin/system/operations`, `SystemOperations`, `fetchWorkerHealth` |
+| **H6 · Seguridad** | El operador rota su MFA y cambia su contraseña (exigiendo la actual); MFA pasó de solo-owner a **cualquier rol sobre su cuenta**. | `/api/auth/password`, `mfa/setup`, `AdminSecurity` |
+
+### Artefactos de datos (obligatorios del proceso)
+
+- **Nuevos**: `RepoTecnico/diagrama_er.md` (ER Mermaid de las 16 tablas) y `RepoTecnico/base_datos.sql`
+  (script PostgreSQL idempotente). **Actualizado**: `diccionario_datos.md` (16 tablas, `recovery_code`,
+  tablas de recepción; corregidas dos contradicciones internas sobre `room_type`).
+- Validados por parseo estructural contra `packages/shared/src/db/migrator.ts` (0 diferencias de
+  columnas/tipos/índices).
+
+### Verificación
+
+- `@hotel/shared`: typecheck y build OK.
+- `@hotel/web`: **typecheck OK**; pruebas nuevas `wallet-menu-items` (6), API usuarios (10) y cambio
+  de contraseña (4); guardianes (boundaries, a11y, paused, recepción, admin-auth, legacy y
+  documentación) en verde; **`next build` de producción OK**.
+- Suite web: 296/297 en verde. El único fallo es `manuals-sync.test.ts` (`docs/manual-cliente.md`
+  sin referencia de imagen), **pre-existente y ajeno** a este incremento.
+
+### Deuda declarada
+
+- Desactivar a un operador revoca sus **refresh tokens**, pero su access token (≤15 min) sigue válido
+  hasta expirar: el blocklist por `jti` de access tokens no está implementado.
+- El cambio de contraseña no revoca las demás sesiones del propio operador.
+- El alta de operadores no permite cambiar el rol de uno existente (solo alta con rol y baja lógica).
+
+
 

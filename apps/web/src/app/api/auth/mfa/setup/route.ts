@@ -19,11 +19,12 @@ const usersRepo = new UsersRepository();
  * se guarda cifrada con AES-256-GCM (`AES_SECRET_KEY`) y los códigos de rescate se reemplazan.
  *
  * La semilla y los códigos en claro se devuelven UNA sola vez (solo se persisten el criptograma
- * y los hashes bcrypt). Exige sesión de `DEFAULT_ADMIN_ROLE`.
+ * y los hashes bcrypt). Rota el MFA del **propio operador**: cualquier rol de back-office puede
+ * rotar el suyo (RF-46, CU-46).
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    const auth = await requireRole(request, "DEFAULT_ADMIN_ROLE");
+    const auth = await requireRole(request);
     if (!auth.ok) return auth.response;
 
     const secret = authService.generateTOTPSecret();

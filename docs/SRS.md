@@ -2,8 +2,8 @@
 
 ## Hotel Marina del Sol: plataforma de noches tokenizadas
 
-> **Versión**: 2.1.0 (añade el incremento v2: owner, recepción y reventa; CATÁLOGO CU-30…CU-37)
-> **Fecha**: 2026-09-25 · **Hito**: Incremento v2 · **Decisión de origen**: D-15, D-30…D-37
+> **Versión**: 2.2.0 (añade el incremento v3: menú de cuenta/wallet y sección Sistemas; catálogo CU-40…CU-46)
+> **Fecha**: 2026-09-26 · **Hito**: Incremento v3 · **Decisión de origen**: D-15, D-40…D-45
 > **Referencia de producto**: [`docs/PRD.md`](PRD.md) v2.0.0
 > **Decisiones normativas**: [`docs/adr/`](adr/README.md)
 > **Origen de requisitos**: [`docs/BRIEF-CLIENTE-INICIAL.md`](BRIEF-CLIENTE-INICIAL.md)
@@ -367,6 +367,13 @@ huérfanas: la decisión D-15 los trae a este catálogo). `CU-PR-*` son casos de
 | **CU-35** | Dar de alta cargos adicionales de una estancia | Recepcionista | RF-35 | `additional_charges`, D-34 |
 | **CU-36** | Publicar, editar el precio y retirar una reventa propia | Portador | RF-36 | `/mis-noches/mis-reventas`, `list`/`unlist` |
 | **CU-37** | Recibir avisos in-app y push de las reventas propias | Portador | RF-37 | `useWebPush`, `sw.js`, D-36 |
+| **CU-40** | Usar el menú desplegable de cuenta/wallet (identidad, rol, accesos y salir) | Todos | RF-40 | `WalletMenu`, `wallet-menu-items.ts`, D-40 |
+| **CU-41** | Entrar en la sección **Sistemas** (solo owner) | Propietario | RF-41 | `adminNav`, `app/admin/sistemas/*`, D-42 |
+| **CU-42** | Gestionar los usuarios de la plataforma (listar/crear-rotar/activar) | Propietario | RF-42 | `/api/admin/system/users`, `SystemUsers`, D-43 |
+| **CU-43** | Consultar y gobernar el contrato desde Sistemas | Propietario | RF-43 | `SystemContractState`, `AdminRoles`, `AdminPause` |
+| **CU-44** | Consultar finanzas y retirar a tesorería desde Sistemas | Propietario | RF-44 | `SystemFinances`, `AdminFunds` |
+| **CU-45** | Consultar operaciones (salud del worker y de la cadena) | Propietario | RF-45 | `/api/admin/system/operations`, `SystemOperations` |
+| **CU-46** | Gestionar la seguridad de la propia cuenta (MFA y contraseña) | Todos | RF-46 | `/api/auth/password`, `/api/auth/mfa/setup`, `AdminSecurity`, D-45 |
 | **CU-PR-01** | Aprovisionar operadores (comando, no ruta) | Responsable técnico | RNF-06 | §4.6 |
 | **CU-PR-02** | Desplegar en la red local con roles, faucet opcional y registro sincronizado | Responsable técnico | RT-02 | ADR-06, ADR-13 |
 

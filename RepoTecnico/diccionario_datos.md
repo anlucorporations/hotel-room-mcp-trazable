@@ -1,7 +1,8 @@
 # Diccionario de datos — Hotel Marina del Sol
 
-> **Fase**: 3 (Terminación, hito M9) · **Actualizado**: 2026-09-23
-> **Fuente de verdad**: `packages/shared/src/db/migrator.ts` (migraciones incrementales, **13 tablas**) · `packages/shared/src/db/schema.sql` se conserva como referencia histórica y su paridad la comprueba un guardián (`packages/shared/src/architecture-guardian.test.ts`)
+> **Fase**: 3 (Terminación, hito M9) · **Actualizado**: 2026-09-26
+> **Fuente de verdad**: `packages/shared/src/db/migrator.ts` (migraciones incrementales, **16 tablas**) · `packages/shared/src/db/schema.sql` se conserva como referencia histórica y su paridad la comprueba un guardián (`packages/shared/src/architecture-guardian.test.ts`)
+> **Artefactos sincronizados**: `RepoTecnico/base_datos.sql` (esquema físico ejecutable) y `RepoTecnico/diagrama_er.md` (modelo entidad-relación); los tres derivan del migrator y se actualizan en el mismo cambio.
 > **Decisiones normativas**: `docs/adr/` · **Especificación**: `docs/SRS.md` §5
 > **Estado**: todas las tablas de este documento están **implementadas**; lo que queda abierto se marca como **HUECO ABIERTO** o **DEUDA**, nunca como planificado.
 
@@ -40,12 +41,13 @@ Total: 50 habitaciones. La master está duplicada en `packages/shared/src/domain
 
 ---
 
-## 2. Esquema PostgreSQL: inventario, ventas, operadores y comunicaciones (13 tablas)
+## 2. Esquema PostgreSQL: inventario, ventas, operadores, recepción y comunicaciones (16 tablas)
 
 > Las tablas `nfts`, `listings`, `sale_events`, `admin_sessions`, `mfa_recovery_codes`,
 > `email_notifications`, `push_subscriptions` y `checkin_contingency_logs` son las de la construcción
-> inicial; las cinco del worker y de operadores entraron en M2–M4. Hoy **todas** están en producción
-> sobre PostgreSQL.
+> inicial; las cinco del worker y de operadores entraron en M2–M4. En el incremento v2 se añadieron las
+> tres tablas off-chain de recepción (`additional_charges`, `stay_checkouts`, `checkout_incidents`),
+> documentadas en §3.5–§3.7. Hoy **todas** están en producción sobre PostgreSQL.
 
 ### 2.1 `nfts` — inventario de noches
 
@@ -53,10 +55,10 @@ Total: 50 habitaciones. La master está duplicada en `packages/shared/src/domain
 |---|---|---|---|
 | `token_id` | `VARCHAR(66)` | PK | Identificador canónico |
 | `room_number` | `INT` | no | Habitación (101–130, 201–220) |
-| `room_type` | `VARCHAR(10)` | no | **Hoy solo `SIMPLE` o `SUITE`**: el tipo «doble» existe en el dominio y en el contrato pero no se persiste (hueco abierto, ver abajo) |
+| `room_type` | `VARCHAR(10)` | no | Tipo del maestro en mayúsculas: `SIMPLE` · `DOBLE` · `SUITE` (**CERRADO en M9**). La BD no lleva `CHECK`: la restricción vive en el dominio (`toRoomTypeDb`/`toNightType`) |
 | `check_in_date` | `DATE` | no | Noche de estancia |
 | `base_price_wei` | `NUMERIC(78,0)` | no | Precio de venta primaria |
-| `status` | `VARCHAR(20)` | no | `AVAILABLE` · `CONFIRMING` · `SOLD` · `BURNED` · `CHECKED_IN` |
+| `status` | `VARCHAR(20)` | no | `AVAILABLE` · `CONFIRMING` · `SOLD` · `BURNED` · `CHECKED_IN` · `CHECKED_OUT` |
 | `current_owner` | `VARCHAR(42)` | no | Titular actual |
 | `check_in_secret_enc` | `TEXT` | sí | Secreto cifrado con AES-256-GCM; el pase vigente **ya no lo usa** (ADR-05): su retirada es deuda |
 | `minted_at` | `TIMESTAMP` | no | Alta del registro |
@@ -64,8 +66,10 @@ Total: 50 habitaciones. La master está duplicada en `packages/shared/src/domain
 | `burned_at` | `TIMESTAMP` | sí | Momento de la quema |
 | `tx_hash_mint` | `VARCHAR(66)` | no | Transacción de alta; hash centinela si la fila no está anclada (ver abajo) |
 | `on_chain_anchored` | `BOOLEAN` | no | `TRUE` por defecto; `FALSE` deja la fila **fuera del catálogo** (migración incremental de M4) |
+| `recovery_code` | `VARCHAR(16)` | sí | Código corto y **estable** de recuperación de reserva (D-32, CU-32): lo teclea recepción si el QR del huésped no está disponible. Se deriva del `tokenId` con `recoveryCodeForToken` (**nunca** de datos personales, RNF-30); único cuando no es nulo |
 
-Índices: `(status, check_in_date, room_type)`, `(room_number)`, `(current_owner)`.
+Índices: `(status, check_in_date, room_type)`, `(room_number)`, `(current_owner)`, parcial
+`(on_chain_anchored)` para las filas no ancladas y único parcial `(recovery_code)`.
 
 **RESUELTO EN M4 (D-02, D-05):** el anclaje on-chain ya no se finge: las filas llevan
 `on_chain_anchored BOOLEAN` (columna añadida por migración incremental, con índice parcial para las no
@@ -73,12 +77,11 @@ ancladas) y `tx_hash_mint` usa un hash centinela explícito cuando la fila no pr
 esas filas **quedan fuera del catálogo**. El estado `CHECKED_IN` es el espejo del `checkedIn` del
 contrato y lo actualiza el listener al consolidar el evento `CheckedIn`.
 
-**HUECO ABIERTO (comprobado en M9, no resuelto):** `room_type` sigue restringido a `SIMPLE` y `SUITE`
-(tipo del repositorio: `"SIMPLE" | "SUITE"`). El tipo **doble** existe en el dominio, en el contrato y
-en el maestro de habitaciones —y tiene royalty propio (5 %)—, pero **no se persiste**, así que un filtro
-por «doble» servido desde PostgreSQL no devuelve resultados. No bloquea ninguna operación on-chain (el
-royalty se calcula en la cadena), pero es una divergencia real entre lo que el cliente pidió y lo que el
-catálogo servido desde base de datos puede mostrar.
+**RESUELTO EN M9 (vocabulario de tipo):** `room_type` dejó de perder el tipo «doble»: el vocabulario
+persistido es `SIMPLE` · `DOBLE` · `SUITE` (tipo `RoomTypeDb`), la traducción desde la cadena vive en un
+único sitio (`toRoomTypeDb`/`toNightType`) y el filtro del catálogo ya devuelve «doble». La columna es
+`VARCHAR(10) NOT NULL` **sin `CHECK`**: la base acepta cualquier cadena y la restricción efectiva está en
+la capa de dominio (decisión de M9; ver §5).
 
 **DEUDA:** no se guarda el hash de la transacción que ancló cada check-in (`check_in_tx_hash`); se
 devuelve en la respuesta y la UI lo muestra, pero no queda traza en la base (SRS §11).
@@ -281,6 +284,62 @@ Sustituyen a las tablas homónimas del SQLite del worker. Se conservan **contado
 
 **Orden de la migración (M7)**: el `ALTER TABLE … ADD COLUMN IF NOT EXISTS block_timestamp` va **antes** del índice sobre esa columna; en PostgreSQL `CREATE TABLE IF NOT EXISTS` no añade columnas a una tabla existente, y con el orden inverso el worker no arrancaba contra una base ya creada.
 
+### 3.5 `additional_charges` — cargos adicionales de la estancia (D-33 · **IMPLEMENTADO**)
+
+Cargos **off-chain** asociados a una noche (minibar, late check-out, daños…). Recepción los crea y el
+check-out los cancela; el MVP **no los cobra** (fuera de alcance). El contrato canónico no cambia y
+nada de esta tabla guarda datos personales (RNF-30).
+
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `id` | `UUID` | PK | `gen_random_uuid()` | — |
+| `token_id` | `VARCHAR(66)` | no | — | FK a `nfts(token_id)` con borrado en cascada |
+| `concept` | `VARCHAR(120)` | no | — | Concepto del cargo |
+| `amount_cents` | `BIGINT` | no | — | Importe en céntimos; `CHECK (amount_cents > 0)` |
+| `currency` | `VARCHAR(3)` | no | `'EUR'` | Moneda ISO-4217 |
+| `status` | `VARCHAR(12)` | no | `'PENDING'` | `PENDING` · `CANCELLED` · `PAID` |
+| `created_by` | `VARCHAR(100)` | no | — | Operador que crea el cargo |
+| `created_at` | `TIMESTAMP` | no | `NOW()` | — |
+| `cancelled_by` | `VARCHAR(100)` | sí | — | Operador que cancela el cargo |
+| `cancelled_at` | `TIMESTAMP` | sí | — | Momento de la cancelación |
+| `cancel_reason` | `VARCHAR(200)` | sí | — | Motivo de la cancelación |
+
+Índice: `(token_id, status)`.
+
+### 3.6 `stay_checkouts` — check-out de la estancia (D-34 · **IMPLEMENTADO**)
+
+Cierre **off-chain** de una estancia: el check-out se ancla aquí, no en la cadena. `UNIQUE(token_id)`
+garantiza la **idempotencia** (RNF-34): un segundo check-out devuelve el registro existente en lugar de
+duplicarlo. Sin datos personales (RNF-30).
+
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `id` | `UUID` | PK | `gen_random_uuid()` | — |
+| `token_id` | `VARCHAR(66)` | no, único | — | FK a `nfts(token_id)` con borrado en cascada; `UNIQUE` para la idempotencia |
+| `room_number` | `INT` | no | — | Habitación |
+| `check_in_date` | `DATE` | no | — | Noche de estancia |
+| `room_condition` | `VARCHAR(20)` | no | — | `OK` · `INCIDENCIA` (vocabulario cerrado) |
+| `notes` | `TEXT` | sí | — | Notas libres del check-out |
+| `charges_cancelled` | `INTEGER` | no | `0` | Número de cargos cancelados al cerrar la estancia |
+| `processed_by` | `VARCHAR(100)` | no | — | Operador que procesa el check-out |
+| `created_at` | `TIMESTAMP` | no | `NOW()` | — |
+
+Índice: `(token_id)` (además del índice único implícito de `UNIQUE(token_id)`).
+
+### 3.7 `checkout_incidents` — incidencias del check-out (D-34 · **IMPLEMENTADO**)
+
+Incidencias marcadas al verificar la habitación en el check-out (vocabulario cerrado en el dominio).
+
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `id` | `UUID` | PK | `gen_random_uuid()` | — |
+| `checkout_id` | `UUID` | no | — | FK a `stay_checkouts(id)` con borrado en cascada |
+| `kind` | `VARCHAR(40)` | no | — | Tipo de incidencia |
+| `description` | `VARCHAR(200)` | sí | — | Descripción libre de la incidencia |
+| `created_at` | `TIMESTAMP` | no | `NOW()` | — |
+
+Índice: `(checkout_id)`.
+
 ## 4. Diccionario on-chain (`HotelNights.sol`)
 
 ### 4.1 Estado del contrato canónico
@@ -349,4 +408,4 @@ corregir»:
 
 ---
 
-*Diccionario de datos · pendiente de actualizar en cada hito que modifique el esquema (M2, M3, M5, M6, M7).*
+*Diccionario de datos · se actualiza en cada hito que modifique el esquema (M2–M9, incremento v2 de recepción y siguientes). Mantenido en sincronía con `diagrama_er.md` y `base_datos.sql`.*

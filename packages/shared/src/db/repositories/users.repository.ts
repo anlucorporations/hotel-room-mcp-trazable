@@ -52,6 +52,19 @@ export class UsersRepository {
   }
 
   /**
+   * Lista TODOS los operadores, activos e inactivos (Sistemas → Usuarios, RF-42).
+   *
+   * Devuelve el registro completo, pero la API de Sistemas **nunca** expone `passwordHash` ni
+   * `totpSecretEnc`: la vista pública de la lista los descarta (RNF-41).
+   */
+  async listAll(): Promise<AdminUserRecord[]> {
+    const res = await this.pool.query(
+      "SELECT * FROM admin_users ORDER BY active DESC, username ASC",
+    );
+    return res.rows.map((row) => this.mapRow(row));
+  }
+
+  /**
    * Crea o actualiza un operador.
    *
    * Al actualizar se reinician `failed_attempts` y `locked_until`: el aprovisionamiento deja la

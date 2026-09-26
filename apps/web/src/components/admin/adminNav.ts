@@ -8,7 +8,13 @@ export type AdminNavLabelKey =
   | "pause"
   | "funds"
   | "expired"
-  | "roles";
+  | "roles"
+  // Grupo «Sistemas» (incremento v3, solo owner): RF-41.
+  | "systems"
+  | "contracts"
+  | "systemUsers"
+  | "finances"
+  | "operations";
 
 export interface AdminNavItem {
   readonly href: string;
@@ -34,4 +40,16 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
   { href: "/admin/fondos", labelKey: "funds", role: "TREASURER_ROLE" },
   { href: "/admin/caducadas", labelKey: "expired", role: "BURNER_ROLE" },
   { href: "/admin/roles", labelKey: "roles", role: "DEFAULT_ADMIN_ROLE" },
+];
+
+/**
+ * Sección **Sistemas** (incremento v3, RF-41): gestión de la plataforma, visible y accesible
+ * **solo** para el owner (`DEFAULT_ADMIN_ROLE`). La primera entrada es la portada del grupo.
+ */
+export const ADMIN_SYSTEMS_NAV: readonly AdminNavItem[] = [
+  { href: "/admin/sistemas", labelKey: "systems", role: "DEFAULT_ADMIN_ROLE" },
+  { href: "/admin/sistemas/contratos", labelKey: "contracts", role: "DEFAULT_ADMIN_ROLE" },
+  { href: "/admin/sistemas/usuarios", labelKey: "systemUsers", role: "DEFAULT_ADMIN_ROLE" },
+  { href: "/admin/sistemas/finanzas", labelKey: "finances", role: "DEFAULT_ADMIN_ROLE" },
+  { href: "/admin/sistemas/operaciones", labelKey: "operations", role: "DEFAULT_ADMIN_ROLE" },
 ];

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAccount, useChainId, useConnect, useSwitchChain } from "wagmi";
+import { useAccount, useChainId, useConnect, useDisconnect, useSwitchChain } from "wagmi";
 import { injected } from "wagmi/connectors";
 import { activeChain } from "@/config/chain";
 import { classifySwitchChainError, type SwitchChainError } from "./switchChainError";
@@ -20,6 +20,8 @@ export interface OnboardingState {
   readonly isSwitchingNetwork: boolean;
   connect: () => void;
   switchToAppChain: () => void;
+  /** Desconecta la wallet del sitio (acción del menú de cabecera, RF-40.2). */
+  disconnect: () => void;
 }
 
 /** Estado de onboarding web3 (CU-17, docs/SRS.md §9, RF-04): wallet, conexión, red correcta y cambio de red. */
@@ -27,6 +29,7 @@ export function useOnboarding(): OnboardingState {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const { connect, isPending } = useConnect();
+  const { disconnect } = useDisconnect();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
 
   const [hasWallet, setHasWallet] = useState(true);
@@ -65,5 +68,6 @@ export function useOnboarding(): OnboardingState {
         { onError: (error) => setSwitchError(classifySwitchChainError(error)) },
       );
     },
+    disconnect: () => disconnect(),
   };
 }

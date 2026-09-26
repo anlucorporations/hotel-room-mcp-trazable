@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { WalletBar } from "@/components/wallet/WalletBar";
+import { WalletMenu } from "@/components/wallet/WalletMenu";
 import { isActiveRoute } from "./navigation";
 
 interface NavItem {
@@ -83,7 +83,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
-          <WalletBar />
+          <WalletMenu />
           <MobileNav pathname={pathname} />
         </div>
       </div>

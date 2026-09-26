@@ -33,3 +33,14 @@ export function fetchAggregates(): Promise<DashboardAggregates> {
 export function fetchHistory(): Promise<SaleHistoryEntry[]> {
   return getJson<SaleHistoryEntry[]>("/history");
 }
+
+/** Salud del worker (`/health`): estado del indexador, `lag` y degradaciones (RF-45, CU-45). */
+export interface WorkerHealth {
+  readonly status?: string;
+  readonly component?: string;
+  readonly details?: Record<string, unknown>;
+}
+
+export function fetchWorkerHealth(): Promise<WorkerHealth> {
+  return getJson<WorkerHealth>("/health");
+}

@@ -8,11 +8,11 @@ import {
   type ReactNode,
 } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { RoleName } from "@hotel/shared/domain";
-import { WalletBar } from "@/components/wallet/WalletBar";
-import { ADMIN_NAV, type AdminNavItem, type AdminNavLabelKey } from "./adminNav";
+import { WalletMenu } from "@/components/wallet/WalletMenu";
+import { ADMIN_NAV, ADMIN_SYSTEMS_NAV, type AdminNavItem, type AdminNavLabelKey } from "./adminNav";
 import { CredentialForm } from "./CredentialForm";
 import { useAdminSession, type AdminSession } from "./useAdminSession";
 
@@ -62,6 +62,39 @@ function Sidebar({ session }: { session: AdminSession }) {
   const itemEnabled = (item: AdminNavItem): boolean =>
     item.role === null ? true : session.hasRole(item.role);
 
+  const renderItem = (item: AdminNavItem) => {
+    const enabled = itemEnabled(item);
+    const active = isActive(pathname, item.href);
+    const label = t(`nav.${item.labelKey}` as `nav.${AdminNavLabelKey}`);
+    if (!enabled) {
+      return (
+        <span
+          key={item.href}
+          aria-disabled="true"
+          aria-describedby={lockedHintId}
+          title={t("nav.lockedHint")}
+          className="flex min-h-touch items-center gap-2 rounded-brand px-3 text-small font-medium text-ink-soft opacity-50"
+        >
+          <span aria-hidden="true">·</span>
+          {label}
+        </span>
+      );
+    }
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        aria-current={active ? "page" : undefined}
+        className={`flex min-h-touch items-center gap-2 rounded-brand px-3 text-small font-medium transition-colors ${
+          active ? "bg-sea text-shell" : "text-ink-soft hover:bg-sand-2 hover:text-ink"
+        }`}
+      >
+        <span aria-hidden="true">·</span>
+        {label}
+      </Link>
+    );
+  };
+
   return (
     <nav
       aria-label={t("nav.label")}
@@ -72,40 +105,20 @@ function Sidebar({ session }: { session: AdminSession }) {
       <span id={lockedHintId} className="sr-only">
         {t("nav.lockedHint")}
       </span>
-      {ADMIN_NAV.map((item) => {
-        const enabled = itemEnabled(item);
-        const active = isActive(pathname, item.href);
-        const label = t(`nav.${item.labelKey}` as `nav.${AdminNavLabelKey}`);
-        if (!enabled) {
-          return (
-            <span
-              key={item.href}
-              aria-disabled="true"
-              aria-describedby={lockedHintId}
-              title={t("nav.lockedHint")}
-              className="flex min-h-touch items-center gap-2 rounded-brand px-3 text-small font-medium text-ink-soft opacity-50"
-            >
-              <span aria-hidden="true">·</span>
-              {label}
-            </span>
-          );
-        }
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            aria-current={active ? "page" : undefined}
-            className={`flex min-h-touch items-center gap-2 rounded-brand px-3 text-small font-medium transition-colors ${
-              active
-                ? "bg-sea text-shell"
-                : "text-ink-soft hover:bg-sand-2 hover:text-ink"
-            }`}
-          >
-            <span aria-hidden="true">·</span>
-            {label}
-          </Link>
-        );
-      })}
+      {ADMIN_NAV.map(renderItem)}
+
+      {/* Sistemas (RF-41): solo el owner. El gating real lo imponen las rutas y las APIs. */}
+      {session.isOwner && (
+        <div
+          data-testid="nav-systems"
+          className="mt-4 flex flex-col gap-1 border-t border-line pt-3"
+        >
+          <span className="px-3 pb-1 text-micro font-semibold uppercase tracking-wider text-ink-soft">
+            {t("nav.systems")}
+          </span>
+          {ADMIN_SYSTEMS_NAV.map(renderItem)}
+        </div>
+      )}
     </nav>
   );
 }
@@ -156,14 +169,6 @@ function RoleChips({ roles }: { roles: readonly RoleName[] }) {
 
 function Topbar({ session }: { session: AdminSession }) {
   const t = useTranslations("admin");
-  const router = useRouter();
-
-  async function logout(): Promise<void> {
-    // /api/auth/logout revoca el refresh, mete el access token en la blocklist de Redis y
-    // borra las cookies de sesión.
-    await session.signOut();
-    router.refresh(); // re-evalúa el gate server-side → vuelve a la pantalla de acceso.
-  }
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-sand/85 backdrop-blur">
@@ -180,22 +185,8 @@ function Topbar({ session }: { session: AdminSession }) {
         {session.roles.length > 0 && <RoleChips roles={session.roles} />}
 
         <div className="ml-auto flex items-center gap-2">
-          {session.sessionUsername && (
-            <span data-testid="admin-username-chip" className="text-small text-ink-soft">
-              {session.sessionUsername}
-            </span>
-          )}
-          {session.sessionUsername && (
-            <button
-              type="button"
-              data-testid="admin-logout"
-              onClick={() => void logout()}
-              className="min-h-touch rounded-pill border border-line px-4 text-small font-medium text-ink-soft transition-colors hover:bg-sand-2 hover:text-ink"
-            >
-              {t("logout")}
-            </button>
-          )}
-          <WalletBar />
+          {/* Menú unificado de la billetera/usuario (RF-40): identidad + rol + accesos + salir. */}
+          <WalletMenu session={session} />
         </div>
       </div>
     </header>
