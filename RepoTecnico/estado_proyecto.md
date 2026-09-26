@@ -992,5 +992,15 @@ enlace al catálogo. Es una dependencia de pago no presupuestada (RF-20, «PAR»
 - El cambio de contraseña no revoca las demás sesiones del propio operador.
 - El alta de operadores no permite cambiar el rol de uno existente (solo alta con rol y baja lógica).
 
+### Despliegue en GCP del incremento v3 (2026-09-26)
+
+- Imagen `web:v3` (Cloud Build) desplegada como revisión `hotel-mcp-web-00003-78m` al 100 %; el
+  `worker` y el `mcp` se mantienen en `v2` (no hay cambios de esquema). Detalle en
+  `despliegue_gcp.md` §13.
+- Desplegado solo con `--image`, conservando las **18** variables/secretos de la revisión previa.
+- Verificación E2E real: owner ve 2 operadores en `/api/admin/system/users` **sin** secretos y
+  `/api/admin/system/operations` con worker `ok`; la cuenta de recepción recibe **403** en ambas;
+  `/reception/overview` sigue en 200.
+
 
 

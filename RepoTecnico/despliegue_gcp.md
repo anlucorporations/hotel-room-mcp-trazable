@@ -289,4 +289,31 @@ su TOTP; las credenciales siguen solo en `~/.config/hotel-mcp/inject-data-output
 
 ---
 
+## 13. Actualización · incremento v3 (2026-09-26)
+
+Menú de cuenta/wallet y sección Sistemas. Solo cambia la **web** (el `worker` y el `mcp` no varían:
+no hay cambios de esquema).
+
+| Paso | Detalle |
+|---|---|
+| Imagen | Cloud Build `web:v3` (mismos `NEXT_PUBLIC_*` que v2) |
+| Revisión | `hotel-mcp-web-00003-78m` al 100 %; worker/mcp siguen en `v2` |
+| Configuración | Desplegado solo con `--image`, de modo que se **conservan** las 18 variables/secretos de la revisión anterior |
+
+### Verificación (despliegue real)
+
+| Comprobación | Resultado |
+|---|---|
+| Imagen | `…/web:v3` · 18 variables de entorno conservadas |
+| Home / `/health/ready` | 200 · `READY` (postgres, redis y RPC `UP`) |
+| `/admin/seguridad`, `/admin/sistemas` sin sesión | 200 (pantalla de acceso; el gate protege el contenido) |
+| `/api/admin/system/users` y `/api/auth/password` sin sesión | **401** |
+| Owner → `/api/admin/system/users` | **200**, 2 operadores, **sin** `passwordHash`/`totpSecretEnc` |
+| Owner → `/api/admin/system/operations` | **200**, worker `ok`, `lag: 0` |
+| Owner → `/api/admin/metrics` | 200 |
+| Recepción → `/api/admin/system/users` y `/operations` | **403** |
+| Recepción → `/api/reception/overview` | 200 (el incremento v2 sigue operativo) |
+
+---
+
 *Despliegue GCP · hotelMCP · 2026-09-26*
