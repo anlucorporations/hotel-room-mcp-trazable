@@ -7,15 +7,20 @@
 
 ## 1. Repositorios y rama
 
+> **Regla vigente (2026-09-25)**: solo se sube el proyecto a los **repositorios de `anlucorporations`**
+> y **a la rama `Hotel-DSH-GCP`**. Cualquier otro remoto o rama queda excluido para `push`.
+
 | Remoto | URL | Uso |
 |---|---|---|
-| `origin` | `https://gitlab.codecrypto.academy/anlucorporations/hotel-room-mcp-trazable.git` | Remoto principal de trabajo |
-| `gitlab-public` | `https://gitlab.com/anlucorporations/hotel-room-mcp-trazable.git` | Espejo público |
+| `origin` | `git@gitlab.com:anlucorporations/hotel-room-mcp-trazable.git` | GitLab de `anlucorporations` |
+| `github` | `git@github.com:anlucorporations/hotel-room-mcp-trazable.git` | GitHub de `anlucorporations` |
+| `codecrypto` | `git@gitlab.codecrypto.academy:anlucorporations/hotel-room-mcp-trazable.git` | GitLab de Codecrypto |
 
-- **Rama de trabajo**: `main` (upstream `origin/main`). Existe además `HotelAntigravity`, idéntica a `main` en contenido.
-- **Regla del proceso**: no se hace `push` sin orden explícita del responsable (comando `/push`).
+- **Rama de `push`**: `Hotel-DSH-GCP` (la misma en los tres remotos). `main` se conserva como rama local de trabajo.
+- **Regla del proceso**: no se hace `push` sin orden explícita del responsable (comando `/push`). El `push` autorizado va **solo** a los tres remotos de `anlucorporations` y **solo** a `Hotel-DSH-GCP`.
+- Todos los remotos usan **SSH**; no hay credenciales embebidas en `.git/config` (verificado: 0 coincidencias de token).
 
-> ⚠️ **ACCIÓN URGENTE (bloqueante B-0)**: la URL del remoto `gitlab-public` incluye un token personal de GitLab en claro (`glpat-…`) guardado en `.git/config`. No está versionado, pero es un token vivo con acceso al repositorio. **Hay que revocarlo y regenerarlo, y dejar el remoto sin credenciales embebidas** (usar el gestor de credenciales de Git o un `insteadOf`).
+> ⚠️ **Deuda heredada (B-0)**: existió un token de GitLab en claro en el remoto `gitlab-public`, que ya no existe. No queda ninguna URL con credenciales embebidas en este checkout; la **rotación del token histórico** sigue siendo tarea del responsable.
 
 ---
 

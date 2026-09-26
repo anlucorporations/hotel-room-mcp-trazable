@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RoleName } from "@hotel/shared/domain";
+import { roleSatisfies } from "@/lib/admin-roles";
 import { useOnboarding } from "@/components/wallet/useOnboarding";
 
 /**
@@ -26,6 +27,11 @@ export interface AdminSession {
   readonly sessionUsername: string | null;
   /** Roles de la sesión (D-04: `DEFAULT_ADMIN_ROLE` o `RECEPTION_ROLE`); `[]` sin sesión. */
   readonly roles: readonly RoleName[];
+  /**
+   * `true` si la sesión es el owner (`DEFAULT_ADMIN_ROLE`, D-30). El owner gobierna todos los
+   * paneles; los roles operativos solo el suyo. La autoridad última sigue siendo el contrato.
+   */
+  readonly isOwner: boolean;
   /** `true` mientras se resuelve el estado inicial de sesión (`/api/auth/session`). */
   readonly isLoading: boolean;
   /** `true` mientras se validan credenciales o el segundo factor. */
@@ -250,12 +256,13 @@ export function useAdminSession(): AdminSession {
     setAuthError(null);
   }, []);
 
-  const hasRole = useCallback((role: RoleName) => roles.includes(role), [roles]);
+  const hasRole = useCallback((role: RoleName) => roleSatisfies(roles, role), [roles]);
 
   return {
     onboarding,
     sessionUsername,
     roles,
+    isOwner: roles.includes("DEFAULT_ADMIN_ROLE"),
     isLoading,
     isSigningIn,
     authStep,

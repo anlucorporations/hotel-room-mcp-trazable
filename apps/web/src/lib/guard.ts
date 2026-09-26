@@ -86,6 +86,10 @@ export function readRefreshToken(request: Request, body?: unknown): string | und
  * `requiredRole` ausente = cualquier rol de back-office (`DEFAULT_ADMIN_ROLE` o
  * `RECEPTION_ROLE`). Un usuario autenticado con un rol fuera de esa lista se trata como
  * `forbidden` (rol insuficiente), no como `unauthorized`.
+ *
+ * El **owner** (`DEFAULT_ADMIN_ROLE`, D-30) satisface cualquier `requiredRole` exigido por una
+ * ruta; el resto de roles necesitan coincidencia exacta (Recepción no accede a administración).
+ * Sigue siendo autorización de aplicación: la cadena impone su propio `hasRole` al firmar.
  */
 export async function authorize(request: Request, requiredRole?: RequiredRole): Promise<GuardResult> {
   const token = readAccessToken(request);
@@ -118,7 +122,7 @@ export async function authorize(request: Request, requiredRole?: RequiredRole): 
     };
   }
 
-  if (requiredRole && payload.role !== requiredRole) {
+  if (requiredRole && payload.role !== requiredRole && payload.role !== "DEFAULT_ADMIN_ROLE") {
     return {
       ok: false,
       reason: "forbidden",

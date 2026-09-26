@@ -115,10 +115,11 @@ describe("Guardián de pausa del contrato (M7)", () => {
     expect(mint).toContain("disabled={busy || isPaused}");
     expect(mint).toContain('data-testid="mint-paused"');
 
-    const reception = read("app/recepcion/page.tsx");
+    // El check-in vive ahora en `CheckInPanel` (incremento v2): la página delega en él.
+    const reception = read("components/reception/CheckInPanel.tsx");
     expect(reception).toContain('functionName: "paused"');
     expect(reception).toContain("disabled={loading || !ticketJws.trim() || isPaused}");
-    expect(reception).toContain("disabled={loading || isPaused}");
+    expect(reception).toContain("disabled={loading || isPaused");
     expect(reception).toContain('data-testid="reception-paused"');
   });
 });

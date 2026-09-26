@@ -49,3 +49,9 @@ export * from "./domain/ticket-auth";
 
 // ABIs de los contratos (objetos `as const` consumidos por viem/wagmi en el cliente).
 export * from "./abi/index";
+
+// Recepción isomorfa (incremento v2): el panel del día y el vocabulario del check-out son puros
+// (sin `pg` ni Node), así que los componentes de cliente pueden importarlos sin arrastrar el
+// servidor al bundle. El repositorio y los servicios de recepción NO se exponen aquí.
+export * from "./reception/day-board";
+export * from "./reception/checkout-vocabulary";

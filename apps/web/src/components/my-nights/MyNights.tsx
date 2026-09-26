@@ -97,6 +97,18 @@ export function MyNights() {
 
   return (
     <section className="flex flex-col gap-6">
+      {/* Acceso a la gestión de reventas (incremento v2, RF-36). */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-small text-ink-soft">{t("resalesHint")}</p>
+        <Link
+          href="/mis-noches/mis-reventas"
+          data-testid="my-resales-link"
+          className="text-small font-semibold text-sea-deep underline"
+        >
+          {t("resalesLink")}
+        </Link>
+      </div>
+
       {hasPending && <ClaimPanel pendingWei={pendingWei} onConfirmed={refetch} />}
 
       <div

@@ -34,6 +34,15 @@ ALTER TABLE nfts ADD COLUMN IF NOT EXISTS on_chain_anchored BOOLEAN NOT NULL DEF
 CREATE INDEX IF NOT EXISTS idx_nfts_anchored ON nfts(on_chain_anchored)
     WHERE on_chain_anchored = FALSE;
 
+-- Código de recuperación de reserva (D-32, CU-32): identificador corto y ESTABLE del token que
+-- recepción teclea si el QR del huésped no está disponible. Se deriva del tokenId con
+-- recoveryCodeForToken (nunca de datos personales, RNF-30) y su unicidad permite localizar la
+-- reserva con un índice en lugar de recorrer la tabla.
+ALTER TABLE nfts ADD COLUMN IF NOT EXISTS recovery_code VARCHAR(16) NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_nfts_recovery_code
+    ON nfts(recovery_code) WHERE recovery_code IS NOT NULL;
+
 CREATE TABLE IF NOT EXISTS listings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     token_id VARCHAR(66) NOT NULL REFERENCES nfts(token_id) ON DELETE CASCADE,
@@ -164,6 +173,57 @@ CREATE TABLE IF NOT EXISTS checkin_contingency_logs (
 CREATE INDEX IF NOT EXISTS idx_contingency_token ON checkin_contingency_logs(token_id);
 
 -- ============================================================================
+-- Recepción: cargos adicionales y check-out (D-33/D-34, incremento v2) — off-chain.
+-- El contrato canónico NO cambia: la estancia y sus cargos son estado operativo del hotel, y el
+-- check-out se ancla aquí (no en la cadena). Nada de estas tablas guarda datos personales (RNF-30).
+-- ============================================================================
+
+-- Cargos adicionales de una estancia (minibar, late check-out, daños…). Recepción los crea y el
+-- check-out los cancela; el MVP no los cobra (fuera de alcance).
+CREATE TABLE IF NOT EXISTS additional_charges (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    token_id VARCHAR(66) NOT NULL REFERENCES nfts(token_id) ON DELETE CASCADE,
+    concept VARCHAR(120) NOT NULL,
+    amount_cents BIGINT NOT NULL CHECK (amount_cents > 0),
+    currency VARCHAR(3) NOT NULL DEFAULT 'EUR',
+    status VARCHAR(12) NOT NULL DEFAULT 'PENDING', -- PENDING | CANCELLED | PAID
+    created_by VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    cancelled_by VARCHAR(100) NULL,
+    cancelled_at TIMESTAMP NULL,
+    cancel_reason VARCHAR(200) NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_charges_token ON additional_charges(token_id, status);
+
+-- Check-out de una estancia. UNIQUE(token_id) garantiza la idempotencia (RNF-34): un segundo
+-- check-out devuelve el registro existente en lugar de duplicarlo.
+CREATE TABLE IF NOT EXISTS stay_checkouts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    token_id VARCHAR(66) NOT NULL UNIQUE REFERENCES nfts(token_id) ON DELETE CASCADE,
+    room_number INT NOT NULL,
+    check_in_date DATE NOT NULL,
+    room_condition VARCHAR(20) NOT NULL, -- OK | INCIDENCIA (vocabulario cerrado)
+    notes TEXT NULL,
+    charges_cancelled INTEGER NOT NULL DEFAULT 0,
+    processed_by VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_checkouts_token ON stay_checkouts(token_id);
+
+-- Incidencias marcadas al verificar la habitación en el check-out (vocabulario cerrado).
+CREATE TABLE IF NOT EXISTS checkout_incidents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    checkout_id UUID NOT NULL REFERENCES stay_checkouts(id) ON DELETE CASCADE,
+    kind VARCHAR(40) NOT NULL,
+    description VARCHAR(200) NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_checkout_incidents_checkout ON checkout_incidents(checkout_id);
+
+-- ============================================================================
 -- Estado del mini-worker (D-09): checkpoints, idempotencia, agregados e histórico
 -- viven en PostgreSQL, la MISMA base que usa la web/API (una sola verdad).
 -- Importes en wei como NUMERIC(78, 0): cubren uint256 sin pérdida de precisión.
@@ -275,6 +335,9 @@ export async function resetDatabase(customPool?: Pool): Promise<void> {
     DROP TABLE IF EXISTS email_notifications CASCADE;
     DROP TABLE IF EXISTS push_subscriptions CASCADE;
     DROP TABLE IF EXISTS checkin_contingency_logs CASCADE;
+    DROP TABLE IF EXISTS checkout_incidents CASCADE;
+    DROP TABLE IF EXISTS stay_checkouts CASCADE;
+    DROP TABLE IF EXISTS additional_charges CASCADE;
     DROP TABLE IF EXISTS mfa_recovery_codes CASCADE;
     DROP TABLE IF EXISTS admin_sessions CASCADE;
     DROP TABLE IF EXISTS admin_users CASCADE;

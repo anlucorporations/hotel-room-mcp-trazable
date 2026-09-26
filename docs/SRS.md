@@ -2,8 +2,8 @@
 
 ## Hotel Marina del Sol: plataforma de noches tokenizadas
 
-> **Versión**: 2.0.0 (reescritura completa; sustituye a la v1.3.0)
-> **Fecha**: 2026-09-23 · **Hito**: M9 · **Decisión de origen**: D-15
+> **Versión**: 2.1.0 (añade el incremento v2: owner, recepción y reventa; CATÁLOGO CU-30…CU-37)
+> **Fecha**: 2026-09-25 · **Hito**: Incremento v2 · **Decisión de origen**: D-15, D-30…D-37
 > **Referencia de producto**: [`docs/PRD.md`](PRD.md) v2.0.0
 > **Decisiones normativas**: [`docs/adr/`](adr/README.md)
 > **Origen de requisitos**: [`docs/BRIEF-CLIENTE-INICIAL.md`](BRIEF-CLIENTE-INICIAL.md)
@@ -359,6 +359,14 @@ huérfanas: la decisión D-15 los trae a este catálogo). `CU-PR-*` son casos de
 | **CU-15** | Retirar los fondos de la tesorería | Propietario | RF-03 | `withdrawFunds`, `/admin/fondos` |
 | **CU-16** | Pedir una noche al asistente y comprarla tras confirmar | Comprador | RF-20 | MCP + `validate-tx` |
 | **CU-17** | Suscribirse a avisos push y darse de baja | Comprador | RF-12 | RFC 8291/8292, ADR-24 |
+| **CU-30** | Operar **todos** los paneles del back-office con la cuenta owner (`DEFAULT_ADMIN_ROLE`) | Propietario | RF-30 | `admin-roles.ts`, D-30 |
+| **CU-31** | Ver las reservas del día y el estado de las 50 habitaciones | Recepcionista | RF-31, RF-32 | `/recepcion`, `overview`, D-31 |
+| **CU-32** | Localizar una reserva por código de recuperación y comprobarla | Recepcionista | RF-33 | `lookup`, D-32 |
+| **CU-33** | Registrar el check-in por QR/JWS desde el panel del día | Recepcionista | RF-33 | `/api/reception/checkin`, D-05 |
+| **CU-34** | Registrar el check-out verificando la habitación y cancelando cargos | Recepcionista | RF-34 | `checkout`, `stay_checkouts`, D-33 |
+| **CU-35** | Dar de alta cargos adicionales de una estancia | Recepcionista | RF-35 | `additional_charges`, D-34 |
+| **CU-36** | Publicar, editar el precio y retirar una reventa propia | Portador | RF-36 | `/mis-noches/mis-reventas`, `list`/`unlist` |
+| **CU-37** | Recibir avisos in-app y push de las reventas propias | Portador | RF-37 | `useWebPush`, `sw.js`, D-36 |
 | **CU-PR-01** | Aprovisionar operadores (comando, no ruta) | Responsable técnico | RNF-06 | §4.6 |
 | **CU-PR-02** | Desplegar en la red local con roles, faucet opcional y registro sincronizado | Responsable técnico | RT-02 | ADR-06, ADR-13 |
 

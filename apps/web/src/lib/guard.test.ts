@@ -161,12 +161,12 @@ describe("guard de sesión y rol (D-04)", () => {
       expect(result).toMatchObject({ ok: false, reason: "forbidden" });
     });
 
-    it("rechaza a un administrador en una ruta de recepción", async () => {
+    it("permite al owner (DEFAULT_ADMIN_ROLE) entrar en una ruta de recepción (D-30)", async () => {
       const result = await authorize(
         requestWith({ authorization: `Bearer ${await token({ role: "DEFAULT_ADMIN_ROLE" })}` }),
         "RECEPTION_ROLE",
       );
-      expect(result).toMatchObject({ ok: false, reason: "forbidden" });
+      expect(result).toMatchObject({ ok: true });
     });
 
     it("trata un rol ajeno al back-office como 403, no como 401", async () => {

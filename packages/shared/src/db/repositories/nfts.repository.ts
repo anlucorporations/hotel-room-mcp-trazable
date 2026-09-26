@@ -1,6 +1,7 @@
 import type { Pool, QueryResultRow } from "pg";
 import { getDbPool } from "../pool";
 import type { RoomTypeDb } from "../../domain/room-master";
+import { recoveryCodeForToken } from "../../reception/recovery-code";
 
 export interface NFTRecord {
   tokenId: string;
@@ -8,13 +9,18 @@ export interface NFTRecord {
   roomType: RoomTypeDb;
   checkInDate: string; // YYYY-MM-DD
   basePriceWei: string;
-  status: "AVAILABLE" | "CONFIRMING" | "SOLD" | "BURNED" | "CHECKED_IN";
+  status: "AVAILABLE" | "CONFIRMING" | "SOLD" | "BURNED" | "CHECKED_IN" | "CHECKED_OUT";
   currentOwner: string;
   checkInSecretEnc?: string | null;
   mintedAt?: Date;
   checkedInAt?: Date | null;
   burnedAt?: Date | null;
   txHashMint: string;
+  /**
+   * Código de recuperación de reserva (D-32, CU-32): identificador corto y estable que recepción
+   * teclea si el QR no está disponible. Se deriva del `tokenId`, nunca de datos personales.
+   */
+  recoveryCode?: string | null;
   /**
    * ¿La fila procede de una transacción real? Por defecto `true` (las filas las escribe el
    * worker a partir de eventos on-chain). El minteo masivo del back-office, que NO emite
@@ -83,13 +89,15 @@ export class NFTsRepository {
     const query = `
       INSERT INTO nfts (
         token_id, room_number, room_type, check_in_date, base_price_wei,
-        status, current_owner, check_in_secret_enc, tx_hash_mint, minted_at, on_chain_anchored
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, COALESCE($10, NOW()), COALESCE($11, TRUE))
+        status, current_owner, check_in_secret_enc, tx_hash_mint, minted_at, on_chain_anchored,
+        recovery_code
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, COALESCE($10, NOW()), COALESCE($11, TRUE), $12)
       ON CONFLICT (token_id) DO UPDATE SET
         status = EXCLUDED.status,
         current_owner = EXCLUDED.current_owner,
         check_in_secret_enc = COALESCE(EXCLUDED.check_in_secret_enc, nfts.check_in_secret_enc),
         on_chain_anchored = EXCLUDED.on_chain_anchored,
+        recovery_code = COALESCE(nfts.recovery_code, EXCLUDED.recovery_code),
         checked_in_at = CASE WHEN EXCLUDED.status = 'CHECKED_IN' THEN NOW() ELSE nfts.checked_in_at END,
         burned_at = CASE WHEN EXCLUDED.status = 'BURNED' THEN NOW() ELSE nfts.burned_at END
       RETURNING *;
@@ -106,6 +114,8 @@ export class NFTsRepository {
       nft.txHashMint,
       nft.mintedAt || null,
       nft.onChainAnchored === undefined ? null : nft.onChainAnchored,
+      // El código se deriva del token (estable): si la fila ya tiene uno, el ON CONFLICT lo conserva.
+      nft.recoveryCode ?? recoveryCodeForToken(nft.tokenId),
     ];
     const res = await this.pool.query(query, values);
     return this.mapRowToNFT(res.rows[0]);
@@ -309,7 +319,7 @@ export class NFTsRepository {
 
   async updateNFTStatus(
     tokenId: string,
-    status: "AVAILABLE" | "CONFIRMING" | "SOLD" | "BURNED" | "CHECKED_IN",
+    status: "AVAILABLE" | "CONFIRMING" | "SOLD" | "BURNED" | "CHECKED_IN" | "CHECKED_OUT",
     extra?: { currentOwner?: string; checkInSecretEnc?: string; burnedAt?: Date; checkedInAt?: Date },
   ): Promise<void> {
     const updates: string[] = ["status = $2"];
@@ -444,6 +454,7 @@ export class NFTsRepository {
       burnedAt: row.burned_at,
       txHashMint: row.tx_hash_mint,
       onChainAnchored: row.on_chain_anchored ?? true,
+      recoveryCode: row.recovery_code ?? null,
     };
   }
 }

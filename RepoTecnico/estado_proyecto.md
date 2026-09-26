@@ -1,6 +1,6 @@
 # Estado del proyecto — Hotel Marina del Sol
 
-> **Proyecto**: `hotel-room-mcp-trazable` · **Rama**: `main` (upstream `origin/main`) · **Fecha**: 2026-09-23
+> **Proyecto**: `hotel-room-mcp-trazable` · **Rama de push**: `Hotel-DSH-GCP` (solo remotos de `anlucorporations`) · **Fecha**: 2026-09-25
 > **Fase del proceso**: Fase 1 reconstruida (este documento + `requerimientos.md`, `diccionario_datos.md`, `entornos_globales.md`) · Fase 2 con auditoría ya ejecutada · **Fase 3: M0–M8 cerrados y verificados; M9 (documentación y entrega) en cierre — registro de ADR, PRD/SRS/PLAN/BACKLOG reescritos, guías operativas corregidas y guardianes de documentación y de arquitectura**
 > **Memoria de trabajo**: este archivo. Se actualiza de forma incremental en cada ciclo.
 
@@ -878,4 +878,61 @@ enlace al catálogo. Es una dependencia de pago no presupuestada (RF-20, «PAR»
 ---
 
 *Documento de estado · punto de partida para la Fase 3 · se actualiza de forma incremental al cerrar cada hito.*
+
+---
+
+## 10. Incremento v2 — owner · recepción · reventa (2026-09-25)
+
+> **Origen**: petición directa del responsable para modificar la plataforma con tres frentes.
+> **Documentación**: `RepoTecnico/incremento_v2/` (requerimientos, casos de uso con Gherkin/EARS y
+> trazabilidad, y plan de desarrollo). **Decisiones**: D-30…D-37.
+
+### Qué se ha construido
+
+| Hito | Entrega | Ficheros clave |
+|---|---|---|
+| **H1 · Owner con acceso total** | `DEFAULT_ADMIN_ROLE` (`admin@hotel.es`) habilita **todos** los paneles del back-office; `RECEPTION_ROLE` sigue sin acceso a administración. El guard de API también deja pasar al owner a las rutas de recepción. No eleva privilegios on-chain (RF-30.2). | `apps/web/src/lib/admin-roles.ts`, `components/admin/useAdminSession.ts`, `lib/guard.ts` |
+| **H2 · Modelo de datos** | Migración idempotente: `nfts.recovery_code` (+ índice único), `additional_charges`, `stay_checkouts` (UNIQUE por token = idempotencia), `checkout_incidents`; estado `CHECKED_OUT`. Código de recuperación derivado del token (estable, sin PII) y backfill. | `packages/shared/src/db/migrator.ts`, `reception/recovery-code.ts`, `db/repositories/reception.repository.ts` |
+| **H3 · API de recepción** | `GET /api/reception/overview`, `GET /api/reception/reservations/lookup`, `GET/POST /api/reception/charges`, `POST /api/reception/checkout`. Todas exigen `RECEPTION_ROLE` o owner. Errores mapeados por código. | `apps/web/src/app/api/reception/*`, `lib/reception-errors.ts` |
+| **H4 · UI de recepción** | `/recepcion` con puerta de sesión y 3 pestañas: **Hoy** (reservas + estado de las 50 habitaciones), **Check-in** (QR/JWS + código de recuperación + comprobación de reserva) y **Check-out** (verificación, incidencias, alta y cancelación de cargos). i18n ES/EN/RU. | `components/reception/*`, `app/recepcion/page.tsx` |
+| **H5 · Mis reventas** | `/mis-noches/mis-reventas`: publicadas (editar/retirar reutilizando `MyNightCard`/`list`/`unlist`), vendidas (eventos `Sale` como vendedor) y saldo pendiente. Aviso in-app de novedades desde la última visita y **suscripción Web Push** (service worker nuevo; el emisor ya existía en el worker). | `components/my-nights/MyResales.tsx`, `useMyNights.ts`, `components/push/useWebPush.ts`, `public/sw.js`, `app/api/push/vapid/route.ts` |
+
+### Decisiones (D-30…D-37)
+
+1. **D-30** Owner = `admin@hotel.es` con `DEFAULT_ADMIN_ROLE`; acceso total sin tocar el contrato.
+2. **D-31** Datos de recepción **solo PostgreSQL** (`nfts` + maestro de 50 habitaciones).
+3. **D-32** «Código de recuperación» = código de reserva del huésped (`MDS-…`), persistido y estable.
+4. **D-33** Check-out y cargos **off-chain en PostgreSQL**; el contrato no cambia.
+5. **D-34** Recepción crea los cargos desde la pantalla de check-out.
+6. **D-35** Alcance de reventa: «Mis reventas» con publicar/editar/retirar.
+7. **D-36** Avisos **in-app + Web Push anónimo**; no se recoge email (se mantiene el PII-free).
+8. **D-37** `/recepcion` exige sesión de `RECEPTION_ROLE` o owner.
+
+### Verificación
+
+- `@hotel/shared` **typecheck OK** y build OK; `@hotel/web` **typecheck OK**.
+- `@hotel/shared` suite completa: **297/297 en verde** (incluye los nuevos: `recovery-code` 5,
+  `day-board` 5, `reception.repository` 10) y el guardián de documentación, actualizado con el
+  catálogo **CU-30…CU-37** en `docs/SRS.md` (v2.1.0).
+- Web: nuevas pruebas `admin-roles` (6), API de recepción v2 (13), y guardianes
+  `boundaries`/`paused`/`a11y`/`guard` ajustados y en verde. `pnpm --filter @hotel/web lint`
+  sin errores y **`next build` de producción OK** (la tabla de rutas incluye
+  `/recepcion`, `/mis-noches/mis-reventas`, `/api/reception/{overview,charges,checkout,reservations/lookup}`
+  y `/api/push/vapid`).
+- **Fallo pre-existente ajeno a este incremento**: `manuals-sync.test.ts` exige que
+  `docs/manual-cliente.md` referencie una imagen y ese fichero (sin modificar) no referencia
+  ninguna. No se toca aquí; queda anotado.
+- Nota de entorno: el `node_modules` estaba incompleto y el lockfile desincronizado con
+  `packages/shared/package.json`; se sincronizó con el pnpm declarado (`pnpm@10.32.1`) y se declaró
+  `jose` (dependencia no declarada que usaban los tests de la web).
+
+### Deuda declarada
+
+- **Cobro de cargos**: el MVP los registra y cancela; no hay pasarela ni conciliación.
+- **PMS**: integración real fuera de alcance; el registro de viajeros (RD 933/2021) sigue en el mostrador.
+- **Push**: funciona de extremo a extremo en el backend; el service worker es nuevo y conviene probarlo
+  en un navegador real (los tests automáticos no cubren la suscripción del navegador).
+- **Tests de UI**: los componentes de recepción y reventa se validan con typecheck y pruebas de las
+  funciones puras/API; falta E2E Playwright sobre el flujo completo (Anvil + PostgreSQL reales).
+
 

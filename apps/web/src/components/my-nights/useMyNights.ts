@@ -22,25 +22,42 @@ export interface OwnedNight {
   readonly listingPriceWei: string | null;
 }
 
+/** Una reventa ya cerrada (el usuario fue el vendedor). Base de «Mis reventas» y de sus avisos. */
+export interface ResaleSale {
+  readonly tokenId: string;
+  readonly room: number;
+  readonly dateYYYYMMDD: number;
+  readonly type: NightType;
+  readonly priceWei: string;
+  readonly buyer: string;
+  /** Bloque de la venta: sirve para detectar novedades sin depender de la hora del cliente. */
+  readonly blockNumber: bigint;
+}
+
 export interface MyNightsData {
   readonly nights: readonly OwnedNight[];
   /** Saldo pendiente de cobro (wei) de reventas vendidas. */
   readonly pendingWei: string;
+  /** Reventas ya vendidas por el usuario, más recientes primero. */
+  readonly resales: readonly ResaleSale[];
 }
 
 const SALE_EVENT = parseAbiItem(
   "event Sale(uint256 indexed tokenId, address indexed seller, address indexed buyer, uint256 price, uint8 saleType)",
 );
 
+/** `SaleType.SECONDARY` en el contrato `HotelNights` (0 = PRIMARY, 1 = SECONDARY). */
+const SALE_TYPE_SECONDARY = 1;
+
 type SaleLogs = GetLogsReturnType<typeof SALE_EVENT>;
 
 /**
- * Pagina los eventos `Sale` de un comprador en chunks ≤ `GETLOGS_MAX_RANGE` desde el bloque
- * de despliegue. Filtra on-chain por `buyer` (topic indexado) para minimizar el payload.
+ * Pagina los eventos `Sale` en chunks ≤ `GETLOGS_MAX_RANGE` desde el bloque de despliegue,
+ * filtrando on-chain por el topic indexado indicado (`buyer` o `seller`) para minimizar el payload.
  */
 async function paginatedSaleLogs(
   client: PublicClient,
-  args: { address: Address; fromBlock: bigint; toBlock: bigint; buyer: Address },
+  args: { address: Address; fromBlock: bigint; toBlock: bigint; buyer?: Address; seller?: Address },
 ): Promise<SaleLogs> {
   const range = BigInt(GETLOGS_MAX_RANGE);
   const ranges: Array<{ from: bigint; to: bigint }> = [];
@@ -48,12 +65,13 @@ async function paginatedSaleLogs(
     const to = from + range - 1n > args.toBlock ? args.toBlock : from + range - 1n;
     ranges.push({ from, to });
   }
+  const filter = args.buyer ? { buyer: args.buyer } : { seller: args.seller as Address };
   const chunks = await Promise.all(
     ranges.map(({ from, to }) =>
       client.getLogs({
         address: args.address,
         event: SALE_EVENT,
-        args: { buyer: args.buyer },
+        args: filter,
         fromBlock: from,
         toBlock: to,
       }),
@@ -94,8 +112,7 @@ async function loadMyNights(
     fromBlock: deploymentBlock,
     toBlock: head,
     buyer: address,
-  });
-  const candidates = [
+  });  const candidates = [
     ...new Set(
       sales
         .map((log) => log.args.tokenId)
@@ -140,7 +157,38 @@ async function loadMyNights(
     .filter((night): night is OwnedNight => night !== null)
     .sort((a, b) => a.dateYYYYMMDD - b.dateYYYYMMDD);
 
-  // 4) Saldo pendiente de cobro (reventas ya vendidas, pull-payment).
+  // 4) Reventas ya cerradas (eventos `Sale` como VENDEDOR, solo secundarias). Permiten mostrar
+  //    «Vendidas» y detectar novedades comparando el bloque con la última visita (sin PII).
+  const sellerSales = await paginatedSaleLogs(client, {
+    address: contractAddress,
+    fromBlock: deploymentBlock,
+    toBlock: head,
+    seller: address,
+  });
+  const resales: ResaleSale[] = sellerSales
+    .filter((log) => Number(log.args.saleType) === SALE_TYPE_SECONDARY)
+    .map((log): ResaleSale | null => {
+      const tokenId = log.args.tokenId;
+      const price = log.args.price;
+      const buyer = log.args.buyer;
+      if (tokenId === undefined || price === undefined || buyer === undefined) return null;
+      const { room, dateYYYYMMDD } = decodeTokenId(tokenId);
+      const type = roomTypeOf(room);
+      if (!type) return null;
+      return {
+        tokenId: tokenId.toString(),
+        room,
+        dateYYYYMMDD,
+        type,
+        priceWei: price.toString(),
+        buyer,
+        blockNumber: log.blockNumber ?? 0n,
+      } satisfies ResaleSale;
+    })
+    .filter((sale): sale is ResaleSale => sale !== null)
+    .sort((a, b) => (b.blockNumber > a.blockNumber ? 1 : b.blockNumber < a.blockNumber ? -1 : 0));
+
+  // 5) Saldo pendiente de cobro (reventas ya vendidas, pull-payment).
   const pending = await client.readContract({
     address: contractAddress,
     abi: hotelNightsAbi,
@@ -148,7 +196,7 @@ async function loadMyNights(
     args: [address],
   });
 
-  return { nights, pendingWei: pending.toString() };
+  return { nights, pendingWei: pending.toString(), resales };
 }
 
 /**
