@@ -1680,6 +1680,55 @@ de navegación ofrece el **acceso a las otras suites según el tipo de usuario**
 - Pruebas nuevas/actualizadas: **6** de `suite-access` y **7** de `wallet-menu-items`; `boundaries`
   (frontera cliente/servidor) en verde (los módulos nuevos no importan el barril raíz).
 
+---
+
+## 25. F6.1 — Home one-page de la suite pública y catálogo en `/catalogo` (2026-09-27)
+
+Primer incremento vertical de **F6**. Cierra **D-31** (el catálogo en su propia página) y sienta la
+**home one-page** en `/` con las secciones informativas de la suite pública (base de D-66…D-71).
+**No cambia el modelo de datos** (los tres artefactos siguen sincronizados sin cambios).
+
+### Descomposición de F6 (para no mezclar entregas)
+| Incremento | Alcance |
+|---|---|
+| **F6.1 ✅** | Home one-page en `/`, catálogo en `/catalogo`, contenido de `hotel_images`/`hotel_offers`/`reviews`/`activities` y contacto con mapa |
+| F6.2 | Reseñas completas: alta **firmada EIP-712** del titular de una noche consumida y **moderación** del administrador (D-28, D-58, D-59) |
+| F6.3 | **Reserva con wallet**: retención, anticipo por transferencia y liquidación al 100 % (D-65, D-72) |
+| F6.4 | Gestión de **galería y planes** desde el back-office (D-73, D-74) |
+
+### Hecho
+
+- **`ContentRepository`** (`packages/shared`): lectura de `hotel_images` (galería por sección y
+  portada) y `hotel_offers` (planes activos y vigentes por fecha). **4 pruebas**.
+- **`ReviewsRepository`** (`packages/shared`): reseñas **`APPROVED`** (anónimas: sin `token_id` ni
+  `room_id`), **nota media** con recuento y listado por estado para la futura moderación. **4 pruebas**.
+- **`getHomeContent()`** (`apps/web/src/lib/home-content.ts`): agrega las cuatro fuentes con
+  `allSettled`; si una falla, su sección queda vacía y **la home sigue sirviendo** (degradación
+  elegante). Marcado `server-only`.
+- **Home one-page `/`** (`HomeSections`): marca y categoría, servicios, estilos de habitación, planes,
+  actividades, experiencia con galería, reseñas con nota media y contacto con **mapa OpenStreetMap**
+  (`iframe` con `title` accesible y `loading="lazy"`, D-67).
+- **Catálogo en `/catalogo`** (D-31): misma parrilla, filtros y compra; `/` deja de ser el catálogo.
+  Navegación con la entrada **«Catálogo»** y cabecera propia.
+- **Servidor de imágenes de contenido** `GET /api/content/images/[file]` con validación de nombre y
+  defensa contra traversal (`lib/hotel-images.ts`, 5 pruebas), caché inmutable.
+- **CSP**: se añade `frame-src https://www.openstreetmap.org` (solo ese origen) para el mapa.
+- **i18n ES/EN/RU** con paridad (1.086 claves por idioma): namespace `home` completo, `shell.navCatalog`
+  y `catalog.pageTitle/pageTagline`.
+
+### Verificación
+
+- `pnpm typecheck`: **6/6 tareas OK**.
+- `pnpm test`: **7/7 tareas OK** — `@hotel/web` **432**, `@hotel/shared` **386**, `@hotel/worker` **123**,
+  `@hotel/mcp` **38**, `@hotel/monitor` **34** y Foundry **139** (1.152 pruebas, 0 fallos).
+- Pruebas nuevas: **8** de contenido/reseñas en `@hotel/shared` y **5** de imágenes de contenido en la web.
+- Guardianes actualizados al nuevo mapa de rutas: `paused-guardian` apunta al catálogo en
+  `app/catalogo/page.tsx` y el guardián de `h1` por ruta reconoce el shell `HomeSections`.
+- `/` y `/catalogo` en el escaneo axe de `e2e/a11y.spec.ts`; **build de producción OK** con la home y
+  el catálogo.
+
+
+
 
 
 

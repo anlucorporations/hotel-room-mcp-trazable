@@ -10,7 +10,86 @@
   },
   "home": {
     "title": "Hotel Marina del Sol",
-    "tagline": "Tu noche frente al Mediterráneo, en propiedad. Reserva directa, sin intermediarios."
+    "tagline": "Tu noche frente al Mediterráneo, en propiedad. Reserva directa, sin intermediarios.",
+    "eyebrow": "Hotel Marina del Sol · Alicante",
+    "titleLead": "Tu noche frente al",
+    "titleHighlight": "Mediterráneo",
+    "titleTail": ", en propiedad.",
+    "subcopy": "Reserva directa, sin intermediarios. Cada noche es tuya desde que la compras y puedes traspasarla si cambian tus planes.",
+    "category": "Hotel de 50 habitaciones · 3 estilos · en el paseo marítimo de Alicante.",
+    "ctaCatalog": "Ver el catálogo",
+    "ctaContact": "Cómo llegar",
+    "services": {
+      "title": "Servicios",
+      "subtitle": "Todo lo necesario para no preocuparte por nada.",
+      "items": {
+        "wifi": {
+          "title": "Wi-Fi",
+          "body": "Conexión de alta velocidad en todo el hotel."
+        },
+        "breakfast": {
+          "title": "Desayuno",
+          "body": "Bufé mediterráneo con producto de proximidad."
+        },
+        "pool": {
+          "title": "Piscina",
+          "body": "Piscina exterior con tumbonas y sombra."
+        },
+        "spa": {
+          "title": "Bienestar",
+          "body": "Zona de descanso y tratamientos con cita previa."
+        },
+        "parking": {
+          "title": "Parking",
+          "body": "Plaza cubierta para huéspedes."
+        },
+        "beach": {
+          "title": "Playa",
+          "body": "A un paseo de la playa del Postiguet."
+        }
+      }
+    },
+    "styles": {
+      "title": "Estilos de habitación",
+      "subtitle": "Tres formas de dormir frente al mar.",
+      "items": {
+        "simple": "La opción esencial para una persona, con todo lo necesario.",
+        "double": "Espacio y comodidad para dos, con vistas o balcón.",
+        "suite": "La habitación más amplia, con sala y las mejores vistas."
+      }
+    },
+    "plans": {
+      "title": "Planes",
+      "subtitle": "Propuestas del hotel, sujetas a disponibilidad.",
+      "empty": "Pronto publicaremos nuevos planes."
+    },
+    "activities": {
+      "title": "Actividades",
+      "subtitle": "Experiencias que puedes reservar durante tu estancia.",
+      "empty": "Estamos preparando las actividades de la temporada.",
+      "price": "{price} {currency}"
+    },
+    "experience": {
+      "title": "Experiencia",
+      "subtitle": "El hotel y su entorno.",
+      "empty": "Pronto añadiremos fotografías."
+    },
+    "reviews": {
+      "title": "Reseñas",
+      "subtitle": "Opiniones de huéspedes que ya han dormido aquí.",
+      "empty": "Todavía no hay reseñas publicadas.",
+      "average": "{average} de 5 · {count, plural, one {# reseña} other {# reseñas}}",
+      "ratingLabel": "{rating} de 5 estrellas"
+    },
+    "contact": {
+      "title": "Contacto",
+      "subtitle": "Estamos en el paseo marítimo.",
+      "address": "Paseo Marítimo, Alicante",
+      "phone": "+34 900 000 000",
+      "phoneHref": "+34900000000",
+      "email": "reservas@hotelmarinadelsol.es",
+      "mapTitle": "Mapa de la ubicación del hotel"
+    }
   },
   "shell": {
     "skipToContent": "Saltar al contenido",
@@ -33,7 +112,8 @@
     "footerTerms": "Términos",
     "footerHelp": "Ayuda y manuales",
     "footerPrivacy": "Privacidad",
-    "navHome": "Inicio"
+    "navHome": "Inicio",
+    "navCatalog": "Catálogo"
   },
   "help": {
     "title": "Ayuda y manuales",
@@ -112,7 +192,9 @@
     "loadMore": "Cargar más noches",
     "loadMoreAnnounce": "Se han añadido {count, plural, one {# noche} other {# noches}} al catálogo.",
     "endOfList": "Has visto todas las noches disponibles en los próximos 90 días.",
-    "buyPaused": "Ventas en pausa"
+    "buyPaused": "Ventas en pausa",
+    "pageTitle": "Catálogo de noches",
+    "pageTagline": "Todas las noches disponibles en los próximos 90 días, con su tipo de habitación y su precio. La compra es directa, sin intermediarios."
   },
   "wallet": {
     "noWallet": "No detectamos una wallet web3.",

@@ -31,7 +31,8 @@ describe("Guardián de pausa del contrato (M7)", () => {
   });
 
   it("el catálogo primario lee la pausa y la pasa a la vista", () => {
-    const page = read("app/page.tsx");
+    // F6 · D-31: el catálogo se trasladó de `/` a `/catalogo` al convertirse `/` en la home.
+    const page = read("app/catalogo/page.tsx");
     expect(page).toContain("fetchContractPaused(");
     expect(page).toMatch(/<CatalogClient[^>]*paused=\{paused\}/);
   });
@@ -67,7 +68,7 @@ describe("Guardián de pausa del contrato (M7)", () => {
    * resuelven por separado (`allSettled`).
    */
   it("las vistas resuelven la pausa y los datos por separado (la rama «desconocida» es alcanzable)", () => {
-    for (const page of ["app/page.tsx", "app/reventa/page.tsx"]) {
+    for (const page of ["app/catalogo/page.tsx", "app/reventa/page.tsx"]) {
       const source = read(page);
       expect(source, page).toContain("Promise.allSettled(");
       expect(source, page).toMatch(/pausedResult\.status === "fulfilled"/);

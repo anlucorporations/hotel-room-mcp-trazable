@@ -79,6 +79,9 @@ export function middleware(request: NextRequest) {
     "img-src 'self' data: blob: https://ipfs.io https://gateway.pinata.cloud https://*.walletconnect.com",
     "font-src 'self' data:",
     "connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com",
+    // F6 · D-67: el mapa de contacto es un iframe de OpenStreetMap; se permite SOLO ese origen
+    // (el resto de `frame-src` sigue cerrado por `default-src 'self'`).
+    "frame-src https://www.openstreetmap.org",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",

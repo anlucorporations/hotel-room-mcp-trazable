@@ -234,6 +234,8 @@ describe("Accesibilidad · invariantes reales sobre los ficheros del producto", 
         return !(
           content.includes("<h1") ||
           content.includes("<Hero") ||
+          // F6: la home delega la one-page (con su `<h1>`) en el shell `HomeSections`.
+          content.includes("<HomeSections") ||
           content.includes("<AdminPanel")
         );
       })

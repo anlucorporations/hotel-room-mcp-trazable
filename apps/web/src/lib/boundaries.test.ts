@@ -22,6 +22,7 @@ const SRC = resolve(here, "..");
 /** Módulos de servidor que SÍ pueden usar el barril (todos declaran `server-only`). */
 const SERVER_ONLY_ALLOWLIST = new Set([
   "lib/guard.ts",
+  "lib/home-content.ts",
   "lib/low-stock.ts",
   "lib/nights.ts",
   "lib/nonce-store.ts",
@@ -31,6 +32,8 @@ const SERVER_ONLY_ALLOWLIST = new Set([
   "lib/session.ts",
   "lib/ticket-ownership.ts",
   "lib/worker-api.ts",
+  // Componentes de servidor que importan el barril raíz (tipos y repositorios de @hotel/shared).
+  "components/home/HomeSections.tsx",
 ]);
 
 const SCANNED_DIRS = ["components", "lib"];

@@ -10,7 +10,86 @@
   },
   "home": {
     "title": "Hotel Marina del Sol",
-    "tagline": "Your night overlooking the Mediterranean, in your custody. Direct booking, no intermediaries."
+    "tagline": "Your night overlooking the Mediterranean, in your custody. Direct booking, no intermediaries.",
+    "eyebrow": "Hotel Marina del Sol · Alicante",
+    "titleLead": "Your night facing the",
+    "titleHighlight": "Mediterranean",
+    "titleTail": ", yours to keep.",
+    "subcopy": "Book direct, with no middlemen. Every night is yours from the moment you buy it, and you can pass it on if your plans change.",
+    "category": "A 50-room hotel · 3 styles · on the Alicante seafront.",
+    "ctaCatalog": "See the catalogue",
+    "ctaContact": "Find us",
+    "services": {
+      "title": "Services",
+      "subtitle": "Everything you need so you don't have to worry about a thing.",
+      "items": {
+        "wifi": {
+          "title": "Wi-Fi",
+          "body": "High-speed connection throughout the hotel."
+        },
+        "breakfast": {
+          "title": "Breakfast",
+          "body": "Mediterranean buffet with local produce."
+        },
+        "pool": {
+          "title": "Pool",
+          "body": "Outdoor pool with sun loungers and shade."
+        },
+        "spa": {
+          "title": "Wellness",
+          "body": "Rest area and treatments by appointment."
+        },
+        "parking": {
+          "title": "Parking",
+          "body": "Covered space for guests."
+        },
+        "beach": {
+          "title": "Beach",
+          "body": "A short walk from Postiguet beach."
+        }
+      }
+    },
+    "styles": {
+      "title": "Room styles",
+      "subtitle": "Three ways to sleep facing the sea.",
+      "items": {
+        "simple": "The essential option for one person, with everything you need.",
+        "double": "Space and comfort for two, with a view or balcony.",
+        "suite": "The largest room, with a lounge and the best views."
+      }
+    },
+    "plans": {
+      "title": "Offers",
+      "subtitle": "Hotel proposals, subject to availability.",
+      "empty": "New offers will be published soon."
+    },
+    "activities": {
+      "title": "Activities",
+      "subtitle": "Experiences you can book during your stay.",
+      "empty": "We are preparing this season's activities.",
+      "price": "{price} {currency}"
+    },
+    "experience": {
+      "title": "Experience",
+      "subtitle": "The hotel and its surroundings.",
+      "empty": "Photos coming soon."
+    },
+    "reviews": {
+      "title": "Reviews",
+      "subtitle": "Opinions from guests who have already stayed here.",
+      "empty": "No reviews published yet.",
+      "average": "{average} out of 5 · {count, plural, one {# review} other {# reviews}}",
+      "ratingLabel": "{rating} out of 5 stars"
+    },
+    "contact": {
+      "title": "Contact",
+      "subtitle": "We are on the seafront.",
+      "address": "Paseo Marítimo, Alicante",
+      "phone": "+34 900 000 000",
+      "phoneHref": "+34900000000",
+      "email": "reservas@hotelmarinadelsol.es",
+      "mapTitle": "Map of the hotel location"
+    }
   },
   "shell": {
     "skipToContent": "Skip to content",
@@ -33,7 +112,8 @@
     "footerTerms": "Terms",
     "footerHelp": "Help and manuals",
     "footerPrivacy": "Privacy",
-    "navHome": "Home"
+    "navHome": "Home",
+    "navCatalog": "Catalogue"
   },
   "help": {
     "title": "Help and manuals",
@@ -112,7 +192,9 @@
     "loadMore": "Load more nights",
     "loadMoreAnnounce": "{count, plural, one {# night} other {# nights}} added to the catalog.",
     "endOfList": "You have viewed all available nights in the next 90 days.",
-    "buyPaused": "Sales paused"
+    "buyPaused": "Sales paused",
+    "pageTitle": "Night catalogue",
+    "pageTagline": "Every night available over the next 90 days, with its room type and price. Booking direct, with no middlemen."
   },
   "wallet": {
     "noWallet": "No Web3 wallet detected.",

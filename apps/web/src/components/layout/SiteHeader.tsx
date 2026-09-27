@@ -12,6 +12,7 @@ interface NavItem {
   readonly href: string;
   readonly labelKey:
     | "navHome"
+    | "navCatalog"
     | "navResale"
     | "navMyNights"
     | "navHistory"
@@ -22,6 +23,8 @@ interface NavItem {
 const NAV_ITEMS: readonly NavItem[] = [
   // D-76: la suite pública es el home del proyecto; su primera entrada es «Inicio» (`/`).
   { href: "/", labelKey: "navHome" },
+  // D-31: el catálogo de noches vive en su propia página desde F6.
+  { href: "/catalogo", labelKey: "navCatalog" },
   // D-07: el mercado secundario es una vista propia; el catálogo solo ofrece primaria.
   { href: "/reventa", labelKey: "navResale" },
   { href: "/mis-noches", labelKey: "navMyNights" },
