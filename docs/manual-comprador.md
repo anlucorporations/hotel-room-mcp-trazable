@@ -5,6 +5,8 @@
 > paréntesis. **Importante:** hoy todo funciona en una **red de pruebas**, así que puedes practicar
 > el proceso completo sin arriesgar dinero de verdad (apartado 10).
 
+![Portada: el Hotel Marina del Sol visto desde el paseo marítimo](imagenes/portada-hotel.svg)
+
 ---
 
 ## 1. Qué es una noche tokenizada y qué compras exactamente
@@ -28,6 +30,8 @@ pasarla** a otra cartera.
 **Nunca se te va a pedir** tu nombre, tu DNI, tu teléfono ni tu correo. La compra es **anónima**.
 Solo se te pedirá un correo si tú quieres recibir el resguardo por email o avisos; en ese caso se
 usa para enviarte el mensaje y **se descarta**, no se guarda junto a tu compra.
+
+![Esquema del recorrido: comprar, resguardo, check-in, reventa y cobro](imagenes/esquema-compra-reventa.svg)
 
 ---
 
@@ -114,6 +118,8 @@ vuelves a abrir la reserva y ya está.
 | «Puedes cerrar: la reserva continúa y aparecerá en “Mis noches”.» | La operación ya está en marcha. | Si cierras, no se pierde. Espera y mira en **Mis noches**. |
 | «Ventas en pausa» | El hotel ha detenido las ventas. | No es un error tuyo. Vuelve más tarde. |
 
+![Comprar una noche en tres pasos: elegir, revisar y firmar](imagenes/compra-tres-pasos.svg)
+
 ---
 
 ## 4. Qué mirar en la pantalla de revisión antes de firmar
@@ -142,6 +148,8 @@ del hotel ni se asocia a tu cartera, se usa para el envío y se descarta) o **im
 
 **El resguardo es de un solo uso.** En cuanto recepción lo escanea, queda gastado para siempre. Si
 no vas a poder ir, lo que hay que hacer es **revender la noche**.
+
+![Resguardo de la noche: código QR en el móvil y código corto en papel](imagenes/resguardo-qr-codigo.svg)
 
 ---
 
@@ -174,6 +182,8 @@ Se hace en la pantalla **Mis noches**, con la cartera conectada.
 | «La noche ha expirado y no puede listarse.» | La fecha ya pasó. | No se puede revender. |
 | «No eres la propietaria de esta noche.» | La noche no está en la cartera conectada. | Conecta la cartera con la que la compraste. |
 | «Esta noche no está en reventa.» | Cancelas un anuncio que ya no existe. | Recarga la página. |
+
+![Pantalla de reventa con las noches a la venta y la tarjeta Mis noches](imagenes/pantalla-reventa.svg)
 
 ---
 

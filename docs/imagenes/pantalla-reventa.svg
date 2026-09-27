@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 900" width="1400" height="900" role="img" aria-labelledby="rv-titulo rv-desc">
+  <title id="rv-titulo">Pantalla de reventa con las noches a la venta y la tarjeta «Mis noches»</title>
+  <desc id="rv-desc">Maqueta de la pantalla Reventa. A la izquierda, una rejilla de tarjetas de noche con la etiqueta «Reventa», el nombre de la habitación, la fecha, el precio y el botón «Reservar reventa». A la derecha, la tarjeta «Mis noches» con una noche marcada con la etiqueta «En reventa» y los botones «Cambiar precio» y «Cancelar reventa».</desc>
+  <defs>
+    <filter id="rv-sombra" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0E5A63" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="1400" height="900" fill="#FBF6EC"/>
+
+  <g filter="url(#rv-sombra)">
+    <rect x="30" y="30" width="1340" height="840" rx="20" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+  </g>
+
+  <text x="70" y="105" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="40" font-weight="700" fill="#08424A">Reventa</text>
+  <text x="70" y="143" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Noches que otros clientes han puesto a la venta.</text>
+
+  <!-- tarjeta de reventa 1 -->
+  <g>
+    <rect x="70" y="180" width="390" height="290" rx="18" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
+    <rect x="70" y="204" width="6" height="90" rx="3" fill="#C68A2E"/>
+    <rect x="310" y="204" width="126" height="38" rx="19" fill="#C68A2E"/>
+    <text x="373" y="229" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" font-weight="700" fill="#FFFFFF">Reventa</text>
+    <text x="98" y="252" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="28" font-weight="700" fill="#1B2327">Suite 205</text>
+    <text x="98" y="288" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">12 jun 2026</text>
+    <text x="98" y="332" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#0E5A63">0,12 ETH</text>
+    <path d="M98 355 H432" stroke="#E7DCC6" stroke-width="2" fill="none"/>
+    <rect x="98" y="375" width="250" height="54" rx="14" fill="#0E5A63"/>
+    <text x="223" y="409" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#FBF6EC">Reservar reventa</text>
+  </g>
+
+  <!-- tarjeta de reventa 2 -->
+  <g>
+    <rect x="480" y="180" width="390" height="290" rx="18" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
+    <rect x="480" y="204" width="6" height="90" rx="3" fill="#C68A2E"/>
+    <rect x="720" y="204" width="126" height="38" rx="19" fill="#C68A2E"/>
+    <text x="783" y="229" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" font-weight="700" fill="#FFFFFF">Reventa</text>
+    <text x="508" y="252" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="28" font-weight="700" fill="#1B2327">Doble 118</text>
+    <text x="508" y="288" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">20 jun 2026</text>
+    <text x="508" y="332" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#0E5A63">0,09 ETH</text>
+    <path d="M508 355 H842" stroke="#E7DCC6" stroke-width="2" fill="none"/>
+    <rect x="508" y="375" width="250" height="54" rx="14" fill="#0E5A63"/>
+    <text x="633" y="409" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#FBF6EC">Reservar reventa</text>
+  </g>
+
+  <!-- tarjeta de reventa 3 -->
+  <g>
+    <rect x="70" y="490" width="390" height="290" rx="18" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
+    <rect x="70" y="514" width="6" height="90" rx="3" fill="#C68A2E"/>
+    <rect x="310" y="514" width="126" height="38" rx="19" fill="#C68A2E"/>
+    <text x="373" y="539" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" font-weight="700" fill="#FFFFFF">Reventa</text>
+    <text x="98" y="562" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="28" font-weight="700" fill="#1B2327">Simple 104</text>
+    <text x="98" y="598" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">3 jul 2026</text>
+    <text x="98" y="642" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#0E5A63">0,06 ETH</text>
+    <path d="M98 665 H432" stroke="#E7DCC6" stroke-width="2" fill="none"/>
+    <rect x="98" y="685" width="250" height="54" rx="14" fill="#0E5A63"/>
+    <text x="223" y="719" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#FBF6EC">Reservar reventa</text>
+  </g>
+
+  <!-- tarjeta de reventa 4 -->
+  <g>
+    <rect x="480" y="490" width="390" height="290" rx="18" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
+    <rect x="480" y="514" width="6" height="90" rx="3" fill="#C68A2E"/>
+    <rect x="720" y="514" width="126" height="38" rx="19" fill="#C68A2E"/>
+    <text x="783" y="539" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" font-weight="700" fill="#FFFFFF">Reventa</text>
+    <text x="508" y="562" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="28" font-weight="700" fill="#1B2327">Suite 210</text>
+    <text x="508" y="598" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">15 jul 2026</text>
+    <text x="508" y="642" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#0E5A63">0,14 ETH</text>
+    <path d="M508 665 H842" stroke="#E7DCC6" stroke-width="2" fill="none"/>
+    <rect x="508" y="685" width="250" height="54" rx="14" fill="#0E5A63"/>
+    <text x="633" y="719" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#FBF6EC">Reservar reventa</text>
+  </g>
+
+  <!-- Mis noches -->
+  <g filter="url(#rv-sombra)">
+    <rect x="920" y="180" width="410" height="600" rx="18" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
+  </g>
+  <text x="950" y="235" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="30" font-weight="700" fill="#1B2327">Mis noches</text>
+  <rect x="944" y="260" width="362" height="350" rx="14" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+  <rect x="1160" y="278" width="130" height="38" rx="19" fill="#5E6B45"/>
+  <text x="1225" y="303" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" font-weight="700" fill="#FFFFFF">En reventa</text>
+  <text x="968" y="316" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="26" font-weight="700" fill="#1B2327">Doble 118</text>
+  <text x="968" y="352" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">12 jun 2026</text>
+  <text x="968" y="392" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#0E5A63">0,12 ETH</text>
+  <rect x="968" y="430" width="314" height="52" rx="12" fill="#FFFFFF" stroke="#0E5A63" stroke-width="2"/>
+  <text x="1125" y="463" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#0E5A63">Cambiar precio</text>
+  <rect x="968" y="496" width="314" height="52" rx="12" fill="#C0542E"/>
+  <text x="1125" y="529" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#FFFFFF">Cancelar reventa</text>
+  <text x="968" y="580" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">Mínimo de reventa: 0,01 ETH</text>
+  <text x="950" y="660" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">Aparece en la pantalla Reventa.</text>
+  <text x="950" y="695" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">El comprador paga tu precio.</text>
+  <text x="950" y="730" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">El hotel se queda su porcentaje.</text>
+</svg>

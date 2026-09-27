@@ -1,0 +1,177 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000" role="img" aria-labelledby="pd-titulo pd-desc">
+  <title id="pd-titulo">Maqueta del panel del dueño con menú, siete cifras y tres gráficos</title>
+  <desc id="pd-desc">Maqueta del panel de administración. A la izquierda, el menú lateral con Publicar noche, Métricas, Royalty, Pausa, Fondos, Caducadas y Roles. Arriba, siete tarjetas de cifras: Vendido, Royalties, Reventa, Noches vendidas, Minteadas, Quemadas y Ocupación, con números de ejemplo redondos. Debajo, tres gráficos: barras por mes, barras por tipo de habitación (simple, doble y suite) y una lista de ranking de las noches más revendidas.</desc>
+  <defs>
+    <filter id="pd-sombra" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0E5A63" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="1600" height="1000" fill="#FBF6EC"/>
+
+  <!-- marco de la aplicación -->
+  <g filter="url(#pd-sombra)">
+    <rect x="24" y="24" width="1552" height="952" rx="24" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+  </g>
+
+  <!-- menú lateral -->
+  <path d="M24 48 a24 24 0 0 1 24 -24 h216 v952 h-216 a24 24 0 0 1 -24 -24 z" fill="#0E5A63"/>
+  <text x="48" y="80" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#FBF6EC">Panel del dueño</text>
+  <rect x="44" y="194" width="200" height="52" rx="12" fill="#FBF6EC" fill-opacity="0.18"/>
+  <g font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" fill="#FBF6EC">
+    <text x="64" y="164">Publicar noche</text>
+    <text x="64" y="228" font-weight="700">Métricas</text>
+    <text x="64" y="292">Royalty</text>
+    <text x="64" y="356">Pausa</text>
+    <text x="64" y="420">Fondos</text>
+    <text x="64" y="484">Caducadas</text>
+    <text x="64" y="548">Roles</text>
+  </g>
+
+  <!-- cabecera -->
+  <text x="304" y="96" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="36" font-weight="700" fill="#08424A">Métricas</text>
+  <text x="1536" y="92" text-anchor="end" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Hotel Marina del Sol · cartera conectada</text>
+  <path d="M304 120 H1536" stroke="#E7DCC6" stroke-width="2" fill="none"/>
+
+  <!-- siete cifras -->
+  <g>
+    <rect x="304" y="140" width="168" height="124" rx="16" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
+    <text x="316" y="174" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">Vendido</text>
+    <text x="316" y="226" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#1B2327">48 ETH</text>
+    <text x="316" y="252" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#0E5A63">venta primaria</text>
+  </g>
+  <g>
+    <rect x="484" y="140" width="168" height="124" rx="16" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
+    <text x="496" y="174" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">Royalties</text>
+    <text x="496" y="226" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#1B2327">3 ETH</text>
+    <text x="496" y="252" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#0E5A63">5 % y 10 %</text>
+  </g>
+  <g>
+    <rect x="664" y="140" width="168" height="124" rx="16" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
+    <text x="676" y="174" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">Reventa</text>
+    <text x="676" y="226" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#1B2327">21 ETH</text>
+    <text x="676" y="252" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#0E5A63">volumen</text>
+  </g>
+  <g>
+    <rect x="844" y="140" width="168" height="124" rx="16" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
+    <text x="856" y="174" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C" textLength="144" lengthAdjust="spacingAndGlyphs">Noches vendidas</text>
+    <text x="856" y="226" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#1B2327">600</text>
+    <text x="856" y="252" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#0E5A63">primaria</text>
+  </g>
+  <g>
+    <rect x="1024" y="140" width="168" height="124" rx="16" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
+    <text x="1036" y="174" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">Minteadas</text>
+    <text x="1036" y="226" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#1B2327">1.200</text>
+    <text x="1036" y="252" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#0E5A63">en total</text>
+  </g>
+  <g>
+    <rect x="1204" y="140" width="168" height="124" rx="16" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
+    <text x="1216" y="174" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">Quemadas</text>
+    <text x="1216" y="226" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#1B2327">180</text>
+    <text x="1216" y="252" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#0E5A63">caducadas</text>
+  </g>
+  <g>
+    <rect x="1384" y="140" width="168" height="124" rx="16" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
+    <text x="1396" y="174" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">Ocupación</text>
+    <text x="1396" y="226" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#1B2327">50 %</text>
+    <text x="1396" y="252" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#0E5A63">vendidas/total</text>
+  </g>
+
+  <!-- gráfico 1 · ventas por mes -->
+  <rect x="304" y="288" width="405" height="664" rx="18" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="326" y="332" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="24" font-weight="700" fill="#08424A">Ventas por mes</text>
+  <path d="M334 848 H679" stroke="#E7DCC6" stroke-width="2" fill="none"/>
+  <g fill="#0E5A63">
+    <rect x="336" y="728" width="34" height="120" rx="6"/>
+    <rect x="394" y="658" width="34" height="190" rx="6"/>
+    <rect x="452" y="698" width="34" height="150" rx="6"/>
+    <rect x="510" y="598" width="34" height="250" rx="6"/>
+    <rect x="568" y="528" width="34" height="320" rx="6" fill="#08424A"/>
+    <rect x="626" y="638" width="34" height="210" rx="6"/>
+  </g>
+  <g font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C" text-anchor="middle">
+    <text x="353" y="876">ene</text>
+    <text x="411" y="876">feb</text>
+    <text x="469" y="876">mar</text>
+    <text x="527" y="876">abr</text>
+    <text x="585" y="876">may</text>
+    <text x="643" y="876">jun</text>
+  </g>
+  <g font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#1B2327" text-anchor="middle">
+    <text x="353" y="718">12</text>
+    <text x="411" y="648">20</text>
+    <text x="469" y="688">16</text>
+    <text x="527" y="588">26</text>
+    <text x="585" y="518">34</text>
+    <text x="643" y="628">22</text>
+  </g>
+  <text x="326" y="922" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">ETH vendidos cada mes</text>
+
+  <!-- gráfico 2 · por tipo de habitación -->
+  <rect x="725" y="288" width="405" height="664" rx="18" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="747" y="332" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="24" font-weight="700" fill="#08424A">Por tipo de habitación</text>
+  <rect x="747" y="352" width="18" height="18" rx="4" fill="#0E5A63"/>
+  <text x="773" y="368" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">Primaria</text>
+  <rect x="874" y="352" width="18" height="18" rx="4" fill="#C0542E"/>
+  <text x="900" y="368" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">Reventa</text>
+  <path d="M755 848 H1100" stroke="#E7DCC6" stroke-width="2" fill="none"/>
+  <g>
+    <rect x="757" y="648" width="34" height="200" rx="6" fill="#0E5A63"/>
+    <rect x="799" y="728" width="34" height="120" rx="6" fill="#C0542E"/>
+    <rect x="887" y="568" width="34" height="280" rx="6" fill="#0E5A63"/>
+    <rect x="929" y="688" width="34" height="160" rx="6" fill="#C0542E"/>
+    <rect x="1017" y="668" width="34" height="180" rx="6" fill="#0E5A63"/>
+    <rect x="1059" y="758" width="34" height="90" rx="6" fill="#C0542E"/>
+  </g>
+  <g font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C" text-anchor="middle">
+    <text x="795" y="876">simple</text>
+    <text x="925" y="876">doble</text>
+    <text x="1055" y="876">suite</text>
+  </g>
+  <text x="747" y="922" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">ETH por tipo de habitación</text>
+
+  <!-- gráfico 3 · noches más revendidas -->
+  <rect x="1146" y="288" width="405" height="664" rx="18" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="1168" y="332" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="24" font-weight="700" fill="#08424A">Noches más revendidas</text>
+  <g>
+    <rect x="1168" y="398" width="361" height="72" rx="12" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+    <text x="1184" y="430" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#1B2327">Suite 205</text>
+    <text x="1184" y="456" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">12 jun 2026</text>
+    <rect x="1290" y="424" width="120" height="14" rx="7" fill="#E7DCC6"/>
+    <rect x="1290" y="424" width="120" height="14" rx="7" fill="#C68A2E"/>
+    <text x="1513" y="440" text-anchor="end" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" font-weight="700" fill="#08424A">8 veces</text>
+  </g>
+  <g>
+    <rect x="1168" y="484" width="361" height="72" rx="12" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+    <text x="1184" y="516" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#1B2327">Doble 118</text>
+    <text x="1184" y="542" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">3 may 2026</text>
+    <rect x="1290" y="510" width="120" height="14" rx="7" fill="#E7DCC6"/>
+    <rect x="1290" y="510" width="90" height="14" rx="7" fill="#C68A2E"/>
+    <text x="1513" y="526" text-anchor="end" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" font-weight="700" fill="#08424A">6 veces</text>
+  </g>
+  <g>
+    <rect x="1168" y="570" width="361" height="72" rx="12" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+    <text x="1184" y="602" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#1B2327">Simple 104</text>
+    <text x="1184" y="628" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">20 abr 2026</text>
+    <rect x="1290" y="596" width="120" height="14" rx="7" fill="#E7DCC6"/>
+    <rect x="1290" y="596" width="60" height="14" rx="7" fill="#C68A2E"/>
+    <text x="1513" y="612" text-anchor="end" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" font-weight="700" fill="#08424A">4 veces</text>
+  </g>
+  <g>
+    <rect x="1168" y="656" width="361" height="72" rx="12" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+    <text x="1184" y="688" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#1B2327">Suite 210</text>
+    <text x="1184" y="714" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">9 jun 2026</text>
+    <rect x="1290" y="682" width="120" height="14" rx="7" fill="#E7DCC6"/>
+    <rect x="1290" y="682" width="45" height="14" rx="7" fill="#C68A2E"/>
+    <text x="1513" y="698" text-anchor="end" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" font-weight="700" fill="#08424A">3 veces</text>
+  </g>
+  <g>
+    <rect x="1168" y="742" width="361" height="72" rx="12" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+    <text x="1184" y="774" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#1B2327">Doble 127</text>
+    <text x="1184" y="800" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">28 may 2026</text>
+    <rect x="1290" y="768" width="120" height="14" rx="7" fill="#E7DCC6"/>
+    <rect x="1290" y="768" width="30" height="14" rx="7" fill="#C68A2E"/>
+    <text x="1513" y="784" text-anchor="end" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" font-weight="700" fill="#08424A">2 veces</text>
+  </g>
+  <text x="1168" y="922" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">Cambios de manos por noche</text>
+</svg>
