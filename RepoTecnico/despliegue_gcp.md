@@ -362,4 +362,35 @@ F4 (Mantenimiento) y F5 (Actividades)** sin recrear infraestructura. Solo cambia
 
 ---
 
-*Despliegue GCP · hotelMCP · actualizado 2026-09-27 (incremento F1–F5)*
+## 15. Actualización · navegación de suites (web:v5, 2026-09-27)
+
+Incremento **solo de web** con los cambios de navegación **D-76** (la suite pública es el home del
+proyecto) y **D-77** (el menú de Usuario ofrece los accesos a las suites según el rol). `worker`,
+`mcp` y `monitor` no varían y **no se reconstruyen**; el **modelo de datos no cambia**.
+
+| Paso | Detalle |
+|---|---|
+| Imagen | Cloud Build `web:v5` (3m47s, build `c7fbe51c…`) con los mismos `NEXT_PUBLIC_*` que v2–v4 (chainId 31337, contrato `0x70bD…605B`, bloque 288) |
+| Revisión | `hotel-mcp-web-00005-szr` al 100 % de tráfico (sustituye a `00004-x5l`, que queda como rollback) |
+| Configuración | Desplegada solo con `--image`, de modo que se **conservan** las variables y secretos de la revisión anterior |
+
+### Verificación (despliegue real)
+
+| Comprobación | Resultado |
+|---|---|
+| `/health/ready` | **200** · `READY` (postgres, redis y RPC `UP`) |
+| Home | **200** · `<title>Hotel Marina del Sol</title>` (94 KB) |
+| Cabecera pública **D-76** | El HTML servido contiene la etiqueta **«Inicio»** de la primera entrada de navegación (1 coincidencia) |
+| Rutas de suites | `/`, `/admin`, `/recepcion`, `/housekeeping` y `/mantenimiento` → **200** |
+| APIs protegidas | `/api/housekeeping/shifts`, `/api/mantenimiento/board` y `/api/admin/actividades/activities` → **401** |
+| Login + TOTP (owner) | **200** · `/api/auth/session` → `admin@hotel.es` con `DEFAULT_ADMIN_ROLE` (fuente de los cuatro accesos del menú, **D-77**) |
+| Regresión F3/F4/F5 | `housekeeping/supplies` **4** artículos (4 bajo umbral), `mantenimiento/board` 200, `actividades` y `planes` con los registros de demostración |
+
+> D-77 es **gating de vista**: cada suite revalida el rol en servidor (guard de API y gate de layout).
+> El menú se pinta en cliente tras resolver la sesión, por eso la verificación E2E comprueba la
+> **fuente** de la decisión (`/api/auth/session` con sus roles) y la asignación por rol está cubierta
+> por pruebas unitarias (`suite-access.test.ts`, `wallet-menu-items.test.ts`).
+
+---
+
+*Despliegue GCP · hotelMCP · actualizado 2026-09-27 (incremento F1–F5 + web v5)*
