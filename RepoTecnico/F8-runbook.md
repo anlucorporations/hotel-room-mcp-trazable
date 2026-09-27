@@ -40,7 +40,7 @@ fantasmas, y publicación de fichas (`/admin/habitacion`) operativa con anclaje 
 | 1 | Registro dinámico en el contrato + `publishRoom` | ✅ **Hecho** (adelantado en F1) |
 | 2 | **Sembrar** las 50 habitaciones desde la BD (D-3/D-14) | 🟡 **Herramienta hecha**: `buildRoomSeed`/`buildRoomRegistrationPlan` (`packages/shared/src/domain/room-registry.ts`) y paso 3.5 de `inject-data.ts`. Falta **ejecutarla** en el corte y **poblar `rooms`** en GCP |
 | 3 | **Reset total coordinado** con respaldo (D-15) | ⏳ Pendiente de ejecución; herramienta existente: `reset-index.ts` (nfts, listings, sale_events y estado del worker; **conserva** `admin_users`) |
-| 4 | **Ventana global de acuñado** + botón manual + aviso de agotamiento (D-4/D-11/D-17, idempotente D-16) | ❌ **No implementada** (solo el ajuste) |
+| 4 | **Ventana global de acuñado** + botón manual + aviso de agotamiento (D-4/D-11/D-17, idempotente D-16) | ✅ **Implementado** el alcance aprobado (por habitación, primer acuñado al publicar + botón + aviso in-app, i18n 3 idiomas); **pendiente** el barrido global y el correo. Ver [`F8-ventana-acunado.md`](./F8-ventana-acunado.md) |
 | 5 | Paso `registerRoom` en scripts de desarrollo/E2E | ✅ **Hecho**: helper `packages/contracts/scripts/room-registry.ts` (`ensureRoomsRegistered`) y cableado en `inject-data.ts`, `seed-demo.ts`, `mint-image-demo.ts`, `e2e-slice.ts` y `e2e/m4…m7`. Validado en local con `inject-data` y `seed-demo` |
 
 ---
@@ -196,4 +196,9 @@ implementarla y probarla debe considerarse F8 cerrada.
     punta (50 habitaciones registradas, `publishRoom`, minteo y reventa).
 - **2026-09-27** · Diseño de la parte 4 (ventana de acuñación) en
   [`F8-ventana-acunado.md`](./F8-ventana-acunado.md), con **5 decisiones abiertas**.
-  - Pendiente: ejecutar el corte global (fases A–E) e implementar la parte 4 tras su aprobación.
+- **2026-09-27** · Implementación de la parte 4 (alcance aprobado): dominio puro `mint-window`
+  (`buildMintWindow`, **7 pruebas**), `NFTsRepository.listByRoomInDateRange`, endpoint
+  `GET /api/admin/rooms/[id]/mint-window` (**5 pruebas** de ruta), hook `useMintWindow` y UI en
+  `/admin/habitacion` (primer acuñado al publicar + botón + aviso in-app) con i18n ES/EN/RU.
+  Gates: typecheck **6/6**, `@hotel/web` **466** pruebas, `@hotel/shared` **412**.
+  - Pendiente: ejecutar el corte global (fases A–E), barrido global de la ventana y correo de agotamiento.

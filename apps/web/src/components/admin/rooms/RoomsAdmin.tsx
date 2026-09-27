@@ -8,6 +8,7 @@ import { hotelNightsAbi } from "@hotel/shared/abi";
 import { contractAddress } from "@/config/chain";
 import { useAdminContext } from "@/components/admin/AdminLayout";
 import { AdminCard } from "@/components/admin/AdminPanel";
+import { useMintWindow } from "./useMintWindow";
 
 /**
  * Sección Habitación (F1 · D-1…D-26): alta, ficha, galería, dos estados, publicación con TOTP y
@@ -67,6 +68,8 @@ export function RoomsAdmin() {
   const { address, isConnected } = useAccount();
   const { signMessageAsync } = useSignMessage();
   const config = useConfig();
+  // F8 · D-4/D-11/D-16/D-17: acuñado (reanudable) de la ventana global de la noche.
+  const mintWindow = useMintWindow();
 
   const [rooms, setRooms] = useState<readonly Room[]>([]);
   const [listLoading, setListLoading] = useState(false);
@@ -333,8 +336,12 @@ export function RoomsAdmin() {
       setMfaOpen(false);
       setMfaCode("");
       setDetail(data.room ?? detail);
-      setNotice({ kind: "ok", text: data.onChainAnchored ? t("published") : t("publishedPending") });
+      const publishedText = data.onChainAnchored ? t("published") : t("publishedPending");
+      setNotice({ kind: "ok", text: publishedText });
       await loadRooms();
+      // F8 · D-4: el primer acuñado de la ventana ocurre al publicar. Si falla, la publicación YA
+      // es válida: no se revierte y queda el botón «Acuñar ventana» para reintentar (D-17).
+      await runMintWindow(publishedText);
     } catch (error: unknown) {
       setNotice({ kind: "error", text: error instanceof Error ? error.message : t("publishError") });
     } finally {
@@ -360,6 +367,27 @@ export function RoomsAdmin() {
       setNotice({ kind: "error", text: error instanceof Error ? error.message : t("archiveError") });
     } finally {
       setArchiving(false);
+    }
+  }
+
+  /**
+   * Acuña la ventana global de la habitación seleccionada (F8 · D-4/D-17). El hook es idempotente:
+   * omite las noches ya acuñadas, de modo que sirve tanto para el primer acuñado (al publicar) como
+   * para reintentar/extender. `prefix` antepone el resultado de la publicación en el mismo notice.
+   */
+  async function runMintWindow(prefix?: string): Promise<void> {
+    if (!detail) return;
+    try {
+      const result = await mintWindow.run(detail.id);
+      const mintedText = t("mintWindowOk", { minted: result.minted, skipped: result.skipped });
+      const combined = prefix ? `${prefix} ${mintedText}` : mintedText;
+      setNotice({
+        kind: "ok",
+        text: result.status.low ? `${combined} ${t("mintWindowLow", { free: result.status.freeNights })}` : combined,
+      });
+      await loadRooms();
+    } catch (error: unknown) {
+      setNotice({ kind: "error", text: error instanceof Error ? error.message : t("mintWindowError") });
     }
   }
 
@@ -493,6 +521,19 @@ export function RoomsAdmin() {
                   ) : (
                     <button type="button" data-testid="room-publish-open" onClick={() => setMfaOpen(true)} className={ACTION}>
                       {t("publish")}
+                    </button>
+                  )}
+                  {detail.publicationStatus === "PUBLISHED" && isConnected && (
+                    <button
+                      type="button"
+                      data-testid="room-mint-window"
+                      onClick={() => void runMintWindow()}
+                      disabled={mintWindow.running}
+                      className={GHOST}
+                    >
+                      {mintWindow.running
+                        ? t("mintWindowRunning", { done: mintWindow.done, total: mintWindow.total })
+                        : t("mintWindow")}
                     </button>
                   )}
                   <button type="button" data-testid="room-archive" onClick={() => void handleArchive()} disabled={archiving} className={GHOST}>

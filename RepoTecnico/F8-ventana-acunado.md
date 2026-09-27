@@ -1,6 +1,8 @@
 # F8 · Diseño — Ventana global de acuñación (D-4, D-11, D-16, D-17)
 
-> **Fase**: F8 · parte 4 · **estado**: propuesta de diseño (pendiente de aprobación)
+> **Fase**: F8 · parte 4 · **estado**: implementado el alcance aprobado (primer acuñado por
+> habitación al publicar + botón manual + aviso de agotamiento in-app); el barrido global y el correo
+> quedan para después
 > **Decisiones**: D-4 (primer acuñado de la ventana al publicar), D-11 (ventana configurable),
 > D-16 (proceso idempotente), D-17 (botón manual de extensión y aviso de agotamiento)
 > Fecha: 2026-09-27 · Continúa a [`F8-runbook.md`](./F8-runbook.md)
@@ -116,16 +118,23 @@ tamaño de lote del barrido completo y canal/cadencia del correo de agotamiento.
 
 ---
 
-## 5. Plan de implementación (cuando se apruebe)
+## 5. Plan de implementación
 
-1. `buildMintWindow` en `packages/shared` (puro) + pruebas (idempotencia, límites de fecha, ventana
-   completa/vacía).
-2. Endpoint/ajuste para leer ventana y detectar faltantes (`GET /api/admin/rooms/[id]/mint-window`).
-3. UI de acuñado por lotes con progreso y reanudación en `/admin/habitacion` (y completar
-   `/admin/mint`).
-4. Aviso de agotamiento (in-app; correo si se aprueba).
-5. Wiring al publicar (según decisión §4.1/§4.2).
-6. i18n, axe, pruebas de API y E2E de la ventana.
+**Implementado (2026-09-27):**
+
+1. ✅ `buildMintWindow`, `addDaysYYYYMMDD`, `todayYYYYMMDDUtc` y `deriveMintWindowStatus` en
+   `packages/shared/src/domain/mint-window.ts` (puro, **7 pruebas**).
+2. ✅ `NFTsRepository.listByRoomInDateRange` (noches y estado por habitación en la ventana).
+3. ✅ `GET /api/admin/rooms/[id]/mint-window` (owner): noches ausentes + estado de agotamiento
+   (**5 pruebas** de ruta).
+4. ✅ Hook `useMintWindow` (cliente): acuñado idempotente/reanudable firmado por la wallet.
+5. ✅ UI en `/admin/habitacion`: primer acuñado **al publicar** (D-4) + botón «Acuñar ventana»
+   (D-17) con progreso, aviso in-app de agotamiento e i18n ES/EN/RU con paridad (1.186 claves).
+
+**Pendiente:**
+
+6. Barrido global de todas las habitaciones (lotes, posible *relayer*).
+7. Correo de agotamiento (`ADMIN_EMAIL`) y E2E del flujo completo.
 
 ---
 
