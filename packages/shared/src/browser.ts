@@ -41,6 +41,10 @@ export * from "./domain/purchase-tx";
 export * from "./domain/ipfs";
 export * from "./domain/faucet";
 
+// Vocabulario del mantenimiento (F4 · D-52…D-54): tipos de avería, prioridades, estados y
+// periodicidades que ofrecen los formularios de cliente y valida el servidor.
+export * from "./domain/maintenance";
+
 // Autorización EIP-712 del resguardo (dominio y tipos): datos constantes que el CLIENTE tiene que
 // firmar con el mismo formato que verifica el servidor. Se movieron aquí desde `passes/jws.ts`
 // (que importa `node:crypto`) para que el componente de compra pueda importarlos sin arrastrar el

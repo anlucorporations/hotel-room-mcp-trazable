@@ -27,8 +27,12 @@ export const REFRESH_TOKEN_COOKIE = "hotel_refresh_token";
 /**
  * Roles que puede exigir una ruta. Incluye los roles de gestión (`DEFAULT_ADMIN_ROLE`,
  * `RECEPTION_ROLE`) y los **roles de BD sin wallet** `HOUSEKEEPING` y `MAINTENANCE` (D-56).
+ *
+ * Desde F4 una ruta puede exigir **varios roles alternativos** (p. ej. reportar una avería lo hacen
+ * recepción *y* limpieza, D-52): basta con que la sesión tenga uno de ellos. El owner sigue
+ * satisfaciendo cualquier requisito.
  */
-export type RequiredRole = AuthRole;
+export type RequiredRole = AuthRole | readonly AuthRole[];
 
 /** Roles de gestión: los que gobiernan el back-office clásico (D-04). */
 const MANAGEMENT_ROLES: readonly AuthRole[] = ["DEFAULT_ADMIN_ROLE", "RECEPTION_ROLE"];
@@ -130,11 +134,15 @@ export async function authorize(request: Request, requiredRole?: RequiredRole): 
   }
 
   if (requiredRole) {
-    if (payload.role !== requiredRole && payload.role !== "DEFAULT_ADMIN_ROLE") {
+    const allowed: readonly AuthRole[] = Array.isArray(requiredRole) ? requiredRole : [requiredRole as AuthRole];
+    if (payload.role !== "DEFAULT_ADMIN_ROLE" && !allowed.includes(payload.role)) {
       return {
         ok: false,
         reason: "forbidden",
-        message: `Esta operación requiere el rol ${requiredRole}.`,
+        message:
+          allowed.length === 1
+            ? `Esta operación requiere el rol ${allowed[0]}.`
+            : `Esta operación requiere alguno de los roles: ${allowed.join(", ")}.`,
       };
     }
   } else if (!isManagementRole(payload.role)) {

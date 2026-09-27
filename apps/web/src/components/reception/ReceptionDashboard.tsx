@@ -7,6 +7,7 @@ import { CredentialForm } from "@/components/admin/CredentialForm";
 import { CheckInPanel } from "./CheckInPanel";
 import { CheckoutPanel } from "./CheckoutPanel";
 import { DayBoard } from "./DayBoard";
+import { ReportIncidentPanel } from "@/components/maintenance/ReportIncidentPanel";
 import type { DayStats, OverviewResponse, Reservation, RoomCell } from "./types";
 
 type Tab = "today" | "checkin" | "checkout";
@@ -117,16 +118,20 @@ export function ReceptionDashboard() {
       </div>
 
       {tab === "today" && (
-        <DayBoard
-          date={date}
-          onDateChange={setDate}
-          onRefresh={refresh}
-          loading={loading}
-          error={error}
-          reservations={reservations}
-          rooms={rooms}
-          stats={stats}
-        />
+        <>
+          <DayBoard
+            date={date}
+            onDateChange={setDate}
+            onRefresh={refresh}
+            loading={loading}
+            error={error}
+            reservations={reservations}
+            rooms={rooms}
+            stats={stats}
+          />
+          {/* D-52: recepción reporta averías; la habitación se bloquea hasta que el técnico resuelva (D-53). */}
+          <ReportIncidentPanel apiFetch={session.apiFetch} />
+        </>
       )}
 
       {tab === "checkin" && <CheckInPanel apiFetch={session.apiFetch} onDone={refresh} />}

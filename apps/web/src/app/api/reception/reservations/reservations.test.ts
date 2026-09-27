@@ -6,7 +6,7 @@ import type * as SharedModule from "@hotel/shared";
 
 vi.mock("@/lib/guard", () => guardMock);
 
-const { mockRepo, mockSettings } = vi.hoisted(() => ({
+const { mockRepo, mockSettings, mockMaintenance } = vi.hoisted(() => ({
   mockRepo: {
     checkAvailability: vi.fn(),
     listReservations: vi.fn(),
@@ -21,6 +21,7 @@ const { mockRepo, mockSettings } = vi.hoisted(() => ({
     planSettlement: vi.fn(),
   },
   mockSettings: { getNumber: vi.fn(), get: vi.fn(), set: vi.fn() },
+  mockMaintenance: { isRoomBlocked: vi.fn() },
 }));
 
 vi.mock("@hotel/shared", async (importOriginal) => {
@@ -29,6 +30,7 @@ vi.mock("@hotel/shared", async (importOriginal) => {
     ...actual,
     ReservationsRepository: vi.fn(() => mockRepo),
     SettingsRepository: vi.fn(() => mockSettings),
+    MaintenanceRepository: vi.fn(() => mockMaintenance),
   };
 });
 
@@ -69,6 +71,8 @@ describe("API recepción · reservas (F2 · D-34…D-43, D-55, D-60)", () => {
     vi.clearAllMocks();
     // Sin configuración persistida, los ajustes devuelven su respaldo (24 h / 30 %) — D-37.
     mockSettings.getNumber.mockImplementation(async (_key: string, fallback: number) => fallback);
+    // Sin averías abiertas, la habitación no está bloqueada (D-53).
+    mockMaintenance.isRoomBlocked.mockResolvedValue(false);
     resetGuardState();
   });
 
@@ -101,6 +105,17 @@ describe("API recepción · reservas (F2 · D-34…D-43, D-55, D-60)", () => {
     it("exige roomId, from y to", async () => {
       const res = await availabilityGET(json("GET", "http://localhost/api/reception/availability"));
       expect(res.status).toBe(400);
+    });
+
+    it("marca la habitación como bloqueada si hay una avería abierta (F4 · D-53)", async () => {
+      mockRepo.checkAvailability.mockResolvedValueOnce([{ nightDate: "2026-10-01", status: "FREE" }]);
+      mockMaintenance.isRoomBlocked.mockResolvedValueOnce(true);
+      const res = await availabilityGET(
+        json("GET", "http://localhost/api/reception/availability?roomId=room-1&from=2026-10-01&to=2026-10-02"),
+      );
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data).toMatchObject({ blocked: true, available: false });
     });
   });
 

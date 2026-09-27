@@ -17,6 +17,7 @@ export * from "./domain/aggregates";
 export * from "./domain/purchase-tx";
 export * from "./domain/ipfs";
 export * from "./domain/faucet";
+export * from "./domain/maintenance";
 export * from "./deployments/schema";
 export * from "./logger";
 
@@ -25,6 +26,7 @@ export * from "./env/index";
 export * from "./db/pool";
 export * from "./db/migrator";
 export * from "./db/repositories/housekeeping.repository";
+export * from "./db/repositories/maintenance.repository";
 export * from "./db/repositories/nfts.repository";
 export * from "./db/repositories/reservations.repository";
 export * from "./db/repositories/rooms.repository";

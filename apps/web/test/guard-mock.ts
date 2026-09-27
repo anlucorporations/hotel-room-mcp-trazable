@@ -17,7 +17,7 @@ import { NextResponse } from "next/server";
  */
 type GuardState = "ok" | "unauthorized" | "forbidden";
 
-const state: { value: GuardState; requiredRole: string | undefined } = {
+const state: { value: GuardState; requiredRole: string | readonly string[] | undefined } = {
   value: "ok",
   requiredRole: undefined,
 };
@@ -34,8 +34,8 @@ export function setGuardState(value: GuardState): void {
   state.value = value;
 }
 
-/** Rol exigido por la última llamada a `requireRole`. */
-export function lastRequiredRole(): string | undefined {
+/** Rol (o roles alternativos) exigido por la última llamada a `requireRole`. */
+export function lastRequiredRole(): string | readonly string[] | undefined {
   return state.requiredRole;
 }
 
@@ -55,12 +55,12 @@ function failureResponse() {
 export const guardMock = {
   ACCESS_TOKEN_COOKIE: "hotel_access_token",
   REFRESH_TOKEN_COOKIE: "hotel_refresh_token",
-  authorize: vi.fn(async (_request: Request, requiredRole?: string) => {
+  authorize: vi.fn(async (_request: Request, requiredRole?: string | readonly string[]) => {
     state.requiredRole = requiredRole;
     if (state.value !== "ok") return { ok: false, reason: state.value, message: "denegado" };
     return { ok: true, session: guardSession };
   }),
-  requireRole: vi.fn(async (_request: Request, requiredRole?: string) => {
+  requireRole: vi.fn(async (_request: Request, requiredRole?: string | readonly string[]) => {
     state.requiredRole = requiredRole;
     if (state.value !== "ok") return { ok: false, response: failureResponse() };
     return { ok: true, session: guardSession };

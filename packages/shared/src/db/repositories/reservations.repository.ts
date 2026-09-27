@@ -95,6 +95,7 @@ export interface ModifyReservationInput {
 
 export type ReservationErrorCode =
   | "ROOM_NOT_FOUND"
+  | "ROOM_BLOCKED"
   | "UNAVAILABLE"
   | "NOT_FOUND"
   | "INVALID_STATE"
@@ -253,6 +254,21 @@ export class ReservationsRepository {
       ]);
       if (room.rows.length === 0) {
         throw new ReservationError("ROOM_NOT_FOUND", "La habitación no existe o está archivada.");
+      }
+
+      // D-53: una avería abierta que bloquea la venta impide reservar la habitación. El bloqueo lo
+      // levanta el propio mantenimiento al resolver la incidencia, sin tocar la publicación (F4).
+      const blocked = await client.query(
+        `SELECT 1 FROM maintenance_incidents
+          WHERE room_id = $1 AND blocks_sale = TRUE AND status IN ('OPEN', 'IN_PROGRESS')
+          LIMIT 1`,
+        [input.roomId],
+      );
+      if (blocked.rows.length > 0) {
+        throw new ReservationError(
+          "ROOM_BLOCKED",
+          "La habitación está bloqueada por una avería en curso (D-53).",
+        );
       }
 
       await this.assertNightsFree(client, input.roomId, nights);

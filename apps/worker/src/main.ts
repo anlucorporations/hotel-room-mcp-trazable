@@ -28,6 +28,7 @@ import { startWorkerHttpServer } from "./http-server";
 import { runWorker } from "./run-worker";
 import { startBurnScheduler, type BurnScheduler } from "./burn-scheduler";
 import { startRetentionScheduler } from "./retention-scheduler";
+import { startPreventiveScheduler } from "./preventive-scheduler";
 import { startListenerRuntime } from "./listener-runtime";
 
 // Node no carga `.env` por si solo (Next.js si lo hace): en desarrollo lo cargamos desde la
@@ -191,6 +192,17 @@ async function main(): Promise<void> {
     notificationsRetentionDays: config.NOTIFICATIONS_RETENTION_DAYS,
   });
 
+  // Mantenimiento preventivo (F4 · D-54): aviso diario de las tareas vencidas al responsable. El
+  // tablero del técnico las muestra igualmente; esto es el correo «avisa cuando toca».
+  const preventiveScheduler = startPreventiveScheduler({
+    logger,
+    signal: controller.signal,
+    intervalMs: config.PREVENTIVE_CHECK_INTERVAL_MS,
+    hourLocal: config.PREVENTIVE_HOUR_LOCAL,
+    timeZone: config.BURN_TIMEZONE,
+    recipient: config.MAINTENANCE_ALERT_EMAIL ?? config.DEVOPS_ALERT_EMAIL,
+  });
+
   // Listener de eventos (D-12): heartbeat, alerta de silencio y alimentación del índice off-chain
   // desde los eventos del contrato canónico (antes nadie lo instanciaba).
   const listenerRuntime = startListenerRuntime({
@@ -233,6 +245,7 @@ async function main(): Promise<void> {
     // El bucle ya terminó (o falló): ahora sí es seguro cerrar servidor, consumidor y stores.
     scheduler?.stop();
     retentionScheduler.stop();
+    preventiveScheduler.stop();
     listenerRuntime.stop();
     clearInterval(reconcileTimer);
     await emailConsumer.stop();

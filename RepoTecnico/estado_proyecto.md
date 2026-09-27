@@ -1525,6 +1525,65 @@ D-48…D-51, D-62 y D-64**.
 - El **SSE por sondeo** a 1,5 s cumple el criterio de <2 s; no se introduce un bus en memoria para no
   romper el despliegue multi-instancia.
 
+---
+
+## 22. F4 — Mantenimiento y Servicios Técnicos (2026-09-27)
+
+Suite Administración → **Mantenimiento** y ruta de personal `/mantenimiento`: incidencias con bloqueo
+de venta, preventivo con cronograma y aviso de tareas vencidas. Cubre **D-52, D-53, D-54 y D-63**.
+
+### Hecho
+
+- **`MaintenanceRepository`** (`packages/shared/src/db/repositories/maintenance.repository.ts`):
+  incidencias con ciclo de vida y **eventos con actor** (`reportIncident`, `assignIncident`,
+  `resolveIncident`, `cancelIncident`), **bloqueo de venta** (`listBlockedRoomIds`, `isRoomBlocked`),
+  planes preventivos (`createPlan`, `listPlans`, `setPlanActive`) y tareas con **generación de la
+  siguiente al cerrar** (`completeTask`/`skipTask`), **listado de vencidas** (`listDueTasks`) y
+  **registro del cumplimiento** (quién y cuándo). **13 pruebas**.
+- **Bloqueo y liberación automáticos (D-53)**: la incidencia `OPEN`/`IN_PROGRESS` con `blocks_sale`
+  retira la habitación de la venta **sin tocar su publicación**; al resolverla o cancelarla, el filtro
+  desaparece solo. La restricción se aplica en el punto de venta:
+  `ReservationsRepository.createReservation` devuelve **`ROOM_BLOCKED`**, `/api/reception/rooms`
+  excluye las bloqueadas y `/api/reception/availability` responde `blocked: true`.
+- **API `/api/mantenimiento`** (rol `MAINTENANCE`; el owner también entra): incidencias
+  (`GET`/`POST`, con **recepción y limpieza** habilitadas para reportar, D-52), transición
+  (`PATCH /incidents/[id]`), tareas (`GET /tasks`, `PATCH /tasks/[id]`), tablero (`GET /board`) y
+  habitaciones reportables (`GET /rooms`).
+- **API admin `/api/admin/mantenimiento/*`** (solo owner): supervisión de incidencias y planes
+  preventivos (`GET`/`POST /plans`, `PATCH /plans/[id]`).
+- **Guard multi-rol (D-52)**: `requireRole` admite ahora **varios roles alternativos**; el owner
+  sigue satisfaciendo cualquiera.
+- **UI `/mantenimiento`** (D-63): tablero móvil del técnico con incidencias abiertas
+  (asignármela/resolver/cancelar), tareas vencidas (hecha/omitir) y formulario de reporte.
+- **UI `/admin/mantenimiento/incidencias` y `/admin/mantenimiento/preventivo`** (owner), con la
+  sección **Mantenimiento** en el menú de Administración.
+- **Reporte desde recepción y limpieza (D-52)**: el formulario `ReportIncidentPanel` se integra en el
+  tablero de recepción y en el de housekeeping.
+- **Aviso programado (D-54)**: `preventive-scheduler` del worker avisa **una vez al día** (cerrojo por
+  día, correo por la cola única) de las tareas vencidas o de hoy; el muestrario del técnico las ve
+  igualmente si el correo no está configurado. **4 pruebas**.
+- **Vocabulario isomorfo**: tipos de avería, prioridades, estados y periodicidades en
+  `@hotel/shared/domain`, compartidos por formularios de cliente y validación de servidor.
+- **i18n ES/EN/RU** con paridad (979 claves por idioma) en el namespace `maintenance`.
+
+### Verificación
+
+- `pnpm typecheck`: **6/6 tareas OK**.
+- `pnpm test`: **7/7 tareas OK** — `@hotel/web` **410**, `@hotel/shared` **367**, `@hotel/worker`
+  **123**, `@hotel/mcp` **38**, `@hotel/monitor` **34** y Foundry **139** (1.111 pruebas, 0 fallos).
+- Pruebas nuevas de F4: **13** del repositorio de Mantenimiento y **1** de `ROOM_BLOCKED` en reservas,
+  **4** del planificador preventivo y **12** de API en la web; `boundaries` y `a11y` en verde.
+- `/mantenimiento`, `/admin/mantenimiento/incidencias` y `/admin/mantenimiento/preventivo` añadidas al
+  escaneo axe de `e2e/a11y.spec.ts`.
+
+### Limitaciones declaradas
+
+- El **correo del aviso preventivo** requiere `MAINTENANCE_ALERT_EMAIL` (o `DEVOPS_ALERT_EMAIL`); sin
+  destinatario, el planificador registra el motivo y el aviso vive en el tablero del técnico.
+- El **axe E2E** sigue cubierto en CI por la limitación de librerías del entorno (igual que F1–F3).
+
+
+
 
 
 

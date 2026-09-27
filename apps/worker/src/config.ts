@@ -69,6 +69,14 @@ const workerEnvSchema = z.object({
   /** Días que se conservan las notificaciones ya enviadas (minimización de datos). */
   NOTIFICATIONS_RETENTION_DAYS: z.coerce.number().int().positive().default(90),
 
+  // ── Mantenimiento preventivo (F4 · D-54) ───────────────────────────────────
+  /** Hora local del hotel a la que se avisa de las tareas preventivas vencidas (por defecto 8). */
+  PREVENTIVE_HOUR_LOCAL: z.coerce.number().int().min(0).max(23).default(8),
+  /** Periodo con el que se comprueba la hora del aviso preventivo (por defecto, 1 hora). */
+  PREVENTIVE_CHECK_INTERVAL_MS: z.coerce.number().int().positive().default(3600_000),
+  /** Destinatario del aviso preventivo; si falta, cae al correo de alertas de operación. */
+  MAINTENANCE_ALERT_EMAIL: emptyAsUndefined(env.email),
+
   // ── Listener de eventos (D-12) ─────────────────────────────────────────────
   /** Confirmaciones antes de consolidar un evento (1 en Anvil; 32 en Polygon). */
   REORG_CONFIRMATIONS: z.coerce.number().int().nonnegative().default(1),

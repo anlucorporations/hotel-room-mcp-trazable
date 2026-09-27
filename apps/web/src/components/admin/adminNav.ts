@@ -15,6 +15,9 @@ export type AdminNavLabelKey =
   | "recepcion"
   | "housekeeping"
   | "lenceria"
+  | "mantenimiento"
+  | "incidencias"
+  | "preventivo"
   | "administracion"
   | "plataforma"
   // Grupo «Sistemas» (incremento v3, solo owner): RF-41.
@@ -36,7 +39,13 @@ export interface AdminNavItem {
 }
 
 /** Clave estable de cada sección del acordeón. */
-export type AdminSectionKey = "habitacion" | "recepcion" | "housekeeping" | "administracion" | "plataforma";
+export type AdminSectionKey =
+  | "habitacion"
+  | "recepcion"
+  | "housekeeping"
+  | "mantenimiento"
+  | "administracion"
+  | "plataforma";
 
 /** Sección del sidebar: una cabecera desplegable con sus entradas (D-29). */
 export interface AdminNavSection {
@@ -73,6 +82,15 @@ export const ADMIN_NAV_SECTIONS: readonly AdminNavSection[] = [
     key: "housekeeping",
     labelKey: "housekeeping",
     items: [{ href: "/admin/housekeeping/lenceria", labelKey: "lenceria", role: "DEFAULT_ADMIN_ROLE" }],
+  },
+  {
+    // Sección 6 del plan (F4 · D-52…D-54): supervisión de incidencias y cronograma preventivo.
+    key: "mantenimiento",
+    labelKey: "mantenimiento",
+    items: [
+      { href: "/admin/mantenimiento/incidencias", labelKey: "incidencias", role: "DEFAULT_ADMIN_ROLE" },
+      { href: "/admin/mantenimiento/preventivo", labelKey: "preventivo", role: "DEFAULT_ADMIN_ROLE" },
+    ],
   },
   {
     key: "administracion",

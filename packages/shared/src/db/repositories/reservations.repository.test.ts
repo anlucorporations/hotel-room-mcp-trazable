@@ -13,9 +13,12 @@ function fakeClient(handlers: {
   updateReservation?: QueryResultRow;
   currentReservation?: QueryResultRow;
   reservationStatus?: string;
+  blocked?: QueryResultRow[];
 }): PoolClient & { query: Mock; release: Mock } {
   const query = vi.fn(async (sql: string) => {
     const s = String(sql);
+    // Bloqueo de venta por avería (F4 · D-53): si hay incidencia, la consulta devuelve fila.
+    if (s.includes("FROM maintenance_incidents")) return { rows: handlers.blocked ?? [], rowCount: (handlers.blocked ?? []).length };
     // El orden importa: la consulta de noches vendidas incluye un subquery `FROM rooms`, así que se
     // comprueba `FROM nfts` ANTES que `FROM rooms`.
     if (s.includes("FROM nfts")) return { rows: handlers.soldNights ?? [], rowCount: 0 };
@@ -144,6 +147,21 @@ describe("ReservationsRepository (F2 · D-34…D-43, D-55, D-57, D-60)", () => {
           totalCents: 10000,
         }),
       ).rejects.toMatchObject({ code: "ROOM_NOT_FOUND" });
+    });
+
+    it("rechaza con ROOM_BLOCKED si hay una avería abierta que bloquea la venta (F4 · D-53)", async () => {
+      const client = fakeClient({ blocked: [{ "?column?": 1 }] });
+      mockPool.connect.mockResolvedValueOnce(client);
+      await expect(
+        repository.createReservation({
+          roomId: "room-1",
+          checkInDate: "2026-10-01",
+          checkOutDate: "2026-10-03",
+          channel: "COUNTER",
+          createdBy: "admin@hotel.es",
+          totalCents: 20000,
+        }),
+      ).rejects.toMatchObject({ code: "ROOM_BLOCKED" });
     });
 
     it("rechaza con UNAVAILABLE si una noche ya está reservada (D-41)", async () => {

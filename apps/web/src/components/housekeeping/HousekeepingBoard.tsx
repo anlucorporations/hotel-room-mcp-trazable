@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useAdminSession } from "@/components/admin/useAdminSession";
 import { CredentialForm } from "@/components/admin/CredentialForm";
+import { ReportIncidentPanel } from "@/components/maintenance/ReportIncidentPanel";
 
 /** Fecha local del puesto (no UTC), formato ISO `YYYY-MM-DD`. */
 function todayIso(): string {
@@ -379,6 +380,9 @@ export function HousekeepingBoard() {
           </ul>
         )}
       </section>
+
+      {/* D-52: limpieza también reporta averías desde su propio tablero. */}
+      <ReportIncidentPanel apiFetch={session.apiFetch} />
     </div>
   );
 }

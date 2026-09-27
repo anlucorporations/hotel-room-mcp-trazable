@@ -240,7 +240,21 @@ D-25 (primer ciclo = shell + Habitación), D-26 (operación primero) y D-24 (cor
   habitación descuenta stock y, por debajo del umbral, emite alerta; la PWA es operable con un toque.
 - **Fuera de alcance:** la **app móvil nativa** es de la versión 3 (D-49, D-50).
 
-### F4 — Mantenimiento y Servicios Técnicos · *riesgo medio*
+### F4 — Mantenimiento y Servicios Técnicos · *riesgo medio* · **✅ COMPLETADA (2026-09-27)**
+
+**Progreso (2026-09-27):**
+- ✅ **`MaintenanceRepository`**: incidencias con eventos y actor, **bloqueo de venta** por avería
+  (`ROOM_BLOCKED` en reservas, exclusión en recepción y `blocked` en disponibilidad) y preventivo con
+  generación de la siguiente tarea y listado de vencidas (D-52…D-54).
+- ✅ **API `/api/mantenimiento`** (rol `MAINTENANCE`) y admin `/api/admin/mantenimiento/*` (owner);
+  **guard multi-rol** para que recepción y limpieza reporten (D-52).
+- ✅ **UI `/mantenimiento`** móvil del técnico (D-63) y paneles de Administración
+  (`/admin/mantenimiento/incidencias` y `/preventivo`); formulario de reporte integrado en recepción
+  y housekeeping.
+- ✅ **Aviso (D-54)**: planificador diario del worker con cerrojo por día y correo por la cola única;
+  el tablero del técnico muestra las vencidas aunque no haya correo configurado.
+- ✅ i18n ES/EN/RU con paridad y escaneo axe ampliado a las rutas nuevas.
+- ⏳ **Axe E2E**: ejecución local limitada por las librerías del entorno; cubierta en CI.
 
 - **Alcance:** ruta **`/mantenimiento`** (D-63) con rol `MAINTENANCE`; **incidencias** reportadas por
   recepción y limpieza (D-52) con **bloqueo/liberación automáticos** de la venta (D-53); **preventivo con
