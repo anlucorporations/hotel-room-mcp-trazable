@@ -212,7 +212,23 @@ D-25 (primer ciclo = shell + Habitación), D-26 (operación primero) y D-24 (cor
   `CANCELLED` e inventario liberado; check-out cambia el estado operativo a `DIRTY` (D-19).
 - **Riesgo principal:** la **conciliación reserva/token** es la pieza crítica (D-57).
 
-### F3 — Housekeeping · *riesgo alto (tiempo real, móvil)*
+### F3 — Housekeeping · *riesgo alto (tiempo real, móvil)* · **✅ COMPLETADA (2026-09-27)**
+
+**Progreso (2026-09-27):**
+- ✅ **`HousekeepingRepository`**: turnos, habitaciones a limpiar por **ocupación** (salida/sucia/ocupada),
+  **reparto automático rotatorio e idempotente** y ajuste manual (D-48), estados con traza y lencería
+  con consumo que nunca deja stock negativo.
+- ✅ **API `/api/housekeeping`** (rol `HOUSEKEEPING`, owner incluido): turnos, asignaciones, habitaciones,
+  estado operativo y **SSE** `/stream`; panel de Lencería en `/api/admin/housekeeping/supplies` (owner).
+- ✅ **Tiempo real (D-30)**: SSE por sondeo de PostgreSQL cada 1,5 s con emisión por cambio de firma;
+  funciona con varias instancias.
+- ✅ **UI `/housekeeping`** móvil de un toque (D-50/D-62) y **UI `/admin/housekeeping/lenceria`** (D-64)
+  con entrada en el menú de Administración; i18n ES/EN/RU con paridad.
+- ✅ **Stock bajo (D-51/D-64)**: descuento automático al limpiar, alerta en el panel y aviso por correo
+  al responsable (cola única, tolerante a fallo).
+- ✅ **Check-out → `DIRTY` (D-19)**: el check-out alimenta el reparto de limpieza con traza.
+- ⏳ **Axe E2E**: rutas añadidas al escaneo; su ejecución local sigue limitada por las librerías del
+  entorno y queda cubierta en CI.
 
 - **Alcance:** ruta **`/housekeeping`** (D-62) con rol `HOUSEKEEPING` sin wallet; **tablero de estados en
   tiempo real por SSE** (D-30); **reparto automático por ocupación + ajuste manual** (D-48);

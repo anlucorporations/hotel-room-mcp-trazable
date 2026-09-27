@@ -22,6 +22,7 @@ const SRC = resolve(here, "..");
 /** Módulos de servidor que SÍ pueden usar el barril (todos declaran `server-only`). */
 const SERVER_ONLY_ALLOWLIST = new Set([
   "lib/guard.ts",
+  "lib/low-stock.ts",
   "lib/nights.ts",
   "lib/nonce-store.ts",
   "lib/reception-errors.ts",

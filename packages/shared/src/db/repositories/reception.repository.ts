@@ -324,6 +324,28 @@ export class ReceptionRepository {
         input.tokenId,
       ]);
 
+      // D-19: al hacer el check-out la habitación pasa a DIRTY y entra en el reparto de limpieza.
+      // Se deja traza en `housekeeping_room_logs` con el valor anterior real (F3 · D-48/D-62).
+      const room = await client.query(
+        `SELECT id, operational_status FROM rooms
+          WHERE room_number = $1 AND archived_at IS NULL FOR UPDATE`,
+        [nft.rows[0].room_number],
+      );
+      if ((room.rowCount ?? 0) > 0) {
+        const fromStatus = room.rows[0].operational_status as string;
+        await client.query(
+          `UPDATE rooms SET operational_status = 'DIRTY', updated_at = NOW() WHERE id = $1`,
+          [room.rows[0].id],
+        );
+        if (fromStatus !== "DIRTY") {
+          await client.query(
+            `INSERT INTO housekeeping_room_logs (room_id, from_value, to_value, changed_by)
+             VALUES ($1, $2, 'DIRTY', $3)`,
+            [room.rows[0].id, fromStatus, input.processedBy],
+          );
+        }
+      }
+
       const checkout = await this.hydrateCheckout(client, {
         ...checkoutRow,
         charges_cancelled: chargesCancelled,

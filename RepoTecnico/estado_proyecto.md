@@ -1463,6 +1463,68 @@ off-chain y la configuración persistida con su pantalla. **La reserva y la liqu
 quedan en F6** (suite pública), tal como fija el plan; **el axe E2E** sigue cubierto en CI por la
 limitación de librerías del entorno.
 
+---
+
+## 21. F3 — Housekeeping (2026-09-27)
+
+Suite Administración → **Housekeeping** y ruta de personal `/housekeeping`: tablero en tiempo real,
+reparto automático por ocupación, estados operativos y lencería con alertas. Cubre **D-19, D-30,
+D-48…D-51, D-62 y D-64**.
+
+### Hecho
+
+- **`HousekeepingRepository`** (`packages/shared/src/db/repositories/housekeeping.repository.ts`):
+  turnos por día y etiqueta (D-48), **habitaciones a limpiar deducidas de la ocupación** con su motivo
+  (`CHECKOUT`/`DIRTY`/`STAYOVER`), **reparto automático rotatorio e idempotente** (`autoAssign`, no pisa
+  lo ya asignado), **ajuste manual** (`assignRoom`/`unassignRoom`), estados operativos con traza en
+  `housekeeping_room_logs` (`startAssignment`, `completeAssignment`, `setRoomOperationalStatus`) y
+  **lencería** (`listSupplyItems`, `listLowStock`, `restock`, `consumeSupplies`, `listMovements`).
+  El consumo **nunca deja stock negativo**: descuenta como mucho lo disponible y registra el consumo real.
+- **Descuento automático + umbral (D-51)**: al terminar una habitación se aplica el consumo por defecto
+  (`DEFAULT_CLEANING_CONSUMPTION`: jabón, papel, toallas y sábanas) y se devuelven los artículos que
+  quedan **bajo umbral**.
+- **API `/api/housekeeping`** (rol `HOUSEKEEPING`; el owner también entra, D-56):
+  turnos (`GET`/`POST`), asignaciones (`GET`/`POST`/`DELETE`), habitaciones a limpiar (`GET`),
+  cambio de estado (`POST /rooms/[id]/status`) y **flujo SSE** (`GET /stream`).
+  Y **panel de Lencería** `GET/POST /api/admin/housekeeping/supplies` (solo owner).
+- **Tablero en tiempo real (D-30)**: `GET /api/housekeeping/stream` sondea la fuente única
+  (PostgreSQL) cada **1,5 s** y emite un evento `board` **solo cuando cambia** la firma del tablero
+  (`boardSignature`). Al ser sondeo sobre la base, funciona con **varias instancias** de la web.
+- **UI `/housekeeping`** (D-50/D-62): ruta independiente, móvil, un toque por acción (crear turno,
+  reparto automático, empezar/terminar, asignar a mano), indicador *en directo*, aviso de stock bajo y
+  gating por rol (`HOUSEKEEPING` o owner) con el acceso canónico.
+- **UI `/admin/housekeeping/lenceria`** (D-64): existencias, umbral crítico, resaltado de lo que está
+  bajo umbral y reposición. Entrada nueva en el menú de Administración (sección **Housekeeping**).
+- **Notificación web/email (D-64)**: además del panel, cuando limpiar una habitación o un ajuste deja un
+  artículo bajo umbral se encola un aviso operativo (`DEVOPS_ALERT`) al responsable vía la cola única
+  (`apps/web/src/lib/low-stock.ts`). Es tolerante a fallo: sin destinatario o sin Redis, el stock ya se
+  descontó y el panel sigue mostrando la alerta.
+- **Check-out → `DIRTY` (D-19)**: `ReceptionRepository.createCheckout` deja la habitación en `DIRTY` y
+  anota la transición en `housekeeping_room_logs`, de modo que el check-out alimenta el reparto de limpieza.
+- **i18n ES/EN/RU** con paridad (899 claves por idioma) en los namespaces `housekeeping` y `supplies`.
+
+### Verificación
+
+- `pnpm typecheck`: **6/6 tareas OK**.
+- `pnpm test`: **7/7 tareas OK** — `@hotel/web` **398**, `@hotel/shared` **353**, `@hotel/worker`
+  **119**, `@hotel/mcp` **38**, `@hotel/monitor` **34** y Foundry **139** (1.081 pruebas, 0 fallos,
+  con `forge` en el PATH).
+- Pruebas nuevas de F3: **13** del repositorio de Housekeeping (más 23 con el de recepción) y **17**
+  en la web (12 de API + 5 de utilidades del tablero), con `boundaries` y `a11y` (escáner de color)
+  en verde.
+- Rutas `/housekeeping` y `/admin/housekeeping/lenceria` añadidas al escaneo axe de `e2e/a11y.spec.ts`.
+- **Build de producción OK**: `next build` compila `/housekeeping`, `/admin/housekeeping/lenceria` y las
+  siete rutas de `/api/housekeeping/*`.
+
+### Limitaciones declaradas
+
+- El **axe E2E** sigue sin poder ejecutarse en este entorno (faltan `libnspr4`/`libnss3` y no hay root);
+  queda cubierto en CI, como en F1/F2.
+- El **aviso por correo** de stock bajo requiere `DEVOPS_ALERT_EMAIL` configurado; sin él, la alerta
+  vive solo en el panel de Lencería (comportamiento por diseño, no silencioso: se registra el motivo).
+- El **SSE por sondeo** a 1,5 s cumple el criterio de <2 s; no se introduce un bus en memoria para no
+  romper el despliegue multi-instancia.
+
 
 
 

@@ -119,6 +119,11 @@ describe("ReceptionRepository (incremento v2)", () => {
       const client = {
         query: vi.fn(async (sql: string) => {
           statements.push(sql);
+          // La habitación se consulta con FOR UPDATE tras el check-out (F3 · D-19): va ANTES del
+          // fragmento genérico `FOR UPDATE`, que resuelve el NFT.
+          if (sql.includes("FROM rooms")) {
+            return { rows: [{ id: "room-1", operational_status: "OCCUPIED" }], rowCount: 1 };
+          }
           if (sql.includes("FOR UPDATE")) {
             return { rows: [{ token_id: "t1", room_number: 101, check_in_date: "2026-09-01", status: state.nftStatus }], rowCount: 1 };
           }
@@ -159,7 +164,7 @@ describe("ReceptionRepository (incremento v2)", () => {
     }
 
     it("registra el check-out de una estancia con entrada y cancela cargos", async () => {
-      const { client } = fakeClient();
+      const { client, statements } = fakeClient();
       mockPool.connect.mockResolvedValue(client);
 
       const { checkout, created } = await repository.createCheckout({
@@ -173,6 +178,9 @@ describe("ReceptionRepository (incremento v2)", () => {
       expect(created).toBe(true);
       expect(checkout.id).toBe("co1");
       expect(checkout.chargesCancelled).toBe(2);
+      // D-19: la habitación queda sucia y entra en el reparto de limpieza, con traza.
+      expect(statements.some((sql) => sql.includes("UPDATE rooms SET operational_status = 'DIRTY'"))).toBe(true);
+      expect(statements.some((sql) => sql.includes("INSERT INTO housekeeping_room_logs"))).toBe(true);
     });
 
     it("es idempotente: si ya hay check-out devuelve el existente", async () => {

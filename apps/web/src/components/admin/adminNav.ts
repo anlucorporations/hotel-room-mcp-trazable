@@ -13,6 +13,8 @@ export type AdminNavLabelKey =
   | "habitacion"
   | "rooms"
   | "recepcion"
+  | "housekeeping"
+  | "lenceria"
   | "administracion"
   | "plataforma"
   // Grupo «Sistemas» (incremento v3, solo owner): RF-41.
@@ -34,7 +36,7 @@ export interface AdminNavItem {
 }
 
 /** Clave estable de cada sección del acordeón. */
-export type AdminSectionKey = "habitacion" | "recepcion" | "administracion" | "plataforma";
+export type AdminSectionKey = "habitacion" | "recepcion" | "housekeeping" | "administracion" | "plataforma";
 
 /** Sección del sidebar: una cabecera desplegable con sus entradas (D-29). */
 export interface AdminNavSection {
@@ -47,8 +49,9 @@ export interface AdminNavSection {
  * Secciones del back-office (D-29: sidebar derecha con menú acordeón, **una sección abierta a la vez**).
  *
  * Es la única fuente de la navegación: `ADMIN_NAV` se deriva de aquí para quien necesite la lista plana.
- * Las secciones que aún no tienen pantallas (Actividades, Housekeeping, Mantenimiento) se incorporarán
- * en sus fases; hoy se listan solo las que existen, para no ofrecer enlaces muertos.
+ * Las secciones que aún no tienen pantallas (Actividades, Mantenimiento) se incorporarán en sus fases;
+ * hoy se listan solo las que existen, para no ofrecer enlaces muertos. Housekeeping entra en F3 con su
+ * panel de Lencería (el tablero vive en la ruta de personal `/housekeeping`, D-62).
  */
 export const ADMIN_NAV_SECTIONS: readonly AdminNavSection[] = [
   {
@@ -63,6 +66,13 @@ export const ADMIN_NAV_SECTIONS: readonly AdminNavSection[] = [
     key: "recepcion",
     labelKey: "recepcion",
     items: [{ href: "/admin/caducadas", labelKey: "expired", role: "BURNER_ROLE" }],
+  },
+  {
+    // Sección 4 del plan (F3 · D-51/D-64): el tablero vive en /housekeeping (rol HOUSEKEEPING) y el
+    // panel de Lencería con las alertas de stock, en Administración.
+    key: "housekeeping",
+    labelKey: "housekeeping",
+    items: [{ href: "/admin/housekeeping/lenceria", labelKey: "lenceria", role: "DEFAULT_ADMIN_ROLE" }],
   },
   {
     key: "administracion",
