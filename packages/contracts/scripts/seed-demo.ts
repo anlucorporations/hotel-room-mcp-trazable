@@ -16,6 +16,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { CHAIN_ID, buildNightMetadata, roomTypeOf } from "@hotel/shared";
 import { faucetAbi, hotelNightsAbi } from "@hotel/shared/abi";
 import { tryReadDeployment } from "@hotel/shared/deployments";
+import { ensureRoomsRegistered } from "./room-registry";
 
 const RPC = process.env.RPC_URL ?? "http://127.0.0.1:8545";
 const CHAIN = Number(process.env.CHAIN_ID ?? CHAIN_ID);
@@ -23,6 +24,9 @@ const CONTRACT = (process.env.CONTRACT_ADDRESS ??
   "0x5FbDB2315678afecb367f032d93F642f64180aa3") as Address;
 // Anvil cuenta #1 (MINTER tras el bootstrap del deploy).
 const MINTER_PK = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d" as const;
+// Anvil cuenta #0: administra el contrato y registra las habitaciones (F8 · D-10).
+const ADMIN_PK = (process.env.ROLE_GRANTOR_PRIVATE_KEY ??
+  "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80") as `0x${string}`;
 
 const chain = defineChain({
   id: CHAIN,
@@ -33,6 +37,12 @@ const chain = defineChain({
 
 const minter = createWalletClient({
   account: privateKeyToAccount(MINTER_PK),
+  chain,
+  transport: http(RPC),
+});
+
+const admin = createWalletClient({
+  account: privateKeyToAccount(ADMIN_PK),
   chain,
   transport: http(RPC),
 });
@@ -82,6 +92,10 @@ async function checkFaucet(): Promise<void> {
 }
 
 async function main(): Promise<void> {
+  // F8 · D-13/D-10: el registro arranca vacío y `mint` lo exige; se registra el maestro antes de
+  // mintear (idempotente; se omite contra un contrato anterior al corte).
+  await ensureRoomsRegistered({ publicClient, admin, contract: CONTRACT, onLog: (m) => console.log(m) });
+
   let minted = 0;
   for (let i = 0; i < ROOMS.length; i++) {
     const room = ROOMS[i]!;

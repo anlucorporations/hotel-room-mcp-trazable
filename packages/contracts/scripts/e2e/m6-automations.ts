@@ -35,6 +35,7 @@ import {
   type VapidKeys,
 } from "@hotel/shared";
 import { hotelNightsAbi } from "@hotel/shared/abi";
+import { ensureRoomsRegistered } from "../room-registry";
 import { startBurnScheduler } from "../../../../apps/worker/src/burn-scheduler";
 import { reconcileOnce, startEmailConsumer } from "../../../../apps/worker/src/email-consumer";
 import { SmtpEmailSender } from "../../../../apps/worker/src/queued-mailer";
@@ -277,6 +278,11 @@ const authSecret = Buffer.from("m6-auth-secret-16");
 
 async function main(): Promise<void> {
   console.log(`\n=== E2E M6 real sobre Anvil ${anvilChain.id} — contrato ${CONTRACT} ===`);
+
+  // F8 · D-10/D-13: el registro arranca vacío y mint lo exige. Firma la cuenta 1
+  // (MINTER_RELAYER_PRIVATE_KEY), la cuenta administradora del entorno.
+  const adminWallet = createWalletClient({ account: minterAccount, chain: anvilChain, transport: http(RPC_URL) });
+  await ensureRoomsRegistered({ publicClient, admin: adminWallet, contract: CONTRACT, onLog: (m) => console.log(m) });
 
   const nftsRepo = new NFTsRepository();
   const notificationQueue = new NotificationQueueService();

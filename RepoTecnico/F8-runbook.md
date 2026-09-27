@@ -41,7 +41,7 @@ fantasmas, y publicación de fichas (`/admin/habitacion`) operativa con anclaje 
 | 2 | **Sembrar** las 50 habitaciones desde la BD (D-3/D-14) | 🟡 **Herramienta hecha**: `buildRoomSeed`/`buildRoomRegistrationPlan` (`packages/shared/src/domain/room-registry.ts`) y paso 3.5 de `inject-data.ts`. Falta **ejecutarla** en el corte y **poblar `rooms`** en GCP |
 | 3 | **Reset total coordinado** con respaldo (D-15) | ⏳ Pendiente de ejecución; herramienta existente: `reset-index.ts` (nfts, listings, sale_events y estado del worker; **conserva** `admin_users`) |
 | 4 | **Ventana global de acuñado** + botón manual + aviso de agotamiento (D-4/D-11/D-17, idempotente D-16) | ❌ **No implementada** (solo el ajuste) |
-| 5 | Paso `registerRoom` en scripts de desarrollo/E2E | 🟡 **Hecho en `inject-data.ts`**; pendiente en `seed-demo`, `mint-image-demo` y `e2e/m4…m7`, `e2e-slice` |
+| 5 | Paso `registerRoom` en scripts de desarrollo/E2E | ✅ **Hecho**: helper `packages/contracts/scripts/room-registry.ts` (`ensureRoomsRegistered`) y cableado en `inject-data.ts`, `seed-demo.ts`, `mint-image-demo.ts`, `e2e-slice.ts` y `e2e/m4…m7`. Validado en local con `inject-data` y `seed-demo` |
 
 ---
 
@@ -136,10 +136,13 @@ inyección minteadas con normalidad (el minteo ya no revienta por `RoomNotRegist
 2. `gcloud run deploy … --image=…` conservando variables/secretos.
 3. Verificar §7.
 
-### Fase F — Ventana de acuñado (parte 4, diseño + implementación)
+### Fase F — Ventana de acuñado (parte 4)
 
-Pendiente de decisión: alcance exacto de «ventana global» (D-4), **botón manual de extensión** (D-17)
-e **idempotencia** (D-16). Solo después de implementarla y probarla debe considerarse F8 cerrada.
+**Diseño propuesto** en [`F8-ventana-acunado.md`](./F8-ventana-acunado.md): definición funcional,
+dominio puro `buildMintWindow`, ejecución idempotente y reanudable, aviso de agotamiento y
+**5 decisiones abiertas** que requieren visto bueno antes de implementar (automático vs explícito,
+quién firma las 4.500 noches, tamaño de lote, umbral/canal del aviso y precio). Solo después de
+implementarla y probarla debe considerarse F8 cerrada.
 
 ---
 
@@ -184,8 +187,13 @@ e **idempotencia** (D-16). Solo después de implementarla y probarla debe consid
 
 ## 10. Registro de progreso
 
-- **2026-09-27** · Preparación F8:
+- **2026-09-27** · Preparación F8 (partes 2 y 5):
   - Lógica pura de siembra/registro (`room-registry.ts`) + **6 pruebas** (405 en `@hotel/shared`).
   - Paso 3.5 de `inject-data.ts` (BD + `registerRoom`, idempotente, con aviso en contratos previos).
-  - `pnpm typecheck` **6/6**; validación local del contrato de punta a punta (§5).
-  - Pendiente: ejecutar el corte global (fases A–E), partes 4 (ventana) y 5 (E2E) restantes.
+  - Helper `scripts/room-registry.ts` y cableado en `seed-demo`, `mint-image-demo`, `e2e-slice` y
+    `e2e/m4…m7`.
+  - `pnpm typecheck` **6/6**; validación local del contrato y de `inject-data`/`seed-demo` de punta a
+    punta (50 habitaciones registradas, `publishRoom`, minteo y reventa).
+- **2026-09-27** · Diseño de la parte 4 (ventana de acuñación) en
+  [`F8-ventana-acunado.md`](./F8-ventana-acunado.md), con **5 decisiones abiertas**.
+  - Pendiente: ejecutar el corte global (fases A–E) e implementar la parte 4 tras su aprobación.

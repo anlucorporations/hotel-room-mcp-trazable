@@ -57,6 +57,7 @@ import {
   verifyEIP712TicketRequest,
 } from "@hotel/shared";
 import { hotelNightsAbi } from "@hotel/shared/abi";
+import { ensureRoomsRegistered } from "../room-registry";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..", "..", "..", "..");
@@ -256,6 +257,11 @@ async function mintAndBuy(room: bigint, nftsRepo: NFTsRepository): Promise<{ tok
 
 async function main(): Promise<void> {
   console.log(`\n=== E2E M5 real sobre Anvil ${anvilChain.id} — contrato ${CONTRACT} ===`);
+
+  // F8 · D-10/D-13: el registro arranca vacío y mint lo exige. Firma la cuenta 1
+  // (MINTER_RELAYER_PRIVATE_KEY), la cuenta administradora del entorno.
+  const adminWallet = createWalletClient({ account: ACCOUNTS.minter, chain: anvilChain, transport: http(RPC_URL) });
+  await ensureRoomsRegistered({ publicClient, admin: adminWallet, contract: CONTRACT, onLog: (m) => console.log(m) });
 
   const nftsRepo = new NFTsRepository();
   const notificationQueue = new NotificationQueueService();

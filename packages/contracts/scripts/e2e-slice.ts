@@ -15,10 +15,12 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 import { anvilChain, encodeTokenId, roomTypeOf } from "@hotel/shared";
 import { hotelNightsAbi } from "@hotel/shared/abi";
+import { ensureRoomsRegistered } from "./room-registry";
 
 const RPC = "http://127.0.0.1:8545";
 const CONTRACT = "0x5FbDB2315678afecb367f032d93F642f64180aa3" as Address;
-// Anvil: cuenta #1 (MINTER tras el bootstrap) y #3 (comprador).
+// Anvil: cuenta #0 (admin, registra habitaciones F8), #1 (MINTER) y #3 (comprador).
+const ADMIN_PK = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" as const;
 const MINTER_PK = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d" as const;
 const BUYER_PK = "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6" as const;
 
@@ -30,6 +32,11 @@ const SALE_EVENT = parseAbiItem(
 );
 
 const publicClient = createPublicClient({ chain: anvilChain, transport: http(RPC) });
+const admin = createWalletClient({
+  account: privateKeyToAccount(ADMIN_PK),
+  chain: anvilChain,
+  transport: http(RPC),
+});
 const minter = createWalletClient({
   account: privateKeyToAccount(MINTER_PK),
   chain: anvilChain,
@@ -67,6 +74,9 @@ async function availableTokenIds(): Promise<Set<string>> {
 }
 
 async function main(): Promise<void> {
+  // F8 · D-10/D-13: el registro de habitaciones arranca vacío y `mint` lo exige.
+  await ensureRoomsRegistered({ publicClient, admin, contract: CONTRACT, onLog: (m) => console.log(m) });
+
   const nights = [
     { room: 102, date: futureDate(10), price: parseEther("0.05") },
     { room: 118, date: futureDate(11), price: parseEther("0.1") },

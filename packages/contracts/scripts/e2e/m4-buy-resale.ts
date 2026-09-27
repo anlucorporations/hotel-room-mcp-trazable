@@ -44,6 +44,7 @@ import {
   verifyPurchaseTx,
 } from "@hotel/shared/domain";
 import { hotelNightsAbi } from "@hotel/shared/abi";
+import { ensureRoomsRegistered } from "../room-registry";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..", "..", "..", "..");
@@ -276,6 +277,11 @@ async function verifiedPurchase(params: {
 
 async function main(): Promise<void> {
   console.log(`\n=== E2E M4 real sobre Anvil ${anvilChain.id} — contrato ${CONTRACT} ===`);
+
+  // F8 · D-10/D-13: el registro arranca vacío y mint lo exige. Firma la cuenta 1
+  // (MINTER_RELAYER_PRIVATE_KEY), la única con DEFAULT_ADMIN_ROLE tras el handover de gobernanza.
+  const adminWallet = createWalletClient({ account: ACCOUNTS.minter, chain: anvilChain, transport: http(RPC_URL) });
+  await ensureRoomsRegistered({ publicClient, admin: adminWallet, contract: CONTRACT, onLog: (m) => console.log(m) });
 
   const ADMIN_ROLE = "0x0000000000000000000000000000000000000000000000000000000000000000" as const;
 

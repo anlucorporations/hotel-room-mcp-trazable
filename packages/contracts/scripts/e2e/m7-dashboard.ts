@@ -31,6 +31,7 @@ import {
 } from "@hotel/shared";
 import type { HealthReport } from "@hotel/shared/health";
 import { hotelNightsAbi } from "@hotel/shared/abi";
+import { ensureRoomsRegistered } from "../room-registry";
 import { AggregateProcessor } from "../../../../apps/worker/src/aggregate-processor";
 import { PgAggregateStore } from "../../../../apps/worker/src/aggregate-store";
 import { ViemChainSource } from "../../../../apps/worker/src/chain-source";
@@ -362,6 +363,11 @@ function decodeEventLogSafe(
 
 async function main(): Promise<void> {
   console.log(`\n=== E2E M7 real sobre Anvil ${anvilChain.id} — contrato ${CONTRACT} ===`);
+
+  // F8 · D-10/D-13: el registro arranca vacío y mint lo exige. Firma la cuenta 1
+  // (MINTER_RELAYER_PRIVATE_KEY), la cuenta «MINTER+PAUSER+admin» de este E2E.
+  const adminWallet = createWalletClient({ account: admin, chain: anvilChain, transport: http(RPC_URL) });
+  await ensureRoomsRegistered({ publicClient, admin: adminWallet, contract: CONTRACT, onLog: (m) => console.log(m) });
 
   const pool = getDbPool();
   await runMigrations(pool);
