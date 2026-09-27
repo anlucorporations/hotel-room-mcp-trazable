@@ -26,17 +26,23 @@
  *   3. **Operadores en la base de datos**: aprovisiona el operador de administracion (cuenta 0) y el
  *      de recepcion (cuenta 1) con contrasena + TOTP, y los IMPRIME UNA VEZ. Si el operador ya
  *      existe, NO rota sus credenciales (eso invalidaria su autenticador): usa `--rotate-operators`.
+ *   3.5 **Registro de habitaciones (F8 · D-3/D-10/D-14)**: vuelca el maestro de las 50 habitaciones
+ *      en `rooms` (idempotente) y registra on-chain las que falten (`registerRoom`). El contrato
+ *      arranca vacio (D-13) y `mint` exige la habitacion registrada, asi que este paso va ANTES del
+ *      inventario. Contra un contrato anterior al corte F8 se omite con un aviso.
  *   4. **Inventario y reservas**: mintea noches de los tres tipos del maestro en fechas futuras
  *      (evitando las que ya existen), las compra en primaria con las cuentas de usuario, y publica
  *      una reventa del usuario B. Deja el historico con ventas primarias y secundarias reales.
  *
  * ── Uso ─────────────────────────────────────────────────────────────────────────────────────────
  *
- *   pnpm --filter @hotel/contracts inject:data                     # inyeccion completa
- *   pnpm --filter @hotel/contracts inject:data -- --dry-run        # solo informa, no firma nada
- *   pnpm --filter @hotel/contracts inject:data -- --skip-chain     # solo operadores de la BD
- *   pnpm --filter @hotel/contracts inject:data -- --skip-db        # solo cadena
- *   pnpm --filter @hotel/contracts inject:data -- --rotate-operators
+ *   # Con pnpm, un `--` extra se cuela como argumento posicional y rompe `parseArgs`; usa `exec`:
+ *   pnpm --filter @hotel/contracts exec tsx scripts/inject-data.ts               # inyeccion completa
+ *   pnpm --filter @hotel/contracts exec tsx scripts/inject-data.ts --dry-run     # solo informa
+ *   pnpm --filter @hotel/contracts exec tsx scripts/inject-data.ts --skip-chain  # solo BD
+ *   pnpm --filter @hotel/contracts exec tsx scripts/inject-data.ts --skip-db     # solo cadena
+ *   pnpm --filter @hotel/contracts exec tsx scripts/inject-data.ts --skip-rooms  # sin registro F8
+ *   pnpm --filter @hotel/contracts exec tsx scripts/inject-data.ts --rotate-operators
  *
  * Requiere: Anvil en marcha (127.0.0.1:8545) y el contrato desplegado (`pnpm deploy:anvil`).
  */
@@ -55,7 +61,15 @@ import {
   type Hex,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { anvilChain, buildNightMetadata, roomTypeOf, toRoomTypeDb, type NightType } from "@hotel/shared/domain";
+import {
+  anvilChain,
+  buildNightMetadata,
+  buildRoomRegistrationPlan,
+  buildRoomSeed,
+  roomTypeOf,
+  toRoomTypeDb,
+  type NightType,
+} from "@hotel/shared/domain";
 import { hotelNightsAbi } from "@hotel/shared/abi";
 import { ANVIL_ACCOUNTS } from "./dev-accounts";
 
@@ -78,6 +92,9 @@ const { values } = parseArgs({
     "skip-db": { type: "boolean", default: false },
     "rotate-operators": { type: "boolean", default: false },
     "no-reservations": { type: "boolean", default: false },
+    // F8 (D-3/D-10): sembrado del maestro en `rooms` y registro on-chain. `--skip-rooms` lo omite
+    // para despliegues anteriores al corte de contrato.
+    "skip-rooms": { type: "boolean", default: false },
   },
 });
 
@@ -212,6 +229,31 @@ async function soldOnce(tokenId: bigint): Promise<boolean> {
   })) as boolean;
 }
 
+/** ¿La habitación ya está en el registro on-chain (F8 · D-10)? */
+async function isRoomRegistered(room: number): Promise<boolean> {
+  return (await publicClient.readContract({
+    address: CONTRACT,
+    abi: hotelNightsAbi,
+    functionName: "isRoomRegistered",
+    args: [BigInt(room)],
+  })) as boolean;
+}
+
+/**
+ * ¿El contrato desplegado incorpora el registro dinámico de habitaciones (corte F8)?
+ *
+ * Contra un contrato anterior al corte la función no existe y la lectura revierte; se detecta aquí
+ * para poder seguir inyectando datos en despliegues antiguos sin romper.
+ */
+async function supportsRoomRegistry(): Promise<boolean> {
+  try {
+    await isRoomRegistered(101);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Envia una transaccion y espera el recibo; devuelve el hash. */
 async function send(
   plan: AccountPlan,
@@ -331,6 +373,51 @@ async function grantRoles(): Promise<void> {
 
 // ── 3. Operadores de la base de datos ───────────────────────────────────────────────────────────
 
+/**
+ * Filas de `rooms` leídas tras sembrar el maestro. Las usa el registro on-chain (D-3: la BD es la
+ * fuente única; el maestro solo carga la tabla).
+ */
+let roomsFromDb: { roomNumber: number; roomType: string }[] | null = null;
+
+/**
+ * Vuelca el maestro en `rooms` (D-14). Idempotente: `ON CONFLICT (room_number) DO NOTHING` respeta
+ * cualquier ficha ya editada por el hotel y solo rellena lo que falta. Devuelve las filas vigentes.
+ */
+async function seedRoomsIntoDb(): Promise<{ roomNumber: number; roomType: string }[]> {
+  // Import dinámico: el barril raíz arrastra `pg` y solo hace falta cuando se toca la BD.
+  const { getDbPool } = await import("@hotel/shared");
+  const pool = getDbPool();
+  const seed = buildRoomSeed();
+  for (const room of seed) {
+    await pool.query(
+      `INSERT INTO rooms (
+          room_number, floor, room_type, capacity, beds, base_rate_wei,
+          description_es, description_en, description_ru
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       ON CONFLICT (room_number) DO NOTHING`,
+      [
+        room.roomNumber,
+        room.floor,
+        room.roomType,
+        room.capacity,
+        room.beds,
+        room.baseRateWei,
+        room.descriptionEs,
+        room.descriptionEn,
+        room.descriptionRu,
+      ],
+    );
+  }
+  const res = await pool.query(
+    "SELECT room_number, room_type FROM rooms WHERE archived_at IS NULL ORDER BY room_number",
+  );
+  log(`  sembradas      ${res.rowCount ?? res.rows.length} habitaciones en la BD (maestro F8 · D-3/D-14)`);
+  return res.rows.map((row: { room_number: number; room_type: string }) => ({
+    roomNumber: row.room_number,
+    roomType: row.room_type,
+  }));
+}
+
 async function provisionOperators(): Promise<void> {
   heading("3. Operadores de la base de datos");
 
@@ -345,6 +432,10 @@ async function provisionOperators(): Promise<void> {
 
   await runMigrations(getDbPool());
   const authService = new AuthService(new SessionsRepository(), new UsersRepository());
+
+  // F8 (D-3/D-14): la BD es la fuente única; el maestro de habitaciones la carga antes del
+  // registro on-chain. Se hace dentro de la sesión de BD porque el pool se cierra al terminar.
+  roomsFromDb = await seedRoomsIntoDb();
 
   const operators = [
     { plan: owner, role: "DEFAULT_ADMIN_ROLE" as const, username: "admin@hotel.es" },
@@ -390,6 +481,47 @@ async function operatorExists(username: string): Promise<boolean> {
   const { getDbPool } = await import("@hotel/shared");
   const res = await getDbPool().query("SELECT 1 FROM admin_users WHERE username = $1", [username]);
   return res.rowCount !== null && res.rowCount > 0;
+}
+
+// ── 3.5 Registro on-chain de habitaciones (F8 · D-3, D-10, D-13, D-14) ──────────────────────────
+
+/**
+ * Registra en el contrato las habitaciones que aún no lo estén (idempotente). El contrato arranca
+ * vacío (D-13) y `mint` exige `_roomRegistered`, así que este paso es obligatorio antes de mintear.
+ * Contra un contrato anterior al corte F8 se omite con un aviso (compatibilidad hacia atrás).
+ */
+async function registerRooms(): Promise<void> {
+  heading("3.5 Registro on-chain de habitaciones (F8)");
+
+  if (!(await supportsRoomRegistry())) {
+    log("  omitido: el contrato desplegado es anterior al corte F8 (sin registro dinámico)");
+    return;
+  }
+
+  // D-3: la fuente es la BD. Si no se tocó la BD, se usa el maestro como respaldo declarado.
+  const rows =
+    roomsFromDb ?? buildRoomSeed().map((room) => ({ roomNumber: room.roomNumber, roomType: room.roomType }));
+  const plan = buildRoomRegistrationPlan(rows);
+  if (plan.length === 0) {
+    log("  sin habitaciones que registrar (la tabla rooms está vacía)");
+    return;
+  }
+
+  let registered = 0;
+  for (const entry of plan) {
+    if (await isRoomRegistered(entry.room)) {
+      log(`  ya registrada  hab. ${entry.room} (${entry.roomType})`);
+      continue;
+    }
+    if (DRY_RUN) {
+      log(`  [dry-run]      registraria hab. ${entry.room} (${entry.roomType})`);
+      continue;
+    }
+    const hash = await send(owner, "registerRoom", [BigInt(entry.room), entry.roomType]);
+    registered += 1;
+    log(`  registrada     hab. ${entry.room} (${entry.roomType}) · tx ${hash}`);
+  }
+  log(`  total          ${registered} registradas de ${plan.length} en el plan`);
 }
 
 // ── 4. Inventario y reservas ────────────────────────────────────────────────────────────────────
@@ -526,6 +658,13 @@ async function main(): Promise<void> {
     log("  omitido (--skip-db)");
   } else {
     await provisionOperators();
+  }
+
+  if (values["skip-chain"] || values["skip-rooms"]) {
+    heading("3.5 Registro on-chain de habitaciones (F8)");
+    log(`  omitido (${values["skip-chain"] ? "--skip-chain" : "--skip-rooms"})`);
+  } else {
+    await registerRooms();
   }
 
   if (values["skip-chain"]) {

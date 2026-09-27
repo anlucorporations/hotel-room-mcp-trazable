@@ -11,6 +11,7 @@ export * from "./network";
 export * from "./domain/types";
 export * from "./domain/roles";
 export * from "./domain/room-master";
+export * from "./domain/room-registry";
 export * from "./domain/token-id";
 export * from "./domain/night-state";
 export * from "./domain/aggregates";

@@ -34,6 +34,8 @@ export * from "./network";
 export * from "./domain/types";
 export * from "./domain/roles";
 export * from "./domain/room-master";
+// Corte de contrato F8: plan de siembra del maestro a la BD y de registro on-chain (puro).
+export * from "./domain/room-registry";
 export * from "./domain/token-id";
 export * from "./domain/night-state";
 export * from "./domain/aggregates";

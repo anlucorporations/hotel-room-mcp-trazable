@@ -1,0 +1,191 @@
+# Runbook F8 — Corte de contrato, siembra y reset
+
+> **Fase**: F8 · *riesgo muy alto* · **corte único** (D-24) · **parcialmente adelantado**
+> **Decisiones**: D-3, D-4, D-10, D-11, D-13, D-14, D-15, D-16, D-17, D-24
+> **Proyecto GCP**: `hotel-mcp` · **Anvil global**: `https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app` (chainId 31337)
+> Fecha de este runbook: 2026-09-27
+
+---
+
+## 1. Objetivo
+
+Cerrar el **corte de contrato** que dejó adelantado F1 y completar el resto de F8: que el contrato
+canónico ampliado (registro dinámico de habitaciones + `publishRoom`) esté **desplegado en el Anvil
+global**, que sus habitaciones estén **sembradas desde la base de datos** (fuente única, D-3) y que
+la plataforma quede **alineada** (worker/mcp/monitor/web) con la ventana de acuñado global.
+
+**Criterio de salida:** catálogo público **coherente con la cadena**, sin noches duplicadas ni
+fantasmas, y publicación de fichas (`/admin/habitacion`) operativa con anclaje real.
+
+---
+
+## 2. Estado actual verificado (2026-09-27)
+
+| Elemento | Estado |
+|---|---|
+| Contrato fuente (`packages/contracts/src/HotelNights.sol`) | ✅ Con `registerRoom`/`updateRoomType`/`isRoomRegistered`/`roomTypeOf` y `publishRoom`/`publicationHashOf`; **139 pruebas Foundry** y **validado en local** (ver §5) |
+| Contrato **desplegado en el Anvil global** | ❌ **Anterior al corte**: `0x70bDA08DBe07363968e9EE53d899dFE48560605B` (bloque 288). `isRoomRegistered(101)` y `publicationHashOf(101)` **revientan** (función inexistente) |
+| Registro `packages/shared/deployments/31337.json` | Apunta al contrato anterior |
+| Tabla `rooms` en GCP | ❌ **Vacía (0 filas)** — la recepción arma el tablero desde `ALL_ROOMS`, no desde la BD |
+| `mint` del contrato nuevo | Exige `_roomRegistered[room]` → **cualquier minteo falla** si no se registra antes |
+| `mint_window_days` (D-4/D-11/D-17) | Solo existe como **ajuste** (`platform_settings` + `/admin/sistemas`): no hay lógica de ventana ni botón de extensión |
+| Imágenes desplegadas | `web:v6`, `worker:v5` (F6); `mcp:v2`, `monitor:v1` |
+
+---
+
+## 3. Inventario de las 5 partes de F8
+
+| # | Parte | Estado |
+|---|---|---|
+| 1 | Registro dinámico en el contrato + `publishRoom` | ✅ **Hecho** (adelantado en F1) |
+| 2 | **Sembrar** las 50 habitaciones desde la BD (D-3/D-14) | 🟡 **Herramienta hecha**: `buildRoomSeed`/`buildRoomRegistrationPlan` (`packages/shared/src/domain/room-registry.ts`) y paso 3.5 de `inject-data.ts`. Falta **ejecutarla** en el corte y **poblar `rooms`** en GCP |
+| 3 | **Reset total coordinado** con respaldo (D-15) | ⏳ Pendiente de ejecución; herramienta existente: `reset-index.ts` (nfts, listings, sale_events y estado del worker; **conserva** `admin_users`) |
+| 4 | **Ventana global de acuñado** + botón manual + aviso de agotamiento (D-4/D-11/D-17, idempotente D-16) | ❌ **No implementada** (solo el ajuste) |
+| 5 | Paso `registerRoom` en scripts de desarrollo/E2E | 🟡 **Hecho en `inject-data.ts`**; pendiente en `seed-demo`, `mint-image-demo` y `e2e/m4…m7`, `e2e-slice` |
+
+---
+
+## 4. Código de apoyo (ya en el repositorio)
+
+- `packages/shared/src/domain/room-registry.ts` (puro, isomorfo):
+  - `buildRoomSeed(rooms?)` → las 50 fichas para `INSERT INTO rooms` (tipo, planta, capacidad, camas,
+    tarifa base y descripciones ES/EN/RU **provisionales**), con `ON CONFLICT (room_number) DO NOTHING`.
+  - `buildRoomRegistrationPlan(rows)` → plan on-chain `{room, roomType}` en minúsculas, ordenado;
+    descarta tipos desconocidos (el contrato los rechazaría con `_checkRoomType`).
+- `packages/contracts/scripts/inject-data.ts`:
+  - Nuevo paso **3.5 «Registro on-chain de habitaciones (F8)»**, idempotente (`isRoomRegistered` antes
+    de firmar), que corre **antes** del minteo.
+  - Nueva opción `--skip-rooms`. Contra un contrato anterior al corte, el paso se **omite con aviso**
+    (`supportsRoomRegistry()`), de modo que los despliegues antiguos siguen inyectándose.
+
+---
+
+## 5. Validación local del corte (hecha, desechable)
+
+Se desplegó el contrato recién compilado en un **Anvil local desechable** (puerto 8599, sin tocar el
+registro de despliegues ni el Anvil global) y se ejecutó el ciclo completo:
+
+```
+1) Desplegando HotelNights en el Anvil local… contrato 0x5fbdb2…aa3 (bloque 1)
+2) Registrando 50 habitaciones (maestro -> registerRoom)…
+   isRoomRegistered(101)=true  roomTypeOf(101)=simple
+   isRoomRegistered(220)=true  roomTypeOf(116)=doble  roomTypeOf(201)=suite
+3) publishRoom + publicationHashOf… huella anclada 0x70a36f26…
+4) Rol MINTER + mint de una noche registrada… mint 10120261101 -> ownerOf 0xf39F…
+OK: el corte F8 funciona de punta a punta en local.
+```
+
+---
+
+## 6. Runbook de ejecución (global) — **el corte es destructivo**
+
+> ⚠️ **No iniciar el corte sin:** (1) respaldo verificado, (2) ventana de mantenimiento acordada,
+> (3) la parte 4 (ventana de acuñado) decidida, y (4) autorización explícita del responsable.
+> El Anvil global es **compartido** con `mcc-ecommerce` (P-5): el despliegue añade una dirección
+> nueva y no altera su estado salvo el avance de bloques.
+
+### Fase A — Respaldo (obligatorio)
+
+```bash
+# Respaldo nativo de Cloud SQL (el acceso es por IP privada; pg_dump directo no es viable)
+gcloud sql export sql hotel-mcp-pg gs://hotel-mcp-backups/f8-$(date +%Y%m%d_%H%M%S).sql \
+  --database=hotel_nft --project=hotel-mcp
+gcloud sql backups create --instance=hotel-mcp-pg --project=hotel-mcp \
+  --description="pre-F8 $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+```
+
+### Fase B — Desplegar el contrato nuevo (Anvil global)
+
+```bash
+export PATH="$HOME/.foundry/bin:$PATH"
+cd packages/contracts
+RPC_URL=https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app \
+DEPLOYER_PRIVATE_KEY=0xac0974... \
+DEPLOY_FAUCET=true FAUCET_FUND_WEI=... \
+  forge script script/Deploy.s.sol:Deploy --rpc-url "$RPC_URL" --broadcast --slow
+pnpm sync   # actualiza packages/shared/deployments/31337.json (address, block, faucet, abiHash)
+```
+
+Guardar la **dirección anterior** (`0x70bD…605B`) y su bloque (288) como rollback.
+
+### Fase C — Reset coordinado (D-15)
+
+```bash
+# Vacía nfts, listings, sale_events y el estado del worker; CONSERVA admin_users.
+node --env-file=../../.env --import tsx packages/shared/scripts/reset-index.ts          # modo seco
+node --env-file=../../.env --import tsx packages/shared/scripts/reset-index.ts --apply
+```
+
+### Fase D — Sembrar habitaciones y registrar on-chain (D-3/D-13/D-14)
+
+```bash
+RPC_URL=https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app CHAIN_ID=31337 \
+CONTRACT_ADDRESS=<nueva dirección> \
+  pnpm --filter @hotel/contracts inject:data -- --skip-db    # rooms desde el maestro + registerRoom
+# o bien, con la BD del entorno:  pnpm --filter @hotel/contracts inject:data
+```
+
+Resultado esperado: **50 habitaciones registradas** (`isRoomRegistered` true) y las noches de
+inyección minteadas con normalidad (el minteo ya no revienta por `RoomNotRegistered`).
+
+### Fase E — Alinear y redesplegar
+
+1. Reconstruir imágenes con el **nuevo** `CONTRACT_ADDRESS`/`DEPLOYMENT_BLOCK`/`NEXT_PUBLIC_*` y el
+   faucet: `worker`, `mcp`, `monitor` (ABIs) y `web` (`NEXT_PUBLIC_CONTRACT_ADDRESS`,
+   `NEXT_PUBLIC_DEPLOYMENT_BLOCK`, `NEXT_PUBLIC_FAUCET_ADDRESS`).
+2. `gcloud run deploy … --image=…` conservando variables/secretos.
+3. Verificar §7.
+
+### Fase F — Ventana de acuñado (parte 4, diseño + implementación)
+
+Pendiente de decisión: alcance exacto de «ventana global» (D-4), **botón manual de extensión** (D-17)
+e **idempotencia** (D-16). Solo después de implementarla y probarla debe considerarse F8 cerrada.
+
+---
+
+## 7. Verificación end-to-end (tras el corte)
+
+| Comprobación | Esperado |
+|---|---|
+| `cast call <nuevo> "isRoomRegistered(uint256)(bool)" 101` | `true` |
+| `cast call <nuevo> "roomTypeOf(uint256)(string)" 116` | `doble` |
+| `isRoomRegistered` de las 50 | `true` |
+| `publicationHashOf` tras publicar una ficha | Igual a la huella (D-18) |
+| Home y `/catalogo` públicos | 200 |
+| `/admin/habitacion` publicar una ficha | Ancla la huella (200, `txHash`) |
+| `/api/public/rooms` | Coherente con lo publicado |
+| `/health` worker y web | `ok`, `lag: 0` |
+| `/api/nfts` | Noches sembradas, `onChainAnchored: true` |
+
+---
+
+## 8. Respaldo y rollback
+
+- **Rollback del contrato**: volver `packages/shared/deployments/31337.json` a `0x70bD…605B` /
+  bloque 288 y redesplegar las imágenes anteriores. El contrato antiguo **no exige** registro, pero
+  tampoco ancla publicaciones.
+- **Rollback de la BD**: restaurar desde el respaldo de la Fase A (la restauración es destructiva:
+  coordinar y verificar).
+- **Rollback de imágenes**: conservar las revisiones Cloud Run previas al corte.
+
+---
+
+## 9. Riesgos
+
+| # | Riesgo | Mitigación |
+|---|---|---|
+| R-2 | **Corte destructivo** (reset, D-15) | Respaldo verificado, runbook y ventana acordada; nunca solapar con otra fase |
+| R-5 | Anvil global **compartido** con `mcc-ecommerce` (P-5) | Despliegue aditivo; no reiniciar el servicio |
+| — | 50 transacciones `registerRoom` (una por habitación) | Idempotente y reanudable; sin batch en el contrato |
+| — | Publicaciones de ejemplo `DEMO-*` en BD | Revisar antes de dar el catálogo por bueno |
+| — | Tarifas/descripciones **provisionales** del seed | Editarlas en la ficha antes de publicar (D-6) |
+
+---
+
+## 10. Registro de progreso
+
+- **2026-09-27** · Preparación F8:
+  - Lógica pura de siembra/registro (`room-registry.ts`) + **6 pruebas** (405 en `@hotel/shared`).
+  - Paso 3.5 de `inject-data.ts` (BD + `registerRoom`, idempotente, con aviso en contratos previos).
+  - `pnpm typecheck` **6/6**; validación local del contrato de punta a punta (§5).
+  - Pendiente: ejecutar el corte global (fases A–E), partes 4 (ventana) y 5 (E2E) restantes.
