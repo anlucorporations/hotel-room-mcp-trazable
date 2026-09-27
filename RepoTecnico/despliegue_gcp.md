@@ -393,4 +393,60 @@ proyecto) y **D-77** (el menú de Usuario ofrece los accesos a las suites según
 
 ---
 
-*Despliegue GCP · hotelMCP · actualizado 2026-09-27 (incremento F1–F5 + web v5)*
+## 16. Actualización · F6 Suite Pública (web:v6 + worker:v5, 2026-09-27)
+
+Se redesplegó la plataforma con la **Suite Pública (F6.1–F6.4)** sin recrear infraestructura. A
+diferencia de las entregas anteriores, **no es solo web**: F6.2 añadió la columna
+`reviews.moderation_notes` por una migración idempotente que aplica el **worker al arrancar**, y el
+worker desplegado (`v4`, F1–F5) era anterior a ese cambio. La web `v6` lee y escribe esa columna
+(`ReviewsRepository`), así que **sin reconstruir el worker las reseñas y su lectura fallarían** con
+«column moderation_notes does not exist». `mcp` y `monitor` no varían (no tocan el esquema nuevo).
+
+| Paso | Detalle |
+|---|---|
+| Imágenes | Cloud Build `worker:v5` (2m32s, build `64d8cc7c…`) y `web:v6` (4m06s, build `33706397…`), con los mismos `NEXT_PUBLIC_*` que v2–v5 (chainId 31337, contrato `0x70bD…605B`, bloque 288, faucet `0xaB7B…5057`) |
+| Revisiones | `hotel-mcp-worker-00004-pqp` y `hotel-mcp-web-00006-lns` al 100 % de tráfico |
+| Configuración | Desplegadas solo con `--image`, de modo que se **conservan** las variables y secretos: **18** en web y **17** en worker |
+| Migración | La aplica el **worker v5 al arrancar** (`runMigrations`, aditiva e idempotente): `ALTER TABLE reviews ADD COLUMN IF NOT EXISTS moderation_notes VARCHAR(200)` (F6 · D-58). El arranque fue limpio (`/health` `ok`, `lag: 0`) |
+
+### Verificación (despliegue real)
+
+| Comprobación | Resultado |
+|---|---|
+| `/health/ready` de la web | **200** · `READY` (postgres, redis y RPC `UP`) |
+| `/health` de worker y mcp | **200** · worker `lag: 0` (bloque 313) · mcp bloque 313 |
+| Home de la web | **200** · `<title>Hotel Marina del Sol</title>` (~102 KB) con «Inicio» (D-76), «Reservar» (D-65) y «Catálogo» |
+| Rutas nuevas | `/catalogo`, `/reservar`, `/admin/contenido` y `/admin/resenas` → **200** |
+| Regresión de rutas | `/admin`, `/recepcion`, `/housekeeping`, `/mantenimiento`, `/privacidad`, `/terminos` → **200** |
+| APIs nuevas sin sesión | `/api/admin/content/images`, `/api/admin/content/offers` y `/api/admin/reviews` → **401**; `/api/public/rooms` → **200** |
+| Login + TOTP (owner) | **200** · sesión `admin@hotel.es` con `DEFAULT_ADMIN_ROLE` |
+| Owner · `/api/admin/content/images` y `/offers` | **200** · galería y planes vacíos (esquema presente) |
+| Owner · `/api/admin/reviews` | **200** · **prueba la columna `moderation_notes`** (0 pendientes) |
+| **Escritura F6.4** | `POST` plan `DEMO-F6` → **201**; listado **1**; `PATCH` activo→inactivo **200**; `DELETE` **200**; listado final **0** |
+| Regresión de suites | `/api/housekeeping/shifts` y `/api/admin/actividades/activities` → **200** con owner |
+
+> El registro `DEMO-F6` se creó para probar el alta y se **borró** al terminar; no queda contenido de
+> demostración en la home.
+
+### Rollback disponible
+
+| Servicio | Revisión previa | Imagen |
+|---|---|---|
+| web | `hotel-mcp-web-00005-szr` | `web:v5` (navegación D-76/D-77) |
+| worker | `hotel-mcp-worker-00003-852` | `worker:v4` (F1–F5) |
+
+> **Ojo al rollback del worker**: `worker:v4` no conoce `reviews.moderation_notes`. Revertir el worker
+> sin revertir la web a `v5` dejaría la web `v6` consultando una columna que ya existe (la migración es
+> aditiva), así que el rollback seguro es **ambos** o solo la web.
+
+### Pendiente (fuera de F6)
+
+- **Corte de contrato de F8** (registro de habitaciones + siembra) y **F7** financiera (3.ª versión):
+  el catálogo público (`/api/public/rooms`) queda vacío hasta publicar fichas y desplegar el contrato
+  ampliado.
+- El **mcp** y el **monitor** siguen con las imágenes de la primera entrega; conviene recompilarlos
+  cuando F8 corte el contrato, para alinear ABIs y monitorización.
+
+---
+
+*Despliegue GCP · hotelMCP · actualizado 2026-09-27 (incremento F6 · web v6 + worker v5)*
