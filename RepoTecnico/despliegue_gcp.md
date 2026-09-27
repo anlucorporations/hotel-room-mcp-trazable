@@ -449,4 +449,39 @@ worker desplegado (`v4`, F1–F5) era anterior a ese cambio. La web `v6` lee y e
 
 ---
 
-*Despliegue GCP · hotelMCP · actualizado 2026-09-27 (incremento F6 · web v6 + worker v5)*
+## 17. Actualización · preparación F8 (web:v7, 2026-09-27)
+
+Incremento **solo de web** con el código **no destructivo** de F8 (partes 2, 4 y 5): siembra de
+habitaciones y `registerRoom` en los scripts, y la **ventana global de acuñación** (endpoint + UI).
+`worker`, `mcp` y `monitor` **no varían** (no hay cambios en `apps/worker` ni en el migrador; los
+cambios de `packages/shared` son aditivos y no afectan al worker). **El corte de contrato de F8
+(fases A–E del runbook) NO se ha ejecutado.**
+
+| Paso | Detalle |
+|---|---|
+| Imagen | Cloud Build `web:v7` (3m27s, build `b0f4fcb5…`), mismos `NEXT_PUBLIC_*` que v2–v6 (chainId 31337, contrato `0x70bD…605B`, bloque 288) |
+| Revisión | `hotel-mcp-web-00007-9f5` al 100 % de tráfico (rollback: `00006-lns`, `web:v6`) |
+| Configuración | Desplegada solo con `--image`: se **conservan** las 18 variables y secretos |
+| Novedades | `GET /api/admin/rooms/[id]/mint-window` (owner) y la UI de la ventana en `/admin/habitacion` (primer acuñado al publicar + botón «Acuñar ventana» + aviso in-app), con i18n ES/EN/RU |
+
+### Verificación (despliegue real)
+
+| Comprobación | Resultado |
+|---|---|
+| `/health/ready` y home | **200** · `READY` · `<title>Hotel Marina del Sol</title>` |
+| Rutas | `/catalogo`, `/reservar`, `/admin`, `/admin/habitacion`, `/admin/contenido` → **200** |
+| `/api/admin/rooms/<id>/mint-window` sin sesión | **401** |
+| `/api/admin/rooms/<id>/mint-window` con owner (habitación inexistente) | **404** · `ROOM_NOT_FOUND` |
+| Login + TOTP (owner) | **200** · `DEFAULT_ADMIN_ROLE` |
+| Regresión F6 | `/api/admin/content/images`, `/api/admin/reviews`, `/api/housekeeping/shifts` y `/api/admin/actividades/activities` → **200** |
+
+> **Estado de F8**: partes 1, 2, 4 y 5 hechas y desplegadas; la parte 3 (reset) y el corte global
+> (fases A–E) siguen **pendientes y sin ejecutar**. Mientras el contrato desplegado sea el anterior,
+> el registro dinámico (`registerRoom`/`publishRoom`) **no existe en cadena**: el anclaje de fichas
+> queda *pendiente* y la tabla `rooms` sigue vacía (no hay habitaciones publicadas). El minteo por
+> ventana, en cambio, funciona (el contrato antiguo no exige registro). El **barrido global de la
+> ventana** y el **correo de agotamiento** también quedan pendientes.
+
+---
+
+*Despliegue GCP · hotelMCP · actualizado 2026-09-27 (preparación F8 · web v7)*
