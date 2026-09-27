@@ -89,7 +89,8 @@
       "phoneHref": "+34900000000",
       "email": "reservas@hotelmarinadelsol.es",
       "mapTitle": "Mapa de la ubicación del hotel"
-    }
+    },
+    "ctaReserve": "Reservar con wallet"
   },
   "shell": {
     "skipToContent": "Saltar al contenido",
@@ -113,7 +114,8 @@
     "footerHelp": "Ayuda y manuales",
     "footerPrivacy": "Privacidad",
     "navHome": "Inicio",
-    "navCatalog": "Catálogo"
+    "navCatalog": "Catálogo",
+    "navReserve": "Reservar"
   },
   "help": {
     "title": "Ayuda y manuales",
@@ -1290,6 +1292,39 @@
       "PENDING": "Pendiente",
       "APPROVED": "Aprobada",
       "REJECTED": "Rechazada"
+    }
+  },
+  "reserve": {
+    "title": "Reserva tu noche",
+    "tagline": "Conecta tu cartera, elige habitación y fechas, y te retenemos la noche. El anticipo se paga por transferencia y el resto con tu cartera.",
+    "walletFirst": "Conecta tu cartera para empezar la reserva.",
+    "room": "Habitación",
+    "roomOption": "Hab. {room} · {type}",
+    "noRooms": "No hay habitaciones disponibles ahora mismo.",
+    "checkIn": "Entrada",
+    "checkOut": "Salida",
+    "email": "Correo (opcional)",
+    "emailPlaceholder": "Para enviarte las instrucciones",
+    "reserve": "Retener la noche",
+    "reserving": "Reteniendo…",
+    "error": "No se pudo retener la noche.",
+    "heldTitle": "Noche retenida",
+    "heldBody": "Guarda tu referencia {reference}. Te hemos reservado la noche; completa el anticipo por transferencia dentro del plazo.",
+    "deposit": "Anticipo",
+    "deadline": "Fecha límite",
+    "reference": "Referencia",
+    "transferInstructions": "Haz la transferencia a la cuenta del hotel indicando la referencia. Recepción confirmará el anticipo y podrás liquidar el resto con tu cartera.",
+    "statusLine": "Estado: {status} · anticipo {paid} de {due}",
+    "refresh": "Actualizar estado",
+    "settle": "Conciliar el 100 %",
+    "settleError": "No se pudo conciliar la liquidación.",
+    "planLine": "{assigned} noche(s) asignada(s) · {needsMint} pendiente(s) de emitir",
+    "status": {
+      "PENDING": "pendiente de anticipo",
+      "CONFIRMED": "confirmada",
+      "CANCELLED": "cancelada",
+      "NO_SHOW": "no presentado",
+      "COMPLETED": "completada"
     }
   }
 }

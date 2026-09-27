@@ -16,6 +16,7 @@ import { expect, test } from "@playwright/test";
 const PATHS = [
   "/",
   "/catalogo",
+  "/reservar",
   "/reventa",
   "/historico",
   "/mis-noches",

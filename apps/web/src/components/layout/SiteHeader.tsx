@@ -13,6 +13,7 @@ interface NavItem {
   readonly labelKey:
     | "navHome"
     | "navCatalog"
+    | "navReserve"
     | "navResale"
     | "navMyNights"
     | "navHistory"
@@ -25,6 +26,8 @@ const NAV_ITEMS: readonly NavItem[] = [
   { href: "/", labelKey: "navHome" },
   // D-31: el catálogo de noches vive en su propia página desde F6.
   { href: "/catalogo", labelKey: "navCatalog" },
+  // D-65/D-72: reserva con wallet (retención + anticipo por transferencia).
+  { href: "/reservar", labelKey: "navReserve" },
   // D-07: el mercado secundario es una vista propia; el catálogo solo ofrece primaria.
   { href: "/reventa", labelKey: "navResale" },
   { href: "/mis-noches", labelKey: "navMyNights" },

@@ -1769,6 +1769,54 @@ motivo). Extiende **D-28** (reseñas anónimas).
 - `/admin/resenas` añadida al escaneo axe de `e2e/a11y.spec.ts`; **build de producción OK** con las
   rutas `/admin/resenas` y `/api/reviews`.
 
+---
+
+## 27. F6.3 — Reserva con wallet desde la suite pública (2026-09-27)
+
+Tercer incremento de **F6**. Cierra **D-65** (retener la noche + anticipo por transferencia +
+liquidación al 100 %) y **D-72** (la wallet se conecta al inicio), reutilizando el motor de reservas
+de F2. **No cambia el modelo de datos.**
+
+### Hecho
+
+- **Precio público reproducible** (`weiToEurCents`, función pura en `packages/shared`): convierte la
+  tarifa base (wei) a céntimos de euro con la tasa EUR actual; el anticipo es el porcentaje
+  configurado (D-37). **3 pruebas**.
+- **API pública**:
+  - `GET /api/public/rooms`: habitaciones publicadas y **no bloqueadas** (D-53), con su tarifa base.
+  - `POST /api/public/reservations`: **wallet obligatoria** (D-72), valida fechas y correo opcional,
+    calcula el total a partir de la tarifa y **retiene la noche** (D-35) con el contacto mínimo cifrado
+    (D-55: correo si se da, si no la wallet). Devuelve las **instrucciones del anticipo** (importe,
+    referencia `MDS-…` y fecha límite). **7 pruebas**.
+  - `GET /api/public/reservations/[id]`: estado de la reserva (el UUID actúa como capacidad; **sin PII**).
+  - `POST /api/public/reservations/[id]/settle`: **liquidación al 100 %** (D-57): asigna el token no
+    vendido, marca `needsMint` o responde **409** ante conflicto.
+- **UI `/reservar`** (`ReserveFlow`): la wallet **primero** (con `WalletBar` si falta conexión o red),
+  selección de habitación y fechas, correo opcional, y tras retener muestra anticipo, referencia,
+  plazo e instrucciones de transferencia, con actualización de estado y conciliación al 100 %.
+- **Navegación**: entrada **«Reservar»** en la cabecera pública y CTA **«Reservar con wallet»** en la
+  home.
+- **i18n ES/EN/RU** con paridad (1.146 claves por idioma).
+
+### Verificación
+
+- `pnpm typecheck`: **6/6 tareas OK**.
+- `pnpm test`: **7/7 tareas OK** — `@hotel/web` **453**, `@hotel/shared` **394**, `@hotel/worker` **123**,
+  `@hotel/mcp` **38**, `@hotel/monitor` **34** y Foundry **139** (1.181 pruebas, 0 fallos).
+- Pruebas nuevas: **3** del conversor `weiToEurCents` y **7** de la API pública de reservas.
+- **build de producción OK** con `/reservar` y las rutas `/api/public/*`.
+- `/reservar` añadida al escaneo axe de `e2e/a11y.spec.ts`.
+
+### Limitaciones declaradas
+
+- El **anticipo lo confirma recepción** (off-chain) y la **liquidación** la firma la wallet al comprar
+  el token (D-60); esta entrega deja la reserva y su conciliación, no el cobro.
+- El endpoint público no lleva **límite de tasa** propio: el propio motor limita por inventario (un
+  bloqueo activo por habitación y noche) y el bloqueo **vence** solo (D-37); queda anotado añadir un
+  rate-limit por IP si el tráfico lo exige.
+
+
+
 
 
 

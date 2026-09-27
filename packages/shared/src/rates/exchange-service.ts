@@ -1,5 +1,23 @@
 import { getCachedEURRate, setCachedEURRate } from "../redis/client";
 
+/**
+ * Convierte un importe en **wei** (token nativo) a **céntimos de euro** con la tasa dada.
+ *
+ * Derivación: `1e18 wei = 1 nativo`; `EUR = nativo × tasa`; `cents = EUR × 100`. Con la tasa en
+ * diezmilésimas (`r = round(tasa × 10000)`), `cents = wei × r / 1e20`. Se calcula en `bigint` para no
+ * perder precisión con importes grandes; el resultado cabe holgadamente en `number`.
+ *
+ * Es una función **pura** (sin red) para poder probarla y para que el precio de una reserva pública
+ * sea reproducible.
+ */
+export function weiToEurCents(wei: bigint | string, rateEurPerNative: number): number {
+  if (!Number.isFinite(rateEurPerNative) || rateEurPerNative <= 0) return 0;
+  const value = typeof wei === "string" ? BigInt(wei) : wei;
+  if (value <= 0n) return 0;
+  const r = BigInt(Math.round(rateEurPerNative * 10000));
+  return Number((value * r) / 10n ** 20n);
+}
+
 export interface RateResponse {
   rate: number;
   updatedAt: string;

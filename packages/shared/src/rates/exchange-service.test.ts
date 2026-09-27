@@ -1,11 +1,32 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { ExchangeRateService } from "./exchange-service";
+import { ExchangeRateService, weiToEurCents } from "./exchange-service";
 import * as redisClient from "../redis/client";
 
 vi.mock("../redis/client", () => ({
   getCachedEURRate: vi.fn(),
   setCachedEURRate: vi.fn().mockResolvedValue(undefined),
 }));
+
+/** F6 · D-65: el precio de la reserva pública se deriva de la tarifa en wei y la tasa EUR. */
+describe("weiToEurCents (F6)", () => {
+  it("convierte wei a céntimos con la tasa dada", () => {
+    // 1 nativo = 1e18 wei; con tasa 2,0 EUR → 200 céntimos por nativo.
+    expect(weiToEurCents(10n ** 18n, 2)).toBe(200);
+    // 0,05 nativo con tasa 1,7 → 8,5 céntimos → 8 (truncado).
+    expect(weiToEurCents(5n * 10n ** 16n, 1.7)).toBe(8);
+  });
+
+  it("devuelve 0 con importe o tasa no válidos", () => {
+    expect(weiToEurCents(0n, 1.7)).toBe(0);
+    expect(weiToEurCents("-5", 1.7)).toBe(0);
+    expect(weiToEurCents(10n ** 18n, 0)).toBe(0);
+    expect(weiToEurCents(10n ** 18n, Number.NaN)).toBe(0);
+  });
+
+  it("acepta el importe como cadena (NUMERIC(78,0))", () => {
+    expect(weiToEurCents("1000000000000000000", 1)).toBe(100);
+  });
+});
 
 describe("ExchangeRateService (US-06)", () => {
   let service: ExchangeRateService;

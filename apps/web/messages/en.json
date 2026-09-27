@@ -89,7 +89,8 @@
       "phoneHref": "+34900000000",
       "email": "reservas@hotelmarinadelsol.es",
       "mapTitle": "Map of the hotel location"
-    }
+    },
+    "ctaReserve": "Book with wallet"
   },
   "shell": {
     "skipToContent": "Skip to content",
@@ -113,7 +114,8 @@
     "footerHelp": "Help and manuals",
     "footerPrivacy": "Privacy",
     "navHome": "Home",
-    "navCatalog": "Catalogue"
+    "navCatalog": "Catalogue",
+    "navReserve": "Book"
   },
   "help": {
     "title": "Help and manuals",
@@ -1290,6 +1292,39 @@
       "PENDING": "Pending",
       "APPROVED": "Approved",
       "REJECTED": "Rejected"
+    }
+  },
+  "reserve": {
+    "title": "Book your night",
+    "tagline": "Connect your wallet, pick a room and dates, and we hold the night for you. The deposit is paid by bank transfer and the rest with your wallet.",
+    "walletFirst": "Connect your wallet to start booking.",
+    "room": "Room",
+    "roomOption": "Room {room} · {type}",
+    "noRooms": "No rooms available right now.",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "email": "Email (optional)",
+    "emailPlaceholder": "To send you the instructions",
+    "reserve": "Hold the night",
+    "reserving": "Holding…",
+    "error": "The night could not be held.",
+    "heldTitle": "Night held",
+    "heldBody": "Keep your reference {reference}. We have held the night; complete the deposit by transfer within the deadline.",
+    "deposit": "Deposit",
+    "deadline": "Deadline",
+    "reference": "Reference",
+    "transferInstructions": "Transfer to the hotel account quoting the reference. Reception will confirm the deposit and you can settle the rest with your wallet.",
+    "statusLine": "Status: {status} · deposit {paid} of {due}",
+    "refresh": "Refresh status",
+    "settle": "Settle 100%",
+    "settleError": "The settlement could not be reconciled.",
+    "planLine": "{assigned} night(s) assigned · {needsMint} pending mint",
+    "status": {
+      "PENDING": "awaiting deposit",
+      "CONFIRMED": "confirmed",
+      "CANCELLED": "cancelled",
+      "NO_SHOW": "no-show",
+      "COMPLETED": "completed"
     }
   }
 }

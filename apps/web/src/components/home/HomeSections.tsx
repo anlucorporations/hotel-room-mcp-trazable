@@ -61,6 +61,12 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
               {t("ctaCatalog")}
             </Link>
             <Link
+              href="/reservar"
+              className="inline-flex min-h-touch items-center rounded-pill bg-sea-deep px-5 text-small font-semibold text-shell transition-colors hover:bg-sea"
+            >
+              {t("ctaReserve")}
+            </Link>
+            <Link
               href="#contacto"
               className="inline-flex min-h-touch items-center rounded-pill border border-sea px-5 text-small font-semibold text-sea transition-colors hover:bg-sand-2"
             >
