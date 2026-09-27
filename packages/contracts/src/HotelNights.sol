@@ -14,7 +14,6 @@ import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 import {IHotelNights} from "./IHotelNights.sol";
 import {DateLib} from "./libraries/DateLib.sol";
-import {RoomMaster} from "./libraries/RoomMaster.sol";
 
 /**
  * @title HotelNights — noches de hotel como NFTs (Hotel Marina del Sol)
@@ -26,11 +25,11 @@ import {RoomMaster} from "./libraries/RoomMaster.sol";
  * storage (EIP-1153, ADR-07) que bloquea `transferFrom` directos (`DirectTransferDisabled`);
  * validación de inputs en `mint`; `Pausable`.
  *
- * @dev D-06 (royalty inmutable por construcción): `royaltyInfo` NO lee configuración alguna;
- *      deriva el tipo de la habitación del `tokenId` con `RoomMaster` y aplica 500 bps (5 %) a
- *      simple/doble (101–130) y 1000 bps (10 %) a suite (201–220), con `treasury` como
- *      receptor. No existe almacenamiento, setter ni rol de royalty: nadie puede alterarlo.
- *      El suelo de reventa (`minListingPrice`) sí es gobernable por `DEFAULT_ADMIN_ROLE`.
+ * @dev D-06 + D-10 (royalty inmutable por construcción): `royaltyInfo` NO lee configuración
+ *      gobernable; deriva el tipo de la habitación del `tokenId` a partir del **registro dinámico
+ *      de habitaciones** (`_roomTypeName`, D-10) y aplica 500 bps (5 %) a simple/doble y 1000 bps
+ *      (10 %) a suite, con `treasury` como receptor. No existe setter de royalty: nadie puede
+ *      alterarlo. El suelo de reventa (`minListingPrice`) sí es gobernable por `DEFAULT_ADMIN_ROLE`.
  *
  * @dev AUTORIDAD (MAJOR#1, opción B): `owner()` (de `Ownable2Step`) es **meramente
  *      informativo** y NO gobierna ninguna función de negocio — ninguna usa el modificador
@@ -53,8 +52,6 @@ contract HotelNights is
     ReentrancyGuard,
     Ownable2Step
 {
-    using RoomMaster for uint256;
-
     // ── Roles (ADR-06) ────────────────────────────────────────────────────────
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant RECEPTION_ROLE = keccak256("RECEPTION_ROLE"); // D-05: check-in
@@ -73,7 +70,7 @@ contract HotelNights is
     uint96 private constant ROYALTY_BPS_STANDARD = 500; // 5 %: simple y doble (101–130)
     uint96 private constant ROYALTY_BPS_SUITE = 1000; // 10 %: suite (201–220)
 
-    /// @dev Tipo "suite" del maestro (RF-18a/ADR-02), resuelto vía `RoomMaster.roomType`.
+    /// @dev Tipo "suite" del vocabulario de habitaciones (D-10), comparado por hash.
     bytes32 private constant SUITE_TYPE_HASH = keccak256("suite");
 
     /// @dev `tokenId = room · ROOM_MULTIPLIER + AAAAMMDD` (Decisión 3).
@@ -97,6 +94,13 @@ contract HotelNights is
     /// @dev D-05: noche consumida por check-in on-chain (RECEPTION). Una vez marcada no se
     ///      puede listar ni revender: es el ancla irreversible anti-doble-gasto del hotel.
     mapping(uint256 tokenId => bool checkedIn) private _checkedIn;
+
+    // Registro dinámico de habitaciones (D-3, D-10, D-13, D-14): la BD es la fuente única y el
+    // contrato se alimenta desde ella. Arranca VACÍO (D-13); `RoomMaster` queda como semilla de
+    // carga y referencia histórica (D-14), no como autoridad.
+    mapping(uint256 room => bool registered) private _roomRegistered;
+    mapping(uint256 room => string roomType) private _roomTypeName;
+    mapping(uint256 room => bytes32 contentHash) private _publicationHash;
 
     // Mercado secundario (FASE 2)
     mapping(uint256 tokenId => Listing) private _listings;
@@ -132,7 +136,7 @@ contract HotelNights is
         whenNotPaused
         returns (uint256 tokenId)
     {
-        if (!room.isInMaster()) revert RoomNotInMaster(room);
+        if (!_roomRegistered[room]) revert RoomNotRegistered(room);
         if (!DateLib.isInRange(dateYYYYMMDD)) revert InvalidDate();
         if (price == 0) revert InvalidPrice();
         if (dateYYYYMMDD < _todayYYYYMMDD()) revert PastDate();
@@ -144,7 +148,7 @@ contract HotelNights is
         _mint(treasury, tokenId); // inventario del hotel (ADR-16); `_mint` evita el receiver check
         _setTokenURI(tokenId, metadataURI); // CID fijado: `tokenURI` resoluble desde este bloque
 
-        emit Mint(tokenId, room, dateYYYYMMDD, room.roomType(), price);
+        emit Mint(tokenId, room, dateYYYYMMDD, _roomTypeName[room], price);
     }
 
     // ── Compra primaria (CU-05) ──────────────────────────────────────────────────
@@ -337,6 +341,63 @@ contract HotelNights is
         emit TreasuryUpdated(oldTreasury, newTreasury);
     }
 
+    // ── Registro dinámico de habitaciones (D-3, D-10, D-18) ────────────────────
+    /// @inheritdoc IHotelNights
+    function registerRoom(uint256 room, string calldata roomType)
+        external
+        override
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        if (room == 0) revert InvalidRoom(room);
+        if (_roomRegistered[room]) revert RoomAlreadyRegistered(room);
+        _checkRoomType(roomType);
+
+        _roomRegistered[room] = true;
+        _roomTypeName[room] = roomType;
+        emit RoomRegistered(room, roomType);
+    }
+
+    /// @inheritdoc IHotelNights
+    function updateRoomType(uint256 room, string calldata roomType)
+        external
+        override
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        if (!_roomRegistered[room]) revert RoomNotRegistered(room);
+        _checkRoomType(roomType);
+
+        _roomTypeName[room] = roomType;
+        emit RoomTypeUpdated(room, roomType);
+    }
+
+    /// @inheritdoc IHotelNights
+    function publishRoom(uint256 room, bytes32 contentHash)
+        external
+        override
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        if (!_roomRegistered[room]) revert RoomNotRegistered(room);
+        if (contentHash == bytes32(0)) revert InvalidContentHash();
+
+        _publicationHash[room] = contentHash;
+        emit RoomPublished(room, contentHash, block.timestamp);
+    }
+
+    /// @inheritdoc IHotelNights
+    function isRoomRegistered(uint256 room) external view override returns (bool) {
+        return _roomRegistered[room];
+    }
+
+    /// @inheritdoc IHotelNights
+    function roomTypeOf(uint256 room) external view override returns (string memory) {
+        return _roomTypeName[room];
+    }
+
+    /// @inheritdoc IHotelNights
+    function publicationHashOf(uint256 room) external view override returns (bytes32) {
+        return _publicationHash[room];
+    }
+
     function _credit(address account, uint256 amount) private {
         if (amount == 0) return;
         _pending[account] += amount;
@@ -448,11 +509,19 @@ contract HotelNights is
      *      `royaltyInfo` es una vista ERC-2981 que los marketplaces pueden consultar con
      *      cualquier id.
      */
-    function _royaltyBpsOf(uint256 tokenId) private pure returns (uint96) {
+    function _royaltyBpsOf(uint256 tokenId) private view returns (uint96) {
         uint256 room = tokenId / ROOM_MULTIPLIER;
-        if (!room.isInMaster()) return 0;
-        if (keccak256(bytes(room.roomType())) == SUITE_TYPE_HASH) return ROYALTY_BPS_SUITE;
+        if (!_roomRegistered[room]) return 0;
+        if (keccak256(bytes(_roomTypeName[room])) == SUITE_TYPE_HASH) return ROYALTY_BPS_SUITE;
         return ROYALTY_BPS_STANDARD; // simple y doble comparten 5 % (RF-08/D-06)
+    }
+
+    /// @dev D-10: el tipo persistido debe ser uno de los tres del maestro.
+    function _checkRoomType(string calldata roomType) private pure {
+        bytes32 typeHash = keccak256(bytes(roomType));
+        if (typeHash != keccak256("simple") && typeHash != keccak256("doble") && typeHash != SUITE_TYPE_HASH) {
+            revert InvalidRoomType(roomType);
+        }
     }
 
     function _unlockTransfer() private {

@@ -1,7 +1,7 @@
 import type { NextRequest} from "next/server";
 import { NextResponse } from "next/server";
 import crypto from "node:crypto";
-import { AuthService, NFTsRepository, UNANCHORED_TX_HASH } from "@hotel/shared";
+import { AuthService, NFTsRepository, ReservationsRepository, UNANCHORED_TX_HASH } from "@hotel/shared";
 import type { RoomTypeDb } from "@hotel/shared/domain";
 import { toRoomTypeDb } from "@hotel/shared/domain";
 import { requireRole } from "@/lib/guard";
@@ -9,6 +9,7 @@ import { requireRole } from "@/lib/guard";
 export const dynamic = "force-dynamic";
 
 const nftsRepo = new NFTsRepository();
+const reservationsRepo = new ReservationsRepository();
 const authService = new AuthService();
 
 export interface MintBatchRequestItem {
@@ -125,10 +126,36 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const allowUnanchored =
       body.allowUnanchored === true || request.nextUrl.searchParams.get("allowUnanchored") === "true";
 
+    // D-57: al acuñar se OMITEN las noches retenidas por una reserva activa. Un lote completo de
+    // noches reservadas no puede acuñarse (409); las reservadas dentro de un lote mixto se omiten y
+    // se informan, para no romper la venta del resto.
+    const omittedReservedNights: Array<{ roomNumber: number; checkInDate: string }> = [];
+    const itemsToMint: MintBatchRequestItem[] = [];
+    for (const item of items) {
+      if (await reservationsRepo.isNightReserved(item.roomNumber, item.checkInDate)) {
+        omittedReservedNights.push({ roomNumber: item.roomNumber, checkInDate: item.checkInDate });
+      } else {
+        itemsToMint.push(item);
+      }
+    }
+
+    if (itemsToMint.length === 0) {
+      return NextResponse.json(
+        {
+          error: "RESERVED_NIGHTS",
+          message:
+            "Todas las noches del lote están retenidas por reservas activas (D-57). " +
+            "Cancela o espera el vencimiento de la reserva antes de acuñarlas.",
+          omittedReservedNights,
+        },
+        { status: 409 },
+      );
+    }
+
     // 2. Cada item debe traer un hash real o declararse explícitamente como pendiente.
     const anchorMissing =
       !allowUnanchored &&
-      items.some((item) => !readTxHash((item as { txHashMint?: unknown }).txHashMint));
+      itemsToMint.some((item) => !readTxHash((item as { txHashMint?: unknown }).txHashMint));
 
     if (anchorMissing) {
       return NextResponse.json(
@@ -150,7 +177,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       process.env.HOTEL_NFT_CONTRACT_ADDRESS ||
       auth.session.username;
 
-    for (const item of items) {
+    for (const item of itemsToMint) {
       const [y, m, d] = item.checkInDate.split("-");
       const dateNum = `${y}${m}${d}`;
       const tokenId = `${item.roomNumber}${dateNum}`;
@@ -186,6 +213,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         anchoredCount: mintedTokenIds.length - unanchoredTokenIds.length,
         unanchoredTokenIds,
         onChainAnchored: unanchoredTokenIds.length === 0,
+        // D-57: noches reservadas que se omitieron del lote.
+        omittedReservedNights,
       },
       // 202 = aceptado y persistido, pero el efecto on-chain sigue pendiente.
       { status: unanchoredTokenIds.length > 0 ? 202 : 200 },

@@ -1,6 +1,6 @@
 import type { NextRequest} from "next/server";
 import { NextResponse } from "next/server";
-import { AuthService } from "@hotel/shared";
+import { AuthService, type AuthRole } from "@hotel/shared";
 import {
   ACCESS_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    let challenge: { username: string; role: "DEFAULT_ADMIN_ROLE" | "RECEPTION_ROLE" };
+    let challenge: { username: string; role: AuthRole };
     try {
       challenge = await authService.verifyChallengeToken(sessionToken);
     } catch {

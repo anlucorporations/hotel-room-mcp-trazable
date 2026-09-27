@@ -8,6 +8,8 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {HotelNights} from "../src/HotelNights.sol";
 import {IHotelNights} from "../src/IHotelNights.sol";
 
+import {RoomRegistrySeed} from "./RoomRegistrySeed.sol";
+
 /**
  * @title HotelNightsCheckInTest
  * @notice D-05 — Check-in on-chain: `markCheckedIn` (solo RECEPTION_ROLE, una única vez,
@@ -35,7 +37,8 @@ contract HotelNightsCheckInTest is Test {
 
     function setUp() public {
         vm.warp(BASE_TS);
-        nft = new HotelNights(treasury); // 2.º arg heredado: SIN efecto (D-06)
+        nft = new HotelNights(treasury);
+        RoomRegistrySeed.seed(nft); // 2.º arg heredado: SIN efecto (D-06)
         nft.grantRole(nft.MINTER_ROLE(), minter);
         nft.grantRole(nft.RECEPTION_ROLE(), reception);
         nft.grantRole(nft.PAUSER_ROLE(), address(this));

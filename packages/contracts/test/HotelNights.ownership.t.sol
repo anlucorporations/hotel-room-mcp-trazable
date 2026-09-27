@@ -7,6 +7,8 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 
 import {HotelNights} from "../src/HotelNights.sol";
 
+import {RoomRegistrySeed} from "./RoomRegistrySeed.sol";
+
 /// @notice CU-16 (docs/SRS.md §9) — Gestión de roles (grant/revoke) y transferencia de ownership (Ownable2Step).
 contract HotelNightsOwnershipTest is Test {
     HotelNights internal nft;
@@ -18,7 +20,8 @@ contract HotelNightsOwnershipTest is Test {
 
     function setUp() public {
         // address(this) queda como owner (Ownable(msg.sender)) y DEFAULT_ADMIN.
-        nft = new HotelNights(treasury); // 2.º arg heredado: SIN efecto (D-06)
+        nft = new HotelNights(treasury);
+        RoomRegistrySeed.seed(nft); // 2.º arg heredado: SIN efecto (D-06)
     }
 
     // ── Ownership en dos pasos (TC-CT-090..093) ───────────────────────────────

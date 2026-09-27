@@ -8,6 +8,8 @@ import {HotelNights} from "../src/HotelNights.sol";
 import {HotelNightsBootstrap} from "../src/HotelNightsBootstrap.sol";
 import {IHotelNights} from "../src/IHotelNights.sol";
 
+import {RoomRegistrySeed} from "./RoomRegistrySeed.sol";
+
 /**
  * @notice DoD T0.2: `hasRole` correcto para los 6 roles tras el bootstrap y EOA revocado.
  * @dev `address(this)` actúa como EOA desplegador (recibe DEFAULT_ADMIN en el constructor).
@@ -25,6 +27,7 @@ contract HotelNightsRolesTest is Test {
 
     function setUp() public {
         nft = new HotelNights(treasury);
+        RoomRegistrySeed.seed(nft);
     }
 
     function test_DeployerStartsAsSoleAdmin() public view {

@@ -1,8 +1,15 @@
 import type { Pool, QueryResultRow } from "pg";
+import type { BackOfficeRoleName } from "../../domain/roles";
 import { getDbPool } from "../pool";
 
-/** Rol de back-office que puede ostentar un operador (D-04). */
-export type AdminUserRole = "DEFAULT_ADMIN_ROLE" | "RECEPTION_ROLE";
+/**
+ * Rol de back-office que puede ostentar un operador en la base de datos (D-04, D-56).
+ *
+ * Es un alias del tipo isomorfo `BackOfficeRoleName` (definido en `domain/roles`), de modo que los
+ * componentes de cliente puedan tipar el rol sin importar el barril raíz del paquete. `HOUSEKEEPING`
+ * y `MAINTENANCE` son roles **de BD sin wallet** (D-56): no existen en el contrato (`RoleName`).
+ */
+export type AdminUserRole = BackOfficeRoleName;
 
 /** Registro de operador tal y como vive en `admin_users`. */
 export interface AdminUserRecord {

@@ -126,8 +126,13 @@ export const emptyAsUndefined = <S extends z.ZodTypeAny>(schema: S) =>
     schema.optional(),
   );
 
-/** Validador zod para el nombre de rol de un operador del back-office (D-04). */
-export const adminRoleName = z.enum(["DEFAULT_ADMIN_ROLE", "RECEPTION_ROLE"]);
+/** Validador zod para el nombre de rol de un operador del back-office (D-04, D-56). */
+export const adminRoleName = z.enum([
+  "DEFAULT_ADMIN_ROLE",
+  "RECEPTION_ROLE",
+  "HOUSEKEEPING",
+  "MAINTENANCE",
+]);
 
 /** Validadores reutilizables para componer los esquemas de cada componente. */
 export const env = {

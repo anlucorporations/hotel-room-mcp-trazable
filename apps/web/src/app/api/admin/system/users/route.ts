@@ -16,7 +16,12 @@ const usersRepo = new UsersRepository();
 const sessionsRepo = new SessionsRepository();
 const authService = new AuthService();
 
-const ROLES: readonly AdminUserRole[] = ["DEFAULT_ADMIN_ROLE", "RECEPTION_ROLE"];
+const ROLES: readonly AdminUserRole[] = [
+  "DEFAULT_ADMIN_ROLE",
+  "RECEPTION_ROLE",
+  "HOUSEKEEPING",
+  "MAINTENANCE",
+];
 
 /** Vista pública de un operador: NUNCA incluye `passwordHash` ni `totpSecretEnc` (RNF-41). */
 function publicUser(user: AdminUserRecord) {

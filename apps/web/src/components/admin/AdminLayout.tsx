@@ -12,7 +12,7 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { RoleName } from "@hotel/shared/domain";
 import { WalletMenu } from "@/components/wallet/WalletMenu";
-import { ADMIN_NAV, ADMIN_SYSTEMS_NAV, type AdminNavItem, type AdminNavLabelKey } from "./adminNav";
+import { ADMIN_NAV_SECTIONS, ADMIN_SYSTEMS_NAV, type AdminNavItem, type AdminNavLabelKey, type AdminSectionKey } from "./adminNav";
 import { CredentialForm } from "./CredentialForm";
 import { useAdminSession, type AdminSession } from "./useAdminSession";
 
@@ -59,6 +59,14 @@ function Sidebar({ session }: { session: AdminSession }) {
   // Hint de bloqueo accesible una sola vez, referenciado por cada item deshabilitado (MINOR#38).
   const lockedHintId = useId();
 
+  // D-29: acordeón de UNA sección abierta a la vez. Arranca en la sección de la ruta activa para que
+  // el enlace actual quede visible sin un clic.
+  const activeSection: AdminSectionKey =
+    ADMIN_NAV_SECTIONS.find((section) => section.items.some((item) => isActive(pathname, item.href)))?.key ??
+    ADMIN_NAV_SECTIONS[0]?.key ??
+    "habitacion";
+  const [openSection, setOpenSection] = useState<AdminSectionKey | null>(activeSection);
+
   const itemEnabled = (item: AdminNavItem): boolean =>
     item.role === null ? true : session.hasRole(item.role);
 
@@ -98,14 +106,39 @@ function Sidebar({ session }: { session: AdminSession }) {
   return (
     <nav
       aria-label={t("nav.label")}
-      className="flex flex-col gap-1 border-line tablet:border-r tablet:pr-4"
+      className="flex flex-col gap-1 border-line tablet:border-l tablet:pl-4"
     >
       {/* Motivo de bloqueo accesible (sr-only): los items deshabilitados lo referencian con
           `aria-describedby`, no solo en `title` dependiente de hover (MINOR#38). */}
       <span id={lockedHintId} className="sr-only">
         {t("nav.lockedHint")}
       </span>
-      {ADMIN_NAV.map(renderItem)}
+
+      {ADMIN_NAV_SECTIONS.map((section) => {
+        const open = openSection === section.key;
+        return (
+          <div key={section.key} className="flex flex-col">
+            <button
+              type="button"
+              data-testid={`nav-section-${section.key}`}
+              aria-expanded={open}
+              aria-controls={`nav-section-panel-${section.key}`}
+              onClick={() => setOpenSection((current) => (current === section.key ? null : section.key))}
+              className="flex min-h-touch items-center justify-between gap-2 rounded-brand px-3 text-left text-small font-semibold text-ink transition-colors hover:bg-sand-2"
+            >
+              {t(`nav.${section.labelKey}` as `nav.${AdminNavLabelKey}`)}
+              <span aria-hidden="true" className={open ? "rotate-90 transition-transform" : "transition-transform"}>
+                ›
+              </span>
+            </button>
+            <ul id={`nav-section-panel-${section.key}`} hidden={!open} className="mt-1 flex flex-col gap-1">
+              {section.items.map((item) => (
+                <li key={item.href}>{renderItem(item)}</li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
 
       {/* Sistemas (RF-41): solo el owner. El gating real lo imponen las rutas y las APIs. */}
       {session.isOwner && (
@@ -218,6 +251,8 @@ function SignInGate({ session }: { session: AdminSession }) {
 export function AdminLayout({ children }: { children: ReactNode }) {
   const t = useTranslations("admin");
   const session = useAdminSession();
+  // D-29: en móvil la barra de navegación se oculta tras un botón; en tablet+ está siempre visible.
+  const [navOpen, setNavOpen] = useState(false);
 
   const shell = (body: ReactNode) => (
     <div className="flex min-h-screen flex-col bg-sand">
@@ -229,10 +264,30 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       </a>
       <Topbar session={session} />
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-5 py-8 tablet:flex-row">
-        {session.sessionUsername && <aside className="tablet:w-56 tablet:flex-none"><Sidebar session={session} /></aside>}
-        <main id="admin-contenido" tabIndex={-1} className="min-w-0 flex-1 outline-none">
+        <main
+          id="admin-contenido"
+          tabIndex={-1}
+          className="order-2 min-w-0 flex-1 outline-none tablet:order-1"
+        >
           {body}
         </main>
+        {session.sessionUsername && (
+          <aside className="order-1 tablet:order-2 tablet:w-56 tablet:flex-none">
+            <button
+              type="button"
+              data-testid="admin-nav-toggle"
+              aria-expanded={navOpen}
+              aria-controls="admin-nav-panel"
+              onClick={() => setNavOpen((open) => !open)}
+              className="mb-3 min-h-touch w-full rounded-pill border border-line px-4 text-small font-semibold text-ink transition-colors hover:bg-sand-2 tablet:hidden"
+            >
+              {t("nav.menu")}
+            </button>
+            <div id="admin-nav-panel" className={navOpen ? "" : "hidden tablet:block"}>
+              <Sidebar session={session} />
+            </div>
+          </aside>
+        )}
       </div>
     </div>
   );

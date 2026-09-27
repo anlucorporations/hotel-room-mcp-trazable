@@ -9,12 +9,32 @@
 --               · RepoTecnico/diagrama_er.md        (modelo entidad-relación)
 --               · RepoTecnico/diccionario_datos.md  (diccionario de datos)
 --
--- Versión   : 1.0.0
+-- Versión   : 1.3.0
 -- Fecha     : 2026-09-26
 -- Motor     : PostgreSQL 14+ (requiere la extensión pgcrypto)
 -- Uso       : psql -f RepoTecnico/base_datos.sql
 --
 -- Changelog
+--   1.3.0 (2026-09-26) · Se añade la sección 3.7 «contenido público» (bloque 5,
+--     decisiones D-73/D-74): hotel_images (galería de la home) y hotel_offers
+--     (planes informativos). Sincronizado con packages/shared/src/db/migrator.ts.
+--     Total del esquema: 44 tablas.
+--   1.2.0 (2026-09-26) · Se añade la sección 3.6 «reservas, actividades,
+--     housekeeping y mantenimiento» (bloque 2, decisiones D-34…D-55): 17 tablas
+--     (reservations, reservation_nights, reservation_contacts,
+--     reservation_status_history, folios, activities, activity_schedules,
+--     activity_bookings, housekeeping_shifts, housekeeping_assignments,
+--     housekeeping_room_logs, supply_items, supply_stock_movements,
+--     maintenance_incidents, maintenance_incident_events, preventive_plans,
+--     preventive_tasks) + columna adicional_charges.folio_id. Sincronizado con
+--     packages/shared/src/db/migrator.ts. Total del esquema: 42 tablas.
+--   1.1.0 (2026-09-26) · Se añade la sección 3.5 «habitaciones y reseñas» de la
+--     Suite Administración → Habitación (decisiones D-1…D-28): room_types, rooms,
+--     room_images, room_amenities, room_amenity_links, room_publications,
+--     room_status_history, reviews y platform_settings. SINCRONIZADO con el
+--     runtime: las 9 tablas, sus índices y sus semillas están ya en
+--     packages/shared/src/db/migrator.ts (INITIAL_SCHEMA_SQL). Total del
+--     esquema: 25 tablas (16 + 9).
 --   1.0.0 (2026-09-26) · Primera versión del artefacto. Cubre las 16 tablas del
 --     migrator: nfts (incluidas las columnas incrementales on_chain_anchored y
 --     recovery_code), listings, sale_events, admin_sessions, admin_users,
@@ -314,6 +334,423 @@ CREATE TABLE IF NOT EXISTS worker_sale_history (
 -- sobre block_timestamp (sección 4) tiene que ir DESPUÉS de este ALTER.
 ALTER TABLE worker_sale_history ADD COLUMN IF NOT EXISTS block_timestamp TIMESTAMPTZ NULL;
 
+-- ----------------------------------------------------------------------------
+-- 3.5 Dominio: habitaciones y reseñas (Suite Administración → Habitación)
+-- ----------------------------------------------------------------------------
+-- PROPUESTA del ciclo F1 (decisiones D-1…D-28). Estas tablas todavía NO están en
+-- packages/shared/src/db/migrator.ts, que es la fuente de verdad en runtime; el
+-- primer paso de F1 es llevarlas allí. Sin PII de viajeros (ADR-20/RNF-30).
+
+-- Catálogo de tipos de habitación. Fijo (D-22): SIMPLE · DOBLE · SUITE, con el
+-- royalty inmutable del contrato (ADR-18) expresado en puntos básicos (bps).
+CREATE TABLE IF NOT EXISTS room_types (
+    code VARCHAR(10) PRIMARY KEY,           -- SIMPLE | DOBLE | SUITE
+    name_es VARCHAR(40) NOT NULL,
+    name_en VARCHAR(40) NOT NULL,
+    name_ru VARCHAR(40) NOT NULL,
+    base_capacity INT NOT NULL CHECK (base_capacity > 0),
+    royalty_bps INT NOT NULL CHECK (royalty_bps BETWEEN 0 AND 10000),
+    sort_order INT NOT NULL DEFAULT 0
+);
+
+-- Habitación como ente operativo (D-1, D-19, D-21). La BD es la fuente única del
+-- maestro (D-3): el registro on-chain se alimentará desde aquí en el corte final.
+CREATE TABLE IF NOT EXISTS rooms (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_number INT UNIQUE NOT NULL CHECK (room_number > 0),
+    floor INT NULL,
+    room_type VARCHAR(10) NOT NULL REFERENCES room_types(code) ON UPDATE CASCADE,
+    capacity INT NOT NULL CHECK (capacity > 0),
+    beds INT NOT NULL CHECK (beds > 0),
+    size_m2 NUMERIC(6, 2) NULL CHECK (size_m2 IS NULL OR size_m2 > 0),
+    -- Obligatoria en español solo para PUBLICAR (D-6, D-21); EN/RU opcionales con respaldo.
+    description_es TEXT NULL,
+    description_en TEXT NULL,
+    description_ru TEXT NULL,
+    base_rate_wei NUMERIC(78, 0) NULL,
+    -- Dos estados INDEPENDIENTES (D-19): publicación y operativo.
+    publication_status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
+    operational_status VARCHAR(12) NOT NULL DEFAULT 'CLEAN',
+    -- Archivar, nunca borrar (D-8): NULL = vigente; con fecha = archivada.
+    archived_at TIMESTAMP NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT rooms_publication_status_check
+        CHECK (publication_status IN ('DRAFT', 'PUBLISHED', 'PAUSED', 'MAINTENANCE', 'OUT_OF_SERVICE')),
+    CONSTRAINT rooms_operational_status_check
+        CHECK (operational_status IN ('CLEAN', 'DIRTY', 'OCCUPIED')),
+    -- Para publicar se exige descripción en español (D-21).
+    CONSTRAINT rooms_publish_requires_es CHECK (
+        publication_status <> 'PUBLISHED' OR description_es IS NOT NULL
+    )
+);
+
+-- Galería de fotos (D-5, D-12, D-20): solo JPG, <=2 MB y máx. 5 por habitación.
+-- file_name sigue <habitación>-<tipo>-<fecha de subida>-<nº de imagen>.
+CREATE TABLE IF NOT EXISTS room_images (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    file_name VARCHAR(200) NOT NULL UNIQUE,
+    storage_path TEXT NOT NULL,
+    position INT NOT NULL CHECK (position BETWEEN 1 AND 5),
+    is_cover BOOLEAN NOT NULL DEFAULT FALSE,
+    alt_text_es VARCHAR(200) NULL,
+    alt_text_en VARCHAR(200) NULL,
+    alt_text_ru VARCHAR(200) NULL,
+    mime_type VARCHAR(30) NOT NULL DEFAULT 'image/jpeg' CHECK (mime_type = 'image/jpeg'),
+    byte_size BIGINT NOT NULL CHECK (byte_size > 0 AND byte_size <= 2097152),
+    uploaded_by VARCHAR(100) NOT NULL,
+    uploaded_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Catálogo de servicios/amenidades (D-21). Por habitación es opcional.
+CREATE TABLE IF NOT EXISTS room_amenities (
+    code VARCHAR(40) PRIMARY KEY,
+    name_es VARCHAR(60) NOT NULL,
+    name_en VARCHAR(60) NOT NULL,
+    name_ru VARCHAR(60) NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0
+);
+
+-- Servicios asignados a cada habitación (N:M).
+CREATE TABLE IF NOT EXISTS room_amenity_links (
+    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    amenity_code VARCHAR(40) NOT NULL REFERENCES room_amenities(code) ON UPDATE CASCADE,
+    PRIMARY KEY (room_id, amenity_code)
+);
+
+-- Publicaciones ancladas (D-2, D-18): huella del contenido + nº de habitación + fecha.
+CREATE TABLE IF NOT EXISTS room_publications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    content_hash VARCHAR(66) NOT NULL,
+    tx_hash VARCHAR(66) NULL,
+    on_chain_anchored BOOLEAN NOT NULL DEFAULT FALSE,
+    -- Firma EIP-191 (personal_sign) del administrador sobre la huella (D-1/D-2).
+    signature TEXT NULL,
+    signer_address VARCHAR(42) NULL,
+    published_by VARCHAR(100) NOT NULL,
+    published_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    unpublished_at TIMESTAMP NULL
+);
+
+-- Migración incremental (F1): las columnas de firma se añaden a bases ya creadas.
+ALTER TABLE room_publications ADD COLUMN IF NOT EXISTS signature TEXT NULL;
+ALTER TABLE room_publications ADD COLUMN IF NOT EXISTS signer_address VARCHAR(42) NULL;
+
+
+-- Historial de cambios de estado (publicación u operativo) para trazabilidad (D-19).
+CREATE TABLE IF NOT EXISTS room_status_history (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    status_kind VARCHAR(12) NOT NULL CHECK (status_kind IN ('PUBLICATION', 'OPERATIONAL')),
+    from_value VARCHAR(20) NULL,
+    to_value VARCHAR(20) NOT NULL,
+    changed_by VARCHAR(100) NOT NULL,
+    reason VARCHAR(200) NULL,
+    changed_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Reseñas (D-27, D-28): anónimas y verificadas por noche consumida on-chain.
+-- NUNCA se publica el número exacto de habitación: solo el tipo. room_id se guarda
+-- para verificación interna y se anula si la habitación se archiva/borra.
+CREATE TABLE IF NOT EXISTS reviews (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    token_id VARCHAR(66) NOT NULL UNIQUE REFERENCES nfts(token_id) ON DELETE CASCADE,
+    room_type VARCHAR(10) NOT NULL REFERENCES room_types(code) ON UPDATE CASCADE,
+    room_id UUID NULL REFERENCES rooms(id) ON DELETE SET NULL,
+    rating SMALLINT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    comment TEXT NULL,
+    status VARCHAR(12) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    moderated_by VARCHAR(100) NULL,
+    moderated_at TIMESTAMP NULL
+);
+
+-- Ajustes de plataforma (D-11): ventana global de acuñado y similares.
+CREATE TABLE IF NOT EXISTS platform_settings (
+    key VARCHAR(60) PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_by VARCHAR(100) NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- ----------------------------------------------------------------------------
+-- 3.6 Dominio: reservas, actividades, housekeeping y mantenimiento (bloque 2)
+-- ----------------------------------------------------------------------------
+-- Decisiones D-34…D-55. Sincronizado con packages/shared/src/db/migrator.ts.
+-- Sin PII de viajeros salvo el contacto mínimo cifrado y purgable (D-55).
+
+-- Reserva (D-34/D-35/D-37/D-40/D-41/D-43). La noche se retiene sin acuñar; el
+-- token se emite al pagar el 100 % (D-39).
+CREATE TABLE IF NOT EXISTS reservations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE RESTRICT,
+    check_in_date DATE NOT NULL,
+    check_out_date DATE NOT NULL,
+    channel VARCHAR(12) NOT NULL DEFAULT 'COUNTER',   -- WEB | COUNTER
+    status VARCHAR(12) NOT NULL DEFAULT 'PENDING',    -- PENDING | CONFIRMED | CANCELLED | NO_SHOW | COMPLETED
+    total_cents BIGINT NOT NULL DEFAULT 0 CHECK (total_cents >= 0),
+    deposit_required_cents BIGINT NOT NULL DEFAULT 0 CHECK (deposit_required_cents >= 0),
+    deposit_paid_cents BIGINT NOT NULL DEFAULT 0 CHECK (deposit_paid_cents >= 0),
+    hold_expires_at TIMESTAMP NULL,
+    created_by VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    confirmed_at TIMESTAMP NULL,
+    cancelled_at TIMESTAMP NULL,
+    cancel_reason VARCHAR(200) NULL,
+    CONSTRAINT reservations_dates_check CHECK (check_out_date > check_in_date),
+    CONSTRAINT reservations_status_check
+        CHECK (status IN ('PENDING', 'CONFIRMED', 'CANCELLED', 'NO_SHOW', 'COMPLETED'))
+);
+
+-- Noches retenidas por la reserva. Índice único parcial (active) = sin sobreventa
+-- (D-41). token_id se rellena cuando la noche se acuña al pagar el 100 % (D-39).
+CREATE TABLE IF NOT EXISTS reservation_nights (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    reservation_id UUID NOT NULL REFERENCES reservations(id) ON DELETE CASCADE,
+    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE RESTRICT,
+    night_date DATE NOT NULL,
+    token_id VARCHAR(66) NULL REFERENCES nfts(token_id) ON DELETE SET NULL,
+    active BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+-- Contacto mínimo cifrado (D-55): canal + dirección, nunca nombre/DNI/teléfono.
+CREATE TABLE IF NOT EXISTS reservation_contacts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    reservation_id UUID NOT NULL REFERENCES reservations(id) ON DELETE CASCADE,
+    channel VARCHAR(12) NOT NULL CHECK (channel IN ('EMAIL', 'TELEGRAM', 'WEB')),
+    value_enc TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    purge_at TIMESTAMP NOT NULL,
+    purged_at TIMESTAMP NULL
+);
+
+CREATE TABLE IF NOT EXISTS reservation_status_history (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    reservation_id UUID NOT NULL REFERENCES reservations(id) ON DELETE CASCADE,
+    from_value VARCHAR(12) NULL,
+    to_value VARCHAR(12) NOT NULL,
+    changed_by VARCHAR(100) NOT NULL,
+    reason VARCHAR(200) NULL,
+    changed_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Folio de la estancia (estado de cuenta). El cobro fiscal es de la 3.ª versión (D-33).
+CREATE TABLE IF NOT EXISTS folios (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    reservation_id UUID NOT NULL UNIQUE REFERENCES reservations(id) ON DELETE CASCADE,
+    status VARCHAR(10) NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN', 'CLOSED')),
+    opened_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    closed_at TIMESTAMP NULL,
+    total_cents BIGINT NOT NULL DEFAULT 0 CHECK (total_cents >= 0)
+);
+
+-- Los cargos adicionales existentes se ligan al folio (aditivo).
+ALTER TABLE additional_charges ADD COLUMN IF NOT EXISTS folio_id UUID NULL
+    REFERENCES folios(id) ON DELETE SET NULL;
+
+-- Actividades (D-44…D-47): catálogo, horarios con cupo y reservas de huéspedes.
+CREATE TABLE IF NOT EXISTS activities (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code VARCHAR(40) UNIQUE NOT NULL,
+    name_es VARCHAR(120) NOT NULL,
+    name_en VARCHAR(120) NULL,
+    name_ru VARCHAR(120) NULL,
+    description_es TEXT NULL,
+    description_en TEXT NULL,
+    description_ru TEXT NULL,
+    price_cents BIGINT NOT NULL DEFAULT 0 CHECK (price_cents >= 0),
+    currency VARCHAR(3) NOT NULL DEFAULT 'EUR',
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_by VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS activity_schedules (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    activity_id UUID NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
+    starts_at TIMESTAMP NOT NULL,
+    ends_at TIMESTAMP NULL,
+    capacity INT NOT NULL CHECK (capacity > 0),
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Inscripción (solo huéspedes con estancia, D-45). El precio va al folio vía cargo (D-46).
+CREATE TABLE IF NOT EXISTS activity_bookings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    schedule_id UUID NOT NULL REFERENCES activity_schedules(id) ON DELETE CASCADE,
+    reservation_id UUID NOT NULL REFERENCES reservations(id) ON DELETE CASCADE,
+    seats INT NOT NULL DEFAULT 1 CHECK (seats > 0),
+    status VARCHAR(12) NOT NULL DEFAULT 'BOOKED'
+        CHECK (status IN ('BOOKED', 'WAITLIST', 'CANCELLED', 'ATTENDED')),
+    charge_id UUID NULL REFERENCES additional_charges(id) ON DELETE SET NULL,
+    created_by VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    cancelled_at TIMESTAMP NULL
+);
+
+-- Housekeeping (D-48…D-51): turnos, reparto y registro de estados operativos.
+CREATE TABLE IF NOT EXISTS housekeeping_shifts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    shift_date DATE NOT NULL,
+    label VARCHAR(20) NOT NULL,           -- MANANA | TARDE | NOCHE
+    supervisor VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    UNIQUE (shift_date, label)
+);
+
+CREATE TABLE IF NOT EXISTS housekeeping_assignments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    shift_id UUID NOT NULL REFERENCES housekeeping_shifts(id) ON DELETE CASCADE,
+    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    assignee VARCHAR(100) NOT NULL,
+    status VARCHAR(12) NOT NULL DEFAULT 'PENDING'
+        CHECK (status IN ('PENDING', 'IN_PROGRESS', 'DONE')),
+    assigned_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMP NULL,
+    UNIQUE (shift_id, room_id)
+);
+
+CREATE TABLE IF NOT EXISTS housekeeping_room_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    assignment_id UUID NULL REFERENCES housekeeping_assignments(id) ON DELETE SET NULL,
+    from_value VARCHAR(12) NULL,
+    to_value VARCHAR(12) NOT NULL,
+    changed_by VARCHAR(100) NOT NULL,
+    changed_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Lencería y suministros (D-51): stock con umbral y movimientos.
+CREATE TABLE IF NOT EXISTS supply_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code VARCHAR(40) UNIQUE NOT NULL,
+    name_es VARCHAR(80) NOT NULL,
+    name_en VARCHAR(80) NULL,
+    name_ru VARCHAR(80) NULL,
+    unit VARCHAR(20) NOT NULL DEFAULT 'unit',
+    stock_qty NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (stock_qty >= 0),
+    threshold_qty NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (threshold_qty >= 0),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS supply_stock_movements (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    item_id UUID NOT NULL REFERENCES supply_items(id) ON DELETE CASCADE,
+    delta_qty NUMERIC(12, 2) NOT NULL,
+    reason VARCHAR(20) NOT NULL
+        CHECK (reason IN ('ROOM_CLEANED', 'GUEST_CHECKIN', 'RESTOCK', 'ADJUSTMENT')),
+    room_id UUID NULL REFERENCES rooms(id) ON DELETE SET NULL,
+    reservation_id UUID NULL REFERENCES reservations(id) ON DELETE SET NULL,
+    created_by VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Mantenimiento (D-52…D-54): incidencias con bloqueo de venta y preventivo.
+CREATE TABLE IF NOT EXISTS maintenance_incidents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE RESTRICT,
+    kind VARCHAR(40) NOT NULL,
+    description TEXT NULL,
+    priority VARCHAR(10) NOT NULL DEFAULT 'MEDIUM'
+        CHECK (priority IN ('LOW', 'MEDIUM', 'HIGH')),
+    status VARCHAR(12) NOT NULL DEFAULT 'OPEN'
+        CHECK (status IN ('OPEN', 'IN_PROGRESS', 'RESOLVED', 'CANCELLED')),
+    blocks_sale BOOLEAN NOT NULL DEFAULT TRUE,
+    reported_by VARCHAR(100) NOT NULL,
+    assigned_to VARCHAR(100) NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    resolved_at TIMESTAMP NULL,
+    resolved_by VARCHAR(100) NULL
+);
+
+CREATE TABLE IF NOT EXISTS maintenance_incident_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    incident_id UUID NOT NULL REFERENCES maintenance_incidents(id) ON DELETE CASCADE,
+    event_type VARCHAR(20) NOT NULL
+        CHECK (event_type IN ('REPORTED', 'ASSIGNED', 'RESOLVED', 'CANCELLED')),
+    notes VARCHAR(200) NULL,
+    actor VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS preventive_plans (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code VARCHAR(40) UNIQUE NOT NULL,
+    name VARCHAR(120) NOT NULL,
+    equipment VARCHAR(120) NOT NULL,
+    room_id UUID NULL REFERENCES rooms(id) ON DELETE SET NULL,
+    periodicity VARCHAR(12) NOT NULL
+        CHECK (periodicity IN ('WEEKLY', 'MONTHLY', 'QUARTERLY')),
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS preventive_tasks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    plan_id UUID NOT NULL REFERENCES preventive_plans(id) ON DELETE CASCADE,
+    due_date DATE NOT NULL,
+    status VARCHAR(10) NOT NULL DEFAULT 'PENDING'
+        CHECK (status IN ('PENDING', 'DONE', 'SKIPPED')),
+    completed_by VARCHAR(100) NULL,
+    completed_at TIMESTAMP NULL,
+    notes VARCHAR(200) NULL,
+    UNIQUE (plan_id, due_date)
+);
+
+-- ----------------------------------------------------------------------------
+-- 3.7 Dominio: contenido público de la home (bloque 5, D-73/D-74)
+-- ----------------------------------------------------------------------------
+-- Galería propia del hotel y planes informativos. Gestionados por el
+-- administrador con wallet. Mismas reglas de imagen que room_images (solo JPG,
+-- <=2 MB) y almacenamiento local en ./docs/imagenes.
+
+CREATE TABLE IF NOT EXISTS hotel_images (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    section VARCHAR(20) NOT NULL,          -- HERO | SERVICES | EXPERIENCE | ACTIVITIES | CONTACT | OTHER
+    file_name VARCHAR(200) NOT NULL UNIQUE,
+    storage_path TEXT NOT NULL,
+    position INT NOT NULL DEFAULT 1 CHECK (position BETWEEN 1 AND 20),
+    is_cover BOOLEAN NOT NULL DEFAULT FALSE,
+    alt_text_es VARCHAR(200) NULL,
+    alt_text_en VARCHAR(200) NULL,
+    alt_text_ru VARCHAR(200) NULL,
+    mime_type VARCHAR(30) NOT NULL DEFAULT 'image/jpeg' CHECK (mime_type = 'image/jpeg'),
+    byte_size BIGINT NOT NULL CHECK (byte_size > 0 AND byte_size <= 2097152),
+    uploaded_by VARCHAR(100) NOT NULL,
+    uploaded_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT hotel_images_section_check
+        CHECK (section IN ('HERO', 'SERVICES', 'EXPERIENCE', 'ACTIVITIES', 'CONTACT', 'OTHER')),
+    UNIQUE (section, position)
+);
+
+-- Planes/escaparates informativos: sin precios (D-69), con vigencia opcional.
+CREATE TABLE IF NOT EXISTS hotel_offers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code VARCHAR(40) UNIQUE NOT NULL,
+    title_es VARCHAR(160) NOT NULL,
+    title_en VARCHAR(160) NULL,
+    title_ru VARCHAR(160) NULL,
+    body_es TEXT NULL,
+    body_en TEXT NULL,
+    body_ru TEXT NULL,
+    image_id UUID NULL REFERENCES hotel_images(id) ON DELETE SET NULL,
+    valid_from DATE NULL,
+    valid_to DATE NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_by VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT hotel_offers_validity_check CHECK (
+        valid_from IS NULL OR valid_to IS NULL OR valid_to >= valid_from
+    )
+);
+
 -- ============================================================================
 -- 4. Índices
 -- ============================================================================
@@ -377,6 +814,94 @@ CREATE INDEX IF NOT EXISTS idx_worker_sale_history_block
 CREATE INDEX IF NOT EXISTS idx_worker_sale_history_ts
     ON worker_sale_history(block_timestamp);
 
+-- rooms (sección 3.5)
+CREATE INDEX IF NOT EXISTS idx_rooms_status ON rooms(publication_status, operational_status);
+CREATE INDEX IF NOT EXISTS idx_rooms_type ON rooms(room_type);
+CREATE INDEX IF NOT EXISTS idx_rooms_archived ON rooms(archived_at) WHERE archived_at IS NOT NULL;
+
+-- room_images
+CREATE INDEX IF NOT EXISTS idx_room_images_room ON room_images(room_id);
+-- Una sola portada por habitación.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_room_images_cover
+    ON room_images(room_id) WHERE is_cover = TRUE;
+-- Máx. 5 fotos por habitación: posiciones 1..5 únicas por habitación.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_room_images_position ON room_images(room_id, position);
+
+-- room_publications
+CREATE INDEX IF NOT EXISTS idx_room_publications_room
+    ON room_publications(room_id, published_at DESC);
+CREATE INDEX IF NOT EXISTS idx_room_publications_pending
+    ON room_publications(on_chain_anchored) WHERE on_chain_anchored = FALSE;
+
+-- room_status_history
+CREATE INDEX IF NOT EXISTS idx_room_status_history_room
+    ON room_status_history(room_id, changed_at DESC);
+
+-- reviews
+CREATE INDEX IF NOT EXISTS idx_reviews_status ON reviews(status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_reviews_room_type ON reviews(room_type);
+
+-- reservations (sección 3.6)
+CREATE INDEX IF NOT EXISTS idx_reservations_status ON reservations(status, check_in_date);
+CREATE INDEX IF NOT EXISTS idx_reservations_room ON reservations(room_id, check_in_date);
+CREATE INDEX IF NOT EXISTS idx_reservations_hold ON reservations(hold_expires_at)
+    WHERE status = 'PENDING';
+
+-- reservation_nights: sin sobreventa (D-41) — una reserva ACTIVA por habitación y noche.
+CREATE INDEX IF NOT EXISTS idx_reservation_nights_res ON reservation_nights(reservation_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_reservation_nights_hold
+    ON reservation_nights(room_id, night_date) WHERE active = TRUE;
+
+-- reservation_contacts / reservation_status_history
+CREATE INDEX IF NOT EXISTS idx_reservation_contacts_res ON reservation_contacts(reservation_id);
+CREATE INDEX IF NOT EXISTS idx_reservation_contacts_purge ON reservation_contacts(purge_at)
+    WHERE purged_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_reservation_history_res
+    ON reservation_status_history(reservation_id, changed_at DESC);
+
+-- folios
+CREATE INDEX IF NOT EXISTS idx_folios_status ON folios(status);
+CREATE INDEX IF NOT EXISTS idx_charges_folio ON additional_charges(folio_id);
+
+-- activities / activity_schedules / activity_bookings
+CREATE INDEX IF NOT EXISTS idx_activities_active ON activities(active);
+CREATE INDEX IF NOT EXISTS idx_activity_schedules_start ON activity_schedules(activity_id, starts_at);
+CREATE INDEX IF NOT EXISTS idx_activity_bookings_schedule ON activity_bookings(schedule_id, status);
+CREATE INDEX IF NOT EXISTS idx_activity_bookings_res ON activity_bookings(reservation_id);
+
+-- housekeeping
+CREATE INDEX IF NOT EXISTS idx_housekeeping_shifts_date ON housekeeping_shifts(shift_date);
+CREATE INDEX IF NOT EXISTS idx_housekeeping_assignments_assignee
+    ON housekeeping_assignments(assignee, status);
+CREATE INDEX IF NOT EXISTS idx_housekeeping_logs_room
+    ON housekeeping_room_logs(room_id, changed_at DESC);
+
+-- supplies
+CREATE INDEX IF NOT EXISTS idx_supply_movements_item
+    ON supply_stock_movements(item_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_supply_movements_reason ON supply_stock_movements(reason);
+
+-- maintenance
+CREATE INDEX IF NOT EXISTS idx_maintenance_incidents_room
+    ON maintenance_incidents(room_id, status);
+CREATE INDEX IF NOT EXISTS idx_maintenance_incidents_open
+    ON maintenance_incidents(status, priority);
+CREATE INDEX IF NOT EXISTS idx_maintenance_events_incident
+    ON maintenance_incident_events(incident_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_preventive_plans_active ON preventive_plans(active, periodicity);
+CREATE INDEX IF NOT EXISTS idx_preventive_tasks_due ON preventive_tasks(status, due_date);
+
+-- hotel_images (sección 3.7)
+CREATE INDEX IF NOT EXISTS idx_hotel_images_section ON hotel_images(section, position);
+-- Una sola portada por sección de la home.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_hotel_images_cover
+    ON hotel_images(section) WHERE is_cover = TRUE;
+
+-- hotel_offers
+CREATE INDEX IF NOT EXISTS idx_hotel_offers_active ON hotel_offers(active, sort_order);
+CREATE INDEX IF NOT EXISTS idx_hotel_offers_validity ON hotel_offers(valid_from, valid_to);
+CREATE INDEX IF NOT EXISTS idx_hotel_offers_image ON hotel_offers(image_id);
+
 -- ============================================================================
 -- 5. Datos semilla mínimos (reejecutables)
 -- ============================================================================
@@ -385,11 +910,43 @@ CREATE INDEX IF NOT EXISTS idx_worker_sale_history_ts
 -- worker pueda hacer SELECT ... FOR UPDATE desde el primer arranque.
 INSERT INTO worker_aggregate_counters (id) VALUES (0) ON CONFLICT (id) DO NOTHING;
 
+-- Catálogo fijo de tipos de habitación (D-22) con el royalty inmutable (ADR-18).
+INSERT INTO room_types (code, name_es, name_en, name_ru, base_capacity, royalty_bps, sort_order) VALUES
+    ('SIMPLE', 'Simple', 'Single', 'Одноместный', 1, 500, 1),
+    ('DOBLE',  'Doble',  'Double', 'Двухместный', 2, 500, 2),
+    ('SUITE',  'Suite',  'Suite',  'Люкс',        2, 1000, 3)
+ON CONFLICT (code) DO NOTHING;
+
+-- Catálogo inicial de servicios (D-21); el administrador puede ampliarlo después.
+INSERT INTO room_amenities (code, name_es, name_en, name_ru, sort_order) VALUES
+    ('WIFI',        'Wi-Fi',              'Wi-Fi',            'Wi-Fi',              1),
+    ('AC',          'Aire acondicionado', 'Air conditioning', 'Кондиционер',        2),
+    ('HEATING',     'Calefacción',        'Heating',          'Отопление',          3),
+    ('TV',          'Televisión',         'TV',               'Телевизор',          4),
+    ('PRIVATE_BATH','Baño privado',       'Private bathroom', 'Собственная ванная', 5),
+    ('BALCONY',     'Balcón',             'Balcony',          'Балкон',             6),
+    ('SEA_VIEW',    'Vistas al mar',      'Sea view',         'Вид на море',        7),
+    ('MINIBAR',     'Minibar',            'Minibar',          'Мини-бар',           8)
+ON CONFLICT (code) DO NOTHING;
+
+-- Ventana global de acuñado en días (D-11).
+INSERT INTO platform_settings (key, value) VALUES ('mint_window_days', '90')
+ON CONFLICT (key) DO NOTHING;
+
+-- Catálogo inicial de lencería y suministros (D-51). Stock a 0 hasta la primera carga.
+INSERT INTO supply_items (code, name_es, name_en, name_ru, unit, threshold_qty) VALUES
+    ('SOAP',   'Jabón',   'Soap',    'Мыло',        'unit', 50),
+    ('PAPER',  'Papel',   'Toilet paper', 'Бумага', 'roll', 40),
+    ('TOWELS', 'Toallas', 'Towels',  'Полотенца',   'unit', 60),
+    ('SHEETS', 'Sábanas', 'Sheets',  'Простыни',    'unit', 40)
+ON CONFLICT (code) DO NOTHING;
+
 -- ============================================================================
 -- 6. Comentarios (COMMENT ON)
 -- ============================================================================
--- Se documentan las 16 tablas y todas sus columnas. Reejecutable: COMMENT ON
--- reemplaza el valor anterior.
+-- Se documentan las 44 tablas del esquema (16 base + 9 de habitaciones/reseñas +
+-- 17 del bloque 2 + 2 de contenido público) y sus columnas relevantes. Reejecutable:
+-- COMMENT ON reemplaza el valor anterior.
 
 -- ---- nfts ----
 COMMENT ON TABLE nfts IS 'Inventario de noches-token; PK de negocio token_id (uint256 on-chain)';
@@ -450,7 +1007,7 @@ COMMENT ON COLUMN admin_users.id IS 'PK UUID';
 COMMENT ON COLUMN admin_users.username IS 'Identificador de acceso (único)';
 COMMENT ON COLUMN admin_users.password_hash IS 'Hash bcrypt de la contraseña';
 COMMENT ON COLUMN admin_users.totp_secret_enc IS 'Semilla TOTP cifrada con AES-256-GCM';
-COMMENT ON COLUMN admin_users.role IS 'DEFAULT_ADMIN_ROLE · RECEPTION_ROLE';
+COMMENT ON COLUMN admin_users.role IS 'DEFAULT_ADMIN_ROLE · RECEPTION_ROLE · HOUSEKEEPING · MAINTENANCE (D-56: roles de BD sin wallet)';
 COMMENT ON COLUMN admin_users.active IS 'Alta/baja del operador';
 COMMENT ON COLUMN admin_users.failed_attempts IS 'Intentos fallidos para el bloqueo temporal';
 COMMENT ON COLUMN admin_users.locked_until IS 'Bloqueo por fuerza bruta';
@@ -570,6 +1127,131 @@ COMMENT ON COLUMN worker_sale_history.seller IS 'Vendedor (dirección 0x…)';
 COMMENT ON COLUMN worker_sale_history.buyer IS 'Comprador (dirección 0x…)';
 COMMENT ON COLUMN worker_sale_history.block_number IS 'Bloque del evento';
 COMMENT ON COLUMN worker_sale_history.block_timestamp IS 'Marca temporal del bloque (reloj de la cadena); NULL en filas anteriores a M7';
+
+-- ---- room_types ----
+COMMENT ON TABLE room_types IS 'Catálogo fijo de tipos de habitación (D-22): SIMPLE · DOBLE · SUITE';
+COMMENT ON COLUMN room_types.code IS 'Código del tipo (PK): SIMPLE · DOBLE · SUITE';
+COMMENT ON COLUMN room_types.base_capacity IS 'Capacidad base del tipo (orientativa)';
+COMMENT ON COLUMN room_types.royalty_bps IS 'Royalty inmutable en puntos básicos (500 = 5 %, 1000 = 10 %), ADR-18';
+
+-- ---- rooms ----
+COMMENT ON TABLE rooms IS 'Habitación como ente operativo; la BD es la fuente única del maestro (D-3)';
+COMMENT ON COLUMN rooms.id IS 'PK UUID';
+COMMENT ON COLUMN rooms.room_number IS 'Número de habitación; único, sin repetir (D-7)';
+COMMENT ON COLUMN rooms.floor IS 'Planta (opcional)';
+COMMENT ON COLUMN rooms.room_type IS 'FK a room_types(code)';
+COMMENT ON COLUMN rooms.capacity IS 'Capacidad de personas (obligatoria)';
+COMMENT ON COLUMN rooms.beds IS 'Número de camas (obligatoria)';
+COMMENT ON COLUMN rooms.size_m2 IS 'Superficie en m² (opcional)';
+COMMENT ON COLUMN rooms.description_es IS 'Descripción en español; obligatoria para publicar (D-6, D-21)';
+COMMENT ON COLUMN rooms.description_en IS 'Descripción en inglés (opcional; respaldo al español)';
+COMMENT ON COLUMN rooms.description_ru IS 'Descripción en ruso (opcional; respaldo al español)';
+COMMENT ON COLUMN rooms.base_rate_wei IS 'Tarifa base en wei (opcional)';
+COMMENT ON COLUMN rooms.publication_status IS 'DRAFT · PUBLISHED · PAUSED · MAINTENANCE · OUT_OF_SERVICE (D-19)';
+COMMENT ON COLUMN rooms.operational_status IS 'CLEAN · DIRTY · OCCUPIED; lo actualiza housekeeping/recepción (D-19)';
+COMMENT ON COLUMN rooms.archived_at IS 'NULL = vigente; con fecha = archivada, nunca borrada (D-8)';
+
+-- ---- room_images ----
+COMMENT ON TABLE room_images IS 'Galería de la habitación; solo JPG, <=2 MB y máx. 5 fotos (D-20)';
+COMMENT ON COLUMN room_images.room_id IS 'FK a rooms(id) ON DELETE CASCADE';
+COMMENT ON COLUMN room_images.file_name IS 'Nombre único: <habitación>-<tipo>-<fecha subida>-<nº imagen> (D-5, D-12)';
+COMMENT ON COLUMN room_images.storage_path IS 'Ruta en el servidor (carpeta ./docs/imagenes)';
+COMMENT ON COLUMN room_images.position IS 'Orden 1..5; la posición 1 es la portada por convención';
+COMMENT ON COLUMN room_images.is_cover IS 'Portada; una sola por habitación (índice único parcial)';
+COMMENT ON COLUMN room_images.byte_size IS 'Tamaño en bytes; CHECK <= 2097152 (2 MB)';
+COMMENT ON COLUMN room_images.uploaded_by IS 'Operador que sube la imagen';
+
+-- ---- room_amenities / room_amenity_links ----
+COMMENT ON TABLE room_amenities IS 'Catálogo de servicios/amenidades (D-21)';
+COMMENT ON TABLE room_amenity_links IS 'Servicios asignados a cada habitación (N:M)';
+
+-- ---- room_publications ----
+COMMENT ON TABLE room_publications IS 'Publicaciones ancladas: huella de la ficha + nº + fecha (D-2, D-18)';
+COMMENT ON COLUMN room_publications.content_hash IS 'Huella (keccak256) del contenido publicado';
+COMMENT ON COLUMN room_publications.tx_hash IS 'Transacción de anclaje; NULL si aún no está anclada';
+COMMENT ON COLUMN room_publications.on_chain_anchored IS 'TRUE cuando el anclaje se confirma en la cadena';
+
+-- ---- room_status_history ----
+COMMENT ON TABLE room_status_history IS 'Historial de cambios de estado (publicación u operativo), D-19';
+COMMENT ON COLUMN room_status_history.status_kind IS 'PUBLICATION · OPERATIONAL';
+
+-- ---- reviews ----
+COMMENT ON TABLE reviews IS 'Reseñas anónimas y verificadas por noche consumida (D-27, D-28)';
+COMMENT ON COLUMN reviews.token_id IS 'FK a nfts(token_id); UNIQUE: una reseña por noche consumida';
+COMMENT ON COLUMN reviews.room_type IS 'Tipo de habitación; es lo único que se publica (nunca el nº exacto, D-28)';
+COMMENT ON COLUMN reviews.room_id IS 'Referencia interna a la habitación; no se publica; se anula al borrar la habitación';
+COMMENT ON COLUMN reviews.rating IS 'Puntuación 1..5';
+COMMENT ON COLUMN reviews.status IS 'PENDING · APPROVED · REJECTED (moderación del administrador)';
+
+-- ---- platform_settings ----
+COMMENT ON TABLE platform_settings IS 'Ajustes de plataforma (D-11): ventana global de acuñado y similares';
+COMMENT ON COLUMN platform_settings.key IS 'Clave del ajuste (PK), p. ej. mint_window_days';
+COMMENT ON COLUMN platform_settings.value IS 'Valor del ajuste en texto';
+
+-- ---- reservations ----
+COMMENT ON TABLE reservations IS 'Reserva de estancia (D-34…D-43); retiene la noche sin acuñar';
+COMMENT ON COLUMN reservations.room_id IS 'FK a rooms(id) ON DELETE RESTRICT';
+COMMENT ON COLUMN reservations.channel IS 'WEB (web con wallet) · COUNTER (mostrador)';
+COMMENT ON COLUMN reservations.status IS 'PENDING · CONFIRMED · CANCELLED · NO_SHOW · COMPLETED';
+COMMENT ON COLUMN reservations.hold_expires_at IS 'Vencimiento del bloqueo (D-37); al vencer se libera';
+COMMENT ON COLUMN reservations.deposit_required_cents IS 'Anticipo exigido (por defecto 30 %)';
+COMMENT ON COLUMN reservations.deposit_paid_cents IS 'Anticipo cobrado';
+COMMENT ON COLUMN reservations.cancel_reason IS 'Motivo de cancelación (D-40)';
+
+-- ---- reservation_nights ----
+COMMENT ON TABLE reservation_nights IS 'Noches retenidas por la reserva; sin sobreventa (D-41)';
+COMMENT ON COLUMN reservation_nights.token_id IS 'Token emitido al pagar el 100 % (D-39); NULL mientras no se paga';
+COMMENT ON COLUMN reservation_nights.active IS 'FALSE libera la retención (índice único parcial)';
+
+-- ---- reservation_contacts ----
+COMMENT ON TABLE reservation_contacts IS 'Contacto mínimo CIFRADO y purgable (D-55); nunca PII completa';
+COMMENT ON COLUMN reservation_contacts.value_enc IS 'Email o usuario de Telegram cifrado con AES-256-GCM';
+COMMENT ON COLUMN reservation_contacts.purge_at IS 'Fecha de purga (al finalizar la estancia)';
+
+-- ---- reservation_status_history ----
+COMMENT ON TABLE reservation_status_history IS 'Historial de estados de la reserva para trazabilidad';
+
+-- ---- folios ----
+COMMENT ON TABLE folios IS 'Estado de cuenta de la estancia; el cobro fiscal es de la 3.ª versión (D-33)';
+COMMENT ON COLUMN folios.status IS 'OPEN · CLOSED';
+
+-- ---- activities / activity_schedules / activity_bookings ----
+COMMENT ON TABLE activities IS 'Catálogo de actividades del hotel (D-44)';
+COMMENT ON TABLE activity_schedules IS 'Horarios con aforo (D-47): capacity es el cupo estricto';
+COMMENT ON TABLE activity_bookings IS 'Inscripción de un huésped con estancia (D-45); BOOKED · WAITLIST · CANCELLED · ATTENDED';
+COMMENT ON COLUMN activity_bookings.charge_id IS 'Cargo en el folio por el precio de la actividad (D-46)';
+
+-- ---- housekeeping ----
+COMMENT ON TABLE housekeeping_shifts IS 'Turno de limpieza por día y franja (D-48)';
+COMMENT ON TABLE housekeeping_assignments IS 'Habitación asignada a una mucama dentro de un turno (D-48)';
+COMMENT ON TABLE housekeeping_room_logs IS 'Cambios del estado operativo (CLEAN · DIRTY · OCCUPIED) (D-19/D-50)';
+
+-- ---- supplies ----
+COMMENT ON TABLE supply_items IS 'Lencería y suministros con umbral crítico (D-51)';
+COMMENT ON COLUMN supply_items.threshold_qty IS 'Umbral crítico; por debajo se emite alerta';
+COMMENT ON TABLE supply_stock_movements IS 'Movimientos de stock; el descuento es automático (D-51)';
+
+-- ---- maintenance ----
+COMMENT ON TABLE maintenance_incidents IS 'Incidencia técnica; con blocks_sale retira la habitación de venta (D-53)';
+COMMENT ON COLUMN maintenance_incidents.status IS 'OPEN · IN_PROGRESS · RESOLVED · CANCELLED';
+COMMENT ON COLUMN maintenance_incidents.blocks_sale IS 'TRUE mientras bloquea la venta; al resolverse se libera (D-53)';
+COMMENT ON TABLE maintenance_incident_events IS 'Historial de la incidencia (reporte, asignación, resolución)';
+COMMENT ON TABLE preventive_plans IS 'Plan de mantenimiento preventivo con periodicidad (D-54)';
+COMMENT ON TABLE preventive_tasks IS 'Tarea preventiva programada con aviso y registro de cumplimiento (D-54)';
+
+-- ---- hotel_images ----
+COMMENT ON TABLE hotel_images IS 'Galería propia del hotel para la home (D-66, D-73)';
+COMMENT ON COLUMN hotel_images.section IS 'Sección de la home: HERO · SERVICES · EXPERIENCE · ACTIVITIES · CONTACT · OTHER';
+COMMENT ON COLUMN hotel_images.file_name IS 'Nombre único: hotel-<seccion>-<fecha subida>-<nº> (D-66)';
+COMMENT ON COLUMN hotel_images.is_cover IS 'Portada de la sección; una sola por sección';
+
+-- ---- hotel_offers ----
+COMMENT ON TABLE hotel_offers IS 'Planes/escaparates informativos de la home (D-69, D-74); sin precios';
+COMMENT ON COLUMN hotel_offers.code IS 'Código único del plan';
+COMMENT ON COLUMN hotel_offers.image_id IS 'FK a hotel_images(id) ON DELETE SET NULL';
+COMMENT ON COLUMN hotel_offers.valid_from IS 'Inicio de vigencia (opcional)';
+COMMENT ON COLUMN hotel_offers.valid_to IS 'Fin de vigencia (opcional); posterior o igual al inicio';
+COMMENT ON COLUMN hotel_offers.sort_order IS 'Orden de presentación en la home';
 
 -- ============================================================================
 -- Fin de base_datos.sql

@@ -42,10 +42,25 @@ interface IHotelNights {
     event CheckedIn(uint256 indexed tokenId, address indexed by, uint256 timestamp);
     /// @notice D-06: nuevo suelo de precio de reventa.
     event MinListingPriceUpdated(uint256 newPrice);
+    /// @notice D-10: habitación añadida al registro dinámico del contrato.
+    event RoomRegistered(uint256 indexed room, string roomType);
+    /// @notice D-10: tipo de una habitación registrada actualizado.
+    event RoomTypeUpdated(uint256 indexed room, string roomType);
+    /// @notice D-18: huella de la ficha de una habitación anclada on-chain.
+    event RoomPublished(uint256 indexed room, bytes32 contentHash, uint256 timestamp);
 
     // ── Errores canónicos (docs/SRS.md §9) ─────────────────────────────────────────
     error DuplicateNight(uint256 tokenId);
-    error RoomNotInMaster(uint256 room);
+    /// @notice D-10: la habitación no está en el registro dinámico del contrato.
+    error RoomNotRegistered(uint256 room);
+    /// @notice D-10: número de habitación inválido (cero).
+    error InvalidRoom(uint256 room);
+    /// @notice D-10: la habitación ya estaba registrada.
+    error RoomAlreadyRegistered(uint256 room);
+    /// @notice D-10: el tipo debe ser "simple", "doble" o "suite".
+    error InvalidRoomType(string roomType);
+    /// @notice D-18: la huella de publicación no puede ser cero.
+    error InvalidContentHash();
     error InvalidPrice();
     error InvalidDate();
     error PastDate();
@@ -155,6 +170,29 @@ interface IHotelNights {
 
     /// @notice Actualiza la dirección de tesorería/receptor de royalties (DEFAULT_ADMIN, CU-16).
     function setTreasury(address newTreasury) external;
+
+    // ── Registro dinámico de habitaciones (D-3, D-10, D-14) ─────────────────────
+    /// @notice Añade una habitación al registro del contrato (DEFAULT_ADMIN, D-10).
+    /// @dev El registro **arranca vacío** (D-13): la autoridad del maestro es la base de datos
+    ///      (D-3) y el despliegue siembra desde ahí. `roomType` es "simple", "doble" o "suite".
+    function registerRoom(uint256 room, string calldata roomType) external;
+
+    /// @notice Cambia el tipo de una habitación registrada (DEFAULT_ADMIN, D-10).
+    function updateRoomType(uint256 room, string calldata roomType) external;
+
+    /// @notice Ancla la huella de la ficha de una habitación (DEFAULT_ADMIN, D-18).
+    /// @dev La huella (`keccak256` del contenido) queda registrada y se emite con la marca de
+    ///      tiempo del bloque: es el anclaje on-chain verificable de la publicación (D-2/D-18).
+    function publishRoom(uint256 room, bytes32 contentHash) external;
+
+    /// @notice ¿La habitación pertenece al registro dinámico del contrato? (D-10).
+    function isRoomRegistered(uint256 room) external view returns (bool);
+
+    /// @notice Tipo de una habitación registrada; cadena vacía si no está (D-10).
+    function roomTypeOf(uint256 room) external view returns (string memory);
+
+    /// @notice Huella de la última publicación anclada de una habitación; cero si no hay (D-18).
+    function publicationHashOf(uint256 room) external view returns (bytes32);
 
     // ── Getters de configuración ──────────────────────────────────────────────
     /// @notice D-06: royalty ERC-2981 inmutable, derivado del TIPO de la habitación del

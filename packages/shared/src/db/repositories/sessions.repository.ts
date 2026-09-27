@@ -1,11 +1,12 @@
 import type { Pool } from "pg";
 import { getDbPool } from "../pool";
 import { hashSessionTrace } from "../../auth/crypto";
+import type { AdminUserRole } from "./users.repository";
 
 export interface AdminSessionRecord {
   id: string;
   username: string;
-  role: "DEFAULT_ADMIN_ROLE" | "RECEPTION_ROLE";
+  role: AdminUserRole;
   refreshTokenHash: string;
   /**
    * Traza pseudonimizada (`hmac-sha256:…`) de la IP del acceso, o `null` si no había nada que
@@ -29,7 +30,7 @@ export class SessionsRepository {
    */
   async createSession(
     username: string,
-    role: "DEFAULT_ADMIN_ROLE" | "RECEPTION_ROLE",
+    role: AdminUserRole,
     refreshTokenHash: string,
     ipAddress: string,
     userAgent: string,

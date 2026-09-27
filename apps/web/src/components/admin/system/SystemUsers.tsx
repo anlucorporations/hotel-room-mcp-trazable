@@ -2,11 +2,23 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import type { BackOfficeRoleName } from "@hotel/shared/domain";
 import { useAdminContext } from "@/components/admin/AdminLayout";
+
+/** Clave i18n del `system` namespace para la etiqueta de cada rol de operador (D-56). */
+const ROLE_LABEL_KEY: Record<
+  BackOfficeRoleName,
+  "roleAdmin" | "roleReception" | "roleHousekeeping" | "roleMaintenance"
+> = {
+  DEFAULT_ADMIN_ROLE: "roleAdmin",
+  RECEPTION_ROLE: "roleReception",
+  HOUSEKEEPING: "roleHousekeeping",
+  MAINTENANCE: "roleMaintenance",
+};
 
 interface SystemUser {
   readonly username: string;
-  readonly role: "DEFAULT_ADMIN_ROLE" | "RECEPTION_ROLE";
+  readonly role: BackOfficeRoleName;
   readonly active: boolean;
   readonly failedAttempts: number;
   readonly lockedUntil: string | null;
@@ -48,7 +60,7 @@ export function SystemUsers() {
   const [copied, setCopied] = useState(false);
 
   const [username, setUsername] = useState("");
-  const [role, setRole] = useState<"DEFAULT_ADMIN_ROLE" | "RECEPTION_ROLE">("RECEPTION_ROLE");
+  const [role, setRole] = useState<BackOfficeRoleName>("RECEPTION_ROLE");
   const [password, setPassword] = useState("");
 
   const load = useCallback(async (): Promise<void> => {
@@ -172,7 +184,7 @@ export function SystemUsers() {
                         {user.username}
                         {isSelf && <span className="ml-2 rounded-pill bg-sand-2 px-2 py-0.5 text-micro">{t("selfBadge")}</span>}
                       </td>
-                      <td className="px-2 py-2">{user.role === "DEFAULT_ADMIN_ROLE" ? t("roleAdmin") : t("roleReception")}</td>
+                      <td className="px-2 py-2">{t(ROLE_LABEL_KEY[user.role])}</td>
                       <td className="px-2 py-2">{user.active ? t("stateActive") : t("stateInactive")}</td>
                       <td className="px-2 py-2">
                         {user.lockedUntil ? t("locked") : user.failedAttempts > 0 ? t("failedAttempts", { count: user.failedAttempts }) : "—"}
@@ -221,6 +233,8 @@ export function SystemUsers() {
             <select data-testid="system-user-role" value={role} onChange={(event) => setRole(event.target.value as typeof role)} className={FIELD}>
               <option value="RECEPTION_ROLE">{t("roleReception")}</option>
               <option value="DEFAULT_ADMIN_ROLE">{t("roleAdmin")}</option>
+              <option value="HOUSEKEEPING">{t("roleHousekeeping")}</option>
+              <option value="MAINTENANCE">{t("roleMaintenance")}</option>
             </select>
           </label>
           <label className="flex flex-col gap-1 text-small text-ink">

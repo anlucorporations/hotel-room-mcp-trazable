@@ -41,3 +41,20 @@ export const ALL_ROLE_NAMES: readonly RoleName[] = [
   "DEFAULT_ADMIN_ROLE",
   ...OPERATIONAL_ROLE_NAMES,
 ];
+
+/**
+ * Roles de **operador de back-office** que viven en la base de datos (D-04, D-56).
+ *
+ * A diferencia de `RoleName` (roles del contrato), estos no existen on-chain. `HOUSEKEEPING` y
+ * `MAINTENANCE` son roles **sin wallet** (D-56). Se declaran aquí, en el subpath isomorfo
+ * `@hotel/shared/domain`, para que los componentes de cliente puedan tipar sin arrastrar el barril
+ * raíz (que reexporta módulos de servidor).
+ */
+export const BACK_OFFICE_ROLE_NAMES = [
+  "DEFAULT_ADMIN_ROLE",
+  "RECEPTION_ROLE",
+  "HOUSEKEEPING",
+  "MAINTENANCE",
+] as const;
+
+export type BackOfficeRoleName = (typeof BACK_OFFICE_ROLE_NAMES)[number];

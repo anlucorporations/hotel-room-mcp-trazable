@@ -7,6 +7,8 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 import {HotelNights} from "../src/HotelNights.sol";
 import {IHotelNights} from "../src/IHotelNights.sol";
 
+import {RoomRegistrySeed} from "./RoomRegistrySeed.sol";
+
 /// @notice CU-02 (docs/SRS.md §9) — Mintear una noche-habitación.
 contract HotelNightsMintTest is Test {
     HotelNights internal nft;
@@ -26,6 +28,7 @@ contract HotelNightsMintTest is Test {
     function setUp() public {
         vm.warp(BASE_TS);
         nft = new HotelNights(treasury);
+        RoomRegistrySeed.seed(nft);
         nft.grantRole(nft.MINTER_ROLE(), minter);
     }
 
@@ -55,9 +58,10 @@ contract HotelNightsMintTest is Test {
         nft.mint(ROOM, DATE, PRICE, URI);
     }
 
-    function test_MintRoomNotInMaster() public {
+    function test_MintRoomNotRegistered() public {
+        // D-10: la autoridad es el registro dinámico; la 999 no está registrada.
         vm.prank(minter);
-        vm.expectRevert(abi.encodeWithSelector(IHotelNights.RoomNotInMaster.selector, uint256(999)));
+        vm.expectRevert(abi.encodeWithSelector(IHotelNights.RoomNotRegistered.selector, uint256(999)));
         nft.mint(999, DATE, PRICE, URI);
     }
 

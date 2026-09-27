@@ -5,6 +5,8 @@ import {Test} from "forge-std/Test.sol";
 
 import {HotelNights} from "../src/HotelNights.sol";
 
+import {RoomRegistrySeed} from "./RoomRegistrySeed.sol";
+
 /**
  * @title HotelNightsRoyaltyTest
  * @notice D-06 — Royalty ERC-2981 por TIPO de habitación, fijo por construcción: 500 bps
@@ -33,6 +35,7 @@ contract HotelNightsRoyaltyTest is Test {
     function setUp() public {
         vm.warp(BASE_TS);
         nft = new HotelNights(treasury);
+        RoomRegistrySeed.seed(nft);
         nft.grantRole(nft.MINTER_ROLE(), minter);
 
         vm.startPrank(minter);
@@ -105,6 +108,7 @@ contract HotelNightsRoyaltyTest is Test {
     ///         altere (el argumento de bps del constructor se eliminó con D-06).
     function test_RoyaltyIsFixedByRoomTypeAcrossDeployments() public {
         HotelNights other = new HotelNights(treasury);
+        RoomRegistrySeed.seed(other);
 
         (, uint256 simpleHere) = nft.royaltyInfo(SIMPLE_ID, 1 ether);
         (, uint256 simpleThere) = other.royaltyInfo(SIMPLE_ID, 1 ether);

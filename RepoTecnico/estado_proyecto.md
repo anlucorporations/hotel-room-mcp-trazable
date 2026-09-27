@@ -1002,5 +1002,467 @@ enlace al catálogo. Es una dependencia de pago no presupuestada (RF-20, «PAR»
   `/api/admin/system/operations` con worker `ok`; la cuenta de recepción recibe **403** en ambas;
   `/reception/overview` sigue en 200.
 
+---
+
+## 12. Propuesta de reestructuración — bloque 1 cerrado y artefactos de datos (2026-09-26)
+
+### Contexto
+
+Análisis de `RepoTecnico/reestructuraHotel.md`: reorganización del producto en tres suites
+(Administración con sidebar derecha y acordeón, Front Office con barra superior, Pública como home de
+marca) más cinco dominios nuevos (Habitación, Housekeeping, Mantenimiento, Actividades y Motor de
+Reservas). **No se ha modificado la estructura del proyecto**: solo se han creado/actualizado documentos.
+
+### Entregables de la propuesta
+
+| Documento | Contenido |
+|---|---|
+| `RepoTecnico/propuesta_reestructura.md` | Análisis, IA de las tres suites, modelo de datos, plan de fases §7 recompuesto, riesgos y decisiones D-1…D-33 |
+| `RepoTecnico/proceso_actual_habitacion.md` | Diagramas del proceso **actual** de creación/publicación de noches (no existe el ente «habitación») |
+| `RepoTecnico/proceso_propuesto_habitacion.md` | Proceso **propuesto** de la sección Habitación, con las 33 decisiones registradas |
+
+### Decisiones cerradas (D-1…D-33)
+
+Bloque 1 **cerrado** tras la entrevista una a una. Resumen: gestión de Habitación por el **administrador
+con wallet** (D-1); ficha en PostgreSQL y anclaje on-chain solo de la publicación (D-2, D-18); la **BD es
+la fuente única del maestro** (D-3) con registro dinámico dentro de `HotelNights` (D-10) y corte final
+único (D-24); acuñado **híbrido idempotente** con ventana global configurable y botón manual (D-4, D-11,
+D-16, D-17); fotos locales en `./docs/imagenes` con nomenclatura y reglas JPG/≤2 MB/máx. 5 (D-5, D-12,
+D-20); idiomas ES obligatorio con respaldo (D-6); inventario abierto, archivado y varios administradores
+(D-7, D-8, D-9); dos estados separados (D-19); tipos fijos Simple/Doble/Suite (D-22); home en `/` con
+catálogo en `/catalogo` y reseñas anónimas verificadas (D-27, D-28, D-31). Detalle completo en
+`proceso_propuesto_habitacion.md`.
+
+### Artefactos de datos (sincronizados en el mismo cambio)
+
+- `base_datos.sql` → **v1.1.0**: nueva sección 3.5 con 9 tablas (`room_types`, `rooms`, `room_images`,
+  `room_amenities`, `room_amenity_links`, `room_publications`, `room_status_history`, `reviews`,
+  `platform_settings`), sus índices, semillas (tipos, servicios, `mint_window_days = 90`) y comentarios.
+  Total **25 tablas** (16 + 9).
+- `diccionario_datos.md` → nuevas secciones **§3.8** y **§3.9** con las 9 tablas campo a campo.
+- `diagrama_er.md` → nueva sección **§6** con el diagrama Mermaid y matriz de relaciones ampliada
+  (filas 7–15); trazabilidad renumerada a §8.
+- `packages/shared/src/db/migrator.ts` → las 9 tablas, índices y semillas añadidas a
+  `INITIAL_SCHEMA_SQL`; `resetDatabase()` amplía su lista de `DROP` en orden de dependencias. El
+  runtime queda **sincronizado** con los tres artefactos (25 tablas). `schema.sql` se conserva como
+  referencia histórica (subconjunto) y el guardián sigue en verde.
+
+### Estado
+
+- No se han modificado contrato, rutas ni estructura de carpetas. Único cambio de código: `migrator.ts`
+  (esquema aditivo e idempotente).
+- Plan de fases recompuesto (F0…F8); el corte de contrato/reset es la fase final (F8).
+
+---
+
+## 13. Bloque 2 — reservas, actividades, housekeeping y mantenimiento (2026-09-26)
+
+### Entrevista (D-34…D-55)
+
+Bloque 2 **cerrado** con 21 decisiones en `RepoTecnico/proceso_propuesto_recepcion.md`:
+Recepción/Reservas (D-34…D-43), Actividades (D-44…D-47), Housekeeping (D-48…D-51) y Mantenimiento
+(D-52…D-54), más el cierre de datos sobre el contacto del huésped (D-55). Ideas clave: administración
+configura y Front Office opera; la reserva **retiene** y el token se emite **solo al pagar el 100 %**;
+sin sobreventa; no-show automático; actividades con cupo estricto y cargo al folio; Housekeeping con
+reparto automático, web responsive ahora (app nativa en v3) y rol limitado sin wallet; mantenimiento con
+bloqueo/liberación automáticos y preventivo con cronograma.
+
+### Artefactos de datos (sincronizados en el mismo cambio)
+
+- `base_datos.sql` → **v1.2.0**: nueva sección 3.6 con **17 tablas** (reservations, reservation_nights,
+  reservation_contacts, reservation_status_history, folios, activities, activity_schedules,
+  activity_bookings, housekeeping_shifts, housekeeping_assignments, housekeeping_room_logs, supply_items,
+  supply_stock_movements, maintenance_incidents, maintenance_incident_events, preventive_plans,
+  preventive_tasks), la columna `additional_charges.folio_id`, sus índices, la semilla de suministros y
+  los comentarios. Total **42 tablas**.
+- `diccionario_datos.md` → nueva sección **§3.10**; retención del contacto de reserva (D-55) añadida.
+- `diagrama_er.md` → nueva sección **§7** con el diagrama Mermaid; matriz de relaciones ampliada
+  (filas 16–38); trazabilidad renumerada a §9.
+- `packages/shared/src/db/migrator.ts` → las 17 tablas, índices y semillas añadidas a
+  `INITIAL_SCHEMA_SQL`; `resetDatabase()` amplía su lista de `DROP` a **42 tablas** en orden de
+  dependencias.
+
+### Verificación
+
+- `@hotel/shared`: **typecheck OK**; guardianes de arquitectura (9) y documentación (6) **en verde**.
+- Paridad automática migrator ↔ `base_datos.sql`: **42/42 tablas**, 17/17 del bloque 2 con columnas e
+  índices idénticos; CREATE/DROP equilibrados (42/42). No hay `psql`/Docker en el entorno, así que la
+  **ejecución** del DDL queda pendiente de una base de datos real.
+
+### Deuda declarada
+
+- El **rol `HOUSEKEEPING`** decidido en D-50 no existe aún como rol del sistema: hoy los operadores son
+  `DEFAULT_ADMIN_ROLE`/`RECEPTION_ROLE`. Falta decidir si vive en la BD o en el contrato (bloque 3).
+- La **disponibilidad (D-41)** debe cruzar `reservation_nights` activas con tokens `nfts` y bloqueos de
+  mantenimiento: el índice único parcial cubre reservas, pero no el choque reserva↔token (queda en la
+  capa de aplicación).
+- Los **tokens no se acuñan** todavía al pagar el 100 % (D-39): es lógica de la API de reservas, aún no
+  implementada.
+- Igual que en la F1, no se ha tocado el contrato ni las rutas.
+
+---
+
+## 14. Bloque 3 — cierres técnicos y roles del personal (2026-09-26)
+
+### Entrevista (D-56…D-64)
+
+Bloque 3 con **9 decisiones** en `RepoTecnico/proceso_propuesto_bloque3.md`:
+
+- **D-56** Roles `HOUSEKEEPING` y `MAINTENANCE` **en la base de datos**, sin wallet (contraseña + TOTP).
+- **D-57** Reserva ↔ token: al acuñar se **omiten** las noches reservadas; al pagar el 100 % se **asigna**
+  el token no vendido o se **acuña y vende**.
+- **D-58/D-59** Reseñas: **moderación previa** del administrador y **firma EIP-712** del titular de la
+  noche consumida.
+- **D-60** **Anticipo off-chain** (folio) y **liquidación con wallet on-chain**; el contrato no cambia.
+- **D-61** Confirmación por **web + email**; **Telegram a la cuarta versión** (ajusta D-38).
+- **D-62/D-63** Rutas independientes **`/housekeeping`** y **`/mantenimiento`** para el personal.
+- **D-64** Alertas de stock en el panel de **Lencería** + notificación; sin panel de compras (v3).
+
+**Pregunta aplazada por el cliente:** alcance del **escaneo axe** (RNF-15) en las rutas nuevas.
+
+### Cambios en artefactos
+
+- **No hay tablas nuevas**: los roles de D-56 son vocabulario de `admin_users.role`, no un cambio de
+  esquema. Se actualizó la documentación del rol en `base_datos.sql`, `migrator.ts`, `diccionario_datos.md`
+  y `diagrama_er.md`.
+- `propuesta_reestructura.md`: IA ampliada con las rutas de personal (nuevo §4.5) y registro de
+  D-34…D-64.
+- El modelo de datos sigue en **42 tablas**, sincronizado.
+
+### Verificación
+
+- `@hotel/shared`: **typecheck OK**; guardianes de arquitectura (9) y documentación (6) **en verde**.
+- Sin cambios de esquema, por lo que la paridad migrator ↔ artefactos se mantiene (42/42).
+
+### Deuda declarada
+
+- La **lógica** de D-57 (omitir reservas al acuñar, asignar/acuñar al pagar el 100 %), de D-58/D-59
+  (moderación y firma de reseñas) y de D-60 (conciliación anticipo/liquidación) **no está implementada**:
+  es trabajo de F2 (Front Office) y F6 (Pública).
+- El **contrato `HotelNights`** sigue sin cambios; el corte de la fase F8 mantiene su alcance (registro
+  dinámico + reset).
+- El escaneo de accesibilidad de las rutas nuevas queda **aplazado** por decisión del cliente.
+
+---
+
+## 15. Bloque 4 — Suite Pública (2026-09-26)
+
+### Entrevista (D-65…D-72)
+
+Bloque 4 con **8 decisiones** en `RepoTecnico/proceso_propuesto_publica.md`:
+
+- **D-65** Reserva desde la web: retiene la noche, **anticipo por transferencia** y **liquidación con
+  wallet**.
+- **D-66** **Galería propia del hotel** gestionada por el administrador (`docs/imagenes`,
+  `hotel-<seccion>-<fecha>-<n>`).
+- **D-67** Contacto con dirección/teléfono/email y **mapa OpenStreetMap** (sin clave).
+- **D-68** Reseñas aprobadas en **home y ficha**, con **nota media**.
+- **D-69** «Planes especiales» como **escaparates informativos**, sin lógica de precios.
+- **D-70** **Categoría (estrellas)** + sección de **experiencia** (galería/servicios/reseñas); sin
+  valoración por categorías.
+- **D-71** Home **one-page** con secciones ancla + páginas propias (`/catalogo`, `/reventa`, …).
+- **D-72** La **wallet se conecta al inicio** de la reserva.
+
+### Cambios en artefactos
+
+- **No hay cambios de esquema** (42 tablas sin tocar). Las decisiones de este bloque son de experiencia
+  de usuario, rutas y flujo; el detalle de producto vive en `propuesta_reestructura.md` (§4.4) y en el
+  documento del bloque.
+- `propuesta_reestructura.md`: §4.4 reescrita (home one-page y flujo de reserva) y registro D-65…D-72.
+
+### Deuda declarada
+
+- La **galería del hotel** (D-66) no tiene tabla propia en esta entrega: reutiliza el patrón de
+  `room_images`/`docs/imagenes`. Si se quiere gestionar desde el back-office, falta decidir su modelo de
+  datos (posible `hotel_images`) antes de F6.
+- **OpenStreetMap** (D-67) es una dependencia externa de solo lectura; debe entrar en la CSP y en la
+  política de rendimiento (LCP) de la web pública.
+- Los **planes informativos** (D-69) no tienen entidad de datos; se gestionarán como contenido si F6 los
+  necesita editables.
+
+---
+
+## 16. Bloque 5 — galería, planes y accesibilidad (2026-09-26)
+
+### Entrevista (D-73…D-75)
+
+Bloque 5 con **3 decisiones** en `RepoTecnico/proceso_propuesto_bloque5.md`:
+
+- **D-73** Galería del hotel en tabla **`hotel_images`** (sección de la home, posición, portada, alt text
+  por idioma; reglas de imagen de `room_images`, gestionada por el administrador con wallet).
+- **D-74** Planes especiales en tabla **`hotel_offers`** (título/descripción multilingües, imagen,
+  vigencia, orden, activo; **sin precios**).
+- **D-75** El escaneo **axe** se extiende a **todas las rutas nuevas** (tres suites + `/housekeeping` +
+  `/mantenimiento`), en escritorio y móvil, con el umbral vigente (cierra la pregunta aplazada del
+  bloque 3).
+
+### Artefactos de datos (sincronizados en el mismo cambio)
+
+- `base_datos.sql` → **v1.3.0**: nueva sección 3.7 con **2 tablas** (`hotel_images`, `hotel_offers`), sus
+  índices y comentarios. Total **44 tablas**.
+- `diccionario_datos.md` → nueva sección **§3.11**.
+- `diagrama_er.md` → nueva sección **§6.2**; matriz de relaciones ampliada (fila 39).
+- `packages/shared/src/db/migrator.ts` → las 2 tablas, índices añadidos a `INITIAL_SCHEMA_SQL`;
+  `resetDatabase()` amplía su lista de `DROP` a **44 tablas**.
+
+### Verificación
+
+- `@hotel/shared`: typecheck OK; guardianes de arquitectura (9) y documentación (6) en verde.
+- Paridad migrator ↔ `base_datos.sql`: **44/44 tablas**, 2/2 del bloque 5 con columnas e índices
+  idénticos; CREATE/DROP equilibrados (44/44).
+
+### Deuda declarada
+
+- Resueltas las deudas de D-66 (galería) y D-69 (planes): ahora tienen entidad de datos.
+- Sigue pendiente la **implementación de lógica** (no el esquema): galería/planes no tienen API ni UI
+  todavía (trabajo de F6).
+- El **contrato** sigue sin cambios; el corte F8 mantiene su alcance.
+
+---
+
+## 17. Plan definitivo consolidado (2026-09-26)
+
+Se consolida toda la entrevista en [`plan_definitivo.md`](plan_definitivo.md) — **versión 1.0**, pendiente
+de aprobación del responsable (fase F0):
+
+- Integra las **75 decisiones (D-1…D-75)** y las **44 tablas** ya sincronizadas.
+- Define **8 fases** (F0…F8): F1 shell+Habitación, F2 Front Office/Reservas, F3 Housekeeping,
+  F4 Mantenimiento, F5 Actividades, F6 Pública, F7 financiera (3.ª versión, fuera), **F8 corte final**
+  (registro dinámico de contrato + reset + primera ventana de acuñado).
+- Incluye arquitectura de información destino, trazabilidad decisiones→fases, gates de calidad
+  (typecheck, tests con trinquete, axe en todas las rutas nuevas, i18n, privacidad), matriz de permisos y
+  riesgos globales.
+- `propuesta_reestructura.md` §7 queda marcado como **superado** por el plan definitivo.
+
+**Próximo paso:** aprobación de F0 y arranque de **F1** (shell de Administración + sección Habitación),
+que es el primer entregable operativo.
+
+---
+
+## 18. F1 en curso — shell de Administración + Habitación (2026-09-26)
+
+**F0 aprobado** por el responsable. Arranca **F1**.
+
+### Hecho
+
+- **Roles de BD (D-56)**: `HOUSEKEEPING` y `MAINTENANCE` añadidos en los 8 puntos que enumeraban roles
+  (`users.repository.ts`, `sessions.repository.ts`, `env/index.ts`, `guard.ts`, ruta `system/users`,
+  `mfa/verify`, `create-admin.ts`, `SystemUsers.tsx`) y en los 3 catálogos i18n
+  (`system.roleHousekeeping`, `system.roleMaintenance`).
+- **`guard.ts`**: `RequiredRole` pasa a ser `AuthRole`; las rutas sin rol explícito siguen reservadas a
+  **gestión** (`DEFAULT_ADMIN_ROLE`/`RECEPTION_ROLE`) y los roles de personal **deben declarar su rol**,
+  de modo que añadirlos **no amplía** el acceso del back-office clásico.
+- **`RoomsRepository`** (`packages/shared/src/db/repositories/rooms.repository.ts`): listado (excluye
+  archivadas D-8), alta con número único (D-7), edición parcial, archivar, dos estados con historial
+  (D-19), galería (posición 1..5 y portada única, D-20) y publicaciones ancladas (D-2/D-18).
+  **17 pruebas** en verde.
+
+### Verificación
+
+- `@hotel/shared`: typecheck y build OK; 70 pruebas de auth/repos/env en verde.
+- `@hotel/web`: typecheck OK; 41 pruebas de guard/roles/usuarios en verde.
+- Paridad i18n ES/EN/RU comprobada.
+- Esquema: sin cambios (44 tablas).
+
+### Pendiente de F1
+
+Shell del sidebar derecho con acordeón (D-29), UI de la sección con i18n y escaneo axe de las rutas
+nuevas.
+
+### Avance (ronda 2)
+
+- **API de habitaciones**: `GET/POST /api/admin/rooms`, `GET/PATCH/DELETE /api/admin/rooms/[id]` con
+  validación compartida (`apps/web/src/lib/rooms.ts`), huella keccak256 de la ficha y `PATCH` que
+  **rechaza publicar** (exige el endpoint con TOTP). `POST /api/admin/rooms/[id]/publish` verifica TOTP
+  contra la semilla del operador, exige descripción ES (D-21) y una foto (D-20), registra la publicación
+  y la marca anclada o pendiente (D-18).
+- **Galería**: `apps/web/src/lib/room-images.ts` (nomenclatura D-5/D-12, anti-traversal, JPG ≤2 MB),
+  servido `GET /api/rooms/images/[file]` (expone `docs/imagenes` fuera de `public/`) y administración
+  `GET/POST /api/admin/rooms/[id]/images` + `PATCH/DELETE …/[imageId]`.
+- **Pruebas nuevas**: 17 (repositorio) + 25 (API habitaciones/publicación) + 8 (librería de imágenes) +
+  11 (rutas de imágenes) = **61 pruebas en verde**; `@hotel/web` typecheck OK.
+
+### Avance (ronda 3) — shell e interfaz
+
+- **Shell de Administración (D-29)**: `adminNav.ts` reorganizado en **secciones** (`ADMIN_NAV_SECTIONS`);
+  `AdminLayout` pasa el sidebar a la **derecha** y lo convierte en **acordeón de una sola sección
+  abierta** (arranca en la de la ruta activa), con botón de menú en móvil (`aria-expanded`/`aria-controls`).
+- **Sección Habitación** (`/admin/habitacion`): página + `RoomsAdmin` con alta, listado, ficha editable,
+  galería (subir JPG, marcar portada, eliminar), pausar/publicar (modal TOTP) y archivar. i18n del
+  namespace `rooms` en ES/EN/RU con paridad y claves de sección en `admin.nav`.
+- **Fronteras**: se añadió el tipo isomorfo `BackOfficeRoleName` en `@hotel/shared/domain` (para que el
+  cliente no importe el barril raíz) y `lib/rooms.ts` pasa a `server-only`. El guardián `boundaries` está
+  en verde.
+- **Build de producción** de `@hotel/web`: **OK**; la ruta `/admin/habitacion` queda compilada.
+- **Pruebas**: 198 pruebas de `lib` + `api/admin` (197 en verde); el único fallo es
+  `manuals-sync.test.ts`, **preexistente y ajeno**. `a11y` estático 17/17.
+
+### Limitaciones declaradas
+
+- **Anclaje on-chain de la publicación**: F1 calcula y guarda la **huella keccak256** y exige TOTP, pero la
+  **firma con wallet y la transacción** necesitan el **registro dinámico del contrato (F8, D-10)**. Por
+  ahora la publicación queda `PENDING_ANCHOR` (202).
+- **axe E2E**: `/admin/habitacion` ya está en `e2e/a11y.spec.ts`, pero el navegador no arranca en este
+  entorno por falta de `libnspr4`/`libnss3` y no haber root para instalarlos; queda para CI.
+
+---
+
+## 19. F1 · Anclaje on-chain — corte de contrato adelantado (2026-09-26)
+
+El responsable eligió **adelantar el corte de contrato (F8)** para cerrar el anclaje de la publicación
+dentro de F1. Ejecutado:
+
+### Contrato (`HotelNights.sol`)
+
+- **Registro dinámico de habitaciones** (D-3/D-10): `registerRoom(room, roomType)`,
+  `updateRoomType`, `isRoomRegistered`, `roomTypeOf`; **arranca vacío** (D-13) y `RoomMaster` queda como
+  **semilla de carga y referencia histórica** (D-14), ya no como autoridad. `mint` exige
+  `isRoomRegistered` (error `RoomNotRegistered`) y el tipo se lee del registro.
+- **Anclaje de la publicación** (D-18): `publishRoom(room, contentHash)` guarda la huella y emite
+  `RoomPublished`; `publicationHashOf` la expone. Solo `DEFAULT_ADMIN_ROLE`.
+- Errores/eventos nuevos en `IHotelNights`; ABI regenerado (`packages/shared/src/abi/hotel-nights.ts`).
+- El royalty sigue **inmutable por tipo**, ahora leído del registro on-chain.
+
+### Aplicación
+
+- `RoomsAdmin`: al publicar, sincroniza el registro (`registerRoom` si falta) y ancla la huella
+  (`publishRoom`) con la wallet; envía `txHash` a la API, que marca la publicación **anclada** (200).
+  Sin wallet/RPC, la publicación sigue funcionando y queda `PENDING_ANCHOR` (202).
+
+### Verificación
+
+- **Foundry: 139 pruebas en verde** (14 suites), incluidas **14 nuevas** del registro y el anclaje
+  (`test/HotelNights.rooms.t.sol`). Los `setUp` siembran el registro con `RoomRegistrySeed` (D-14).
+- **Integración real en Anvil**: despliegue del contrato, `isRoomRegistered(101) = false` (D-13),
+  `registerRoom(101,"simple")`, `publishRoom(101, 0xab…)` y `publicationHashOf(101)` idéntico a la huella.
+- `@hotel/web`: typecheck OK, **build de producción OK**, 58 pruebas de habitaciones/fronteras en verde.
+
+### Pendiente declarado (resto de F8)
+
+- **Reset total** coordinado (D-15) y **siembra** de las 50 habitaciones desde la BD (D-3).
+- **Ventana de acuñado** global con botón manual (D-4/D-11/D-17).
+- **Paso `registerRoom`** en los scripts de desarrollo/E2E (`seed-demo`, `inject-data`, `e2e/m4…m7`)
+  antes de mintear: sin él, esos scripts fallan con `RoomNotRegistered` y no se han podido re-ejecutar
+  aquí (requieren Anvil y datos).
+
+### Cierre de F1
+
+**F1 COMPLETADA (2026-09-26)** por aceptación del responsable: los scripts de desarrollo/E2E quedan como
+**deuda de F8** (junto con el reset, la siembra desde la BD y la ventana de acuñado), y el axe E2E como
+limitación de entorno cubierta en CI. El objetivo de la fase se da por cumplido con el anclaje on-chain
+verificado en Anvil y **139 pruebas Foundry** en verde.
+
+---
+
+## 20. F2 en curso — Front Office y Motor de Reservas (2026-09-26)
+
+Arranca **F2** (D-26, D-32, D-34…D-43, D-55, D-57, D-60).
+
+### Hecho
+
+- **`ReservationsRepository`** (`packages/shared/src/db/repositories/reservations.repository.ts`):
+  - Disponibilidad **exacta** noche a noche (`FREE`/`RESERVED`/`SOLD`) cruzando reservas activas y
+    tokens vendidos (D-41/D-57).
+  - Alta **reteniendo** noches en transacción; la BD impide la sobreventa con el índice único parcial
+    `(room_id, night_date) WHERE active` y el repositorio traduce la violación a `UNAVAILABLE` (D-41).
+  - Contacto **cifrado (AES-256-GCM) y purgable** (D-55); folio abierto al crear (D-60).
+  - `confirmReservation` (sin emitir token, D-39), `cancelReservation`/`markNoShow` liberando inventario
+    (D-40/D-42), `expireHolds` (D-37), `modifyReservation` con recálculo (D-43),
+    `recordDeposit` (D-60) y `assignToken` (D-57).
+  - **13 pruebas** en verde.
+- **API de recepción** (`apps/web/src/app/api/reception/`): `GET /availability`,
+  `GET/POST /reservations`, `GET/PATCH/DELETE /reservations/[id]`, `POST …/confirm`,
+  `POST …/deposit`. Todas exigen `RECEPTION_ROLE`; ninguna registra PII en claro. **14 pruebas**.
+- `@hotel/shared` typecheck y build OK; `@hotel/web` typecheck OK.
+
+### Pendiente de F2
+
+- **Shell Front Office** con barra superior (D-32) y reubicación de `/recepcion/*`.
+- **UI del motor de reservas** (i18n ES/EN/RU).
+- **Regla reserva↔token en el acuñado** (D-57): al acuñar la ventana se omiten las noches reservadas y
+  al pagar el 100 % se asigna el token no vendido o se acuña (D-39).
+- **Reserva con wallet** desde la web (D-65/D-72) y **purga programada** de contactos.
+
+### Avance (ronda 1) — shell, UI y regla reserva↔token
+
+- **Shell Front Office (D-32)**: `recepcion/layout.tsx` + `FrontOfficeShell` (barra superior
+  Operación · Reservas). `/recepcion` sigue siendo la raíz; la página se movió al layout sin duplicar
+  `PublicShell`.
+- **UI del motor de reservas** en `/recepcion/reservas` (`ReservationsAdmin`): alta con comprobación de
+  disponibilidad, confirmar/cancelar y listado; gating por `RECEPTION_ROLE`; i18n ES/EN/RU con paridad.
+- **Endpoint** `GET /api/reception/rooms` (solo habitaciones `PUBLISHED`, sin campos sensibles).
+- **D-57 en el acuñado**: `isNightReserved` en el repositorio y, en `/api/admin/mint`, las noches
+  reservadas se **omiten** (`omittedReservedNights`) o el lote entero devuelve **409 `RESERVED_NIGHTS`**.
+- **Verificación**: `@hotel/shared` 30/30; `@hotel/web` 73/73 (incluye recepción, admin, guardianes de
+  recepción y fronteras); typecheck de ambos; **build de producción OK** con `/recepcion` y
+  `/recepcion/reservas`; `/recepcion/reservas` añadida al escaneo axe de `e2e/a11y.spec.ts`.
+- **Pendiente**: liquidación al 100 % con asignación/acuñado (D-39/D-57) desde la web con wallet
+  (D-65/D-72), purga programada de contactos (D-55) y `no-show` automático programado (D-42).
+
+### Avance (ronda 2) — liquidación y automatización
+
+- **Plan de liquidación al 100 % (D-57/D-60)**: `ReservationsRepository.planSettlement` decide noche a
+  noche **asignar** el token no vendido (lo enlaza), marcar **`needsMint`** si no existe, o
+  **`conflicts`** si ya lo compró otra persona. Endpoint `POST /api/reception/reservations/[id]/settle`
+  (409 `SETTLEMENT_CONFLICT`); la compra/acuñado on-chain la firma la wallet en la suite pública (F6).
+- **Automatización (D-37/D-42/D-55)**: `purgeExpiredData` (`packages/shared/src/maintenance/retention.ts`)
+  ahora también ejecuta `expireHolds` (bloqueos vencidos), `markNoShows` (confirmadas sin presentarse) y
+  `purgeContacts` (contactos de estancias terminadas). El **planificador de retención del worker** ya
+  las corre cada 6 h, así que el vencimiento, el no-show y la purga son automáticos. `PurgeResult` gana
+  `expiredHolds`, `noShows` y `purgedContacts`.
+- **Verificación**: `@hotel/shared` 34/34 (19 del repositorio de reservas), `@hotel/web` 51/51 en
+  recepción, `@hotel/worker` typecheck y 5/5 de retención, typecheck de web, **build de producción OK**.
+- **Pendiente**: reserva y liquidación **con wallet** desde la suite pública (D-65/D-72, F6) y no-show
+  con **hora límite configurable** (hoy es por fecha de entrada).
+
+### Avance (ronda 3) — configuración persistida y no-show con hora
+
+- **`SettingsRepository`** (`platform_settings`): `get`, `getNumber` (con respaldo) y `set` con upsert.
+  Claves: ventana de acuñado (D-11), **anticipo** (D-37), **plazo de bloqueo** (D-37) y **hora del
+  no-show** (D-42).
+- **`GET/PUT /api/admin/settings`** (solo owner): lee los ajustes vigentes y valida rangos antes de
+  escribir (0-100 % de anticipo, 1-720 h de plazo, 0-23 h de no-show, 1-365 días de ventana).
+- **Alta de reserva**: si no se pasa importe, el anticipo y el plazo se leen de los ajustes
+  (respaldo 30 % / 24 h), de modo que son **configurables sin desplegar**.
+- **No-show con hora límite (D-42)**: `markNoShows(now, noShowHour)` marca las confirmadas de hoy solo
+  cuando la hora actual supera la configurada (y siempre las de días anteriores); el worker lee la hora
+  de los ajustes.
+- **Verificación**: `@hotel/shared` **87/87** (todos los repositorios + guardianes), `@hotel/worker`
+  5/5, `@hotel/web` 57/57 en administración/recepción, typecheck de ambos y **build de producción OK**.
+- **Pendiente**: **reserva y liquidación con wallet** desde la suite pública (D-65/D-72, F6) y una
+  **pantalla de ajustes** en el back-office (la API ya está; la UI es conveniencia).
+
+### Avance (ronda 4) — pantalla de ajustes
+
+- **`/admin/sistemas/ajustes`** (`SettingsAdmin`): formulario para la **ventana de acuñado** (D-11),
+  el **anticipo** (D-37), el **plazo de bloqueo** (D-37) y la **hora del no-show** (D-42), con rangos
+  validados y aviso de resultado. Entrada nueva en el menú **Sistemas** (solo owner).
+- i18n ES/EN/RU con paridad (namespace `settings` + `admin.nav.settings` + títulos del panel); la ruta
+  se añade al escaneo axe.
+- **Verificación**: `@hotel/web` typecheck OK, 10/10 en ajustes/fronteras/guardián de admin, **build de
+  producción OK** con `/admin/sistemas/ajustes`.
+- Con esto la configuración queda **de punta a punta**: UI → API → `platform_settings` → alta de reserva.
+- **Pendiente**: **reserva y liquidación con wallet** desde la suite pública (D-65/D-72, F6).
+
+### Avance (ronda 5) — corrección del historial y cierre de F2
+
+- **Defecto corregido** en `reservation_status_history`: las transiciones (confirmar/cancelar/no-show)
+  escribían `from_value = NULL` y la modificación anotaba `'MODIFIED'` como si fuera un estado. Ahora se
+  lee el estado **anterior real** y se registra la transición `from → to`; la modificación anota el
+  estado vigente a ambos lados con el motivo «Modificación de reserva».
+- **Pruebas**: 2 nuevas que verifican `PENDING → CONFIRMED` y `CONFIRMED → CANCELLED` en el historial.
+- **Verificación**: `@hotel/shared` **89/89**, `@hotel/web` **129/129** (admin + recepción + guardianes)
+  y typecheck, `@hotel/worker` typecheck 5/5, **build de producción OK**.
+
+### Cierre de F2
+
+**F2 COMPLETADA (2026-09-26).** Cubre el shell Front Office (D-32), el motor de reservas completo
+(crear/confirmar/modificar/cancelar, disponibilidad exacta sin sobreventa, anticipo y vencimiento
+configurables), el no-show automático con hora, la regla reserva↔token (D-57), el folio con anticipo
+off-chain y la configuración persistida con su pantalla. **La reserva y la liquidación con wallet
+quedan en F6** (suite pública), tal como fija el plan; **el axe E2E** sigue cubierto en CI por la
+limitación de librerías del entorno.
+
+
 
 

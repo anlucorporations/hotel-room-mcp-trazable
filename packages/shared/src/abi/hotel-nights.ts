@@ -364,6 +364,25 @@ export const hotelNightsAbi = [
   },
   {
     "type": "function",
+    "name": "isRoomRegistered",
+    "inputs": [
+      {
+        "name": "room",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "list",
     "inputs": [
       {
@@ -589,6 +608,61 @@ export const hotelNightsAbi = [
   },
   {
     "type": "function",
+    "name": "publicationHashOf",
+    "inputs": [
+      {
+        "name": "room",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "publishRoom",
+    "inputs": [
+      {
+        "name": "room",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "contentHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "registerRoom",
+    "inputs": [
+      {
+        "name": "room",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "roomType",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "renounceOwnership",
     "inputs": [],
     "outputs": [],
@@ -629,6 +703,25 @@ export const hotelNightsAbi = [
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "roomTypeOf",
+    "inputs": [
+      {
+        "name": "room",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -903,6 +996,24 @@ export const hotelNightsAbi = [
     "type": "function",
     "name": "unpause",
     "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "updateRoomType",
+    "inputs": [
+      {
+        "name": "room",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "roomType",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
     "outputs": [],
     "stateMutability": "nonpayable"
   },
@@ -1230,6 +1341,69 @@ export const hotelNightsAbi = [
         "type": "address",
         "indexed": true,
         "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "RoomPublished",
+    "inputs": [
+      {
+        "name": "room",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "contentHash",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "timestamp",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "RoomRegistered",
+    "inputs": [
+      {
+        "name": "room",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "roomType",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "RoomTypeUpdated",
+    "inputs": [
+      {
+        "name": "room",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "roomType",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
       }
     ],
     "anonymous": false
@@ -1660,6 +1834,11 @@ export const hotelNightsAbi = [
   },
   {
     "type": "error",
+    "name": "InvalidContentHash",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "InvalidDate",
     "inputs": []
   },
@@ -1667,6 +1846,28 @@ export const hotelNightsAbi = [
     "type": "error",
     "name": "InvalidPrice",
     "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidRoom",
+    "inputs": [
+      {
+        "name": "room",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "InvalidRoomType",
+    "inputs": [
+      {
+        "name": "roomType",
+        "type": "string",
+        "internalType": "string"
+      }
+    ]
   },
   {
     "type": "error",
@@ -1794,7 +1995,18 @@ export const hotelNightsAbi = [
   },
   {
     "type": "error",
-    "name": "RoomNotInMaster",
+    "name": "RoomAlreadyRegistered",
+    "inputs": [
+      {
+        "name": "room",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "RoomNotRegistered",
     "inputs": [
       {
         "name": "room",

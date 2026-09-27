@@ -9,12 +9,19 @@ export type AdminNavLabelKey =
   | "funds"
   | "expired"
   | "roles"
+  // Secciones del acordeón (D-29)
+  | "habitacion"
+  | "rooms"
+  | "recepcion"
+  | "administracion"
+  | "plataforma"
   // Grupo «Sistemas» (incremento v3, solo owner): RF-41.
   | "systems"
   | "contracts"
   | "systemUsers"
   | "finances"
-  | "operations";
+  | "operations"
+  | "settings";
 
 export interface AdminNavItem {
   readonly href: string;
@@ -26,21 +33,56 @@ export interface AdminNavItem {
   readonly role: RoleName | null;
 }
 
+/** Clave estable de cada sección del acordeón. */
+export type AdminSectionKey = "habitacion" | "recepcion" | "administracion" | "plataforma";
+
+/** Sección del sidebar: una cabecera desplegable con sus entradas (D-29). */
+export interface AdminNavSection {
+  readonly key: AdminSectionKey;
+  readonly labelKey: AdminNavLabelKey;
+  readonly items: readonly AdminNavItem[];
+}
+
 /**
- * Entradas del back-office (docs/SRS.md §7). Una sola fuente para el sidebar y el gating
- * por rol de cada página, alineada con los CU: Royalty→DEFAULT_ADMIN (D-06, panel informativo
- * de gobierno del propietario: el contrato ya no tiene un rol de royalty), Pausa→PAUSER
- * (CU-14), Fondos→TREASURER (CU-15), Caducadas→BURNER (CU-13), Roles→DEFAULT_ADMIN (CU-16).
+ * Secciones del back-office (D-29: sidebar derecha con menú acordeón, **una sección abierta a la vez**).
+ *
+ * Es la única fuente de la navegación: `ADMIN_NAV` se deriva de aquí para quien necesite la lista plana.
+ * Las secciones que aún no tienen pantallas (Actividades, Housekeeping, Mantenimiento) se incorporarán
+ * en sus fases; hoy se listan solo las que existen, para no ofrecer enlaces muertos.
  */
-export const ADMIN_NAV: readonly AdminNavItem[] = [
-  { href: "/admin/mint", labelKey: "mint", role: "MINTER_ROLE" },
-  { href: "/admin/dashboard", labelKey: "dashboard", role: null },
-  { href: "/admin/royalty", labelKey: "royalty", role: "DEFAULT_ADMIN_ROLE" },
-  { href: "/admin/pausa", labelKey: "pause", role: "PAUSER_ROLE" },
-  { href: "/admin/fondos", labelKey: "funds", role: "TREASURER_ROLE" },
-  { href: "/admin/caducadas", labelKey: "expired", role: "BURNER_ROLE" },
-  { href: "/admin/roles", labelKey: "roles", role: "DEFAULT_ADMIN_ROLE" },
+export const ADMIN_NAV_SECTIONS: readonly AdminNavSection[] = [
+  {
+    key: "habitacion",
+    labelKey: "habitacion",
+    items: [
+      { href: "/admin/habitacion", labelKey: "rooms", role: "DEFAULT_ADMIN_ROLE" },
+      { href: "/admin/mint", labelKey: "mint", role: "MINTER_ROLE" },
+    ],
+  },
+  {
+    key: "recepcion",
+    labelKey: "recepcion",
+    items: [{ href: "/admin/caducadas", labelKey: "expired", role: "BURNER_ROLE" }],
+  },
+  {
+    key: "administracion",
+    labelKey: "administracion",
+    items: [
+      { href: "/admin/dashboard", labelKey: "dashboard", role: null },
+      { href: "/admin/royalty", labelKey: "royalty", role: "DEFAULT_ADMIN_ROLE" },
+      { href: "/admin/fondos", labelKey: "funds", role: "TREASURER_ROLE" },
+      { href: "/admin/roles", labelKey: "roles", role: "DEFAULT_ADMIN_ROLE" },
+    ],
+  },
+  {
+    key: "plataforma",
+    labelKey: "plataforma",
+    items: [{ href: "/admin/pausa", labelKey: "pause", role: "PAUSER_ROLE" }],
+  },
 ];
+
+/** Lista plana derivada de las secciones (compatibilidad con consumidores existentes). */
+export const ADMIN_NAV: readonly AdminNavItem[] = ADMIN_NAV_SECTIONS.flatMap((section) => section.items);
 
 /**
  * Sección **Sistemas** (incremento v3, RF-41): gestión de la plataforma, visible y accesible
@@ -52,4 +94,5 @@ export const ADMIN_SYSTEMS_NAV: readonly AdminNavItem[] = [
   { href: "/admin/sistemas/usuarios", labelKey: "systemUsers", role: "DEFAULT_ADMIN_ROLE" },
   { href: "/admin/sistemas/finanzas", labelKey: "finances", role: "DEFAULT_ADMIN_ROLE" },
   { href: "/admin/sistemas/operaciones", labelKey: "operations", role: "DEFAULT_ADMIN_ROLE" },
+  { href: "/admin/sistemas/ajustes", labelKey: "settings", role: "DEFAULT_ADMIN_ROLE" },
 ];

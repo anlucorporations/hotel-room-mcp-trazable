@@ -8,6 +8,8 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {HotelNights} from "../src/HotelNights.sol";
 import {IHotelNights} from "../src/IHotelNights.sol";
 
+import {RoomRegistrySeed} from "./RoomRegistrySeed.sol";
+
 /// @notice Comprador malicioso que reintenta `buy` al recibir el NFT (CU-05 reentrancy, docs/SRS.md §9).
 contract ReentrantBuyer is IERC721Receiver {
     HotelNights private immutable NFT;
@@ -58,6 +60,7 @@ contract HotelNightsBuyTest is Test {
     function setUp() public {
         vm.warp(BASE_TS);
         nft = new HotelNights(treasury);
+        RoomRegistrySeed.seed(nft);
         nft.grantRole(nft.MINTER_ROLE(), minter);
         vm.prank(minter);
         nft.mint(ROOM, DATE, PRICE, URI);
@@ -155,6 +158,7 @@ contract HotelNightsBuyTest is Test {
         // `EthTransferFailed` y la venta NO se materializa (CEI + revert atómico).
         RejectingTreasury rejecter = new RejectingTreasury();
         HotelNights local = new HotelNights(address(rejecter));
+        RoomRegistrySeed.seed(local);
         local.grantRole(local.MINTER_ROLE(), minter);
         vm.prank(minter);
         local.mint(ROOM, DATE, PRICE, URI); // minteada al inventario (rejecter)

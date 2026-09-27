@@ -22,7 +22,12 @@ import { UsersRepository, type AdminUserRole } from "../src/db/repositories/user
 import { SessionsRepository } from "../src/db/repositories/sessions.repository.ts";
 import { requireSecret } from "../src/env/index.ts";
 
-const ROLES: readonly AdminUserRole[] = ["DEFAULT_ADMIN_ROLE", "RECEPTION_ROLE"];
+const ROLES: readonly AdminUserRole[] = [
+  "DEFAULT_ADMIN_ROLE",
+  "RECEPTION_ROLE",
+  "HOUSEKEEPING",
+  "MAINTENANCE",
+];
 
 const { values } = parseArgs({
   options: {

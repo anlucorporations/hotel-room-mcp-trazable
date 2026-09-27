@@ -8,6 +8,8 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {HotelNights} from "../src/HotelNights.sol";
 import {IHotelNights} from "../src/IHotelNights.sol";
 
+import {RoomRegistrySeed} from "./RoomRegistrySeed.sol";
+
 /// @notice Tesorería reentrante: al recibir ETH reintenta withdraw (CU-15 reentrancy, docs/SRS.md §9).
 contract ReentrantTreasury {
     HotelNights private immutable NFT;
@@ -42,6 +44,7 @@ contract HotelNightsAdminTest is Test {
         vm.warp(BASE_TS);
         // El 2.º argumento (bps) es heredado y NO tiene efecto (D-06).
         nft = new HotelNights(treasury);
+        RoomRegistrySeed.seed(nft);
         // address(this) es DEFAULT_ADMIN: se concede el resto de roles a sí mismo.
         nft.grantRole(nft.MINTER_ROLE(), minter);
         nft.grantRole(nft.PAUSER_ROLE(), address(this));

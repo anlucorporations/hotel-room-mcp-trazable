@@ -1,7 +1,6 @@
 import "server-only";
 import { NextResponse, type NextRequest } from "next/server";
 import { AuthService, type AuthRole } from "@hotel/shared";
-import type { RoleName } from "@hotel/shared/domain";
 
 /**
  * Guard de autorización de las rutas de back-office y recepción (D-04, RNF-13).
@@ -25,8 +24,14 @@ export const ACCESS_TOKEN_COOKIE = "hotel_access_token";
 /** Cookie HttpOnly donde la web guarda el refresh token. */
 export const REFRESH_TOKEN_COOKIE = "hotel_refresh_token";
 
-/** Roles que puede exigir una ruta (subconjunto de los roles del contrato). */
-export type RequiredRole = Extract<RoleName, "DEFAULT_ADMIN_ROLE" | "RECEPTION_ROLE">;
+/**
+ * Roles que puede exigir una ruta. Incluye los roles de gestión (`DEFAULT_ADMIN_ROLE`,
+ * `RECEPTION_ROLE`) y los **roles de BD sin wallet** `HOUSEKEEPING` y `MAINTENANCE` (D-56).
+ */
+export type RequiredRole = AuthRole;
+
+/** Roles de gestión: los que gobiernan el back-office clásico (D-04). */
+const MANAGEMENT_ROLES: readonly AuthRole[] = ["DEFAULT_ADMIN_ROLE", "RECEPTION_ROLE"];
 
 export interface GuardedSession {
   readonly username: string;
@@ -83,9 +88,11 @@ export function readRefreshToken(request: Request, body?: unknown): string | und
 /**
  * Valida la sesión y el rol exigido.
  *
- * `requiredRole` ausente = cualquier rol de back-office (`DEFAULT_ADMIN_ROLE` o
- * `RECEPTION_ROLE`). Un usuario autenticado con un rol fuera de esa lista se trata como
- * `forbidden` (rol insuficiente), no como `unauthorized`.
+ * `requiredRole` ausente = cualquier rol **de gestión** (`DEFAULT_ADMIN_ROLE` o
+ * `RECEPTION_ROLE`). Las rutas de personal (`HOUSEKEEPING`, `MAINTENANCE`; D-56) **deben declarar
+ * su rol** para entrar: no heredan el acceso del back-office clásico. Un usuario autenticado con
+ * un rol fuera de la lista exigida se trata como `forbidden` (rol insuficiente), no como
+ * `unauthorized`.
  *
  * El **owner** (`DEFAULT_ADMIN_ROLE`, D-30) satisface cualquier `requiredRole` exigido por una
  * ruta; el resto de roles necesitan coincidencia exacta (Recepción no accede a administración).
@@ -114,7 +121,25 @@ export async function authorize(request: Request, requiredRole?: RequiredRole): 
     return { ok: false, reason: "unauthorized", message: "Token inválido, expirado o revocado." };
   }
 
-  if (!isBackOfficeRole(payload.role)) {
+  if (!isKnownOperatorRole(payload.role)) {
+    return {
+      ok: false,
+      reason: "forbidden",
+      message: "El rol de la sesión no es un rol de operador reconocido.",
+    };
+  }
+
+  if (requiredRole) {
+    if (payload.role !== requiredRole && payload.role !== "DEFAULT_ADMIN_ROLE") {
+      return {
+        ok: false,
+        reason: "forbidden",
+        message: `Esta operación requiere el rol ${requiredRole}.`,
+      };
+    }
+  } else if (!isManagementRole(payload.role)) {
+    // Las rutas sin rol explícito siguen reservadas a gestión: los roles de personal (D-56)
+    // deben declarar su rol y no heredan el acceso del back-office clásico.
     return {
       ok: false,
       reason: "forbidden",
@@ -122,20 +147,17 @@ export async function authorize(request: Request, requiredRole?: RequiredRole): 
     };
   }
 
-  if (requiredRole && payload.role !== requiredRole && payload.role !== "DEFAULT_ADMIN_ROLE") {
-    return {
-      ok: false,
-      reason: "forbidden",
-      message: `Esta operación requiere el rol ${requiredRole}.`,
-    };
-  }
-
   return { ok: true, session: { username: payload.sub, role: payload.role, jti: payload.jti } };
 }
 
-/** ¿El rol es uno de los dos que gobiernan el back-office (D-04)? */
-function isBackOfficeRole(role: string): role is AuthRole {
-  return role === "DEFAULT_ADMIN_ROLE" || role === "RECEPTION_ROLE";
+/** ¿El rol es un rol de operador reconocido (gestión o personal, D-56)? */
+function isKnownOperatorRole(role: string): role is AuthRole {
+  return isManagementRole(role as AuthRole) || role === "HOUSEKEEPING" || role === "MAINTENANCE";
+}
+
+/** ¿El rol pertenece a la gestión del back-office (D-04)? */
+function isManagementRole(role: AuthRole): boolean {
+  return (MANAGEMENT_ROLES as readonly string[]).includes(role);
 }
 
 /**

@@ -12,9 +12,10 @@ vi.mock("@/lib/guard", () => guardMock);
  * que una `const` declarada más abajo todavía no existe cuando la fábrica se evalúa
  * (`ReferenceError: Cannot access 'upsertNFT' before initialization`).
  */
-const { upsertNFT, fetchAggregates } = vi.hoisted(() => ({
+const { upsertNFT, fetchAggregates, isNightReserved } = vi.hoisted(() => ({
   upsertNFT: vi.fn(),
   fetchAggregates: vi.fn(),
+  isNightReserved: vi.fn(),
 }));
 
 vi.mock("@/lib/worker-api", () => ({ fetchAggregates }));
@@ -25,6 +26,10 @@ vi.mock("@hotel/shared", async () => {
     ...actual,
     NFTsRepository: vi.fn().mockImplementation(() => ({
       upsertNFT,
+    })),
+    // D-57: el minteo omite las noches retenidas por reservas activas; en el test no hay ninguna.
+    ReservationsRepository: vi.fn().mockImplementation(() => ({
+      isNightReserved,
     })),
     AuthService: vi.fn().mockImplementation(() => ({
       // La re-confirmación TOTP (RF-03) valida contra la semilla cifrada del operador.
@@ -57,6 +62,8 @@ describe("Admin Endpoints (US-16, D-04)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     upsertNFT.mockResolvedValue({});
+    // Por defecto ninguna noche está reservada (D-57).
+    isNightReserved.mockResolvedValue(false);
     resetGuardState();
   });
 
@@ -190,6 +197,32 @@ describe("Admin Endpoints (US-16, D-04)", () => {
       expect(data.status).toBe("SUCCESS");
       expect(data.onChainAnchored).toBe(true);
       expect(data.anchoredCount).toBe(1);
+    });
+
+    it("omite las noches reservadas y acuña el resto (D-57)", async () => {
+      isNightReserved.mockImplementation(async (roomNumber: number) => roomNumber === 101);
+      const items = [
+        { roomNumber: 101, roomType: "SIMPLE" as const, checkInDate: "2026-09-15", basePriceWei: "1" },
+        { roomNumber: 102, roomType: "SIMPLE" as const, checkInDate: "2026-09-15", basePriceWei: "1" },
+      ];
+
+      const res = await postAdminMint(mintRequest({ confirmTotpCode: "123456", items, allowUnanchored: true }));
+      expect(res.status).toBe(202);
+      const data = await res.json();
+      expect(data.mintedCount).toBe(1);
+      expect(data.tokenIds).toEqual(["10220260915"]);
+      expect(data.omittedReservedNights).toEqual([{ roomNumber: 101, checkInDate: "2026-09-15" }]);
+    });
+
+    it("devuelve 409 si todas las noches del lote están reservadas (D-57)", async () => {
+      isNightReserved.mockResolvedValue(true);
+      const items = [{ roomNumber: 101, roomType: "SIMPLE" as const, checkInDate: "2026-09-15", basePriceWei: "1" }];
+
+      const res = await postAdminMint(mintRequest({ confirmTotpCode: "123456", items, allowUnanchored: true }));
+      expect(res.status).toBe(409);
+      const data = await res.json();
+      expect(data.error).toBe("RESERVED_NIGHTS");
+      expect(upsertNFT).not.toHaveBeenCalled();
     });
   });
 

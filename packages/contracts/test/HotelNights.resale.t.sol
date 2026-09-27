@@ -9,6 +9,8 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {HotelNights} from "../src/HotelNights.sol";
 import {IHotelNights} from "../src/IHotelNights.sol";
 
+import {RoomRegistrySeed} from "./RoomRegistrySeed.sol";
+
 /// @notice Reintenta `buyResale` al recibir el NFT (CU-07 reentrancy, docs/SRS.md §9).
 contract ReentrantResaleBuyer is IERC721Receiver {
     HotelNights private immutable NFT;
@@ -101,6 +103,7 @@ contract HotelNightsResaleTest is Test {
     function setUp() public {
         vm.warp(BASE_TS);
         nft = new HotelNights(treasury);
+        RoomRegistrySeed.seed(nft);
         nft.grantRole(nft.MINTER_ROLE(), minter);
         vm.prank(minter);
         nft.mint(ROOM, DATE, PRICE, URI);

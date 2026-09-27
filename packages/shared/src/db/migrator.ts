@@ -106,7 +106,9 @@ CREATE INDEX IF NOT EXISTS idx_sessions_expiry ON admin_sessions(expires_at);
 -- Operadores del back-office (D-04): sistema canónico de autenticación.
 -- Contraseña (bcrypt) + TOTP obligatorio. La semilla TOTP NUNCA se guarda en claro:
 -- va cifrada con AES-256-GCM usando AES_SECRET_KEY (sin valor por defecto en el código).
--- El rol es uno de los que gobiernan el back-office (DEFAULT_ADMIN_ROLE | RECEPTION_ROLE).
+-- El rol es uno de los que gobiernan el back-office
+-- (DEFAULT_ADMIN_ROLE | RECEPTION_ROLE | HOUSEKEEPING | MAINTENANCE; D-56 añade los dos
+-- últimos como roles de BD SIN wallet para el personal de limpieza y mantenimiento).
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS admin_users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -295,6 +297,512 @@ ALTER TABLE worker_sale_history ADD COLUMN IF NOT EXISTS block_timestamp TIMESTA
 
 CREATE INDEX IF NOT EXISTS idx_worker_sale_history_ts
     ON worker_sale_history(block_timestamp);
+
+-- ============================================================================
+-- Habitaciones y reseñas (Suite Administración → Habitación, D-1…D-28).
+-- La BD es la fuente única del maestro (D-3); la ficha se modela aquí y el
+-- registro on-chain se alimenta desde ella en el corte final (F8). Sin PII de
+-- viajeros (ADR-20/RNF-30). Sincronizado con RepoTecnico/base_datos.sql §3.5,
+-- diccionario_datos.md §3.8–§3.9 y diagrama_er.md §6.
+-- ============================================================================
+
+-- Catálogo fijo de tipos de habitación (D-22) con el royalty inmutable (ADR-18).
+CREATE TABLE IF NOT EXISTS room_types (
+    code VARCHAR(10) PRIMARY KEY,           -- SIMPLE | DOBLE | SUITE
+    name_es VARCHAR(40) NOT NULL,
+    name_en VARCHAR(40) NOT NULL,
+    name_ru VARCHAR(40) NOT NULL,
+    base_capacity INT NOT NULL CHECK (base_capacity > 0),
+    royalty_bps INT NOT NULL CHECK (royalty_bps BETWEEN 0 AND 10000),
+    sort_order INT NOT NULL DEFAULT 0
+);
+
+-- Habitación como ente operativo (D-1, D-19, D-21).
+CREATE TABLE IF NOT EXISTS rooms (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_number INT UNIQUE NOT NULL CHECK (room_number > 0),
+    floor INT NULL,
+    room_type VARCHAR(10) NOT NULL REFERENCES room_types(code) ON UPDATE CASCADE,
+    capacity INT NOT NULL CHECK (capacity > 0),
+    beds INT NOT NULL CHECK (beds > 0),
+    size_m2 NUMERIC(6, 2) NULL CHECK (size_m2 IS NULL OR size_m2 > 0),
+    -- Descripción obligatoria en español solo para PUBLICAR (D-6, D-21); EN/RU opcionales.
+    description_es TEXT NULL,
+    description_en TEXT NULL,
+    description_ru TEXT NULL,
+    base_rate_wei NUMERIC(78, 0) NULL,
+    -- Dos estados INDEPENDIENTES (D-19): publicación y operativo.
+    publication_status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
+    operational_status VARCHAR(12) NOT NULL DEFAULT 'CLEAN',
+    -- Archivar, nunca borrar (D-8): NULL = vigente; con fecha = archivada.
+    archived_at TIMESTAMP NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT rooms_publication_status_check
+        CHECK (publication_status IN ('DRAFT', 'PUBLISHED', 'PAUSED', 'MAINTENANCE', 'OUT_OF_SERVICE')),
+    CONSTRAINT rooms_operational_status_check
+        CHECK (operational_status IN ('CLEAN', 'DIRTY', 'OCCUPIED')),
+    CONSTRAINT rooms_publish_requires_es CHECK (
+        publication_status <> 'PUBLISHED' OR description_es IS NOT NULL
+    )
+);
+
+CREATE INDEX IF NOT EXISTS idx_rooms_status ON rooms(publication_status, operational_status);
+CREATE INDEX IF NOT EXISTS idx_rooms_type ON rooms(room_type);
+CREATE INDEX IF NOT EXISTS idx_rooms_archived ON rooms(archived_at) WHERE archived_at IS NOT NULL;
+
+-- Galería (D-5, D-12, D-20): solo JPG, <=2 MB y máx. 5 fotos por habitación.
+CREATE TABLE IF NOT EXISTS room_images (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    file_name VARCHAR(200) NOT NULL UNIQUE,
+    storage_path TEXT NOT NULL,
+    position INT NOT NULL CHECK (position BETWEEN 1 AND 5),
+    is_cover BOOLEAN NOT NULL DEFAULT FALSE,
+    alt_text_es VARCHAR(200) NULL,
+    alt_text_en VARCHAR(200) NULL,
+    alt_text_ru VARCHAR(200) NULL,
+    mime_type VARCHAR(30) NOT NULL DEFAULT 'image/jpeg' CHECK (mime_type = 'image/jpeg'),
+    byte_size BIGINT NOT NULL CHECK (byte_size > 0 AND byte_size <= 2097152),
+    uploaded_by VARCHAR(100) NOT NULL,
+    uploaded_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_room_images_room ON room_images(room_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_room_images_cover
+    ON room_images(room_id) WHERE is_cover = TRUE;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_room_images_position ON room_images(room_id, position);
+
+-- Catálogo de servicios/amenidades (D-21) y su asignación N:M.
+CREATE TABLE IF NOT EXISTS room_amenities (
+    code VARCHAR(40) PRIMARY KEY,
+    name_es VARCHAR(60) NOT NULL,
+    name_en VARCHAR(60) NOT NULL,
+    name_ru VARCHAR(60) NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS room_amenity_links (
+    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    amenity_code VARCHAR(40) NOT NULL REFERENCES room_amenities(code) ON UPDATE CASCADE,
+    PRIMARY KEY (room_id, amenity_code)
+);
+
+-- Publicaciones ancladas (D-2, D-18): huella de la ficha + nº de habitación + fecha.
+CREATE TABLE IF NOT EXISTS room_publications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    content_hash VARCHAR(66) NOT NULL,
+    tx_hash VARCHAR(66) NULL,
+    on_chain_anchored BOOLEAN NOT NULL DEFAULT FALSE,
+    -- Firma EIP-191 (personal_sign) del administrador sobre la huella (D-1/D-2).
+    signature TEXT NULL,
+    signer_address VARCHAR(42) NULL,
+    published_by VARCHAR(100) NOT NULL,
+    published_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    unpublished_at TIMESTAMP NULL
+);
+
+-- Migración incremental (F1): las columnas de firma se añaden a bases ya creadas.
+ALTER TABLE room_publications ADD COLUMN IF NOT EXISTS signature TEXT NULL;
+ALTER TABLE room_publications ADD COLUMN IF NOT EXISTS signer_address VARCHAR(42) NULL;
+
+CREATE INDEX IF NOT EXISTS idx_room_publications_room
+    ON room_publications(room_id, published_at DESC);
+CREATE INDEX IF NOT EXISTS idx_room_publications_pending
+    ON room_publications(on_chain_anchored) WHERE on_chain_anchored = FALSE;
+
+-- Historial de cambios de estado (publicación u operativo), D-19.
+CREATE TABLE IF NOT EXISTS room_status_history (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    status_kind VARCHAR(12) NOT NULL CHECK (status_kind IN ('PUBLICATION', 'OPERATIONAL')),
+    from_value VARCHAR(20) NULL,
+    to_value VARCHAR(20) NOT NULL,
+    changed_by VARCHAR(100) NOT NULL,
+    reason VARCHAR(200) NULL,
+    changed_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_room_status_history_room
+    ON room_status_history(room_id, changed_at DESC);
+
+-- Reseñas (D-27, D-28): anónimas y verificadas por noche consumida. NUNCA se
+-- publica el número exacto de habitación: solo el tipo.
+CREATE TABLE IF NOT EXISTS reviews (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    token_id VARCHAR(66) NOT NULL UNIQUE REFERENCES nfts(token_id) ON DELETE CASCADE,
+    room_type VARCHAR(10) NOT NULL REFERENCES room_types(code) ON UPDATE CASCADE,
+    room_id UUID NULL REFERENCES rooms(id) ON DELETE SET NULL,
+    rating SMALLINT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    comment TEXT NULL,
+    status VARCHAR(12) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    moderated_by VARCHAR(100) NULL,
+    moderated_at TIMESTAMP NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_reviews_status ON reviews(status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_reviews_room_type ON reviews(room_type);
+
+-- Ajustes de plataforma (D-11): ventana global de acuñado y similares.
+CREATE TABLE IF NOT EXISTS platform_settings (
+    key VARCHAR(60) PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_by VARCHAR(100) NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Semillas reejecutables (catálogos fijos y ventana de acuñado).
+INSERT INTO room_types (code, name_es, name_en, name_ru, base_capacity, royalty_bps, sort_order) VALUES
+    ('SIMPLE', 'Simple', 'Single', 'Одноместный', 1, 500, 1),
+    ('DOBLE',  'Doble',  'Double', 'Двухместный', 2, 500, 2),
+    ('SUITE',  'Suite',  'Suite',  'Люкс',        2, 1000, 3)
+ON CONFLICT (code) DO NOTHING;
+
+INSERT INTO room_amenities (code, name_es, name_en, name_ru, sort_order) VALUES
+    ('WIFI',         'Wi-Fi',              'Wi-Fi',            'Wi-Fi',              1),
+    ('AC',           'Aire acondicionado', 'Air conditioning', 'Кондиционер',        2),
+    ('HEATING',      'Calefacción',        'Heating',          'Отопление',          3),
+    ('TV',           'Televisión',         'TV',               'Телевизор',          4),
+    ('PRIVATE_BATH', 'Baño privado',       'Private bathroom', 'Собственная ванная', 5),
+    ('BALCONY',      'Balcón',             'Balcony',          'Балкон',             6),
+    ('SEA_VIEW',     'Vistas al mar',      'Sea view',         'Вид на море',        7),
+    ('MINIBAR',      'Minibar',            'Minibar',          'Мини-бар',           8)
+ON CONFLICT (code) DO NOTHING;
+
+INSERT INTO platform_settings (key, value) VALUES ('mint_window_days', '90')
+ON CONFLICT (key) DO NOTHING;
+
+-- ============================================================================
+-- Bloque 2: reservas, actividades, housekeeping y mantenimiento (D-34…D-55).
+-- Sincronizado con RepoTecnico/base_datos.sql §3.6. Sin PII de viajeros salvo
+-- el contacto mínimo cifrado y purgable (D-55).
+-- ============================================================================
+
+-- Reserva (D-34/D-35/D-37/D-40/D-41/D-43): retiene la noche sin acuñar.
+CREATE TABLE IF NOT EXISTS reservations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE RESTRICT,
+    check_in_date DATE NOT NULL,
+    check_out_date DATE NOT NULL,
+    channel VARCHAR(12) NOT NULL DEFAULT 'COUNTER',   -- WEB | COUNTER
+    status VARCHAR(12) NOT NULL DEFAULT 'PENDING',    -- PENDING | CONFIRMED | CANCELLED | NO_SHOW | COMPLETED
+    total_cents BIGINT NOT NULL DEFAULT 0 CHECK (total_cents >= 0),
+    deposit_required_cents BIGINT NOT NULL DEFAULT 0 CHECK (deposit_required_cents >= 0),
+    deposit_paid_cents BIGINT NOT NULL DEFAULT 0 CHECK (deposit_paid_cents >= 0),
+    hold_expires_at TIMESTAMP NULL,
+    created_by VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    confirmed_at TIMESTAMP NULL,
+    cancelled_at TIMESTAMP NULL,
+    cancel_reason VARCHAR(200) NULL,
+    CONSTRAINT reservations_dates_check CHECK (check_out_date > check_in_date),
+    CONSTRAINT reservations_status_check
+        CHECK (status IN ('PENDING', 'CONFIRMED', 'CANCELLED', 'NO_SHOW', 'COMPLETED'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_reservations_status ON reservations(status, check_in_date);
+CREATE INDEX IF NOT EXISTS idx_reservations_room ON reservations(room_id, check_in_date);
+CREATE INDEX IF NOT EXISTS idx_reservations_hold ON reservations(hold_expires_at)
+    WHERE status = 'PENDING';
+
+CREATE TABLE IF NOT EXISTS reservation_nights (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    reservation_id UUID NOT NULL REFERENCES reservations(id) ON DELETE CASCADE,
+    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE RESTRICT,
+    night_date DATE NOT NULL,
+    token_id VARCHAR(66) NULL REFERENCES nfts(token_id) ON DELETE SET NULL,
+    active BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+CREATE INDEX IF NOT EXISTS idx_reservation_nights_res ON reservation_nights(reservation_id);
+-- Sin sobreventa (D-41): una reserva ACTIVA por habitación y noche.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_reservation_nights_hold
+    ON reservation_nights(room_id, night_date) WHERE active = TRUE;
+
+CREATE TABLE IF NOT EXISTS reservation_contacts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    reservation_id UUID NOT NULL REFERENCES reservations(id) ON DELETE CASCADE,
+    channel VARCHAR(12) NOT NULL CHECK (channel IN ('EMAIL', 'TELEGRAM', 'WEB')),
+    value_enc TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    purge_at TIMESTAMP NOT NULL,
+    purged_at TIMESTAMP NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_reservation_contacts_res ON reservation_contacts(reservation_id);
+CREATE INDEX IF NOT EXISTS idx_reservation_contacts_purge ON reservation_contacts(purge_at)
+    WHERE purged_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS reservation_status_history (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    reservation_id UUID NOT NULL REFERENCES reservations(id) ON DELETE CASCADE,
+    from_value VARCHAR(12) NULL,
+    to_value VARCHAR(12) NOT NULL,
+    changed_by VARCHAR(100) NOT NULL,
+    reason VARCHAR(200) NULL,
+    changed_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_reservation_history_res
+    ON reservation_status_history(reservation_id, changed_at DESC);
+
+CREATE TABLE IF NOT EXISTS folios (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    reservation_id UUID NOT NULL UNIQUE REFERENCES reservations(id) ON DELETE CASCADE,
+    status VARCHAR(10) NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN', 'CLOSED')),
+    opened_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    closed_at TIMESTAMP NULL,
+    total_cents BIGINT NOT NULL DEFAULT 0 CHECK (total_cents >= 0)
+);
+
+CREATE INDEX IF NOT EXISTS idx_folios_status ON folios(status);
+
+ALTER TABLE additional_charges ADD COLUMN IF NOT EXISTS folio_id UUID NULL
+    REFERENCES folios(id) ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS idx_charges_folio ON additional_charges(folio_id);
+
+CREATE TABLE IF NOT EXISTS activities (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code VARCHAR(40) UNIQUE NOT NULL,
+    name_es VARCHAR(120) NOT NULL,
+    name_en VARCHAR(120) NULL,
+    name_ru VARCHAR(120) NULL,
+    description_es TEXT NULL,
+    description_en TEXT NULL,
+    description_ru TEXT NULL,
+    price_cents BIGINT NOT NULL DEFAULT 0 CHECK (price_cents >= 0),
+    currency VARCHAR(3) NOT NULL DEFAULT 'EUR',
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_by VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_activities_active ON activities(active);
+
+CREATE TABLE IF NOT EXISTS activity_schedules (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    activity_id UUID NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
+    starts_at TIMESTAMP NOT NULL,
+    ends_at TIMESTAMP NULL,
+    capacity INT NOT NULL CHECK (capacity > 0),
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_activity_schedules_start ON activity_schedules(activity_id, starts_at);
+
+CREATE TABLE IF NOT EXISTS activity_bookings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    schedule_id UUID NOT NULL REFERENCES activity_schedules(id) ON DELETE CASCADE,
+    reservation_id UUID NOT NULL REFERENCES reservations(id) ON DELETE CASCADE,
+    seats INT NOT NULL DEFAULT 1 CHECK (seats > 0),
+    status VARCHAR(12) NOT NULL DEFAULT 'BOOKED'
+        CHECK (status IN ('BOOKED', 'WAITLIST', 'CANCELLED', 'ATTENDED')),
+    charge_id UUID NULL REFERENCES additional_charges(id) ON DELETE SET NULL,
+    created_by VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    cancelled_at TIMESTAMP NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_activity_bookings_schedule ON activity_bookings(schedule_id, status);
+CREATE INDEX IF NOT EXISTS idx_activity_bookings_res ON activity_bookings(reservation_id);
+
+CREATE TABLE IF NOT EXISTS housekeeping_shifts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    shift_date DATE NOT NULL,
+    label VARCHAR(20) NOT NULL,           -- MANANA | TARDE | NOCHE
+    supervisor VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    UNIQUE (shift_date, label)
+);
+
+CREATE INDEX IF NOT EXISTS idx_housekeeping_shifts_date ON housekeeping_shifts(shift_date);
+
+CREATE TABLE IF NOT EXISTS housekeeping_assignments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    shift_id UUID NOT NULL REFERENCES housekeeping_shifts(id) ON DELETE CASCADE,
+    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    assignee VARCHAR(100) NOT NULL,
+    status VARCHAR(12) NOT NULL DEFAULT 'PENDING'
+        CHECK (status IN ('PENDING', 'IN_PROGRESS', 'DONE')),
+    assigned_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMP NULL,
+    UNIQUE (shift_id, room_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_housekeeping_assignments_assignee
+    ON housekeeping_assignments(assignee, status);
+
+CREATE TABLE IF NOT EXISTS housekeeping_room_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    assignment_id UUID NULL REFERENCES housekeeping_assignments(id) ON DELETE SET NULL,
+    from_value VARCHAR(12) NULL,
+    to_value VARCHAR(12) NOT NULL,
+    changed_by VARCHAR(100) NOT NULL,
+    changed_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_housekeeping_logs_room
+    ON housekeeping_room_logs(room_id, changed_at DESC);
+
+CREATE TABLE IF NOT EXISTS supply_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code VARCHAR(40) UNIQUE NOT NULL,
+    name_es VARCHAR(80) NOT NULL,
+    name_en VARCHAR(80) NULL,
+    name_ru VARCHAR(80) NULL,
+    unit VARCHAR(20) NOT NULL DEFAULT 'unit',
+    stock_qty NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (stock_qty >= 0),
+    threshold_qty NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (threshold_qty >= 0),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS supply_stock_movements (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    item_id UUID NOT NULL REFERENCES supply_items(id) ON DELETE CASCADE,
+    delta_qty NUMERIC(12, 2) NOT NULL,
+    reason VARCHAR(20) NOT NULL
+        CHECK (reason IN ('ROOM_CLEANED', 'GUEST_CHECKIN', 'RESTOCK', 'ADJUSTMENT')),
+    room_id UUID NULL REFERENCES rooms(id) ON DELETE SET NULL,
+    reservation_id UUID NULL REFERENCES reservations(id) ON DELETE SET NULL,
+    created_by VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_supply_movements_item
+    ON supply_stock_movements(item_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_supply_movements_reason ON supply_stock_movements(reason);
+
+CREATE TABLE IF NOT EXISTS maintenance_incidents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE RESTRICT,
+    kind VARCHAR(40) NOT NULL,
+    description TEXT NULL,
+    priority VARCHAR(10) NOT NULL DEFAULT 'MEDIUM'
+        CHECK (priority IN ('LOW', 'MEDIUM', 'HIGH')),
+    status VARCHAR(12) NOT NULL DEFAULT 'OPEN'
+        CHECK (status IN ('OPEN', 'IN_PROGRESS', 'RESOLVED', 'CANCELLED')),
+    blocks_sale BOOLEAN NOT NULL DEFAULT TRUE,
+    reported_by VARCHAR(100) NOT NULL,
+    assigned_to VARCHAR(100) NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    resolved_at TIMESTAMP NULL,
+    resolved_by VARCHAR(100) NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_maintenance_incidents_room
+    ON maintenance_incidents(room_id, status);
+CREATE INDEX IF NOT EXISTS idx_maintenance_incidents_open
+    ON maintenance_incidents(status, priority);
+
+CREATE TABLE IF NOT EXISTS maintenance_incident_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    incident_id UUID NOT NULL REFERENCES maintenance_incidents(id) ON DELETE CASCADE,
+    event_type VARCHAR(20) NOT NULL
+        CHECK (event_type IN ('REPORTED', 'ASSIGNED', 'RESOLVED', 'CANCELLED')),
+    notes VARCHAR(200) NULL,
+    actor VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_maintenance_events_incident
+    ON maintenance_incident_events(incident_id, created_at);
+
+CREATE TABLE IF NOT EXISTS preventive_plans (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code VARCHAR(40) UNIQUE NOT NULL,
+    name VARCHAR(120) NOT NULL,
+    equipment VARCHAR(120) NOT NULL,
+    room_id UUID NULL REFERENCES rooms(id) ON DELETE SET NULL,
+    periodicity VARCHAR(12) NOT NULL
+        CHECK (periodicity IN ('WEEKLY', 'MONTHLY', 'QUARTERLY')),
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_preventive_plans_active ON preventive_plans(active, periodicity);
+
+CREATE TABLE IF NOT EXISTS preventive_tasks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    plan_id UUID NOT NULL REFERENCES preventive_plans(id) ON DELETE CASCADE,
+    due_date DATE NOT NULL,
+    status VARCHAR(10) NOT NULL DEFAULT 'PENDING'
+        CHECK (status IN ('PENDING', 'DONE', 'SKIPPED')),
+    completed_by VARCHAR(100) NULL,
+    completed_at TIMESTAMP NULL,
+    notes VARCHAR(200) NULL,
+    UNIQUE (plan_id, due_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_preventive_tasks_due ON preventive_tasks(status, due_date);
+
+-- Catálogo inicial de lencería y suministros (D-51). Stock a 0 hasta la primera carga.
+INSERT INTO supply_items (code, name_es, name_en, name_ru, unit, threshold_qty) VALUES
+    ('SOAP',   'Jabón',   'Soap',         'Мыло',      'unit', 50),
+    ('PAPER',  'Papel',   'Toilet paper', 'Бумага',    'roll', 40),
+    ('TOWELS', 'Toallas', 'Towels',       'Полотенца', 'unit', 60),
+    ('SHEETS', 'Sábanas', 'Sheets',       'Простыни',  'unit', 40)
+ON CONFLICT (code) DO NOTHING;
+
+-- ============================================================================
+-- Bloque 5: contenido público de la home (D-66, D-69, D-73, D-74).
+-- Sincronizado con RepoTecnico/base_datos.sql §3.7.
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS hotel_images (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    section VARCHAR(20) NOT NULL,          -- HERO | SERVICES | EXPERIENCE | ACTIVITIES | CONTACT | OTHER
+    file_name VARCHAR(200) NOT NULL UNIQUE,
+    storage_path TEXT NOT NULL,
+    position INT NOT NULL DEFAULT 1 CHECK (position BETWEEN 1 AND 20),
+    is_cover BOOLEAN NOT NULL DEFAULT FALSE,
+    alt_text_es VARCHAR(200) NULL,
+    alt_text_en VARCHAR(200) NULL,
+    alt_text_ru VARCHAR(200) NULL,
+    mime_type VARCHAR(30) NOT NULL DEFAULT 'image/jpeg' CHECK (mime_type = 'image/jpeg'),
+    byte_size BIGINT NOT NULL CHECK (byte_size > 0 AND byte_size <= 2097152),
+    uploaded_by VARCHAR(100) NOT NULL,
+    uploaded_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT hotel_images_section_check
+        CHECK (section IN ('HERO', 'SERVICES', 'EXPERIENCE', 'ACTIVITIES', 'CONTACT', 'OTHER')),
+    UNIQUE (section, position)
+);
+
+CREATE INDEX IF NOT EXISTS idx_hotel_images_section ON hotel_images(section, position);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_hotel_images_cover
+    ON hotel_images(section) WHERE is_cover = TRUE;
+
+CREATE TABLE IF NOT EXISTS hotel_offers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code VARCHAR(40) UNIQUE NOT NULL,
+    title_es VARCHAR(160) NOT NULL,
+    title_en VARCHAR(160) NULL,
+    title_ru VARCHAR(160) NULL,
+    body_es TEXT NULL,
+    body_en TEXT NULL,
+    body_ru TEXT NULL,
+    image_id UUID NULL REFERENCES hotel_images(id) ON DELETE SET NULL,
+    valid_from DATE NULL,
+    valid_to DATE NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_by VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT hotel_offers_validity_check CHECK (
+        valid_from IS NULL OR valid_to IS NULL OR valid_to >= valid_from
+    )
+);
+
+CREATE INDEX IF NOT EXISTS idx_hotel_offers_active ON hotel_offers(active, sort_order);
+CREATE INDEX IF NOT EXISTS idx_hotel_offers_validity ON hotel_offers(valid_from, valid_to);
+CREATE INDEX IF NOT EXISTS idx_hotel_offers_image ON hotel_offers(image_id);
 `;
 
 /**
@@ -328,6 +836,34 @@ export async function purgeOldNotifications(
 export async function resetDatabase(customPool?: Pool): Promise<void> {
   const pool = customPool || getDbPool();
   await pool.query(`
+    DROP TABLE IF EXISTS hotel_offers CASCADE;
+    DROP TABLE IF EXISTS hotel_images CASCADE;
+    DROP TABLE IF EXISTS preventive_tasks CASCADE;
+    DROP TABLE IF EXISTS preventive_plans CASCADE;
+    DROP TABLE IF EXISTS maintenance_incident_events CASCADE;
+    DROP TABLE IF EXISTS maintenance_incidents CASCADE;
+    DROP TABLE IF EXISTS supply_stock_movements CASCADE;
+    DROP TABLE IF EXISTS supply_items CASCADE;
+    DROP TABLE IF EXISTS housekeeping_room_logs CASCADE;
+    DROP TABLE IF EXISTS housekeeping_assignments CASCADE;
+    DROP TABLE IF EXISTS housekeeping_shifts CASCADE;
+    DROP TABLE IF EXISTS activity_bookings CASCADE;
+    DROP TABLE IF EXISTS activity_schedules CASCADE;
+    DROP TABLE IF EXISTS activities CASCADE;
+    DROP TABLE IF EXISTS folios CASCADE;
+    DROP TABLE IF EXISTS reservation_status_history CASCADE;
+    DROP TABLE IF EXISTS reservation_contacts CASCADE;
+    DROP TABLE IF EXISTS reservation_nights CASCADE;
+    DROP TABLE IF EXISTS reservations CASCADE;
+    DROP TABLE IF EXISTS reviews CASCADE;
+    DROP TABLE IF EXISTS room_status_history CASCADE;
+    DROP TABLE IF EXISTS room_publications CASCADE;
+    DROP TABLE IF EXISTS room_amenity_links CASCADE;
+    DROP TABLE IF EXISTS room_amenities CASCADE;
+    DROP TABLE IF EXISTS room_images CASCADE;
+    DROP TABLE IF EXISTS rooms CASCADE;
+    DROP TABLE IF EXISTS room_types CASCADE;
+    DROP TABLE IF EXISTS platform_settings CASCADE;
     DROP TABLE IF EXISTS worker_sale_history CASCADE;
     DROP TABLE IF EXISTS worker_aggregate_counters CASCADE;
     DROP TABLE IF EXISTS worker_processed_logs CASCADE;

@@ -25,6 +25,7 @@ const SERVER_ONLY_ALLOWLIST = new Set([
   "lib/nights.ts",
   "lib/nonce-store.ts",
   "lib/reception-errors.ts",
+  "lib/rooms.ts",
   "lib/server-client.ts",
   "lib/session.ts",
   "lib/ticket-ownership.ts",

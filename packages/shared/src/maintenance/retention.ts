@@ -1,6 +1,8 @@
 import type { Pool } from "pg";
 import { getDbPool } from "../db/pool";
 import { purgeOldNotifications } from "../db/migrator";
+import { DEFAULT_NO_SHOW_HOUR, ReservationsRepository } from "../db/repositories/reservations.repository";
+import { NO_SHOW_HOUR_KEY, SettingsRepository } from "../db/repositories/settings.repository";
 
 /**
  * Retención de datos (M9 · ADR-24).
@@ -27,6 +29,12 @@ export interface PurgeResult {
   readonly orphanRecoveryCodes: number;
   /** Notificaciones enviadas eliminadas por superar el plazo. */
   readonly oldNotifications: number;
+  /** Reservas con el bloqueo de anticipo vencido, liberadas (D-37). */
+  readonly expiredHolds: number;
+  /** Reservas confirmadas sin presentarse, marcadas como no-show (D-42). */
+  readonly noShows: number;
+  /** Contactos de reservas ya terminadas, purgados (D-55). */
+  readonly purgedContacts: number;
   /** Instante en que se ejecutó la limpieza. */
   readonly executedAt: string;
 }
@@ -72,10 +80,23 @@ export async function purgeExpiredData(options: RetentionOptions = {}): Promise<
   const orphanRecoveryCodes = await purgeOrphanRecoveryCodes(pool);
   const oldNotifications = await purgeOldNotifications(days, pool);
 
+  // Reservas (F2): liberar bloqueos vencidos, marcar no-shows y purgar contactos de estancias
+  // terminadas. Son operaciones independientes: un fallo en una no impide las demás.
+  const reservations = new ReservationsRepository(pool);
+  const settings = new SettingsRepository(pool);
+  // D-42: la hora límite del no-show es configurable; sin fila, el respaldo (18:00 UTC).
+  const noShowHour = await settings.getNumber(NO_SHOW_HOUR_KEY, DEFAULT_NO_SHOW_HOUR);
+  const expiredHolds = await reservations.expireHolds();
+  const noShows = await reservations.markNoShows(new Date(), noShowHour);
+  const purgedContacts = await reservations.purgeContacts();
+
   return {
     expiredSessions,
     orphanRecoveryCodes,
     oldNotifications,
+    expiredHolds,
+    noShows,
+    purgedContacts,
     executedAt: new Date().toISOString(),
   };
 }

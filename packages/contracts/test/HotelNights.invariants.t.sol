@@ -8,6 +8,8 @@ import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Recei
 import {HotelNights} from "../src/HotelNights.sol";
 import {IHotelNights} from "../src/IHotelNights.sol";
 
+import {RoomRegistrySeed} from "./RoomRegistrySeed.sol";
+
 /**
  * @title HotelNightsHandler
  * @notice Handler para el fuzzing de invariantes (MAJOR#2, TC-CT-017/018/046/049). Ejecuta
@@ -185,6 +187,7 @@ contract HotelNightsInvariantsTest is StdInvariant, Test {
     function setUp() public {
         vm.warp(BASE_TS);
         nft = new HotelNights(treasury);
+        RoomRegistrySeed.seed(nft);
         handler = new HotelNightsHandler(nft, treasury);
 
         // El handler actúa como MINTER (mintea) y TREASURER (withdraw).
