@@ -236,7 +236,7 @@ CREATE TABLE IF NOT EXISTS checkin_contingency_logs (
 -- Cargos adicionales de una estancia (minibar, late check-out, daños…).
 CREATE TABLE IF NOT EXISTS additional_charges (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    token_id VARCHAR(66) NOT NULL REFERENCES nfts(token_id) ON DELETE CASCADE,
+    token_id VARCHAR(66) NULL REFERENCES nfts(token_id) ON DELETE CASCADE,
     concept VARCHAR(120) NOT NULL,
     amount_cents BIGINT NOT NULL CHECK (amount_cents > 0),
     currency VARCHAR(3) NOT NULL DEFAULT 'EUR',
@@ -550,6 +550,10 @@ CREATE TABLE IF NOT EXISTS folios (
 -- Los cargos adicionales existentes se ligan al folio (aditivo).
 ALTER TABLE additional_charges ADD COLUMN IF NOT EXISTS folio_id UUID NULL
     REFERENCES folios(id) ON DELETE SET NULL;
+
+-- F5 (D-46): un cargo puede pertenecer al folio sin token propio (reserva confirmada antes de la
+-- liquidación al 100 %, D-57); por eso token_id deja de ser obligatorio.
+ALTER TABLE additional_charges ALTER COLUMN token_id DROP NOT NULL;
 
 -- Actividades (D-44…D-47): catálogo, horarios con cupo y reservas de huéspedes.
 CREATE TABLE IF NOT EXISTS activities (

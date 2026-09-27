@@ -394,7 +394,8 @@
       "lenceria": "Linen",
       "mantenimiento": "Maintenance",
       "incidencias": "Incidents",
-      "preventivo": "Preventive"
+      "preventivo": "Preventive",
+      "actividades": "Activities"
     },
     "mintTitle": "Back-office · Mint night",
     "roomsTitle": "Back-office · Rooms",
@@ -754,7 +755,8 @@
     "incidentObjeto": "Lost item",
     "incidentMinibar": "Minibar consumed",
     "incidentAveria": "Breakdown",
-    "incidentOtro": "Other"
+    "incidentOtro": "Other",
+    "tabActivities": "Activities"
   },
   "myResales": {
     "title": "My resales",
@@ -1119,5 +1121,53 @@
       "MONTHLY": "Monthly",
       "QUARTERLY": "Quarterly"
     }
+  },
+  "activities": {
+    "adminTitle": "Activities",
+    "adminTagline": "Catalogue, strict-capacity schedules and prices. Reception signs guests up.",
+    "roleDeniedAdmin": "Only the owner can configure activities.",
+    "loading": "Loading…",
+    "loadError": "Activities could not be loaded.",
+    "saveError": "The change could not be saved.",
+    "catalogTitle": "Catalogue",
+    "noActivities": "No activities yet.",
+    "code": "Code",
+    "name": "Name",
+    "price": "Price",
+    "priceCents": "Price (cents)",
+    "state": "Status",
+    "active": "Active",
+    "paused": "Paused",
+    "createActivity": "Create activity",
+    "activityCreated": "Activity {code} created.",
+    "schedulesTitle": "Schedules",
+    "noSchedules": "No schedules yet.",
+    "activity": "Activity",
+    "startsAt": "Starts",
+    "capacity": "Capacity",
+    "remaining": "{count} free",
+    "waitlist": "Waitlisted",
+    "occupancy": "Occupancy",
+    "createSchedule": "Create schedule",
+    "scheduleCreated": "Schedule created.",
+    "closed": "Closed",
+    "receptionTitle": "Today's activities",
+    "date": "Date",
+    "noSchedulesToday": "No activity schedules for that day.",
+    "occupancyDetail": "{booked} of {capacity} seats taken · {waitlist} waitlisted",
+    "guest": "Guest",
+    "room": "Room",
+    "seats": "Seats",
+    "allowWaitlist": "Waitlist if full",
+    "book": "Sign up",
+    "booked": "Booking made; the charge goes to the folio.",
+    "bookedWaitlist": "Added to the waiting list.",
+    "bookError": "The guest could not be signed up.",
+    "cancelBooking": "Cancel",
+    "cancelled": "Booking cancelled.",
+    "promoted": "The first guest on the waiting list has been promoted.",
+    "cancelError": "The booking could not be cancelled.",
+    "statusBooked": "Booked",
+    "statusWaitlist": "Waitlisted"
   }
 }

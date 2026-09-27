@@ -15,6 +15,7 @@ export type AdminNavLabelKey =
   | "recepcion"
   | "housekeeping"
   | "lenceria"
+  | "actividades"
   | "mantenimiento"
   | "incidencias"
   | "preventivo"
@@ -43,6 +44,7 @@ export type AdminSectionKey =
   | "habitacion"
   | "recepcion"
   | "housekeeping"
+  | "actividades"
   | "mantenimiento"
   | "administracion"
   | "plataforma";
@@ -82,6 +84,12 @@ export const ADMIN_NAV_SECTIONS: readonly AdminNavSection[] = [
     key: "housekeeping",
     labelKey: "housekeeping",
     items: [{ href: "/admin/housekeeping/lenceria", labelKey: "lenceria", role: "DEFAULT_ADMIN_ROLE" }],
+  },
+  {
+    // Sección 3 del plan (F5 · D-44): catálogo, horarios con cupo y precios. La recepción inscribe.
+    key: "actividades",
+    labelKey: "actividades",
+    items: [{ href: "/admin/actividades", labelKey: "actividades", role: "DEFAULT_ADMIN_ROLE" }],
   },
   {
     // Sección 6 del plan (F4 · D-52…D-54): supervisión de incidencias y cronograma preventivo.

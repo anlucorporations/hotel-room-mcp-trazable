@@ -299,7 +299,7 @@ nada de esta tabla guarda datos personales (RNF-30).
 | Campo | Tipo | Nulo | Default | Descripción |
 |---|---|---|---|---|
 | `id` | `UUID` | PK | `gen_random_uuid()` | — |
-| `token_id` | `VARCHAR(66)` | no | — | FK a `nfts(token_id)` con borrado en cascada |
+| `token_id` | `VARCHAR(66)` | sí | — | FK a `nfts(token_id)` con borrado en cascada. **Opcional desde F5 (D-46)**: un cargo de actividad se imputa al folio y puede no tener token todavía (reserva confirmada antes de la liquidación, D-57) |
 | `concept` | `VARCHAR(120)` | no | — | Concepto del cargo |
 | `amount_cents` | `BIGINT` | no | — | Importe en céntimos; `CHECK (amount_cents > 0)` |
 | `currency` | `VARCHAR(3)` | no | `'EUR'` | Moneda ISO-4217 |
@@ -309,8 +309,9 @@ nada de esta tabla guarda datos personales (RNF-30).
 | `cancelled_by` | `VARCHAR(100)` | sí | — | Operador que cancela el cargo |
 | `cancelled_at` | `TIMESTAMP` | sí | — | Momento de la cancelación |
 | `cancel_reason` | `VARCHAR(200)` | sí | — | Motivo de la cancelación |
+| `folio_id` | `UUID` | sí | — | FK a `folios(id)` con `SET NULL`: folio de la estancia al que se imputa el cargo (F5, D-46) |
 
-Índice: `(token_id, status)`.
+Índices: `(token_id, status)` y `(folio_id)`.
 
 ### 3.6 `stay_checkouts` — check-out de la estancia (D-34 · **IMPLEMENTADO**)
 

@@ -125,7 +125,7 @@ erDiagram
 
     additional_charges {
         UUID id PK
-        VARCHAR(66) token_id FK "FK a nfts ON DELETE CASCADE"
+        VARCHAR(66) token_id FK "FK a nfts ON DELETE CASCADE; opcional desde F5 (D-46)"
         VARCHAR(120) concept "Concepto del cargo"
         BIGINT amount_cents "Importe en céntimos; CHECK amount_cents mayor que 0"
         VARCHAR(3) currency "Moneda ISO-4217; por defecto EUR"
@@ -135,6 +135,7 @@ erDiagram
         VARCHAR(100) cancelled_by "Operador que cancela el cargo"
         TIMESTAMP cancelled_at "Momento de la cancelación"
         VARCHAR(200) cancel_reason "Motivo de la cancelación"
+        UUID folio_id FK "FK a folios ON DELETE SET NULL: cargo imputado al folio (F5, D-46)"
     }
 
     stay_checkouts {

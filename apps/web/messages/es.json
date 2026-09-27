@@ -394,7 +394,8 @@
       "lenceria": "Lencería",
       "mantenimiento": "Mantenimiento",
       "incidencias": "Incidencias",
-      "preventivo": "Preventivo"
+      "preventivo": "Preventivo",
+      "actividades": "Actividades"
     },
     "mintTitle": "Back-office · Publicar noche",
     "roomsTitle": "Back-office · Habitaciones",
@@ -754,7 +755,8 @@
     "incidentObjeto": "Objeto olvidado",
     "incidentMinibar": "Minibar consumido",
     "incidentAveria": "Avería",
-    "incidentOtro": "Otro"
+    "incidentOtro": "Otro",
+    "tabActivities": "Actividades"
   },
   "myResales": {
     "title": "Mis reventas",
@@ -1119,5 +1121,53 @@
       "MONTHLY": "Mensual",
       "QUARTERLY": "Trimestral"
     }
+  },
+  "activities": {
+    "adminTitle": "Actividades",
+    "adminTagline": "Catálogo, horarios con cupo estricto y precios. La recepción inscribe a los huéspedes.",
+    "roleDeniedAdmin": "Solo el propietario puede configurar las actividades.",
+    "loading": "Cargando…",
+    "loadError": "No se pudieron cargar las actividades.",
+    "saveError": "No se pudo guardar.",
+    "catalogTitle": "Catálogo",
+    "noActivities": "Todavía no hay actividades.",
+    "code": "Código",
+    "name": "Nombre",
+    "price": "Precio",
+    "priceCents": "Precio (céntimos)",
+    "state": "Estado",
+    "active": "Activa",
+    "paused": "Pausada",
+    "createActivity": "Crear actividad",
+    "activityCreated": "Actividad {code} creada.",
+    "schedulesTitle": "Horarios",
+    "noSchedules": "Todavía no hay horarios.",
+    "activity": "Actividad",
+    "startsAt": "Comienzo",
+    "capacity": "Aforo",
+    "remaining": "{count} libres",
+    "waitlist": "En espera",
+    "occupancy": "Ocupación",
+    "createSchedule": "Crear horario",
+    "scheduleCreated": "Horario creado.",
+    "closed": "Cerrado",
+    "receptionTitle": "Actividades del día",
+    "date": "Fecha",
+    "noSchedulesToday": "No hay horarios de actividades para ese día.",
+    "occupancyDetail": "{booked} de {capacity} plazas ocupadas · {waitlist} en espera",
+    "guest": "Huésped",
+    "room": "Habitación",
+    "seats": "Plazas",
+    "allowWaitlist": "Lista de espera si está lleno",
+    "book": "Inscribir",
+    "booked": "Inscripción realizada; el cargo va al folio.",
+    "bookedWaitlist": "Añadido a la lista de espera.",
+    "bookError": "No se pudo inscribir.",
+    "cancelBooking": "Cancelar",
+    "cancelled": "Inscripción cancelada.",
+    "promoted": "Se ha promocionado la primera plaza en espera.",
+    "cancelError": "No se pudo cancelar.",
+    "statusBooked": "Inscrito",
+    "statusWaitlist": "En espera"
   }
 }

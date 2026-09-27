@@ -25,6 +25,7 @@ export * from "./logger";
 export * from "./env/index";
 export * from "./db/pool";
 export * from "./db/migrator";
+export * from "./db/repositories/activities.repository";
 export * from "./db/repositories/housekeeping.repository";
 export * from "./db/repositories/maintenance.repository";
 export * from "./db/repositories/nfts.repository";

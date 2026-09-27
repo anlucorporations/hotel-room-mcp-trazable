@@ -124,7 +124,11 @@ describe("AuthService (US-05)", () => {
           expect(match).toBe(true);
         }
       },
-      15000,
+      // bcrypt es deliberadamente costoso: 8 hashes + 8 comparaciones. Bajo la ejecución de todo el
+      // workspace en paralelo, 15 s quedaban al borde y el test se volvía intermitente (medido el
+      // 27-09-2026: timeout en la pasada de turbo, verde en aislamiento). 30 s mantiene la afirmación
+      // y absorbe la contención de CPU sin volverlo un test laxo.
+      30000,
     );
   });
 

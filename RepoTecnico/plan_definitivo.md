@@ -264,7 +264,18 @@ D-25 (primer ciclo = shell + Habitación), D-26 (operación primero) y D-24 (cor
 - **Criterios:** con incidencia `OPEN` y `blocks_sale = TRUE`, la noche no se ofrece; al pasar a
   `RESOLVED`, vuelve a estar disponible; una tarea preventiva vencida genera aviso.
 
-### F5 — Actividades · *riesgo medio*
+### F5 — Actividades · *riesgo medio* · **✅ COMPLETADA (2026-09-27)**
+
+**Progreso (2026-09-27):**
+- ✅ **`ActivitiesRepository`**: catálogo y horarios con **cupo estricto** (bloqueo `FOR UPDATE`),
+  inscripción solo de **estancias activas** (D-45), **cargo al folio** (D-46) y **lista de espera
+  opcional** con promoción automática al liberarse una plaza (D-47).
+- ✅ `additional_charges.token_id` pasa a **nullable** (migración idempotente) para imputar cargos de
+  actividad al folio antes de la liquidación; artefactos de datos sincronizados.
+- ✅ **API admin** (`/api/admin/actividades/*`, owner) y **recepción**
+  (`/api/reception/actividades/*`, `RECEPTION_ROLE`); UI `/admin/actividades` y pestaña **Actividades**
+  en Front Office; i18n ES/EN/RU con paridad.
+- ⏳ **Axe E2E**: `/admin/actividades` añadida al escaneo; ejecución local limitada por el entorno (CI).
 
 - **Alcance:** catálogo, horarios con **cupo estricto** y **lista de espera opcional** (D-44…D-47);
   inscripción **solo de huéspedes con estancia activa** y **cargo al folio** (D-45, D-46).

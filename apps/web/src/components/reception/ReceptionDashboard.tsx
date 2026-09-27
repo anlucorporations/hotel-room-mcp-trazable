@@ -8,9 +8,10 @@ import { CheckInPanel } from "./CheckInPanel";
 import { CheckoutPanel } from "./CheckoutPanel";
 import { DayBoard } from "./DayBoard";
 import { ReportIncidentPanel } from "@/components/maintenance/ReportIncidentPanel";
+import { ActivitiesPanel } from "./ActivitiesPanel";
 import type { DayStats, OverviewResponse, Reservation, RoomCell } from "./types";
 
-type Tab = "today" | "checkin" | "checkout";
+type Tab = "today" | "checkin" | "checkout" | "activities";
 
 /** Fecha local en formato ISO `YYYY-MM-DD` (la del puesto de recepción, no UTC). */
 function todayIso(): string {
@@ -100,7 +101,7 @@ export function ReceptionDashboard() {
       <p className="text-small text-ink-soft">{t("signedAs", { username: sessionUsername })}</p>
 
       <div role="tablist" aria-label={t("tabsLabel")} className="flex rounded-pill border border-line bg-sand-2 p-1">
-        {(["today", "checkin", "checkout"] as const).map((item) => (
+        {(["today", "checkin", "checkout", "activities"] as const).map((item) => (
           <button
             key={item}
             role="tab"
@@ -143,6 +144,8 @@ export function ReceptionDashboard() {
           onDone={refresh}
         />
       )}
+
+      {tab === "activities" && <ActivitiesPanel apiFetch={session.apiFetch} />}
     </div>
   );
 }

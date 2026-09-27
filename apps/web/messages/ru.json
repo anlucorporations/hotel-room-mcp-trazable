@@ -394,7 +394,8 @@
       "lenceria": "Бельё",
       "mantenimiento": "Техобслуживание",
       "incidencias": "Инциденты",
-      "preventivo": "Профилактика"
+      "preventivo": "Профилактика",
+      "actividades": "Мероприятия"
     },
     "mintTitle": "Бэк-офис · Выпуск ночи",
     "roomsTitle": "Бэк-офис · Номера",
@@ -754,7 +755,8 @@
     "incidentObjeto": "Забытая вещь",
     "incidentMinibar": "Израсходован минибар",
     "incidentAveria": "Неисправность",
-    "incidentOtro": "Другое"
+    "incidentOtro": "Другое",
+    "tabActivities": "Мероприятия"
   },
   "myResales": {
     "title": "Мои перепродажи",
@@ -1119,5 +1121,53 @@
       "MONTHLY": "Ежемесячно",
       "QUARTERLY": "Ежеквартально"
     }
+  },
+  "activities": {
+    "adminTitle": "Мероприятия",
+    "adminTagline": "Каталог, расписания со строгим лимитом мест и цены. Регистрация — на ресепшене.",
+    "roleDeniedAdmin": "Только владелец может настраивать мероприятия.",
+    "loading": "Загрузка…",
+    "loadError": "Не удалось загрузить мероприятия.",
+    "saveError": "Не удалось сохранить.",
+    "catalogTitle": "Каталог",
+    "noActivities": "Мероприятий пока нет.",
+    "code": "Код",
+    "name": "Название",
+    "price": "Цена",
+    "priceCents": "Цена (центы)",
+    "state": "Статус",
+    "active": "Активно",
+    "paused": "Приостановлено",
+    "createActivity": "Создать мероприятие",
+    "activityCreated": "Мероприятие {code} создано.",
+    "schedulesTitle": "Расписания",
+    "noSchedules": "Расписаний пока нет.",
+    "activity": "Мероприятие",
+    "startsAt": "Начало",
+    "capacity": "Мест",
+    "remaining": "{count} свободно",
+    "waitlist": "В ожидании",
+    "occupancy": "Заполненность",
+    "createSchedule": "Создать расписание",
+    "scheduleCreated": "Расписание создано.",
+    "closed": "Закрыто",
+    "receptionTitle": "Мероприятия на день",
+    "date": "Дата",
+    "noSchedulesToday": "На этот день расписаний нет.",
+    "occupancyDetail": "{booked} из {capacity} мест занято · {waitlist} в ожидании",
+    "guest": "Гость",
+    "room": "Номер",
+    "seats": "Места",
+    "allowWaitlist": "Лист ожидания, если нет мест",
+    "book": "Записать",
+    "booked": "Запись сделана; плата отнесена на счёт.",
+    "bookedWaitlist": "Добавлено в лист ожидания.",
+    "bookError": "Не удалось записать.",
+    "cancelBooking": "Отменить",
+    "cancelled": "Запись отменена.",
+    "promoted": "Первый из листа ожидания переведён в запись.",
+    "cancelError": "Не удалось отменить.",
+    "statusBooked": "Записан",
+    "statusWaitlist": "В ожидании"
   }
 }

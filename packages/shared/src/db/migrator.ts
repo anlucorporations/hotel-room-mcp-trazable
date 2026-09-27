@@ -565,6 +565,11 @@ ALTER TABLE additional_charges ADD COLUMN IF NOT EXISTS folio_id UUID NULL
 
 CREATE INDEX IF NOT EXISTS idx_charges_folio ON additional_charges(folio_id);
 
+-- Actividades (F5 · D-46): un cargo de actividad se imputa al FOLIO de la estancia y puede no tener
+-- todavía un token emitido (reserva confirmada antes de la liquidación al 100 %, D-57). Por eso
+-- «token_id» deja de ser obligatorio: la pertenencia la marca «folio_id» (añadido arriba).
+ALTER TABLE additional_charges ALTER COLUMN token_id DROP NOT NULL;
+
 CREATE TABLE IF NOT EXISTS activities (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     code VARCHAR(40) UNIQUE NOT NULL,

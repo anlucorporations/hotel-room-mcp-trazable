@@ -1582,6 +1582,61 @@ de venta, preventivo con cronograma y aviso de tareas vencidas. Cubre **D-52, D-
   destinatario, el planificador registra el motivo y el aviso vive en el tablero del técnico.
 - El **axe E2E** sigue cubierto en CI por la limitación de librerías del entorno (igual que F1–F3).
 
+---
+
+## 23. F5 — Actividades (2026-09-27)
+
+Suite Administración → **Actividades** y pestaña de actividades en Front Office: catálogo y horarios
+con **cupo estricto**, inscripción **solo de estancias activas**, **cargo al folio** y **lista de
+espera opcional**. Cubre **D-44…D-47**.
+
+### Hecho
+
+- **`ActivitiesRepository`** (`packages/shared/src/db/repositories/activities.repository.ts`):
+  catálogo y horarios (`createActivity`, `updateActivity`, `createSchedule`, `setScheduleActive`,
+  `listSchedules` con ocupación y plazas libres), inscripción (`book`) y cancelación con
+  **promoción automática** de la lista de espera (`cancelBooking`). **11 pruebas**.
+- **Cupo estricto sin sobreventa (D-47)**: el horario se bloquea con `FOR UPDATE` durante la
+  inscripción; dos recepcionistas concurrentes no pueden superar el aforo.
+- **Lista de espera opcional (D-47)**: con el horario lleno, `allowWaitlist` deja la inscripción en
+  `WAITLIST` sin cargo; al cancelar una plaza, la primera de la espera **se promociona** y se le crea
+  su cargo.
+- **Solo estancias activas (D-45)**: la reserva debe estar `CONFIRMED` y en curso en la fecha de la
+  actividad.
+- **Cargo al folio (D-46)**: la inscripción crea una línea en `additional_charges` ligada al
+  **folio** de la estancia. Se relaja `additional_charges.token_id` a **NULL** (migración idempotente):
+  una reserva confirmada puede no tener todavía token (llega con la liquidación, D-57). Artefactos de
+  datos sincronizados (`base_datos.sql`, `diccionario_datos.md`, `diagrama_er.md`).
+- **API admin `/api/admin/actividades/*`** (owner): catálogo (`GET`/`POST`, `PATCH`), horarios
+  (`GET`/`POST`, `PATCH`). **API recepción `/api/reception/actividades/*`** (`RECEPTION_ROLE`):
+  horarios del día, inscripciones (`GET`/`POST`) y cancelación (`DELETE`, devuelve la promocionada).
+- **UI**: `/admin/actividades` (catálogo y horarios) y pestaña **Actividades** en `/recepcion`
+  (inscripción con ocupación real, lista de espera y cancelación).
+- **i18n ES/EN/RU** con paridad (1.027 claves por idioma) en el namespace `activities`.
+
+### Verificación
+
+- `pnpm typecheck`: **6/6 tareas OK**.
+- `pnpm test` (por paquetes): `@hotel/web` **420**, `@hotel/shared` **378**, `@hotel/worker` **123**,
+  `@hotel/mcp` **38**, `@hotel/monitor` **34** y Foundry **139** (1.132 pruebas, 0 fallos).
+- Pruebas nuevas de F5: **11** del repositorio de Actividades y **10** de API en la web; `boundaries`
+  y `a11y` en verde.
+- **Endurecido** el test de códigos de rescate de `auth.test.ts`: bcrypt con 8 hashes + 8
+  comparaciones quedaba al borde de 15 s bajo la ejecución de todo el workspace en paralelo y se
+  volvía intermitente; ahora tolera 30 s manteniendo la afirmación.
+- `/admin/actividades` añadida al escaneo axe; **build de producción OK** con las ocho rutas nuevas de
+  actividades.
+
+### Limitaciones declaradas
+
+- El cargo de actividad se **imputa al folio**; el **cobro** es de la contabilidad de la 3.ª versión
+  (D-33), igual que el resto de `additional_charges`.
+- La inscripción se apoya en una **reserva** (el modelo `activity_bookings.reservation_id` es
+  obligatorio); una noche comprada sin reserva asociada queda para cuando exista ese vínculo.
+- El **axe E2E** sigue cubierto en CI por la limitación de librerías del entorno.
+
+
+
 
 
 
