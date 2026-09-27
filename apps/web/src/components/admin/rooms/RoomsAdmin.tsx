@@ -47,6 +47,17 @@ interface RoomImage {
   url: string;
 }
 
+/** Entrada de `GET /api/admin/rooms/window-overview` usada por el barrido global (F8). */
+interface WindowOverviewRoom {
+  roomId: string;
+  roomNumber: number;
+  roomType: string;
+  basePriceWei: string | null;
+  missing: number;
+  freeNights: number;
+  low: boolean;
+}
+
 const FIELD =
   "min-h-touch w-full rounded-brand border border-line bg-shell px-3 text-ink outline-none focus:border-sea";
 const ACTION =
@@ -85,6 +96,10 @@ export function RoomsAdmin() {
   const [uploading, setUploading] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [archiving, setArchiving] = useState(false);
+  // F8: barrido global secuencial de todas las habitaciones publicadas con noches pendientes.
+  const [sweeping, setSweeping] = useState(false);
+  const [sweepCurrent, setSweepCurrent] = useState(0);
+  const [sweepTotal, setSweepTotal] = useState(0);
 
   const [mfaOpen, setMfaOpen] = useState(false);
   const [mfaCode, setMfaCode] = useState("");
@@ -391,6 +406,66 @@ export function RoomsAdmin() {
     }
   }
 
+  /**
+   * Barrido global (F8 · D-4/D-11/D-16/D-17): acuña la ventana de todas las habitaciones publicadas
+   * con noches pendientes, en secuencia y reutilizando el hook idempotente. Si una habitación falla
+   * se detiene el barrido y el proceso queda reanudable (volver a pulsar continúa donde quedó).
+   */
+  async function handleGlobalSweep(): Promise<void> {
+    if (sweeping) return;
+    setSweeping(true);
+    setNotice(null);
+    setSweepCurrent(0);
+    setSweepTotal(0);
+    try {
+      const res = await apiFetch("/api/admin/rooms/window-overview");
+      const data = (await res.json().catch(() => ({}))) as {
+        message?: string;
+        rooms?: WindowOverviewRoom[];
+      };
+      if (!res.ok) throw new Error(data.message || t("loadError"));
+
+      const pending = (data.rooms ?? []).filter((room) => room.missing > 0);
+      if (pending.length === 0) {
+        setNotice({ kind: "ok", text: t("globalSweepNone") });
+        return;
+      }
+
+      setSweepTotal(pending.length);
+      let processed = 0;
+      let minted = 0;
+      let low = 0;
+      for (let index = 0; index < pending.length; index += 1) {
+        const room = pending[index];
+        if (!room) continue;
+        setSweepCurrent(index + 1);
+        try {
+          const result = await mintWindow.run(room.roomId);
+          minted += result.minted;
+          if (result.status.low) low += 1;
+          processed += 1;
+        } catch (error: unknown) {
+          const reason = error instanceof Error ? error.message : t("mintWindowError");
+          setNotice({
+            kind: "error",
+            text: `${t("globalSweepError", { room: room.roomNumber })} ${reason}`,
+          });
+          await loadRooms();
+          return;
+        }
+      }
+
+      let text = t("globalSweepOk", { rooms: processed, minted });
+      if (low > 0) text = `${text} ${t("globalSweepLow", { rooms: low })}`;
+      setNotice({ kind: "ok", text });
+      await loadRooms();
+    } catch (error: unknown) {
+      setNotice({ kind: "error", text: error instanceof Error ? error.message : t("loadError") });
+    } finally {
+      setSweeping(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
       {notice && (
@@ -454,6 +529,21 @@ export function RoomsAdmin() {
       </AdminCard>
 
       <AdminCard>
+        {isConnected && (
+          <div className="mb-4 flex flex-wrap items-center justify-end gap-3">
+            <button
+              type="button"
+              data-testid="rooms-global-sweep"
+              onClick={() => void handleGlobalSweep()}
+              disabled={sweeping || mintWindow.running}
+              className={ACTION}
+            >
+              {sweeping && sweepTotal > 0
+                ? t("globalSweepRunning", { current: sweepCurrent, total: sweepTotal })
+                : t("globalSweep")}
+            </button>
+          </div>
+        )}
         {listLoading ? (
           <p role="status" className="text-ink-soft">
             {t("loading")}

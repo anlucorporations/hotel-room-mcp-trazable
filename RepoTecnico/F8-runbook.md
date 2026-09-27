@@ -222,3 +222,9 @@ implementarla y probarla debe considerarse F8 cerrada.
   - Verificado en vivo: registro on-chain, `publishRoom`, 50 habitaciones en `/api/admin/rooms`,
     ventana de 90 días, 6 noches `onChainAnchored`. `emailDegraded: true` por el SMTP de relleno.
   - Detalle en [`despliegue_gcp.md`](./despliegue_gcp.md) §18.
+- **2026-09-27** · **E2E de publicación y ventana** (una ficha, en producción): imagen → huella →
+  firma EIP-191 → `publishRoom` → `PUBLISHED` anclada → 89 noches acuñadas; revertida a `DRAFT`.
+- **2026-09-27** · **Barrido global de la ventana** implementado: `GET /api/admin/rooms/window-overview`
+  (**3 pruebas**) y botón «Barrido global» en `/admin/habitacion` (secuencial, idempotente,
+  reanudable). Gates: typecheck **6/6**, `@hotel/web` **469** pruebas y build de producción OK.
+  - Pendiente: correo de agotamiento y banco de pruebas del barrido multi-habitación.

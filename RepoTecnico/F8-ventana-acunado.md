@@ -1,8 +1,7 @@
 # F8 · Diseño — Ventana global de acuñación (D-4, D-11, D-16, D-17)
 
-> **Fase**: F8 · parte 4 · **estado**: implementado el alcance aprobado (primer acuñado por
-> habitación al publicar + botón manual + aviso de agotamiento in-app); el barrido global y el correo
-> quedan para después
+> **Fase**: F8 · parte 4 · **estado**: implementado (primer acuñado al publicar + botón + **barrido
+> global** + aviso in-app y E2E real en producción); el **correo** de agotamiento queda para después
 > **Decisiones**: D-4 (primer acuñado de la ventana al publicar), D-11 (ventana configurable),
 > D-16 (proceso idempotente), D-17 (botón manual de extensión y aviso de agotamiento)
 > Fecha: 2026-09-27 · Continúa a [`F8-runbook.md`](./F8-runbook.md)
@@ -77,8 +76,10 @@ El acuñado **on-chain lo firma la wallet del administrador** (MINTER), igual qu
 para el barrido global, así que:
 
 - **Al publicar** se acuña **solo esa habitación** (≤ 90 tx) — asumible con progreso.
-- **Extensión global**: proceso por lotes (p. ej. 5 habitaciones por pasada) con progreso y
-  reanudación; opcionalmente el worker como *relayer* si se decide darle `MINTER_ROLE` (ver §4).
+- **Barrido global**: `GET /api/admin/rooms/window-overview` (owner) resume las habitaciones
+  **publicadas** con noches pendientes (y las de agotamiento) y el botón **«Barrido global»** de
+  `/admin/habitacion` las acuña **en secuencia** reutilizando el mismo hook idempotente. Es
+  **reanudable**: si una falla, se detiene y volver a pulsar continúa donde quedó. No usa *relayer*.
 
 ### 3.3 Aviso de agotamiento (D-17)
 
@@ -91,10 +92,11 @@ para el barrido global, así que:
 
 | Punto | Cambio |
 |---|---|
-| `POST /api/admin/rooms/[id]/publish` | Tras anclar la huella, devolver `mintWindow: { missing, windowDays }` para que el cliente encadene el acuñado (o disparar el proceso si se aprueba un relayer) |
-| `/admin/habitacion` | Botón «Acuñar ventana» + progreso + aviso de agotamiento |
-| `/admin/mint` | Completar el modo lote (hoy solo firma 1 noche) usando `buildMintWindow` |
-| `adminNav` / i18n | Entradas y literales ES/EN/RU (paridad obligatoria) |
+| `POST /api/admin/rooms/[id]/publish` | Tras anclar la huella, el cliente encadena el acuñado (el anclaje es best-effort) |
+| `/admin/habitacion` | ✅ Botón por habitación «Acuñar ventana» + **«Barrido global»** + progreso + aviso de agotamiento |
+| `GET /api/admin/rooms/window-overview` | ✅ Resumen del barrido (habitaciones publicadas, noches pendientes y libres) |
+| `/admin/mint` | Pendiente: completar el modo lote (hoy solo firma 1 noche) |
+| `adminNav` / i18n | ✅ Literales ES/EN/RU con paridad (1.192 claves) |
 
 ---
 
@@ -113,8 +115,8 @@ para el barrido global, así que:
    después.
 5. **Precio**: `rooms.base_rate_wei`; si falta, no se acuña (no se inventa tarifa).
 
-**Abiertas (para el barrido global futuro):** quién firma las 4.500 noches (relayer vs navegador),
-tamaño de lote del barrido completo y canal/cadencia del correo de agotamiento.
+**Abiertas:** canal/cadencia del correo de agotamiento y si el barrido global se moverá a un
+*relayer* del worker (hoy firma el navegador, habitación a habitación).
 
 ---
 
@@ -129,12 +131,15 @@ tamaño de lote del barrido completo y canal/cadencia del correo de agotamiento.
    (**5 pruebas** de ruta).
 4. ✅ Hook `useMintWindow` (cliente): acuñado idempotente/reanudable firmado por la wallet.
 5. ✅ UI en `/admin/habitacion`: primer acuñado **al publicar** (D-4) + botón «Acuñar ventana»
-   (D-17) con progreso, aviso in-app de agotamiento e i18n ES/EN/RU con paridad (1.186 claves).
+   (D-17) con progreso, aviso in-app de agotamiento e i18n ES/EN/RU con paridad.
+6. ✅ **Barrido global**: `GET /api/admin/rooms/window-overview` (**3 pruebas** de ruta) y botón
+   «Barrido global» en `/admin/habitacion` (secuencial, idempotente y reanudable).
+7. ✅ **E2E real** en producción (una ficha): imagen → huella → firma EIP-191 → `publishRoom` →
+   `POST /publish` → ventana de 89 noches acuñada, y reversión a borrador.
 
 **Pendiente:**
 
-6. Barrido global de todas las habitaciones (lotes, posible *relayer*).
-7. Correo de agotamiento (`ADMIN_EMAIL`) y E2E del flujo completo.
+8. Correo de agotamiento (`ADMIN_EMAIL`) y E2E del barrido multi-habitación.
 
 ---
 

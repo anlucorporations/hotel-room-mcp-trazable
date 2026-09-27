@@ -328,8 +328,9 @@ D-25 (primer ciclo = shell + Habitación), D-26 (operación primero) y D-24 (cor
      agregados del worker (D-15); registro on-chain **arranca vacío** (D-13). → **HECHO** (backup
      `1790542352281`).
   4. **Primer acuñado** de la **ventana global configurable** (D-4, D-11) al publicar, con **botón manual
-     de extensión** y aviso de agotamiento (D-17), proceso **idempotente** (D-16). → **HECHO** para una
-     habitación; **pendiente** el barrido global y el correo.
+     de extensión** y aviso de agotamiento (D-17), proceso **idempotente** (D-16). → **HECHO**: por
+     habitación al publicar, «Acuñar ventana» y **barrido global**; **pendiente** el correo de
+     agotamiento.
   5. **Paso `registerRoom` en los scripts de desarrollo/E2E** (`seed-demo`, `inject-data`,
      `e2e/m4…m7`) antes de mintear. → **HECHO** (helper `scripts/room-registry.ts`).
 - **Runbook (resumen):** backup → desplegar contrato nuevo → cargar habitaciones → sincronizar BD↔cadena →
