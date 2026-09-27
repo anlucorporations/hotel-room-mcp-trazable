@@ -316,4 +316,50 @@ no hay cambios de esquema).
 
 ---
 
-*Despliegue GCP · hotelMCP · 2026-09-26*
+## 14. Actualización · F1–F5 (2026-09-27)
+
+Se redesplegó la plataforma con las fases **F1 (Habitación), F2 (Front Office), F3 (Housekeeping),
+F4 (Mantenimiento) y F5 (Actividades)** sin recrear infraestructura. Solo cambian **worker** y **web**;
+`mcp` y `monitor` no varían (no tocan el esquema nuevo).
+
+| Paso | Detalle |
+|---|---|
+| Imágenes | Cloud Build `worker:v4` (2m14s) y `web:v4` (3m03s), mismos `NEXT_PUBLIC_*` que v2/v3 (chainId 31337, contrato `0x70bD…605B`, bloque 288) |
+| Revisiones | `hotel-mcp-worker-00003-852` y `hotel-mcp-web-00004-x5l` al 100 % de tráfico |
+| Configuración | Desplegadas solo con `--image`, de modo que se **conservan** las variables y secretos de la revisión anterior |
+| Migración | La aplica el **worker al arrancar** (`runMigrations`, idempotente y aditiva): crea las tablas del modelo (`rooms`, `room_images`, `room_publications`, `reservations`, `housekeeping_*`, `supply_*`, `maintenance_*`, `preventive_*`, `activities`, `activity_*`, `platform_settings`, `hotel_*`…) y relaja `additional_charges.token_id` a `NULL` (F5 · D-46) |
+| Sin cambios de entorno | Las variables nuevas de F4 (`PREVENTIVE_HOUR_LOCAL`, `PREVENTIVE_CHECK_INTERVAL_MS`, `MAINTENANCE_ALERT_EMAIL`) tienen valor por defecto; sin destinatario, el aviso preventivo queda en el tablero del técnico y el planificador registra el motivo |
+
+### Verificación (despliegue real)
+
+| Comprobación | Resultado |
+|---|---|
+| `/health/ready` de la web | **200** · `READY` (postgres, redis y RPC `UP`) |
+| Home de la web | **200** · `<title>Hotel Marina del Sol</title>` (94 KB) |
+| Rutas nuevas sin sesión | `/housekeeping`, `/mantenimiento`, `/admin/actividades`, `/admin/housekeeping/lenceria`, `/admin/mantenimiento/incidencias` y `/admin/mantenimiento/preventivo` → **200** (pantalla de acceso) |
+| APIs nuevas sin sesión | `/api/housekeeping/shifts`, `/api/mantenimiento/board`, `/api/admin/actividades/activities`, `/api/admin/mantenimiento/plans` y `/api/admin/housekeeping/supplies` → **401** |
+| Login + TOTP (owner) | **200** · sesión `admin@hotel.es` con `DEFAULT_ADMIN_ROLE` |
+| F3 · `GET /api/housekeeping/shifts`, `/supplies` | **200** · 0 turnos; **4** artículos de lencería, **4** bajo umbral |
+| F4 · `GET /api/mantenimiento/board` | **200** · 0 incidencias, 0 tareas vencidas, 0 bloqueos (esquema presente) |
+| F5 · `GET /api/admin/actividades/activities` | **200** · catálogo vacío |
+| **Escritura F5** | `POST` actividad `DEMO-F5` y su horario → **201**; la recepción lo ve (`/api/reception/actividades/schedules` → **1**); actividad desactivada |
+| **Escritura F4** | `POST` plan preventivo `DEMO-F4` → **201**; aparece en `/api/admin/mantenimiento/plans` → **1**; plan desactivado |
+| Regresión · `/api/nfts` (público) | **200** con las noches sembradas |
+| `/health` de worker y mcp | **200** · worker `lag: 0` |
+
+> Los registros `DEMO-F5` (actividad + horario) y `DEMO-F4` (plan preventivo) se crearon para probar
+> las rutas de alta y quedaron **desactivados**; no hay borrado físico de catálogo por diseño.
+
+### Pendiente del despliegue
+
+- **Contrato sin recortar (F8)**: las imágenes llevan el código que llama a `registerRoom`/`publishRoom`
+  del contrato canónico ampliado (F1), pero el contrato **desplegado en el Anvil global es el anterior**
+  (`0x70bD…605B`, bloque 288). La **publicación de fichas desde `/admin/habitacion` requiere el corte
+  de contrato de F8** (nuevo despliegue + siembra del registro de habitaciones); el resto de la
+  plataforma no se ve afectado.
+- El **mcp** y el **monitor** siguen con las imágenes de la primera entrega; conviene recompilarlos
+  cuando F8 corte el contrato, para alinear ABIs y monitorización.
+
+---
+
+*Despliegue GCP · hotelMCP · actualizado 2026-09-27 (incremento F1–F5)*
