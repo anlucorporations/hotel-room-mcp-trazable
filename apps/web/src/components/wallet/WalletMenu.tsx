@@ -1,24 +1,38 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { Fragment, useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import type { RoleName } from "@hotel/shared/domain";
+import type { BackOfficeRoleName } from "@hotel/shared/domain";
 import type { AdminSession } from "@/components/admin/useAdminSession";
 import { walletMenuItems, type WalletMenuAction } from "@/lib/wallet-menu-items";
 import { useOnboarding } from "./useOnboarding";
 import { FaucetButton } from "./FaucetButton";
 
-/** Etiqueta i18n de cada rol on-chain (namespace `walletMenu`). */
-const ROLE_KEY: Readonly<Record<RoleName, string>> = {
+/**
+ * Etiqueta i18n de cada rol de operador (namespace `walletMenu`). Incluye los roles de personal sin
+ * wallet (`HOUSEKEEPING`, `MAINTENANCE`, D-56) para que la insignia del menú público no quede vacía.
+ */
+const ROLE_KEY: Readonly<Record<BackOfficeRoleName, string>> = {
   DEFAULT_ADMIN_ROLE: "roleDefaultAdmin",
-  MINTER_ROLE: "roleMinter",
   RECEPTION_ROLE: "roleReception",
+  HOUSEKEEPING: "roleHousekeeping",
+  MAINTENANCE: "roleMaintenance",
+};
+
+/** Roles on-chain que no son de back-office directo (minter, pauser, burner, tesorería). */
+const ONCHAIN_ROLE_KEY: Readonly<Record<string, string>> = {
+  MINTER_ROLE: "roleMinter",
   PAUSER_ROLE: "rolePauser",
   BURNER_ROLE: "roleBurner",
   TREASURER_ROLE: "roleTreasurer",
 };
+
+function roleLabelKey(role: string | undefined): string | undefined {
+  if (!role) return undefined;
+  return (ROLE_KEY as Readonly<Record<string, string>>)[role] ?? ONCHAIN_ROLE_KEY[role];
+}
 
 function short(address: string): string {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
@@ -26,6 +40,14 @@ function short(address: string): string {
 
 const ITEM =
   "flex min-h-touch w-full items-center gap-2 rounded-brand-sm px-3 text-left text-small text-ink transition-colors hover:bg-sand-2";
+
+/** Claves de acción que abren otra suite (D-77), para agruparlas bajo un encabezado. */
+const SUITE_ACTIONS = new Set<WalletMenuAction>([
+  "suiteAdmin",
+  "suiteReception",
+  "suiteHousekeeping",
+  "suiteMaintenance",
+]);
 
 /**
  * Menú desplegable de la billetera/usuario (RF-40, CU-40).
@@ -67,7 +89,13 @@ export function WalletMenu({ session }: { session?: AdminSession }) {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [open]);
 
-  const items = walletMenuItems({ hasSession, isOwner, isConnected, isWrongNetwork });
+  const items = walletMenuItems({
+    hasSession,
+    isOwner,
+    isConnected,
+    isWrongNetwork,
+    roles: session?.roles ?? [],
+  });
 
   function close(): void {
     setOpen(false);
@@ -87,6 +115,8 @@ export function WalletMenu({ session }: { session?: AdminSession }) {
   }
 
   const role = session?.roles[0];
+  const roleKey = roleLabelKey(role);
+  const firstSuite = items.find((item) => SUITE_ACTIONS.has(item.action));
   const title = hasSession
     ? session?.sessionUsername ?? ""
     : isConnected && onboarding.address
@@ -112,9 +142,9 @@ export function WalletMenu({ session }: { session?: AdminSession }) {
         <span data-testid="wallet-menu-title" className="max-w-[16ch] truncate">
           {title}
         </span>
-        {hasSession && role && (
+        {hasSession && roleKey && (
           <span className="rounded-pill bg-sand-2 px-2 py-0.5 text-micro font-semibold uppercase tracking-wide text-sea-deep">
-            {t(ROLE_KEY[role] as "roleDefaultAdmin")}
+            {t(roleKey as "roleDefaultAdmin")}
           </span>
         )}
         <span aria-hidden="true" className={`transition-transform ${open ? "rotate-180" : ""}`}>
@@ -146,20 +176,17 @@ export function WalletMenu({ session }: { session?: AdminSession }) {
 
             {items.map((item) => {
               const label = t(item.action as "security");
-              if (item.href) {
-                return (
-                  <Link
-                    key={item.action}
-                    href={item.href}
-                    role="menuitem"
-                    onClick={close}
-                    className={ITEM}
-                  >
-                    {label}
-                  </Link>
-                );
-              }
-              return (
+              const entry = item.href ? (
+                <Link
+                  key={item.action}
+                  href={item.href}
+                  role="menuitem"
+                  onClick={close}
+                  className={ITEM}
+                >
+                  {label}
+                </Link>
+              ) : (
                 <button
                   key={item.action}
                   type="button"
@@ -170,6 +197,22 @@ export function WalletMenu({ session }: { session?: AdminSession }) {
                   {label}
                 </button>
               );
+
+              // Encabezado «Tus suites» (D-77) justo antes del primer acceso a otra suite.
+              if (item === firstSuite) {
+                return (
+                  <Fragment key={`group-${item.action}`}>
+                    <p
+                      role="presentation"
+                      className="mt-1 px-3 py-2 text-micro uppercase tracking-wide text-ink-soft"
+                    >
+                      {t("suitesTitle")}
+                    </p>
+                    {entry}
+                  </Fragment>
+                );
+              }
+              return entry;
             })}
 
             <div className="mt-2 border-t border-line px-3 pt-2 empty:hidden">

@@ -5,12 +5,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { WalletMenu } from "@/components/wallet/WalletMenu";
+import { useAdminSession } from "@/components/admin/useAdminSession";
 import { isActiveRoute } from "./navigation";
 
 interface NavItem {
   readonly href: string;
   readonly labelKey:
-    | "navNights"
+    | "navHome"
     | "navResale"
     | "navMyNights"
     | "navHistory"
@@ -19,7 +20,8 @@ interface NavItem {
 }
 
 const NAV_ITEMS: readonly NavItem[] = [
-  { href: "/", labelKey: "navNights" },
+  // D-76: la suite pública es el home del proyecto; su primera entrada es «Inicio» (`/`).
+  { href: "/", labelKey: "navHome" },
   // D-07: el mercado secundario es una vista propia; el catálogo solo ofrece primaria.
   { href: "/reventa", labelKey: "navResale" },
   { href: "/mis-noches", labelKey: "navMyNights" },
@@ -39,6 +41,9 @@ const NAV_ITEMS: readonly NavItem[] = [
 export function SiteHeader() {
   const t = useTranslations("shell");
   const pathname = usePathname();
+  // D-77: la cabecera pública conoce la sesión para que el menú de Usuario ofrezca los accesos a
+  // las suites que corresponden al tipo de usuario. Es solo vista: cada suite revalida en servidor.
+  const session = useAdminSession();
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-sand/85 backdrop-blur">
@@ -83,7 +88,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
-          <WalletMenu />
+          <WalletMenu session={session} />
           <MobileNav pathname={pathname} />
         </div>
       </div>

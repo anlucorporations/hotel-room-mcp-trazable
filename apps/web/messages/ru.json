@@ -18,7 +18,6 @@
     "brandSubtitle": "Аликанте · Средиземное море",
     "brandHome": "Marina del Sol, главная",
     "navLabel": "Основная навигация",
-    "navNights": "Номера",
     "navMyNights": "Мои ночи",
     "navHistory": "История продаж",
     "navResale": "Перепродажа",
@@ -33,7 +32,8 @@
     "footerHistory": "Публичная история продаж",
     "footerTerms": "Условия",
     "footerHelp": "Справка и руководства",
-    "footerPrivacy": "Конфиденциальность"
+    "footerPrivacy": "Конфиденциальность",
+    "navHome": "Главная"
   },
   "help": {
     "title": "Справка и руководства",
@@ -796,14 +796,21 @@
     "security": "Безопасность и мои данные",
     "users": "Пользователи",
     "roles": "Роли",
-    "admin": "Панель администратора",
+    "admin": "Войти",
     "signOut": "Выйти",
     "roleDefaultAdmin": "OWNER",
     "roleMinter": "MINTER",
     "roleReception": "РЕГИСТРАЦИЯ",
     "rolePauser": "PAUSER",
     "roleBurner": "BURNER",
-    "roleTreasurer": "КАЗНА"
+    "roleTreasurer": "КАЗНА",
+    "suiteAdmin": "Администрирование",
+    "suiteReception": "Ресепшен",
+    "suiteHousekeeping": "Служба номеров",
+    "suiteMaintenance": "Техобслуживание",
+    "suitesTitle": "Ваши разделы",
+    "roleHousekeeping": "УБОРКА",
+    "roleMaintenance": "ТЕХНИК"
   },
   "rooms": {
     "loading": "Загрузка…",

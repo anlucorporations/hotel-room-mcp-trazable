@@ -1635,6 +1635,53 @@ espera opcional**. Cubre **D-44…D-47**.
   obligatorio); una noche comprada sin reserva asociada queda para cuando exista ese vínculo.
 - El **axe E2E** sigue cubierto en CI por la limitación de librerías del entorno.
 
+---
+
+## 24. Navegación de suites desde la suite pública (2026-09-27)
+
+Ajuste de navegación pedido por el responsable, cerrado con **D-76** y **D-77**. **No cambia el
+modelo de datos** (`diccionario_datos.md`, `diagrama_er.md` y `base_datos.sql` siguen sincronizados
+sin cambios).
+
+**D-76 (decisión del cliente, aplicada).** La **suite pública es el home del proyecto**: vive en la
+raíz `/` y ninguna otra suite ocupa esa ruta. La primera entrada de la cabecera pasa a llamarse
+**«Inicio»** (`/`); el catálogo sigue sirviéndose en esa misma página.
+
+**D-77 (decisión del cliente, aplicada).** Desde la suite pública, el **menú de Usuario** de la barra
+de navegación ofrece el **acceso a las otras suites según el tipo de usuario**:
+
+| Tipo de usuario | Suites que ve en el menú |
+|---|---|
+| Owner (`DEFAULT_ADMIN_ROLE`) | Administración · Recepción · Housekeeping · Mantenimiento |
+| Recepción (`RECEPTION_ROLE`) | Front Office (`/recepcion`) |
+| Housekeeping | su ruta (`/housekeeping`) |
+| Mantenimiento | su ruta (`/mantenimiento`) |
+| Otros roles de back-office (minter, pauser, burner, tesorería) | Administración |
+| **Sin sesión** | **solo «Iniciar sesión»** (`/admin`), sin accesos a suites |
+
+### Hecho
+
+- **`suite-access.ts`** (`apps/web/src/lib/suite-access.ts`): función pura que traduce roles → suites;
+  es **solo vista** (cada suite revalida el rol en servidor), con **6 pruebas**.
+- **`walletMenuItems`** ampliado con las acciones `suiteAdmin`, `suiteReception`, `suiteHousekeeping`
+  y `suiteMaintenance`, agrupadas bajo el encabezado **«Tus suites»**; sin sesión solo «Iniciar
+  sesión». **7 pruebas**.
+- **`WalletMenu`**: la insignia de rol admite ya los roles de personal sin wallet
+  (`HOUSEKEEPING`, `MAINTENANCE`), que antes habrían quedado sin etiqueta.
+- **`SiteHeader`**: la cabecera pública conoce la **sesión** (`useAdminSession`) y la pasa al menú;
+  la primera entrada de navegación es **«Inicio»**. Al ser solo vista, no concede permisos: sin
+  sesión válida el menú no ofrece suites y cada suite mantiene su guard.
+- **i18n ES/EN/RU** con paridad (1.034 claves por idioma): `shell.navHome` y el bloque de suites/roles
+  del namespace `walletMenu`.
+
+### Verificación
+
+- `pnpm typecheck` de la web en verde.
+- Pruebas nuevas/actualizadas: **6** de `suite-access` y **7** de `wallet-menu-items`; `boundaries`
+  (frontera cliente/servidor) en verde (los módulos nuevos no importan el barril raíz).
+
+
+
 
 
 

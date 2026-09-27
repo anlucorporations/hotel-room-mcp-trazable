@@ -80,12 +80,13 @@ Suite FRONT OFFICE  (/recepcion) — barra superior minimalista (D-32)
 ├── Reservas               → motor, disponibilidad, llegadas, cancelaciones (D-26, D-34)
 └── Recepción              → check-in, check-out, folio y cargos (D-39, D-60)
 
-Suite PÚBLICA  (/) — home one-page + páginas propias (D-31, D-71)
+Suite PÚBLICA  (/) — home one-page + páginas propias (D-31, D-71, D-76)
 ├── Home                   → marca, categoría, servicios, planes, actividades, experiencia, reseñas, contacto
 ├── /catalogo              → catálogo de ofertas
 ├── /reventa               → mercado secundario
 ├── /mis-noches, /historico, /checkin, /asistente, /ayuda
-└── Reserva con wallet     → wallet al inicio; anticipo por transferencia; liquidación al 100 % (D-65, D-72)
+├── Reserva con wallet     → wallet al inicio; anticipo por transferencia; liquidación al 100 % (D-65, D-72)
+└── Menú de Usuario        → accesos a las otras suites según el rol de la sesión (D-76, D-77)
 
 Rutas de PERSONAL (fuera de las suites)
 ├── /housekeeping          → rol HOUSEKEEPING, móvil, vista simplificada (D-56, D-62)

@@ -18,7 +18,6 @@
     "brandSubtitle": "Alicante · Mediterranean",
     "brandHome": "Marina del Sol, home",
     "navLabel": "Main navigation",
-    "navNights": "Nights",
     "navMyNights": "My Nights",
     "navHistory": "Sales History",
     "navResale": "Resale market",
@@ -33,7 +32,8 @@
     "footerHistory": "Public sales history",
     "footerTerms": "Terms",
     "footerHelp": "Help and manuals",
-    "footerPrivacy": "Privacy"
+    "footerPrivacy": "Privacy",
+    "navHome": "Home"
   },
   "help": {
     "title": "Help and manuals",
@@ -796,14 +796,21 @@
     "security": "Security and my data",
     "users": "Users",
     "roles": "Roles",
-    "admin": "Admin panel",
+    "admin": "Sign in",
     "signOut": "Sign out",
     "roleDefaultAdmin": "OWNER",
     "roleMinter": "MINTER",
     "roleReception": "RECEPTION",
     "rolePauser": "PAUSER",
     "roleBurner": "BURNER",
-    "roleTreasurer": "TREASURY"
+    "roleTreasurer": "TREASURY",
+    "suiteAdmin": "Administration",
+    "suiteReception": "Front office",
+    "suiteHousekeeping": "Housekeeping",
+    "suiteMaintenance": "Maintenance",
+    "suitesTitle": "Your suites",
+    "roleHousekeeping": "HOUSEKEEPING",
+    "roleMaintenance": "MAINTENANCE"
   },
   "rooms": {
     "loading": "Loading…",

@@ -18,7 +18,6 @@
     "brandSubtitle": "Alicante · Mediterráneo",
     "brandHome": "Marina del Sol, inicio",
     "navLabel": "Principal",
-    "navNights": "Noches",
     "navMyNights": "Mis noches",
     "navHistory": "Histórico",
     "navResale": "Reventa",
@@ -33,7 +32,8 @@
     "footerHistory": "Histórico público",
     "footerTerms": "Términos",
     "footerHelp": "Ayuda y manuales",
-    "footerPrivacy": "Privacidad"
+    "footerPrivacy": "Privacidad",
+    "navHome": "Inicio"
   },
   "help": {
     "title": "Ayuda y manuales",
@@ -796,14 +796,21 @@
     "security": "Seguridad y mis datos",
     "users": "Usuarios",
     "roles": "Roles",
-    "admin": "Panel de administración",
+    "admin": "Iniciar sesión",
     "signOut": "Cerrar sesión",
     "roleDefaultAdmin": "OWNER",
     "roleMinter": "MINTER",
     "roleReception": "RECEPCIÓN",
     "rolePauser": "PAUSER",
     "roleBurner": "BURNER",
-    "roleTreasurer": "TESORERÍA"
+    "roleTreasurer": "TESORERÍA",
+    "suiteAdmin": "Administración",
+    "suiteReception": "Front Office",
+    "suiteHousekeeping": "Housekeeping",
+    "suiteMaintenance": "Mantenimiento",
+    "suitesTitle": "Tus suites",
+    "roleHousekeeping": "LIMPIEZA",
+    "roleMaintenance": "MANTENIMIENTO"
   },
   "rooms": {
     "loading": "Cargando…",
