@@ -17,6 +17,11 @@ la plataforma quede **alineada** (worker/mcp/monitor/web) con la ventana de acu�
 **Criterio de salida:** catálogo público **coherente con la cadena**, sin noches duplicadas ni
 fantasmas, y publicación de fichas (`/admin/habitacion`) operativa con anclaje real.
 
+> **Preparación lista (sin ejecutar)**: checklist, baseline de rollback y comandos exactos en
+> [`F8-preflight.md`](./F8-preflight.md); orquestador **dry-run por defecto** `infra/gcp/f8-cut.sh`;
+> build de las 4 imágenes `infra/gcp/f8-build-images.sh`; y ensayo local desechable
+> `scripts/dev/f8-rehearsal.sh` (ya ejecutado en verde). **No se ha tocado ningún servicio global.**
+
 ---
 
 ## 2. Estado actual verificado (2026-09-27)
@@ -202,3 +207,10 @@ implementarla y probarla debe considerarse F8 cerrada.
   `/admin/habitacion` (primer acuñado al publicar + botón + aviso in-app) con i18n ES/EN/RU.
   Gates: typecheck **6/6**, `@hotel/web` **466** pruebas, `@hotel/shared` **412**.
   - Pendiente: ejecutar el corte global (fases A–E), barrido global de la ventana y correo de agotamiento.
+- **2026-09-27** · **Preparación del corte (sin tocar GCP)**:
+  - [`F8-preflight.md`](./F8-preflight.md): checklists, baseline de rollback, comandos por fase,
+    respaldo/restauración y riesgos.
+  - `infra/gcp/f8-cut.sh` (fases A–E, **dry-run por defecto**; reset y siembra como pasos de job) y
+    `infra/gcp/f8-build-images.sh` (4 imágenes desde el registro).
+  - `scripts/dev/f8-rehearsal.sh`: ensayo local desechable **en verde** (Anvil propio, 50
+    habitaciones registradas, `roomTypeOf` correcto, 6 eventos `Mint`).
