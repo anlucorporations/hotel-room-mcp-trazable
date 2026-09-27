@@ -401,6 +401,7 @@ erDiagram
         TIMESTAMP created_at "Alta"
         VARCHAR(100) moderated_by "Administrador que modera"
         TIMESTAMP moderated_at "Momento de la moderación"
+        VARCHAR(200) moderation_notes "Motivo de la moderación (F6 · D-58)"
     }
 
     platform_settings {

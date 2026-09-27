@@ -445,6 +445,7 @@ Semilla inicial: `WIFI`, `AC`, `HEATING`, `TV`, `PRIVATE_BATH`, `BALCONY`, `SEA_
 | `created_at` | `TIMESTAMP` | no | `NOW()` | — |
 | `moderated_by` | `VARCHAR(100)` | sí | — | Administrador que modera |
 | `moderated_at` | `TIMESTAMP` | sí | — | — |
+| `moderation_notes` | `VARCHAR(200)` | sí | — | Motivo de la moderación (F6 · D-58): por qué se aprobó o rechazó |
 
 Índices: `(status, created_at DESC)`, `(room_type)`.
 

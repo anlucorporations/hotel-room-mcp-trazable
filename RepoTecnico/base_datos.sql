@@ -464,8 +464,13 @@ CREATE TABLE IF NOT EXISTS reviews (
     status VARCHAR(12) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     moderated_by VARCHAR(100) NULL,
-    moderated_at TIMESTAMP NULL
+    moderated_at TIMESTAMP NULL,
+    -- Motivo de la moderación (F6 · D-58).
+    moderation_notes VARCHAR(200) NULL
 );
+
+-- Migración incremental (F6): la nota de moderación se añade a bases ya creadas.
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS moderation_notes VARCHAR(200) NULL;
 
 -- Ajustes de plataforma (D-11): ventana global de acuñado y similares.
 CREATE TABLE IF NOT EXISTS platform_settings (

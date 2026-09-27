@@ -165,7 +165,7 @@ export function MyNights() {
         <ul className="grid grid-cols-1 gap-6 tablet:grid-cols-2 desktop:grid-cols-3">
           {visibleNights.map((night) => (
             <li key={night.tokenId}>
-              <MyNightCard night={night} onConfirmed={refetch} />
+              <MyNightCard night={night} onConfirmed={refetch} reviewable={tab === "past"} />
             </li>
           ))}
         </ul>

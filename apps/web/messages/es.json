@@ -477,7 +477,8 @@
       "mantenimiento": "Mantenimiento",
       "incidencias": "Incidencias",
       "preventivo": "Preventivo",
-      "actividades": "Actividades"
+      "actividades": "Actividades",
+      "resenas": "Reseñas"
     },
     "mintTitle": "Back-office · Publicar noche",
     "roomsTitle": "Back-office · Habitaciones",
@@ -1258,5 +1259,37 @@
     "cancelError": "No se pudo cancelar.",
     "statusBooked": "Inscrito",
     "statusWaitlist": "En espera"
+  },
+  "reviews": {
+    "adminTitle": "Reseñas",
+    "adminTagline": "Aprueba o rechaza las reseñas de los huéspedes. Ninguna se publica sin tu aprobación.",
+    "roleDenied": "Solo el propietario puede moderar las reseñas.",
+    "loading": "Cargando…",
+    "loadError": "No se pudieron cargar las reseñas.",
+    "empty": "No hay reseñas en este estado.",
+    "filterStatus": "Estado",
+    "ratingLabel": "{rating} de 5 estrellas",
+    "reason": "Motivo",
+    "reasonLabel": "Motivo",
+    "reasonPlaceholder": "Opcional: por qué se aprueba o rechaza",
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "actionError": "No se pudo moderar la reseña.",
+    "approved": "Reseña aprobada y publicada.",
+    "rejected": "Reseña rechazada.",
+    "formOpen": "Dejar reseña",
+    "formTitle": "Cuéntanos cómo fue",
+    "ratingField": "Nota",
+    "commentField": "Comentario",
+    "commentPlaceholder": "Qué te gustó y qué mejorarías",
+    "submit": "Enviar reseña",
+    "submitting": "Enviando…",
+    "submitted": "Gracias. Tu reseña queda pendiente de revisión.",
+    "cancel": "Cancelar",
+    "status": {
+      "PENDING": "Pendiente",
+      "APPROVED": "Aprobada",
+      "REJECTED": "Rechazada"
+    }
   }
 }

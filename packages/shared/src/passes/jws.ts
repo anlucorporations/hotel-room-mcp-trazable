@@ -105,8 +105,8 @@ export interface EIP712TicketDomain {
  * bundle del navegador. Se reexportan para no romper a los consumidores de servidor que ya los
  * importaban desde `passes/jws`.
  */
-import { QR_REDOWNLOAD_DOMAIN, QR_REDOWNLOAD_TYPES } from "../domain/ticket-auth";
-export { QR_REDOWNLOAD_DOMAIN, QR_REDOWNLOAD_TYPES };
+import { QR_REDOWNLOAD_DOMAIN, QR_REDOWNLOAD_TYPES, REVIEW_AUTH_TYPES } from "../domain/ticket-auth";
+export { QR_REDOWNLOAD_DOMAIN, QR_REDOWNLOAD_TYPES, REVIEW_AUTH_TYPES };
 
 /**
  * Verifica la firma EIP-712 de una wallet que solicita la descarga de un resguardo.
@@ -149,6 +149,43 @@ export async function verifyEIP712TicketRequest(
     });
   } catch (err) {
     console.error("[EIP712] Error al verificar firma:", err);
+    return false;
+  }
+}
+
+/**
+ * Verifica la firma EIP-712 del titular de una noche **consumida** al enviar una reseña (F6 · D-59).
+ *
+ * Igual que el resguardo: la vigencia declarada se acota por arriba (5 min por defecto) y el `nonce`
+ * es de un solo uso (lo consume el guardián). La diferencia es que la **nota** (`rating`) forma parte
+ * del mensaje firmado, así que no se puede alterar después de firmar.
+ */
+export async function verifyEIP712ReviewRequest(
+  walletAddress: Address,
+  signature: `0x${string}`,
+  tokenId: bigint,
+  rating: number,
+  nonce: string,
+  expiresAt: bigint,
+  domain: EIP712TicketDomain = QR_REDOWNLOAD_DOMAIN,
+  maxTtlSeconds = 300,
+): Promise<boolean> {
+  const now = BigInt(Math.floor(Date.now() / 1000));
+  if (expiresAt < now) return false;
+  if (expiresAt > now + BigInt(maxTtlSeconds)) return false;
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) return false;
+
+  try {
+    return await verifyTypedData({
+      address: walletAddress,
+      domain,
+      types: REVIEW_AUTH_TYPES,
+      primaryType: "SubmitReview",
+      message: { tokenId, rating, nonce, expiresAt },
+      signature,
+    });
+  } catch (err) {
+    console.error("[EIP712] Error al verificar firma de reseña:", err);
     return false;
   }
 }

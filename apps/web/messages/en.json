@@ -477,7 +477,8 @@
       "mantenimiento": "Maintenance",
       "incidencias": "Incidents",
       "preventivo": "Preventive",
-      "actividades": "Activities"
+      "actividades": "Activities",
+      "resenas": "Reviews"
     },
     "mintTitle": "Back-office · Mint night",
     "roomsTitle": "Back-office · Rooms",
@@ -1258,5 +1259,37 @@
     "cancelError": "The booking could not be cancelled.",
     "statusBooked": "Booked",
     "statusWaitlist": "Waitlisted"
+  },
+  "reviews": {
+    "adminTitle": "Reviews",
+    "adminTagline": "Approve or reject guest reviews. None is published without your approval.",
+    "roleDenied": "Only the owner can moderate reviews.",
+    "loading": "Loading…",
+    "loadError": "Reviews could not be loaded.",
+    "empty": "No reviews in this state.",
+    "filterStatus": "Status",
+    "ratingLabel": "{rating} out of 5 stars",
+    "reason": "Reason",
+    "reasonLabel": "Reason",
+    "reasonPlaceholder": "Optional: why it is approved or rejected",
+    "approve": "Approve",
+    "reject": "Reject",
+    "actionError": "The review could not be moderated.",
+    "approved": "Review approved and published.",
+    "rejected": "Review rejected.",
+    "formOpen": "Write a review",
+    "formTitle": "Tell us how it went",
+    "ratingField": "Rating",
+    "commentField": "Comment",
+    "commentPlaceholder": "What you liked and what could improve",
+    "submit": "Send review",
+    "submitting": "Sending…",
+    "submitted": "Thank you. Your review is pending moderation.",
+    "cancel": "Cancel",
+    "status": {
+      "PENDING": "Pending",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected"
+    }
   }
 }

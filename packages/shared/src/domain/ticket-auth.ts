@@ -32,3 +32,19 @@ export const QR_REDOWNLOAD_TYPES = {
     { name: "expiresAt", type: "uint256" },
   ],
 } as const;
+
+/**
+ * Campos que firma el titular de una noche **consumida** al enviar su reseña (F6 · D-59).
+ *
+ * La nota (`rating`) va **dentro de la firma**: el servidor rechaza una reseña cuya nota no sea la
+ * que el huésped firmó. Reutiliza el mismo dominio que el resguardo (`QR_REDOWNLOAD_DOMAIN`) y el
+ * patrón de ADR-05 (nonce de un solo uso + vigencia corta).
+ */
+export const REVIEW_AUTH_TYPES = {
+  SubmitReview: [
+    { name: "tokenId", type: "uint256" },
+    { name: "rating", type: "uint8" },
+    { name: "nonce", type: "string" },
+    { name: "expiresAt", type: "uint256" },
+  ],
+} as const;

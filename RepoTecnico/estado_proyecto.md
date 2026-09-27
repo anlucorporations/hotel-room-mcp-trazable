@@ -1727,6 +1727,50 @@ Primer incremento vertical de **F6**. Cierra **D-31** (el catálogo en su propia
 - `/` y `/catalogo` en el escaneo axe de `e2e/a11y.spec.ts`; **build de producción OK** con la home y
   el catálogo.
 
+---
+
+## 26. F6.2 — Reseñas firmadas (EIP-712) y moderación (2026-09-27)
+
+Segundo incremento de **F6**. Cierra **D-59** (solo reseña el titular on-chain de una noche
+**consumida**, acreditado con firma EIP-712) y **D-58** (moderación previa del administrador con
+motivo). Extiende **D-28** (reseñas anónimas).
+
+### Hecho
+
+- **Firma EIP-712 de reseña** (`packages/shared`): nuevo tipo `REVIEW_AUTH_TYPES` (`SubmitReview`:
+  `tokenId`, `rating`, `nonce`, `expiresAt`) en el dominio isomorfo y verificador
+  `verifyEIP712ReviewRequest`. La **nota va dentro de la firma**: el servidor rechaza una reseña cuya
+  nota no sea la firmada. Reutiliza el dominio del resguardo y el patrón de ADR-05 (nonce de un solo
+  uso + vigencia ≤ 5 min).
+- **Guardián reutilizable** (`lib/ticket-ownership.ts`): se extrae el núcleo `requireOwnership`
+  (cabeceras, TTL, nonce, titularidad **on-chain** por `ownerOf`) para que el resguardo y la reseña
+  compartan exactamente las mismas defensas; `requireReviewOwnership` solo cambia el mensaje firmado.
+- **Esquema**: `reviews.moderation_notes VARCHAR(200)` (migración idempotente) sincronizada en
+  `base_datos.sql`, `diccionario_datos.md` y `diagrama_er.md`.
+- **`ReviewsRepository`**: alta `PENDING` (`create`, `ALREADY_REVIEWED` ante duplicado),
+  `findByToken`, `moderate` (solo sobre `PENDING`, con quién/cuándo/motivo) y lectura pública ya
+  existente. **9 pruebas**.
+- **API**: `POST /api/reviews` (público) exige token `CHECKED_OUT`, ausencia de reseña previa y
+  **firma del titular**; 201 `PENDING`. `GET /api/admin/reviews?status=…` y
+  `PATCH /api/admin/reviews/[id]` (`approve`/`reject` + motivo), solo owner. **10 pruebas**.
+- **UI**: `/admin/resenas` (moderación con motivo y estados) y formulario **«Dejar reseña»** en
+  `/mis-noches` para las noches pasadas, que firma con la wallet del titular. Sección **Reseñas** en
+  el menú de Administración.
+- **i18n ES/EN/RU** con paridad (1.115 claves por idioma).
+
+### Verificación
+
+- `pnpm typecheck`: **6/6 tareas OK**.
+- `pnpm test`: **7/7 tareas OK** — `@hotel/web` **446**, `@hotel/shared` **391**, `@hotel/worker` **123**,
+  `@hotel/mcp` **38**, `@hotel/monitor` **34** y Foundry **139** (1.171 pruebas, 0 fallos).
+- Pruebas nuevas: **9** del repositorio de reseñas, **10** de API y **4** del guardián de reseñas.
+- Candado de revisión: solo las reseñas **`APPROVED`** alimentan la home (`ReviewsRepository.listApproved`
+  y `summary`), de modo que una reseña `PENDING` **no se publica** (D-58).
+- `/admin/resenas` añadida al escaneo axe de `e2e/a11y.spec.ts`; **build de producción OK** con las
+  rutas `/admin/resenas` y `/api/reviews`.
+
+
+
 
 
 

@@ -1,7 +1,12 @@
 import "server-only";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Address, Hex } from "viem";
-import { consumeOnce, verifyEIP712TicketRequest, QR_REDOWNLOAD_DOMAIN } from "@hotel/shared";
+import {
+  consumeOnce,
+  verifyEIP712TicketRequest,
+  verifyEIP712ReviewRequest,
+  QR_REDOWNLOAD_DOMAIN,
+} from "@hotel/shared";
 import { activeChain, contractAddress } from "@/config/chain";
 import { readOnChainOwnership, type OwnershipReader } from "@/lib/onchain-ownership";
 
@@ -28,12 +33,23 @@ import { readOnChainOwnership, type OwnershipReader } from "@/lib/onchain-owners
  *
  * El `nonce` se consume en Redis (`SET NX EX`), así que la autorización es de un solo uso también
  * con varias instancias del servidor.
+ *
+ * F6 · D-59: la **reseña** reutiliza este mismo guardián cambiando el mensaje firmado —la nota va
+ * dentro de la firma— mediante el verificador inyectable del núcleo `requireOwnership`.
  */
 export const MAX_SIGNATURE_TTL_SECONDS = 300;
 
 export type OwnershipResult =
   | { readonly ok: true; readonly wallet: Address; readonly onChainOwner: Address }
   | { readonly ok: false; readonly response: NextResponse };
+
+/** Verifica la firma concreta de la acción (resguardo o reseña). */
+type SignatureVerifier = (
+  wallet: Address,
+  signature: Hex,
+  nonce: string,
+  expiresAt: bigint,
+) => Promise<boolean>;
 
 function unauthorized(message: string): OwnershipResult {
   return {
@@ -43,17 +59,14 @@ function unauthorized(message: string): OwnershipResult {
 }
 
 /**
- * Comprueba que quien pide el resguardo es el titular de la noche.
- *
- * @param owner dirección del propietario según el registro indexado (`nfts.current_owner`). NO es
- *              la autoridad: sirve para detectar y registrar que el índice va por detrás de la
- *              cadena. La decisión la toma `ownerOf` (ver `readOnChainOwnership`).
- * @param reader lector de titularidad inyectable (los tests usan un doble; en producción, RPC).
+ * Núcleo del guardián: cabeceras EIP-712, vigencia, nonce de un solo uso, titularidad **on-chain** y
+ * consumo del nonce. La única pieza que cambia entre acciones es `verify` (qué mensaje se firmó).
  */
-export async function requireTicketOwnership(
+async function requireOwnership(
   request: NextRequest,
   tokenId: string,
   owner: string,
+  verify: SignatureVerifier,
   reader?: OwnershipReader,
 ): Promise<OwnershipResult> {
   const walletAddress = request.headers.get("x-wallet-address");
@@ -78,19 +91,7 @@ export async function requireTicketOwnership(
     );
   }
 
-  const isValid = await verifyEIP712TicketRequest(
-    walletAddress as Address,
-    signature as Hex,
-    BigInt(tokenId),
-    nonce,
-    BigInt(expiresAt),
-    {
-      ...QR_REDOWNLOAD_DOMAIN,
-      chainId: activeChain.id,
-      verifyingContract: contractAddress,
-    },
-  );
-
+  const isValid = await verify(walletAddress as Address, signature as Hex, nonce, BigInt(expiresAt));
   if (!isValid) {
     return unauthorized("Firma EIP-712 inválida");
   }
@@ -150,4 +151,69 @@ export async function requireTicketOwnership(
   }
 
   return { ok: true, wallet: walletAddress as Address, onChainOwner: onChain.owner };
+}
+
+/**
+ * Comprueba que quien pide el resguardo es el titular de la noche.
+ *
+ * @param owner dirección del propietario según el registro indexado (`nfts.current_owner`). NO es
+ *              la autoridad: sirve para detectar y registrar que el índice va por detrás de la
+ *              cadena. La decisión la toma `ownerOf` (ver `readOnChainOwnership`).
+ * @param reader lector de titularidad inyectable (los tests usan un doble; en producción, RPC).
+ */
+export async function requireTicketOwnership(
+  request: NextRequest,
+  tokenId: string,
+  owner: string,
+  reader?: OwnershipReader,
+): Promise<OwnershipResult> {
+  return requireOwnership(
+    request,
+    tokenId,
+    owner,
+    (wallet, signature, nonce, expiresAt) =>
+      verifyEIP712TicketRequest(wallet, signature, BigInt(tokenId), nonce, expiresAt, {
+        ...QR_REDOWNLOAD_DOMAIN,
+        chainId: activeChain.id,
+        verifyingContract: contractAddress,
+      }),
+    reader,
+  );
+}
+
+/**
+ * Comprueba que quien envía la reseña es el titular de una noche consumida (F6 · D-59).
+ *
+ * Mismo guardián que el resguardo, pero el mensaje firmado incluye la **nota** (D-59): el servidor
+ * rechaza la reseña si la nota enviada no es la firmada. La precondición «noche consumida»
+ * (`CHECKED_OUT`) la comprueba la ruta antes de llamar aquí.
+ */
+export async function requireReviewOwnership(
+  request: NextRequest,
+  tokenId: string,
+  rating: number,
+  owner: string,
+  reader?: OwnershipReader,
+): Promise<OwnershipResult> {
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "BAD_REQUEST", message: "La nota debe ser un número entero entre 1 y 5." },
+        { status: 400 },
+      ),
+    };
+  }
+  return requireOwnership(
+    request,
+    tokenId,
+    owner,
+    (wallet, signature, nonce, expiresAt) =>
+      verifyEIP712ReviewRequest(wallet, signature, BigInt(tokenId), rating, nonce, expiresAt, {
+        ...QR_REDOWNLOAD_DOMAIN,
+        chainId: activeChain.id,
+        verifyingContract: contractAddress,
+      }),
+    reader,
+  );
 }

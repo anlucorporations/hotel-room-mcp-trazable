@@ -24,6 +24,7 @@ const PATHS = [
   "/admin/mint",
   "/admin/habitacion",
   "/admin/actividades",
+  "/admin/resenas",
   "/admin/sistemas/ajustes",
   "/admin/housekeeping/lenceria",
   "/admin/mantenimiento/incidencias",

@@ -293,8 +293,9 @@ D-25 (primer ciclo = shell + Habitación), D-26 (operación primero) y D-24 (cor
 - ✅ **`ContentRepository`** (`hotel_images`, `hotel_offers`) y **`ReviewsRepository`** (aprobadas +
   nota media + por estado) con sus pruebas; agregación tolerante a fallo (`getHomeContent`).
 - ✅ Servidor público de imágenes de contenido y CSP con `frame-src` de OpenStreetMap.
-- 🔜 **F6.2** reseñas firmadas (EIP-712) y moderación · **F6.3** reserva con wallet · **F6.4** gestión
-  de galería y planes en el back-office.
+- 🔜 **F6.2 ✅ (2026-09-27)**: reseñas **firmadas EIP-712** por el titular de una noche consumida
+  (D-59) y **moderación** del administrador con motivo (D-58); `/admin/resenas` y formulario en
+  `/mis-noches`. · **F6.3** reserva con wallet · **F6.4** gestión de galería y planes en el back-office.
 
 - **Alcance:**
   - **Home one-page** en `/` con secciones: marca + categoría (D-70), servicios, estilos, planes

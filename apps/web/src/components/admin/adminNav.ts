@@ -16,6 +16,7 @@ export type AdminNavLabelKey =
   | "housekeeping"
   | "lenceria"
   | "actividades"
+  | "resenas"
   | "mantenimiento"
   | "incidencias"
   | "preventivo"
@@ -108,6 +109,8 @@ export const ADMIN_NAV_SECTIONS: readonly AdminNavSection[] = [
       { href: "/admin/royalty", labelKey: "royalty", role: "DEFAULT_ADMIN_ROLE" },
       { href: "/admin/fondos", labelKey: "funds", role: "TREASURER_ROLE" },
       { href: "/admin/roles", labelKey: "roles", role: "DEFAULT_ADMIN_ROLE" },
+      // F6 · D-58: moderación previa de las reseñas de los huéspedes.
+      { href: "/admin/resenas", labelKey: "resenas", role: "DEFAULT_ADMIN_ROLE" },
     ],
   },
   {

@@ -7,6 +7,7 @@ import { NightImage } from "@/components/NightImage";
 import { TxModal } from "@/components/buy/TxModal";
 import { formatEth, formatNightDate, TYPE_LABEL } from "@/lib/format";
 import { resaleErrorMessage } from "./resaleErrorMessage";
+import { ReviewForm } from "./ReviewForm";
 import { TicketView } from "./TicketView";
 import { useListNight } from "./useListNight";
 import type { OwnedNight } from "./useMyNights";
@@ -20,9 +21,12 @@ const GHOST_BTN =
 export function MyNightCard({
   night,
   onConfirmed,
+  reviewable = false,
 }: {
   night: OwnedNight;
   onConfirmed: () => void;
+  /** Noche pasada: ofrece **reseñarla** (F6 · D-59). La API exige que esté consumida. */
+  reviewable?: boolean;
 }) {
   const t = useTranslations("myNights");
   const { list, unlist, reset, status, hash, error } = useListNight();
@@ -194,6 +198,13 @@ export function MyNightCard({
           )}
         </div>
       </div>
+
+      {/* F6 · D-59: solo las noches consumidas pueden reseñarse; el formulario firma con la wallet. */}
+      {reviewable && (
+        <div className="border-t border-line px-4 pb-4">
+          <ReviewForm tokenId={night.tokenId} />
+        </div>
+      )}
 
       <TxModal phase={status} onClose={reset} hash={hash} />
     </article>
