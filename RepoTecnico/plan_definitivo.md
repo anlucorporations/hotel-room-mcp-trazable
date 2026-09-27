@@ -284,7 +284,7 @@ D-25 (primer ciclo = shell + Habitación), D-26 (operación primero) y D-24 (cor
 - **Criterios:** sin plazas → lista de espera o rechazo, nunca sobreventa de aforo; la inscripción genera
   línea en el folio.
 
-### F6 — Suite Pública · *riesgo alto (UX/marca)* · **🔄 en curso (F6.1 ✅)**
+### F6 — Suite Pública · *riesgo alto (UX/marca)* · **✅ COMPLETADA (2026-09-27)**
 
 **Progreso F6.1 (2026-09-27):**
 - ✅ **Home one-page en `/`** con marca y categoría, servicios, estilos, planes, actividades,
@@ -293,9 +293,8 @@ D-25 (primer ciclo = shell + Habitación), D-26 (operación primero) y D-24 (cor
 - ✅ **`ContentRepository`** (`hotel_images`, `hotel_offers`) y **`ReviewsRepository`** (aprobadas +
   nota media + por estado) con sus pruebas; agregación tolerante a fallo (`getHomeContent`).
 - ✅ Servidor público de imágenes de contenido y CSP con `frame-src` de OpenStreetMap.
-- 🔜 **F6.3 ✅ (2026-09-27)**: **reserva con wallet** desde `/reservar` (wallet primero, retención,
-  anticipo por transferencia y conciliación al 100 %) sobre el motor de F2 (D-65, D-72).
-  · **F6.4** gestión de galería y planes en el back-office.
+- 🔜 **F6.4 ✅ (2026-09-27)**: gestión de **galería y planes** en `/admin/contenido` (D-73/D-74).
+  **F6 COMPLETADA** (F6.1–F6.4).
 
 - **Alcance:**
   - **Home one-page** en `/` con secciones: marca + categoría (D-70), servicios, estilos, planes

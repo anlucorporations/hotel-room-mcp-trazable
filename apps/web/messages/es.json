@@ -480,7 +480,8 @@
       "incidencias": "Incidencias",
       "preventivo": "Preventivo",
       "actividades": "Actividades",
-      "resenas": "Reseñas"
+      "resenas": "Reseñas",
+      "contenido": "Contenido"
     },
     "mintTitle": "Back-office · Publicar noche",
     "roomsTitle": "Back-office · Habitaciones",
@@ -1326,5 +1327,41 @@
       "NO_SHOW": "no presentado",
       "COMPLETED": "completada"
     }
+  },
+  "content": {
+    "adminTitle": "Contenido de la web",
+    "adminTagline": "Galería del hotel y planes informativos de la home. Solo JPG de hasta 2 MB, con su texto alternativo.",
+    "roleDenied": "Solo el propietario puede gestionar el contenido.",
+    "loading": "Cargando…",
+    "loadError": "No se pudo cargar el contenido.",
+    "saveError": "No se pudo guardar el plan.",
+    "uploadError": "No se pudo subir la imagen.",
+    "uploaded": "Imagen subida.",
+    "galleryTitle": "Galería",
+    "section": "Sección",
+    "section_HERO": "Portada",
+    "section_SERVICES": "Servicios",
+    "section_EXPERIENCE": "Experiencia",
+    "section_ACTIVITIES": "Actividades",
+    "section_CONTACT": "Contacto",
+    "section_OTHER": "Otros",
+    "noImages": "No hay imágenes en esta sección.",
+    "cover": "portada",
+    "makeCover": "Hacer portada",
+    "delete": "Borrar",
+    "file": "Imagen (JPG)",
+    "altEs": "Texto alternativo",
+    "upload": "Subir imagen",
+    "imageHint": "Solo JPG y hasta 2 MB. El nombre se genera automáticamente.",
+    "offersTitle": "Planes informativos",
+    "noOffers": "Todavía no hay planes.",
+    "active": "Activo",
+    "paused": "Pausado",
+    "offerCode": "Código",
+    "offerTitle": "Título",
+    "validFrom": "Desde",
+    "validTo": "Hasta",
+    "createOffer": "Crear plan",
+    "offerCreated": "Plan {code} creado."
   }
 }

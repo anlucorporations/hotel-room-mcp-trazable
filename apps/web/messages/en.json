@@ -480,7 +480,8 @@
       "incidencias": "Incidents",
       "preventivo": "Preventive",
       "actividades": "Activities",
-      "resenas": "Reviews"
+      "resenas": "Reviews",
+      "contenido": "Content"
     },
     "mintTitle": "Back-office · Mint night",
     "roomsTitle": "Back-office · Rooms",
@@ -1326,5 +1327,41 @@
       "NO_SHOW": "no-show",
       "COMPLETED": "completed"
     }
+  },
+  "content": {
+    "adminTitle": "Website content",
+    "adminTagline": "Hotel gallery and home informative offers. JPG up to 2 MB, with alt text.",
+    "roleDenied": "Only the owner can manage the content.",
+    "loading": "Loading…",
+    "loadError": "Content could not be loaded.",
+    "saveError": "The offer could not be saved.",
+    "uploadError": "The image could not be uploaded.",
+    "uploaded": "Image uploaded.",
+    "galleryTitle": "Gallery",
+    "section": "Section",
+    "section_HERO": "Hero",
+    "section_SERVICES": "Services",
+    "section_EXPERIENCE": "Experience",
+    "section_ACTIVITIES": "Activities",
+    "section_CONTACT": "Contact",
+    "section_OTHER": "Other",
+    "noImages": "No images in this section.",
+    "cover": "cover",
+    "makeCover": "Make cover",
+    "delete": "Delete",
+    "file": "Image (JPG)",
+    "altEs": "Alt text",
+    "upload": "Upload image",
+    "imageHint": "JPG only, up to 2 MB. The file name is generated automatically.",
+    "offersTitle": "Informative offers",
+    "noOffers": "No offers yet.",
+    "active": "Active",
+    "paused": "Paused",
+    "offerCode": "Code",
+    "offerTitle": "Title",
+    "validFrom": "From",
+    "validTo": "To",
+    "createOffer": "Create offer",
+    "offerCreated": "Offer {code} created."
   }
 }

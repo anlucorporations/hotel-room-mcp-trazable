@@ -111,6 +111,210 @@ export class ContentRepository {
     );
     return res.rows.map(mapOffer);
   }
+
+  // ---------------------------------------------------------------------------
+  // Gestión (administrador con wallet, D-73/D-74)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Registra una imagen de contenido ya guardada en disco (D-73). Si se marca portada, retira la
+   * anterior de la misma sección (índice único parcial). La posición es única por sección.
+   */
+  async addImage(input: {
+    section: ContentSection;
+    fileName: string;
+    storagePath: string;
+    position: number;
+    isCover?: boolean;
+    altTextEs?: string | null;
+    altTextEn?: string | null;
+    altTextRu?: string | null;
+    byteSize: number;
+    uploadedBy: string;
+  }): Promise<HotelImageRecord> {
+    if (input.position < 1 || input.position > 20) {
+      throw new ContentError("POSITION_TAKEN", "La posición de la imagen debe estar entre 1 y 20 (D-73).");
+    }
+    if (input.isCover) {
+      await this.pool.query(
+        `UPDATE hotel_images SET is_cover = FALSE WHERE section = $1 AND is_cover = TRUE`,
+        [input.section],
+      );
+    }
+    try {
+      const res = await this.pool.query(
+        `INSERT INTO hotel_images
+           (section, file_name, storage_path, position, is_cover,
+            alt_text_es, alt_text_en, alt_text_ru, byte_size, uploaded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         RETURNING *`,
+        [
+          input.section,
+          input.fileName,
+          input.storagePath,
+          input.position,
+          input.isCover ?? false,
+          input.altTextEs ?? null,
+          input.altTextEn ?? null,
+          input.altTextRu ?? null,
+          input.byteSize,
+          input.uploadedBy,
+        ],
+      );
+      return mapImage(res.rows[0]);
+    } catch (error: unknown) {
+      if (isUniqueViolation(error)) {
+        throw new ContentError(
+          "POSITION_TAKEN",
+          "Ya hay una imagen en esa sección y posición (o ese fichero ya existe).",
+        );
+      }
+      throw error;
+    }
+  }
+
+  async deleteImage(id: string): Promise<boolean> {
+    const res = await this.pool.query(`DELETE FROM hotel_images WHERE id = $1`, [id]);
+    return (res.rowCount ?? 0) > 0;
+  }
+
+  /** Marca una imagen como portada de su sección y retira la anterior. */
+  async setCoverImage(section: ContentSection, id: string): Promise<HotelImageRecord | null> {
+    await this.pool.query(
+      `UPDATE hotel_images SET is_cover = FALSE WHERE section = $1 AND is_cover = TRUE`,
+      [section],
+    );
+    const res = await this.pool.query(
+      `UPDATE hotel_images SET is_cover = TRUE WHERE id = $1 AND section = $2 RETURNING *`,
+      [id, section],
+    );
+    return res.rows.length > 0 ? mapImage(res.rows[0]) : null;
+  }
+
+  /** Alta de un plan informativo (D-74). El código es único. */
+  async createOffer(input: {
+    code: string;
+    titleEs: string;
+    titleEn?: string | null;
+    titleRu?: string | null;
+    bodyEs?: string | null;
+    bodyEn?: string | null;
+    bodyRu?: string | null;
+    imageId?: string | null;
+    validFrom?: string | null;
+    validTo?: string | null;
+    sortOrder?: number;
+    createdBy: string;
+  }): Promise<HotelOfferRecord> {
+    try {
+      const res = await this.pool.query(
+        `INSERT INTO hotel_offers
+           (code, title_es, title_en, title_ru, body_es, body_en, body_ru, image_id,
+            valid_from, valid_to, sort_order, created_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+         RETURNING *, NULL::text AS image_file_name`,
+        [
+          input.code,
+          input.titleEs,
+          input.titleEn ?? null,
+          input.titleRu ?? null,
+          input.bodyEs ?? null,
+          input.bodyEn ?? null,
+          input.bodyRu ?? null,
+          input.imageId ?? null,
+          input.validFrom ?? null,
+          input.validTo ?? null,
+          input.sortOrder ?? 0,
+          input.createdBy,
+        ],
+      );
+      return mapOffer(res.rows[0]);
+    } catch (error: unknown) {
+      if (isUniqueViolation(error)) {
+        throw new ContentError("OFFER_CODE_TAKEN", `Ya existe un plan con el código ${input.code}.`);
+      }
+      throw error;
+    }
+  }
+
+  /** Edición parcial de un plan (título, textos, imagen, vigencia, orden y estado). */
+  async updateOffer(
+    id: string,
+    input: {
+      titleEs?: string;
+      titleEn?: string | null;
+      titleRu?: string | null;
+      bodyEs?: string | null;
+      bodyEn?: string | null;
+      bodyRu?: string | null;
+      imageId?: string | null;
+      validFrom?: string | null;
+      validTo?: string | null;
+      sortOrder?: number;
+      active?: boolean;
+    },
+  ): Promise<HotelOfferRecord | null> {
+    const columnMap: ReadonlyArray<[keyof typeof input, string]> = [
+      ["titleEs", "title_es"],
+      ["titleEn", "title_en"],
+      ["titleRu", "title_ru"],
+      ["bodyEs", "body_es"],
+      ["bodyEn", "body_en"],
+      ["bodyRu", "body_ru"],
+      ["imageId", "image_id"],
+      ["validFrom", "valid_from"],
+      ["validTo", "valid_to"],
+      ["sortOrder", "sort_order"],
+      ["active", "active"],
+    ];
+    const sets: string[] = [];
+    const values: unknown[] = [];
+    for (const [key, column] of columnMap) {
+      if (!(key in input)) continue;
+      values.push(input[key] ?? null);
+      sets.push(`${column} = $${values.length}`);
+    }
+    if (sets.length === 0) return null;
+    sets.push("updated_at = NOW()");
+    values.push(id);
+    const res = await this.pool.query(
+      `UPDATE hotel_offers SET ${sets.join(", ")} WHERE id = $${values.length} RETURNING *, NULL::text AS image_file_name`,
+      values,
+    );
+    return res.rows.length > 0 ? mapOffer(res.rows[0]) : null;
+  }
+
+  async setOfferActive(id: string, active: boolean): Promise<HotelOfferRecord | null> {
+    const res = await this.pool.query(
+      `UPDATE hotel_offers SET active = $2, updated_at = NOW()
+        WHERE id = $1 RETURNING *, NULL::text AS image_file_name`,
+      [id, active],
+    );
+    return res.rows.length > 0 ? mapOffer(res.rows[0]) : null;
+  }
+
+  async deleteOffer(id: string): Promise<boolean> {
+    const res = await this.pool.query(`DELETE FROM hotel_offers WHERE id = $1`, [id]);
+    return (res.rowCount ?? 0) > 0;
+  }
+}
+
+export type ContentErrorCode = "POSITION_TAKEN" | "OFFER_CODE_TAKEN";
+
+export class ContentError extends Error {
+  constructor(
+    readonly code: ContentErrorCode,
+    message: string,
+  ) {
+    super(message);
+    this.name = "ContentError";
+  }
+}
+
+const UNIQUE_VIOLATION = "23505";
+
+function isUniqueViolation(error: unknown): boolean {
+  return typeof error === "object" && error !== null && (error as { code?: string }).code === UNIQUE_VIOLATION;
 }
 
 function mapImage(row: QueryResultRow): HotelImageRecord {

@@ -17,6 +17,7 @@ export type AdminNavLabelKey =
   | "lenceria"
   | "actividades"
   | "resenas"
+  | "contenido"
   | "mantenimiento"
   | "incidencias"
   | "preventivo"
@@ -116,7 +117,11 @@ export const ADMIN_NAV_SECTIONS: readonly AdminNavSection[] = [
   {
     key: "plataforma",
     labelKey: "plataforma",
-    items: [{ href: "/admin/pausa", labelKey: "pause", role: "PAUSER_ROLE" }],
+    items: [
+      { href: "/admin/pausa", labelKey: "pause", role: "PAUSER_ROLE" },
+      // F6 · D-73/D-74: galería y planes informativos de la home.
+      { href: "/admin/contenido", labelKey: "contenido", role: "DEFAULT_ADMIN_ROLE" },
+    ],
   },
 ];
 

@@ -85,4 +85,75 @@ describe("ContentRepository (F6)", () => {
     expect(String(sql)).toContain("o.active = TRUE");
     expect(String(sql)).not.toContain("valid_from");
   });
+
+  it("registra una imagen y, si es portada, retira la anterior (D-73)", async () => {
+    pool.query
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // limpiar portada
+      .mockResolvedValueOnce({ rows: [imageRow({ is_cover: true })], rowCount: 1 });
+    const image = await repository.addImage({
+      section: "EXPERIENCE",
+      fileName: "hotel-experience-2026-09-27-1.jpg",
+      storagePath: "docs/imagenes/hotel-experience-2026-09-27-1.jpg",
+      position: 1,
+      isCover: true,
+      byteSize: 1024,
+      uploadedBy: "admin@hotel.es",
+    });
+    expect(image.isCover).toBe(true);
+    const sqls = pool.query.mock.calls.map(([s]) => String(s));
+    expect(sqls[0]).toContain("SET is_cover = FALSE");
+    expect(sqls[1]).toContain("INSERT INTO hotel_images");
+  });
+
+  it("traduce la posición ocupada a POSITION_TAKEN", async () => {
+    pool.query.mockRejectedValueOnce(Object.assign(new Error("dup"), { code: "23505" }));
+    await expect(
+      repository.addImage({
+        section: "HERO",
+        fileName: "hotel-hero-2026-09-27-1.jpg",
+        storagePath: "docs/imagenes/hotel-hero-2026-09-27-1.jpg",
+        position: 1,
+        byteSize: 100,
+        uploadedBy: "admin@hotel.es",
+      }),
+    ).rejects.toMatchObject({ code: "POSITION_TAKEN" });
+  });
+
+  it("borra imágenes y cambia la portada", async () => {
+    pool.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
+    expect(await repository.deleteImage("img-1")).toBe(true);
+
+    pool.query
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+      .mockResolvedValueOnce({ rows: [imageRow({ is_cover: true })], rowCount: 1 });
+    const cover = await repository.setCoverImage("EXPERIENCE", "img-1");
+    expect(cover?.isCover).toBe(true);
+  });
+
+  it("crea un plan y traduce el código duplicado (D-74)", async () => {
+    pool.query.mockResolvedValueOnce({ rows: [offerRow()], rowCount: 1 });
+    const offer = await repository.createOffer({
+      code: "VERANO",
+      titleEs: "Escapada",
+      createdBy: "admin@hotel.es",
+    });
+    expect(offer.code).toBe("VERANO");
+
+    pool.query.mockRejectedValueOnce(Object.assign(new Error("dup"), { code: "23505" }));
+    await expect(
+      repository.createOffer({ code: "VERANO", titleEs: "Otra", createdBy: "admin@hotel.es" }),
+    ).rejects.toMatchObject({ code: "OFFER_CODE_TAKEN" });
+  });
+
+  it("edita, activa y borra un plan", async () => {
+    pool.query.mockResolvedValueOnce({ rows: [offerRow({ title_es: "Nuevo" })], rowCount: 1 });
+    const updated = await repository.updateOffer("off-1", { titleEs: "Nuevo", sortOrder: 2 });
+    expect(updated?.titleEs).toBe("Nuevo");
+
+    pool.query.mockResolvedValueOnce({ rows: [offerRow({ active: false })], rowCount: 1 });
+    expect((await repository.setOfferActive("off-1", false))?.active).toBe(false);
+
+    pool.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
+    expect(await repository.deleteOffer("off-1")).toBe(true);
+  });
 });

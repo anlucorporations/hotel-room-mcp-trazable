@@ -1815,6 +1815,46 @@ de F2. **No cambia el modelo de datos.**
   bloqueo activo por habitación y noche) y el bloqueo **vence** solo (D-37); queda anotado añadir un
   rate-limit por IP si el tráfico lo exige.
 
+---
+
+## 28. F6.4 — Gestión de la galería y los planes (2026-09-27) · **F6 COMPLETADA**
+
+Cuarto y último incremento de **F6**. Cierra **D-73** (galería `hotel_images` gestionada por el
+administrador con wallet) y **D-74** (planes `hotel_offers` editables, sin precios). Con esto **F6
+queda completa**.
+
+### Hecho
+
+- **`ContentRepository` (escritura)**: alta/baja de imágenes con **portada por sección**, alta/edición/
+  activación/baja de planes, con `ContentError` (`POSITION_TAKEN`, `OFFER_CODE_TAKEN`). **9 pruebas**.
+- **Nombres canónicos de galería** (D-66): `hotel-<seccion>-<AAAA-MM-DD>-<n>.jpg` con validación e
+  índice 1..20 (`buildHotelImageFileName`, `isHotelImageName`); se guarda en el mismo `docs/imagenes`.
+- **API admin** (solo owner): `GET/POST /api/admin/content/images`, `DELETE/PATCH /api/admin/content/images/[id]`,
+  `GET/POST /api/admin/content/offers` y `PATCH/DELETE /api/admin/content/offers/[id]`.
+  La subida valida **solo JPG ≤ 2 MB** y guarda el fichero en disco.
+- **UI `/admin/contenido`** (`ContentAdmin`): subida de imágenes por sección con alt text, portada y
+  borrado; planes con vigencia, activo y borrado. Entrada **Contenido** en el menú (sección Plataforma).
+- **i18n ES/EN/RU** con paridad (1.181 claves por idioma).
+
+### Verificación
+
+- `pnpm typecheck`: **6/6 tareas OK**.
+- `pnpm test`: **7/7 tareas OK** — `@hotel/web` **461**, `@hotel/shared` **399**, `@hotel/worker` **123**,
+  `@hotel/mcp` **38**, `@hotel/monitor` **34** y Foundry **139** (1.194 pruebas, 0 fallos).
+- Pruebas nuevas: **5** de escritura en el repositorio de contenido, **2** del nombre de galería y **6**
+  de la API de contenido.
+- `/admin/contenido` añadida al escaneo axe de `e2e/a11y.spec.ts`; **build de producción OK** con la
+  ruta y las cuatro rutas de API.
+
+### Cierre de F6
+
+Con F6.1–F6.4 la **Suite Pública** del plan queda construida: home one-page en `/`, catálogo en
+`/catalogo`, reseñas firmadas y moderadas, **reserva con wallet** en `/reservar`, y gestión de
+galería/planes. Lo que **no** es de F6 y sigue pendiente del plan: el **corte de contrato de F8**
+(registro de habitaciones + siembra) y la **Administración financiera (F7, 3.ª versión)**.
+
+
+
 
 
 

@@ -480,7 +480,8 @@
       "incidencias": "Инциденты",
       "preventivo": "Профилактика",
       "actividades": "Мероприятия",
-      "resenas": "Отзывы"
+      "resenas": "Отзывы",
+      "contenido": "Контент"
     },
     "mintTitle": "Бэк-офис · Выпуск ночи",
     "roomsTitle": "Бэк-офис · Номера",
@@ -1326,5 +1327,41 @@
       "NO_SHOW": "неявка",
       "COMPLETED": "завершена"
     }
+  },
+  "content": {
+    "adminTitle": "Контент сайта",
+    "adminTagline": "Галерея отеля и информационные предложения на главной. Только JPG до 2 МБ с alt-текстом.",
+    "roleDenied": "Только владелец может управлять контентом.",
+    "loading": "Загрузка…",
+    "loadError": "Не удалось загрузить контент.",
+    "saveError": "Не удалось сохранить предложение.",
+    "uploadError": "Не удалось загрузить изображение.",
+    "uploaded": "Изображение загружено.",
+    "galleryTitle": "Галерея",
+    "section": "Раздел",
+    "section_HERO": "Обложка",
+    "section_SERVICES": "Услуги",
+    "section_EXPERIENCE": "Впечатления",
+    "section_ACTIVITIES": "Мероприятия",
+    "section_CONTACT": "Контакты",
+    "section_OTHER": "Прочее",
+    "noImages": "В этом разделе нет изображений.",
+    "cover": "обложка",
+    "makeCover": "Сделать обложкой",
+    "delete": "Удалить",
+    "file": "Изображение (JPG)",
+    "altEs": "Alt-текст",
+    "upload": "Загрузить",
+    "imageHint": "Только JPG до 2 МБ. Имя файла создаётся автоматически.",
+    "offersTitle": "Информационные предложения",
+    "noOffers": "Предложений пока нет.",
+    "active": "Активно",
+    "paused": "Приостановлено",
+    "offerCode": "Код",
+    "offerTitle": "Заголовок",
+    "validFrom": "С",
+    "validTo": "По",
+    "createOffer": "Создать предложение",
+    "offerCreated": "Предложение {code} создано."
   }
 }
