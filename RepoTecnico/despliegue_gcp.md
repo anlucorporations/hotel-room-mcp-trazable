@@ -549,6 +549,25 @@ preflight de la preparación ([`F8-preflight.md`](./F8-preflight.md)). Resumen d
 - **Contrato**: restaurar `packages/shared/deployments/31337.json` a `0x70bD…605B`/bloque 288.
 - **BD**: restaurar desde el backup `1790542352281` (destructivo; coordinar).
 
+### E2E de publicación y ventana de acuñación (prueba temporal, 2026-09-27)
+
+Para validar el **criterio de salida de F8** se publicó **una** ficha (habitación 101) de punta a
+punta y se ejecutó su primer acuñado de ventana; después se **revirtió**:
+
+1. Subida de `sencilla_hotel.jpg` (444 KB) → `101-Simple-2026-09-27-1.jpg` (portada).
+2. `GET /publish` → huella `0xcf1d2e2e…638e`; firma **EIP-191** de la huella por la cuenta 0
+   (`verifyMessage` = true) y `publishRoom(101, huella)` → tx `0xaa19f8d7…b891`.
+3. `POST /publish` con TOTP → habitación **`PUBLISHED`** con `onChainAnchored: true`;
+   `publicationHashOf(101)` = huella.
+4. **Primer acuñado de la ventana (D-4)**: `GET /mint-window` → 90 días, 89 noches ausentes;
+   acuñadas 89 (28-sep → 26-dic) → **95 eventos `Mint`** en total (6 de la siembra + 89).
+   El worker quedó `lag: 0` e indexó las noches (`/api/nfts`, paginado a 20 por página).
+5. **Reversión**: `PATCH` a `DRAFT` + borrado de la imagen → `POST /api/public/rooms` vuelve a **0**.
+
+> La prueba no deja contenido público: la ficha está en borrador. En cadena permanece la huella de
+> publicación y las 90 noches de la habitación 101 (idempotentes y reutilizables al publicar de
+> nuevo).
+
 ### Pendiente tras el corte
 
 - **Publicar las 50 fichas** (están `DRAFT`): requieren descripción ES definitiva e imagen; al
