@@ -374,6 +374,29 @@ export class NFTsRepository {
   }
 
   /**
+   * Noches de una habitación con check-in dentro de un rango `[fromDate, toDate]` (ISO `AAAA-MM-DD`).
+   *
+   * La usa la ventana global de acuñación (F8 · D-4): con el `token_id` se sabe qué noches ya
+   * existen (idempotencia, D-16) y con `status` cuántas siguen libres (`AVAILABLE`) para el aviso de
+   * agotamiento (D-17). Solo devuelve lo imprescindible; el detalle de la noche no hace falta aquí.
+   */
+  async listByRoomInDateRange(
+    roomNumber: number,
+    fromDate: string,
+    toDate: string,
+  ): Promise<Array<{ tokenId: string; status: string }>> {
+    const res = await this.pool.query(
+      `SELECT token_id, status FROM nfts
+        WHERE room_number = $1 AND check_in_date BETWEEN $2 AND $3`,
+      [roomNumber, fromDate, toDate],
+    );
+    return res.rows.map((row: { token_id: string; status: string }) => ({
+      tokenId: row.token_id,
+      status: row.status,
+    }));
+  }
+
+  /**
    * Registra la auditoría de un check-in asistido por contingencia (SRS §4.2, RD 933/2021).
    */
   async recordContingencyCheckIn(

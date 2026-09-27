@@ -96,18 +96,23 @@ para el barrido global, así que:
 
 ---
 
-## 4. Decisiones abiertas (requieren visto bueno del responsable)
+## 4. Decisiones
 
-1. **¿Automático o explícito?** El plan dice «primer acuñado **al publicar**». ¿Se dispara solo al
-   publicar (con re-MFA) o el publicar deja la habitación lista y el acuñado es un botón aparte?
-2. **¿Quién firma la ventana global?** (a) la wallet del admin en el navegador (hoy) o (b) un
-   *relayer* MINTER en el worker. Con 4.500 noches, (b) es mucho más práctico, pero exige dar
-   `MINTER_ROLE` a una cuenta de servicio y custodiarla.
-3. **Tamaño de lote y reanudación**: ¿5 habitaciones/pasada? ¿cuánto progreso se persiste?
-4. **Umbral de aviso**: ¿cuántas noches libres por habitación disparan el aviso? ¿in-app, correo o
-   ambos? ¿A quién?
-5. **Precio**: ¿todas las noches de la ventana al `base_rate_wei` de la ficha, o con tarifa
-   estacional? (Hoy `rooms.base_rate_wei`, tarifa provisional del seed de F8).
+**Tomadas para esta implementación (2026-09-27, aprobado por el responsable):**
+
+1. **Primer acuñado al publicar** (D-4): al publicar una habitación se acuña su ventana; además hay un
+   botón manual para reintentar/extender (D-17). *(No se implementa el barrido global de todas las
+   habitaciones por ahora.)*
+2. **Firma en el navegador**: la wallet del administrador (MINTER) firma las ≤90 tx de **una**
+   habitación, con progreso e idempotencia (ADR-11). El *relayer* del worker queda para el barrido
+   global futuro.
+3. **Lote**: una habitación por ejecución (≤ `mint_window_days` tx), reanudable.
+4. **Aviso**: in-app, umbral `MINT_WINDOW_LOW_THRESHOLD = 7` noches libres. El correo queda para
+   después.
+5. **Precio**: `rooms.base_rate_wei`; si falta, no se acuña (no se inventa tarifa).
+
+**Abiertas (para el barrido global futuro):** quién firma las 4.500 noches (relayer vs navegador),
+tamaño de lote del barrido completo y canal/cadencia del correo de agotamiento.
 
 ---
 
