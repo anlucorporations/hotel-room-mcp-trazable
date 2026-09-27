@@ -24,17 +24,17 @@ fantasmas, y publicación de fichas (`/admin/habitacion`) operativa con anclaje 
 
 ---
 
-## 2. Estado actual verificado (2026-09-27)
+## 2. Estado actual verificado (tras el corte, 2026-09-27)
 
 | Elemento | Estado |
 |---|---|
 | Contrato fuente (`packages/contracts/src/HotelNights.sol`) | ✅ Con `registerRoom`/`updateRoomType`/`isRoomRegistered`/`roomTypeOf` y `publishRoom`/`publicationHashOf`; **139 pruebas Foundry** y **validado en local** (ver §5) |
-| Contrato **desplegado en el Anvil global** | ❌ **Anterior al corte**: `0x70bDA08DBe07363968e9EE53d899dFE48560605B` (bloque 288). `isRoomRegistered(101)` y `publicationHashOf(101)` **revientan** (función inexistente) |
-| Registro `packages/shared/deployments/31337.json` | Apunta al contrato anterior |
-| Tabla `rooms` en GCP | ❌ **Vacía (0 filas)** — la recepción arma el tablero desde `ALL_ROOMS`, no desde la BD |
-| `mint` del contrato nuevo | Exige `_roomRegistered[room]` → **cualquier minteo falla** si no se registra antes |
-| `mint_window_days` (D-4/D-11/D-17) | Solo existe como **ajuste** (`platform_settings` + `/admin/sistemas`): no hay lógica de ventana ni botón de extensión |
-| Imágenes desplegadas | `web:v6`, `worker:v5` (F6); `mcp:v2`, `monitor:v1` |
+| Contrato **desplegado en el Anvil global** | ✅ **Cortado**: `0xc66AB83418C20A65C3f8e83B3d11c8C3a6097b6F` (bloque **314**); `isRoomRegistered`/`publishRoom` operativos (verificado) |
+| Registro `packages/shared/deployments/31337.json` | ✅ Apunta al contrato nuevo (bloque 314, faucet `0xdFdE…f75b`) |
+| Tabla `rooms` en GCP | ✅ **50 filas** sembradas desde el maestro (D-3/D-14) |
+| `mint` del contrato nuevo | Exige `_roomRegistered[room]` → ✅ las 50 están registradas antes del minteo |
+| `mint_window_days` (D-4/D-11/D-17) | ✅ Implementado (endpoint + UI); pendiente el barrido global y el correo |
+| Imágenes desplegadas | ✅ `web:f8`, `worker:f8`, `mcp:f8`, `monitor:f8` (revisiones 00008-vnh / 00005-v52 / 00003-sjj / 00002-hn4) |
 
 ---
 
@@ -42,11 +42,11 @@ fantasmas, y publicación de fichas (`/admin/habitacion`) operativa con anclaje 
 
 | # | Parte | Estado |
 |---|---|---|
-| 1 | Registro dinámico en el contrato + `publishRoom` | ✅ **Hecho** (adelantado en F1) |
-| 2 | **Sembrar** las 50 habitaciones desde la BD (D-3/D-14) | 🟡 **Herramienta hecha**: `buildRoomSeed`/`buildRoomRegistrationPlan` (`packages/shared/src/domain/room-registry.ts`) y paso 3.5 de `inject-data.ts`. Falta **ejecutarla** en el corte y **poblar `rooms`** en GCP |
-| 3 | **Reset total coordinado** con respaldo (D-15) | ⏳ Pendiente de ejecución; herramienta existente: `reset-index.ts` (nfts, listings, sale_events y estado del worker; **conserva** `admin_users`) |
-| 4 | **Ventana global de acuñado** + botón manual + aviso de agotamiento (D-4/D-11/D-17, idempotente D-16) | ✅ **Implementado** el alcance aprobado (por habitación, primer acuñado al publicar + botón + aviso in-app, i18n 3 idiomas); **pendiente** el barrido global y el correo. Ver [`F8-ventana-acunado.md`](./F8-ventana-acunado.md) |
-| 5 | Paso `registerRoom` en scripts de desarrollo/E2E | ✅ **Hecho**: helper `packages/contracts/scripts/room-registry.ts` (`ensureRoomsRegistered`) y cableado en `inject-data.ts`, `seed-demo.ts`, `mint-image-demo.ts`, `e2e-slice.ts` y `e2e/m4…m7`. Validado en local con `inject-data` y `seed-demo` |
+| 1 | Registro dinámico en el contrato + `publishRoom` | ✅ **Hecho y desplegado** |
+| 2 | **Sembrar** las 50 habitaciones desde la BD (D-3/D-14) | ✅ **Ejecutado**: 50 filas en `rooms` + 50 `registerRoom` on-chain |
+| 3 | **Reset total coordinado** con respaldo (D-15) | ✅ **Ejecutado** (backup `1790542352281`; `nfts` 18→0, worker 0; operadores conservados) |
+| 4 | **Ventana global de acuñado** + botón manual + aviso de agotamiento (D-4/D-11/D-17, idempotente D-16) | ✅ **Implementado** el alcance aprobado; **pendiente** el barrido global y el correo. Ver [`F8-ventana-acunado.md`](./F8-ventana-acunado.md) |
+| 5 | Paso `registerRoom` en scripts de desarrollo/E2E | ✅ **Hecho**: helper `packages/contracts/scripts/room-registry.ts` y cableado en `inject-data.ts`, `seed-demo.ts`, `mint-image-demo.ts`, `e2e-slice.ts` y `e2e/m4…m7` |
 
 ---
 
@@ -214,3 +214,11 @@ implementarla y probarla debe considerarse F8 cerrada.
     `infra/gcp/f8-build-images.sh` (4 imágenes desde el registro).
   - `scripts/dev/f8-rehearsal.sh`: ensayo local desechable **en verde** (Anvil propio, 50
     habitaciones registradas, `roomTypeOf` correcto, 6 eventos `Mint`).
+- **2026-09-27** · **Corte F8 EJECUTADO** (autorizado por el responsable):
+  - Respaldo Cloud SQL `1790542352281`; contrato nuevo `0xc66A…7b6F` (bloque 314) + `pnpm sync`.
+  - 4 imágenes `f8` y redespliegue (web 00008-vnh, worker 00005-v52, mcp 00003-sjj, monitor
+    00002-hn4; el monitor por REST v2 al faltar el módulo `grpc` del SDK).
+  - Reset D-15 (18→0 noches; operadores conservados) y siembra (50 habitaciones + 6 noches).
+  - Verificado en vivo: registro on-chain, `publishRoom`, 50 habitaciones en `/api/admin/rooms`,
+    ventana de 90 días, 6 noches `onChainAnchored`. `emailDegraded: true` por el SMTP de relleno.
+  - Detalle en [`despliegue_gcp.md`](./despliegue_gcp.md) §18.

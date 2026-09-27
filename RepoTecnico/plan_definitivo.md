@@ -315,24 +315,29 @@ D-25 (primer ciclo = shell + Habitación), D-26 (operación primero) y D-24 (cor
 - Facturación y cobranzas, métodos de pago y caja chica. Solo se reserva su diseño; requiere decisión
   fiscal del cliente (Veri*factu/TicketBAI) y de la gestoría.
 
-### F8 — Corte final: contrato, migración y reset · *riesgo muy alto* · **corte único** (D-24) · **🔄 parcialmente adelantado**
+### F8 — Corte final: contrato, migración y reset · *riesgo muy alto* · **corte único** (D-24) · **✅ CORTE EJECUTADO (2026-09-27)**
 
 - **Alcance:**
   1. **Modificar `HotelNights`** para alojar un **registro dinámico de habitaciones** con rol de
-     administrador (D-3, D-10), sustituyendo la autoridad del rango fijo de `RoomMaster`. → **HECHO**
-     (adelantado durante F1): `registerRoom`/`updateRoomType`/`isRoomRegistered`/`roomTypeOf` y
-     `publishRoom`/`publicationHashOf` (D-18), con 139 pruebas Foundry y despliegue verificado en Anvil.
+     administrador (D-3, D-10), sustituyendo la autoridad del rango fijo de `RoomMaster`. → **HECHO**:
+     `registerRoom`/`updateRoomType`/`isRoomRegistered`/`roomTypeOf` y `publishRoom`/`publicationHashOf`
+     (D-18), con 139 pruebas Foundry y **desplegado en el Anvil global** (`0xc66A…7b6F`, bloque 314).
   2. **Sembrar** las habitaciones desde la BD (fuente única, D-3); `RoomMaster` queda como semilla de
-     carga y referencia histórica (D-14). → **PENDIENTE** (el registro on-chain arranca vacío, D-13).
+     carga y referencia histórica (D-14). → **HECHO**: 50 filas en `rooms` + 50 `registerRoom`.
   3. **Reset total** coordinado: copia de seguridad y limpieza de `nfts`, `sale_events`, `listings` y
-     agregados del worker (D-15); registro on-chain **arranca vacío** (D-13). → **PENDIENTE**.
+     agregados del worker (D-15); registro on-chain **arranca vacío** (D-13). → **HECHO** (backup
+     `1790542352281`).
   4. **Primer acuñado** de la **ventana global configurable** (D-4, D-11) al publicar, con **botón manual
-     de extensión** y aviso de agotamiento (D-17), proceso **idempotente** (D-16). → **PENDIENTE**.
+     de extensión** y aviso de agotamiento (D-17), proceso **idempotente** (D-16). → **HECHO** para una
+     habitación; **pendiente** el barrido global y el correo.
   5. **Paso `registerRoom` en los scripts de desarrollo/E2E** (`seed-demo`, `inject-data`,
-     `e2e/m4…m7`) antes de mintear. → **PENDIENTE** (declarado).
+     `e2e/m4…m7`) antes de mintear. → **HECHO** (helper `scripts/room-registry.ts`).
 - **Runbook (resumen):** backup → desplegar contrato nuevo → cargar habitaciones → sincronizar BD↔cadena →
   limpiar tablas → primer acuñado → verificar catálogo y métricas → conservar el anterior como *rollback*.
 - **Criterio de salida:** catálogo público coherente con la cadena, sin noches duplicadas ni fantasmas.
+  → **Cumplido el 2026-09-27** (detalle en [`despliegue_gcp.md`](./despliegue_gcp.md) §18).
+- **Pendiente fuera del corte:** publicar las 50 fichas (hoy `DRAFT`), SMTP real para cerrar
+  `emailDegraded` y el barrido global de la ventana.
 
 ---
 

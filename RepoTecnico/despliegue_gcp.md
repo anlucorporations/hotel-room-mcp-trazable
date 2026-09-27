@@ -484,4 +484,78 @@ cambios de `packages/shared` son aditivos y no afectan al worker). **El corte de
 
 ---
 
-*Despliegue GCP · hotelMCP · actualizado 2026-09-27 (preparación F8 · web v7)*
+## 18. Corte de contrato F8 ejecutado (2026-09-27)
+
+Se ejecutó el **corte único de F8** (D-24) sobre el Anvil global y Cloud SQL, con el runbook y el
+preflight de la preparación ([`F8-preflight.md`](./F8-preflight.md)). Resumen del estado final:
+
+| Elemento | Antes | Después |
+|---|---|---|
+| Contrato | `0x70bD…605B` (bloque 288), **sin** registro dinámico | **`0xc66AB83418C20A65C3f8e83B3d11c8C3a6097b6F`** (bloque **314**) con `registerRoom`/`publishRoom` |
+| Faucet | `0xaB7B…5057` | `0xdFdE6B33f13de2CA1A75A6F7169f50541B14f75b` (financiado con **1000 ETH**) |
+| Registro de habitaciones | — | **50 habitaciones** registradas on-chain (`isRoomRegistered` = true) |
+| `rooms` (BD) | 0 filas | **50 filas** sembradas desde el maestro (D-3/D-14) |
+| Inventario | 18 noches | Reset (D-15) y **6 noches** sembradas + ancladas (`onChainAnchored: true`) |
+| Imágenes | web:v7, worker:v5, mcp:v2, monitor:v1 | **web:f8, worker:f8, mcp:f8, monitor:f8** |
+| Revisiones | web 00007, worker 00004, mcp 00002, monitor 00001 | **web 00008-vnh**, **worker 00005-v52**, **mcp 00003-sjj**, **monitor 00002-hn4** |
+
+### Pasos ejecutados
+
+1. **Respaldo** (obligatorio: los backups automáticos estaban **desactivados**):
+   `gcloud sql backups create` → backup `1790542352281` (`SUCCESSFUL`).
+2. **Contrato**: `forge script Deploy.s.sol:Deploy` con `DEPLOY_FAUCET=true`, `FAUCET_FUND_WEI=1000e18`
+   contra el Anvil global + `pnpm sync` (registro `31337.json` → dirección/bloque/faucet nuevos).
+3. **Imágenes**: 4 Cloud Builds en paralelo — `web:f8` (3m27s, `aea7456f…`), `worker:f8` (2m04s,
+   `3b548830…`), `mcp:f8` (2m12s, `3ae0a667…`) y `monitor:f8` (1m52s, `25ef1b1d…`).
+4. **Job de siembra** (`hotel-mcp-inject-data`) actualizado a `mcp:f8` y
+   `CONTRACT_ADDRESS`/`DEPLOYMENT_BLOCK` nuevos. El **reset** (D-15) se ejecutó con el job en modo
+   seco y luego `--apply`
+   (`pnpm --filter @hotel/shared exec node --import tsx scripts/reset-index.ts`): antes
+   `{nfts:18, ventas:0, historico:7, checkpoints:1, operadores:2}` → después
+   `{nfts:0, ventas:0, historico:0, checkpoints:0, operadores:2}` (**operadores conservados**).
+5. **Siembra**: `pnpm --filter @hotel/contracts inject:data` → 50 `registerRoom` + minteo (paso 3.5).
+6. **Redespliegue**: `70-deploy-apps.sh` con `GCP_IMAGE_TAG=f8` (worker, mcp, web) y el monitor por
+   **API REST v2** (`gcloud run worker-pools deploy` fallaba por el módulo Python `grpc` ausente; se
+   actualizó con un `PATCH` a `workerPools/hotel-mcp-monitor` conservando el entorno).
+
+### Verificación (despliegue real)
+
+| Comprobación | Resultado |
+|---|---|
+| `isRoomRegistered(101)` / `(220)` en el contrato nuevo | **true** / **true** |
+| `roomTypeOf(116)` | `doble` |
+| `publishRoom(101, 0x1111…)` | tx `0x8d8579…` OK · `publicationHashOf(101)` = huella |
+| `GET /api/admin/rooms` (owner) | **50** habitaciones (`101 SIMPLE DRAFT`, `baseRateWei` 0.05 ETH) |
+| `GET /api/admin/rooms/<id>/mint-window` (owner) | **`windowDays: 90`**, 89 noches ausentes, `canMint:false` (DRAFT) |
+| `/api/nfts` | **6** noches, `onChainAnchored: true` |
+| `/api/public/rooms` | 0 (ninguna ficha publicada aún: las 50 están `DRAFT`) |
+| `/health/ready` web · mcp `/health` | **200 READY** · `ok` |
+| Worker `/health` | `lag: 0`, `processingDegraded: false`, `emailDegraded: **true**` |
+
+> **`emailDegraded: true` (aviso)**: el worker se marca degradado al agotar los reintentos SMTP. El
+> entorno usa el SMTP de relleno `SMTP_HOST=smtp.invalid` (heredado del despliegue), así que los
+> correos de aviso de venta de la siembra no se entregan. **No es un fallo del corte**: el pipeline
+> (`lag: 0`) y el procesamiento están sanos; desaparecerá en cuanto se configure un SMTP real.
+
+### Rollback
+
+| Servicio | Revisión de vuelta | Imagen |
+|---|---|---|
+| web | `hotel-mcp-web-00007-9f5` | `web:v7` |
+| worker | `hotel-mcp-worker-00004-pqp` | `worker:v5` |
+| mcp | `hotel-mcp-mcp-00002-j4r` | `mcp:v2` |
+| monitor | `hotel-mcp-monitor-00001-rbw` | `monitor:v1` |
+
+- **Contrato**: restaurar `packages/shared/deployments/31337.json` a `0x70bD…605B`/bloque 288.
+- **BD**: restaurar desde el backup `1790542352281` (destructivo; coordinar).
+
+### Pendiente tras el corte
+
+- **Publicar las 50 fichas** (están `DRAFT`): requieren descripción ES definitiva e imagen; al
+  publicar se anclan (`publishRoom`) y el **primer acuñado de la ventana** se dispara (D-4).
+- **SMTP real** para cerrar `emailDegraded`.
+- **Barrido global** de la ventana de acuñación y correo de agotamiento (parte 4, alcance diferido).
+
+---
+
+*Despliegue GCP · hotelMCP · actualizado 2026-09-27 (corte de contrato F8 ejecutado)*
