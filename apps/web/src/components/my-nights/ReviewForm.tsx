@@ -18,7 +18,7 @@ export function ReviewForm({ tokenId }: { tokenId: string }) {
   const [comment, setComment] = useState("");
 
   if (status === "done") {
-    return <p role="status" className="mt-2 text-small text-olive">{t("submitted")}</p>;
+    return <p role="status" className="mt-2 text-small text-success">{t("submitted")}</p>;
   }
 
   if (!open) {

@@ -107,9 +107,9 @@ export function ReviewsModeration() {
         </select>
       </label>
 
-      {notice && <p role="status" className="text-small text-olive">{notice}</p>}
+      {notice && <p role="status" className="text-small text-success">{notice}</p>}
       {error && (
-        <p role="alert" className="rounded-brand-lg border border-terracotta/40 bg-terracotta/10 px-4 py-3 text-small text-ink">
+        <p role="alert" className="rounded-brand-lg border border-error/40 bg-error-bg px-4 py-3 text-small text-ink">
           {error}
         </p>
       )}

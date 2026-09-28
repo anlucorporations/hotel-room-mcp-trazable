@@ -106,7 +106,7 @@ export function AdminSecurity() {
         </p>
       )}
       {message && (
-        <p role="status" data-testid="security-message" className="rounded-brand border border-olive bg-sand-2 px-4 py-3 text-small text-ink">
+        <p role="status" data-testid="security-message" className="rounded-brand border border-success/40 bg-success-bg px-4 py-3 text-small text-ink">
           {message}
         </p>
       )}
@@ -119,7 +119,7 @@ export function AdminSecurity() {
         </button>
 
         {mfa && (
-          <div data-testid="mfa-credentials" className="mt-4 rounded-brand border border-olive bg-sand-2 p-4">
+          <div data-testid="mfa-credentials" className="mt-4 rounded-brand border border-success/40 bg-success-bg p-4">
             <p className="text-small text-ink-soft">{t("securityOnceHint")}</p>
             <dl className="mt-2 grid gap-2 text-small">
               <div><dt className="text-ink-soft">{t("secretLabel")}</dt><dd className="font-mono break-all">{mfa.secret}</dd></div>

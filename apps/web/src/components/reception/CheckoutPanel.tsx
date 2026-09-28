@@ -181,7 +181,7 @@ export function CheckoutPanel({
       )}
 
       {receipt && (
-        <div data-testid="checkout-success" role="status" className="rounded-brand border border-olive bg-sand-2 p-4">
+        <div data-testid="checkout-success" role="status" className="rounded-brand border border-success/40 bg-success-bg p-4">
           <p className="font-semibold">{receipt.created ? t("checkoutSuccess") : t("checkoutAlready")}</p>
           <p className="text-small text-ink-soft">
             {t("checkoutChargesCancelled", { count: receipt.checkout.chargesCancelled })}

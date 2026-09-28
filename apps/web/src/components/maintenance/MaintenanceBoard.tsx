@@ -157,7 +157,7 @@ export function MaintenanceBoard() {
       </div>
 
       {error && (
-        <p role="alert" className="rounded-brand-lg border border-terracotta/40 bg-terracotta/10 px-4 py-3 text-small text-ink">
+        <p role="alert" className="rounded-brand-lg border border-error/40 bg-error-bg px-4 py-3 text-small text-ink">
           {error}
         </p>
       )}
@@ -231,7 +231,7 @@ export function MaintenanceBoard() {
         ) : (
           <ul className="flex flex-col gap-2">
             {dueTasks.map((task) => (
-              <li key={task.id} data-testid={`maint-task-${task.planCode}`} className={`flex flex-wrap items-center gap-2 rounded-brand-lg border px-4 py-2 ${task.overdue ? "border-terracotta/50 bg-terracotta/10" : "border-line bg-sand-2"}`}>
+              <li key={task.id} data-testid={`maint-task-${task.planCode}`} className={`flex flex-wrap items-center gap-2 rounded-brand-lg border px-4 py-2 ${task.overdue ? "border-warning/50 bg-warning-bg" : "border-line bg-sand-2"}`}>
                 <span className="font-medium text-ink">{task.planName ?? task.planCode}</span>
                 <span className="text-micro text-ink-soft">
                   {task.equipment}

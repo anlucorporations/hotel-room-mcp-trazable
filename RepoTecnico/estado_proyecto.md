@@ -1982,6 +1982,8 @@ fases de la hoja de ruta:
 
 | **D · Piezas de marca y vista previa social** | `app/opengraph-image.tsx`: imagen social **generada en código** con los tokens (1200×630, marino + champagne + arena) en lugar de un PNG suelto; metadata `og:*`/`twitter:card` y `metadataBase` con `NEXT_PUBLIC_SITE_URL` (documentada en `.env.example`). Registro marino (`ocean`) en la **portada** y en los títulos de las pantallas de recepción/reventa; **maqueta del catálogo** al día (tokens, hero oscuro y barra de reserva) | `@hotel/web` **510 pruebas**; guardián nuevo `brand-pieces.test.ts` **6/6** (HEX **derivados del preset**, `role="img"`+`<title>` por ilustración, OG en código, variables de la maqueta); verificado en producción: `/opengraph-image` → **200 `image/png`, PNG válido 1200×630, 105 KB**, y el `<head>` declara `og:image` |
 
+| **F · Aplicación al producto** | El registro marino entra en el **sidebar de administración** (`bg-ocean`, enlaces `text-sand`, secciones `champagne`, entrada activa como pastilla `bg-shell text-ocean` / 14,5:1) y los **30 estilos de estado improvisados** de **18 ficheros** pasan a los tokens semánticos (banners de error → `error`/`error-bg`, confirmaciones → `success`/`success-bg`, avisos → `warning`/`warning-bg`, insignia «en directo» → `success`). Par nuevo declarado: `ocean` sobre `shell` | `@hotel/web` **510 pruebas** y los 4 guardianes de accesibilidad en verde; `typecheck` y `lint` 6/6; build OK |
+
 **Hallazgos que destaparon los guardianes nuevos (C.1–C.3)**: (a) `text-caption`/`text-body-lg` de la
 escala tipográfica nueva se leían como «color desconocido» — corregido y con **prueba que deriva la
 lista del preset real**; (b) la paridad i18n **no estaba verificada por ninguna prueba**: el guardián

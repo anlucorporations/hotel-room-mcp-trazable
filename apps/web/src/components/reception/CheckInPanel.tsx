@@ -135,7 +135,7 @@ export function CheckInPanel({
       )}
 
       {result && (
-        <div data-testid="checkin-success-banner" className="rounded-brand border border-olive bg-sand-2 p-4 text-ink">
+        <div data-testid="checkin-success-banner" className="rounded-brand border border-success/40 bg-success-bg p-4 text-ink">
           <p className="font-semibold">{t("checkinSuccess")}</p>
           <p className="text-small text-ink-soft">
             {t("checkinSuccessRoom", { room: result.roomNumber, date: result.checkInDate })}

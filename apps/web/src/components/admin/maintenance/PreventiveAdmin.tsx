@@ -124,7 +124,7 @@ export function PreventiveAdmin() {
   return (
     <div className="flex flex-col gap-5">
       {dueTasks.length > 0 && (
-        <div role="alert" data-testid="preventive-due" className="rounded-brand-lg border border-terracotta/40 bg-terracotta/10 px-4 py-3">
+        <div role="alert" data-testid="preventive-due" className="rounded-brand-lg border border-error/40 bg-error-bg px-4 py-3">
           <h2 className="text-small font-semibold text-ink">{t("dueWarning", { count: dueTasks.length })}</h2>
           <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-micro text-ink-soft">
             {dueTasks.map((task) => (
@@ -137,12 +137,12 @@ export function PreventiveAdmin() {
       )}
 
       {notice && (
-        <p role="status" className="text-small text-olive">
+        <p role="status" className="text-small text-success">
           {notice}
         </p>
       )}
       {error && (
-        <p role="alert" className="rounded-brand-lg border border-terracotta/40 bg-terracotta/10 px-4 py-3 text-small text-ink">
+        <p role="alert" className="rounded-brand-lg border border-error/40 bg-error-bg px-4 py-3 text-small text-ink">
           {error}
         </p>
       )}

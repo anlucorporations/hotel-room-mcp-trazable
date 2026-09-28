@@ -240,7 +240,7 @@ export function ReserveFlow({ initial }: { initial?: BookingQuery } = {}) {
       </form>
 
       {error && (
-        <p role="alert" className="rounded-brand-lg border border-terracotta/40 bg-terracotta/10 px-4 py-3 text-small text-ink">
+        <p role="alert" className="rounded-brand-lg border border-error/40 bg-error-bg px-4 py-3 text-small text-ink">
           {error}
         </p>
       )}

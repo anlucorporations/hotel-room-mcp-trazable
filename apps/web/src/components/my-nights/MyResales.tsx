@@ -92,7 +92,7 @@ export function MyResales() {
   return (
     <div className="flex flex-col gap-8">
       {newSales.length > 0 && (
-        <div data-testid="resales-news" role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-brand-lg border border-olive bg-sand-2 px-4 py-3">
+        <div data-testid="resales-news" role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-brand-lg border border-success/40 bg-success-bg px-4 py-3">
           <p className="text-ink">{t("news", { count: newSales.length })}</p>
           <button type="button" onClick={markSeen} data-testid="resales-mark-seen" className="min-h-touch rounded-pill bg-sea px-5 font-semibold text-shell">
             {t("markSeen")}

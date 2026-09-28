@@ -81,7 +81,7 @@ function Sidebar({ session }: { session: AdminSession }) {
           aria-disabled="true"
           aria-describedby={lockedHintId}
           title={t("nav.lockedHint")}
-          className="flex min-h-touch items-center gap-2 rounded-brand px-3 text-small font-medium text-ink-soft opacity-50"
+          className="flex min-h-touch items-center gap-2 rounded-brand px-3 text-small font-medium text-sand opacity-50"
         >
           <span aria-hidden="true">·</span>
           {label}
@@ -94,7 +94,7 @@ function Sidebar({ session }: { session: AdminSession }) {
         href={item.href}
         aria-current={active ? "page" : undefined}
         className={`flex min-h-touch items-center gap-2 rounded-brand px-3 text-small font-medium transition-colors ${
-          active ? "bg-sea text-shell" : "text-ink-soft hover:bg-sand-2 hover:text-ink"
+          active ? "bg-shell font-semibold text-ocean" : "text-sand hover:bg-ocean-soft hover:text-shell"
         }`}
       >
         <span aria-hidden="true">·</span>
@@ -106,7 +106,7 @@ function Sidebar({ session }: { session: AdminSession }) {
   return (
     <nav
       aria-label={t("nav.label")}
-      className="flex flex-col gap-1 border-line tablet:border-l tablet:pl-4"
+      className="flex flex-col gap-1 tablet:border-l tablet:border-champagne/30 tablet:pl-4"
     >
       {/* Motivo de bloqueo accesible (sr-only): los items deshabilitados lo referencian con
           `aria-describedby`, no solo en `title` dependiente de hover (MINOR#38). */}
@@ -124,7 +124,7 @@ function Sidebar({ session }: { session: AdminSession }) {
               aria-expanded={open}
               aria-controls={`nav-section-panel-${section.key}`}
               onClick={() => setOpenSection((current) => (current === section.key ? null : section.key))}
-              className="flex min-h-touch items-center justify-between gap-2 rounded-brand px-3 text-left text-small font-semibold text-ink transition-colors hover:bg-sand-2"
+              className="flex min-h-touch items-center justify-between gap-2 rounded-brand px-3 text-left text-small font-semibold text-champagne transition-colors hover:bg-ocean-soft"
             >
               {t(`nav.${section.labelKey}` as `nav.${AdminNavLabelKey}`)}
               <span aria-hidden="true" className={open ? "rotate-90 transition-transform" : "transition-transform"}>
@@ -144,9 +144,9 @@ function Sidebar({ session }: { session: AdminSession }) {
       {session.isOwner && (
         <div
           data-testid="nav-systems"
-          className="mt-4 flex flex-col gap-1 border-t border-line pt-3"
+          className="mt-4 flex flex-col gap-1 border-t border-champagne/30 pt-3"
         >
-          <span className="px-3 pb-1 text-micro font-semibold uppercase tracking-wider text-ink-soft">
+          <span className="px-3 pb-1 text-micro font-semibold uppercase tracking-wider text-champagne">
             {t("nav.systems")}
           </span>
           {ADMIN_SYSTEMS_NAV.map(renderItem)}
@@ -284,7 +284,9 @@ export function AdminLayout({ children }: { children: ReactNode }) {
               {t("nav.menu")}
             </button>
             <div id="admin-nav-panel" className={navOpen ? "" : "hidden tablet:block"}>
-              <Sidebar session={session} />
+              <div className="rounded-brand-lg bg-ocean p-4 shadow-card">
+                <Sidebar session={session} />
+              </div>
             </div>
           </aside>
         )}

@@ -141,7 +141,7 @@ export function ReportIncidentPanel({
         </button>
       </form>
       {done && (
-        <p role="status" className="mt-2 text-small text-olive">
+        <p role="status" className="mt-2 text-small text-success">
           {done}
         </p>
       )}

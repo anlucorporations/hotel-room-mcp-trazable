@@ -186,14 +186,14 @@ export function HousekeepingBoard() {
         <span>{t("signedAs", { username: sessionUsername })}</span>
         <span
           data-testid="housekeeping-live"
-          className={`rounded-pill px-2 py-0.5 text-micro font-semibold ${live ? "bg-olive/15 text-olive" : "bg-sand-2 text-ink-soft"}`}
+          className={`rounded-pill px-2 py-0.5 text-micro font-semibold ${live ? "bg-success/15 text-success" : "bg-sand-2 text-ink-soft"}`}
         >
           {live ? t("live") : t("reconnecting")}
         </span>
       </p>
 
       {lowStock.length > 0 && (
-        <div role="alert" data-testid="housekeeping-low-stock" className="rounded-brand-lg border border-terracotta/40 bg-terracotta/10 px-4 py-3">
+        <div role="alert" data-testid="housekeeping-low-stock" className="rounded-brand-lg border border-error/40 bg-error-bg px-4 py-3">
           <h2 className="text-small font-semibold text-ink">{t("lowStockTitle")}</h2>
           <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-micro text-ink-soft">
             {lowStock.map((item) => (
@@ -277,7 +277,7 @@ export function HousekeepingBoard() {
       </section>
 
       {error && (
-        <p role="alert" className="rounded-brand-lg border border-terracotta/40 bg-terracotta/10 px-4 py-3 text-small text-ink">
+        <p role="alert" className="rounded-brand-lg border border-error/40 bg-error-bg px-4 py-3 text-small text-ink">
           {error}
         </p>
       )}

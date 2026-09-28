@@ -60,6 +60,12 @@ no un marketplace de NFTs.
 > (daba 1.71:1 sobre el CTA teal): es un **doble anillo arena + teal** con ≥3:1 contra
 > ambos colores adyacentes (WCAG 1.4.11 / 2.4.7).
 >
+> **Aplicación al producto (2026-09-27)**: los cuatro **estados semánticos** ya se usan en el
+> producto (18 ficheros): los banners de error pasan a `error`/`error-bg`, las confirmaciones a
+> `success`/`success-bg`, los avisos (plazo vencido, stock bajo) a `warning`/`warning-bg` y la insignia
+> «en directo» a `success`. El registro marino entra en la **sidebar de administración** (`bg-ocean`
+> con la pastilla activa en `bg-shell text-ocean`).
+
 > **Evolución del 2026-09-27** (aprobada a partir de `RepoTecnico/propuesta_imagen_visual.md`): los
 > **12 tokens originales no cambian**; se **añaden** el registro oscuro (`ocean`, `ocean-soft`), el
 > detalle `champagne` (solo sobre oscuro), el borde de controles `line-strong` y los cuatro estados
@@ -143,6 +149,9 @@ no un marketplace de NFTs.
 - **StickySummary** (`components/reserve/StickySummary.tsx`): resumen de la estancia (habitación, fechas, noches, precio por noche y total) anclado con `tablet:sticky` junto al formulario de `/reservar`. El precio llega **ya convertido** desde `/api/public/rooms` con la misma tasa que usa el cobro; si no hay tarifa, dice que el importe se confirma al retener en lugar de inventar un número.
 
 ### Organismos
+- **AdminSidebar** en registro marino (Fase F): la navegación del back-office vive en una tarjeta
+  `bg-ocean` con enlaces `text-sand` (13,4:1), secciones en `champagne` (6,4:1) y la entrada activa como
+  pastilla `bg-shell text-ocean` (14,5:1), con filetes `border-champagne/30`.
 - **Header** (marca + nav + wallet), **Hero editorial**, **CatalogGrid**, **HistoryTable**,
   **DashboardGrid**, **MintForm** (admin), **ChatPanel**, **TxModal** (confirmación de compra),
   **OnboardingSheet** (instalar/añadir red), **ResaleManager** (fijar/actualizar/cancelar precio de reventa + `claim`), **EmptyState / DegradedState**.

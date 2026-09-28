@@ -109,6 +109,7 @@ export const DECLARED_TEXT_ON_BACKGROUND: ReadonlyArray<{
   // Registro oscuro editorial (`ocean`) y detalle premium: medidos en `scripts/design/contrast-audit.mjs`.
   { foreground: "sand", background: "ocean", where: "texto arena sobre superficie marina" },
   { foreground: "shell", background: "ocean", where: "texto blanco sobre superficie marina" },
+  { foreground: "ocean", background: "shell", where: "título marino sobre tarjeta blanca (sidebar activo)" },
   { foreground: "champagne", background: "ocean", where: "detalle champagne sobre marina (iconos, cifras)" },
   { foreground: "champagne", background: "ocean-soft", where: "filete/etiqueta champagne sobre marina suave" },
   // Estados semánticos: el color de estado se usa como texto sobre su propio fondo teñido.

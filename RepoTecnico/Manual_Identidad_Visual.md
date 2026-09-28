@@ -1,6 +1,6 @@
 # Manual de identidad visual — Hotel Marina del Sol
 
-> **Sistema**: «Mediterráneo editorial» con registro marino · **Versión**: 1.0.0 · **Fecha**: 2026-09-27
+> **Sistema**: «Mediterráneo editorial» con registro marino · **Versión**: **1.1.0** · **Fecha**: 2026-09-27
 > **Alcance**: las 5 suites (pública, recepción, housekeeping, mantenimiento, administración) · Web
 > responsive (ES/EN/RU). No hay aplicación nativa en esta entrega (3.ª versión, D-49/D-50).
 > **Fuentes de verdad** (este manual **no** las sustituye, las explica):
@@ -77,6 +77,12 @@ Los roles son los que usa el código; el **token** es el nombre con el que se es
 | `warning` / `warning-bg` | — | `#8A5A12` / `#F7E9C9` | hsl(36 77% 31%) / hsl(42 74% 88%) | Avisos |
 | `error` / `error-bg` | — | `#9E2B1F` / `#F8E3DE` | hsl(6 67% 37%) / hsl(12 65% 92%) | Errores y bloqueos |
 | `info` / `info-bg` | — | `#14556B` / `#DCEAF1` | hsl(195 69% 25%) / hsl(200 43% 90%) | Información y ayuda |
+
+**Estado de aplicación (v1.1.0):** todos los tokens de esta tabla están **en uso** en el producto. Los
+estados semánticos sustituyeron los estilos improvisados (banners de error en `error`/`error-bg`,
+confirmaciones en `success`/`success-bg`, avisos en `warning`/`warning-bg`, insignia «en directo» en
+`success`) y el registro marino se aplica en el **hero**, el **pie**, el **sidebar de administración** y
+la **vista previa social**.
 
 **Regla de oro del color:** el teal (`sea`) es la **acción**; el terracota (`terracotta` como relleno y
 `terracotta-text` como texto) es la **atención**; el marino (`ocean`) es el **registro oscuro**; el
@@ -279,6 +285,7 @@ Contenido máximo `max-w-6xl` (excepto hero a sangre) y medida de lectura ≤ 66
 
 | Versión | Fecha | Cambios |
 |---|---|---|
+| **1.1.0** | 2026-09-27 | **Aplicación al producto**: sidebar de administración en registro marino (`ocean`, con la entrada activa como pastilla `bg-shell text-ocean` y secciones en `champagne`) y migración de los **30 estilos de estado improvisados** de 18 ficheros a los tokens semánticos. Sin cambios de token: es la puesta en uso de lo ya definido. |
 | **1.0.0** | 2026-09-27 | Primera edición. Recoge la evolución **aditiva** aprobada a partir de `propuestaVisual-Hotel.md`: 12 tokens nuevos (`ocean`, `ocean-soft`, `champagne`, `line-strong` y los cuatro estados con sus fondos), 7 niveles tipográficos y el radio `brand-xs`; cascada cirílica (Playfair Display + Inter); componentes de la suite pública (`Hero`, `Stars`, `SuiteCard`, `ExperienceCard`, `TestimonialCard`, `BookingBar`, `StickySummary`) y de personal (`DataTable`); frontera de controles con `line-strong` (cierre del hallazgo **H-7**, WCAG 1.4.11); vista previa social generada en código; guardianes de paleta, contraste, frontera, tipografía, tablas, i18n y piezas de marca. |
 
 ---

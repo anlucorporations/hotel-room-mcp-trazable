@@ -256,7 +256,7 @@ export function SystemUsers() {
       </form>
 
       {provisioned && (
-        <section data-testid="system-user-credentials" role="status" className="rounded-brand border border-olive bg-sand-2 p-5">
+        <section data-testid="system-user-credentials" role="status" className="rounded-brand border border-success/40 bg-success-bg p-5">
           <h2 className="font-display text-h3 font-semibold">{t("credentialsTitle")}</h2>
           <p className="mt-1 text-small text-ink-soft">{t("credentialsHint")}</p>
           <dl className="mt-3 grid gap-2 text-small">

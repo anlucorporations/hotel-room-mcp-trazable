@@ -9,7 +9,7 @@ const ROOM_STATUS_CLASS: Readonly<Record<RoomBoardStatus, string>> = {
   LIBRE: "border-olive/40 bg-olive/10 text-olive",
   PENDIENTE: "border-gold/50 bg-gold/10 text-ink",
   RESERVADA: "border-sea/40 bg-sea/10 text-sea-deep",
-  OCUPADA: "border-terracotta/50 bg-terracotta/10 text-terracotta-text",
+  OCUPADA: "border-warning/50 bg-warning-bg text-terracotta-text",
   SALIDA: "border-line bg-sand-2 text-ink-soft",
   BLOQUEADA: "border-ink-soft/40 bg-ink-soft/10 text-ink-soft",
 };
