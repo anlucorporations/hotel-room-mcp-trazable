@@ -29,7 +29,7 @@
   </g>
 
   <!-- cabecera -->
-  <text x="304" y="96" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="36" font-weight="700" fill="#08424A">Métricas</text>
+  <text x="304" y="96" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="36" font-weight="700" fill="#0F2C3F">Métricas</text>
   <text x="1536" y="92" text-anchor="end" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Hotel Marina del Sol · cartera conectada</text>
   <path d="M304 120 H1536" stroke="#E7DCC6" stroke-width="2" fill="none"/>
 

@@ -99,6 +99,23 @@ no un marketplace de NFTs.
 | Tablet | 768–1023 px | 2 columnas |
 | Desktop | ≥ 1024 px | 3 columnas |
 
+### 2.5 Piezas de marca y vista previa social (Fase D)
+
+- **Ilustraciones** (`docs/imagenes/*.svg`): las nueve piezas están dentro de la paleta y lo vigila
+  `brand-pieces.test.ts`, que **deriva los HEX del preset real** (una pieza nueva no puede introducir
+  un color que el sistema no tenga). Cada SVG lleva `role="img"` y `<title>` porque son imágenes de
+  contenido en los manuales.
+- **Registro marino**: la **portada** y los títulos de las pantallas de recepción y reventa adoptan
+  `ocean #0F2C3F` (antes `sea-deep`) — el marino es la superficie oscura del sistema. El `gold` se
+  mantiene en claro; el `champagne` solo aparece sobre oscuro (la imagen social).
+- **Vista previa social**: `app/opengraph-image.tsx` **genera** la imagen 1200×630 con los tokens
+  (`ocean`→`ocean-soft`, titular arena, eyebrow champagne, filete terracota) en vez de ser un PNG
+  suelto: no puede desincronizarse de la paleta y se regenera sola. El `<head>` declara `og:*` y
+  `twitter:card`. En producción hay que definir **`NEXT_PUBLIC_SITE_URL`** (en desarrollo cae a
+  `http://localhost:3000`).
+- **Maqueta del catálogo** (`docs/ux-mockups/catalogo.html`): al día con los tokens nuevos, el hero en
+  registro marino y la **barra de reserva** entregada en la Fase C.2.
+
 ---
 
 ## 3. Librería de componentes (Atomic Design)

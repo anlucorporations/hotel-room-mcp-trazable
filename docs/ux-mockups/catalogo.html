@@ -23,6 +23,16 @@
     --olive:       #5E6B45;
     --gold:        #C68A2E;
 
+    /* Registro marino y estados (propuesta de imagen visual, 2026-09-27) */
+    --ocean:        #0F2C3F;
+    --ocean-soft:   #16455E;
+    --champagne:    #C5A880;   /* detalle premium SOLO sobre oscuro: 6.4:1 sobre ocean */
+    --line-strong:  #8F7F5F;   /* frontera de controles: 3.3-3.9:1 (WCAG 1.4.11) */
+    --success: #2F6B4F; --success-bg: #E3EFE7;
+    --warning: #8A5A12; --warning-bg: #F7E9C9;
+    --error:   #9E2B1F; --error-bg:   #F8E3DE;
+    --info:    #14556B; --info-bg:    #DCEAF1;
+
     --font-display: "Fraunces", Georgia, serif;
     --font-ui: "Hanken Grotesk", system-ui, sans-serif;
 
@@ -57,6 +67,17 @@
   .btn-primary:focus-visible, .chip[aria-pressed="true"]:focus-visible, [data-testid="retry"]:focus-visible { box-shadow: 0 0 0 2px var(--shell), 0 0 0 5px var(--sea-deep); }
 
   .wrap { width: min(1180px, 100% - 40px); margin-inline: auto; }
+
+  /* Barra de reserva y registro marino (Fase C.2): controles con frontera line-strong (3:1) */
+  .booking { display:grid; gap:12px; grid-template-columns:1fr; background:var(--shell);
+             border:1px solid var(--line); border-radius:var(--r-md); padding:16px; box-shadow:var(--shadow-md); }
+  @media (min-width: 768px) { .booking { grid-template-columns: repeat(3, minmax(0,1fr)) auto; align-items:end; } }
+  .booking label { display:flex; flex-direction:column; gap:4px; font-size:.9rem; font-weight:500; color:var(--ink); }
+  .booking input, .booking select { min-height:var(--tap); border:1px solid var(--line-strong);
+             border-radius:var(--r-sm); background:var(--sand); padding:0 12px; font:inherit; color:var(--ink); }
+  .hero--dark { background: linear-gradient(160deg, var(--ocean) 0%, var(--ocean-soft) 100%); }
+  .hero--dark h1, .hero--dark p { color: var(--sand); }
+  .hero--dark .eyebrow { color: var(--champagne); }
 
   /* ============ HEADER ============ */
   header { position: sticky; top: 0; z-index: 40; background: color-mix(in srgb, var(--sand) 86%, transparent); backdrop-filter: blur(10px) saturate(1.2); border-bottom: 1px solid var(--line); }
@@ -173,11 +194,23 @@
   </div>
 </header>
 
-<section class="hero wrap" aria-labelledby="h1">
+<section class="hero hero--dark wrap" aria-labelledby="h1">
   <svg class="wave" viewBox="0 0 200 60" fill="none" aria-hidden="true"><path d="M0 30 Q 25 8 50 30 T 100 30 T 150 30 T 200 30" stroke="currentColor" stroke-width="2.5" opacity=".5"/><path d="M0 44 Q 25 22 50 44 T 100 44 T 150 44 T 200 44" stroke="currentColor" stroke-width="2.5" opacity=".3"/></svg>
   <p class="eyebrow">Reserva directa · sin intermediarios</p>
-  <h1 id="h1">Tu noche frente al <em>Mediterráneo</em>, en propiedad.</h1>
+  <h1 id="h1">Tu noche frente al <em style="color:var(--champagne); font-style:normal;">Mediterráneo</em>, en propiedad.</h1>
   <p>Cada noche es tuya desde el momento en que la reservas. Y si tus planes cambian, puedes traspasarla a otro viajero. Sencillo, seguro, sin papeleo.</p>
+</section>
+
+<!-- Barra de reserva (Fase C.2): entrada, salida y huéspedes -> /reservar?from=&to=&guests= -->
+<section class="wrap" aria-label="Consulta de disponibilidad" style="margin-top:-28px; position:relative; z-index:5;">
+  <form class="booking" data-testid="booking-bar">
+    <label>Entrada<input type="date" value="2026-06-15" min="2026-06-02" /></label>
+    <label>Salida<input type="date" value="2026-06-18" min="2026-06-16" /></label>
+    <label>Huéspedes
+      <select><option>1 huésped</option><option selected>2 huéspedes</option><option>3 huéspedes</option></select>
+    </label>
+    <button class="btn btn-primary" type="submit">Ver disponibilidad</button>
+  </form>
 </section>
 
 <section class="filters" aria-label="Filtros del catálogo">

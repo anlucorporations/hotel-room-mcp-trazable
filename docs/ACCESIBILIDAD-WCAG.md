@@ -123,6 +123,8 @@ Qué comprueba (M7, D-11; ampliado en la propuesta de imagen visual, Fase A.2):
 | Matemática | Fórmula de luminancia relativa (blanco sobre negro = 21:1) y umbrales 4.5:1 / 3:1 |
 | **Frontera de controles** (Fase A.2, `control-boundary.test.ts`) | `line-strong` ≥ 3:1 en los tres lienzos; `line` < 3:1 (no puede ser frontera); los **89 controles** con borde declaran `line-strong` por defecto y sus bordes de estado también alcanzan 3:1. Verificado en falso: un solo control con `border-line` pone la prueba roja |
 | **Cascada cirílica** (`cyrillic-fonts.test.ts`) | `Playfair Display` + `Inter` se cargan con el subconjunto `cyrillic` y `preload:false`, y las pilas del preset y de `globals.css` los colocan **después** de la fuente de marca |
+| **Tablas de datos** (`table-semantics.test.ts`) | Todo `<table>` del producto tiene nombre accesible (`<caption>`/`aria-label`) y `scope="col"`; las de presentación quedan exentas. Regla **derivada** del código, no una lista fija |
+| **Piezas de marca** (`brand-pieces.test.ts`) | Las nueve ilustraciones de `docs/imagenes` usan solo colores de la paleta real (HEX derivados del preset) y llevan `role="img"` + `<title>`; la imagen social se genera en código con tokens y la maqueta declara variables de la paleta |
 
 **Estado del escaneo con navegador real (M8, ampliado en M9)**: `axe` **ya corre** sobre el navegador
 real. Con `pnpm --filter @hotel/web exec playwright install chromium-headless-shell` quedó resuelto el

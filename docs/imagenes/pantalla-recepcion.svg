@@ -14,7 +14,7 @@
   </g>
 
   <!-- cabecera -->
-  <text x="70" y="108" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="40" font-weight="700" fill="#08424A">Validación de Recepción &amp; Check-in</text>
+  <text x="70" y="108" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="40" font-weight="700" fill="#0F2C3F">Validación de Recepción &amp; Check-in</text>
   <text x="70" y="146" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Valida el resguardo del huésped y anota el check-in en la cadena.</text>
 
   <!-- pestañas -->

@@ -41,11 +41,31 @@ const interCyrillic = Inter({
 });
 
 // Metadata i18n (MINOR#41): título y descripción desde las claves `app.*`.
+// La imagen social la genera `app/opengraph-image.tsx` con los tokens de marca (Fase D).
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("app");
+  const locale = await getLocale();
+  const title = t("name");
+  const description = t("description");
+
   return {
-    title: t("name"),
-    description: t("description"),
+    title,
+    description,
+    // Base para resolver las URLs absolutas que exigen Open Graph y Twitter. En producción se
+    // define `NEXT_PUBLIC_SITE_URL`; en desarrollo se usa el local para no inventar un dominio.
+    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+    openGraph: {
+      type: "website",
+      siteName: title,
+      title,
+      description,
+      locale,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
   };
 }
 

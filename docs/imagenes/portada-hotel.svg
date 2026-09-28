@@ -8,7 +8,7 @@
     </linearGradient>
     <linearGradient id="ph-mar" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#0E5A63"/>
-      <stop offset="100%" stop-color="#08424A"/>
+      <stop offset="100%" stop-color="#0F2C3F"/>
     </linearGradient>
     <filter id="ph-sombra" x="-10%" y="-10%" width="120%" height="130%">
       <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0E5A63" flood-opacity="0.14"/>
@@ -113,6 +113,6 @@
   </g>
 
   <!-- nombre y línea de presentación -->
-  <text x="800" y="112" text-anchor="middle" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="76" font-weight="700" fill="#08424A" textLength="840" lengthAdjust="spacingAndGlyphs">Hotel Marina del Sol</text>
+  <text x="800" y="112" text-anchor="middle" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="76" font-weight="700" fill="#0F2C3F" textLength="840" lengthAdjust="spacingAndGlyphs">Hotel Marina del Sol</text>
   <text x="800" y="164" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" fill="#4C575C" textLength="830" lengthAdjust="spacingAndGlyphs">50 habitaciones · Alicante · noches en propiedad</text>
 </svg>

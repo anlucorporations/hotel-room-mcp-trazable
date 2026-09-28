@@ -1980,7 +1980,9 @@ fases de la hoja de ruta:
 
 | **C.3 · DataTable de personal** | `components/ui/DataTable.tsx`: tabla **densa** con `<caption>` solo para lectores, `scope="col"`/`scope="row"`, región desplazable con nombre y `tabIndex={0}` (WCAG 2.1.1), densidad `compact`/`comfortable`, cabecera fija y columnas ocultables en móvil **sin sacarlas del DOM**. Migrada `/admin/mantenimiento/incidencias`; añadido el `<caption>` que faltaba en **6 tablas** (`maintenance` ×2, `activities` ×2, `rooms`, `reception`) con claves ES/EN/RU | `@hotel/web` **504 pruebas**; guardián nuevo `table-semantics.test.ts` **5/5**, **derivado de todas las tablas del producto** y **falsificado** (quitar un caption → rojo con fichero y etiqueta); smoke test: `/admin/mantenimiento/incidencias` y las rutas de personal responden **200** sin errores |
 
-**Hallazgos que destaparon los guardianes nuevos (C.1/C.2/C.3)**: (a) `text-caption`/`text-body-lg` de la
+| **D · Piezas de marca y vista previa social** | `app/opengraph-image.tsx`: imagen social **generada en código** con los tokens (1200×630, marino + champagne + arena) en lugar de un PNG suelto; metadata `og:*`/`twitter:card` y `metadataBase` con `NEXT_PUBLIC_SITE_URL` (documentada en `.env.example`). Registro marino (`ocean`) en la **portada** y en los títulos de las pantallas de recepción/reventa; **maqueta del catálogo** al día (tokens, hero oscuro y barra de reserva) | `@hotel/web` **510 pruebas**; guardián nuevo `brand-pieces.test.ts` **6/6** (HEX **derivados del preset**, `role="img"`+`<title>` por ilustración, OG en código, variables de la maqueta); verificado en producción: `/opengraph-image` → **200 `image/png`, PNG válido 1200×630, 105 KB**, y el `<head>` declara `og:image` |
+
+**Hallazgos que destaparon los guardianes nuevos (C.1–C.3)**: (a) `text-caption`/`text-body-lg` de la
 escala tipográfica nueva se leían como «color desconocido» — corregido y con **prueba que deriva la
 lista del preset real**; (b) la paridad i18n **no estaba verificada por ninguna prueba**: el guardián
 nuevo `i18n-parity.test.ts` (1.228 claves idénticas en ES/EN/RU, sin valores en blanco y con los mismos
@@ -1991,8 +1993,8 @@ prueba **cruza** el cálculo de noches del cliente con el del servidor; (d) **6 
 nombre accesible: ahora todo `<table>` del producto debe declarar `<caption>`/`aria-label` y
 `scope="col"`, con guardián derivado y exención explícita para tablas de presentación.
 
-**Pendiente de la propuesta**: D (regenerar piezas de marca) y E (`Manual_Identidad_Visual.md`, que se
-escribe **después** para no desincronizar
+**Pendiente de la propuesta**: E (`Manual_Identidad_Visual.md`, que se escribe **después** para no
+desincronizar
 tokens y manual). Queda **observado y no exigido** H-8: 27 botones/enlaces «fantasma» con `border-line`
 (el criterio 1.4.11 aplica a la información visual necesaria para identificar el componente y un botón
 con etiqueta visible se identifica por su texto; el foco ya cumple). Sigue sin tocarse contrato, rutas
