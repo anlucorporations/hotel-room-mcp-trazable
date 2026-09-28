@@ -15,6 +15,7 @@ substitutions:
   _NEXT_PUBLIC_DEPLOYMENT_BLOCK: "0"
   _NEXT_PUBLIC_FAUCET_ADDRESS: ""
   _NEXT_PUBLIC_NETWORK: ""
+  _NEXT_PUBLIC_SITE_URL: ""
 
 steps:
   - name: gcr.io/cloud-builders/docker
@@ -27,6 +28,7 @@ steps:
       - --build-arg=NEXT_PUBLIC_DEPLOYMENT_BLOCK=${_NEXT_PUBLIC_DEPLOYMENT_BLOCK}
       - --build-arg=NEXT_PUBLIC_FAUCET_ADDRESS=${_NEXT_PUBLIC_FAUCET_ADDRESS}
       - --build-arg=NEXT_PUBLIC_NETWORK=${_NEXT_PUBLIC_NETWORK}
+      - --build-arg=NEXT_PUBLIC_SITE_URL=${_NEXT_PUBLIC_SITE_URL}
       - --tag=${_IMAGE}
       - .
 

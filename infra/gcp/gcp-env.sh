@@ -44,6 +44,9 @@ export GCP_LOCAL_SECRETS_DIR="${GCP_LOCAL_SECRETS_DIR:-$HOME/.config/hotel-mcp}"
 # Anvil global ya existente en el proyecto mcc-ecommerce (Cloud Run, público,
 # estado persistido en el bucket mcc-ecommerce-anvil-state vía GCS Fuse).
 # OJO: su chainId es 31337, no el 81234 canónico del proyecto.
+# URL pública de la web (metadata Open Graph/Twitter). Se inyecta en el BUILD de la imagen.
+export GCP_WEB_URL="${GCP_WEB_URL:-https://hotel-mcp-web-475955050238.europe-west1.run.app}"
+
 export GCP_ANVIL_URL="${GCP_ANVIL_URL:-https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app}"
 export GCP_ANVIL_CHAIN_ID="${GCP_ANVIL_CHAIN_ID:-31337}"
 export GCP_ANVIL_PROJECT="${GCP_ANVIL_PROJECT:-mcc-ecommerce}"
