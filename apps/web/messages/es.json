@@ -857,7 +857,8 @@
     "incidentMinibar": "Minibar consumido",
     "incidentAveria": "Avería",
     "incidentOtro": "Otro",
-    "tabActivities": "Actividades"
+    "tabActivities": "Actividades",
+    "reservationsCaption": "Reservas registradas"
   },
   "myResales": {
     "title": "Mis reventas",
@@ -993,7 +994,8 @@
     "operational.OCCUPIED": "Ocupada",
     "types.SIMPLE": "Simple",
     "types.DOBLE": "Doble",
-    "types.SUITE": "Suite"
+    "types.SUITE": "Suite",
+    "roomsCaption": "Habitaciones del hotel"
   },
   "settings": {
     "loading": "Cargando…",
@@ -1239,7 +1241,9 @@
       "WEEKLY": "Semanal",
       "MONTHLY": "Mensual",
       "QUARTERLY": "Trimestral"
-    }
+    },
+    "incidentsCaption": "Incidencias registradas",
+    "plansCaption": "Planes preventivos"
   },
   "activities": {
     "adminTitle": "Actividades",
@@ -1287,7 +1291,9 @@
     "promoted": "Se ha promocionado la primera plaza en espera.",
     "cancelError": "No se pudo cancelar.",
     "statusBooked": "Inscrito",
-    "statusWaitlist": "En espera"
+    "statusWaitlist": "En espera",
+    "catalogCaption": "Catálogo de actividades",
+    "schedulesCaption": "Horarios programados"
   },
   "reviews": {
     "adminTitle": "Reseñas",

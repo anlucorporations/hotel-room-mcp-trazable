@@ -130,6 +130,7 @@ no un marketplace de NFTs.
   **DashboardGrid**, **MintForm** (admin), **ChatPanel**, **TxModal** (confirmación de compra),
   **OnboardingSheet** (instalar/añadir red), **ResaleManager** (fijar/actualizar/cancelar precio de reventa + `claim`), **EmptyState / DegradedState**.
 - **Hero de la home pública** (`components/home/Hero.tsx`, Fase C): foto a sangre de la portada (`hotel_images` sección `HERO`) con **velo marino `bg-ocean/65`** (4,93:1 con texto blanco) y titular en serif con la palabra destacada en `champagne`. Sin portada cae a `bg-ocean` plano; la imagen va **sin** `lazy` porque es el LCP.
+- **DataTable** (`components/ui/DataTable.tsx`, Fase C.3): tabla **densa** de las suites de personal (recepción, housekeeping, mantenimiento, administración) con `<caption>` solo para lectores, `scope="col"`/`scope="row"`, región desplazable con nombre y `tabIndex={0}` (WCAG 2.1.1), densidad `compact`/`comfortable`, cabecera fija opcional y columnas ocultables en móvil **sin sacarlas del DOM**. No conoce el dominio: recibe columnas y filas. La vigila `table-semantics.test.ts`, que **deriva la regla de todas las tablas del producto**.
 
 ### Plantillas
 - **PublicLayout** (header + main + footer), **AdminLayout** (sidebar + topbar protegido por rol),

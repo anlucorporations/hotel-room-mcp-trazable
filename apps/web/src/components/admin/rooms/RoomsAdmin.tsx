@@ -553,6 +553,7 @@ export function RoomsAdmin() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-small">
+              <caption className="sr-only">{t("roomsCaption")}</caption>
               <thead>
                 <tr className="text-ink-soft">
                   <th scope="col" className="px-2 py-2">{t("colNumber")}</th>

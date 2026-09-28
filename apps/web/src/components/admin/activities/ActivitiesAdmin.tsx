@@ -163,6 +163,7 @@ export function ActivitiesAdmin() {
           <p className="text-small text-ink-soft">{t("noActivities")}</p>
         ) : (
           <table className="w-full border-collapse text-small">
+            <caption className="sr-only">{t("catalogCaption")}</caption>
             <thead>
               <tr className="border-b border-line text-left text-micro uppercase tracking-wide text-ink-soft">
                 <th scope="col" className="py-2">{t("code")}</th>
@@ -219,6 +220,7 @@ export function ActivitiesAdmin() {
           <p className="text-small text-ink-soft">{t("noSchedules")}</p>
         ) : (
           <table className="w-full border-collapse text-small">
+            <caption className="sr-only">{t("schedulesCaption")}</caption>
             <thead>
               <tr className="border-b border-line text-left text-micro uppercase tracking-wide text-ink-soft">
                 <th scope="col" className="py-2">{t("activity")}</th>

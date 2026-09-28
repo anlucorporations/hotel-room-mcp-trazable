@@ -857,7 +857,8 @@
     "incidentMinibar": "Minibar consumed",
     "incidentAveria": "Breakdown",
     "incidentOtro": "Other",
-    "tabActivities": "Activities"
+    "tabActivities": "Activities",
+    "reservationsCaption": "Registered reservations"
   },
   "myResales": {
     "title": "My resales",
@@ -993,7 +994,8 @@
     "operational.OCCUPIED": "Occupied",
     "types.SIMPLE": "Single",
     "types.DOBLE": "Double",
-    "types.SUITE": "Suite"
+    "types.SUITE": "Suite",
+    "roomsCaption": "Hotel rooms"
   },
   "settings": {
     "loading": "Loading…",
@@ -1239,7 +1241,9 @@
       "WEEKLY": "Weekly",
       "MONTHLY": "Monthly",
       "QUARTERLY": "Quarterly"
-    }
+    },
+    "incidentsCaption": "Reported incidents",
+    "plansCaption": "Preventive plans"
   },
   "activities": {
     "adminTitle": "Activities",
@@ -1287,7 +1291,9 @@
     "promoted": "The first guest on the waiting list has been promoted.",
     "cancelError": "The booking could not be cancelled.",
     "statusBooked": "Booked",
-    "statusWaitlist": "Waitlisted"
+    "statusWaitlist": "Waitlisted",
+    "catalogCaption": "Activity catalogue",
+    "schedulesCaption": "Scheduled slots"
   },
   "reviews": {
     "adminTitle": "Reviews",

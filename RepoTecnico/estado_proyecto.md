@@ -1978,17 +1978,21 @@ fases de la hoja de ruta:
 
 | **C.2 · Barra de reserva y resumen flotante** | `BookingBar` (entrada, salida y huéspedes → `/reservar?from=…&to=…&guests=…`), montada **flotando** sobre el hero en `/` y **en línea** en `/catalogo`; `StickySummary` en `/reservar` (habitación, fechas, noches, precio por noche y total, `tablet:sticky`). La página `/reservar` lee la búsqueda en el **servidor** (`parseBookingQuery`) y el flujo preselecciona la primera habitación **con capacidad suficiente**; `/api/public/rooms` publica `capacity`, `sizeM2` y `perNightCents` **con la misma tasa que el cobro** (best-effort: sin tasa, `null` y se dice que el importe se confirma al retener) | `@hotel/web` **499 pruebas** (nuevas: **12** de `lib/booking`, con **convergencia comprobada** contra `nightsBetween` del servidor); smoke test en producción: `/`, `/catalogo` y `/reservar` (incluso con parámetros basura) responden **200** con la barra montada |
 
-**Hallazgos que destaparon los guardianes nuevos (C.1/C.2)**: (a) `text-caption`/`text-body-lg` de la
+| **C.3 · DataTable de personal** | `components/ui/DataTable.tsx`: tabla **densa** con `<caption>` solo para lectores, `scope="col"`/`scope="row"`, región desplazable con nombre y `tabIndex={0}` (WCAG 2.1.1), densidad `compact`/`comfortable`, cabecera fija y columnas ocultables en móvil **sin sacarlas del DOM**. Migrada `/admin/mantenimiento/incidencias`; añadido el `<caption>` que faltaba en **6 tablas** (`maintenance` ×2, `activities` ×2, `rooms`, `reception`) con claves ES/EN/RU | `@hotel/web` **504 pruebas**; guardián nuevo `table-semantics.test.ts` **5/5**, **derivado de todas las tablas del producto** y **falsificado** (quitar un caption → rojo con fichero y etiqueta); smoke test: `/admin/mantenimiento/incidencias` y las rutas de personal responden **200** sin errores |
+
+**Hallazgos que destaparon los guardianes nuevos (C.1/C.2/C.3)**: (a) `text-caption`/`text-body-lg` de la
 escala tipográfica nueva se leían como «color desconocido» — corregido y con **prueba que deriva la
 lista del preset real**; (b) la paridad i18n **no estaba verificada por ninguna prueba**: el guardián
-nuevo `i18n-parity.test.ts` (1.222 claves idénticas en ES/EN/RU, sin valores en blanco y con los mismos
+nuevo `i18n-parity.test.ts` (1.228 claves idénticas en ES/EN/RU, sin valores en blanco y con los mismos
 marcadores) destapó **dos defectos previos**: `admin.expiredManual` no comunicaba «hasta {max}» en EN/RU
 y `assistant.handoff.insufficientBalance` perdía `{have}` y `{need}` en EN/RU. Ambos corregidos; (c) el
 resumen previo al cobro podía separarse del importe real, así que la tasa se unificó en la API y una
-prueba **cruza** el cálculo de noches del cliente con el del servidor.
+prueba **cruza** el cálculo de noches del cliente con el del servidor; (d) **6 de 13 tablas** no tenían
+nombre accesible: ahora todo `<table>` del producto debe declarar `<caption>`/`aria-label` y
+`scope="col"`, con guardián derivado y exención explícita para tablas de presentación.
 
-**Pendiente de la propuesta**: C.3 (`DataTable` densa de las suites de personal), D (regenerar
-piezas de marca) y E (`Manual_Identidad_Visual.md`, que se escribe **después** para no desincronizar
+**Pendiente de la propuesta**: D (regenerar piezas de marca) y E (`Manual_Identidad_Visual.md`, que se
+escribe **después** para no desincronizar
 tokens y manual). Queda **observado y no exigido** H-8: 27 botones/enlaces «fantasma» con `border-line`
 (el criterio 1.4.11 aplica a la información visual necesaria para identificar el componente y un botón
 con etiqueta visible se identifica por su texto; el foco ya cumple). Sigue sin tocarse contrato, rutas

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useAdminSession } from "@/components/admin/useAdminSession";
+import { DataTable } from "@/components/ui/DataTable";
 import { MAINTENANCE_STATUSES } from "@hotel/shared/domain";
 
 interface Incident {
@@ -100,30 +101,26 @@ export function IncidentsAdmin() {
       ) : incidents.length === 0 ? (
         <p className="text-small text-ink-soft">{t("noIncidents")}</p>
       ) : (
-        <table className="w-full border-collapse text-small">
-          <thead>
-            <tr className="border-b border-line text-left text-micro uppercase tracking-wide text-ink-soft">
-              <th scope="col" className="py-2">{t("room")}</th>
-              <th scope="col" className="py-2">{t("reportKind")}</th>
-              <th scope="col" className="py-2">{t("reportPriority")}</th>
-              <th scope="col" className="py-2">{t("reportStatus")}</th>
-              <th scope="col" className="py-2">{t("blocksSale")}</th>
-              <th scope="col" className="py-2">{t("assignedColumn")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {incidents.map((incident) => (
-              <tr key={incident.id} className="border-b border-line/60">
-                <th scope="row" className="py-2 text-left font-medium text-ink">{incident.roomNumber ?? "—"}</th>
-                <td className="py-2 text-ink">{t(`kind.${incident.kind}` as "kind.OTROS")}</td>
-                <td className="py-2 text-ink-soft">{t(`priority.${incident.priority}`)}</td>
-                <td className="py-2 text-ink-soft">{t(`status.${incident.status}`)}</td>
-                <td className="py-2 text-ink-soft">{incident.blocksSale ? t("yes") : t("no")}</td>
-                <td className="py-2 text-ink-soft">{incident.assignedTo ?? incident.resolvedBy ?? "—"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <DataTable
+          caption={t("incidentsCaption")}
+          density="compact"
+          stickyHeader
+          rows={incidents}
+          rowKey={(incident) => incident.id}
+          emptyLabel={t("noIncidents")}
+          columns={[
+            { key: "room", header: t("room"), cell: (incident) => incident.roomNumber ?? "—" },
+            { key: "kind", header: t("reportKind"), cell: (incident) => t(`kind.${incident.kind}` as "kind.OTROS") },
+            { key: "priority", header: t("reportPriority"), cell: (incident) => t(`priority.${incident.priority}`) },
+            { key: "status", header: t("reportStatus"), cell: (incident) => t(`status.${incident.status}`) },
+            { key: "blocks", header: t("blocksSale"), cell: (incident) => (incident.blocksSale ? t("yes") : t("no")) },
+            {
+              key: "assigned",
+              header: t("assignedColumn"),
+              cell: (incident) => incident.assignedTo ?? incident.resolvedBy ?? "—",
+            },
+          ]}
+        />
       )}
     </div>
   );

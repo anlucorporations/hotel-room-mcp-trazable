@@ -857,7 +857,8 @@
     "incidentMinibar": "Израсходован минибар",
     "incidentAveria": "Неисправность",
     "incidentOtro": "Другое",
-    "tabActivities": "Мероприятия"
+    "tabActivities": "Мероприятия",
+    "reservationsCaption": "Зарегистрированные брони"
   },
   "myResales": {
     "title": "Мои перепродажи",
@@ -993,7 +994,8 @@
     "operational.OCCUPIED": "Занят",
     "types.SIMPLE": "Одноместный",
     "types.DOBLE": "Двухместный",
-    "types.SUITE": "Люкс"
+    "types.SUITE": "Люкс",
+    "roomsCaption": "Номера отеля"
   },
   "settings": {
     "loading": "Загрузка…",
@@ -1239,7 +1241,9 @@
       "WEEKLY": "Еженедельно",
       "MONTHLY": "Ежемесячно",
       "QUARTERLY": "Ежеквартально"
-    }
+    },
+    "incidentsCaption": "Зарегистрированные инциденты",
+    "plansCaption": "Планы профилактики"
   },
   "activities": {
     "adminTitle": "Мероприятия",
@@ -1287,7 +1291,9 @@
     "promoted": "Первый из листа ожидания переведён в запись.",
     "cancelError": "Не удалось отменить.",
     "statusBooked": "Записан",
-    "statusWaitlist": "В ожидании"
+    "statusWaitlist": "В ожидании",
+    "catalogCaption": "Каталог активностей",
+    "schedulesCaption": "Расписание"
   },
   "reviews": {
     "adminTitle": "Отзывы",
