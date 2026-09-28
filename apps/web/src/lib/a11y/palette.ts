@@ -11,6 +11,7 @@
  * («la certificación WCAG se medía contra colores que no existen en el preset»).
  */
 export const PALETTE = {
+  // — Sistema vigente «Mediterráneo editorial» (sin cambios) —
   sand: "#FBF6EC",
   "sand-2": "#F3EAD8",
   shell: "#FFFFFF",
@@ -23,6 +24,19 @@ export const PALETTE = {
   "terracotta-text": "#A8431F",
   olive: "#5E6B45",
   gold: "#C68A2E",
+  // — Tokens aditivos del sistema visual (propuesta de imagen visual, 2026-09-27) —
+  ocean: "#0F2C3F",
+  "ocean-soft": "#16455E",
+  champagne: "#C5A880",
+  "line-strong": "#8F7F5F",
+  success: "#2F6B4F",
+  "success-bg": "#E3EFE7",
+  warning: "#8A5A12",
+  "warning-bg": "#F7E9C9",
+  error: "#9E2B1F",
+  "error-bg": "#F8E3DE",
+  info: "#14556B",
+  "info-bg": "#DCEAF1",
 } as const;
 
 /** Token de color de la paleta de marca. */
@@ -92,4 +106,24 @@ export const DECLARED_TEXT_ON_BACKGROUND: ReadonlyArray<{
   { foreground: "white", background: "ink", where: "texto sobre velo oscuro de marca (modal/menú)" },
   { foreground: "ink", background: "white", where: "texto principal sobre panel blanco (modales)" },
   { foreground: "ink-soft", background: "white", where: "texto secundario sobre panel blanco" },
+  // Registro oscuro editorial (`ocean`) y detalle premium: medidos en `scripts/design/contrast-audit.mjs`.
+  { foreground: "sand", background: "ocean", where: "texto arena sobre superficie marina" },
+  { foreground: "shell", background: "ocean", where: "texto blanco sobre superficie marina" },
+  { foreground: "champagne", background: "ocean", where: "detalle champagne sobre marina (iconos, cifras)" },
+  { foreground: "champagne", background: "ocean-soft", where: "filete/etiqueta champagne sobre marina suave" },
+  // Estados semánticos: el color de estado se usa como texto sobre su propio fondo teñido.
+  { foreground: "success", background: "success-bg", where: "confirmación sobre su fondo teñido" },
+  { foreground: "success", background: "sand", where: "confirmación como texto sobre arena" },
+  { foreground: "warning", background: "warning-bg", where: "aviso sobre su fondo teñido" },
+  { foreground: "warning", background: "sand", where: "aviso como texto sobre arena" },
+  { foreground: "error", background: "error-bg", where: "error sobre su fondo teñido" },
+  { foreground: "error", background: "sand", where: "error como texto sobre arena" },
+  { foreground: "info", background: "info-bg", where: "información sobre su fondo teñido" },
+  { foreground: "info", background: "sand", where: "información como texto sobre arena" },
+  { foreground: "ink", background: "success-bg", where: "texto principal sobre banda de confirmación" },
+  { foreground: "ink", background: "warning-bg", where: "texto principal sobre banda de aviso" },
+  { foreground: "ink", background: "error-bg", where: "texto principal sobre banda de error" },
+  { foreground: "ink", background: "info-bg", where: "texto principal sobre banda informativa" },
+  { foreground: "shell", background: "success", where: "texto blanco sobre relleno de confirmación" },
+  { foreground: "shell", background: "error", where: "texto blanco sobre relleno de error" },
 ];

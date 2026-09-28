@@ -2,7 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Sistema visual «Mediterráneo editorial» (docs/SRS.md §7). */
+/* Sistema visual «Mediterráneo editorial» (docs/SRS.md §7) + tokens aditivos del registro oscuro
+   y de estados (RepoTecnico/propuesta_imagen_visual.md §3.2). Espejo de runtime del preset. */
 :root {
   --sand: #fbf6ec;
   --sand-2: #f3ead8;
@@ -16,13 +17,26 @@
   --terracotta-text: #a8431f;
   --olive: #5e6b45;
   --gold: #c68a2e;
+  --ocean: #0f2c3f;
+  --ocean-soft: #16455e;
+  --champagne: #c5a880;
+  --line-strong: #8f7f5f;
+  --success: #2f6b4f;
+  --success-bg: #e3efe7;
+  --warning: #8a5a12;
+  --warning-bg: #f7e9c9;
+  --error: #9e2b1f;
+  --error-bg: #f8e3de;
+  --info: #14556b;
+  --info-bg: #dceaf1;
   --ease: cubic-bezier(0.21, 0.68, 0.27, 0.99);
 }
 
 @layer base {
   body {
     @apply bg-sand text-ink antialiased;
-    font-family: var(--font-hanken), system-ui, -apple-system, sans-serif;
+    /* Cascada cirílica: Inter cubre el ruso (Fraunces/Hanken no lo incluyen). Ver propuesta §3.4. */
+    font-family: var(--font-hanken), var(--font-inter), system-ui, -apple-system, sans-serif;
     font-size: 1.0625rem;
     line-height: 1.5;
   }
@@ -30,7 +44,7 @@
   h1,
   h2,
   h3 {
-    font-family: var(--font-fraunces), Georgia, serif;
+    font-family: var(--font-fraunces), var(--font-playfair), Georgia, serif;
     color: var(--ink);
   }
 

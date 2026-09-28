@@ -1931,6 +1931,54 @@ concurrentes, Polygon real (32 confirmaciones), los dos indexadores de la misma 
 triar y digest de Slither sin fijar, y el modo lote de `/admin/mint` (hoy firma 1 noche por pasada:
 el camino operativo es «Acuñar ventana» / «Barrido global»).
 
+---
+
+## 30. Imagen visual — propuesta de evolución (2026-09-27) · `@visualUiUx`
+
+**Origen**: análisis de [`propuestaVisual-Hotel.md`](./propuestaVisual-Hotel.md) (propuesta externa
+«Marina Sol»: lujo costero, océano + arena + terracota + champagne, tipografías editoriales y app
+móvil) a petición del responsable.
+
+**Entregables de esta ronda** (Fase 1 del skill `visual-ui-ux`, sin tocar código de producto):
+
+| Artefacto | Contenido |
+|---|---|
+| [`propuesta_imagen_visual.md`](./propuesta_imagen_visual.md) | Propuesta completa: análisis del documento, diagnóstico del sistema real, paleta por **roles semánticos** con HEX/HSL y ratios, tipografía (con el hueco cirílico), espaciado/radios/elevación/rejilla, inventario de componentes por Atomic Design, aplicación a las **5 suites**, hoja de ruta A–E con ficheros exactos y gates |
+| `scripts/design/contrast-audit.mjs` | **Instrumento** reproducible (sin dependencias, misma matemática WCAG 2.1 que `lib/a11y/contrast.ts`): 3 conjuntos de paleta y **32 pares medidos** con veredicto y corrección |
+
+**Veredicto**: la dirección del documento es buena, pero adoptarlo **como sustitución** rompería
+WCAG AA en **5 pares** y descartaría un sistema ya protegido por guardianes; además ignora 4 de las 5
+suites (personal) y no cierra el defecto real detectable: **el ruso no tiene glifos** en las dos
+tipografías de marca (Fraunces sin cirílico; Hanken Grotesk solo el bloque extendido, sin el rango ruso
+básico) con paridad ES/EN/RU declarada. Recomendación: **evolución aditiva** (mantener los 12 tokens;
+añadir `ocean`, `ocean-soft`, `champagne`, `line-strong`, `ink-disabled`, estados y velo).
+
+**Hallazgo nuevo (H-7)**: los controles de formulario usan hoy `border-line` (#E7DCC6) como única
+frontera → **~1,10:1**, por debajo del 3:1 que exige **WCAG 2.1 · 1.4.11** para el límite de
+componentes activos. Axe no lo detecta y el escáner propio mide pares texto/fondo. Corrección
+propuesta: token `line-strong` #8F7F5F (3,27–3,91:1) en `input`/`select`/`textarea` + **prueba nueva**
+de contraste de borde en CI.
+
+**Pendiente**: las **3 decisiones de calibración** (§6 de la propuesta) bloquean la generación de
+tokens, del `Manual_Identidad_Visual.md` y de los componentes nuevos. Sin cambios en contrato, rutas ni
+modelo de datos (los tres artefactos de datos siguen sincronizados sin cambios).
+
+### Decisiones aprobadas e implementación (misma fecha)
+
+El responsable aprobó las tres recomendaciones: **evolución aditiva** de la paleta, ámbito de **las 5
+suites** y **cascada cirílica**. En la misma ronda se implementaron y verificaron las dos primeras
+fases de la hoja de ruta:
+
+| Fase | Qué entró | Verificación |
+|---|---|---|
+| **A · Tokens aditivos** | `preset.cjs`: `ocean`, `ocean-soft`, `champagne`, `line-strong`, `success(-bg)`, `warning(-bg)`, `error(-bg)`, `info(-bg)`; niveles tipográficos `display`, `h4`, `body-lg`, `body-sm`, `caption`, `overline`, `code`; radio `brand-xs`. Espejo `palette.ts` con **24 pares declarados** nuevos, `globals.css` (`:root`) y documentación (`docs/DISENO-UX.md` §2.1–2.3, `docs/ACCESIBILIDAD-WCAG.md` §0) | `a11y.test.ts` **17/17** (igualdad preset↔palette incluida) |
+| **B · Cascada cirílica** | `layout.tsx`: `Playfair Display` + `Inter` con `subsets:["cyrillic"]` y `preload:false`; pilas del preset y de `globals.css` con el respaldo después de la fuente de marca | Guardián nuevo `cyrillic-fonts.test.ts` **4/4** |
+
+**Pendiente de la propuesta**: A.2 (borde `line-strong` en los controles + prueba de contraste de
+componente ≥3:1, cierre de **H-7**), C (componentes `Hero`/`BookingBar`/`StickySummary`…), D
+(regenerar piezas de marca) y E (`Manual_Identidad_Visual.md`, que se escribe **después** para no
+desincronizar tokens y manual). Sigue sin tocarse contrato, rutas ni modelo de datos.
+
 
 
 

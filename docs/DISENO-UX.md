@@ -45,26 +45,49 @@ no un marketplace de NFTs.
 | `--terracotta-text` | `#A8431F` | Acento como **texto** sobre arena (eyebrow, mensajes de error) | **5.0:1** sobre sand ✅ |
 | `--olive` | `#5E6B45` | Estado «disponible», sage | 4.8:1 con blanco ✅ |
 | `--gold` | `#C68A2E` | Detalle premium (Suite) | usar con `--ink` encima |
+| `--ocean` **(nuevo)** | `#0F2C3F` | Superficie oscura editorial: hero, pie, cabecera de administración | **13,4:1** con `sand` · 14,5:1 con `shell` ✅ |
+| `--ocean-soft` **(nuevo)** | `#16455E` | Superficie oscura secundaria; hover sobre oscuro | 4,54:1 con `champagne` ✅ |
+| `--champagne` **(nuevo)** | `#C5A880` | Detalle premium **solo sobre oscuro** (filetes, iconos, cifras) | 6,39:1 sobre `ocean` ✅ · **2,26:1 sobre blanco ❌** |
+| `--line-strong` **(nuevo)** | `#8F7F5F` | **Borde de controles** (`input`/`select`/`textarea`), WCAG 1.4.11 | 3,91:1 blanco · 3,63:1 arena · 3,27:1 arena-2 ✅ |
+| `--success` / `--success-bg` **(nuevos)** | `#2F6B4F` / `#E3EFE7` | Confirmaciones | 6,29:1 con blanco · 5,32:1 sobre su fondo ✅ |
+| `--warning` / `--warning-bg` **(nuevos)** | `#8A5A12` / `#F7E9C9` | Avisos (ventana corta, stock, preventivo) | 5,49:1 sobre arena · 4,91:1 sobre su fondo ✅ |
+| `--error` / `--error-bg` **(nuevos)** | `#9E2B1F` / `#F8E3DE` | Errores y bloqueos | 7,45:1 con blanco · 6,04:1 sobre su fondo ✅ |
+| `--info` / `--info-bg` **(nuevos)** | `#14556B` / `#DCEAF1` | Información y ayuda | 7,67:1 sobre arena · 6,72:1 sobre su fondo ✅ |
 
 > **Decisión de accesibilidad:** el CTA primario es **teal** (7:1) por confianza y
 > contraste. `--terracotta` solo se usa en **fondos** (badges/dot); como **texto sobre
 > arena** se usa `--terracotta-text` (#A8431F, 5:1). El **anillo de foco NO es terracota**
 > (daba 1.71:1 sobre el CTA teal): es un **doble anillo arena + teal** con ≥3:1 contra
 > ambos colores adyacentes (WCAG 1.4.11 / 2.4.7).
+>
+> **Evolución del 2026-09-27** (aprobada a partir de `RepoTecnico/propuesta_imagen_visual.md`): los
+> **12 tokens originales no cambian**; se **añaden** el registro oscuro (`ocean`, `ocean-soft`), el
+> detalle `champagne` (solo sobre oscuro), el borde de controles `line-strong` y los cuatro estados
+> semánticos. **Velo del hero**: `bg-ocean/65` (compuesto `#637682` sobre blanco) → **4,73:1** con
+> texto blanco; al 55 % daba 3,52:1 (solo texto grande). Los **32 pares medidos** y su veredicto se
+> reproducen con `node scripts/design/contrast-audit.mjs`.
 
 ### 2.2 Tipografía
 
 - **Display:** `Fraunces` (serif variable, óptico) — titulares, precios, nombres de habitación.
 - **UI/cuerpo:** `Hanken Grotesk` — navegación, texto, formularios, botones.
-- **Escala** (mobile → desktop con `clamp`): H1 `2.3→4.1rem` · H2 `1.6→2.2rem` · H3 `1.3rem`
-  · cuerpo `1.0625rem (17px)` · small `0.9rem` · micro `0.78rem`.
+- **Cascada cirílica (2026-09-27):** Fraunces **no publica** el subconjunto `cyrillic` y Hanken
+  Grotesk solo el *extendido* (sin el rango ruso básico U+0400–045F), así que el locale RU caía a
+  `Georgia`/`system-ui`. Se añade un **respaldo glifo a glifo**: `Playfair Display` (display) e
+  `Inter` (UI) cargados **solo** con el subconjunto `cyrillic` y `preload: false`, tras la fuente de
+  marca en la pila (`var(--font-fraunces), var(--font-playfair), …`). ES/EN no cambian. Guardián:
+  `apps/web/src/lib/a11y/cyrillic-fonts.test.ts`.
+- **Escala** (mobile → desktop con `clamp`): `display` `2.8→5rem` · H1 `2.3→4.1rem` · H2 `1.6→2.2rem`
+  · H3 `1.3rem` · H4 `1.075rem` · `body-lg 1.1875rem` · cuerpo `1.0625rem (17px)` · `body-sm 0.95rem`
+  · small `0.9rem` · `caption 0.82rem` · `overline 0.78rem` (+0,14em) · micro `0.78rem` · `code 0.9rem`.
 - Cuerpo mínimo **16px**; interlineado 1.5; medida de línea ≤ 66ch.
 
 ### 2.3 Espaciado, formas, sombras, motion
 
-- **Espaciado** (escala 4px): 4 · 8 · 12 · 16 · 20 · 28 · 40 · 64.
-- **Radios:** `--r-sm 10` · `--r-md 16` · `--r-lg 22` · `--r-pill 999`.
-- **Sombras:** `sm` (reposo), `md` (hover card), `lg` (elevación/modal) — todas con tinte teal cálido.
+- **Espaciado** (escala 4px): 4 · 8 · 12 · 16 · 20 · 24 · 28 · 32 · 40 · 48 · 64 · 96.
+- **Radios:** `--r-xs 6` · `--r-sm 10` · `--r-md 16` · `--r-lg 22` · `--r-pill 999`.
+- **Sombras:** `sm` (reposo), `md` (hover card), `lg` (elevación/modal) — todas con tinte teal cálido;
+  el resumen flotante de reserva reutiliza `md`.
 - **Motion:** `--ease cubic-bezier(.21,.68,.27,.99)`; reveal escalonado al cargar (≤0.6s);
   hover card `translateY(-5px)` + zoom de foto. **Respeta `prefers-reduced-motion`.**
 

@@ -37,10 +37,22 @@ Ratio real de las combinaciones en uso (calculado con la fórmula de luminancia 
 | `terracotta-text` sobre `shell` / `sand` / `sand-2` | 6.02 / 5.59 / 5.04 | Avisos y etiquetas |
 | `shell` sobre `sea` / `sea-deep` / `terracotta-text` / `olive` | 7.89 / 11.12 / 6.02 / 5.73 | Texto sobre acciones y etiquetas |
 | `ink` sobre `gold` | 5.38 | Etiqueta «Suite» |
+| `sand` / `shell` sobre `ocean` | 13.42 / 14.46 | Registro oscuro editorial (hero, pie, cabecera de administración) |
+| `champagne` sobre `ocean` / `ocean-soft` | 6.39 / 4.54 | Detalle premium sobre superficie oscura |
+| `success` / `warning` / `error` / `info` sobre `sand` | 5.84 / 5.49 / 6.92 / 7.67 | Estados semánticos como texto |
+| `success` / `warning` / `error` / `info` sobre su fondo teñido | 5.32 / 4.91 / 6.04 / 6.72 | Bandas de estado |
+| `shell` sobre `success` / `error` | 6.29 / 7.45 | Texto blanco sobre relleno de estado |
+| `shell` sobre velo `ocean` al **65 %** | 4.73 | Texto del hero sobre fotografía |
 
 Todas superan el **4.5:1** de texto normal (y el 3:1 de texto grande y componentes, criterio 1.4.11:
 las series de las gráficas —`sea` y `terracotta-text`, 7.89 y 6.02 sobre blanco— se distinguen del
 fondo de la tarjeta).
+
+**Frontera de controles (1.4.11)** — hallazgo H-7 de la propuesta de imagen visual: el borde de
+`input`/`select`/`textarea` pasa a `line-strong #8F7F5F` (**3,91:1** sobre `shell`, **3,63:1** sobre
+`sand`, **3,27:1** sobre `sand-2`). El `line #E7DCC6` anterior daba ~1,10:1 y se conserva **solo** para
+filetes decorativos (exentos). Los pares nuevos se miden con
+`node scripts/design/contrast-audit.mjs` (32 pares con veredicto AA/AAA).
 
 ---
 
