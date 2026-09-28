@@ -1976,14 +1976,18 @@ fases de la hoja de ruta:
 | **A.2 · Frontera de controles (H-7)** | `line-strong #8F7F5F` en los **89 controles** con frontera y las **11** constantes `FIELD` (**28 ficheros**); los 184 filetes decorativos conservan `line`. Guardián nuevo `control-boundary.test.ts`: mide 3:1 en los tres lienzos, deriva del contraste qué tokens pueden ser frontera, exige `line-strong` por defecto y comprueba los bordes de estado | `@hotel/web` **478 pruebas**; guardián **5/5** y **falsificado** a mano (un `border-line` en un control → rojo con fichero y clase) |
 | **C.1 · Componentes de la suite pública** | `Hero` (foto a sangre de la portada `HERO` con velo `bg-ocean/65`, 4,93:1 con texto blanco; cae a `bg-ocean` sin foto), `Stars` (imagen con nombre accesible; lógica pura en `lib/stars.ts`), `SuiteCard` horizontal (una habitación **publicada por tipo**, con su foto, capacidad, camas y m², sin inventar precio), `ExperienceCard` (alt como pie visible) y `TestimonialCard`; home integrada con **datos reales** y `getHomeContent` ampliado con `hero` y `suites` (degradación elegante por fuente) | `@hotel/web` **487 pruebas** (nuevas: `stars` 4, paridad i18n 4) y a11y **18/18**; build de producción OK |
 
-**Hallazgos que destaparon los guardianes nuevos (C.1)**: (a) `text-caption`/`text-body-lg` de la
+| **C.2 · Barra de reserva y resumen flotante** | `BookingBar` (entrada, salida y huéspedes → `/reservar?from=…&to=…&guests=…`), montada **flotando** sobre el hero en `/` y **en línea** en `/catalogo`; `StickySummary` en `/reservar` (habitación, fechas, noches, precio por noche y total, `tablet:sticky`). La página `/reservar` lee la búsqueda en el **servidor** (`parseBookingQuery`) y el flujo preselecciona la primera habitación **con capacidad suficiente**; `/api/public/rooms` publica `capacity`, `sizeM2` y `perNightCents` **con la misma tasa que el cobro** (best-effort: sin tasa, `null` y se dice que el importe se confirma al retener) | `@hotel/web` **499 pruebas** (nuevas: **12** de `lib/booking`, con **convergencia comprobada** contra `nightsBetween` del servidor); smoke test en producción: `/`, `/catalogo` y `/reservar` (incluso con parámetros basura) responden **200** con la barra montada |
+
+**Hallazgos que destaparon los guardianes nuevos (C.1/C.2)**: (a) `text-caption`/`text-body-lg` de la
 escala tipográfica nueva se leían como «color desconocido» — corregido y con **prueba que deriva la
 lista del preset real**; (b) la paridad i18n **no estaba verificada por ninguna prueba**: el guardián
-nuevo `i18n-parity.test.ts` (1.201 claves idénticas en ES/EN/RU, sin valores en blanco y con los mismos
+nuevo `i18n-parity.test.ts` (1.222 claves idénticas en ES/EN/RU, sin valores en blanco y con los mismos
 marcadores) destapó **dos defectos previos**: `admin.expiredManual` no comunicaba «hasta {max}» en EN/RU
-y `assistant.handoff.insufficientBalance` perdía `{have}` y `{need}` en EN/RU. Ambos corregidos.
+y `assistant.handoff.insufficientBalance` perdía `{have}` y `{need}` en EN/RU. Ambos corregidos; (c) el
+resumen previo al cobro podía separarse del importe real, así que la tasa se unificó en la API y una
+prueba **cruza** el cálculo de noches del cliente con el del servidor.
 
-**Pendiente de la propuesta**: C.2 (`BookingBar` flotante, `StickySummary`, `DataTable`), D (regenerar
+**Pendiente de la propuesta**: C.3 (`DataTable` densa de las suites de personal), D (regenerar
 piezas de marca) y E (`Manual_Identidad_Visual.md`, que se escribe **después** para no desincronizar
 tokens y manual). Queda **observado y no exigido** H-8: 27 botones/enlaces «fantasma» con `border-line`
 (el criterio 1.4.11 aplica a la información visual necesaria para identificar el componente y un botón

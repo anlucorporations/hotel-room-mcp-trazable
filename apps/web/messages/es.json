@@ -101,6 +101,10 @@
       "sizeLabel": "Superficie",
       "size": "{size} m²",
       "cta": "Ver disponibilidad"
+    },
+    "booking": {
+      "title": "Consulta de disponibilidad",
+      "helper": "Te llevamos a la reserva con estas fechas; la noche se retiene y el anticipo se paga por transferencia."
     }
   },
   "shell": {
@@ -1348,7 +1352,19 @@
       "CANCELLED": "cancelada",
       "NO_SHOW": "no presentado",
       "COMPLETED": "completada"
-    }
+    },
+    "summary": {
+      "title": "Resumen de la estancia",
+      "room": "Habitación",
+      "dates": "Fechas",
+      "datesValue": "{from} → {to}",
+      "nights": "Noches",
+      "nightsValue": "{count, plural, one {# noche} other {# noches}}",
+      "perNight": "Precio por noche",
+      "total": "Total",
+      "unknown": "El importe se confirma al retener la noche."
+    },
+    "nightsRequired": "Elige una salida posterior a la entrada."
   },
   "content": {
     "adminTitle": "Contenido de la web",
@@ -1385,5 +1401,18 @@
     "validTo": "Hasta",
     "createOffer": "Crear plan",
     "offerCreated": "Plan {code} creado."
+  },
+  "booking": {
+    "ariaLabel": "Buscar disponibilidad",
+    "checkIn": "Entrada",
+    "checkOut": "Salida",
+    "guests": "Huéspedes",
+    "guestsOption": "{count, plural, one {# huésped} other {# huéspedes}}",
+    "submit": "Ver disponibilidad",
+    "errors": {
+      "FECHA_INVALIDA": "Revisa las fechas.",
+      "ANTERIOR_A_MANANA": "La entrada no puede ser hoy: la primera noche disponible es mañana.",
+      "SALIDA_NO_POSTERIOR": "La salida debe ser posterior a la entrada."
+    }
   }
 }

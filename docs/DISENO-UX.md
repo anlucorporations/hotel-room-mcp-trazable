@@ -122,6 +122,8 @@ no un marketplace de NFTs.
 - **SuiteCard** (`components/home/SuiteCard.tsx`): tarjeta **horizontal** de habitación publicada (foto + tipo + capacidad + camas + m² + descripción + CTA al catálogo). Sin precio: la tarifa se publica solo donde se puede comprobar contra la cadena. Sin foto se pinta igual (banda arena).
 - **ExperienceCard** (`components/home/ExperienceCard.tsx`): imagen de la galería con el **texto alternativo como pie visible** (y `alt=""` para no leerlo dos veces); sin alt, nombre accesible genérico.
 - **TestimonialCard** (`components/home/TestimonialCard.tsx`): reseña **aprobada** (D-58) con `Stars`, cita en serif y pie «huésped verificado».
+- **BookingBar** (`components/booking/BookingBar.tsx`): barra de reserva con entrada, salida y huéspedes que lleva a `/reservar?from=…&to=…&guests=…`. Valida en el propio formulario las reglas del dominio (`lib/booking.ts`: la noche de hoy no es vendible, la salida debe ser posterior) y explica el problema en línea (`role="alert"`) en vez de dejar avanzar. Montada **flotando** sobre el borde del hero en `/` y **en línea** en `/catalogo`.
+- **StickySummary** (`components/reserve/StickySummary.tsx`): resumen de la estancia (habitación, fechas, noches, precio por noche y total) anclado con `tablet:sticky` junto al formulario de `/reservar`. El precio llega **ya convertido** desde `/api/public/rooms` con la misma tasa que usa el cobro; si no hay tarifa, dice que el importe se confirma al retener en lugar de inventar un número.
 
 ### Organismos
 - **Header** (marca + nav + wallet), **Hero editorial**, **CatalogGrid**, **HistoryTable**,

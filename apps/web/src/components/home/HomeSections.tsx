@@ -4,6 +4,7 @@ import type { ActivityRecord, HotelImageRecord, HotelOfferRecord } from "@hotel/
 import { contentImageUrl } from "@/lib/hotel-images";
 import { pick, type HomeReview } from "@/lib/home-view";
 import type { HomeContent } from "@/lib/home-content";
+import { BookingBar } from "@/components/booking/BookingBar";
 import { ExperienceCard } from "./ExperienceCard";
 import { Hero } from "./Hero";
 import { SuiteCard } from "./SuiteCard";
@@ -41,6 +42,13 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
     <>
       {/* 1 · Hero editorial con velo marino (Fase C) */}
       <Hero image={content.hero} locale={locale} />
+
+      {/* 1b · Barra de reserva flotante: se solapa con el borde inferior del hero (Fase C.2) */}
+      <section aria-label={t("booking.title")} className="relative z-10 mx-auto -mt-8 w-full max-w-6xl px-5 tablet:-mt-10">
+        <h2 className="sr-only">{t("booking.title")}</h2>
+        <BookingBar />
+        <p className="mt-2 text-caption text-ink-soft">{t("booking.helper")}</p>
+      </section>
 
       {/* 2 · Servicios */}
       <section aria-labelledby="home-services" className="border-y border-line/70 bg-sand-2/60 px-5 py-10">

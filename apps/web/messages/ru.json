@@ -101,6 +101,10 @@
       "sizeLabel": "Площадь",
       "size": "{size} м²",
       "cta": "Проверить наличие"
+    },
+    "booking": {
+      "title": "Проверить наличие",
+      "helper": "Мы переходим к бронированию с этими датами; ночь удерживается, а аванс оплачивается переводом."
     }
   },
   "shell": {
@@ -1348,7 +1352,19 @@
       "CANCELLED": "отменена",
       "NO_SHOW": "неявка",
       "COMPLETED": "завершена"
-    }
+    },
+    "summary": {
+      "title": "Детали проживания",
+      "room": "Номер",
+      "dates": "Даты",
+      "datesValue": "{from} → {to}",
+      "nights": "Ночи",
+      "nightsValue": "{count, plural, one {# ночь} other {# ночей}}",
+      "perNight": "Цена за ночь",
+      "total": "Итого",
+      "unknown": "Сумма подтверждается при удержании ночи."
+    },
+    "nightsRequired": "Выберите выезд позже заезда."
   },
   "content": {
     "adminTitle": "Контент сайта",
@@ -1385,5 +1401,18 @@
     "validTo": "По",
     "createOffer": "Создать предложение",
     "offerCreated": "Предложение {code} создано."
+  },
+  "booking": {
+    "ariaLabel": "Поиск свободных ночей",
+    "checkIn": "Заезд",
+    "checkOut": "Выезд",
+    "guests": "Гости",
+    "guestsOption": "{count, plural, one {# гость} other {# гостей}}",
+    "submit": "Проверить наличие",
+    "errors": {
+      "FECHA_INVALIDA": "Проверьте даты.",
+      "ANTERIOR_A_MANANA": "Заезд не может быть сегодня: первая доступная ночь — завтра.",
+      "SALIDA_NO_POSTERIOR": "Выезд должен быть позже заезда."
+    }
   }
 }

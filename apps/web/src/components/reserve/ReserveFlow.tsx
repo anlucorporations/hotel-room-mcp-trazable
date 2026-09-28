@@ -1,15 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useOnboarding } from "@/components/wallet/useOnboarding";
 import { WalletBar } from "@/components/wallet/WalletBar";
-
+import { nightsCount, type BookingQuery } from "@/lib/booking";
+import { StickySummary } from "./StickySummary";
 interface PublicRoom {
   id: string;
   roomNumber: number;
   roomType: string;
-  baseRateWei: string | null;
+  capacity: number;
+  perNightCents: number | null;
 }
 
 interface Payment {
@@ -48,19 +50,28 @@ function eur(cents: number): string {
 }
 
 /**
- * Flujo de **reserva con wallet** de la suite pública (F6 · D-65, D-72).
+ * Flujo de **reserva con wallet** de la suite pública (F6 · D-65, D-72 · Fase C.2).
  *
  * La wallet se conecta **al inicio** (D-72): sin ella no se puede retener. Después el huésped elige
  * habitación y fechas, el sistema **retiene la noche** (D-35) y muestra las **instrucciones del
  * anticipo** (transferencia, importe, referencia y plazo). La **liquidación** se concilia al 100 %
  * (D-57) y el pago lo firma la wallet al comprar el token (D-60).
+ *
+ * `initial` llega de la **barra de reserva** (leída en el servidor desde la URL): fechas y huéspedes
+ * preseleccionados. Con huéspedes, se elige la primera habitación **con capacidad suficiente**, que es
+ * lo que el huésped acaba de pedir en la barra.
  */
-export function ReserveFlow() {
+export function ReserveFlow({ initial }: { initial?: BookingQuery } = {}) {
   const t = useTranslations("reserve");
   const { isConnected, isWrongNetwork, address } = useOnboarding();
 
   const [rooms, setRooms] = useState<readonly PublicRoom[]>([]);
-  const [form, setForm] = useState({ roomId: "", checkInDate: todayIso(1), checkOutDate: todayIso(2), email: "" });
+  const [form, setForm] = useState({
+    roomId: "",
+    checkInDate: initial?.checkInDate ?? todayIso(1),
+    checkOutDate: initial?.checkOutDate ?? todayIso(2),
+    email: "",
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<{ id: string; payment: Payment } | null>(null);
@@ -75,13 +86,32 @@ export function ReserveFlow() {
         if (!active) return;
         const list = data.rooms ?? [];
         setRooms(list);
-        if (list.length > 0) setForm((current) => ({ ...current, roomId: current.roomId || list[0]!.id }));
+        if (list.length === 0) return;
+        // Preselección: la primera que quepa en los huéspedes pedidos (o la primera a secas).
+        const guests = initial?.guests;
+        const fits = guests === undefined ? undefined : list.find((room) => room.capacity >= guests);
+        const preferred = fits ?? list[0]!;
+        setForm((current) => ({ ...current, roomId: current.roomId || preferred.id }));
       })
       .catch(() => undefined);
     return () => {
       active = false;
     };
-  }, []);
+  }, [initial?.guests]);
+
+  /** Resumen de la estancia que se enseña antes de retener (mismo cálculo que el formulario). */
+  const summary = useMemo(() => {
+    const room = rooms.find((candidate) => candidate.id === form.roomId);
+    const nights = nightsCount(form.checkInDate, form.checkOutDate);
+    return {
+      roomLabel:
+        room === undefined
+          ? t("noRooms")
+          : t("roomOption", { room: room.roomNumber, type: room.roomType }),
+      nights,
+      perNightCents: room?.perNightCents ?? null,
+    };
+  }, [rooms, form.roomId, form.checkInDate, form.checkOutDate, t]);
 
   const refreshStatus = useCallback(async (id: string): Promise<void> => {
     const res = await fetch(`/api/public/reservations/${id}`);
@@ -146,7 +176,8 @@ export function ReserveFlow() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="grid gap-6 tablet:grid-cols-[minmax(0,1fr)_20rem] tablet:items-start">
+      <div className="flex flex-col gap-6">
       <form onSubmit={reserve} className="flex flex-col gap-3 rounded-brand-lg border border-line bg-shell p-5">
         <label className="flex flex-col gap-1 text-small">
           <span className="font-medium text-ink">{t("room")}</span>
@@ -198,11 +229,14 @@ export function ReserveFlow() {
         </div>
         <button
           type="submit"
-          disabled={busy || !form.roomId}
+          disabled={busy || !form.roomId || summary.nights === 0}
           className="min-h-touch self-start rounded-pill bg-sea px-5 text-small font-semibold text-shell disabled:opacity-50"
         >
           {busy ? t("reserving") : t("reserve")}
         </button>
+        {summary.nights === 0 && (
+          <p className="text-small text-terracotta-text">{t("nightsRequired")}</p>
+        )}
       </form>
 
       {error && (
@@ -252,6 +286,19 @@ export function ReserveFlow() {
             </p>
           )}
         </section>
+      )}
+      </div>
+
+      {/* Resumen flotante de la estancia (Fase C.2): se oculta al retener, cuando el panel de
+          instrucciones del anticipo pasa a ser el resumen con los importes reales. */}
+      {created === null && (
+        <StickySummary
+          roomLabel={summary.roomLabel}
+          checkInDate={form.checkInDate}
+          checkOutDate={form.checkOutDate}
+          nights={summary.nights}
+          perNightCents={summary.perNightCents}
+        />
       )}
     </div>
   );

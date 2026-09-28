@@ -101,6 +101,10 @@
       "sizeLabel": "Size",
       "size": "{size} m²",
       "cta": "Check availability"
+    },
+    "booking": {
+      "title": "Check availability",
+      "helper": "We take you to the booking with these dates; the night is held and the deposit is paid by transfer."
     }
   },
   "shell": {
@@ -1348,7 +1352,19 @@
       "CANCELLED": "cancelled",
       "NO_SHOW": "no-show",
       "COMPLETED": "completed"
-    }
+    },
+    "summary": {
+      "title": "Stay summary",
+      "room": "Room",
+      "dates": "Dates",
+      "datesValue": "{from} → {to}",
+      "nights": "Nights",
+      "nightsValue": "{count, plural, one {# night} other {# nights}}",
+      "perNight": "Price per night",
+      "total": "Total",
+      "unknown": "The amount is confirmed when the night is held."
+    },
+    "nightsRequired": "Choose a check-out later than the check-in."
   },
   "content": {
     "adminTitle": "Website content",
@@ -1385,5 +1401,18 @@
     "validTo": "To",
     "createOffer": "Create offer",
     "offerCreated": "Offer {code} created."
+  },
+  "booking": {
+    "ariaLabel": "Search availability",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "guests": "Guests",
+    "guestsOption": "{count, plural, one {# guest} other {# guests}}",
+    "submit": "Check availability",
+    "errors": {
+      "FECHA_INVALIDA": "Check the dates.",
+      "ANTERIOR_A_MANANA": "Check-in cannot be today: the first available night is tomorrow.",
+      "SALIDA_NO_POSTERIOR": "Check-out must be later than check-in."
+    }
   }
 }

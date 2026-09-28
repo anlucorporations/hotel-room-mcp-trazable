@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { BookingBar } from "@/components/booking/BookingBar";
 import { CatalogClient } from "@/components/CatalogClient";
 import { DegradedState } from "@/components/DegradedState";
 import { PublicShell } from "@/components/layout/PublicShell";
@@ -31,6 +32,11 @@ export default async function CatalogPage() {
         <h1 className="font-display text-h1 font-medium">{t("pageTitle")}</h1>
         <p className="mt-3 max-w-prose text-body text-ink-soft">{t("pageTagline")}</p>
       </header>
+      {/* Barra de reserva (Fase C.2): el catálogo es la pantalla de decisión, así que la
+          disponibilidad se consulta sin volver a la home. */}
+      <div className="mx-auto w-full max-w-6xl px-5 pt-6">
+        <BookingBar variant="inline" />
+      </div>
       {nights === null ? (
         <div className="mx-auto w-full max-w-6xl px-5 py-8">
           <DegradedState />
