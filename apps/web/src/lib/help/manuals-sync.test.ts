@@ -213,7 +213,8 @@ describe("guardián de manuales generados (Ayuda)", () => {
       );
 
       // La ilustración de portada es del PREÁMBULO: debe estar en `lead`, una sola vez.
-      const portada = referenced.find((name) => name.startsWith("portada-"));
+      // Nombre canónico de la portada (catálogo de imágenes): `doc-portada-hotel.svg`.
+      const portada = referenced.find((name) => name.startsWith("doc-portada-"));
       expect(portada, `${manual.file}: sin imagen de portada en el preámbulo`).toBeDefined();
       const inLead = [
         ...(doc?.lead ?? "").matchAll(/<img\s+src="\/manual\/imagenes\/([^"]+)"/g),

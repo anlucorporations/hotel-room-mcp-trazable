@@ -6,7 +6,7 @@
 > Hoy todo funciona en una **red de pruebas**: sirve para practicar y validar, no para vender al
 > público todavía.
 
-![Portada: el Hotel Marina del Sol visto desde el paseo marítimo](imagenes/portada-hotel.svg)
+![Portada: el Hotel Marina del Sol visto desde el paseo marítimo](imagenes/doc-portada-hotel.svg)
 
 ---
 
@@ -32,7 +32,7 @@ Si la pantalla dice **«Tu sesión ha caducado. Vuelve a iniciar sesión.»**, e
 normal: la sesión dura 15 minutos. Vuelve a entrar (usuario, contraseña y código). No hay nada
 roto.
 
-![Acceso con doble factor: tres llaves para entrar](imagenes/acceso-doble-factor.svg)
+![Acceso con doble factor: tres llaves para entrar](imagenes/doc-acceso-doble-factor.svg)
 
 ---
 
@@ -60,7 +60,7 @@ Y dos avisos que pueden aparecer:
   En ese caso el botón de confirmar queda desactivado a propósito (mejor eso que dejarte pulsar y
   que la operación falle).
 
-![Pantalla de recepción: validación del resguardo y cartel verde de check-in](imagenes/pantalla-recepcion.svg)
+![Pantalla de recepción: validación del resguardo y cartel verde de check-in](imagenes/doc-pantalla-recepcion.svg)
 
 ---
 
@@ -97,9 +97,9 @@ por **`MDS-`**). **Cada resguardo sirve una sola vez**: al confirmarlo queda gas
 - **No inventes ni teclees** un resguardo a mano si no lo tienes delante.
 - **No apuntes datos personales** en ningún campo de la pantalla (ver apartado 5).
 
-![Pantalla de recepción: validación del resguardo y cartel verde de check-in](imagenes/pantalla-recepcion.svg)
+![Pantalla de recepción: validación del resguardo y cartel verde de check-in](imagenes/doc-pantalla-recepcion.svg)
 
-![Resguardo de la noche: código QR en el móvil y código corto en papel](imagenes/resguardo-qr-codigo.svg)
+![Resguardo de la noche: código QR en el móvil y código corto en papel](imagenes/doc-resguardo-qr-codigo.svg)
 
 ---
 

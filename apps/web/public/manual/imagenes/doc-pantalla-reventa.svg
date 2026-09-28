@@ -13,7 +13,7 @@
     <rect x="30" y="30" width="1340" height="840" rx="20" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
   </g>
 
-  <text x="70" y="105" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="40" font-weight="700" fill="#08424A">Reventa</text>
+  <text x="70" y="105" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="40" font-weight="700" fill="#0F2C3F">Reventa</text>
   <text x="70" y="143" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Noches que otros clientes han puesto a la venta.</text>
 
   <!-- tarjeta de reventa 1 -->

@@ -1,7 +1,34 @@
-# Índice de ilustraciones para los manuales
+# Índice de imágenes de la plataforma
 
-Esta carpeta reúne las imágenes que acompañan a los manuales de `docs/`. Cada imagen corresponde
-a un momento concreto de un manual. Las descripciones están escritas para que **las pueda dibujar
+Esta carpeta reúne **tres familias** de imágenes, y el nombre de cada una dice a cuál pertenece y
+dónde se ve (catálogo completo, con el mapa de las 50 habitaciones:
+[`RepoTecnico/catalogo_imagenes.md`](../../RepoTecnico/catalogo_imagenes.md)):
+
+| Familia | Patrón | Se sirve en |
+|---|---|---|
+| **Habitación** | `<nº>-<Simple\|Doble\|Suite>-<AAAA-MM-DD>-<1..5>.jpg` | `GET /api/rooms/images/<fichero>` |
+| **Contenido público** (hero, galería, planes) | `hotel-<hero\|services\|experience\|activities\|contact\|other>-<AAAA-MM-DD>-<1..20>.jpg` | `GET /api/content/images/<fichero>` |
+| **Ilustraciones de manual** | `doc-<pantalla>-<elemento>.svg` (o `.png` en la portada) | `GET /manual/imagenes/<fichero>` |
+
+Las dos primeras se **suben desde el back-office** (el sistema construye el nombre) y son **JPG ≤ 2 MB**.
+Las de manual se guardan aquí a mano con el prefijo `doc-` y se regeneran con
+`pnpm --filter @hotel/web run manuals`.
+
+## Fotografías de habitación
+
+Material actual: **una portada por tipo**, en la habitación representativa de cada uno (101 simple,
+116 doble, 201 suite). El nombre es el canónico y, al subirlas desde `/admin/habitacion`, el sistema
+lo vuelve a generar con la fecha del día.
+
+| Fichero | Habitación | Posición |
+|---|---|---|
+| `101-Simple-2026-09-28-1.jpg` | 101 (simple) | Portada (1) |
+| `116-Doble-2026-09-28-1.jpg` | 116 (doble) | Portada (1) |
+| `201-Suite-2026-09-28-1.jpg` | 201 (suite) | Portada (1) |
+
+## Ilustraciones para los manuales
+
+Cada imagen corresponde a un momento concreto de un manual. Las descripciones están escritas para que **las pueda dibujar
 alguien que no conoce el sistema**: dicen qué tiene que verse, no cómo está hecho por dentro.
 
 **Cómo usar esta página**
@@ -19,15 +46,15 @@ verde azulado oscuro (`sea`) para acciones y títulos, terracota para avisos, ve
 
 | # | Fichero propuesto | Formato | Medidas | Dónde se usa | Qué debe mostrar |
 |---|---|---|---|---|---|
-| 1 | `portada-hotel.svg` | SVG (y PNG a 1600×900) | 1600×900 | Portada de los tres manuales | El hotel visto desde el paseo marítimo con el mar al fondo. Encima, el nombre **«Hotel Marina del Sol»** y debajo, en una sola línea, **«50 habitaciones · Alicante · noches en propiedad»**. Sin logotipos de terceros y sin precios. |
-| 2 | `compra-tres-pasos.svg` | SVG | 1400×600 | `manual-comprador.md` §3 | Una fila de tres recuadros numerados, con una flecha entre cada uno. Recuadro 1: una rejilla de tarjetas de habitación con foto, fecha y precio, titulado **«1 · Elegir»**. Recuadro 2: una ventana con cinco líneas (Habitación, Noche, Importe, Token, Contrato) y el título **«2 · Revisar»**. Recuadro 3: un móvil con el aviso de la cartera y el título **«3 · Firmar»**. Bajo los tres, una frase: **«Se firma exactamente lo que se ha revisado»**. |
-| 3 | `panel-dueno.svg` | SVG | 1600×1000 | `manual-cliente.md` §4 | Una maqueta del panel del dueño: menú lateral con las palabras **Publicar noche, Métricas, Royalty, Pausa, Fondos, Caducadas, Roles**; arriba, siete cifras en tarjetas (**Vendido, Royalties, Reventa, Noches vendidas, Minteadas, Quemadas, Ocupación**); debajo, tres gráficos: barras por mes, barras por tipo de habitación (simple/doble/suite) y una lista de ranking de las más revendidas. Números de ejemplo redondos y creíbles, nunca datos reales de clientes. |
-| 4 | `pantalla-recepcion.svg` | SVG | 1400×900 | `manual-recepcion.md` §2 y §3 | La pantalla de recepción: título **«Validación de Recepción & Check-in»**, dos pestañas (**Escaneo QR / JWS** y **Protocolo de Contingencia (Sin Móvil)**), un lector de mano escaneando un móvil, el botón **Confirmar Check-in Inmediato** y, justo debajo, el cartel verde de éxito con habitación, fecha y el texto **«Anclado on-chain: 0x…»**. |
-| 5 | `resguardo-qr-codigo.svg` | SVG | 1200×800 | `manual-comprador.md` §5 y `manual-recepcion.md` §3 | Dos mitades. Izquierda: un móvil con un **código QR** grande y el texto **«Enséñalo en recepción»**. Derecha: una tarjeta de papel con un **código corto tipo `MDS-A1B2C3D4`** y el texto **«Plan B: apúntalo»**. Abajo, en una franja, el aviso **«Cada resguardo sirve una sola vez»**. |
-| 6 | `pantalla-reventa.svg` | SVG | 1400×900 | `manual-comprador.md` §6 | La pantalla **Reventa**: una rejilla de tarjetas con la etiqueta **Reventa**, el nombre de la habitación, la fecha, el precio y el botón **Reservar reventa**. Al lado, otra tarjeta con la etiqueta **En reventa** y los botones **Cambiar precio** y **Cancelar reventa**, titulada **«Mis noches»**. |
-| 7 | `esquema-compra-reventa.svg` | SVG | 1600×500 | `docs/README.md` y `manual-comprador.md` §1 | Una línea de tiempo de cinco paradas con iconos sencillos y una flecha que las une: **Comprar** (móvil con cartera) → **Resguardo** (QR en un móvil) → **Check-in** (mostrador con lector) → **Reventa** (dos manos intercambiando una tarjeta) → **Cobro** (moneda entrando en una cartera). Debajo de cada parada, una frase de máximo seis palabras. |
-| 8 | `esquema-quemado-12h.svg` | SVG | 1400×600 | `manual-cliente.md` §1 | Un reloj marcando las **12:00** en el centro. A la izquierda, tres tarjetas de noche con la etiqueta **«no vendida»** y una flecha hacia el centro. A la derecha, esas tarjetas con un sello **«retirada»** y el texto **«Sin intervención humana»**. Abajo, un cartel destacado: **«Una noche ya vendida a un cliente NUNCA se retira»**. |
-| 9 | `acceso-doble-factor.svg` | SVG | 1200×700 | `manual-cliente.md` §2 y `manual-recepcion.md` §1 | Tres cajas en fila con un candado cada una: **1. Usuario y contraseña**, **2. Código de 6 dígitos del móvil**, **3. Cartera conectada**. Debajo, una nota con el texto **«El código de 6 dígitos es solo para el personal del hotel»**. |
+| 1 | `doc-portada-hotel.svg` + `doc-portada-hotel.png` | SVG (y PNG a 1600×900) | 1600×900 | Portada de los tres manuales | El hotel visto desde el paseo marítimo con el mar al fondo. Encima, el nombre **«Hotel Marina del Sol»** y debajo, en una sola línea, **«50 habitaciones · Alicante · noches en propiedad»**. Sin logotipos de terceros y sin precios. |
+| 2 | `doc-compra-tres-pasos.svg` | SVG | 1400×600 | `manual-comprador.md` §3 | Una fila de tres recuadros numerados, con una flecha entre cada uno. Recuadro 1: una rejilla de tarjetas de habitación con foto, fecha y precio, titulado **«1 · Elegir»**. Recuadro 2: una ventana con cinco líneas (Habitación, Noche, Importe, Token, Contrato) y el título **«2 · Revisar»**. Recuadro 3: un móvil con el aviso de la cartera y el título **«3 · Firmar»**. Bajo los tres, una frase: **«Se firma exactamente lo que se ha revisado»**. |
+| 3 | `doc-panel-dueno.svg` | SVG | 1600×1000 | `manual-cliente.md` §4 | Una maqueta del panel del dueño: menú lateral con las palabras **Publicar noche, Métricas, Royalty, Pausa, Fondos, Caducadas, Roles**; arriba, siete cifras en tarjetas (**Vendido, Royalties, Reventa, Noches vendidas, Minteadas, Quemadas, Ocupación**); debajo, tres gráficos: barras por mes, barras por tipo de habitación (simple/doble/suite) y una lista de ranking de las más revendidas. Números de ejemplo redondos y creíbles, nunca datos reales de clientes. |
+| 4 | `doc-pantalla-recepcion.svg` | SVG | 1400×900 | `manual-recepcion.md` §2 y §3 | La pantalla de recepción: título **«Validación de Recepción & Check-in»**, dos pestañas (**Escaneo QR / JWS** y **Protocolo de Contingencia (Sin Móvil)**), un lector de mano escaneando un móvil, el botón **Confirmar Check-in Inmediato** y, justo debajo, el cartel verde de éxito con habitación, fecha y el texto **«Anclado on-chain: 0x…»**. |
+| 5 | `doc-resguardo-qr-codigo.svg` | SVG | 1200×800 | `manual-comprador.md` §5 y `manual-recepcion.md` §3 | Dos mitades. Izquierda: un móvil con un **código QR** grande y el texto **«Enséñalo en recepción»**. Derecha: una tarjeta de papel con un **código corto tipo `MDS-A1B2C3D4`** y el texto **«Plan B: apúntalo»**. Abajo, en una franja, el aviso **«Cada resguardo sirve una sola vez»**. |
+| 6 | `doc-pantalla-reventa.svg` | SVG | 1400×900 | `manual-comprador.md` §6 | La pantalla **Reventa**: una rejilla de tarjetas con la etiqueta **Reventa**, el nombre de la habitación, la fecha, el precio y el botón **Reservar reventa**. Al lado, otra tarjeta con la etiqueta **En reventa** y los botones **Cambiar precio** y **Cancelar reventa**, titulada **«Mis noches»**. |
+| 7 | `doc-esquema-compra-reventa.svg` | SVG | 1600×500 | `docs/README.md` y `manual-comprador.md` §1 | Una línea de tiempo de cinco paradas con iconos sencillos y una flecha que las une: **Comprar** (móvil con cartera) → **Resguardo** (QR en un móvil) → **Check-in** (mostrador con lector) → **Reventa** (dos manos intercambiando una tarjeta) → **Cobro** (moneda entrando en una cartera). Debajo de cada parada, una frase de máximo seis palabras. |
+| 8 | `doc-esquema-quemado-12h.svg` | SVG | 1400×600 | `manual-cliente.md` §1 | Un reloj marcando las **12:00** en el centro. A la izquierda, tres tarjetas de noche con la etiqueta **«no vendida»** y una flecha hacia el centro. A la derecha, esas tarjetas con un sello **«retirada»** y el texto **«Sin intervención humana»**. Abajo, un cartel destacado: **«Una noche ya vendida a un cliente NUNCA se retira»**. |
+| 9 | `doc-acceso-doble-factor.svg` | SVG | 1200×700 | `manual-cliente.md` §2 y `manual-recepcion.md` §1 | Tres cajas en fila con un candado cada una: **1. Usuario y contraseña**, **2. Código de 6 dígitos del móvil**, **3. Cartera conectada**. Debajo, una nota con el texto **«El código de 6 dígitos es solo para el personal del hotel»**. |
 
 ## Bloques Mermaid listos para pegar
 
@@ -65,5 +92,6 @@ flowchart TD
 
 ---
 
-*Índice de ilustraciones · Hotel Marina del Sol · cualquier imagen nueva, con el mismo estilo y la
-misma paleta, evita que los manuales parezcan de proyectos distintos.*
+*Índice de imágenes · Hotel Marina del Sol · cualquier imagen nueva, con el mismo estilo y la
+misma paleta, evita que los manuales parezcan de proyectos distintos. El cumplimiento de los
+nombres lo comprueba `apps/web/src/lib/images-naming.test.ts`.*

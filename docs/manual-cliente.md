@@ -5,7 +5,7 @@
 > Todo lo que cuenta este manual funciona hoy en una **red de pruebas**, no en una red pública
 > de pago. Lo verás explicado en el apartado 8.
 
-![Portada: el Hotel Marina del Sol visto desde el paseo marítimo](imagenes/portada-hotel.svg)
+![Portada: el Hotel Marina del Sol visto desde el paseo marítimo](imagenes/doc-portada-hotel.svg)
 
 ---
 
@@ -39,7 +39,7 @@ pedirse es un correo, y solo si él quiere recibir el resguardo por email o avis
 El **registro de viajeros** (la obligación del RD 933/2021) **no lo hace esta web**. Se sigue
 haciendo en el mostrador, como hoy. La web no guarda DNI ni nombres.
 
-![Esquema del quemado diario de las 12:00](imagenes/esquema-quemado-12h.svg)
+![Esquema del quemado diario de las 12:00](imagenes/doc-esquema-quemado-12h.svg)
 
 ---
 
@@ -87,7 +87,7 @@ Esto es lo más importante que debes saber de este apartado:
 3. Anota en un sitio seguro **quién tiene copia** de esos códigos. No los dejes solo en el móvil
    que vas a perder.
 
-![Acceso con doble factor: tres llaves para entrar](imagenes/acceso-doble-factor.svg)
+![Acceso con doble factor: tres llaves para entrar](imagenes/doc-acceso-doble-factor.svg)
 
 ---
 
@@ -158,7 +158,7 @@ números a los dibujos, o si necesitas leerlos con ayuda, están ahí.
 - Si alguna cifra no se puede leer, la pantalla lo **dice** («No se pudieron cargar las
   métricas») en lugar de mostrar ceros que parecerían buenos datos.
 
-![Maqueta del panel del dueño: menú, siete cifras y tres gráficos](imagenes/panel-dueno.svg)
+![Maqueta del panel del dueño: menú, siete cifras y tres gráficos](imagenes/doc-panel-dueno.svg)
 
 ---
 

@@ -60,7 +60,7 @@ describe("Identidad visual · piezas de marca dentro de la paleta", () => {
   });
 
   it("la portada adopta el registro marino (`ocean`), no el teal antiguo, en mar y titular", () => {
-    const cover = readFileSync(`${IMAGES_DIR}/portada-hotel.svg`, "utf8");
+    const cover = readFileSync(`${IMAGES_DIR}/doc-portada-hotel.svg`, "utf8");
     const ocean = preset.theme.extend.colors.ocean!.toUpperCase();
     expect(cover.toUpperCase()).toContain(ocean);
     // El titular de la portada usa el marino (no el `sea-deep` de la generación anterior).

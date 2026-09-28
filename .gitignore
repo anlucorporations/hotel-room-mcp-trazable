@@ -61,3 +61,8 @@ docs/REVISION-*.md
 
 # Cobertura forge
 packages/contracts/lcov.info
+
+# Intermedios del pipeline de manuales (HTML imprimible y PDF A4): se regeneran con
+# `pnpm --filter @hotel/web run manuals`. Los PDF públicos versionados son los de
+# apps/web/public/manual/.
+docs/pdf/

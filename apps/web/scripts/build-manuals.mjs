@@ -21,6 +21,12 @@
  * Uso:
  *   pnpm --filter @hotel/web run manuals
  *   node apps/web/scripts/build-manuals.mjs
+ *   node apps/web/scripts/build-manuals.mjs --no-pdf   # sin Chromium (ver abajo)
+ *
+ * `--no-pdf` (o `MANUALS_SKIP_PDF=1`) omite el paso de PDF y la copia del PDF público, pero **sí**
+ * regenera el módulo TypeScript, el HTML imprimible y las copias de las imágenes. Existe porque hay
+ * entornos sin las librerías de Chromium (`libnspr4`/`libnss3`): antes, el fallo del PDF abortaba la
+ * tubería y dejaba la web con las imágenes antiguas aunque el módulo ya apuntara a las nuevas.
  *
  * Sale con código ≠ 0 si falta un manual o si queda algún marcador interno sin resolver.
  */
@@ -488,7 +494,7 @@ function listAvailableImages(dir) {
  *
  * `lead` es TODO el preámbulo: la cita inicial (`>`) **y** el resto de bloques que van entre el H1
  * y la primera sección `##` (en los manuales actuales, la ilustración de portada). Descartar esos
- * bloques hacía que la imagen `imagenes/portada-hotel.svg` se perdiera en el módulo y en el PDF.
+ * bloques hacía que la imagen `imagenes/doc-portada-hotel.svg` se perdiera en el módulo y en el PDF.
  */
 function parseManual(markdown, { slug, imageOf, file }) {
   const lines = markdown.replace(/\r\n?/g, "\n").split("\n");
@@ -955,6 +961,10 @@ async function main() {
   }
 
   // 3) PDF con Playwright Chromium.
+  const skipPdf = process.argv.includes("--no-pdf") || process.env.MANUALS_SKIP_PDF === "1";
+  if (skipPdf) {
+    console.log("\nPDF (Playwright Chromium, A4): OMITIDO (--no-pdf) — los PDF actuales no se tocan");
+  } else {
   console.log("\nPDF (Playwright Chromium, A4):");
   const browser = await chromium.launch();
   try {
@@ -983,11 +993,16 @@ async function main() {
   } finally {
     await browser.close();
   }
+  }
 
   // 4) Copias públicas para la web.
   console.log("\nCopias públicas (apps/web/public/manual):");
   mkdirSync(PUBLIC_MANUAL_DIR, { recursive: true });
+  if (skipPdf) {
+    console.log("  · PDF no regenerados: se conservan los publicados (ejecuta sin --no-pdf para rehacerlos)");
+  }
   for (const doc of docs) {
+    if (skipPdf) break;
     const from = join(PDF_DIR, `manual-${doc.slug}.pdf`);
     const to = join(PUBLIC_MANUAL_DIR, `manual-${doc.slug}.pdf`);
     cpSync(from, to);
