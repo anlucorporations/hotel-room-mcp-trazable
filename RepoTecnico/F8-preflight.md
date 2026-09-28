@@ -1,5 +1,11 @@
 # F8 · Preflight — checklist y ejecución del corte
 
+> **⚠️ DOCUMENTO HISTÓRICO: el corte ya se ejecutó (2026-09-27), con autorización del responsable.**
+> La baseline de rollback del §2 y los comandos del §4 describen el estado **previo** al corte. El
+> estado vigente está en [`F8-runbook.md`](./F8-runbook.md) §2/§10 y en
+> [`despliegue_gcp.md`](./despliegue_gcp.md) §18 (contrato `0xc66A…7b6F`, bloque 314, imágenes `f8`).
+> Se conserva porque el §5 (respaldo y rollback) sigue siendo el procedimiento de vuelta atrás.
+>
 > **Regla de esta preparación**: **no se toca ningún servicio global de GCP** (Anvil global, Cloud
 > SQL, Cloud Build, Cloud Run) hasta que el responsable autorice la ejecución con una ventana de
 > mantenimiento. Este documento y los scripts asociados están **listos pero sin ejecutar**.
@@ -24,7 +30,7 @@ Ensayo ya ejecutado (evidencia): `bash scripts/dev/f8-rehearsal.sh` → **OK** (
 
 ---
 
-## 2. Baseline de rollback (estado actual, 2026-09-27)
+## 2. Baseline de rollback (estado **previo** al corte, 2026-09-27)
 
 | Elemento | Valor actual |
 |---|---|
@@ -36,8 +42,9 @@ Ensayo ya ejecutado (evidencia): `bash scripts/dev/f8-rehearsal.sh` → **OK** (
 | MCP | revisión `hotel-mcp-mcp-00002-j4r` (`mcp:v2`) |
 | Monitor | worker pool `hotel-mcp-monitor` (`monitor:v1`) |
 
-> **Captura estos valores el día del corte** (`gcloud run services describe …`), porque pueden haber
-> cambiado; son el punto de vuelta.
+> **Histórico**: son los valores **de partida del corte**. El estado en vigor es
+> `0xc66A…7b6F` (bloque 314) y las revisiones `web-00008-vnh` / `worker-00005-v52` /
+> `mcp-00003-sjj` / `monitor-00002-hn4` (`F8-runbook.md` §2, `despliegue_gcp.md` §18).
 
 ---
 

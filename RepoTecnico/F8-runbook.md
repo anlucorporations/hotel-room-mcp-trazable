@@ -33,7 +33,7 @@ fantasmas, y publicación de fichas (`/admin/habitacion`) operativa con anclaje 
 | Registro `packages/shared/deployments/31337.json` | ✅ Apunta al contrato nuevo (bloque 314, faucet `0xdFdE…f75b`) |
 | Tabla `rooms` en GCP | ✅ **50 filas** sembradas desde el maestro (D-3/D-14) |
 | `mint` del contrato nuevo | Exige `_roomRegistered[room]` → ✅ las 50 están registradas antes del minteo |
-| `mint_window_days` (D-4/D-11/D-17) | ✅ Implementado (endpoint + UI); pendiente el barrido global y el correo |
+| `mint_window_days` (D-4/D-11/D-17) | ✅ **Completo**: endpoint + UI + «Acuñar ventana» + **barrido global** + **aviso de agotamiento** (in-app y correo por la cola única) |
 | Imágenes desplegadas | ✅ `web:f8`, `worker:f8`, `mcp:f8`, `monitor:f8` (revisiones 00008-vnh / 00005-v52 / 00003-sjj / 00002-hn4) |
 
 ---
@@ -45,7 +45,7 @@ fantasmas, y publicación de fichas (`/admin/habitacion`) operativa con anclaje 
 | 1 | Registro dinámico en el contrato + `publishRoom` | ✅ **Hecho y desplegado** |
 | 2 | **Sembrar** las 50 habitaciones desde la BD (D-3/D-14) | ✅ **Ejecutado**: 50 filas en `rooms` + 50 `registerRoom` on-chain |
 | 3 | **Reset total coordinado** con respaldo (D-15) | ✅ **Ejecutado** (backup `1790542352281`; `nfts` 18→0, worker 0; operadores conservados) |
-| 4 | **Ventana global de acuñado** + botón manual + aviso de agotamiento (D-4/D-11/D-17, idempotente D-16) | ✅ **Implementado** el alcance aprobado; **pendiente** el barrido global y el correo. Ver [`F8-ventana-acunado.md`](./F8-ventana-acunado.md) |
+| 4 | **Ventana global de acuñado** + botón manual + aviso de agotamiento (D-4/D-11/D-17, idempotente D-16) | ✅ **Completo**: por habitación al publicar, «Acuñar ventana», **barrido global** y **aviso de agotamiento** (in-app + correo). Ver [`F8-ventana-acunado.md`](./F8-ventana-acunado.md) |
 | 5 | Paso `registerRoom` en scripts de desarrollo/E2E | ✅ **Hecho**: helper `packages/contracts/scripts/room-registry.ts` y cableado en `inject-data.ts`, `seed-demo.ts`, `mint-image-demo.ts`, `e2e-slice.ts` y `e2e/m4…m7` |
 
 ---
@@ -227,4 +227,23 @@ implementarla y probarla debe considerarse F8 cerrada.
 - **2026-09-27** · **Barrido global de la ventana** implementado: `GET /api/admin/rooms/window-overview`
   (**3 pruebas**) y botón «Barrido global» en `/admin/habitacion` (secuencial, idempotente,
   reanudable). Gates: typecheck **6/6**, `@hotel/web` **469** pruebas y build de producción OK.
-  - Pendiente: correo de agotamiento y banco de pruebas del barrido multi-habitación.
+- **2026-09-27** · **F8 CERRADA** (últimas dos piezas de la parte 4):
+  - **Aviso de agotamiento (D-17)**: planificador `apps/worker/src/mint-window-scheduler.ts` que
+    avisa por la **cola única** al responsable (`MINT_WINDOW_ALERT_EMAIL`, respaldo `ADMIN_EMAIL`),
+    **una vez por episodio y habitación** (estado en Redis con `SET NX`, rearme al ampliar la ventana
+    y ante fallo de encolado). Variables nuevas: `MINT_WINDOW_ALERT_EMAIL`,
+    `MINT_WINDOW_ALERT_HOUR_LOCAL`, `MINT_WINDOW_CHECK_INTERVAL_MS` (documentadas en `.env.example`).
+    **9 pruebas** del planificador.
+  - **Cálculo unificado**: `buildMintWindowOverview` / `selectLowRooms` en
+    `packages/shared/src/maintenance/mint-window-watch.ts`, compartido por la ruta
+    `window-overview` y por el planificador; banco de pruebas **multi-habitación** (**6 pruebas**).
+  - **Banco de pruebas REAL del barrido multi-habitación**: `pnpm test:e2e:f8`
+    (`packages/contracts/scripts/e2e/f8-mint-window.ts`), orquestado por
+    `bash scripts/dev/f8-mint-window-sweep.sh` sobre un Anvil desechable: 3 habitaciones, 15 noches
+    acuñadas, segundo barrido con **0 transacciones**, duplicado que **revierte on-chain**,
+    agotamiento a 5 noches libres y rearme a 12. Evidencia:
+    [`evidencias/f8-mint-window-sweep.json`](./evidencias/f8-mint-window-sweep.json).
+  - **Gates**: `pnpm typecheck` **6/6**, `pnpm lint` **6/6**, `pnpm test` **7/7**, build de producción
+    de la web en verde y `forge test` **14 suites / 139 pruebas**.
+  - **Lo que queda de F8 es operativo y depende del cliente** (no del código): publicar las 50 fichas
+    (necesitan descripción ES e imagen definitivas) y las credenciales SMTP reales.

@@ -60,3 +60,6 @@ export * from "./fiat-onramp/service";
 export * from "./pms/adapter";
 // Retención de datos (M9 · ADR-24): purga de sesiones caducadas, códigos huérfanos y correos viejos.
 export * from "./maintenance/retention";
+// Ventana global de acuñación (F8 · D-4/D-11/D-16/D-17): resumen por habitación que comparten el
+// barrido global del back-office y el aviso de agotamiento del worker.
+export * from "./maintenance/mint-window-watch";

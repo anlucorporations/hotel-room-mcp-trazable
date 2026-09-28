@@ -573,7 +573,10 @@ punta y se ejecutó su primer acuñado de ventana; después se **revirtió**:
 - **Publicar las 50 fichas** (están `DRAFT`): requieren descripción ES definitiva e imagen; al
   publicar se anclan (`publishRoom`) y el **primer acuñado de la ventana** se dispara (D-4).
 - **SMTP real** para cerrar `emailDegraded`.
-- **Barrido global** de la ventana de acuñación y correo de agotamiento (parte 4, alcance diferido).
+- **Cerrado en código el 2026-09-27** (no requiere redespliegue del corte, entra en la próxima imagen):
+  el **barrido global** de la ventana y el **aviso de agotamiento** (in-app + correo por la cola
+  única), con su banco de pruebas real `pnpm test:e2e:f8` sobre Anvil desechable
+  (`F8-ventana-acunado.md` §5, `F8-runbook.md` §10).
 
 ---
 

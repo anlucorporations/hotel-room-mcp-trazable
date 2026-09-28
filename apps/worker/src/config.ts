@@ -77,6 +77,14 @@ const workerEnvSchema = z.object({
   /** Destinatario del aviso preventivo; si falta, cae al correo de alertas de operación. */
   MAINTENANCE_ALERT_EMAIL: emptyAsUndefined(env.email),
 
+  // ── Aviso de agotamiento de la ventana de acuñación (F8 · D-17) ─────────────
+  /** Hora local del hotel a la que se comprueba el agotamiento (por defecto 8). */
+  MINT_WINDOW_ALERT_HOUR_LOCAL: z.coerce.number().int().min(0).max(23).default(8),
+  /** Periodo con el que se comprueba la hora del aviso de agotamiento (por defecto, 1 hora). */
+  MINT_WINDOW_CHECK_INTERVAL_MS: z.coerce.number().int().positive().default(3600_000),
+  /** Destinatario del aviso de agotamiento; si falta, cae a `ADMIN_EMAIL`. */
+  MINT_WINDOW_ALERT_EMAIL: emptyAsUndefined(env.email),
+
   // ── Listener de eventos (D-12) ─────────────────────────────────────────────
   /** Confirmaciones antes de consolidar un evento (1 en Anvil; 32 en Polygon). */
   REORG_CONFIRMATIONS: z.coerce.number().int().nonnegative().default(1),

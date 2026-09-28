@@ -442,7 +442,8 @@ export class RoomsRepository {
         input.roomId,
         input.contentHash,
         input.txHash ?? null,
-        input.txHash != null,
+        // `!= null` cubriría también `undefined`; se escribe explícito porque `eqeqeq` es bloqueante.
+        input.txHash !== null && input.txHash !== undefined,
         input.signature ?? null,
         input.signerAddress ?? null,
         input.publishedBy,

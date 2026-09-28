@@ -20,6 +20,7 @@
     "e2e:m5": "tsx scripts/e2e/m5-checkin.ts",
     "e2e:m6": "tsx scripts/e2e/m6-automations.ts",
     "e2e:m7": "tsx scripts/e2e/m7-dashboard.ts",
+    "e2e:f8": "tsx scripts/e2e/f8-mint-window.ts",
     "clean": "forge clean && rm -rf .turbo"
   },
   "dependencies": {

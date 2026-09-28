@@ -1,7 +1,7 @@
 # Estado del proyecto — Hotel Marina del Sol
 
-> **Proyecto**: `hotel-room-mcp-trazable` · **Rama de push**: `Hotel-DSH-GCP` (solo remotos de `anlucorporations`) · **Fecha**: 2026-09-25
-> **Fase del proceso**: Fase 1 reconstruida (este documento + `requerimientos.md`, `diccionario_datos.md`, `entornos_globales.md`) · Fase 2 con auditoría ya ejecutada · **Fase 3: M0–M8 cerrados y verificados; M9 (documentación y entrega) en cierre — registro de ADR, PRD/SRS/PLAN/BACKLOG reescritos, guías operativas corregidas y guardianes de documentación y de arquitectura**
+> **Proyecto**: `hotel-room-mcp-trazable` · **Rama de push**: `Hotel-DSH-GCP` (solo remotos de `anlucorporations`) · **Fecha**: 2026-09-27
+> **Fase del proceso**: Fase 1 reconstruida (este documento + `requerimientos.md`, `diccionario_datos.md`, `entornos_globales.md`) · Fase 2 con auditoría ya ejecutada · **Fase 3: M0–M9 cerrados y verificados · Plan de reestructuración: F0–F6 completadas y F8 CERRADA (corte ejecutado en GCP + ventana de acuñación completa con barrido global y aviso de agotamiento); F7 (administración financiera) queda fuera de esta entrega (3.ª versión)**
 > **Memoria de trabajo**: este archivo. Se actualiza de forma incremental en cada ciclo.
 
 ---
@@ -1852,6 +1852,84 @@ Con F6.1–F6.4 la **Suite Pública** del plan queda construida: home one-page e
 `/catalogo`, reseñas firmadas y moderadas, **reserva con wallet** en `/reservar`, y gestión de
 galería/planes. Lo que **no** es de F6 y sigue pendiente del plan: el **corte de contrato de F8**
 (registro de habitaciones + siembra) y la **Administración financiera (F7, 3.ª versión)**.
+
+---
+
+## 29. F8 CERRADA — ventana de acuñación, barrido global y aviso de agotamiento (2026-09-27)
+
+**Premisa.** El corte de F8 (contrato con registro dinámico, siembra de las 50 habitaciones, reset D-15
+y redespliegue) ya estaba **ejecutado** (`despliegue_gcp.md` §18). Quedaban abiertas las **dos últimas
+piezas de la parte 4**: el **correo de agotamiento** (D-17) y el **banco de pruebas del barrido
+multi-habitación**; además, el cálculo de la ventana vivía **duplicado** en la ruta `window-overview`.
+
+### Hecho
+
+1. **Cálculo en una sola fuente** (`packages/shared/src/maintenance/mint-window-watch.ts`):
+   `buildMintWindowOverview` (ventana vigente + estado por habitación publicada, ordenado por lo que
+   más falta) y `selectLowRooms`. Lo comparten la ruta del back-office y el planificador del worker, de
+   modo que **la vista y el correo no pueden discrepar**. `MintWindowOverview` publica el `threshold`.
+2. **Ruta refactorizada** (`GET /api/admin/rooms/window-overview`): sin lógica propia, responde el
+   resumen compartido (misma forma de respuesta; sus **3 pruebas** siguen en verde).
+3. **Aviso de agotamiento (D-17)** — `apps/worker/src/mint-window-scheduler.ts`: planificador a la hora
+   local del hotel (`MINT_WINDOW_ALERT_HOUR_LOCAL`, por defecto 8) con **cerrojo de pasada**, correo
+   por la **cola única** (`DEVOPS_ALERT`, sin PII) al destinatario `MINT_WINDOW_ALERT_EMAIL` (respaldo
+   `ADMIN_EMAIL`). Emite **una vez por episodio y habitación** (estado en Redis con `SET NX` y
+   caducidad de 30 días), **rearma** cuando la habitación deja de estar en agotamiento y **rearma lo
+   reclamado si el encolado falla**, para no perder el aviso. Cableado en `main.ts` con su parada
+   ordenada; variables nuevas documentadas en `.env.example` (`MINT_WINDOW_ALERT_EMAIL`,
+   `MINT_WINDOW_ALERT_HOUR_LOCAL`, `MINT_WINDOW_CHECK_INTERVAL_MS`).
+4. **Banco de pruebas REAL del barrido multi-habitación**: `pnpm test:e2e:f8`
+   (`packages/contracts/scripts/e2e/f8-mint-window.ts`), orquestado por
+   `scripts/dev/f8-mint-window-sweep.sh` sobre un **Anvil desechable** (no toca GCP, ni PostgreSQL, ni
+   Redis): registra 3 habitaciones (simple/doble/suite), acuña 15 noches, repite el barrido, intenta el
+   duplicado y comprueba el agotamiento. Evidencia:
+   `RepoTecnico/evidencias/f8-mint-window-sweep.json`.
+
+### Verificación ejecutada
+
+| Verificación | Resultado |
+|---|---|
+| `pnpm typecheck` | **6/6** ✅ |
+| `pnpm lint` | **6/6, 0 errores** (51 warnings `no-console` en scripts CLI, la excepción documentada) |
+| `pnpm test` | **7/7 tareas** ✅ (incluye las **6** pruebas multi-habitación del resumen y las **9** del planificador) |
+| `pnpm --filter @hotel/web build` | ✅ verde, con la ruta `window-overview` refactorizada |
+| `forge test` | **14 suites / 139 pruebas**, 0 fallos |
+| **Banco de pruebas F8** (`bash scripts/dev/f8-mint-window-sweep.sh`) | ✅ 3 habitaciones registradas; **15 noches** acuñadas con recibo en `success`; **segundo barrido = 0 pendientes y 0 transacciones** (idempotencia D-16); **el duplicado revierte on-chain**; agotamiento con **5 noches libres** (< 7) y **rearme** al ampliar a 12 |
+
+### Hallazgos reales al ejecutar (ninguno detectable con `typecheck` ni con las pruebas que había)
+
+1. **El barrido local fallaba con `AccessControlUnauthorizedAccount`.** El constructor de `HotelNights`
+   solo concede `DEFAULT_ADMIN_ROLE` a quien despliega: el bootstrap completo de roles vive en
+   `Deploy.s.sol`, no en el constructor. Un `forge create` directo (el camino del ensayo local) deja al
+   operador **sin `MINTER_ROLE`**, así que el acuñado revierte. El banco de pruebas **concede el rol si
+   falta** (y no envía nada si ya lo tiene, como en el Anvil global). Queda documentado que el registro
+   de habitaciones y el acuñado tienen **prerrequisitos de rol distintos**.
+2. **`pnpm lint` estaba rojo en `packages/shared` por una causa previa** (F1): un `!=` en
+   `rooms.repository.ts` violaba `eqeqeq`. Corregido con la comparación explícita
+   `!== null && !== undefined` (misma semántica que `!= null`, sin la ambigüedad). Sin esto, el gate de
+   lint del pipeline habría seguido bloqueando.
+
+### Documentación actualizada en el mismo cierre
+
+`F8-ventana-acunado.md` (estado completo, decisiones, plan 1–10 y verificación),
+`F8-runbook.md` (§2/§3 al día y §10 con el registro del cierre), `F8-preflight.md` (**marcado como
+histórico**: el corte ya se ejecutó y su baseline es la de partida), `plan_definitivo.md` (F8 sin
+pendientes de código), `despliegue_gcp.md` §18, `Manuales/03-operacion/02-e2e-y-verificacion.md`
+(§2 orden y **§7 nuevo** con el banco de F8) y `Manuales/03-operacion/README.md` (fila de diagnóstico
+del correo de agotamiento).
+
+### Lo que queda de F8: **operativo, no de código** (depende del cliente o del entorno)
+
+| # | Pendiente | Por qué no se cierra aquí |
+|---|---|---|
+| 1 | **Publicar las 50 fichas** (hoy `DRAFT`) | Necesitan descripción ES definitiva e **imagen del hotel** (decisión y material del cliente); al publicar se anclan y se dispara el primer acuñado (D-4) |
+| 2 | **SMTP real** (cerrar `emailDegraded`) | Faltan credenciales del proveedor; sin ellas el correo queda `PENDING`/reintentado, no se pierde |
+| 3 | **Redesplegar `worker` (y `web`) con la imagen de este cierre** | El planificador de agotamiento y el cálculo unificado **no están** en la revisión desplegada (`worker:f8`); `gcloud` no es utilizable en este entorno (snap sin permisos), así que la publicación de imágenes queda para la ventana del responsable |
+
+**Deuda que este cierre no toca** (sigue en su sitio): cobertura de `apps/web`, perfil de 200
+concurrentes, Polygon real (32 confirmaciones), los dos indexadores de la misma noche, `pnpm audit` sin
+triar y digest de Slither sin fijar, y el modo lote de `/admin/mint` (hoy firma 1 noche por pasada:
+el camino operativo es «Acuñar ventana» / «Barrido global»).
 
 
 

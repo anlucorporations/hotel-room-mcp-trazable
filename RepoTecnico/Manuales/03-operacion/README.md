@@ -168,6 +168,7 @@ Cómo leer el `/health` del worker:
 | Quema que **no quema** nada | Sin `BURNER_ROLE`, saldo insuficiente o ninguna noche caducada | `/health`, saldo de la hot-wallet | Recarga gas; revisa `skippedTokens` en el log del ciclo |
 | Alertas de gas | Saldo bajo del umbral | `cast balance <wallet>`; `GAS_WALLETS` / `MIN_GAS_NATIVE` | Recarga la wallet y confirma que el monitor rearma el aviso |
 | Alerta de **silencio de cadena** | Sin bloques nuevos en `SILENCE_THRESHOLD_MS` (10 min) | `cast block-number` dos veces | Revisa Anvil/RPC; la alerta se emite **una vez por episodio** y se rearma al volver un bloque |
+| Correo **«Ventana de acuñación corta»** | Una habitación publicada baja de `MINT_WINDOW_LOW_THRESHOLD` (7) noches libres en la ventana | `GET /api/admin/rooms/window-overview` (owner) y la fila `low` de la habitación | Amplía la ventana desde `/admin/habitacion` («Acuñar ventana» o «Barrido global»). El aviso se emite **una vez por episodio** y se rearma al quedar holgada |
 
 ## 5. Rutinas
 

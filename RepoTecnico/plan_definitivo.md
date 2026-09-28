@@ -328,17 +328,18 @@ D-25 (primer ciclo = shell + Habitación), D-26 (operación primero) y D-24 (cor
      agregados del worker (D-15); registro on-chain **arranca vacío** (D-13). → **HECHO** (backup
      `1790542352281`).
   4. **Primer acuñado** de la **ventana global configurable** (D-4, D-11) al publicar, con **botón manual
-     de extensión** y aviso de agotamiento (D-17), proceso **idempotente** (D-16). → **HECHO**: por
-     habitación al publicar, «Acuñar ventana» y **barrido global**; **pendiente** el correo de
-     agotamiento.
+     de extensión** y aviso de agotamiento (D-17), proceso **idempotente** (D-16). → **HECHO Y CERRADO**:
+     por habitación al publicar, «Acuñar ventana», **barrido global** y **aviso de agotamiento in-app y
+     por correo** (planificador del worker, una vez por episodio); banco de pruebas multi-habitación
+     real (`pnpm test:e2e:f8`) con evidencia en `RepoTecnico/evidencias/f8-mint-window-sweep.json`.
   5. **Paso `registerRoom` en los scripts de desarrollo/E2E** (`seed-demo`, `inject-data`,
      `e2e/m4…m7`) antes de mintear. → **HECHO** (helper `scripts/room-registry.ts`).
 - **Runbook (resumen):** backup → desplegar contrato nuevo → cargar habitaciones → sincronizar BD↔cadena →
   limpiar tablas → primer acuñado → verificar catálogo y métricas → conservar el anterior como *rollback*.
 - **Criterio de salida:** catálogo público coherente con la cadena, sin noches duplicadas ni fantasmas.
   → **Cumplido el 2026-09-27** (detalle en [`despliegue_gcp.md`](./despliegue_gcp.md) §18).
-- **Pendiente fuera del corte:** publicar las 50 fichas (hoy `DRAFT`), SMTP real para cerrar
-  `emailDegraded` y el barrido global de la ventana.
+- **Pendiente fuera del corte (operativo, no de código):** publicar las 50 fichas (hoy `DRAFT`, necesitan
+  descripción ES e imagen definitivas del hotel) y el **SMTP real** para cerrar `emailDegraded`.
 
 ---
 

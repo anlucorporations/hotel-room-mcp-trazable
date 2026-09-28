@@ -22,6 +22,7 @@
     "test:e2e:m5": "pnpm --filter @hotel/contracts e2e:m5",
     "test:e2e:m6": "pnpm --filter @hotel/contracts e2e:m6",
     "test:e2e:m7": "pnpm --filter @hotel/contracts e2e:m7",
+    "test:e2e:f8": "pnpm --filter @hotel/contracts e2e:f8",
     "test:dr": "node --experimental-strip-types scripts/backup/restore-verify.ts",
     "contracts:build": "pnpm --filter @hotel/contracts build",
     "deploy:anvil": "pnpm --filter @hotel/contracts deploy:local",

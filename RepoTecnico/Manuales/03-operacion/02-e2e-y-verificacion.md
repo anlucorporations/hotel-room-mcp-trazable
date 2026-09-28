@@ -1,7 +1,7 @@
 # 03 · E2E y verificación reproducible
 
 > **Regla del proyecto**: ninguna afirmación de calidad sin instrumento ni artefacto (ADR-23). Los
-> cuatro E2E on-chain, la prueba de carga y la de recuperación escriben su evidencia en
+> cinco E2E on-chain (M4–M7 y F8), la prueba de carga y la de recuperación escriben su evidencia en
 > [`../../evidencias/`](../../evidencias).
 > **Aviso que no se puede saltar**: **para el worker** antes de lanzar los E2E on-chain. El listener
 > indexa el mismo contrato y **reescribe** las filas que los guiones afirman; con el worker vivo, el
@@ -39,12 +39,20 @@
 ## 2. Orden de ejecución
 
 ```
-pnpm test:e2e:m4  →  pnpm test:e2e:m5  →  pnpm test:e2e:m6  →  pnpm test:e2e:m7
+pnpm test:e2e:m4  →  pnpm test:e2e:m5  →  pnpm test:e2e:m6  →  pnpm test:e2e:m7  →  pnpm test:e2e:f8
 ```
 
 Los guiones de `packages/contracts/scripts/e2e/` son **idempotentes y re-ejecutables**: eligen la
 **primera fecha libre** de su habitación de prueba y calculan las fechas con el **reloj de la cadena**,
 no con el de la máquina. Por eso siguen pasando después del viaje en el tiempo de M6.
+
+El de **F8** es el único que no necesita PostgreSQL ni Redis (no escribe índice: lee el estado
+**on-chain** con `ownerOf`) y **registra él mismo** sus habitaciones. Se puede lanzar sin preparar
+nada más que una cadena:
+
+```bash
+bash scripts/dev/f8-mint-window-sweep.sh     # Anvil desechable + despliegue + banco de pruebas
+```
 
 No ejecutes dos E2E ni dos suites a la vez en el mismo workspace: Foundry reescribe su registro de
 despliegue y `tsup` limpia `packages/shared/dist`.
@@ -148,7 +156,33 @@ libre y cada quema es una transacción nueva). La tabla de hashes que aparece en
 [`../../estado_proyecto.md`](../../estado_proyecto.md) corresponde a la ejecución documentada, no a la
 tuya.
 
-## 7. Prueba de carga
+## 7. F8 — barrido multi-habitación y ventana de acuñación
+
+```bash
+pnpm test:e2e:f8        # contra el Anvil y el contrato configurados en .env
+# o, sin preparar nada (Anvil desechable + despliegue + registro de habitaciones):
+bash scripts/dev/f8-mint-window-sweep.sh
+```
+
+**Qué demuestra** sobre una cadena real: el **registro dinámico** de habitaciones (simple, doble y
+suite), el **barrido** de la ventana para las tres (15 noches acuñadas con su recibo en `success`),
+la **idempotencia** de D-16 (el segundo barrido encuentra **0 noches pendientes** y **no firma ninguna
+transacción**), que **volver a acuñar la misma noche revierte on-chain** (nada de tokens duplicados) y
+el **aviso de agotamiento** de D-17: con 5 noches libres la ventana está en agotamiento (< 7) y al
+ampliarla a 12 vuelve a estar holgada, que es cuando el planificador del worker **rearma** el aviso.
+
+| Dato | Valor documentado |
+|---|---|
+| Habitaciones | simple 101, doble 116, suite 201 |
+| Ventanas | corta 5 días · ampliada 12 días |
+| Evidencia | [`../../evidencias/f8-mint-window-sweep.json`](../../evidencias/f8-mint-window-sweep.json) |
+| Aviso por correo (worker) | `MINT_WINDOW_ALERT_EMAIL` / `MINT_WINDOW_ALERT_HOUR_LOCAL` / `MINT_WINDOW_CHECK_INTERVAL_MS` |
+
+**Aviso**: cada ejecución **regenera** el artefacto y **cambia los hashes** (las fechas se calculan
+desde el reloj de la cadena). El banco de pruebas **no** sustituye a la verificación del aviso por
+correo de extremo a extremo: eso exige SMTP real (ver el manual de variables de entorno).
+
+## 8. Prueba de carga
 
 ```powershell
 pnpm test:load
@@ -177,7 +211,7 @@ Guion alternativo para cuando k6 esté instalado:
 pnpm test:load:k6      # k6 run scripts/load-tests/catalog-load.js
 ```
 
-## 8. Prueba de recuperación ante desastre
+## 9. Prueba de recuperación ante desastre
 
 ```powershell
 pnpm test:dr
@@ -191,7 +225,7 @@ siempre y escritura del artefacto [`../../evidencias/dr-verify.json`](../../evid
 **Nota de alcance**: el rol de la aplicación no tiene `CREATEDB`, así que la restauración se hace en un
 esquema, no en una base nueva. Detalle y runbook: [02 · Base de datos](../02-instalacion/02-base-de-datos.md).
 
-## 9. Accesibilidad (axe + Playwright)
+## 10. Accesibilidad (axe + Playwright)
 
 ```powershell
 pnpm --filter @hotel/web exec playwright test
@@ -205,7 +239,7 @@ paleta real.
 `WORKER_BASE_URL` a un puerto muerto (vistas degradadas) y el dashboard exige sesión, así que las
 gráficas y tablas con cifras reales no se escanean.
 
-## 10. Qué **no** está verificado (y por tanto no se declara)
+## 11. Qué **no** está verificado (y por tanto no se declara)
 
 - **LCP < 2,5 s en 4G móvil (RNF-01)**: no hay instrumento de medición en el repositorio. **Sin medir**.
 - **Cobertura ≥ 80 %**: no alcanzada; el hueco está localizado y el trinquete impide empeorar

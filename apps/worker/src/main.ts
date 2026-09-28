@@ -29,6 +29,7 @@ import { runWorker } from "./run-worker";
 import { startBurnScheduler, type BurnScheduler } from "./burn-scheduler";
 import { startRetentionScheduler } from "./retention-scheduler";
 import { startPreventiveScheduler } from "./preventive-scheduler";
+import { startMintWindowScheduler } from "./mint-window-scheduler";
 import { startListenerRuntime } from "./listener-runtime";
 
 // Node no carga `.env` por si solo (Next.js si lo hace): en desarrollo lo cargamos desde la
@@ -203,6 +204,18 @@ async function main(): Promise<void> {
     recipient: config.MAINTENANCE_ALERT_EMAIL ?? config.DEVOPS_ALERT_EMAIL,
   });
 
+  // Agotamiento de la ventana de acuñación (F8 · D-17): avisa al responsable cuando una habitación
+  // publicada se queda sin noches libres en la ventana, una vez por episodio y por habitación. El
+  // aviso in-app ya está en /admin/habitacion; esto es el correo por la cola única (D-03).
+  const mintWindowScheduler = startMintWindowScheduler({
+    logger,
+    signal: controller.signal,
+    intervalMs: config.MINT_WINDOW_CHECK_INTERVAL_MS,
+    hourLocal: config.MINT_WINDOW_ALERT_HOUR_LOCAL,
+    timeZone: config.BURN_TIMEZONE,
+    recipient: config.MINT_WINDOW_ALERT_EMAIL ?? config.ADMIN_EMAIL ?? config.DEVOPS_ALERT_EMAIL,
+  });
+
   // Listener de eventos (D-12): heartbeat, alerta de silencio y alimentación del índice off-chain
   // desde los eventos del contrato canónico (antes nadie lo instanciaba).
   const listenerRuntime = startListenerRuntime({
@@ -246,6 +259,7 @@ async function main(): Promise<void> {
     scheduler?.stop();
     retentionScheduler.stop();
     preventiveScheduler.stop();
+    mintWindowScheduler.stop();
     listenerRuntime.stop();
     clearInterval(reconcileTimer);
     await emailConsumer.stop();
