@@ -1993,12 +1993,15 @@ prueba **cruza** el cálculo de noches del cliente con el del servidor; (d) **6 
 nombre accesible: ahora todo `<table>` del producto debe declarar `<caption>`/`aria-label` y
 `scope="col"`, con guardián derivado y exención explícita para tablas de presentación.
 
-**Pendiente de la propuesta**: E (`Manual_Identidad_Visual.md`, que se escribe **después** para no
-desincronizar
-tokens y manual). Queda **observado y no exigido** H-8: 27 botones/enlaces «fantasma» con `border-line`
-(el criterio 1.4.11 aplica a la información visual necesaria para identificar el componente y un botón
-con etiqueta visible se identifica por su texto; el foco ya cumple). Sigue sin tocarse contrato, rutas
-ni modelo de datos.
+**Pendiente de la propuesta**: **ninguno — ciclo cerrado**. La Fase **E** (`Manual_Identidad_Visual.md`
+v1.0.0, con brief, guía de estilo, tokens, inventario de componentes, do's & don'ts, pares aprobados y
+**prohibidos con su ratio** y changelog) se escribió **después** de A–D precisamente para no
+desincronizar tokens y manual: sus tablas se derivan del código y quedan cubiertas por los mismos
+guardianes. Lo único que sigue **propuesto y no aprobado** es el **modo noche** del personal (§3.6 de
+la propuesta), que duplicaría la matriz de pares a verificar. Queda **observado y no exigido** H-8: 27
+botones/enlaces «fantasma» con `border-line` (el criterio 1.4.11 aplica a la información visual
+necesaria para identificar el componente y un botón con etiqueta visible se identifica por su texto; el
+foco ya cumple). Sigue sin tocarse contrato, rutas ni modelo de datos.
 
 
 

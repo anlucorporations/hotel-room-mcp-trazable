@@ -7,9 +7,10 @@
 > `docs/SRS.md` §7), verificado por guardianes de test y por escaneo axe.
 > **Instrumento de medición**: `node scripts/design/contrast-audit.mjs` (WCAG 2.1, misma matemática que
 > `apps/web/src/lib/a11y/contrast.ts`; **32 pares medidos**, ratio sin redondear).
-> **Estado**: **dirección aprobada** (2026-09-27) y **Fases A + B implementadas y verificadas**
-> (§6.1); los componentes (C), las piezas de marca (D) y el `Manual_Identidad_Visual.md` (E) quedan
-> pendientes. **Fecha**: 2026-09-27.
+> **Estado**: **ciclo CERRADO** (2026-09-27). Dirección aprobada y **cinco fases implementadas y
+> verificadas**: A (tokens), A.2 (frontera de controles), B (cascada cirílica), C (componentes de las
+> tres superficies), D (piezas de marca y vista social) y E ([`Manual_Identidad_Visual.md`](./Manual_Identidad_Visual.md)
+> v1.0.0). **Fecha**: 2026-09-27.
 
 ---
 
@@ -376,7 +377,7 @@ personal (§3.6), con su coste de duplicar la matriz de contraste y el escaneo?
 | **A.2 · Controles (H-7)** | ✅ **Implementada** (2026-09-27) | `line-strong` en los **89 controles** con borde y las **11** constantes `FIELD` (**28 ficheros**, codemod que solo toca etiquetas de control: los 184 filetes decorativos quedan intactos) + guardián nuevo `control-boundary.test.ts` **5/5** (con falsificación: un `border-line` en un control lo pone rojo) |
 | **C · Componentes** | ✅ **Fase C COMPLETA** (C.1, C.2 y C.3, 2026-09-27): `Hero` (foto a sangre + velo `ocean/65`), `Stars`, `SuiteCard` horizontal, `ExperienceCard`, `TestimonialCard`, **`BookingBar`** (flotante en la home y en línea en el catálogo, con búsqueda transportada en la URL), **`StickySummary`** en `/reservar` con el importe convertido con la **misma tasa** que el cobro y **`DataTable`** (tabla densa de las suites de personal, migrada en `/admin/mantenimiento/incidencias`) | `@hotel/web` **478 → 504 pruebas**; guardianes nuevos de **paridad i18n** y **semántica de tablas**; **12 pruebas** de reglas de reserva con convergencia comprobada contra el servidor |
 | **D · Marca y piezas** | ✅ **Implementada** (2026-09-27): **vista previa social generada en código** (`app/opengraph-image.tsx`, 1200×630 con `ocean`/`champagne`/arena, más `og:*` y `twitter:card` en el `<head>` y `NEXT_PUBLIC_SITE_URL` documentada); registro marino en la **portada** y en los títulos de las pantallas de recepción/reventa; **maqueta del catálogo** al día (tokens nuevos, hero oscuro y barra de reserva) | `@hotel/web` **504 → 510 pruebas**; guardián nuevo `brand-pieces.test.ts` **6/6** (HEX derivados del preset, `role="img"`+`<title>` por pieza, OG en código y variables de la maqueta); verificado en producción: `/opengraph-image` responde **200 `image/png` 1200×630 (105 KB)** con el `<head>` declarando `og:image` |
-| **E · Manual de identidad** | ⏳ Pendiente | `RepoTecnico/Manual_Identidad_Visual.md` (se escribe **después** de A/A.2/C, para no desincronizar tokens y manual) |
+| **E · Manual de identidad** | ✅ **Implementada** (2026-09-27): [`Manual_Identidad_Visual.md`](./Manual_Identidad_Visual.md) v1.0.0 con brief y concepto, guía de estilo (roles con HEX/HSL y ratios), tokens rol→valor→uso→código, inventario por Atomic Design, directrices de implementación, do's & don'ts, accesibilidad (pares aprobados y **prohibidos con su ratio**) y changelog | **Ciclo cerrado**: las tablas se derivan del código (preset + espejo + guardianes), no se transcriben; los 6 guardianes visuales y el instrumento de contraste siguen en verde |
 
 ### 6.2 Hallazgos destapados por los guardianes nuevos (Fase C)
 
@@ -441,6 +442,6 @@ externo en runtime, coherente con la CSP del proyecto).
 
 ---
 
-*Propuesta de imagen visual v0.1 · @asistenteProyecto + @visualUiUx · entrada:
-`propuestaVisual-Hotel.md` · pendiente de las 3 decisiones del §6 para generar tokens y
-`Manual_Identidad_Visual.md`.*
+*Propuesta de imagen visual v1.0.0 · @asistenteProyecto + @visualUiUx · entrada:
+`propuestaVisual-Hotel.md` · **ciclo cerrado el 2026-09-27**: fases A, A.2, B, C, D y E implementadas
+y verificadas; manual de identidad en [`Manual_Identidad_Visual.md`](./Manual_Identidad_Visual.md).*
