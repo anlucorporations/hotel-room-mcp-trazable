@@ -48,7 +48,7 @@ no un marketplace de NFTs.
 | `--ocean` **(nuevo)** | `#0F2C3F` | Superficie oscura editorial: hero, pie, cabecera de administración | **13,4:1** con `sand` · 14,5:1 con `shell` ✅ |
 | `--ocean-soft` **(nuevo)** | `#16455E` | Superficie oscura secundaria; hover sobre oscuro | 4,54:1 con `champagne` ✅ |
 | `--champagne` **(nuevo)** | `#C5A880` | Detalle premium **solo sobre oscuro** (filetes, iconos, cifras) | 6,39:1 sobre `ocean` ✅ · **2,26:1 sobre blanco ❌** |
-| `--line-strong` **(nuevo)** | `#8F7F5F` | **Borde de controles** (`input`/`select`/`textarea`), WCAG 1.4.11 | 3,91:1 blanco · 3,63:1 arena · 3,27:1 arena-2 ✅ |
+| `--line-strong` **(nuevo)** | `#8F7F5F` | **Frontera de controles** (`input`/`select`/`textarea`), WCAG 1.4.11 — aplicado en los **89 controles** con borde y protegido por `control-boundary.test.ts` | 3,91:1 blanco · 3,63:1 arena · 3,27:1 arena-2 ✅ |
 | `--success` / `--success-bg` **(nuevos)** | `#2F6B4F` / `#E3EFE7` | Confirmaciones | 6,29:1 con blanco · 5,32:1 sobre su fondo ✅ |
 | `--warning` / `--warning-bg` **(nuevos)** | `#8A5A12` / `#F7E9C9` | Avisos (ventana corta, stock, preventivo) | 5,49:1 sobre arena · 4,91:1 sobre su fondo ✅ |
 | `--error` / `--error-bg` **(nuevos)** | `#9E2B1F` / `#F8E3DE` | Errores y bloqueos | 7,45:1 con blanco · 6,04:1 sobre su fondo ✅ |

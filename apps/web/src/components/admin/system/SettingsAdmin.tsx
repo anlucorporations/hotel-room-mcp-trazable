@@ -19,7 +19,7 @@ interface Settings {
 }
 
 const FIELD =
-  "min-h-touch w-full rounded-brand border border-line bg-shell px-3 text-ink outline-none focus:border-sea";
+  "min-h-touch w-full rounded-brand border border-line-strong bg-shell px-3 text-ink outline-none focus:border-sea";
 const ACTION =
   "min-h-touch rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60";
 

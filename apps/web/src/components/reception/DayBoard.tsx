@@ -49,7 +49,7 @@ export function DayBoard({
             data-testid="reception-date"
             value={date}
             onChange={(event) => onDateChange(event.target.value)}
-            className="min-h-touch rounded-brand border border-line bg-shell px-3 text-ink outline-none focus:border-sea"
+            className="min-h-touch rounded-brand border border-line-strong bg-shell px-3 text-ink outline-none focus:border-sea"
           />
         </label>
         <button

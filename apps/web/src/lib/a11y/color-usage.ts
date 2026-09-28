@@ -226,3 +226,63 @@ export function blendOver(
   const hex = (n: number): string => n.toString(16).padStart(2, "0");
   return `#${hex(mix(fg.r, bg.r))}${hex(mix(fg.g, bg.g))}${hex(mix(fg.b, bg.b))}`;
 }
+
+/** Control de formulario con su clase de estilo resuelta (Fase A.2 · hallazgo H-7). */
+export interface FormControlSource {
+  readonly tag: "input" | "select" | "textarea";
+  /**
+   * Clase aplicada al control: el literal del propio JSX o el valor de la constante de módulo
+   * (`const FIELD = "…"`) cuando se usa `className={FIELD}`. `null` si el control no declara clase.
+   */
+  readonly className: string | null;
+}
+
+/**
+ * Extrae los controles de formulario de un fuente y **resuelve** su clase.
+ *
+ * Existe para poder verificar la **frontera de los controles** (WCAG 2.1 · 1.4.11): el borde es lo
+ * único que identifica un `input`/`select`/`textarea` sobre el lienzo, así que debe alcanzar 3:1.
+ * Sin resolver las constantes (`FIELD`) el guardián sería ciego justo en la mayoría de los campos
+ * del back-office, que es donde vive el hallazgo H-7.
+ */
+export function extractFormControls(source: string): FormControlSource[] {
+  /** Constantes de cadena de nivel de módulo, para resolver `className={FIELD}`. */
+  const constants = new Map<string, string>();
+  for (const match of source.matchAll(/const\s+([A-Za-z_$][\w$]*)\s*=\s*"([^"]*)"/g)) {
+    constants.set(match[1]!, match[2]!);
+  }
+
+  const controls: FormControlSource[] = [];
+  const opening = /<(input|select|textarea)\b/g;
+  let match: RegExpExecArray | null;
+  while ((match = opening.exec(source))) {
+    // Se recorre la etiqueta hasta su `>` de cierre, respetando cadenas y llaves anidadas.
+    let index = match.index + match[0].length;
+    let depth = 0;
+    let quote: string | null = null;
+    for (; index < source.length; index += 1) {
+      const char = source[index]!;
+      if (quote) {
+        if (char === quote) quote = null;
+        continue;
+      }
+      if (char === '"' || char === "'" || char === "`") {
+        quote = char;
+        continue;
+      }
+      if (char === "{") depth += 1;
+      else if (char === "}") depth -= 1;
+      else if (char === ">" && depth === 0) break;
+    }
+    const tag = source.slice(match.index, index + 1);
+
+    const attribute = /className=(?:"([^"]*)"|\{\s*"([^"]*)"\s*\}|\{\s*([A-Za-z_$][\w$]*)\s*\})/.exec(tag);
+    const className =
+      attribute === null
+        ? null
+        : (attribute[1] ?? attribute[2] ?? constants.get(attribute[3]!) ?? null);
+
+    controls.push({ tag: match[1] as FormControlSource["tag"], className });
+  }
+  return controls;
+}

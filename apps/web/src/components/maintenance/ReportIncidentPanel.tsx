@@ -85,7 +85,7 @@ export function ReportIncidentPanel({
             value={roomId}
             onChange={(event) => setRoomId(event.target.value)}
             data-testid="report-room"
-            className="min-h-touch rounded-brand-sm border border-line bg-sand px-3"
+            className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
           >
             {rooms.map((room) => (
               <option key={room.id} value={room.id}>
@@ -100,7 +100,7 @@ export function ReportIncidentPanel({
             value={kind}
             onChange={(event) => setKind(event.target.value)}
             data-testid="report-kind"
-            className="min-h-touch rounded-brand-sm border border-line bg-sand px-3"
+            className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
           >
             {MAINTENANCE_KINDS.map((option) => (
               <option key={option} value={option}>
@@ -114,7 +114,7 @@ export function ReportIncidentPanel({
           <select
             value={priority}
             onChange={(event) => setPriority(event.target.value)}
-            className="min-h-touch rounded-brand-sm border border-line bg-sand px-3"
+            className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
           >
             {MAINTENANCE_PRIORITIES.map((option) => (
               <option key={option} value={option}>
@@ -129,7 +129,7 @@ export function ReportIncidentPanel({
             type="text"
             value={description}
             onChange={(event) => setDescription(event.target.value)}
-            className="min-h-touch rounded-brand-sm border border-line bg-sand px-3"
+            className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
           />
         </label>
         <button

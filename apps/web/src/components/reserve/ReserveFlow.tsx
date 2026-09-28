@@ -154,7 +154,7 @@ export function ReserveFlow() {
             value={form.roomId}
             onChange={(event) => setForm({ ...form, roomId: event.target.value })}
             data-testid="reserve-room"
-            className="min-h-touch rounded-brand-sm border border-line bg-sand px-3"
+            className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
           >
             {rooms.length === 0 && <option value="">{t("noRooms")}</option>}
             {rooms.map((room) => (
@@ -172,7 +172,7 @@ export function ReserveFlow() {
               required
               value={form.checkInDate}
               onChange={(event) => setForm({ ...form, checkInDate: event.target.value })}
-              className="min-h-touch rounded-brand-sm border border-line bg-sand px-3"
+              className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
             />
           </label>
           <label className="flex flex-col gap-1 text-small">
@@ -182,7 +182,7 @@ export function ReserveFlow() {
               required
               value={form.checkOutDate}
               onChange={(event) => setForm({ ...form, checkOutDate: event.target.value })}
-              className="min-h-touch rounded-brand-sm border border-line bg-sand px-3"
+              className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
             />
           </label>
           <label className="flex min-w-[16rem] flex-1 flex-col gap-1 text-small">
@@ -192,7 +192,7 @@ export function ReserveFlow() {
               value={form.email}
               onChange={(event) => setForm({ ...form, email: event.target.value })}
               placeholder={t("emailPlaceholder")}
-              className="min-h-touch rounded-brand-sm border border-line bg-sand px-3"
+              className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
             />
           </label>
         </div>

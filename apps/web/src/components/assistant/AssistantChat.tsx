@@ -167,7 +167,7 @@ export function AssistantChat() {
           autoCapitalize="sentences"
           autoCorrect="on"
           spellCheck
-          className="min-h-touch flex-1 resize-none rounded-brand border border-line bg-shell px-3 py-2 text-base text-ink"
+          className="min-h-touch flex-1 resize-none rounded-brand border border-line-strong bg-shell px-3 py-2 text-base text-ink"
         />
         <button
           type="submit"

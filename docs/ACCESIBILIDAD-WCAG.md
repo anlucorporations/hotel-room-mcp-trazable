@@ -48,11 +48,21 @@ Todas superan el **4.5:1** de texto normal (y el 3:1 de texto grande y component
 las series de las gráficas —`sea` y `terracotta-text`, 7.89 y 6.02 sobre blanco— se distinguen del
 fondo de la tarjeta).
 
-**Frontera de controles (1.4.11)** — hallazgo H-7 de la propuesta de imagen visual: el borde de
-`input`/`select`/`textarea` pasa a `line-strong #8F7F5F` (**3,91:1** sobre `shell`, **3,63:1** sobre
-`sand`, **3,27:1** sobre `sand-2`). El `line #E7DCC6` anterior daba ~1,10:1 y se conserva **solo** para
-filetes decorativos (exentos). Los pares nuevos se miden con
+**Frontera de controles (1.4.11)** — hallazgo H-7 de la propuesta de imagen visual, **implementado**
+(Fase A.2, 2026-09-27): el borde de `input`/`select`/`textarea` pasa a `line-strong #8F7F5F`
+(**3,91:1** sobre `shell`, **3,63:1** sobre `sand`, **3,27:1** sobre `sand-2`) en los **89 controles**
+con frontera y en las 11 constantes `FIELD` compartidas. El `line #E7DCC6` anterior daba ~1,10:1 y se
+conserva **solo** para filetes decorativos (exentos). Lo protege un guardián nuevo —
+`apps/web/src/lib/a11y/control-boundary.test.ts`— que **deriva** del contraste medido qué tokens pueden
+ser frontera, exige `line-strong` por defecto y se comprobó **en falso**: devolver un solo control a
+`border-line` lo pone rojo con el fichero y la clase exactos. Los pares se miden con
 `node scripts/design/contrast-audit.mjs` (32 pares con veredicto AA/AAA).
+
+**Texto de botones «fantasma»** (observado y evaluado): 27 elementos `button`/`a` en 24 ficheros usan
+`border border-line` como estilo secundario. **No se cambian** porque el criterio 1.4.11 se aplica a la
+información visual *necesaria para identificar* el componente, y un botón con etiqueta visible se
+identifica por su texto; el **foco** (2.4.11) sí cumple con el doble anillo arena+teal. Si se quiere
+más afordancia, la palanca es aplicar `line-strong` también ahí (cambio visible en 27 elementos).
 
 ---
 
@@ -100,10 +110,10 @@ La plataforma de reservas Web3 del Hotel Marina del Sol garantiza el acceso equi
 Ejecute la suite de pruebas de accesibilidad:
 
 ```bash
-pnpm --filter @hotel/web test src/lib/a11y/a11y.test.ts
+pnpm --filter @hotel/web exec vitest run src/lib/a11y
 ```
 
-Qué comprueba (M7, D-11):
+Qué comprueba (M7, D-11; ampliado en la propuesta de imagen visual, Fase A.2):
 
 | Bloque | Invariante |
 |---|---|
@@ -111,6 +121,8 @@ Qué comprueba (M7, D-11):
 | Uso real del color | Ningún `className` usa un color fuera de la paleta; todo par texto/fondo del mismo elemento cumple 4.5:1 (con composición alfa); ningún color de texto ni de fondo queda sin verificar |
 | Estructura | `lang` en el documento, enlace de salto con destino existente, un `h1` por ruta, SVG ocultos o nombrados, gráficas con `role="img"`, leyenda en texto y tabla de datos, tablas con `scope` |
 | Matemática | Fórmula de luminancia relativa (blanco sobre negro = 21:1) y umbrales 4.5:1 / 3:1 |
+| **Frontera de controles** (Fase A.2, `control-boundary.test.ts`) | `line-strong` ≥ 3:1 en los tres lienzos; `line` < 3:1 (no puede ser frontera); los **89 controles** con borde declaran `line-strong` por defecto y sus bordes de estado también alcanzan 3:1. Verificado en falso: un solo control con `border-line` pone la prueba roja |
+| **Cascada cirílica** (`cyrillic-fonts.test.ts`) | `Playfair Display` + `Inter` se cargan con el subconjunto `cyrillic` y `preload:false`, y las pilas del preset y de `globals.css` los colocan **después** de la fuente de marca |
 
 **Estado del escaneo con navegador real (M8, ampliado en M9)**: `axe` **ya corre** sobre el navegador
 real. Con `pnpm --filter @hotel/web exec playwright install chromium-headless-shell` quedó resuelto el

@@ -174,7 +174,7 @@ export function ActivitiesPanel({
             value={date}
             onChange={(event) => setDate(event.target.value)}
             data-testid="activities-date"
-            className="min-h-touch rounded-brand-sm border border-line bg-sand px-3"
+            className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
           />
         </label>
       </div>
@@ -223,7 +223,7 @@ export function ActivitiesPanel({
                 value={form.reservationId}
                 onChange={(event) => setForm({ ...form, reservationId: event.target.value })}
                 data-testid="activities-reservation"
-                className="min-h-touch rounded-brand-sm border border-line bg-sand px-3"
+                className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
               >
                 {reservations.map((reservation) => (
                   <option key={reservation.id} value={reservation.id}>
@@ -239,7 +239,7 @@ export function ActivitiesPanel({
                 min={1}
                 value={form.seats}
                 onChange={(event) => setForm({ ...form, seats: Number(event.target.value) })}
-                className="min-h-touch w-20 rounded-brand-sm border border-line bg-sand px-3"
+                className="min-h-touch w-20 rounded-brand-sm border border-line-strong bg-sand px-3"
               />
             </label>
             <label className="flex items-center gap-2 text-small">

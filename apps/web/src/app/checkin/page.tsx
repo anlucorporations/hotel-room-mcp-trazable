@@ -118,7 +118,7 @@ export default function CheckInPage() {
                 rows={4}
                 value={jws}
                 onFocus={(e) => e.currentTarget.select()}
-                className="mt-2 w-full rounded-brand border border-line p-2 font-mono text-micro text-ink"
+                className="mt-2 w-full rounded-brand border border-line-strong p-2 font-mono text-micro text-ink"
               />
             </details>
           </>

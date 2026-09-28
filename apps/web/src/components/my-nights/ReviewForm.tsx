@@ -49,7 +49,7 @@ export function ReviewForm({ tokenId }: { tokenId: string }) {
         <select
           value={rating}
           onChange={(event) => setRating(Number(event.target.value))}
-          className="min-h-touch rounded-brand-sm border border-line bg-shell px-3"
+          className="min-h-touch rounded-brand-sm border border-line-strong bg-shell px-3"
         >
           {[5, 4, 3, 2, 1].map((value) => (
             <option key={value} value={value}>
@@ -66,7 +66,7 @@ export function ReviewForm({ tokenId }: { tokenId: string }) {
           placeholder={t("commentPlaceholder")}
           rows={3}
           maxLength={1000}
-          className="rounded-brand-sm border border-line bg-shell px-3 py-2"
+          className="rounded-brand-sm border border-line-strong bg-shell px-3 py-2"
         />
       </label>
       {error && (

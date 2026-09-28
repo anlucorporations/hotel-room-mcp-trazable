@@ -88,7 +88,7 @@ export function TicketView({ night }: { night: OwnedNight }) {
               rows={2}
               value={ticket.jws}
               onFocus={(e) => e.currentTarget.select()}
-              className="mt-1 w-full rounded-brand border border-line p-2 font-mono text-micro text-ink"
+              className="mt-1 w-full rounded-brand border border-line-strong p-2 font-mono text-micro text-ink"
             />
           </label>
           <p className="text-micro text-ink-soft">{t("tokenHint")}</p>

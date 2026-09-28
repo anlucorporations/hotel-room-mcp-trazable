@@ -214,7 +214,7 @@ export function HousekeepingBoard() {
               value={date}
               onChange={(event) => setDate(event.target.value)}
               data-testid="housekeeping-date"
-              className="min-h-touch rounded-brand-sm border border-line bg-sand px-3"
+              className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
             />
           </label>
           <label className="flex flex-col gap-1 text-small">
@@ -223,7 +223,7 @@ export function HousekeepingBoard() {
               value={shiftLabel}
               onChange={(event) => setShiftLabel(event.target.value as ShiftLabel)}
               data-testid="housekeeping-shift-label"
-              className="min-h-touch rounded-brand-sm border border-line bg-sand px-3"
+              className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
             >
               <option value="MANANA">{t("shiftManana")}</option>
               <option value="TARDE">{t("shiftTarde")}</option>
@@ -254,7 +254,7 @@ export function HousekeepingBoard() {
               value={assignees}
               onChange={(event) => setAssignees(event.target.value)}
               data-testid="housekeeping-assignees"
-              className="min-h-touch rounded-brand-sm border border-line bg-sand px-3"
+              className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
             />
           </label>
           <button
@@ -357,7 +357,7 @@ export function HousekeepingBoard() {
                   onChange={(event) =>
                     setManualNames((current) => ({ ...current, [room.roomId]: event.target.value }))
                   }
-                  className="min-h-touch min-w-[10rem] flex-1 rounded-brand-sm border border-line bg-shell px-3 text-small"
+                  className="min-h-touch min-w-[10rem] flex-1 rounded-brand-sm border border-line-strong bg-shell px-3 text-small"
                 />
                 <button
                   type="button"

@@ -17,7 +17,7 @@ const PRIMARY =
   "min-h-touch rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60";
 const DANGER =
   "min-h-touch rounded-pill bg-terracotta px-5 font-semibold text-shell transition-colors hover:opacity-90 disabled:opacity-60";
-const FIELD = "min-h-touch w-full rounded-brand border border-line bg-shell px-3 text-ink";
+const FIELD = "min-h-touch w-full rounded-brand border border-line-strong bg-shell px-3 text-ink";
 
 const DEFAULT_BATCH_MAX = 50; // BURN_BATCH_MAX por defecto (CU-13, docs/SRS.md §9); se confirma on-chain.
 

@@ -76,7 +76,7 @@ export function IncidentsAdmin() {
           value={status}
           onChange={(event) => setStatus(event.target.value)}
           data-testid="incidents-status"
-          className="min-h-touch rounded-brand-sm border border-line bg-sand px-3"
+          className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
         >
           <option value="">{t("filterAll")}</option>
           {MAINTENANCE_STATUSES.map((option) => (

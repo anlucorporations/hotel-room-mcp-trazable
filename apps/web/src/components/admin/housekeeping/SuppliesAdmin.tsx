@@ -149,7 +149,7 @@ export function SuppliesAdmin() {
                         aria-label={t("restockFor", { item: item.nameEs })}
                         value={quantities[item.id] ?? ""}
                         onChange={(event) => setQuantities((current) => ({ ...current, [item.id]: event.target.value }))}
-                        className="min-h-touch w-20 rounded-brand-sm border border-line bg-sand px-2"
+                        className="min-h-touch w-20 rounded-brand-sm border border-line-strong bg-sand px-2"
                       />
                       <button
                         type="button"

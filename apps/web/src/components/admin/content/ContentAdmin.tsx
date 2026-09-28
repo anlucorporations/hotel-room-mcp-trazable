@@ -174,7 +174,7 @@ export function ContentAdmin() {
             value={section}
             onChange={(event) => setSection(event.target.value as Section)}
             data-testid="content-section"
-            className="min-h-touch rounded-brand-sm border border-line bg-sand px-3"
+            className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
           >
             {SECTIONS.map((option) => (
               <option key={option} value={option}>{t(`section_${option}` as "section_HERO")}</option>
@@ -217,7 +217,7 @@ export function ContentAdmin() {
           </label>
           <label className="flex flex-col gap-1 text-small">
             <span className="font-medium text-ink">{t("altEs")}</span>
-            <input value={alts.es} onChange={(event) => setAlts({ ...alts, es: event.target.value })} className="min-h-touch w-48 rounded-brand-sm border border-line bg-sand px-3" />
+            <input value={alts.es} onChange={(event) => setAlts({ ...alts, es: event.target.value })} className="min-h-touch w-48 rounded-brand-sm border border-line-strong bg-sand px-3" />
           </label>
           <button type="submit" className="min-h-touch rounded-pill bg-sea px-4 text-small font-semibold text-shell">
             {t("upload")}
@@ -253,19 +253,19 @@ export function ContentAdmin() {
         <form onSubmit={createOffer} className="flex flex-wrap items-end gap-3 rounded-brand-lg border border-line bg-shell p-4">
           <label className="flex flex-col gap-1 text-small">
             <span className="font-medium text-ink">{t("offerCode")}</span>
-            <input required value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} className="min-h-touch w-32 rounded-brand-sm border border-line bg-sand px-3" />
+            <input required value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} className="min-h-touch w-32 rounded-brand-sm border border-line-strong bg-sand px-3" />
           </label>
           <label className="flex flex-col gap-1 text-small">
             <span className="font-medium text-ink">{t("offerTitle")}</span>
-            <input required value={form.titleEs} onChange={(event) => setForm({ ...form, titleEs: event.target.value })} className="min-h-touch w-56 rounded-brand-sm border border-line bg-sand px-3" />
+            <input required value={form.titleEs} onChange={(event) => setForm({ ...form, titleEs: event.target.value })} className="min-h-touch w-56 rounded-brand-sm border border-line-strong bg-sand px-3" />
           </label>
           <label className="flex flex-col gap-1 text-small">
             <span className="font-medium text-ink">{t("validFrom")}</span>
-            <input type="date" value={form.validFrom} onChange={(event) => setForm({ ...form, validFrom: event.target.value })} className="min-h-touch rounded-brand-sm border border-line bg-sand px-3" />
+            <input type="date" value={form.validFrom} onChange={(event) => setForm({ ...form, validFrom: event.target.value })} className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3" />
           </label>
           <label className="flex flex-col gap-1 text-small">
             <span className="font-medium text-ink">{t("validTo")}</span>
-            <input type="date" value={form.validTo} onChange={(event) => setForm({ ...form, validTo: event.target.value })} className="min-h-touch rounded-brand-sm border border-line bg-sand px-3" />
+            <input type="date" value={form.validTo} onChange={(event) => setForm({ ...form, validTo: event.target.value })} className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3" />
           </label>
           <button type="submit" className="min-h-touch rounded-pill bg-sea px-4 text-small font-semibold text-shell">
             {t("createOffer")}

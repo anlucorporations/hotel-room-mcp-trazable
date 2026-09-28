@@ -22,7 +22,7 @@ import { useMintNight } from "./useMintNight";
 import { useAdminTxCopy } from "./adminTxCopy";
 import { classifyAdminTxError } from "./adminTxError";
 
-const FIELD = "min-h-touch rounded-brand border border-line bg-shell px-3 text-ink";
+const FIELD = "min-h-touch rounded-brand border border-line-strong bg-shell px-3 text-ink";
 const SUBMIT =
   "min-h-touch rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60";
 
@@ -189,7 +189,7 @@ export function AdminMint() {
             checked={isBatchMode}
             onChange={(e) => setIsBatchMode(e.target.checked)}
             data-testid="mint-batch-toggle"
-            className="rounded border-line"
+            className="rounded border-line-strong"
           />
           {t("batchMint")}
         </label>

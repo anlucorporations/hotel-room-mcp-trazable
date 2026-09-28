@@ -133,7 +133,7 @@ export function MyNightCard({
                   value={priceEth}
                   onChange={(e) => setPriceEth(e.target.value)}
                   aria-invalid={priceError}
-                  className="mt-1 min-h-touch rounded-brand border border-line px-3 text-ink"
+                  className="mt-1 min-h-touch rounded-brand border border-line-strong px-3 text-ink"
                 />
               </label>
               {priceError && (

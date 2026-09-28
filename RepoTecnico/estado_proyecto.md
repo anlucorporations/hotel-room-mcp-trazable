@@ -1973,11 +1973,14 @@ fases de la hoja de ruta:
 |---|---|---|
 | **A · Tokens aditivos** | `preset.cjs`: `ocean`, `ocean-soft`, `champagne`, `line-strong`, `success(-bg)`, `warning(-bg)`, `error(-bg)`, `info(-bg)`; niveles tipográficos `display`, `h4`, `body-lg`, `body-sm`, `caption`, `overline`, `code`; radio `brand-xs`. Espejo `palette.ts` con **24 pares declarados** nuevos, `globals.css` (`:root`) y documentación (`docs/DISENO-UX.md` §2.1–2.3, `docs/ACCESIBILIDAD-WCAG.md` §0) | `a11y.test.ts` **17/17** (igualdad preset↔palette incluida) |
 | **B · Cascada cirílica** | `layout.tsx`: `Playfair Display` + `Inter` con `subsets:["cyrillic"]` y `preload:false`; pilas del preset y de `globals.css` con el respaldo después de la fuente de marca | Guardián nuevo `cyrillic-fonts.test.ts` **4/4** |
+| **A.2 · Frontera de controles (H-7)** | `line-strong #8F7F5F` en los **89 controles** con frontera y las **11** constantes `FIELD` (**28 ficheros**); los 184 filetes decorativos conservan `line`. Guardián nuevo `control-boundary.test.ts`: mide 3:1 en los tres lienzos, deriva del contraste qué tokens pueden ser frontera, exige `line-strong` por defecto y comprueba los bordes de estado | `@hotel/web` **478 pruebas**; guardián **5/5** y **falsificado** a mano (un `border-line` en un control → rojo con fichero y clase) |
 
-**Pendiente de la propuesta**: A.2 (borde `line-strong` en los controles + prueba de contraste de
-componente ≥3:1, cierre de **H-7**), C (componentes `Hero`/`BookingBar`/`StickySummary`…), D
-(regenerar piezas de marca) y E (`Manual_Identidad_Visual.md`, que se escribe **después** para no
-desincronizar tokens y manual). Sigue sin tocarse contrato, rutas ni modelo de datos.
+**Pendiente de la propuesta**: C (componentes `Hero`/`BookingBar`/`StickySummary`…), D (regenerar
+piezas de marca) y E (`Manual_Identidad_Visual.md`, que se escribe **después** para no desincronizar
+tokens y manual). Queda **observado y no exigido** H-8: 27 botones/enlaces «fantasma» con `border-line`
+(el criterio 1.4.11 aplica a la información visual necesaria para identificar el componente y un botón
+con etiqueta visible se identifica por su texto; el foco ya cumple). Sigue sin tocarse contrato, rutas
+ni modelo de datos.
 
 
 

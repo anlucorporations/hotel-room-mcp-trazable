@@ -97,7 +97,7 @@ export function ReviewsModeration() {
           value={status}
           onChange={(event) => setStatus(event.target.value as (typeof STATUSES)[number])}
           data-testid="reviews-status"
-          className="min-h-touch rounded-brand-sm border border-line bg-sand px-3"
+          className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
         >
           {STATUSES.map((option) => (
             <option key={option} value={option}>
@@ -142,7 +142,7 @@ export function ReviewsModeration() {
                       value={reasons[review.id] ?? ""}
                       onChange={(event) => setReasons((current) => ({ ...current, [review.id]: event.target.value }))}
                       placeholder={t("reasonPlaceholder")}
-                      className="min-h-touch rounded-brand-sm border border-line bg-sand px-3"
+                      className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
                     />
                   </label>
                   <button

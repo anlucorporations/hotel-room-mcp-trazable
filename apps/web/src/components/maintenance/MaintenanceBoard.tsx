@@ -151,7 +151,7 @@ export function MaintenanceBoard() {
             value={date}
             onChange={(event) => setDate(event.target.value)}
             data-testid="maintenance-date"
-            className="min-h-touch rounded-brand-sm border border-line bg-sand px-3"
+            className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
           />
         </label>
       </div>
