@@ -108,6 +108,7 @@ no un marketplace de NFTs.
 - **Chip de filtro**: toggle accesible (`aria-pressed`), scroll horizontal en móvil.
 - **Badge**: tipo de habitación / `Suite` (gold) / `Reventa` (terracota).
 - **Input / Select / DatePicker**, **Etiqueta**, **Precio** (Fraunces + sufijo ETH), **Dot de estado**.
+- **Stars** (`components/home/Stars.tsx`): calificación como **imagen con nombre accesible** (`role="img"` + `aria-label`, glifos `aria-hidden`); rellenas en `terracotta-text` (6,0:1 sobre blanco) y vacías al 25 % de opacidad. La lógica pura vive en `lib/stars.ts` (notas corruptas se acotan, no se inventan).
 - **Icono** (stroke 2px, set propio: calendario, marcador, ola, wallet, check, alerta).
 
 ### Moléculas
@@ -118,11 +119,15 @@ no un marketplace de NFTs.
 - **MetricCard** (dashboard): valor + etiqueta + periodo + sparkline.
 - **ChatBubble** + **ChatComposer** (asistente).
 - **Pagination / LoadMore**: botón «cargar más» (`load-more`) con estado de carga incremental, fin de lista (`end-of-list`), anuncio `aria-live` y gestión de foco al añadir resultados (RNF-02, ventana de 90 días).
+- **SuiteCard** (`components/home/SuiteCard.tsx`): tarjeta **horizontal** de habitación publicada (foto + tipo + capacidad + camas + m² + descripción + CTA al catálogo). Sin precio: la tarifa se publica solo donde se puede comprobar contra la cadena. Sin foto se pinta igual (banda arena).
+- **ExperienceCard** (`components/home/ExperienceCard.tsx`): imagen de la galería con el **texto alternativo como pie visible** (y `alt=""` para no leerlo dos veces); sin alt, nombre accesible genérico.
+- **TestimonialCard** (`components/home/TestimonialCard.tsx`): reseña **aprobada** (D-58) con `Stars`, cita en serif y pie «huésped verificado».
 
 ### Organismos
 - **Header** (marca + nav + wallet), **Hero editorial**, **CatalogGrid**, **HistoryTable**,
   **DashboardGrid**, **MintForm** (admin), **ChatPanel**, **TxModal** (confirmación de compra),
   **OnboardingSheet** (instalar/añadir red), **ResaleManager** (fijar/actualizar/cancelar precio de reventa + `claim`), **EmptyState / DegradedState**.
+- **Hero de la home pública** (`components/home/Hero.tsx`, Fase C): foto a sangre de la portada (`hotel_images` sección `HERO`) con **velo marino `bg-ocean/65`** (4,93:1 con texto blanco) y titular en serif con la palabra destacada en `champagne`. Sin portada cae a `bg-ocean` plano; la imagen va **sin** `lazy` porque es el LCP.
 
 ### Plantillas
 - **PublicLayout** (header + main + footer), **AdminLayout** (sidebar + topbar protegido por rol),

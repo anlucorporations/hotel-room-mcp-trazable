@@ -53,12 +53,17 @@ function sourceFiles(): string[] {
 const rel = (file: string): string => relative(SRC_ROOT, file).replace(/\\/g, "/");
 
 /** Preset real de Tailwind (CommonJS de build) tal y como lo consume la aplicación. */
-function realPresetColors(): Record<string, string> {
+function realPreset(): {
+  theme: { extend: { colors: Record<string, string>; fontSize: Record<string, unknown> } };
+} {
   const require = createRequire(import.meta.url);
-  const preset = require("../../../../../packages/config/tailwind/preset.cjs") as {
-    theme: { extend: { colors: Record<string, string> } };
+  return require("../../../../../packages/config/tailwind/preset.cjs") as {
+    theme: { extend: { colors: Record<string, string>; fontSize: Record<string, unknown> } };
   };
-  return preset.theme.extend.colors;
+}
+
+function realPresetColors(): Record<string, string> {
+  return realPreset().theme.extend.colors;
 }
 
 describe("Accesibilidad · la paleta medida ES la paleta real (H-21)", () => {
@@ -161,6 +166,22 @@ describe("Accesibilidad · utilidades de color usadas en el producto", () => {
     expect(tokens).toContain("bg-sand");
     expect(tokens).toContain("text-ink");
     expect(tokens).toContain("text-ink-soft");
+  });
+
+  it("el escáner no confunde los niveles de la escala tipográfica con colores (Fase C)", () => {
+    // `text-caption`, `text-body-lg`… son TAMAÑOS (claves de `fontSize` del preset) y comparten la
+    // forma `text-<token>` con los colores. Al añadir niveles nuevos (propuesta de imagen visual,
+    // Fase A) el escáner los denunció como «color desconocido» en cuanto un componente los usó: la
+    // lista de exclusión se DERIVA del preset real para que un nivel futuro quede cubierto solo.
+    const preset = realPreset();
+    const levels = Object.keys(preset.theme.extend.fontSize ?? {});
+    expect(levels.length).toBeGreaterThan(6);
+    const mistaken = levels.flatMap((level) =>
+      parseColorUtilities(`text-${level}`)
+        .filter((utility) => utility.role === "foreground")
+        .map((utility) => utility.raw),
+    );
+    expect(mistaken).toEqual([]);
   });
 
   it("ningún color de texto se usa sin una combinación declarada y verificada detrás", () => {

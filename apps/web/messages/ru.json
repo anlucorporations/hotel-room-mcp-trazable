@@ -72,14 +72,16 @@
     "experience": {
       "title": "Впечатления",
       "subtitle": "Отель и его окрестности.",
-      "empty": "Фотографии скоро появятся."
+      "empty": "Фотографии скоро появятся.",
+      "imageAlt": "Впечатления в отеле Marina del Sol"
     },
     "reviews": {
       "title": "Отзывы",
       "subtitle": "Мнения гостей, которые уже здесь останавливались.",
       "empty": "Опубликованных отзывов пока нет.",
       "average": "{average} из 5 · {count, plural, one {# отзыв} few {# отзыва} many {# отзывов} other {# отзыва}}",
-      "ratingLabel": "{rating} из 5 звёзд"
+      "ratingLabel": "{rating} из 5 звёзд",
+      "verified": "Подтверждённый гость"
     },
     "contact": {
       "title": "Контакты",
@@ -90,7 +92,16 @@
       "email": "reservas@hotelmarinadelsol.es",
       "mapTitle": "Карта расположения отеля"
     },
-    "ctaReserve": "Забронировать с кошельком"
+    "ctaReserve": "Забронировать с кошельком",
+    "suites": {
+      "roomLabel": "Номер {number}",
+      "capacityLabel": "Вместимость",
+      "capacity": "До {count} гостей",
+      "bedsLabel": "Кровати",
+      "sizeLabel": "Площадь",
+      "size": "{size} м²",
+      "cta": "Проверить наличие"
+    }
   },
   "shell": {
     "skipToContent": "Перейти к содержимому",
@@ -530,7 +541,7 @@
     "expiredScanning": "Сканирование…",
     "expiredScanError": "Ошибка сканирования. Введите ID вручную.",
     "expiredCount": "{count, plural, =0 {Нет истёкших ночей} one {# истёкшая ночь} few {# истёкшие ночи} many {# истёкших ночей} other {# истёкших ночей}}.",
-    "expiredManual": "ID токенов для сжигания",
+    "expiredManual": "ID токенов для сжигания (вручную, до {max}, через запятую или с новой строки)",
     "expiredBatchHint": "Пакет: {count} из {max} токенов.",
     "expiredBurn": "Сжечь пакет ({count})",
     "expiredEmptyBatch": "Пакет пуст.",
@@ -707,7 +718,7 @@
       "verifying": "Проверка цены в блокчейне…",
       "verifyFailed": "Не удалось проверить цену.",
       "verifyRetry": "Повторить",
-      "insufficientBalance": "Не хватает {missing} {symbol}.",
+      "insufficientBalance": "Не хватает {missing} {symbol} (у вас {have}, нужно {need}).",
       "reverifyFailed": "Параметры транзакции не совпадают с ценой в блокчейне.",
       "successTitle": "Номер забронирован!",
       "successBody": "Ваша бронь подтверждена. Посмотреть её можно в Моих ночах.",

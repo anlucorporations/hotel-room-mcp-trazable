@@ -1,36 +1,34 @@
 import "server-only";
 import { getTranslations } from "next-intl/server";
-import Link from "next/link";
-import type { ActivityRecord, HotelImageRecord, HotelOfferRecord, ReviewRecord } from "@hotel/shared";
+import type { ActivityRecord, HotelImageRecord, HotelOfferRecord } from "@hotel/shared";
 import { contentImageUrl } from "@/lib/hotel-images";
+import { pick, type HomeReview } from "@/lib/home-view";
 import type { HomeContent } from "@/lib/home-content";
+import { ExperienceCard } from "./ExperienceCard";
+import { Hero } from "./Hero";
+import { SuiteCard } from "./SuiteCard";
+import { TestimonialCard } from "./TestimonialCard";
 
 /**
- * Home one-page de la suite pública (F6 · D-66…D-71, D-76).
+ * Home one-page de la suite pública (F6 · D-66…D-71, D-76 · Fase C de la imagen visual).
  *
- * Secciones: marca y categoría, servicios, estilos, planes informativos, actividades, experiencia
- * con galería, reseñas con nota media y contacto con mapa. Las secciones que dependen de datos se
- * pintan solo si hay contenido (degradación elegante); el resto es texto de marca.
+ * Secciones: **hero editorial con velo marino**, servicios, alojamiento con tarjetas reales,
+ * planes informativos, actividades, experiencia con galería, reseñas con nota media y contacto con
+ * mapa. Las secciones que dependen de datos se pintan solo si hay contenido (degradación elegante);
+ * el resto es texto de marca. El **catálogo** (con precios verificables contra la cadena) vive en
+ * `/catalogo`.
  *
  * El mapa es un `<iframe>` de OpenStreetMap con `loading="lazy"` y `title` accesible: no bloquea el
  * LCP (D-67) y la CSP lo permite explícitamente (`frame-src`).
  */
 
 const SERVICES = ["wifi", "breakfast", "pool", "spa", "parking", "beach"] as const;
-const STYLES = ["simple", "double", "suite"] as const;
-
-/** Texto localizado con respaldo al español (D-6). */
-function pick(locale: string, es: string | null, en: string | null, ru: string | null): string {
-  if (locale.startsWith("en")) return en ?? es ?? "";
-  if (locale.startsWith("ru")) return ru ?? es ?? "";
-  return es ?? "";
-}
-
-function roomTypeKey(code: string): "simple" | "doble" | "suite" {
-  if (code === "DOBLE") return "doble";
-  if (code === "SUITE") return "suite";
-  return "simple";
-}
+/** Estilos de respaldo cuando aún no hay fichas publicadas: clave i18n del texto y tipo del dominio. */
+const STYLES = [
+  { key: "simple", type: "simple" },
+  { key: "double", type: "doble" },
+  { key: "suite", type: "suite" },
+] as const;
 
 const MAP_EMBED =
   "https://www.openstreetmap.org/export/embed.html?bbox=-0.4920%2C38.3345%2C-0.4700%2C38.3560&layer=mapnik&marker=38.3452%2C-0.4810";
@@ -41,40 +39,8 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
 
   return (
     <>
-      {/* 1 · Marca y categoría (D-70) */}
-      <section aria-labelledby="home-hero" className="px-5 pb-8 pt-12 desktop:pt-16">
-        <div className="mx-auto w-full max-w-6xl">
-          <p className="mb-3.5 text-micro font-bold uppercase tracking-[0.18em] text-terracotta-text">
-            {t("eyebrow")}
-          </p>
-          <h1 id="home-hero" className="max-w-[18ch] font-display text-h1 font-medium">
-            {t("titleLead")} <em className="not-italic text-sea">{t("titleHighlight")}</em>
-            {t("titleTail")}
-          </h1>
-          <p className="mt-4 max-w-prose text-body text-ink-soft">{t("subcopy")}</p>
-          <p className="mt-3 max-w-prose text-small text-ink-soft">{t("category")}</p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link
-              href="/catalogo"
-              className="inline-flex min-h-touch items-center rounded-pill bg-sea px-5 text-small font-semibold text-shell transition-colors hover:bg-sea-deep"
-            >
-              {t("ctaCatalog")}
-            </Link>
-            <Link
-              href="/reservar"
-              className="inline-flex min-h-touch items-center rounded-pill bg-sea-deep px-5 text-small font-semibold text-shell transition-colors hover:bg-sea"
-            >
-              {t("ctaReserve")}
-            </Link>
-            <Link
-              href="#contacto"
-              className="inline-flex min-h-touch items-center rounded-pill border border-sea px-5 text-small font-semibold text-sea transition-colors hover:bg-sand-2"
-            >
-              {t("ctaContact")}
-            </Link>
-          </div>
-        </div>
-      </section>
+      {/* 1 · Hero editorial con velo marino (Fase C) */}
+      <Hero image={content.hero} locale={locale} />
 
       {/* 2 · Servicios */}
       <section aria-labelledby="home-services" className="border-y border-line/70 bg-sand-2/60 px-5 py-10">
@@ -92,19 +58,27 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
         </div>
       </section>
 
-      {/* 3 · Estilos de habitación */}
+      {/* 3 · Alojamiento: tarjetas reales de habitación (Fase C); sin fichas publicadas, texto de marca */}
       <section aria-labelledby="home-styles" className="px-5 py-10">
         <div className="mx-auto w-full max-w-6xl">
           <h2 id="home-styles" className="font-display text-h2 font-medium">{t("styles.title")}</h2>
           <p className="mt-2 max-w-prose text-small text-ink-soft">{t("styles.subtitle")}</p>
-          <ul className="mt-6 grid gap-4 tablet:grid-cols-3">
-            {STYLES.map((key) => (
-              <li key={key} className="rounded-brand border border-line bg-shell p-5">
-                <h3 className="font-display text-body font-semibold text-ink">{roomType(key)}</h3>
-                <p className="mt-1.5 text-small text-ink-soft">{t(`styles.items.${key}`)}</p>
-              </li>
-            ))}
-          </ul>
+          {content.suites.length === 0 ? (
+            <ul className="mt-6 grid gap-4 tablet:grid-cols-3">
+              {STYLES.map(({ key, type }) => (
+                <li key={key} className="rounded-brand border border-line bg-shell p-5">
+                  <h3 className="font-display text-body font-semibold text-ink">{roomType(type)}</h3>
+                  <p className="mt-1.5 text-small text-ink-soft">{t(`styles.items.${key}`)}</p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <ul className="mt-6 flex flex-col gap-5">
+              {content.suites.map((suite) => (
+                <SuiteCard key={suite.id} suite={suite} locale={locale} />
+              ))}
+            </ul>
+          )}
         </div>
       </section>
 
@@ -182,15 +156,16 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
           ) : (
             <ul className="mt-6 grid grid-cols-2 gap-3 tablet:grid-cols-3">
               {content.gallery.map((image: HotelImageRecord) => (
-                <li key={image.id}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={contentImageUrl(image.fileName)}
-                    alt={pick(locale, image.altTextEs, image.altTextEn, image.altTextRu)}
-                    loading="lazy"
-                    className="h-40 w-full rounded-brand border border-line object-cover"
-                  />
-                </li>
+                <ExperienceCard
+                  key={image.id}
+                  locale={locale}
+                  image={{
+                    fileName: image.fileName,
+                    altEs: image.altTextEs,
+                    altEn: image.altTextEn,
+                    altRu: image.altTextRu,
+                  }}
+                />
               ))}
             </ul>
           )}
@@ -214,18 +189,8 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
             <p className="mt-4 text-small text-ink-soft">{t("reviews.empty")}</p>
           ) : (
             <ul className="mt-6 grid gap-4 tablet:grid-cols-3">
-              {content.reviews.map((review: ReviewRecord) => (
-                <li key={review.id} className="rounded-brand border border-line bg-shell p-5">
-                  <p
-                    className="text-body text-sea-deep"
-                    aria-label={t("reviews.ratingLabel", { rating: review.rating })}
-                  >
-                    <span aria-hidden="true">{"★".repeat(review.rating)}</span>
-                    <span aria-hidden="true" className="text-ink-soft/40">{"★".repeat(5 - review.rating)}</span>
-                  </p>
-                  <p className="mt-2 text-small font-medium text-ink-soft">{roomType(roomTypeKey(review.roomType))}</p>
-                  {review.comment && <p className="mt-2 text-small text-ink">“{review.comment}”</p>}
-                </li>
+              {content.reviews.map((review: HomeReview) => (
+                <TestimonialCard key={review.id} review={review} />
               ))}
             </ul>
           )}

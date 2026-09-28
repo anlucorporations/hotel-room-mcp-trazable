@@ -1974,8 +1974,16 @@ fases de la hoja de ruta:
 | **A · Tokens aditivos** | `preset.cjs`: `ocean`, `ocean-soft`, `champagne`, `line-strong`, `success(-bg)`, `warning(-bg)`, `error(-bg)`, `info(-bg)`; niveles tipográficos `display`, `h4`, `body-lg`, `body-sm`, `caption`, `overline`, `code`; radio `brand-xs`. Espejo `palette.ts` con **24 pares declarados** nuevos, `globals.css` (`:root`) y documentación (`docs/DISENO-UX.md` §2.1–2.3, `docs/ACCESIBILIDAD-WCAG.md` §0) | `a11y.test.ts` **17/17** (igualdad preset↔palette incluida) |
 | **B · Cascada cirílica** | `layout.tsx`: `Playfair Display` + `Inter` con `subsets:["cyrillic"]` y `preload:false`; pilas del preset y de `globals.css` con el respaldo después de la fuente de marca | Guardián nuevo `cyrillic-fonts.test.ts` **4/4** |
 | **A.2 · Frontera de controles (H-7)** | `line-strong #8F7F5F` en los **89 controles** con frontera y las **11** constantes `FIELD` (**28 ficheros**); los 184 filetes decorativos conservan `line`. Guardián nuevo `control-boundary.test.ts`: mide 3:1 en los tres lienzos, deriva del contraste qué tokens pueden ser frontera, exige `line-strong` por defecto y comprueba los bordes de estado | `@hotel/web` **478 pruebas**; guardián **5/5** y **falsificado** a mano (un `border-line` en un control → rojo con fichero y clase) |
+| **C.1 · Componentes de la suite pública** | `Hero` (foto a sangre de la portada `HERO` con velo `bg-ocean/65`, 4,93:1 con texto blanco; cae a `bg-ocean` sin foto), `Stars` (imagen con nombre accesible; lógica pura en `lib/stars.ts`), `SuiteCard` horizontal (una habitación **publicada por tipo**, con su foto, capacidad, camas y m², sin inventar precio), `ExperienceCard` (alt como pie visible) y `TestimonialCard`; home integrada con **datos reales** y `getHomeContent` ampliado con `hero` y `suites` (degradación elegante por fuente) | `@hotel/web` **487 pruebas** (nuevas: `stars` 4, paridad i18n 4) y a11y **18/18**; build de producción OK |
 
-**Pendiente de la propuesta**: C (componentes `Hero`/`BookingBar`/`StickySummary`…), D (regenerar
+**Hallazgos que destaparon los guardianes nuevos (C.1)**: (a) `text-caption`/`text-body-lg` de la
+escala tipográfica nueva se leían como «color desconocido» — corregido y con **prueba que deriva la
+lista del preset real**; (b) la paridad i18n **no estaba verificada por ninguna prueba**: el guardián
+nuevo `i18n-parity.test.ts` (1.201 claves idénticas en ES/EN/RU, sin valores en blanco y con los mismos
+marcadores) destapó **dos defectos previos**: `admin.expiredManual` no comunicaba «hasta {max}» en EN/RU
+y `assistant.handoff.insufficientBalance` perdía `{have}` y `{need}` en EN/RU. Ambos corregidos.
+
+**Pendiente de la propuesta**: C.2 (`BookingBar` flotante, `StickySummary`, `DataTable`), D (regenerar
 piezas de marca) y E (`Manual_Identidad_Visual.md`, que se escribe **después** para no desincronizar
 tokens y manual). Queda **observado y no exigido** H-8: 27 botones/enlaces «fantasma» con `border-line`
 (el criterio 1.4.11 aplica a la información visual necesaria para identificar el componente y un botón

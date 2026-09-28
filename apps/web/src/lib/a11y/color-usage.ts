@@ -57,7 +57,18 @@ const NON_COLOR_TOKENS = new Set([
   "h1",
   "h2",
   "h3",
+  "h4",
   "body",
+  // Niveles de la escala tipográfica (`fontSize` del preset) que, sin esta lista, el escáner
+  // confundía con colores: `text-caption` y `text-body-lg` se leían como «color desconocido».
+  // El guardián de `a11y.test.ts` deriva esta lista del preset real, así que un nivel nuevo
+  // tampoco podrá colarse.
+  "display",
+  "body-lg",
+  "body-sm",
+  "caption",
+  "overline",
+  "code",
   "small",
   "micro",
   "gradient-to-t",

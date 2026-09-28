@@ -374,9 +374,16 @@ personal (§3.6), con su coste de duplicar la matriz de contraste y el escaneo?
 | **A · Tokens** | ✅ **Implementada** (2026-09-27) | `packages/config/tailwind/preset.cjs` (13 colores nuevos, 7 niveles tipográficos, `brand-xs`), espejo `apps/web/src/lib/a11y/palette.ts` (+24 pares declarados), `globals.css` (`:root`), `docs/DISENO-UX.md` §2.1–2.3, `docs/ACCESIBILIDAD-WCAG.md` §0. Verificado: `a11y.test.ts` **17/17** (incluye la igualdad preset↔palette y el contraste de todos los pares declarados) |
 | **B · Cascada cirílica** | ✅ **Implementada** | `apps/web/src/app/layout.tsx` (Playfair Display + Inter con `subsets:["cyrillic"]`, `preload:false`), pilas en el preset y en `globals.css`. Guardián nuevo `cyrillic-fonts.test.ts` **4/4** |
 | **A.2 · Controles (H-7)** | ✅ **Implementada** (2026-09-27) | `line-strong` en los **89 controles** con borde y las **11** constantes `FIELD` (**28 ficheros**, codemod que solo toca etiquetas de control: los 184 filetes decorativos quedan intactos) + guardián nuevo `control-boundary.test.ts` **5/5** (con falsificación: un `border-line` en un control lo pone rojo) |
-| **C · Componentes** | ⏳ Pendiente | `Hero`, `BookingBar`, `StickySummary`, `SuiteCard`, `ExperienceCard`, `TestimonialCard`, `Stars`, `DataTable` |
+| **C · Componentes** | 🟡 **C.1 hecha** (2026-09-27): `Hero` (foto a sangre + velo `ocean/65`), `Stars`, `SuiteCard` horizontal, `ExperienceCard`, `TestimonialCard`, integrados en la home con datos reales (portada `HERO` + una habitación publicada por tipo). **C.2 pendiente**: `BookingBar` flotante, `StickySummary` y `DataTable` | `@hotel/web` **478 → 486 pruebas**; guardián nuevo de **paridad i18n** (ES/EN/RU) que además destapó y corrigió **dos defectos previos** (ver §6.2) |
 | **D · Marca y piezas** | ⏳ Pendiente | Regenerar `docs/imagenes/*.svg`, mockup del catálogo, OG y capturas |
 | **E · Manual de identidad** | ⏳ Pendiente | `RepoTecnico/Manual_Identidad_Visual.md` (se escribe **después** de A/A.2/C, para no desincronizar tokens y manual) |
+
+### 6.2 Hallazgos destapados por los guardianes nuevos (Fase C)
+
+| # | Hallazgo | Cómo se detectó | Corrección |
+|---|---|---|---|
+| C-1 | **`text-caption` y `text-body-lg` se leían como colores desconocidos**: la escala tipográfica nueva (Fase A) comparte la forma `text-<token>` con los colores y el escáner de accesibilidad no la conocía; en cuanto un componente la usó (Fase C) la denunció | `a11y.test.ts` («ningún componente usa un color que no exista en la paleta») | Los niveles de `fontSize` entran en la lista de no-colores, y una **prueba nueva deriva esa lista del preset real**: un nivel futuro queda cubierto solo |
+| C-2 | **La paridad i18n no estaba verificada por ninguna prueba**: se comprobaba a mano en cada incremento | Guardián nuevo `i18n-parity.test.ts` | 1.201 claves idénticas en ES/EN/RU, sin traducciones en blanco y con **los mismos marcadores de interpolación**; destapó dos defectos reales: `admin.expiredManual` no decía «hasta {max}» en EN/RU y `assistant.handoff.insufficientBalance` perdía `{have}` y `{need}` en EN/RU (el importe disponible y el necesario no se mostraban). Ambos corregidos |
 
 ---
 

@@ -72,14 +72,16 @@
     "experience": {
       "title": "Experiencia",
       "subtitle": "El hotel y su entorno.",
-      "empty": "Pronto añadiremos fotografías."
+      "empty": "Pronto añadiremos fotografías.",
+      "imageAlt": "Experiencia en el Hotel Marina del Sol"
     },
     "reviews": {
       "title": "Reseñas",
       "subtitle": "Opiniones de huéspedes que ya han dormido aquí.",
       "empty": "Todavía no hay reseñas publicadas.",
       "average": "{average} de 5 · {count, plural, one {# reseña} other {# reseñas}}",
-      "ratingLabel": "{rating} de 5 estrellas"
+      "ratingLabel": "{rating} de 5 estrellas",
+      "verified": "Huésped verificado"
     },
     "contact": {
       "title": "Contacto",
@@ -90,7 +92,16 @@
       "email": "reservas@hotelmarinadelsol.es",
       "mapTitle": "Mapa de la ubicación del hotel"
     },
-    "ctaReserve": "Reservar con wallet"
+    "ctaReserve": "Reservar con wallet",
+    "suites": {
+      "roomLabel": "Habitación {number}",
+      "capacityLabel": "Capacidad",
+      "capacity": "Hasta {count} huéspedes",
+      "bedsLabel": "Camas",
+      "sizeLabel": "Superficie",
+      "size": "{size} m²",
+      "cta": "Ver disponibilidad"
+    }
   },
   "shell": {
     "skipToContent": "Saltar al contenido",

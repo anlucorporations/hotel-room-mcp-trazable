@@ -72,14 +72,16 @@
     "experience": {
       "title": "Experience",
       "subtitle": "The hotel and its surroundings.",
-      "empty": "Photos coming soon."
+      "empty": "Photos coming soon.",
+      "imageAlt": "Experience at Hotel Marina del Sol"
     },
     "reviews": {
       "title": "Reviews",
       "subtitle": "Opinions from guests who have already stayed here.",
       "empty": "No reviews published yet.",
       "average": "{average} out of 5 · {count, plural, one {# review} other {# reviews}}",
-      "ratingLabel": "{rating} out of 5 stars"
+      "ratingLabel": "{rating} out of 5 stars",
+      "verified": "Verified guest"
     },
     "contact": {
       "title": "Contact",
@@ -90,7 +92,16 @@
       "email": "reservas@hotelmarinadelsol.es",
       "mapTitle": "Map of the hotel location"
     },
-    "ctaReserve": "Book with wallet"
+    "ctaReserve": "Book with wallet",
+    "suites": {
+      "roomLabel": "Room {number}",
+      "capacityLabel": "Capacity",
+      "capacity": "Up to {count} guests",
+      "bedsLabel": "Beds",
+      "sizeLabel": "Size",
+      "size": "{size} m²",
+      "cta": "Check availability"
+    }
   },
   "shell": {
     "skipToContent": "Skip to content",
@@ -530,7 +541,7 @@
     "expiredScanning": "Scanning…",
     "expiredScanError": "Scan error. Use manual token ID entry.",
     "expiredCount": "{count, plural, =0 {No expired nights} one {# expired night} other {# expired nights}}.",
-    "expiredManual": "Token IDs to burn (separated by commas or newlines)",
+    "expiredManual": "Token IDs to burn (manual, up to {max}, separated by commas or newlines)",
     "expiredBatchHint": "Current batch: {count} of max {max} tokens.",
     "expiredBurn": "Burn batch ({count})",
     "expiredEmptyBatch": "No tokens in batch.",
@@ -707,7 +718,7 @@
       "verifying": "Verifying on-chain price…",
       "verifyFailed": "Could not verify price on-chain.",
       "verifyRetry": "Retry",
-      "insufficientBalance": "You need {missing} more {symbol}.",
+      "insufficientBalance": "You are short {missing} {symbol} (you have {have}, you need {need}).",
       "reverifyFailed": "Transaction data does not match on-chain price.",
       "successTitle": "Night booked!",
       "successBody": "Your booking is confirmed. View it in My Nights.",
