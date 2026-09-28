@@ -8,33 +8,74 @@ import { WalletMenu } from "@/components/wallet/WalletMenu";
 import { useAdminSession } from "@/components/admin/useAdminSession";
 import { isActiveRoute } from "./navigation";
 
+type ShellLabelKey =
+  // D-76: la suite pública es el home del proyecto; su primera entrada es «Inicio».
+  | "navHome"
+  | "navCatalog"
+  | "navReserve"
+  | "navResale"
+  | "navMyNights"
+  | "navHistory"
+  | "navAssistant"
+  | "navHelp"
+  | "navCompany"
+  | "navFacilities"
+  | "navServices"
+  | "navRooms"
+  | "navExperiences"
+  | "navActivities"
+  | "navPlans"
+  | "navReviews"
+  | "navContact"
+  | "navHotelGroup"
+  | "navDiscoverGroup";
+
 interface NavItem {
   readonly href: string;
-  readonly labelKey:
-    | "navHome"
-    | "navCatalog"
-    | "navReserve"
-    | "navResale"
-    | "navMyNights"
-    | "navHistory"
-    | "navAssistant"
-    | "navHelp";
+  readonly labelKey: ShellLabelKey;
 }
 
-const NAV_ITEMS: readonly NavItem[] = [
+/**
+ * Navegación de la suite pública (petición del responsable, 2026-09-28).
+ *
+ * La barra se **nutre de las páginas de detalle**: cada sección de la home tiene su página y su
+ * entrada de menú. Se reparte en tres grupos para que la cabecera no se sature: los **primarios**
+ * (los que llevan a la decisión de compra) y dos desplegables accesibles —`<details>` nativo, sin
+ * JavaScript— con «El hotel» y «Descubre».
+ */
+const PRIMARY_ITEMS: readonly NavItem[] = [
   // D-76: la suite pública es el home del proyecto; su primera entrada es «Inicio» (`/`).
   { href: "/", labelKey: "navHome" },
-  // D-31: el catálogo de noches vive en su propia página desde F6.
+  { href: "/habitaciones", labelKey: "navRooms" },
   { href: "/catalogo", labelKey: "navCatalog" },
   // D-65/D-72: reserva con wallet (retención + anticipo por transferencia).
   { href: "/reservar", labelKey: "navReserve" },
-  // D-07: el mercado secundario es una vista propia; el catálogo solo ofrece primaria.
-  { href: "/reventa", labelKey: "navResale" },
-  { href: "/mis-noches", labelKey: "navMyNights" },
-  { href: "/historico", labelKey: "navHistory" },
-  { href: "/asistente", labelKey: "navAssistant" },
-  // M9 (D-14/D-17): la ayuda sirve los manuales del repositorio desde la propia web.
-  { href: "/ayuda", labelKey: "navHelp" },
+];
+
+const NAV_GROUPS: readonly { labelKey: ShellLabelKey; items: readonly NavItem[] }[] = [
+  {
+    labelKey: "navHotelGroup",
+    items: [
+      { href: "/empresa", labelKey: "navCompany" },
+      { href: "/instalaciones", labelKey: "navFacilities" },
+      { href: "/servicios", labelKey: "navServices" },
+      { href: "/planes", labelKey: "navPlans" },
+      { href: "/resenas", labelKey: "navReviews" },
+      { href: "/contacto", labelKey: "navContact" },
+    ],
+  },
+  {
+    labelKey: "navDiscoverGroup",
+    items: [
+      { href: "/experiencias", labelKey: "navExperiences" },
+      { href: "/actividades", labelKey: "navActivities" },
+      { href: "/reventa", labelKey: "navResale" },
+      { href: "/mis-noches", labelKey: "navMyNights" },
+      { href: "/historico", labelKey: "navHistory" },
+      { href: "/asistente", labelKey: "navAssistant" },
+      { href: "/ayuda", labelKey: "navHelp" },
+    ],
+  },
 ];
 
 /**
@@ -42,7 +83,7 @@ const NAV_ITEMS: readonly NavItem[] = [
  * en gradiente, navegación con `aria-current` en el activo y la barra de wallet a la derecha.
  *
  * En tablet+ la navegación es horizontal; en móvil se sustituye por un botón hamburguesa
- * accesible que despliega los mismos `NAV_ITEMS` (MAJOR#10/UX#4).
+ * accesible que despliega todos los enlaces públicos, agrupados (MAJOR#10/UX#4).
  */
 export function SiteHeader() {
   const t = useTranslations("shell");
@@ -75,8 +116,8 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        <nav aria-label={t("navLabel")} className="ml-2 hidden items-center gap-6 tablet:flex">
-          {NAV_ITEMS.map((item) => {
+        <nav aria-label={t("navLabel")} className="ml-2 hidden items-center gap-5 tablet:flex">
+          {PRIMARY_ITEMS.map((item) => {
             const active = isActiveRoute(pathname, item.href);
             return (
               <Link
@@ -89,6 +130,37 @@ export function SiteHeader() {
               >
                 {t(item.labelKey)}
               </Link>
+            );
+          })}
+
+          {NAV_GROUPS.map((group) => {
+            const groupActive = group.items.some((item) => isActiveRoute(pathname, item.href));
+            return (
+              <details key={group.labelKey} className="group relative">
+                <summary
+                  className={`flex cursor-pointer list-none items-center gap-1 py-1.5 text-small font-medium transition-colors hover:text-ink ${
+                    groupActive ? "text-ink" : "text-ink-soft"
+                  }`}
+                >
+                  {t(group.labelKey)}
+                  <span aria-hidden="true" className="text-micro transition-transform group-open:rotate-180">
+                    ▾
+                  </span>
+                </summary>
+                <ul className="absolute right-0 top-full z-50 mt-2 flex w-56 flex-col gap-1 rounded-brand border border-line bg-shell p-2 shadow-modal">
+                  {group.items.map((item) => (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        aria-current={isActiveRoute(pathname, item.href) ? "page" : undefined}
+                        className="flex min-h-touch items-center rounded-brand-sm px-3 text-small text-ink-soft transition-colors hover:bg-sand-2 hover:text-ink"
+                      >
+                        {t(item.labelKey)}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </details>
             );
           })}
         </nav>
@@ -106,7 +178,7 @@ export function SiteHeader() {
  * Navegación móvil accesible (MAJOR#10/UX#4), visible solo `<tablet`.
  *
  * Botón hamburguesa con `aria-expanded`/`aria-controls` y área táctil ≥44px que despliega
- * los `NAV_ITEMS`. El panel cierra con Escape, al elegir un enlace y al cambiar de ruta;
+ * los mismos enlaces que la barra de escritorio. El panel cierra con Escape, al elegir un enlace y al cambiar de ruta;
  * el foco se mueve al primer enlace al abrir y vuelve al botón al cerrar.
  */
 function MobileNav({ pathname }: { pathname: string }) {
@@ -179,26 +251,36 @@ function MobileNav({ pathname }: { pathname: string }) {
             aria-label={t("navLabel")}
             className="absolute left-0 right-0 top-[68px] z-40 border-b border-line bg-sand px-5 py-3 shadow-[0_10px_30px_rgba(0,0,0,0.08)]"
           >
-            <ul className="flex flex-col">
-              {NAV_ITEMS.map((item, index) => {
-                const active = isActiveRoute(pathname, item.href);
-                return (
-                  <li key={item.href}>
-                    <Link
-                      ref={index === 0 ? firstLinkRef : undefined}
-                      href={item.href}
-                      aria-current={active ? "page" : undefined}
-                      onClick={() => setOpen(false)}
-                      className={`flex min-h-touch items-center text-body font-medium transition-colors ${
-                        active ? "text-ink" : "text-ink-soft hover:text-ink"
-                      }`}
-                    >
-                      {t(item.labelKey)}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
+            {[{ labelKey: null, items: PRIMARY_ITEMS }, ...NAV_GROUPS].map((group, groupIndex) => (
+              <div key={group.labelKey ?? "primary"} className={groupIndex === 0 ? "" : "mt-3 border-t border-line pt-3"}>
+                {group.labelKey && (
+                  <p className="px-1 pb-1 text-micro font-semibold uppercase tracking-[0.14em] text-ink-soft">
+                    {t(group.labelKey)}
+                  </p>
+                )}
+                <ul className="flex flex-col">
+                  {group.items.map((item, index) => {
+                    const active = isActiveRoute(pathname, item.href);
+                    const isFirstLink = groupIndex === 0 && index === 0;
+                    return (
+                      <li key={item.href}>
+                        <Link
+                          ref={isFirstLink ? firstLinkRef : undefined}
+                          href={item.href}
+                          aria-current={active ? "page" : undefined}
+                          onClick={() => setOpen(false)}
+                          className={`flex min-h-touch items-center text-body font-medium transition-colors ${
+                            active ? "text-ink" : "text-ink-soft hover:text-ink"
+                          }`}
+                        >
+                          {t(item.labelKey)}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
           </nav>
         </>
       ) : null}

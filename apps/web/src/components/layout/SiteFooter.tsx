@@ -25,6 +25,22 @@ export function SiteFooter() {
           </Link>
         </div>
         <nav aria-label={t("footerNavLabel")} className="flex flex-wrap gap-x-5 gap-y-2 text-small text-ink-soft">
+          {/* Páginas de detalle de la suite pública (2026-09-28): el pie también las enlaza. */}
+          <Link href="/empresa" className="transition-colors hover:text-ink">
+            {t("navCompany")}
+          </Link>
+          <Link href="/instalaciones" className="transition-colors hover:text-ink">
+            {t("navFacilities")}
+          </Link>
+          <Link href="/habitaciones" className="transition-colors hover:text-ink">
+            {t("navRooms")}
+          </Link>
+          <Link href="/experiencias" className="transition-colors hover:text-ink">
+            {t("navExperiences")}
+          </Link>
+          <Link href="/contacto" className="transition-colors hover:text-ink">
+            {t("navContact")}
+          </Link>
           <Link href="/historico" className="transition-colors hover:text-ink">
             {t("footerHistory")}
           </Link>

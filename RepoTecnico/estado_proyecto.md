@@ -2009,20 +2009,78 @@ botones/enlaces «fantasma» con `border-line` (el criterio 1.4.11 aplica a la i
 necesaria para identificar el componente y un botón con etiqueta visible se identifica por su texto; el
 foco ya cumple). Sigue sin tocarse contrato, rutas ni modelo de datos.
 
+---
 
+## 31. Suite pública completa y cierre de las demás suites (2026-09-28)
 
+**Petición del responsable**: (1) llenar la suite pública con información coherente para atraer
+visitas, incluyendo la Ayuda, siendo **la única sin sesión ni cartera**; (1.1) convertir cada sección
+de la home en su propia página y dejar el inicio como resumen; (1.2) nutrir la barra superior de esas
+páginas; (1.3) añadir **Empresa** y **Instalaciones** (distribución del hotel y características de cada
+tipo de habitación); (2) restringir las demás suites a usuarios inscritos.
 
+### Decisiones aprobadas (entrevista de 3)
 
+| # | Pregunta | Decisión |
+|---|---|---|
+| 1 | Alcance de la cartera | **Sesión validada en servidor para todas las suites no públicas**; la cartera se exige donde ya es imprescindible (comprar, reservar, revender, administrar). Housekeeping y mantenimiento siguen con contraseña + TOTP **sin cartera** (D-56) |
+| 2 | Origen del contenido | **Híbrido**: habitaciones, planes, actividades, reseñas y galería desde las tablas reales; «Empresa» e «Instalaciones» como texto institucional en i18n ES/EN/RU. **Sin cambios en el modelo de datos** |
+| 3 | Mapa de páginas | **Una página por sección** + Empresa e Instalaciones, con la home como resumen |
 
+### Hecho
 
+**Suite pública (9 páginas nuevas, todas con `PublicShell`, `<h1>` propio y contenido real):**
 
+| Ruta | Contenido |
+|---|---|
+| `/empresa` | Quién es el hotel y cómo trabaja (reserva directa, noches en propiedad, privacidad, transparencia) + **cifras del inventario real**: 50 habitaciones, 2 plantas, 3 tipos, 3 idiomas |
+| `/instalaciones` | **Distribución** del hotel por plantas (tabla con `DataTable`: planta, numeración, tipos, cuántas), zonas comunes, accesibilidad y enlaces a habitaciones y contacto |
+| `/servicios` | Los seis servicios con su descripción (mismas claves que la home, sin duplicar textos) y lo que incluye cualquier estancia |
+| `/habitaciones` | Los **tres tipos** con rango real de capacidad y superficie (calculado del inventario), ficha de muestra con foto (`SuiteCard`) y los tres pasos de la compra |
+| `/experiencias` | Galería completa de la sección `EXPERIENCE` (la home enseña seis) |
+| `/actividades` | Catálogo activo con precio |
+| `/planes` | Planes informativos activos (D-69) |
+| `/resenas` | **Todas** las reseñas aprobadas con la nota media (la home enseña tres) |
+| `/contacto` | Dirección, teléfono, correo, mapa OpenStreetMap, cómo llegar y el aviso de que el registro de viajeros sigue en el mostrador (D-13) |
 
+**Home como resumen**: cada sección termina en un enlace «Ver más» a su página (7 enlaces
+verificados), los listados se recortan (planes 2, actividades 3, galería 6, reseñas 3) y se añade una
+banda de descubrimiento con Empresa, Instalaciones y Ayuda.
 
+**Navegación** (`SiteHeader`): primarios (Inicio, Habitaciones, Catálogo, Reservar) + dos
+desplegables `<details>` accesibles **sin JavaScript** («El hotel»: Empresa, Instalaciones, Servicios,
+Planes, Reseñas, Contacto; «Descubre»: Experiencias, Actividades, Reventa, Mis noches, Histórico,
+Asistente, Ayuda). El panel móvil los agrupa con encabezados y el **pie** enlaza las páginas de
+sección.
 
+**Cierre de las suites no públicas** (requisito 2): `/recepcion` (rol `RECEPTION_ROLE`),
+`/housekeeping` (`HOUSEKEEPING`) y `/mantenimiento` (`MAINTENANCE`) pasan a tener **layout con puerta
+en servidor** (`currentAdminSession(rol)`, que ahora acepta el rol exigido; el owner entra a todas) y
+sirven la pantalla de acceso canónica en lugar del panel. La suite pública **no** importa el guard de
+sesión.
 
+### Verificación
 
+| Comprobación | Resultado |
+|---|---|
+| `pnpm typecheck` · `pnpm lint` | **6/6** · **6/6** |
+| `pnpm --filter @hotel/web test` | **69 ficheros · 524 pruebas** (nuevas: guardián de suite pública 8) |
+| `pnpm --filter @hotel/web build` | **OK · 54 páginas** estáticas (9 más que antes) |
+| Smoke test en producción local | **14 rutas públicas → 200** con un solo `<h1>` y la navegación; **`/recepcion`, `/housekeeping` y `/mantenimiento` → 200 con la pantalla de acceso y SIN panel** (los marcadores del panel no aparecen en el HTML) |
+| i18n | 1.312 claves idénticas en ES/EN/RU (paridad vigilada) |
 
+### Hallazgos y mejoras del proceso
 
-
-
+1. **El escáner de contraste cruzaba variantes** (lo destapó la primera versión de los botones
+   «contorno»): medía el texto de reposo (`text-sea`) contra el fondo del `hover` (`hover:bg-sea-deep`
+   = 1,41:1) aunque en ese estado el texto cambia a arena. Ahora el emparejamiento es **por variante**
+   con herencia explícita (una variante sin color propio hereda el de reposo), que es la regla real de
+   CSS. Se **falsificó** con una sonda `hover:bg-sea` sin texto propio: el guardián la caza con
+   «hover: text-sea sobre hover:bg-sea = 1:1».
+2. **La delegación del `<h1>` no puede ser hueca**: el guardián de accesibilidad acepta `<PageHeader`
+   como cabecera delegada de las páginas de sección y, en el mismo test, exige que ese componente
+   contenga el `<h1>`.
+3. **`lib/public-content.ts` entra en la lista blanca de la frontera cliente/servidor** (declara
+   `server-only`): lee el maestro de habitaciones y cae a `buildRoomSeed` si la base no responde, así
+   que la página sigue sirviendo información **real** sin BD.
 

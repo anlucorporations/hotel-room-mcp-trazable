@@ -15,6 +15,7 @@ import {
   isNonTextUtility,
   parseColorUtilities,
   tokenHex,
+  type ColorUtility,
 } from "./color-usage";
 
 /**
@@ -118,26 +119,52 @@ describe("Accesibilidad · utilidades de color usadas en el producto", () => {
   it("todo par texto/fondo del MISMO elemento cumple 4.5:1 sobre la paleta real", () => {
     const violations: string[] = [];
 
-    for (const { file, classes, utility } of usages) {
-      if (utility.role !== "foreground" || isNonTextUtility(utility)) continue;
+    for (const { file, classes } of usages) {
       // Un literal con condicional (`?`) o interpolación (`${}`) mezcla RAMAS distintas: emparejar
       // su texto con su fondo daría pares que nunca se pintan juntos (`text-ink-soft` de la rama
       // A con `bg-sea` de la rama B). Esos colores siguen verificados por la regla de combinaciones
       // declaradas, que es la que cubre los estados condicionales.
       if (/[?]|\$\{/.test(classes)) continue;
-      const siblings = parseColorUtilities(classes).filter((other) => other.role === "background");
-      const fgHex = tokenHex(utility.token);
-      if (fgHex === null) continue;
 
-      for (const background of siblings) {
-        const bgHex = tokenHex(background.token);
-        if (bgHex === null) continue;
-        // El fondo puede llevar opacidad (p. ej. `bg-ink/40`): se compone sobre el lienzo.
-        const effectiveBg = blendOver(bgHex, PALETTE.sand, background.opacityPercent);
-        const effectiveFg = blendOver(fgHex, effectiveBg, utility.opacityPercent);
-        const { ratio } = verifyWcagAA(effectiveFg, effectiveBg, false);
-        if (ratio < 4.5) {
-          violations.push(`${file} :: ${utility.raw} sobre ${background.raw} = ${ratio}:1`);
+      // El emparejamiento es **por variante** (2026-09-28). Antes se cruzaba todo texto con todo
+      // fondo del mismo literal, y eso denunciaba pares imposibles: `text-sea … hover:bg-sea-deep
+      // hover:text-shell` pintaba el texto en arena al pasar el ratón, pero el escáner medía el
+      // `text-sea` de reposo contra el fondo del hover (1,41:1). La regla real de CSS es la
+      // herencia: en una variante sin color propio se hereda el de reposo, y eso sí se comprueba.
+      const byVariant = new Map<string, { fg: ColorUtility[]; bg: ColorUtility[] }>();
+      for (const utility of parseColorUtilities(classes)) {
+        if (isNonTextUtility(utility)) continue;
+        if (utility.role !== "foreground" && utility.role !== "background") continue;
+        const key = utility.variants.join(":") || "base";
+        const bucket = byVariant.get(key) ?? { fg: [], bg: [] };
+        if (utility.role === "foreground") bucket.fg.push(utility);
+        else bucket.bg.push(utility);
+        byVariant.set(key, bucket);
+      }
+
+      const base = byVariant.get("base");
+      for (const [variant, bucket] of byVariant) {
+        const foregrounds = bucket.fg.length > 0 ? bucket.fg : (base?.fg ?? []);
+        const backgrounds = bucket.bg.length > 0 ? bucket.bg : (base?.bg ?? []);
+        if (backgrounds.length === 0) continue;
+
+        for (const foreground of foregrounds) {
+          const fgHex = tokenHex(foreground.token);
+          if (fgHex === null) continue;
+          for (const background of backgrounds) {
+            const bgHex = tokenHex(background.token);
+            if (bgHex === null) continue;
+            // El fondo puede llevar opacidad (p. ej. `bg-ink/40`): se compone sobre el lienzo.
+            const effectiveBg = blendOver(bgHex, PALETTE.sand, background.opacityPercent);
+            const effectiveFg = blendOver(fgHex, effectiveBg, foreground.opacityPercent);
+            const { ratio } = verifyWcagAA(effectiveFg, effectiveBg, false);
+            if (ratio < 4.5) {
+              const where = variant === "base" ? "" : `${variant}: `;
+              violations.push(
+                `${file} :: ${where}${foreground.raw} sobre ${background.raw} = ${ratio}:1`,
+              );
+            }
+          }
         }
       }
     }
@@ -257,12 +284,19 @@ describe("Accesibilidad · invariantes reales sobre los ficheros del producto", 
           content.includes("<Hero") ||
           // F6: la home delega la one-page (con su `<h1>`) en el shell `HomeSections`.
           content.includes("<HomeSections") ||
+          // 2026-09-28: las páginas de sección de la suite pública delegan en `PageHeader`,
+          // que es quien pinta el `<h1>` (se comprueba justo debajo que lo hace de verdad).
+          content.includes("<PageHeader") ||
           content.includes("<AdminPanel")
         );
       })
       .map(rel);
 
     expect(withoutHeading).toEqual([]);
+
+    // La delegación no puede ser hueca: quien recibe el encabezado tiene que pintarlo.
+    const pageHeader = source("components/public/PageHeader.tsx");
+    expect(pageHeader).toContain("<h1");
   });
 
   it("ningún SVG queda sin ocultar a lectores de pantalla ni sin nombre accesible", () => {

@@ -1,10 +1,12 @@
 import "server-only";
 import { getTranslations } from "next-intl/server";
+import Link from "next/link";
 import type { ActivityRecord, HotelImageRecord, HotelOfferRecord } from "@hotel/shared";
 import { contentImageUrl } from "@/lib/hotel-images";
 import { pick, type HomeReview } from "@/lib/home-view";
 import type { HomeContent } from "@/lib/home-content";
 import { BookingBar } from "@/components/booking/BookingBar";
+import { MoreLink } from "@/components/public/MoreLink";
 import { ExperienceCard } from "./ExperienceCard";
 import { Hero } from "./Hero";
 import { SuiteCard } from "./SuiteCard";
@@ -63,6 +65,7 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
               </li>
             ))}
           </ul>
+          <MoreLink href="/servicios" label={t("more")} section={t("services.title")} />
         </div>
       </section>
 
@@ -87,6 +90,7 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
               ))}
             </ul>
           )}
+          <MoreLink href="/habitaciones" label={t("more")} section={t("styles.title")} />
         </div>
       </section>
 
@@ -99,7 +103,7 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
             <p className="mt-6 text-small text-ink-soft">{t("plans.empty")}</p>
           ) : (
             <ul className="mt-6 grid gap-4 tablet:grid-cols-2">
-              {content.offers.map((offer: HotelOfferRecord) => (
+              {content.offers.slice(0, 2).map((offer: HotelOfferRecord) => (
                 <li key={offer.id} className="overflow-hidden rounded-brand border border-line bg-shell">
                   {offer.imageFileName && (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -122,6 +126,7 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
               ))}
             </ul>
           )}
+          <MoreLink href="/planes" label={t("more")} section={t("plans.title")} />
         </div>
       </section>
 
@@ -134,7 +139,7 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
             <p className="mt-6 text-small text-ink-soft">{t("activities.empty")}</p>
           ) : (
             <ul className="mt-6 grid gap-4 tablet:grid-cols-3">
-              {content.activities.map((activity: ActivityRecord) => (
+              {content.activities.slice(0, 3).map((activity: ActivityRecord) => (
                 <li key={activity.id} className="rounded-brand border border-line bg-shell p-5">
                   <h3 className="font-display text-body font-semibold text-ink">
                     {pick(locale, activity.nameEs, activity.nameEn, activity.nameRu)}
@@ -151,6 +156,7 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
               ))}
             </ul>
           )}
+          <MoreLink href="/actividades" label={t("more")} section={t("activities.title")} />
         </div>
       </section>
 
@@ -163,7 +169,7 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
             <p className="mt-6 text-small text-ink-soft">{t("experience.empty")}</p>
           ) : (
             <ul className="mt-6 grid grid-cols-2 gap-3 tablet:grid-cols-3">
-              {content.gallery.map((image: HotelImageRecord) => (
+              {content.gallery.slice(0, 6).map((image: HotelImageRecord) => (
                 <ExperienceCard
                   key={image.id}
                   locale={locale}
@@ -177,6 +183,7 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
               ))}
             </ul>
           )}
+          <MoreLink href="/experiencias" label={t("more")} section={t("experience.title")} />
         </div>
       </section>
 
@@ -197,11 +204,12 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
             <p className="mt-4 text-small text-ink-soft">{t("reviews.empty")}</p>
           ) : (
             <ul className="mt-6 grid gap-4 tablet:grid-cols-3">
-              {content.reviews.map((review: HomeReview) => (
+              {content.reviews.slice(0, 3).map((review: HomeReview) => (
                 <TestimonialCard key={review.id} review={review} />
               ))}
             </ul>
           )}
+          <MoreLink href="/resenas" label={t("more")} section={t("reviews.title")} />
         </div>
       </section>
 
@@ -226,6 +234,47 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
               className="h-72 w-full"
             />
           </div>
+        </div>
+        <div className="mx-auto mt-6 w-full max-w-6xl">
+          <MoreLink href="/contacto" label={t("more")} section={t("contact.title")} />
+        </div>
+      </section>
+
+      {/* 9 · Banda de descubrimiento (2026-09-28): empresa, distribución y Ayuda */}
+      <section aria-labelledby="home-band" className="px-5 pb-14 pt-2">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 rounded-brand-lg border border-line bg-shell p-6 tablet:flex-row tablet:items-center tablet:justify-between">
+          <div>
+            <h2 id="home-band" className="font-display text-h3 font-medium">
+              {t("band.title")}
+            </h2>
+            <p className="mt-1.5 max-w-prose text-small text-ink-soft">{t("band.helpBody")}</p>
+          </div>
+          <ul className="flex flex-wrap gap-3">
+            <li>
+              <Link
+                href="/empresa"
+                className="inline-flex min-h-touch items-center rounded-pill border border-sea px-4 text-small font-semibold text-sea transition-colors hover:bg-sea-deep hover:text-shell"
+              >
+                {t("band.company")}
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/instalaciones"
+                className="inline-flex min-h-touch items-center rounded-pill border border-sea px-4 text-small font-semibold text-sea transition-colors hover:bg-sea-deep hover:text-shell"
+              >
+                {t("band.facilities")}
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/ayuda"
+                className="inline-flex min-h-touch items-center rounded-pill bg-sea px-4 text-small font-semibold text-shell transition-colors hover:bg-sea-deep"
+              >
+                {t("band.help")}
+              </Link>
+            </li>
+          </ul>
         </div>
       </section>
     </>

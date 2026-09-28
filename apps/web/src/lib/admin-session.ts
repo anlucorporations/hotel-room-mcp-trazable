@@ -1,9 +1,12 @@
 import "server-only";
 import { cookies } from "next/headers";
-import { authorize, type GuardResult } from "@/lib/guard";
+import { authorize, type GuardResult, type RequiredRole } from "@/lib/guard";
 
 /**
  * Sesión del back-office verificada **en el render** de un Server Component (M7 · H1).
+ *
+ * `requiredRole` (2026-09-28) permite usarla también como **puerta de las suites de personal**:
+ * el owner satisface cualquier requisito, y los roles de BD sin wallet (D-56) entran solo a la suya.
  *
  * Motivo: `app/admin/layout.tsx` solo miraba si la cookie existía, y en el App Router el árbol de
  * la página se renderiza igualmente (el layout decide si lo pinta o no). Con el build real, un
@@ -15,12 +18,13 @@ import { authorize, type GuardResult } from "@/lib/guard";
  * componente de página lea nada. Falla en cerrado: si no se puede verificar (Redis caído, secreto
  * ausente), no se sirve el panel.
  */
-export async function currentAdminSession(): Promise<GuardResult> {
+export async function currentAdminSession(requiredRole?: RequiredRole): Promise<GuardResult> {
   const cookieHeader = cookies().toString();
   if (cookieHeader.length === 0) {
     return { ok: false, reason: "unauthorized", message: "Sin cookies de sesión." };
   }
   return authorize(
     new Request("http://back-office.interno/", { headers: { cookie: cookieHeader } }),
+    requiredRole,
   );
 }

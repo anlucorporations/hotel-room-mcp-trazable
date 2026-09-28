@@ -1,19 +1,21 @@
 import type { ReactNode } from "react";
-import { PublicShell } from "@/components/layout/PublicShell";
+import { AdminSignInScreen } from "@/components/admin/AdminSignInScreen";
+import { currentAdminSession } from "@/lib/admin-session";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Layout de la ruta de personal `/housekeeping` (F3 · D-62).
+ * Puerta de la suite del servicio de habitaciones (2026-09-28).
  *
- * Fuera de las tres suites: es la pantalla del personal de limpieza, pensada para el móvil y con
- * vista simplificada. Reutiliza `PublicShell` para conservar marca y pie, sin anadir navegacion de
- * suites que el rol HOUSEKEEPING no necesita.
+ * La suite pública es la única que se abre **sin** sesión; a partir de aquí todo exige una sesión
+ * verificada en servidor con el rol correspondiente (el owner entra a todas). HOUSEKEEPING es un rol de
+ * BD **sin wallet** (D-56): el acceso es contraseña + TOTP, y la wallet no interviene.
+ *
+ * La comprobación vive en el layout **y** en el componente de la página (defensa en profundidad):
+ * un layout puede ocultar el árbol, no impedir que se renderice (lección de M7 · H1).
  */
-export default function HousekeepingLayout({ children }: { children: ReactNode }) {
-  return (
-    <PublicShell>
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-5 py-8">{children}</div>
-    </PublicShell>
-  );
+export default async function SuiteLayout({ children }: { children: ReactNode }) {
+  const session = await currentAdminSession("HOUSEKEEPING");
+  if (!session.ok) return <AdminSignInScreen />;
+  return <>{children}</>;
 }

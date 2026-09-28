@@ -105,6 +105,15 @@
     "booking": {
       "title": "Check availability",
       "helper": "We take you to the booking with these dates; the night is held and the deposit is paid by transfer."
+    },
+    "more": "Read more",
+    "summaryLabel": "Summary",
+    "band": {
+      "title": "Would you like to know the hotel?",
+      "company": "Who we are",
+      "facilities": "How it is laid out",
+      "help": "How it works (Help)",
+      "helpBody": "Plain-language manuals for the buyer, the hotel and reception."
     }
   },
   "shell": {
@@ -130,7 +139,18 @@
     "footerPrivacy": "Privacy",
     "navHome": "Home",
     "navCatalog": "Catalogue",
-    "navReserve": "Book"
+    "navReserve": "Book",
+    "navCompany": "Company",
+    "navFacilities": "Facilities",
+    "navServices": "Services",
+    "navRooms": "Rooms",
+    "navExperiences": "Experiences",
+    "navActivities": "Activities",
+    "navPlans": "Packages",
+    "navReviews": "Reviews",
+    "navContact": "Contact",
+    "navHotelGroup": "The hotel",
+    "navDiscoverGroup": "Discover"
   },
   "help": {
     "title": "Help and manuals",
@@ -1419,6 +1439,129 @@
       "FECHA_INVALIDA": "Check the dates.",
       "ANTERIOR_A_MANANA": "Check-in cannot be today: the first available night is tomorrow.",
       "SALIDA_NO_POSTERIOR": "Check-out must be later than check-in."
+    }
+  },
+  "company": {
+    "eyebrow": "The hotel",
+    "title": "A small hotel on the seafront in Alicante",
+    "lead": "Fifty rooms on two floors, a short walk from the beach. We sell direct: no middlemen, no portal commissions and the service of a small hotel.",
+    "story": {
+      "title": "How we work",
+      "body": "In high season the hotel fills up and the rest of the year leaves nights free. Instead of leaving them empty, we sell them as nights you own: whoever buys a night can use it, gift it or resell it on this same website. We take a percentage every time a night changes hands."
+    },
+    "values": {
+      "title": "What matters to us",
+      "direct": {
+        "title": "Direct",
+        "body": "Bookings on our own website, with no middleman taking a commission."
+      },
+      "privacy": {
+        "title": "No paperwork",
+        "body": "We do not ask for ID, phone or email to buy. The travellers' register is still kept at the front desk."
+      },
+      "transparent": {
+        "title": "Transparent",
+        "body": "The sales history is public: anyone can see which night sold and for how much."
+      },
+      "local": {
+        "title": "Close by",
+        "body": "A 50-room hotel: we all know each other and the service is neighbourly."
+      }
+    },
+    "facts": {
+      "title": "The hotel in figures",
+      "rooms": "rooms",
+      "floors": "floors",
+      "types": "room types",
+      "languages": "languages (Spanish, English and Russian)"
+    },
+    "cta": {
+      "title": "Would you like to see the available nights?",
+      "body": "The catalogue shows every free night with its date, its room and its price.",
+      "button": "See the catalogue"
+    }
+  },
+  "facilities": {
+    "eyebrow": "Facilities",
+    "title": "How the hotel is laid out",
+    "lead": "Two floors, 50 rooms and shared areas designed for resting.",
+    "floors": {
+      "title": "Floors and numbering",
+      "body": "The number follows the floor: 1XX rooms are on the ground floor and 2XX on the first floor. All of them have the same fittings; size and layout change.",
+      "columnFloor": "Floor",
+      "columnRange": "Rooms",
+      "columnTypes": "Types",
+      "columnCount": "How many",
+      "ground": "Ground floor",
+      "first": "First floor"
+    },
+    "common": {
+      "title": "Shared areas",
+      "reception": "Reception and check-in desk.",
+      "breakfast": "Breakfast room with a Mediterranean buffet.",
+      "pool": "Outdoor pool with sun loungers and shade.",
+      "parking": "Covered parking for guests."
+    },
+    "accessibility": {
+      "title": "Accessibility",
+      "body": "This website meets WCAG 2.1 AA: verified contrast, keyboard navigation, visible focus and content in three languages. The reception and staff screens are designed to be used standing up and on a phone."
+    },
+    "rooms": {
+      "title": "Features by room type",
+      "body": "Each type has its own size and capacity. The detail, with photographs and real hotel data, is on the rooms page.",
+      "button": "See the room types"
+    },
+    "contact": {
+      "title": "Where we are",
+      "body": "On the seafront in Alicante. The address, phone number and map are on the contact page.",
+      "button": "Contact and map"
+    }
+  },
+  "services": {
+    "eyebrow": "Services",
+    "title": "Everything you need to stop worrying",
+    "lead": "What every stay includes, with no surprise extras.",
+    "stay": {
+      "title": "During your stay",
+      "activities": "Activities and experiences you can book at the hotel itself.",
+      "reception": "Reception with on-chain check-in: a pass works only once.",
+      "languages": "Service in Spanish, English and Russian.",
+      "help": "Plain-language user manuals, inside the website itself."
+    },
+    "help": {
+      "title": "Do you need help?",
+      "body": "In the Help section you will find the buyer, hotel and reception manuals, with the same content the staff sees.",
+      "button": "Go to Help"
+    }
+  },
+  "roomsGuide": {
+    "eyebrow": "Rooms",
+    "title": "Three room types, one same coast",
+    "lead": "Single, double and suite. Size and capacity change; the rest of the fittings are the same.",
+    "types": {
+      "title": "The three types",
+      "count": "{count, plural, one {# room} other {# rooms}}",
+      "capacityRange": "Capacity: {min}–{max} guests",
+      "sizeRange": "Size: {min}–{max} m²",
+      "empty": "We are publishing the room details."
+    },
+    "buying": {
+      "title": "How to buy a night",
+      "step1": "Choose the night in the catalogue: you will see the room, the date and the price.",
+      "step2": "Review the summary: what you sign is exactly what you reviewed.",
+      "step3": "Sign with your wallet. The night is yours and you can resell it if your plans change."
+    },
+    "cta": "See available nights",
+    "help": "How it works, step by step"
+  },
+  "contact": {
+    "howToArrive": {
+      "title": "Getting here",
+      "body": "We are on the seafront, a short walk from the beach and fifteen minutes on foot from the centre. There is covered parking for guests."
+    },
+    "travelers": {
+      "title": "Travellers' register",
+      "body": "The travellers' register (Spanish RD 933/2021) is still completed at the front desk. This website does not ask for or store ID, name or phone number to buy a night."
     }
   }
 }

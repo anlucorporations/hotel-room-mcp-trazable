@@ -81,7 +81,7 @@ function toHomeReview(review: ReviewRecord): HomeReview {
  * imágenes falla, la tarjeta se pinta **sin foto** (nunca se inventa contenido). Las lecturas están
  * acotadas a tres tipos como máximo, así que no hace falta materializar el catálogo entero.
  */
-async function loadHomeSuites(repo: RoomsRepository): Promise<HomeSuite[]> {
+export async function loadHomeSuites(repo: RoomsRepository): Promise<HomeSuite[]> {
   const rooms = (await repo.listRooms()).filter(
     (room: RoomRecord) => room.publicationStatus === "PUBLISHED",
   );

@@ -12,9 +12,20 @@ import { expect, test } from "@playwright/test";
  * estado «sin resguardo», que es el que ve un visitante que llega sin haber generado el pase.
  * La sección de Ayuda (`/ayuda` y los tres manuales, M9) se escanea entera: es texto largo con
  * tablas e ilustraciones, justo donde una regresión de contraste o de jerarquía se cuela.
+ * El 2026-09-28 entran las **páginas de sección de la suite pública** (la home pasa a ser un
+ * resumen y cada sección tiene su página), incluidas Empresa e Instalaciones.
  */
 const PATHS = [
   "/",
+  "/empresa",
+  "/instalaciones",
+  "/servicios",
+  "/habitaciones",
+  "/experiencias",
+  "/actividades",
+  "/planes",
+  "/resenas",
+  "/contacto",
   "/catalogo",
   "/reservar",
   "/reventa",

@@ -105,6 +105,15 @@
     "booking": {
       "title": "Consulta de disponibilidad",
       "helper": "Te llevamos a la reserva con estas fechas; la noche se retiene y el anticipo se paga por transferencia."
+    },
+    "more": "Ver más",
+    "summaryLabel": "Resumen",
+    "band": {
+      "title": "¿Quieres conocer el hotel?",
+      "company": "Quiénes somos",
+      "facilities": "Cómo se distribuye",
+      "help": "Cómo funciona (Ayuda)",
+      "helpBody": "Manuales en lenguaje llano para el comprador, el hotel y recepción."
     }
   },
   "shell": {
@@ -130,7 +139,18 @@
     "footerPrivacy": "Privacidad",
     "navHome": "Inicio",
     "navCatalog": "Catálogo",
-    "navReserve": "Reservar"
+    "navReserve": "Reservar",
+    "navCompany": "Empresa",
+    "navFacilities": "Instalaciones",
+    "navServices": "Servicios",
+    "navRooms": "Habitaciones",
+    "navExperiences": "Experiencias",
+    "navActivities": "Actividades",
+    "navPlans": "Planes",
+    "navReviews": "Reseñas",
+    "navContact": "Contacto",
+    "navHotelGroup": "El hotel",
+    "navDiscoverGroup": "Descubre"
   },
   "help": {
     "title": "Ayuda y manuales",
@@ -1419,6 +1439,129 @@
       "FECHA_INVALIDA": "Revisa las fechas.",
       "ANTERIOR_A_MANANA": "La entrada no puede ser hoy: la primera noche disponible es mañana.",
       "SALIDA_NO_POSTERIOR": "La salida debe ser posterior a la entrada."
+    }
+  },
+  "company": {
+    "eyebrow": "El hotel",
+    "title": "Un hotel pequeño en el paseo marítimo de Alicante",
+    "lead": "Cincuenta habitaciones en dos plantas, a un paseo de la playa. Trabajamos con reserva directa: sin intermediarios, sin comisiones de portales y con el trato de un hotel pequeño.",
+    "story": {
+      "title": "Cómo trabajamos",
+      "body": "En temporada alta el hotel se llena y el resto del año quedan noches libres. En lugar de dejarlas vacías, las ponemos a la venta como noches en propiedad: quien compra una noche puede usarla, regalarla o revenderla en esta misma web. Nosotros nos llevamos un porcentaje cada vez que una noche cambia de manos."
+    },
+    "values": {
+      "title": "Lo que nos importa",
+      "direct": {
+        "title": "Directo",
+        "body": "Reservas en nuestra propia web, sin intermediarios que se lleven comisión."
+      },
+      "privacy": {
+        "title": "Sin papeleo",
+        "body": "No pedimos DNI, ni teléfono, ni correo para comprar. El registro de viajeros se sigue haciendo en el mostrador."
+      },
+      "transparent": {
+        "title": "Transparente",
+        "body": "El histórico de ventas es público: cualquiera puede ver qué noche se vendió y por cuánto."
+      },
+      "local": {
+        "title": "Cerca",
+        "body": "Un hotel de 50 habitaciones: nos conocemos todos y el trato es de vecindario."
+      }
+    },
+    "facts": {
+      "title": "El hotel en cifras",
+      "rooms": "habitaciones",
+      "floors": "plantas",
+      "types": "tipos de habitación",
+      "languages": "idiomas (español, inglés y ruso)"
+    },
+    "cta": {
+      "title": "¿Quieres ver las noches disponibles?",
+      "body": "El catálogo muestra cada noche libre con su fecha, su habitación y su precio.",
+      "button": "Ver el catálogo"
+    }
+  },
+  "facilities": {
+    "eyebrow": "Instalaciones",
+    "title": "Cómo se distribuye el hotel",
+    "lead": "Dos plantas, 50 habitaciones y zonas comunes pensadas para descansar.",
+    "floors": {
+      "title": "Plantas y numeración",
+      "body": "La numeración sigue la planta: las habitaciones 1XX están en la planta baja y las 2XX en la primera. Todas tienen la misma dotación; cambian el tamaño y la distribución.",
+      "columnFloor": "Planta",
+      "columnRange": "Habitaciones",
+      "columnTypes": "Tipos",
+      "columnCount": "Cuántas",
+      "ground": "Planta baja",
+      "first": "Primera planta"
+    },
+    "common": {
+      "title": "Zonas comunes",
+      "reception": "Recepción y mostrador de check-in.",
+      "breakfast": "Sala de desayunos con bufé mediterráneo.",
+      "pool": "Piscina exterior con tumbonas y sombra.",
+      "parking": "Parking cubierto para huéspedes."
+    },
+    "accessibility": {
+      "title": "Accesibilidad",
+      "body": "Esta web cumple WCAG 2.1 AA: contraste verificado, navegación por teclado, foco visible y contenido en tres idiomas. Las pantallas de recepción y del personal están pensadas para usarse de pie y con el móvil."
+    },
+    "rooms": {
+      "title": "Características por tipo de habitación",
+      "body": "Cada tipo tiene su tamaño y su capacidad. El detalle, con fotos y datos reales del hotel, está en la página de habitaciones.",
+      "button": "Ver los tipos de habitación"
+    },
+    "contact": {
+      "title": "Dónde estamos",
+      "body": "En el paseo marítimo de Alicante. La dirección, el teléfono y el mapa están en la página de contacto.",
+      "button": "Contacto y mapa"
+    }
+  },
+  "services": {
+    "eyebrow": "Servicios",
+    "title": "Todo lo necesario para no preocuparte por nada",
+    "lead": "Lo que incluye cualquier estancia, sin extras sorpresa.",
+    "stay": {
+      "title": "Durante la estancia",
+      "activities": "Actividades y experiencias reservables en el propio hotel.",
+      "reception": "Recepción con check-in anclado en la cadena: un resguardo sirve una sola vez.",
+      "languages": "Atención en español, inglés y ruso.",
+      "help": "Manuales de uso en lenguaje llano, dentro de la propia web."
+    },
+    "help": {
+      "title": "¿Necesitas ayuda?",
+      "body": "En la sección de Ayuda tienes los manuales del comprador, del hotel y de recepción, con el mismo contenido que ve el personal.",
+      "button": "Ir a la Ayuda"
+    }
+  },
+  "roomsGuide": {
+    "eyebrow": "Habitaciones",
+    "title": "Tres tipos de habitación, una misma costa",
+    "lead": "Simples, dobles y suites. Cambian el tamaño y la capacidad; el resto de la dotación es la misma.",
+    "types": {
+      "title": "Los tres tipos",
+      "count": "{count, plural, one {# habitación} other {# habitaciones}}",
+      "capacityRange": "Capacidad: {min}–{max} huéspedes",
+      "sizeRange": "Superficie: {min}–{max} m²",
+      "empty": "Estamos publicando las fichas de las habitaciones."
+    },
+    "buying": {
+      "title": "Cómo se compra una noche",
+      "step1": "Elige la noche en el catálogo: verás la habitación, la fecha y el precio.",
+      "step2": "Revisa el resumen: lo que se firma es exactamente lo que se ha revisado.",
+      "step3": "Firma con tu cartera. La noche queda en tu poder y puedes revenderla si cambian tus planes."
+    },
+    "cta": "Ver noches disponibles",
+    "help": "Cómo funciona, paso a paso"
+  },
+  "contact": {
+    "howToArrive": {
+      "title": "Cómo llegar",
+      "body": "Estamos en el paseo marítimo, a un paseo de la playa y a quince minutos a pie del centro. Hay parking cubierto para huéspedes."
+    },
+    "travelers": {
+      "title": "Registro de viajeros",
+      "body": "El registro de viajeros (RD 933/2021) se sigue haciendo en el mostrador. Esta web no pide ni guarda DNI, nombre ni teléfono para comprar una noche."
     }
   }
 }

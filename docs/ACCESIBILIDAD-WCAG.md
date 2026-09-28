@@ -118,7 +118,7 @@ Qué comprueba (M7, D-11; ampliado en la propuesta de imagen visual, Fase A.2):
 | Bloque | Invariante |
 |---|---|
 | Paleta | La paleta medida es **idéntica** al preset real de Tailwind; las combinaciones declaradas superan 4.5:1; las series de las gráficas superan 3:1 sobre el fondo de la tarjeta |
-| Uso real del color | Ningún `className` usa un color fuera de la paleta; todo par texto/fondo del mismo elemento cumple 4.5:1 (con composición alfa); ningún color de texto ni de fondo queda sin verificar |
+| Uso real del color | Ningún `className` usa un color fuera de la paleta; todo par texto/fondo del mismo elemento cumple 4.5:1 (con composición alfa) y el emparejamiento es **por variante** (`hover:` con `hover:`, y lo que no la declara hereda el reposo); ningún color de texto ni de fondo queda sin verificar |
 | Estructura | `lang` en el documento, enlace de salto con destino existente, un `h1` por ruta, SVG ocultos o nombrados, gráficas con `role="img"`, leyenda en texto y tabla de datos, tablas con `scope` |
 | Matemática | Fórmula de luminancia relativa (blanco sobre negro = 21:1) y umbrales 4.5:1 / 3:1 |
 | **Frontera de controles** (Fase A.2, `control-boundary.test.ts`) | `line-strong` ≥ 3:1 en los tres lienzos; `line` < 3:1 (no puede ser frontera); los **89 controles** con borde declaran `line-strong` por defecto y sus bordes de estado también alcanzan 3:1. Verificado en falso: un solo control con `border-line` pone la prueba roja |

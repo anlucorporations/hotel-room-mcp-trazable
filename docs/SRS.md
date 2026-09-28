@@ -305,8 +305,12 @@ igualdad con el SQL del worker **es** el criterio de aceptación del dashboard (
 
 ## 7. Interfaz y accesibilidad
 
-- **Rutas**: `/` (catálogo), `/reventa`, `/mis-noches`, `/historico`, `/recepcion`, `/asistente` y las
-  7 pantallas de administración (minteo, dashboard, fondos, roles, royalty, pausa, caducadas).
+- **Rutas públicas** (2026-09-28): `/` (home resumen), `/empresa`, `/instalaciones`, `/servicios`,
+  `/habitaciones`, `/experiencias`, `/actividades`, `/planes`, `/resenas`, `/contacto`, `/catalogo`,
+  `/reservar`, `/reventa`, `/mis-noches`, `/mis-noches/mis-reventas`, `/historico`, `/checkin`,
+  `/asistente`, `/ayuda`, `/privacidad` y `/terminos`. La **suite pública es la única que se abre sin
+  sesión ni cartera**; el resto de suites (administración, recepción, housekeeping y mantenimiento)
+  exigen una **sesión validada en servidor** con su rol (el owner entra a todas).
 - **Idiomas**: ES / EN / RU con catálogos de mensajes reales.
 - **Compra en tres pasos**: seleccionar → **revisar** (calldata, importe y destino) → firmar el objeto
   revisado. Nunca se firma un objeto reconstruido (ADR-11).
