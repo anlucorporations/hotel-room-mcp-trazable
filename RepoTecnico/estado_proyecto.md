@@ -1984,6 +1984,8 @@ fases de la hoja de ruta:
 
 | **F · Aplicación al producto** | El registro marino entra en el **sidebar de administración** (`bg-ocean`, enlaces `text-sand`, secciones `champagne`, entrada activa como pastilla `bg-shell text-ocean` / 14,5:1) y los **30 estilos de estado improvisados** de **18 ficheros** pasan a los tokens semánticos (banners de error → `error`/`error-bg`, confirmaciones → `success`/`success-bg`, avisos → `warning`/`warning-bg`, insignia «en directo» → `success`). Par nuevo declarado: `ocean` sobre `shell` | `@hotel/web` **510 pruebas** y los 4 guardianes de accesibilidad en verde; `typecheck` y `lint` 6/6; build OK |
 
+| **Release `v9` en GCP** | Imágenes `web/worker/mcp/monitor:v9` construidas con Cloud Build y desplegadas **solo con `--image`** (sin tocar contrato, base de datos ni reset): web `00009-76r`, worker `00007-scm`, mcp `00004-bl7` y worker pool del monitor al día. Detalle y rollback en `despliegue_gcp.md` §19 | `/health/ready` **READY**; `/` 200 con hero y **barra de reserva**; **imagen social 1200×630 servida** con `og:image` de producción; worker `lag 0` y **planificador de agotamiento de F8 activo**; **arreglo de entorno**: al worker le faltaba `CHECKIN_SECRET_KEY` (su listener fallaba al consolidar `CheckedIn`) y se añadió desde Secret Manager |
+
 **Hallazgos que destaparon los guardianes nuevos (C.1–C.3)**: (a) `text-caption`/`text-body-lg` de la
 escala tipográfica nueva se leían como «color desconocido» — corregido y con **prueba que deriva la
 lista del preset real**; (b) la paridad i18n **no estaba verificada por ninguna prueba**: el guardián

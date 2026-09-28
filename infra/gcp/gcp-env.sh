@@ -53,6 +53,9 @@ export GCP_ANVIL_PROJECT="${GCP_ANVIL_PROJECT:-mcc-ecommerce}"
 
 # Redis global: VM privada en la VPC dedicada (sin IP pública).
 export GCP_REDIS_HOST="${GCP_REDIS_HOST:-10.10.0.10}"
+# Worker pool del monitor (no expone HTTP; se actualiza por REST v2: deploy-monitor.sh)
+export GCP_MONITOR_POOL="${GCP_MONITOR_POOL:-hotel-mcp-monitor}"
+
 export GCP_REDIS_VM="${GCP_REDIS_VM:-hotel-mcp-redis}"
 
 # Registro de despliegue de contratos (lo consume 70-deploy-apps.sh)

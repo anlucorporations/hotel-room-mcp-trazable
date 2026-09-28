@@ -580,4 +580,49 @@ punta y se ejecutó su primer acuñado de ventana; después se **revirtió**:
 
 ---
 
-*Despliegue GCP · hotelMCP · actualizado 2026-09-27 (corte de contrato F8 ejecutado)*
+## 19. Release `v9` — ciclo de imagen visual aplicado al producto (2026-09-28)
+
+**Qué se desplegó.** Las cuatro imágenes `v9`, construidas con Cloud Build desde el árbol publicado
+(7 commits del ciclo visual + el parche de build) y desplegadas **solo con `--image`**, conservando
+las variables y secretos de cada revisión. **No** se tocó el contrato, ni la base de datos, ni se
+ejecutó ningún reset/siembra: el corte de F8 (contrato `0xc66A…7b6F`, bloque 314) sigue vigente.
+
+| Componente | Imagen | Revisión | Verificación |
+|---|---|---|---|
+| `hotel-mcp-web` | `web:v9` | `hotel-mcp-web-00009-76r` (100 %) | `/health/ready` → **READY** (postgres, redis y cadena `UP`); `/` 200 con **hero (`bg-ocean/65`)** y **barra de reserva**; `/catalogo` y `/reventa` 200 |
+| `hotel-mcp-worker` | `worker:v9` | `hotel-mcp-worker-00007-scm` (100 %) | `/health` con `lag 0` y `aggregateLag 0`; **`planificador de ventana de acuñación activo`** (el aviso de agotamiento de F8 entra por primera vez en producción), junto a los de retención y preventivo; `/aggregates` con datos reales (97 noches, 6 vendidas) |
+| `hotel-mcp-mcp` | `mcp:v9` | `hotel-mcp-mcp-00004-bl7` (100 %) | `/health` → `ok`, bloque al día |
+| `hotel-mcp-monitor` | `monitor:v9` | worker pool actualizado | imagen y **8 variables/secretos conservados** (REST v2: `gcloud run worker-pools update` falla en este SDK por el módulo `grpc` ausente) |
+
+**Imagen social verificada en producción**: `/opengraph-image` → **200 `image/png`, PNG válido
+1200×630 (105 KB)** y el `<head>` publica `og:image` con el **dominio de producción** (no
+`localhost`), gracias a la nueva `NEXT_PUBLIC_SITE_URL` inyectada en el **build** de la web.
+
+**Arreglo de entorno encontrado al desplegar (defecto previo, no del release).** El worker **no tenía
+`CHECKIN_SECRET_KEY`** (la web sí): su listener fallaba al consolidar los eventos `CheckedIn` con
+`Secreto obligatorio no configurado: CHECKIN_SECRET_KEY`. Se añadió el secreto de Secret Manager
+(`hotel-checkin-secret-key`) a la revisión `00007-scm`; **los fallos cesaron** (verificado en los logs
+por ventana temporal). Sin esto, el índice off-chain no marcaba como consumidas las noches del
+check-in.
+
+**Estado esperado que NO es una avería.** `/health` del worker devuelve `status: down` con
+`emailDegraded: true` porque el SMTP desplegado es el **de relleno** (`smtp.invalid`), el mismo
+invariante documentado en el corte de F8: el correo queda `PENDING` y la reconciliación lo reintenta.
+Se cierra con credenciales SMTP reales (pendiente del cliente), como las **50 fichas en `DRAFT`**.
+
+**Rollback.** Las revisiones anteriores siguen disponibles y sin tráfico:
+`hotel-mcp-web-00008-vnh` (`web:f8`), `hotel-mcp-worker-00006-pvh`/`00005-v52` (`worker:v9`/`f8`),
+`hotel-mcp-mcp-00003-sjj` (`mcp:f8`) y `monitor:f8`. Volver atrás es
+`gcloud run services update-traffic <servicio> --to-revisions=<revisión>=100`.
+
+**Instrumentos añadidos al repositorio.** `infra/gcp/deploy-monitor.sh` (actualización segura del
+worker pool por REST v2, con el array de contenedores completo para no perder entorno ni secretos) y
+`GCP_WEB_URL`/`GCP_MONITOR_POOL` en `infra/gcp/gcp-env.sh`.
+
+> **Nota de proceso**: `infra/gcp/f8-build-images.sh` construye las 4 imágenes de una release tomando
+> dirección, bloque y faucet del **registro de despliegue vigente**; para esta release se ejecutó con
+> `--tag=v9 --execute`, sin pasar por las fases destructivas de `f8-cut.sh`.
+
+---
+
+*Despliegue GCP · hotelMCP · actualizado 2026-09-28 (release `v9`: ciclo visual aplicado)*
