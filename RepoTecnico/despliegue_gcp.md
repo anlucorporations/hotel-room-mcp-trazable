@@ -625,4 +625,51 @@ worker pool por REST v2, con el array de contenedores completo para no perder en
 
 ---
 
-*Despliegue GCP · hotelMCP · actualizado 2026-09-28 (release `v9`: ciclo visual aplicado)*
+## 20. Release `v10` — suite pública completa en producción (2026-09-29)
+
+**Qué se desplegó.** Release **solo de web**: los dos commits posteriores a `v9` (`dfd8aaf`
+renombrado canónico de imágenes y `638b73f` suite pública de 9 páginas + cierre de las suites de
+personal) tocan **únicamente `apps/web/` y documentación**; `packages/`, migraciones, contrato y
+`Dockerfile` no varían. `worker`, `mcp` y `monitor` **no se reconstruyen** y siguen en `v9`, con el
+mismo criterio que la release web-only de §15. **No** se tocó contrato (sigue `0xc66A…7b6F`, bloque
+314), ni base de datos, ni se ejecutó siembra o reset.
+
+| Paso | Detalle |
+|---|---|
+| Imagen | Cloud Build `web:v10` (4m11s, build `d2c739e9-3746-4eb1-8b4d-9a053c8bf808`) con los mismos `NEXT_PUBLIC_*` de v2–v9 (chainId 31337, contrato `0xc66ab83418c20a65c3f8e83b3d11c8c3a6097b6f`, bloque 314, faucet `0xdFdE…f75b`, `NEXT_PUBLIC_SITE_URL` de producción) |
+| Revisión | `hotel-mcp-web-00010-kvr` al 100 % de tráfico (sustituye a `00009-76r`, que queda como rollback) |
+| Configuración | Desplegada **solo con `--image`**: se conservan las **18** variables de entorno y los **9** secretos de la revisión anterior |
+| Componentes intactos | `hotel-mcp-worker-00007-scm` (`worker:v9`), `hotel-mcp-mcp-00004-bl7` (`mcp:v9`) y worker pool `hotel-mcp-monitor` (`monitor:v9`) |
+
+### Verificación (despliegue real)
+
+| Comprobación | Resultado |
+|---|---|
+| `pnpm --filter @hotel/web test` (antes del despliegue) | **69 ficheros · 524 pruebas** en verde |
+| `/health/ready` | **200** · `READY` (postgres, redis y `polygonRPC` **UP**) |
+| Home | **200** (133 KB) · `<title>Hotel Marina del Sol</title>` |
+| **9 páginas nuevas** | `/empresa`, `/instalaciones`, `/habitaciones`, `/servicios`, `/experiencias`, `/actividades`, `/planes`, `/resenas` y `/contacto` → **200** con su `<title>` propio (100–117 KB) y contenido real (p. ej. `/habitaciones` nombra Simple, Doble y Suite) |
+| Navegación nueva | El HTML de la home enlaza las **9** rutas de sección (`SiteHeader` + pie) |
+| Imagen social | `/opengraph-image` → **200 `image/png`, PNG válido 1200×630 (106 KB)** y `og:image` con el dominio de producción |
+| Regresión de rutas | `/catalogo`, `/reservar`, `/reventa`, `/mis-noches`, `/admin`, `/recepcion`, `/housekeeping`, `/mantenimiento`, `/asistente`, `/ayuda`, `/checkin`, `/historico`, `/privacidad` y `/terminos` → **200** |
+| APIs protegidas | `/api/housekeeping/shifts`, `/api/mantenimiento/board` y `/api/admin/actividades/activities` → **401** |
+| Worker / MCP (v9, sin cambios) | worker `/health` con `lag 0` y `aggregateLag 0` (bloque 478); mcp `/health` → `ok` (bloque 478) |
+
+**Estado esperado que NO es una avería.** El worker sigue devolviendo `status: down` con
+`emailDegraded: true` por el SMTP de relleno (`smtp.invalid`), el mismo invariante documentado en §19;
+`processingDegraded` es `false`.
+
+**Rollback.** La revisión anterior sigue disponible y sin tráfico:
+`gcloud run services update-traffic hotel-mcp-web --to-revisions=hotel-mcp-web-00009-76r=100`.
+`worker`, `mcp` y `monitor` no se tocaron, así que no requieren acción.
+
+> **Nota de proceso (desbloquea el pendiente nº 3 de `estado_proyecto.md`).** El `gcloud` del snap
+> (`/snap/bin/gcloud`) **no es utilizable** en este entorno («snap-confine … cap_dac_override»). El
+> SDK instalado en el home sí lo es: **`/home/dsh/google-cloud-sdk/bin/gcloud`** (582.0.0, cuenta
+> `anlucorporations@gmail.com`, config `hotel-mcp`). Los scripts de `infra/gcp/` siguen invocando
+> `gcloud` por `PATH`, así que en este entorno hay que ejecutarlos con
+> `PATH="$HOME/google-cloud-sdk/bin:$PATH"` delante.
+
+---
+
+*Despliegue GCP · hotelMCP · actualizado 2026-09-29 (release `v10`: suite pública completa en producción)*
