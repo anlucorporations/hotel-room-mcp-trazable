@@ -4,6 +4,7 @@
  *
  * Entradas (markdown en español, raíz del monorepo):
  *   docs/manual-cliente.md · docs/manual-comprador.md · docs/manual-recepcion.md
+ *   docs/Manuales/05-casos-de-uso/<bloque>/CU-*.md   (32 casos de uso, orden de iniciación)
  *
  * Salidas (todas idempotentes, se reescriben en cada ejecución):
  *   1. apps/web/src/lib/help/manuals.generated.ts   módulo TypeScript que consume la sección Ayuda.
@@ -12,8 +13,11 @@
  *   4. apps/web/public/manual/manual-<slug>.pdf     copia pública para la descarga de la web.
  *   5. apps/web/public/manual/imagenes/*.{svg,png}  copia de docs/imagenes/ si existe.
  *
+ * Si Chromium no puede arrancar (faltan `libnspr4`/`libnss3`), usa `--no-pdf`: se regeneran el
+ * módulo, el HTML imprimible y las imágenes, y se conservan los PDF ya publicados.
+ *
  * El conversor de markdown es propio (SIN dependencias nuevas) y soporta exactamente el subconjunto
- * que usan los tres manuales: `#`/`##`/`###`, párrafos, regla horizontal `---`, citas `>`
+ * que usan los manuales: `#`/`##`/`###`, párrafos, regla horizontal `---`, citas `>`
  * multilínea, listas ordenadas/no ordenadas (con continuación indentada y anidamiento),
  * tablas con fila separadora, y en línea: negrita, cursiva, `código`, enlaces e imágenes.
  * TODO el texto de entrada se escapa siempre (nunca se inyecta markdown crudo).
@@ -50,10 +54,104 @@ const GENERATED_TS = join(WEB_ROOT, "src", "lib", "help", "manuals.generated.ts"
 
 /** Un manual fuente: slug estable (contrato del consumidor) + fichero markdown. */
 const SOURCES = [
-  { slug: "cliente", file: "manual-cliente.md" },
-  { slug: "comprador", file: "manual-comprador.md" },
-  { slug: "recepcion", file: "manual-recepcion.md" },
+  { slug: "cliente", file: "manual-cliente.md", group: "general", block: null },
+  { slug: "comprador", file: "manual-comprador.md", group: "general", block: null },
+  { slug: "recepcion", file: "manual-recepcion.md", group: "general", block: null },
 ];
+
+/**
+ * Manuales por caso de uso (`docs/Manuales/05-casos-de-uso/<bloque>/CU-*.md`).
+ *
+ * `CU_ORDER` fija el **orden de iniciación del sistema** (el del brief del equipo,
+ * `RepoTecnico/Manuales/05-casos-de-uso/00-BRIEF-equipo-manuales.md`), que NO es el alfabético:
+ * el bloque 1 empieza por CU-16 (roles) y no por CU-01, y el bloque 6 caduca antes de pausar.
+ * Se descubren por glob para no repetir 32 rutas a mano; si aparece un CU sin orden declarado,
+ * el generador falla en vez de colarlo al final en silencio.
+ */
+const CU_ROOT = join(DOCS_DIR, "Manuales", "05-casos-de-uso");
+const CU_GROUP = "casos-de-uso";
+const CU_ORDER = [
+  "cu-16-roles",
+  "cu-01-acceso-back-office",
+  "cu-12-royalty",
+  "cu-02-mintear-noche",
+  "cu-17-onboarding-web3",
+  "cu-04-catalogo",
+  "cu-09-historico",
+  "cu-08-asistente-ia",
+  "cu-05-compra-primaria",
+  "cu-06-listar-reventa",
+  "cu-07-compra-secundaria",
+  "cu-10-aviso-email",
+  "cu-11-dashboard",
+  "cu-13-caducadas",
+  "cu-15-retirar-fondos",
+  "cu-14-pausa",
+  "cu-pr-01-faucet",
+  "cu-30-acceso-owner",
+  "cu-31-panel-dia-recepcion",
+  "cu-32-buscar-reserva",
+  "cu-33-checkin-qr",
+  "cu-34-checkout",
+  "cu-35-cargos-adicionales",
+  "cu-36-reventa-huesped",
+  "cu-37-avisos-reventa",
+  "cu-40-menu-wallet",
+  "cu-41-seccion-sistemas",
+  "cu-42-gestion-usuarios",
+  "cu-43-gobernar-contrato",
+  "cu-44-finanzas-retirar",
+  "cu-45-operaciones",
+  "cu-46-seguridad-operador",
+];
+const CU_BLOCK_LABELS = {
+  "01-iniciacion": "Bloque 1 · Iniciación y aprovisionamiento",
+  "02-inventario": "Bloque 2 · Inventario",
+  "03-onboarding-y-descubrimiento": "Bloque 3 · Onboarding y descubrimiento",
+  "04-ventas": "Bloque 4 · Ventas",
+  "05-postventa": "Bloque 5 · Postventa y observabilidad",
+  "06-operacion-y-ciclo-de-vida": "Bloque 6 · Operación y ciclo de vida",
+  "07-entorno-de-pruebas": "Bloque 7 · Entorno de pruebas",
+  "08-operacion-hotelera-v2": "Bloque 8 · Operación hotelera (v2)",
+  "09-back-office-y-gobierno-v3": "Bloque 9 · Back-office y gobierno (v3)",
+};
+
+/** Descubre los manuales de caso de uso y los devuelve en el orden de iniciación. */
+function listCuSources() {
+  if (!existsSync(CU_ROOT)) return [];
+  const found = new Map();
+  for (const entry of readdirSync(CU_ROOT, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const dir = join(CU_ROOT, entry.name);
+    for (const name of readdirSync(dir)) {
+      if (!/^CU-.+\.md$/.test(name)) continue;
+      const slug = name
+        .replace(/\.md$/, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+      found.set(slug, {
+        slug,
+        file: `Manuales/05-casos-de-uso/${entry.name}/${name}`,
+        group: CU_GROUP,
+        block: CU_BLOCK_LABELS[entry.name] ?? entry.name,
+      });
+    }
+  }
+  const unknown = [...found.keys()].filter((slug) => !CU_ORDER.includes(slug));
+  if (unknown.length > 0) {
+    throw new Error(`casos de uso sin orden declarado en CU_ORDER: ${unknown.join(", ")}`);
+  }
+  const ordered = CU_ORDER.map((slug) => found.get(slug)).filter(Boolean);
+  const missing = CU_ORDER.filter((slug) => !found.has(slug));
+  if (missing.length > 0) {
+    throw new Error(`faltan manuales de caso de uso: ${missing.join(", ")}`);
+  }
+  return ordered;
+}
+
+/** Todos los manuales: primero los generales y después los 32 casos de uso en orden de iniciación. */
+const ALL_SOURCES = [...SOURCES, ...listCuSources()];
 
 const SUBTITLE = "Hotel Marina del Sol · plataforma de noches tokenizadas";
 const IMAGE_EXTENSIONS = [".svg", ".png"];
@@ -808,7 +906,10 @@ function buildGeneratedModule(docs, generatedAt) {
   chunks.push(" * Regenerar con: `pnpm --filter @hotel/web run manuals` (o `pnpm build:manuals`).");
   chunks.push(` * Última generación: ${generatedAt}`);
   chunks.push(" *");
-  chunks.push(" * Fuentes: docs/manual-cliente.md · docs/manual-comprador.md · docs/manual-recepcion.md");
+  chunks.push(
+    ` * Fuentes: ${docs.length} manuales — 3 generales (docs/manual-*.md) + ` +
+      `${docs.length - 3} casos de uso (docs/Manuales/05-casos-de-uso/**)`,
+  );
   chunks.push(" */");
   chunks.push("/* eslint-disable */");
   chunks.push("");
@@ -820,10 +921,12 @@ function buildGeneratedModule(docs, generatedAt) {
   chunks.push("}");
   chunks.push("");
   chunks.push("export interface ManualDoc {");
-  chunks.push('  readonly slug: string;      // "cliente" | "comprador" | "recepcion"');
+  chunks.push('  readonly slug: string;      // "cliente" | "comprador" | "recepcion" | "cu-16-roles" | …');
   chunks.push("  readonly title: string;     // el H1 del manual");
   chunks.push("  readonly lead: string;      // el blockquote inicial, ya convertido a HTML");
   chunks.push('  readonly pdf: string;       // "/manual/manual-<slug>.pdf"');
+  chunks.push('  readonly group: "general" | "casos-de-uso";');
+  chunks.push('  readonly block: string | null; // p. ej. "Bloque 1 · Iniciación y aprovisionamiento"');
   chunks.push("  readonly sections: readonly ManualSection[];");
   chunks.push("}");
   chunks.push("");
@@ -834,6 +937,8 @@ function buildGeneratedModule(docs, generatedAt) {
     chunks.push(`    title: ${JSON.stringify(doc.title)},`);
     chunks.push(`    lead: ${JSON.stringify(doc.lead)},`);
     chunks.push(`    pdf: ${JSON.stringify(doc.pdf)},`);
+    chunks.push(`    group: ${JSON.stringify(doc.group)},`);
+    chunks.push(`    block: ${JSON.stringify(doc.block ?? null)},`);
     chunks.push("    sections: [");
     for (const section of doc.sections) {
       chunks.push("      {");
@@ -880,7 +985,7 @@ async function main() {
   console.log(`Imágenes en ${rel(IMAGES_SRC)}: ${availableImages.length}`);
 
   const docs = [];
-  for (const source of SOURCES) {
+  for (const source of ALL_SOURCES) {
     const file = join(DOCS_DIR, source.file);
     if (!existsSync(file)) throw new Error(`falta el manual fuente: ${rel(file)}`);
 
@@ -911,6 +1016,8 @@ async function main() {
       slug: web.slug,
       title: web.title,
       pdf: web.pdf,
+      group: source.group,
+      block: source.block ?? null,
       lead: webResolver.applyTo(web.lead, (base) => `/manual/imagenes/${base}`),
       sections: web.sections.map((section) => ({
         ...section,
@@ -941,8 +1048,8 @@ async function main() {
     );
   }
 
-  if (docs.length !== SOURCES.length) {
-    throw new Error(`se esperaban ${SOURCES.length} manuales y se procesaron ${docs.length}`);
+  if (docs.length !== ALL_SOURCES.length) {
+    throw new Error(`se esperaban ${ALL_SOURCES.length} manuales y se procesaron ${docs.length}`);
   }
 
   // 1) Módulo TypeScript.

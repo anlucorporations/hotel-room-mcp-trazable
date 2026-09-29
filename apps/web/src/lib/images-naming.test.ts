@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -23,7 +23,25 @@ import { describe, expect, it } from "vitest";
 
 const REPO_ROOT = fileURLToPath(new URL("../../../../", import.meta.url));
 const IMAGES_DIR = join(REPO_ROOT, "docs", "imagenes");
-const MANUALS = ["docs/manual-cliente.md", "docs/manual-comprador.md", "docs/manual-recepcion.md"];
+
+/** Manuales literales: los 3 generales + los 32 de caso de uso (los mismos que sirve `/ayuda`). */
+const CU_MANUALS_ROOT = join(REPO_ROOT, "docs", "Manuales", "05-casos-de-uso");
+const CU_MANUALS = existsSync(CU_MANUALS_ROOT)
+  ? readdirSync(CU_MANUALS_ROOT, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .flatMap((entry) =>
+        readdirSync(join(CU_MANUALS_ROOT, entry.name))
+          .filter((name) => /^CU-.+\.md$/.test(name))
+          .map((name) => join("docs", "Manuales", "05-casos-de-uso", entry.name, name)),
+      )
+      .sort()
+  : [];
+const MANUALS = [
+  "docs/manual-cliente.md",
+  "docs/manual-comprador.md",
+  "docs/manual-recepcion.md",
+  ...CU_MANUALS,
+];
 
 const CONTENT_IMAGE = /^hotel-(hero|services|experience|activities|contact|other)-\d{4}-\d{2}-\d{2}-\d{1,2}\.jpg$/;
 const DOC_ASSET = /^doc-[a-z0-9]+(-[a-z0-9]+)*\.(svg|png)$/;

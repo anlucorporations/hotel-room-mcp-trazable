@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -16,8 +16,8 @@ import { findListProblems } from "./list-structure.mjs";
  * sección de Ayuda sigue reflejando los ficheros `.md` reales.
  *
  * Qué comprueba (sin Playwright ni red: solo lectura de ficheros):
- *   1. Los tres manuales fuente existen.
- *   2. `MANUALS` cubre los tres slugs, en orden, con `slug`/`title`/`lead`/`pdf` no vacíos.
+ *   1. Los 35 manuales fuente existen (3 generales + 32 casos de uso).
+ *   2. `MANUALS` cubre todos los slugs, en orden, con `slug`/`title`/`lead`/`pdf`/`group`/`block`.
  *   3. TODOS los títulos `##` del markdown aparecen en `MANUALS`, en orden y con el mismo número
  *      de secciones `##` y `###`.
  *   4. El `html` de cada sección no contiene markdown sin convertir (`**`, `|…|`, enlaces, anclas,
@@ -31,11 +31,76 @@ const here = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(here, "..", "..", "..", "..", "..");
 const DOCS = join(ROOT, "docs");
 
-/** Espejo de `SOURCES` de `apps/web/scripts/build-manuals.mjs`. */
+/** Orden de iniciación del sistema (espejo de `CU_ORDER` del generador). */
+const CU_ORDER = [
+  "cu-16-roles",
+  "cu-01-acceso-back-office",
+  "cu-12-royalty",
+  "cu-02-mintear-noche",
+  "cu-17-onboarding-web3",
+  "cu-04-catalogo",
+  "cu-09-historico",
+  "cu-08-asistente-ia",
+  "cu-05-compra-primaria",
+  "cu-06-listar-reventa",
+  "cu-07-compra-secundaria",
+  "cu-10-aviso-email",
+  "cu-11-dashboard",
+  "cu-13-caducadas",
+  "cu-15-retirar-fondos",
+  "cu-14-pausa",
+  "cu-pr-01-faucet",
+  "cu-30-acceso-owner",
+  "cu-31-panel-dia-recepcion",
+  "cu-32-buscar-reserva",
+  "cu-33-checkin-qr",
+  "cu-34-checkout",
+  "cu-35-cargos-adicionales",
+  "cu-36-reventa-huesped",
+  "cu-37-avisos-reventa",
+  "cu-40-menu-wallet",
+  "cu-41-seccion-sistemas",
+  "cu-42-gestion-usuarios",
+  "cu-43-gobernar-contrato",
+  "cu-44-finanzas-retirar",
+  "cu-45-operaciones",
+  "cu-46-seguridad-operador",
+];
+
+/** Descubre los 32 manuales de caso de uso, en el orden de iniciación (espejo del generador). */
+function listCuSources(): Array<{ slug: string; file: string; group: string; block: string | null }> {
+  const cuRoot = join(DOCS, "Manuales", "05-casos-de-uso");
+  if (!existsSync(cuRoot)) return [];
+  const found = new Map<string, { slug: string; file: string; group: string; block: string | null }>();
+  for (const entry of readdirSync(cuRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    for (const name of readdirSync(join(cuRoot, entry.name))) {
+      if (!/^CU-.+\.md$/.test(name)) continue;
+      const slug = name
+        .replace(/\.md$/, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+      found.set(slug, {
+        slug,
+        file: `Manuales/05-casos-de-uso/${entry.name}/${name}`,
+        group: "casos-de-uso",
+        block: entry.name,
+      });
+    }
+  }
+  return CU_ORDER.map((slug) => found.get(slug)).filter(
+    (source): source is { slug: string; file: string; group: string; block: string | null } =>
+      source !== undefined,
+  );
+}
+
+/** Espejo de `SOURCES` + `listCuSources()` de `apps/web/scripts/build-manuals.mjs`. */
 const SOURCES = [
-  { slug: "cliente", file: "manual-cliente.md" },
-  { slug: "comprador", file: "manual-comprador.md" },
-  { slug: "recepcion", file: "manual-recepcion.md" },
+  { slug: "cliente", file: "manual-cliente.md", group: "general", block: null },
+  { slug: "comprador", file: "manual-comprador.md", group: "general", block: null },
+  { slug: "recepcion", file: "manual-recepcion.md", group: "general", block: null },
+  ...listCuSources(),
 ];
 
 /** Títulos de encabezado del manual, con su nivel y su texto (sin el prefijo `#`). */
@@ -65,12 +130,13 @@ const manuals = SOURCES.map((source) => ({
 }));
 
 describe("guardián de manuales generados (Ayuda)", () => {
-  it("los tres manuales fuente existen en docs/", () => {
+  it("los manuales fuente (3 generales + 32 casos de uso) existen en docs/", () => {
     const missing = manuals.filter((manual) => !existsSync(manual.path)).map((manual) => manual.file);
     expect(missing, `faltan manuales literales en docs/: ${missing.join(", ")}`).toEqual([]);
+    expect(manuals.length, "se esperaban 35 manuales fuente").toBe(35);
   });
 
-  it("MANUALS cubre los tres slugs con sus campos obligatorios", () => {
+  it("MANUALS cubre todos los slugs con sus campos obligatorios", () => {
     expect(MANUALS.map((doc) => doc.slug)).toEqual(SOURCES.map((source) => source.slug));
 
     for (const doc of MANUALS) {
@@ -78,6 +144,19 @@ describe("guardián de manuales generados (Ayuda)", () => {
       expect(doc.lead.trim(), `${doc.slug}: lead vacío`).not.toBe("");
       expect(doc.pdf, `${doc.slug}: pdf inesperado`).toBe(`/manual/manual-${doc.slug}.pdf`);
       expect(doc.sections.length, `${doc.slug}: sin secciones`).toBeGreaterThan(0);
+    }
+
+    // Agrupación: 3 generales + 32 casos de uso, y cada caso de uso declara su bloque.
+    const source = new Map(SOURCES.map((item) => [item.slug, item]));
+    expect(MANUALS.filter((doc) => doc.group === "general").length).toBe(3);
+    expect(MANUALS.filter((doc) => doc.group === "casos-de-uso").length).toBe(32);
+    for (const doc of MANUALS) {
+      expect(doc.group, `${doc.slug}: grupo inesperado`).toBe(source.get(doc.slug)?.group);
+      if (doc.group === "casos-de-uso") {
+        expect(doc.block ?? "", `${doc.slug}: caso de uso sin bloque`).not.toBe("");
+      } else {
+        expect(doc.block, `${doc.slug}: un manual general no debería tener bloque`).toBeNull();
+      }
     }
 
     // El lead es TODO el preámbulo ya convertido a HTML (la cita inicial y el resto de bloques, en
@@ -212,10 +291,11 @@ describe("guardián de manuales generados (Ayuda)", () => {
         Object.fromEntries(countByFile(referenced)),
       );
 
-      // La ilustración de portada es del PREÁMBULO: debe estar en `lead`, una sola vez.
-      // Nombre canónico de la portada (catálogo de imágenes): `doc-portada-hotel.svg`.
-      const portada = referenced.find((name) => name.startsWith("doc-portada-"));
-      expect(portada, `${manual.file}: sin imagen de portada en el preámbulo`).toBeDefined();
+      // La ilustración de portada es del PREÁMBULO: debe estar en `lead`, una sola vez. Los
+      // manuales generales usan `doc-portada-*`; los de caso de uso, su propia infografía `doc-cu-*`.
+      const coverPrefix = doc?.group === "casos-de-uso" ? "doc-cu-" : "doc-portada-";
+      const portada = referenced.find((name) => name.startsWith(coverPrefix));
+      expect(portada, `${manual.file}: sin imagen de portada (${coverPrefix}*) en el preámbulo`).toBeDefined();
       const inLead = [
         ...(doc?.lead ?? "").matchAll(/<img\s+src="\/manual\/imagenes\/([^"]+)"/g),
       ].filter((match) => match[1] === portada);

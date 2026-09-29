@@ -90,6 +90,50 @@ flowchart TD
     X --> Y["El dueño no tiene que hacer nada<br/>y lo ve en Noches quemadas"]
 ```
 
+## Infografías de los casos de uso
+
+Las **32 infografías** de los manuales por caso de uso (más el mapa de iniciación) se generan con el
+brief `RepoTecnico/Manuales/05-casos-de-uso/00-BRIEF-equipo-manuales.md`, se referencian desde
+`docs/Manuales/05-casos-de-uso/**` y se sirven en `/manual/imagenes/`. Mismo estilo y misma paleta
+que las anteriores: banda `sea-deep` con el número de CU, 3–5 pasos numerados en tarjetas y una
+franja inferior con **Quién · Qué consigues · Si falla**.
+
+| Fichero | Caso de uso representado | Bloque |
+|---|---|---|
+| `doc-cu-01-acceso-back-office.svg` | CU-01 · Entrar al panel del hotel con la cartera y el rol correcto | Bloque 1 · Iniciación |
+| `doc-cu-12-royalty.svg` | CU-12 · Decidir cuánto se queda el hotel en cada reventa | Bloque 1 · Iniciación |
+| `doc-cu-16-roles.svg` | CU-16 · Dar de alta a quien puede tocar el sistema (roles y propiedad) | Bloque 1 · Iniciación |
+| `doc-cu-02-mintear-noche.svg` | CU-02 · Poner una noche a la venta (crear la ficha digital) | Bloque 2 · Inventario |
+| `doc-cu-04-catalogo.svg` | CU-04 · Ver y filtrar las noches disponibles | Bloque 3 · Onboarding |
+| `doc-cu-08-asistente-ia.svg` | CU-08 · Pedirle una noche al asistente y que prepare la compra | Bloque 3 · Onboarding |
+| `doc-cu-09-historico.svg` | CU-09 · Mirar el histórico público de ventas | Bloque 3 · Onboarding |
+| `doc-cu-17-onboarding-web3.svg` | CU-17 · Conectar la cartera y ponerse en la red correcta | Bloque 3 · Onboarding |
+| `doc-cu-05-compra-primaria.svg` | CU-05 · Comprar una noche al hotel | Bloque 4 · Ventas |
+| `doc-cu-06-listar-reventa.svg` | CU-06 · Poner mi noche en reventa (y quitarla) | Bloque 4 · Ventas |
+| `doc-cu-07-compra-secundaria.svg` | CU-07 · Comprar una noche que otro cliente revende | Bloque 4 · Ventas |
+| `doc-cu-10-aviso-email.svg` | CU-10 · Avisar al hotel por email cada vez que hay una venta | Bloque 5 · Postventa |
+| `doc-cu-11-dashboard.svg` | CU-11 · Ver las métricas del negocio en el panel | Bloque 5 · Postventa |
+| `doc-cu-13-caducadas.svg` | CU-13 · Retirar las noches del hotel que ya han caducado | Bloque 6 · Operación |
+| `doc-cu-14-pausa.svg` | CU-14 · Parar el sistema en una emergencia y volver a arrancarlo | Bloque 6 · Operación |
+| `doc-cu-15-retirar-fondos.svg` | CU-15 · Pasar el dinero recaudado a la cuenta del hotel | Bloque 6 · Operación |
+| `doc-cu-pr-01-faucet.svg` | CU-PR-01 · Conseguir dinero de prueba (solo en pruebas) | Bloque 7 · Pruebas |
+| `doc-cu-30-acceso-owner.svg` | CU-30 · Que el dueño lo vea y lo pueda todo | Bloque 8 · Hotelera (v2) |
+| `doc-cu-31-panel-dia-recepcion.svg` | CU-31 · La pantalla del día en recepción | Bloque 8 · Hotelera (v2) |
+| `doc-cu-32-buscar-reserva.svg` | CU-32 · Encontrar una reserva con el código de recuperación | Bloque 8 · Hotelera (v2) |
+| `doc-cu-33-checkin-qr.svg` | CU-33 · Dar entrada al cliente escaneando su resguardo | Bloque 8 · Hotelera (v2) |
+| `doc-cu-34-checkout.svg` | CU-34 · Dar salida y cerrar la cuenta de la habitación | Bloque 8 · Hotelera (v2) |
+| `doc-cu-35-cargos-adicionales.svg` | CU-35 · Apuntar los extras del huésped (minibar, desayuno…) | Bloque 8 · Hotelera (v2) |
+| `doc-cu-36-reventa-huesped.svg` | CU-36 · Que el huésped publique, cambie o retire su reventa | Bloque 8 · Hotelera (v2) |
+| `doc-cu-37-avisos-reventa.svg` | CU-37 · Avisar al huésped cuando su reventa se mueve | Bloque 8 · Hotelera (v2) |
+| `doc-cu-40-menu-wallet.svg` | CU-40 · El menú de la cartera y del usuario | Bloque 9 · Back-office (v3) |
+| `doc-cu-41-seccion-sistemas.svg` | CU-41 · La sección «Sistemas» (solo para el dueño) | Bloque 9 · Back-office (v3) |
+| `doc-cu-42-gestion-usuarios.svg` | CU-42 · Dar de alta, cambiar y quitar usuarios de la plataforma | Bloque 9 · Back-office (v3) |
+| `doc-cu-43-gobernar-contrato.svg` | CU-43 · Gobernar el contrato (pausar, roles, royalty, propiedad) | Bloque 9 · Back-office (v3) |
+| `doc-cu-44-finanzas-retirar.svg` | CU-44 · Ver las finanzas del hotel y retirar el dinero | Bloque 9 · Back-office (v3) |
+| `doc-cu-45-operaciones.svg` | CU-45 · Ver qué está pasando ahora mismo (operaciones) | Bloque 9 · Back-office (v3) |
+| `doc-cu-46-seguridad-operador.svg` | CU-46 · Proteger la cuenta del que manda | Bloque 9 · Back-office (v3) |
+| `doc-mapa-iniciacion-sistema.svg` | Mapa de la iniciación del sistema: las 9 fases y sus 32 casos de uso | Portada de los índices |
+
 ---
 
 *Índice de imágenes · Hotel Marina del Sol · cualquier imagen nueva, con el mismo estilo y la

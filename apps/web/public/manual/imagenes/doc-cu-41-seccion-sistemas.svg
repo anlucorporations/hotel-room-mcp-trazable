@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" aria-labelledby="t d">
+  <title id="t">CU-41 · La sección Sistemas: entrar como dueño, abrir la portada y elegir un panel</title>
+  <desc id="d">Cinco tarjetas numeradas unidas por flechas. La primera entra al panel con la cuenta del dueño; la segunda encuentra el grupo Sistemas en el menú lateral; la tercera abre la portada con cuatro tarjetas; la cuarta entra en Contratos, Usuarios, Finanzas u Operaciones; la quinta recuerda que Ajustes solo está en el menú lateral. Abajo se resume quién puede hacerlo, qué se consigue y qué hacer si algo falla.</desc>
+  <rect width="1600" height="900" fill="#FBF6EC"/>
+  <rect x="0" y="0" width="1600" height="156" fill="#08424A"/>
+  <text x="60" y="66" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#C5A880" letter-spacing="2">CU-41 · BLOQUE 9</text>
+  <text x="60" y="122" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="42" font-weight="700" fill="#FFFFFF">La sección Sistemas, solo para el dueño</text>
+
+  <!-- paso 1 -->
+  <rect x="60" y="210" width="270" height="420" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+  <circle cx="195" cy="300" r="36" fill="#08424A"/>
+  <text x="195" y="312" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">1</text>
+  <text x="195" y="408" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#1B2327">Entrar como dueño</text>
+  <text x="195" y="474" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Usuario, contraseña</text>
+  <text x="195" y="506" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">y el código del móvil</text>
+  <path d="M96 530 H294" stroke="#E7DCC6" stroke-width="2" fill="none"/>
+  <rect x="90" y="546" width="210" height="48" rx="14" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="195" y="577" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">Sesión del dueño</text>
+
+  <!-- paso 2 -->
+  <rect x="360" y="210" width="270" height="420" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+  <circle cx="495" cy="300" r="36" fill="#08424A"/>
+  <text x="495" y="312" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">2</text>
+  <text x="495" y="408" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#1B2327">Buscar Sistemas</text>
+  <text x="495" y="474" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">El grupo está en el</text>
+  <text x="495" y="506" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">menú lateral</text>
+  <path d="M396 530 H594" stroke="#E7DCC6" stroke-width="2" fill="none"/>
+  <rect x="390" y="546" width="210" height="48" rx="14" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="495" y="577" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">Menú lateral</text>
+
+  <!-- paso 3 -->
+  <rect x="660" y="210" width="270" height="420" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+  <circle cx="795" cy="300" r="36" fill="#08424A"/>
+  <text x="795" y="312" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">3</text>
+  <text x="795" y="408" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#1B2327">Abrir la portada</text>
+  <text x="795" y="474" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Cuatro tarjetas</text>
+  <text x="795" y="506" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">bien visibles</text>
+  <path d="M696 530 H894" stroke="#E7DCC6" stroke-width="2" fill="none"/>
+  <rect x="690" y="546" width="210" height="48" rx="14" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="795" y="577" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">Sistemas</text>
+
+  <!-- paso 4 -->
+  <rect x="960" y="210" width="270" height="420" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+  <circle cx="1095" cy="300" r="36" fill="#08424A"/>
+  <text x="1095" y="312" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">4</text>
+  <text x="1095" y="408" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#1B2327">Elegir una tarjeta</text>
+  <text x="1095" y="474" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Contratos, Usuarios,</text>
+  <text x="1095" y="506" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Finanzas y Operaciones</text>
+  <path d="M996 530 H1194" stroke="#E7DCC6" stroke-width="2" fill="none"/>
+  <rect x="990" y="546" width="210" height="48" rx="14" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="1095" y="577" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">Cuatro paneles</text>
+
+  <!-- paso 5 -->
+  <rect x="1260" y="210" width="270" height="420" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+  <circle cx="1395" cy="300" r="36" fill="#08424A"/>
+  <text x="1395" y="312" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">5</text>
+  <text x="1395" y="408" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#1B2327">Ajustes, aparte</text>
+  <text x="1395" y="474" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Solo se llega por</text>
+  <text x="1395" y="506" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">el menú lateral</text>
+  <path d="M1296 530 H1494" stroke="#E7DCC6" stroke-width="2" fill="none"/>
+  <rect x="1290" y="546" width="210" height="48" rx="14" fill="#E3EFE7"/>
+  <text x="1395" y="577" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#2F6B4F">Inicio &#8594; Sistemas</text>
+
+  <text x="345" y="428" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0E5A63">&#8594;</text>
+  <text x="645" y="428" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0E5A63">&#8594;</text>
+  <text x="945" y="428" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0E5A63">&#8594;</text>
+  <text x="1245" y="428" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0E5A63">&#8594;</text>
+
+  <rect x="0" y="740" width="1600" height="160" fill="#F3EAD8"/>
+  <text x="60" y="790" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#4C575C" letter-spacing="1.5">QUIÉN</text>
+  <text x="60" y="838" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#1B2327">Solo el dueño del hotel</text>
+  <text x="590" y="790" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#4C575C" letter-spacing="1.5">QUÉ CONSIGUES</text>
+  <text x="590" y="838" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#1B2327">Lo más delicado, junto y a salvo</text>
+  <text x="1120" y="790" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#4C575C" letter-spacing="1.5">SI FALLA</text>
+  <text x="1120" y="838" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#1B2327">Sin permiso no aparece:</text>
+  <text x="1120" y="872" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#1B2327">pídeselo al dueño</text>
+</svg>

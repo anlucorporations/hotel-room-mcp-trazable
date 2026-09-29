@@ -16,9 +16,13 @@ noches se pueden revender con un porcentaje para el hotel.
 - **Si trabajas en recepción** → `docs/manual-recepcion.md`.
 - **Si quieres comprar o revender una noche** → `docs/manual-comprador.md`.
 - **Si vas a dibujar las ilustraciones de los manuales** → `docs/imagenes/README.md`.
+- **Si quieres el detalle de un caso de uso concreto** → [`Manuales/05-casos-de-uso/README.md`](Manuales/05-casos-de-uso/README.md)
+  (32 manuales, cada uno con su infografía) o la sección **Ayuda** de la propia web (`/ayuda`).
 
-Los tres manuales están escritos en lenguaje llano, sin jerga, y describen lo que el sistema
-hace **hoy**. Si algo no está terminado, lo dicen con claridad.
+Los tres manuales generales están escritos en lenguaje llano, sin jerga, y describen lo que el sistema
+hace **hoy**. Si algo no está terminado, lo dicen con claridad. Los **32 manuales por caso de uso**
+siguen el mismo criterio y están ordenados según la **iniciación del sistema** (primero los permisos,
+luego el inventario, después los clientes y al final la operación y el gobierno).
 
 Los **manuales técnicos** (instalación, operación, incidentes y mantenimiento) viven en
 [`../RepoTecnico/Manuales/`](../RepoTecnico/Manuales/README.md): son para quien levanta y mantiene el
@@ -37,6 +41,8 @@ sistema, no para el hotel ni para el comprador.
 | Hacer un check-in en el mostrador | [`manual-recepcion.md`](manual-recepcion.md) §3 |
 | Entender un mensaje de error de recepción | [`manual-recepcion.md`](manual-recepcion.md) §4 |
 | Hacer el check-in si el cliente no tiene el QR | [`manual-recepcion.md`](manual-recepcion.md) §5 |
+| Entender un caso de uso concreto, paso a paso y con infografía | [`Manuales/05-casos-de-uso/README.md`](Manuales/05-casos-de-uso/README.md) · sección **Ayuda** de la web (`/ayuda`) |
+| Ver el orden en que se pone en marcha el sistema (32 CU en 9 bloques) | [`Manuales/05-casos-de-uso/README.md`](Manuales/05-casos-de-uso/README.md) · [`imagenes/doc-mapa-iniciacion-sistema.svg`](imagenes/doc-mapa-iniciacion-sistema.svg) |
 | Saber qué límites tiene hoy el sistema y qué decide el dueño | [`manual-cliente.md`](manual-cliente.md) §8 · [`PRD.md`](PRD.md) §10 |
 | Ver qué se pidió al principio y con qué palabras | [`BRIEF-CLIENTE-INICIAL.md`](BRIEF-CLIENTE-INICIAL.md) |
 | Ver qué es el producto y qué **no** es | [`PRD.md`](PRD.md) |

@@ -1,0 +1,171 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" aria-labelledby="t d">
+  <title id="t">Mapa de iniciación del sistema: las 9 fases y sus 32 casos de uso</title>
+  <desc id="d">Infografía panorámica con nueve tarjetas repartidas en tres filas y leídas de izquierda a derecha. Fase 1 Iniciación (CU-16, CU-01, CU-12); fase 2 Inventario (CU-02); fase 3 Onboarding y descubrimiento (CU-17, CU-04, CU-09, CU-08); fase 4 Ventas (CU-05, CU-06, CU-07); fase 5 Postventa (CU-10, CU-11); fase 6 Operación y ciclo de vida (CU-13, CU-15, CU-14); fase 7 Entorno de pruebas (CU-PR-01); fase 8 Operación hotelera v2 (CU-30, CU-31, CU-32, CU-33, CU-34, CU-35, CU-36, CU-37); fase 9 Back-office y gobierno v3 (CU-40, CU-41, CU-42, CU-43, CU-44, CU-45, CU-46).</desc>
+
+  <rect width="1600" height="900" fill="#FBF6EC"/>
+
+  <!-- cabecera -->
+  <rect x="0" y="0" width="1600" height="156" fill="#08424A"/>
+  <text x="60" y="66" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#C5A880" letter-spacing="2">MAPA DE INICIACIÓN DEL SISTEMA · 9 FASES · 32 CASOS DE USO</text>
+  <text x="60" y="122" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="42" font-weight="700" fill="#FFFFFF">La iniciación del sistema, fase a fase</text>
+
+  <!-- ================= FILA 1 ================= -->
+
+  <!-- fase 1 · Iniciación -->
+  <rect x="60" y="174" width="476" height="196" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+  <rect x="60" y="174" width="476" height="10" rx="5" fill="#08424A"/>
+  <circle cx="110" cy="226" r="30" fill="#08424A"/>
+  <text x="110" y="238" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">1</text>
+  <text x="156" y="235" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#1B2327">Iniciación</text>
+  <text x="88" y="270" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Dejar permisos y royalty listos</text>
+  <rect x="162" y="307" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="204" y="331" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-16</text>
+  <rect x="256" y="307" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="298" y="331" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-01</text>
+  <rect x="350" y="307" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="392" y="331" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-12</text>
+
+  <!-- fase 2 · Inventario -->
+  <rect x="562" y="174" width="476" height="196" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+  <rect x="562" y="174" width="476" height="10" rx="5" fill="#08424A"/>
+  <circle cx="612" cy="226" r="30" fill="#08424A"/>
+  <text x="612" y="238" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">2</text>
+  <text x="658" y="235" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#1B2327">Inventario</text>
+  <text x="590" y="270" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Poner una noche a la venta</text>
+  <rect x="758" y="307" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="800" y="331" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-02</text>
+
+  <!-- fase 3 · Onboarding y descubrimiento -->
+  <rect x="1064" y="174" width="476" height="196" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+  <rect x="1064" y="174" width="476" height="10" rx="5" fill="#08424A"/>
+  <circle cx="1114" cy="226" r="30" fill="#08424A"/>
+  <text x="1114" y="238" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">3</text>
+  <text x="1160" y="235" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#1B2327">Onboarding y descubrimiento</text>
+  <text x="1092" y="270" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Entrar, mirar y elegir</text>
+  <rect x="1119" y="307" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="1161" y="331" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-17</text>
+  <rect x="1213" y="307" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="1255" y="331" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-04</text>
+  <rect x="1307" y="307" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="1349" y="331" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-09</text>
+  <rect x="1401" y="307" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="1443" y="331" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-08</text>
+
+  <text x="549" y="235" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0E5A63">&#8594;</text>
+  <text x="1051" y="235" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0E5A63">&#8594;</text>
+
+  <!-- ================= FILA 2 ================= -->
+
+  <!-- fase 4 · Ventas -->
+  <rect x="60" y="386" width="476" height="196" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+  <rect x="60" y="386" width="476" height="10" rx="5" fill="#C0542E"/>
+  <circle cx="110" cy="438" r="30" fill="#08424A"/>
+  <text x="110" y="450" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">4</text>
+  <text x="156" y="447" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#1B2327">Ventas</text>
+  <text x="88" y="482" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Comprar y revender</text>
+  <rect x="162" y="519" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="204" y="543" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-05</text>
+  <rect x="256" y="519" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="298" y="543" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-06</text>
+  <rect x="350" y="519" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="392" y="543" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-07</text>
+
+  <!-- fase 5 · Postventa -->
+  <rect x="562" y="386" width="476" height="196" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+  <rect x="562" y="386" width="476" height="10" rx="5" fill="#C0542E"/>
+  <circle cx="612" cy="438" r="30" fill="#08424A"/>
+  <text x="612" y="450" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">5</text>
+  <text x="658" y="447" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#1B2327">Postventa</text>
+  <text x="590" y="482" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Avisos y métricas</text>
+  <rect x="711" y="519" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="753" y="543" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-10</text>
+  <rect x="805" y="519" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="847" y="543" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-11</text>
+
+  <!-- fase 6 · Operación y ciclo de vida -->
+  <rect x="1064" y="386" width="476" height="196" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+  <rect x="1064" y="386" width="476" height="10" rx="5" fill="#C0542E"/>
+  <circle cx="1114" cy="438" r="30" fill="#08424A"/>
+  <text x="1114" y="450" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">6</text>
+  <text x="1160" y="447" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#1B2327">Operación y ciclo de vida</text>
+  <text x="1092" y="482" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Caducar, cobrar y pausar</text>
+  <rect x="1166" y="519" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="1208" y="543" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-13</text>
+  <rect x="1260" y="519" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="1302" y="543" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-15</text>
+  <rect x="1354" y="519" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="1396" y="543" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-14</text>
+
+  <text x="549" y="447" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0E5A63">&#8594;</text>
+  <text x="1051" y="447" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0E5A63">&#8594;</text>
+
+  <!-- ================= FILA 3 ================= -->
+
+  <!-- fase 7 · Entorno de pruebas -->
+  <rect x="60" y="598" width="476" height="196" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+  <rect x="60" y="598" width="476" height="10" rx="5" fill="#2F6B4F"/>
+  <circle cx="110" cy="650" r="30" fill="#08424A"/>
+  <text x="110" y="662" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">7</text>
+  <text x="156" y="659" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#1B2327">Entorno de pruebas</text>
+  <text x="88" y="694" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Dinero de prueba</text>
+  <rect x="237" y="731" width="122" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="298" y="755" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-PR-01</text>
+
+  <!-- fase 8 · Operación hotelera v2 -->
+  <rect x="562" y="598" width="476" height="196" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+  <rect x="562" y="598" width="476" height="10" rx="5" fill="#2F6B4F"/>
+  <circle cx="612" cy="650" r="30" fill="#08424A"/>
+  <text x="612" y="662" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">8</text>
+  <text x="658" y="659" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#1B2327">Operación hotelera v2</text>
+  <text x="590" y="694" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Mostrador y huésped</text>
+  <rect x="617" y="709" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="659" y="733" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-30</text>
+  <rect x="711" y="709" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="753" y="733" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-31</text>
+  <rect x="805" y="709" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="847" y="733" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-32</text>
+  <rect x="899" y="709" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="941" y="733" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-33</text>
+  <rect x="617" y="753" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="659" y="777" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-34</text>
+  <rect x="711" y="753" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="753" y="777" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-35</text>
+  <rect x="805" y="753" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="847" y="777" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-36</text>
+  <rect x="899" y="753" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="941" y="777" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-37</text>
+
+  <!-- fase 9 · Back-office y gobierno v3 -->
+  <rect x="1064" y="598" width="476" height="196" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+  <rect x="1064" y="598" width="476" height="10" rx="5" fill="#2F6B4F"/>
+  <circle cx="1114" cy="650" r="30" fill="#08424A"/>
+  <text x="1114" y="662" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">9</text>
+  <text x="1160" y="659" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#1B2327">Back-office y gobierno v3</text>
+  <text x="1092" y="694" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Mando y gobierno del dueño</text>
+  <rect x="1119" y="709" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="1161" y="733" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-40</text>
+  <rect x="1213" y="709" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="1255" y="733" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-41</text>
+  <rect x="1307" y="709" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="1349" y="733" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-42</text>
+  <rect x="1401" y="709" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="1443" y="733" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-43</text>
+  <rect x="1166" y="753" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="1208" y="777" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-44</text>
+  <rect x="1260" y="753" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="1302" y="777" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-45</text>
+  <rect x="1354" y="753" width="84" height="34" rx="17" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
+  <text x="1396" y="777" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">CU-46</text>
+
+  <text x="549" y="659" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0E5A63">&#8594;</text>
+  <text x="1051" y="659" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0E5A63">&#8594;</text>
+
+  <!-- pie -->
+  <rect x="0" y="800" width="1600" height="100" fill="#F3EAD8"/>
+  <text x="60" y="838" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#4C575C" letter-spacing="1.5">CÓMO SE LEE</text>
+  <text x="60" y="874" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#1B2327">De izquierda a derecha</text>
+  <text x="560" y="838" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#4C575C" letter-spacing="1.5">QUÉ ORDENA</text>
+  <text x="560" y="874" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#1B2327">El orden de puesta en marcha</text>
+  <text x="1120" y="838" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#4C575C" letter-spacing="1.5">CUÁNTOS</text>
+  <text x="1120" y="874" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#1B2327">32 casos de uso en 9 fases</text>
+</svg>
