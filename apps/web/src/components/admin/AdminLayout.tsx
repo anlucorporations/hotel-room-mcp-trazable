@@ -2,17 +2,32 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
+  useEffect,
   useId,
+  useRef,
   useState,
   type ReactNode,
+  type RefObject,
 } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import type { RoleName } from "@hotel/shared/domain";
+import { BREAKPOINT_TABLET_PX, type RoleName } from "@hotel/shared/domain";
 import { WalletMenu } from "@/components/wallet/WalletMenu";
-import { ADMIN_NAV_SECTIONS, ADMIN_SYSTEMS_NAV, type AdminNavItem, type AdminNavLabelKey, type AdminSectionKey } from "./adminNav";
+import { ADMIN_ICONS, ChevronIcon, CollapseIcon, MenuIcon } from "./adminIcons";
+import {
+  ADMIN_NAV_SECTIONS,
+  ADMIN_SYSTEMS_ICON,
+  ADMIN_SYSTEMS_NAV,
+  breadcrumbForPathname,
+  isActiveHref,
+  sectionForPathname,
+  type AdminNavItem,
+  type AdminNavLabelKey,
+  type AdminSectionKey,
+} from "./adminNav";
 import { CredentialForm } from "./CredentialForm";
 import { useAdminSession, type AdminSession } from "./useAdminSession";
 
@@ -35,9 +50,8 @@ export function useAdminContext(): AdminSession {
   return ctx;
 }
 
-function isActive(pathname: string, href: string): boolean {
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
+/** Id del `<aside>` que gobiernan los dos botones de plegado (móvil y escritorio). */
+const SIDEBAR_ID = "admin-sidebar";
 
 /** Marca circular de la marca (coherente con la cabecera pública, docs/SRS.md §7). */
 function BrandMark() {
@@ -53,27 +67,53 @@ function BrandMark() {
   );
 }
 
-function Sidebar({ session }: { session: AdminSession }) {
+/**
+ * Barra lateral izquierda (distribución AdminLTE, 2026-09-29). Es el único bloque `ocean` del
+ * back-office y agrupa marca, acordeón de secciones y el grupo Sistemas.
+ *
+ * Dos modos, con un solo estado cada uno:
+ *   · **Escritorio**: fija (`sticky`) y plegable a *mini* (solo iconos, etiquetas `sr-only`).
+ *   · **Móvil**: cajón fuera de pantalla; **cerrado no se pinta** (`hidden`) para que no quede
+ *     contenido fuera de vista pero enfocable con el tabulador.
+ */
+function Sidebar({
+  session,
+  mini,
+  onToggleMini,
+  drawerOpen,
+  panelRef,
+}: {
+  session: AdminSession;
+  mini: boolean;
+  onToggleMini: () => void;
+  drawerOpen: boolean;
+  panelRef: RefObject<HTMLElement>;
+}) {
   const t = useTranslations("admin");
   const pathname = usePathname();
   // Hint de bloqueo accesible una sola vez, referenciado por cada item deshabilitado (MINOR#38).
   const lockedHintId = useId();
 
-  // D-29: acordeón de UNA sección abierta a la vez. Arranca en la sección de la ruta activa para que
-  // el enlace actual quede visible sin un clic.
-  const activeSection: AdminSectionKey =
-    ADMIN_NAV_SECTIONS.find((section) => section.items.some((item) => isActive(pathname, item.href)))?.key ??
-    ADMIN_NAV_SECTIONS[0]?.key ??
-    "habitacion";
-  const [openSection, setOpenSection] = useState<AdminSectionKey | null>(activeSection);
+  const navLabel = (key: AdminNavLabelKey) => t(`nav.${key}` as `nav.${AdminNavLabelKey}`);
+
+  // D-29: acordeón de UNA sección abierta a la vez. La sección abierta se **resincroniza con la
+  // ruta** (enlace profundo, atrás/adelante, recarga): antes se fijaba solo al montar y la entrada
+  // activa podía quedar dentro de una sección cerrada.
+  const [openSection, setOpenSection] = useState<AdminSectionKey | null>(() => sectionForPathname(pathname));
+  useEffect(() => {
+    setOpenSection(sectionForPathname(pathname));
+  }, [pathname]);
 
   const itemEnabled = (item: AdminNavItem): boolean =>
     item.role === null ? true : session.hasRole(item.role);
 
+  /** Etiqueta visible en escritorio y `sr-only` con el sidebar plegado (nunca desaparece del DOM). */
+  const labelClass = mini ? "tablet:sr-only" : undefined;
+
   const renderItem = (item: AdminNavItem) => {
     const enabled = itemEnabled(item);
-    const active = isActive(pathname, item.href);
-    const label = t(`nav.${item.labelKey}` as `nav.${AdminNavLabelKey}`);
+    const active = isActiveHref(pathname, item.href);
+    const label = navLabel(item.labelKey);
     if (!enabled) {
       return (
         <span
@@ -104,62 +144,146 @@ function Sidebar({ session }: { session: AdminSession }) {
   };
 
   return (
-    <nav
-      aria-label={t("nav.label")}
-      className="flex flex-col gap-1 tablet:border-l tablet:border-champagne/30 tablet:pl-4"
+    <aside
+      id={SIDEBAR_ID}
+      ref={panelRef}
+      tabIndex={-1}
+      aria-label={t("nav.sidebar")}
+      className={[
+        // Móvil: cajón. Cerrado no se pinta (fuera del orden de tabulación).
+        drawerOpen ? "fixed inset-y-0 left-0 z-50 flex shadow-modal" : "hidden tablet:flex",
+        "w-72 flex-col bg-ocean text-sand outline-none",
+        // Escritorio: vuelve al flujo, se pega arriba y mantiene su propio scroll.
+        "tablet:sticky tablet:inset-y-auto tablet:top-0 tablet:z-30 tablet:h-screen tablet:overflow-y-auto tablet:shadow-none",
+        mini ? "tablet:w-16" : "tablet:w-64",
+      ].join(" ")}
     >
-      {/* Motivo de bloqueo accesible (sr-only): los items deshabilitados lo referencian con
-          `aria-describedby`, no solo en `title` dependiente de hover (MINOR#38). */}
-      <span id={lockedHintId} className="sr-only">
-        {t("nav.lockedHint")}
-      </span>
-
-      {ADMIN_NAV_SECTIONS.map((section) => {
-        const open = openSection === section.key;
-        return (
-          <div key={section.key} className="flex flex-col">
-            <button
-              type="button"
-              data-testid={`nav-section-${section.key}`}
-              aria-expanded={open}
-              aria-controls={`nav-section-panel-${section.key}`}
-              onClick={() => setOpenSection((current) => (current === section.key ? null : section.key))}
-              className="flex min-h-touch items-center justify-between gap-2 rounded-brand px-3 text-left text-small font-semibold text-champagne transition-colors hover:bg-ocean-soft"
-            >
-              {t(`nav.${section.labelKey}` as `nav.${AdminNavLabelKey}`)}
-              <span aria-hidden="true" className={open ? "rotate-90 transition-transform" : "transition-transform"}>
-                ›
-              </span>
-            </button>
-            <ul id={`nav-section-panel-${section.key}`} hidden={!open} className="mt-1 flex flex-col gap-1">
-              {section.items.map((item) => (
-                <li key={item.href}>{renderItem(item)}</li>
-              ))}
-            </ul>
-          </div>
-        );
-      })}
-
-      {/* Sistemas (RF-41): solo el owner. El gating real lo imponen las rutas y las APIs. */}
-      {session.isOwner && (
-        <div
-          data-testid="nav-systems"
-          className="mt-4 flex flex-col gap-1 border-t border-champagne/30 pt-3"
+      <div className="flex min-h-[64px] flex-none items-center gap-3 px-4">
+        <Link
+          href="/admin/dashboard"
+          aria-label={t("brandHome")}
+          title={t("brandTitle")}
+          className="flex min-w-0 flex-1 items-center gap-3 font-display text-[19px] font-semibold leading-none tracking-tight text-shell"
         >
-          <span className="px-3 pb-1 text-micro font-semibold uppercase tracking-wider text-champagne">
-            {t("nav.systems")}
-          </span>
-          {ADMIN_SYSTEMS_NAV.map(renderItem)}
-        </div>
-      )}
-    </nav>
+          <BrandMark />
+          <span className={mini ? "truncate tablet:sr-only" : "truncate"}>{t("brandTitle")}</span>
+        </Link>
+        {/* Plegado a mini: solo escritorio (en móvil el cajón es siempre ancho). */}
+        <button
+          type="button"
+          data-testid="admin-sidebar-collapse"
+          aria-expanded={!mini}
+          aria-controls={SIDEBAR_ID}
+          aria-label={mini ? t("nav.expandSidebar") : t("nav.collapseSidebar")}
+          title={mini ? t("nav.expandSidebar") : t("nav.collapseSidebar")}
+          onClick={onToggleMini}
+          className="hidden min-h-touch min-w-touch flex-none items-center justify-center rounded-brand text-champagne transition-colors hover:bg-ocean-soft tablet:inline-flex"
+        >
+          <CollapseIcon collapsed={mini} />
+        </button>
+      </div>
+
+      <nav aria-label={t("nav.label")} className="flex flex-1 flex-col gap-1 px-3 pb-4">
+        {/* Motivo de bloqueo accesible (sr-only): los items deshabilitados lo referencian con
+            `aria-describedby`, no solo en `title` dependiente de hover (MINOR#38). */}
+        <span id={lockedHintId} className="sr-only">
+          {t("nav.lockedHint")}
+        </span>
+
+        {ADMIN_NAV_SECTIONS.map((section) => {
+          // Con el sidebar plegado ningún panel cabe: la sección se abre al desplegarlo.
+          const open = openSection === section.key && !mini;
+          const SectionIcon = ADMIN_ICONS[section.icon];
+          const label = navLabel(section.labelKey);
+          return (
+            <div key={section.key} className="flex flex-col">
+              <button
+                type="button"
+                data-testid={`nav-section-${section.key}`}
+                aria-expanded={open}
+                aria-controls={`nav-section-panel-${section.key}`}
+                title={label}
+                onClick={() => {
+                  if (mini) {
+                    onToggleMini();
+                    setOpenSection(section.key);
+                    return;
+                  }
+                  setOpenSection((current) => (current === section.key ? null : section.key));
+                }}
+                className="flex min-h-touch items-center gap-2 rounded-brand px-3 text-left text-small font-semibold text-champagne transition-colors hover:bg-ocean-soft"
+              >
+                <SectionIcon className="flex-none" />
+                <span className={labelClass}>{label}</span>
+                <ChevronIcon
+                  className={`ml-auto flex-none transition-transform ${open ? "rotate-90" : ""} ${
+                    mini ? "tablet:hidden" : ""
+                  }`}
+                />
+              </button>
+              {/*
+                El plegado va por CLASE, nunca por el atributo `hidden`: el preflight de Tailwind v3
+                declara `[hidden]:where(:not([hidden=until-found])){display:none}` en la capa base y
+                con especificidad (0,1,0) —`:where()` no suma—, así que el `display:flex` de la
+                utilidad (misma especificidad y POSTERIOR en la hoja) lo anulaba y las siete
+                secciones se veían siempre abiertas.
+              */}
+              <ul
+                id={`nav-section-panel-${section.key}`}
+                className={open ? "mt-1 flex flex-col gap-1" : "hidden"}
+              >
+                {section.items.map((item) => (
+                  <li key={item.href}>{renderItem(item)}</li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+
+        {/* Sistemas (RF-41): solo el owner. El gating real lo imponen las rutas y las APIs. */}
+        {session.isOwner && (
+          <div data-testid="nav-systems" className="mt-4 flex flex-col gap-1 border-t border-champagne/30 pt-3">
+            {mini ? (
+              // Plegado: un solo destino (la portada del grupo) con el nombre accesible.
+              <Link
+                href={ADMIN_SYSTEMS_NAV[0]!.href}
+                title={t("nav.systems")}
+                className="flex min-h-touch items-center gap-2 rounded-brand px-3 text-small font-semibold text-champagne transition-colors hover:bg-ocean-soft"
+              >
+                <SystemIcon className="flex-none" />
+                <span className="tablet:sr-only">{t("nav.systems")}</span>
+              </Link>
+            ) : (
+              <>
+                <span className="flex items-center gap-2 px-3 pb-1 text-micro font-semibold uppercase tracking-wider text-champagne">
+                  <SystemIcon className="flex-none" />
+                  {t("nav.systems")}
+                </span>
+                {ADMIN_SYSTEMS_NAV.map(renderItem)}
+              </>
+            )}
+          </div>
+        )}
+      </nav>
+
+      {/* Pie del sidebar: contexto de la aplicación, oculto con el sidebar plegado. */}
+      <p className={`flex-none border-t border-champagne/30 px-4 py-3 text-micro text-champagne ${mini ? "tablet:hidden" : ""}`}>
+        {t("nav.footer")}
+      </p>
+    </aside>
   );
+}
+
+/** Icono del grupo Sistemas (evita repetir la indirección del `Record` de secciones). */
+function SystemIcon({ className }: { readonly className?: string }) {
+  const Icon = ADMIN_ICONS[ADMIN_SYSTEMS_ICON];
+  return <Icon className={className} />;
 }
 
 function RoleChips({ roles }: { roles: readonly RoleName[] }) {
   const t = useTranslations("admin");
   // En móvil los chips saturan el ancho (UX#40): se colapsan tras un contador «ROLES (N)»
-  // expandible (`<details>`); desde tablet se muestran siempre expandidos.
+  // expandible; desde tablet se muestran siempre expandidos.
   const [open, setOpen] = useState(false);
 
   const chips = (
@@ -200,29 +324,114 @@ function RoleChips({ roles }: { roles: readonly RoleName[] }) {
   );
 }
 
-function Topbar({ session }: { session: AdminSession }) {
+/**
+ * Barra superior (navbar de AdminLTE): hamburguesa del cajón en móvil, roles de la sesión y el
+ * menú unificado de billetera/usuario. Es `sticky` para que el contexto no se pierda al bajar.
+ */
+function Topbar({
+  session,
+  drawerOpen,
+  onToggleDrawer,
+  toggleRef,
+}: {
+  session: AdminSession;
+  drawerOpen: boolean;
+  onToggleDrawer: () => void;
+  toggleRef: RefObject<HTMLButtonElement>;
+}) {
   const t = useTranslations("admin");
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-sand/85 backdrop-blur">
-      <div className="mx-auto flex min-h-[64px] w-full max-w-6xl flex-wrap items-center gap-3 px-5 py-2">
+    <header className="sticky top-0 z-40 border-b border-line bg-sand/90 backdrop-blur">
+      <div className="flex min-h-[64px] w-full items-center gap-3 px-4 py-2 tablet:px-5">
+        <button
+          ref={toggleRef}
+          type="button"
+          data-testid="admin-nav-toggle"
+          aria-expanded={drawerOpen}
+          aria-controls={SIDEBAR_ID}
+          aria-label={drawerOpen ? t("nav.closeMenu") : t("nav.openMenu")}
+          onClick={onToggleDrawer}
+          className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-brand border border-line-strong text-ink transition-colors hover:bg-sand-2 tablet:hidden"
+        >
+          <MenuIcon />
+        </button>
+
+        {/* En móvil la marca vive aquí (en escritorio preside el sidebar). */}
         <Link
           href="/admin/dashboard"
           aria-label={t("brandHome")}
-          className="flex items-center gap-3 font-display text-[19px] font-semibold leading-none tracking-tight text-ink"
+          className="flex min-w-0 items-center gap-2 font-display text-[19px] font-semibold leading-none tracking-tight text-ink tablet:hidden"
         >
           <BrandMark />
-          {t("brandTitle")}
+          <span className="truncate">{t("brandTitle")}</span>
         </Link>
 
-        {session.roles.length > 0 && <RoleChips roles={session.roles} />}
-
         <div className="ml-auto flex items-center gap-2">
+          {session.roles.length > 0 && <RoleChips roles={session.roles} />}
           {/* Menú unificado de la billetera/usuario (RF-40): identidad + rol + accesos + salir. */}
           <WalletMenu session={session} />
         </div>
       </div>
     </header>
+  );
+}
+
+/**
+ * Cabecera de contenido (AdminLTE `content-header` con migas). Se **deriva de la ruta** para no
+ * tocar las 23 páginas del back-office: cada panel sigue titulando con su `AdminPanel`.
+ */
+function ContentHeader() {
+  const t = useTranslations("admin");
+  const pathname = usePathname();
+  const crumbs = breadcrumbForPathname(pathname);
+  if (crumbs.length === 0) return null;
+
+  return (
+    <div className="border-b border-line bg-sand-2/50">
+      <div className="mx-auto w-full max-w-6xl px-5 py-2.5">
+        <nav aria-label={t("nav.breadcrumb")}>
+          <ol className="flex flex-wrap items-center gap-2 text-micro text-ink-soft">
+            <li>
+              <Link href="/admin/dashboard" className="rounded-brand-xs hover:text-sea">
+                {t("nav.home")}
+              </Link>
+            </li>
+            {crumbs.map((crumb, index) => {
+              const current = index === crumbs.length - 1;
+              return (
+                <li key={crumb.href} className="flex items-center gap-2">
+                  <span aria-hidden="true">›</span>
+                  {current ? (
+                    <span aria-current="page" className="font-semibold text-ink">
+                      {t(`nav.${crumb.labelKey}` as `nav.${AdminNavLabelKey}`)}
+                    </span>
+                  ) : (
+                    <Link href={crumb.href} className="rounded-brand-xs hover:text-sea">
+                      {t(`nav.${crumb.labelKey}` as `nav.${AdminNavLabelKey}`)}
+                    </Link>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
+      </div>
+    </div>
+  );
+}
+
+/** Pie de la plantilla (AdminLTE `main-footer`). */
+function Footer() {
+  const t = useTranslations("admin");
+  return (
+    <footer className="border-t border-line bg-shell">
+      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-2 px-5 py-3 text-micro text-ink-soft">
+        <span>{t("brandTitle")}</span>
+        <span aria-hidden="true">·</span>
+        <span>{t("nav.footer")}</span>
+      </div>
+    </footer>
   );
 }
 
@@ -242,54 +451,110 @@ function SignInGate({ session }: { session: AdminSession }) {
 }
 
 /**
- * Plantilla del back-office (AdminLayout, docs/SRS.md §7): topbar con marca + roles del
- * usuario + estado de wallet, y sidebar navegable con `aria-current`. Centraliza la sesión
- * canónica (D-04): sin sesión muestra la pantalla de acceso (usuario + contraseña + TOTP); con
- * sesión, las entradas/paneles se habilitan o deshabilitan según el rol. Es el shell de admin,
- * NO el PublicShell público.
+ * Plantilla del back-office (docs/SRS.md §7), **redistribuida al estilo AdminLTE** (decisión del
+ * responsable, 2026-09-29): sidebar fija a la izquierda con marca y acordeón, navbar superior con
+ * roles y billetera, `content-header` con migas, `content-wrapper` y pie.
+ *
+ * Centraliza la sesión canónica (D-04): sin sesión muestra la pantalla de acceso (usuario +
+ * contraseña + TOTP); con sesión, las entradas/paneles se habilitan o deshabilitan según el rol.
+ * Es el shell de admin, NO el `PublicShell` público.
  */
 export function AdminLayout({ children }: { children: ReactNode }) {
   const t = useTranslations("admin");
   const session = useAdminSession();
-  // D-29: en móvil la barra de navegación se oculta tras un botón; en tablet+ está siempre visible.
-  const [navOpen, setNavOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Mini-sidebar (solo escritorio) y cajón (solo móvil): estados independientes, sin almacenamiento
+  // persistente para no arriesgar un desajuste de hidratación entre servidor y cliente.
+  const [mini, setMini] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+
+  const closeDrawer = useCallback((returnFocus = false) => {
+    setDrawerOpen(false);
+    if (returnFocus) toggleRef.current?.focus();
+  }, []);
+
+  // Al navegar, el cajón se cierra: la página destino queda visible (y el foco no salta).
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [pathname]);
+
+  // Si la ventana pasa a escritorio con el cajón abierto, se cierra: allí no hay cajón y el bloqueo
+  // de scroll del fondo se quedaría puesto (el breakpoint se toma de la constante compartida para
+  // no divergir del preset de Tailwind).
+  useEffect(() => {
+    const desktop = window.matchMedia(`(min-width: ${BREAKPOINT_TABLET_PX}px)`);
+    const onChange = (event: MediaQueryListEvent) => {
+      if (event.matches) setDrawerOpen(false);
+    };
+    desktop.addEventListener("change", onChange);
+    return () => desktop.removeEventListener("change", onChange);
+  }, []);
+
+  // Cajón abierto: `Escape` cierra y devuelve el foco al botón; el fondo no hace scroll.
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeDrawer(true);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    // El foco entra en el panel para que el tabulador no siga por la página de fondo.
+    sidebarRef.current?.focus();
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [drawerOpen, closeDrawer]);
+
+  const hasSession = Boolean(session.sessionUsername);
 
   const shell = (body: ReactNode) => (
-    <div className="flex min-h-screen flex-col bg-sand">
+    <div className="flex min-h-screen bg-sand">
       <a
         href="#admin-contenido"
         className="sr-only z-50 rounded-br-brand-sm bg-sea px-4 py-3 font-semibold text-shell focus:not-sr-only focus:absolute focus:left-0 focus:top-0"
       >
         {t("skipToContent")}
       </a>
-      <Topbar session={session} />
-      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-5 py-8 tablet:flex-row">
-        <main
-          id="admin-contenido"
-          tabIndex={-1}
-          className="order-2 min-w-0 flex-1 outline-none tablet:order-1"
-        >
-          {body}
-        </main>
-        {session.sessionUsername && (
-          <aside className="order-1 tablet:order-2 tablet:w-56 tablet:flex-none">
-            <button
-              type="button"
-              data-testid="admin-nav-toggle"
-              aria-expanded={navOpen}
-              aria-controls="admin-nav-panel"
-              onClick={() => setNavOpen((open) => !open)}
-              className="mb-3 min-h-touch w-full rounded-pill border border-line px-4 text-small font-semibold text-ink transition-colors hover:bg-sand-2 tablet:hidden"
-            >
-              {t("nav.menu")}
-            </button>
-            <div id="admin-nav-panel" className={navOpen ? "" : "hidden tablet:block"}>
-              <div className="rounded-brand-lg bg-ocean p-4 shadow-card">
-                <Sidebar session={session} />
-              </div>
-            </div>
-          </aside>
-        )}
+
+      {hasSession && (
+        <Sidebar
+          session={session}
+          mini={mini}
+          onToggleMini={() => setMini((value) => !value)}
+          drawerOpen={drawerOpen}
+          panelRef={sidebarRef}
+        />
+      )}
+
+      {/* Velo del cajón (móvil): cierra al pulsarlo y nunca aparece en escritorio. */}
+      {hasSession && drawerOpen && (
+        <button
+          type="button"
+          aria-label={t("nav.closeMenu")}
+          onClick={() => closeDrawer(true)}
+          className="fixed inset-0 z-40 cursor-default bg-ocean/60 tablet:hidden"
+        />
+      )}
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <Topbar
+          session={session}
+          drawerOpen={drawerOpen}
+          onToggleDrawer={() => setDrawerOpen((open) => !open)}
+          toggleRef={toggleRef}
+        />
+        {hasSession && <ContentHeader />}
+        <div className="mx-auto w-full max-w-6xl flex-1 px-5 py-8">
+          <main id="admin-contenido" tabIndex={-1} className="min-w-0 outline-none">
+            {body}
+          </main>
+        </div>
+        <Footer />
       </div>
     </div>
   );
@@ -302,7 +567,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!session.sessionUsername) {
+  if (!hasSession) {
     return shell(<SignInGate session={session} />);
   }
 

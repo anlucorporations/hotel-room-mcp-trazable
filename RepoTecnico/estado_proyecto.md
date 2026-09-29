@@ -1990,6 +1990,8 @@ fases de la hoja de ruta:
 
 | **Release `v10` en GCP** | Release **solo de web** (los dos commits posteriores a `v9` no tocan `packages/` ni migraciones ni contrato): `web:v10` construida con Cloud Build y desplegada **solo con `--image`**, conservando **18 variables y 9 secretos**; `worker`, `mcp` y `monitor` **no se reconstruyen** y siguen en `v9`. Detalle y rollback en `despliegue_gcp.md` §20 | `/health/ready` **READY**; home **200**; las **9 páginas nuevas** de la suite pública → **200** con su título y contenido real; imagen social **1200×630** servida con `og:image` de producción; regresión de 14 rutas públicas **200** y APIs protegidas **401**; worker `lag 0` (bloque 478). **Desbloqueo de proceso**: el `gcloud` del snap no es utilizable, pero el SDK de `/home/dsh/google-cloud-sdk/bin/gcloud` sí (con `PATH` por delante) |
 
+| **Redistribución AdminLTE del back-office** | Shell de administración rehecho al estilo AdminLTE **con los tokens de marca** (**D-78**: sidebar **izquierda** fija y plegable a mini, navbar, migas de pan derivadas de la ruta, `content-wrapper` y pie) y arreglo del **acordeón**, que se veía siempre abierto porque el atributo `hidden` convivía con la clase `flex` y el preflight de Tailwind v3 no declara `[hidden]{display:none}`; los KPI del dashboard pasan al patrón `small-box` (**D-79**). Detalle en §32 | Guardián nuevo `admin-shell.test.ts` **13/13** y **falsificado** (reintroducir `hidden={!open}` lo pone rojo), derivaciones puras de la ruta, `@hotel/web` **537 pruebas**, `typecheck`/`lint` OK y build de producción OK |
+
 **Hallazgos que destaparon los guardianes nuevos (C.1–C.3)**: (a) `text-caption`/`text-body-lg` de la
 escala tipográfica nueva se leían como «color desconocido» — corregido y con **prueba que deriva la
 lista del preset real**; (b) la paridad i18n **no estaba verificada por ninguna prueba**: el guardián
@@ -2086,3 +2088,82 @@ sesión.
    `server-only`): lee el maestro de habitaciones y cae a `buildRoomSeed` si la base no responde, así
    que la página sigue sirviendo información **real** sin BD.
 
+
+---
+
+## 32. Redistribución AdminLTE del back-office y arreglo del acordeón (2026-09-29)
+
+**Petición del responsable**: (1) dar a la suite de administración una **distribución al estilo
+AdminLTE**; (2) **corregir la barra de navegación**, porque «el efecto acordeón no se carga
+adecuadamente».
+
+### Diagnóstico (causa raíz del acordeón)
+
+El panel de cada sección se pintaba con el **atributo** `hidden` junto a la **clase** `flex`
+(`AdminLayout.tsx`):
+
+```tsx
+<ul id={`nav-section-panel-${section.key}`} hidden={!open} className="mt-1 flex flex-col gap-1">
+```
+
+La causa **exacta**, comprobada sobre el CSS compilado de la release (`.next/static/css`), es de
+especificidad y orden, no de ausencia de regla: el preflight de Tailwind v3.4 **sí** declara
+`[hidden]:where(:not([hidden=until-found])){display:none}`, pero lo hace en la **capa base** y con
+especificidad **(0,1,0)** —`:where()` no suma—, mientras que `.flex{display:flex}` es una utilidad con
+la **misma especificidad** y **posterior** en la hoja (posición 13.577 frente a 11.574 del CSS
+construido). El `flex` gana, así que **las siete secciones se veían siempre abiertas** y el acordeón no
+existía, aunque `aria-expanded` dijera lo contrario. El defecto pasó desapercibido porque el
+back-office **no tenía ningún guardián de plantilla** (solo pruebas de funciones puras) y porque
+`aria-expanded` era coherente con el estado de React mientras el DOM mostraba otra cosa.
+
+**Segundo defecto, encontrado al escribir el guardián**: `breadcrumbForPathname` resolvía con el
+**primer** destino que casaba, y `/admin/sistemas` es prefijo de `/admin/sistemas/ajustes`, así que la
+miga y la sección activas eran las del grupo y no las de la página. Se corrige con **coincidencia más
+específica** (el `href` más largo) en `bestMatch`.
+
+### Decisiones de la entrevista (4)
+
+| # | Pregunta | Decisión |
+|---|---|---|
+| 1 | Alcance del rediseño | **Shell completo + dashboard**: la plantilla se rehace; de las páginas solo `/admin/dashboard` pasa al patrón `small-box`. Las otras 22 páginas **no se tocan** (el titular sigue siendo `AdminPanel`) |
+| 2 | Comportamiento del sidebar | **Plegable a mini-sidebar** (solo iconos) en escritorio; en móvil, **cajón** con velo. Iconos **SVG en línea**, sin dependencias nuevas |
+| 3 | Acordeón | **Una sección a la vez** (D-29) **+ auto-apertura de la sección activa**, resincronizada con la ruta (enlace profundo, atrás/adelante, recarga) |
+| 4 | Identidad cromática | **Tokens de marca**: estructura AdminLTE con el registro marino/champagne/arena ya aprobado (no se importa la paleta por defecto de AdminLTE) |
+
+**D-78 (decisión del cliente, aplicada).** El shell de administración adopta la **distribución
+AdminLTE** —sidebar **izquierda** fija y plegable, navbar superior, cabecera de contenido con **migas
+de pan derivadas de la ruta**, `content-wrapper` y pie— **manteniendo los tokens de marca**. Sustituye
+**solo la posición y la distribución** de D-29: el **acordeón de una sección abierta sigue vigente**.
+
+**D-79 (decisión del cliente, aplicada).** El rediseño cubre **la plantilla y el dashboard**
+(`small-box`); el interior de las demás páginas de administración queda fuera de este incremento.
+
+### Hecho
+
+- **`adminIcons.tsx`** (nuevo): ocho iconos de sección + hamburguesa, cheurón y plegado, dibujados en
+  línea con `currentColor`, `aria-hidden` y `focusable="false"`. El `Record<AdminIconKey, …>` obliga
+  en `tsc` a que **toda sección tenga icono**.
+- **`adminNav.ts`**: cada sección declara su `icon`; se añaden las derivaciones puras
+  `isActiveHref` (exige el separador: `/admin/mint` no casa con `/admin/mintaje`), `sectionForPathname`,
+  `navEntryForPathname` y `breadcrumbForPathname` (Inicio → sección → entrada).
+- **`AdminLayout.tsx`**: reescrito con la distribución AdminLTE. **Mini-sidebar** en escritorio (el
+  nombre accesible se conserva con `sr-only`, nunca desaparece del DOM); **cajón** en móvil que se
+  cierra con velo, con **`Escape`** y al navegar, con **foco gestionado** y bloqueo de scroll del
+  fondo que se libera si la ventana pasa a escritorio. El acordeón **plega por clase**, resincroniza la
+  sección activa con la ruta y, con el sidebar plegado, abrir una sección lo despliega.
+- **Dashboard**: los siete KPI pasan al patrón `small-box` (dato grande, icono decorativo, banda de
+  fórmula al pie). Se mantiene la decisión **UX#34**: sin mini-barras para magnitudes heterogéneas.
+- **i18n**: 8 claves nuevas en `admin.nav` (ES/EN/RU) con paridad verificada por el guardián.
+- **Guardián nuevo `admin-shell.test.ts`** (13 pruebas): derivaciones puras, iconos, contrato del shell
+  (prohibición del atributo `hidden`, cableado `aria-expanded`/`aria-controls`, resincronización con la
+  ruta, cajón con velo y `Escape`, piezas AdminLTE) y presencia de las claves i18n.
+
+### Verificación
+
+| Comprobación | Resultado |
+|---|---|
+| `pnpm --filter @hotel/web test` | **70 ficheros · 537 pruebas** en verde (13 nuevas del guardián del shell) |
+| `pnpm --filter @hotel/web typecheck` · `lint` | **OK** · **0 errores** (2 avisos previos, ajenos al cambio) |
+| **Falsificación del guardián** | Reintroducido `hidden={!open}` + `flex` → la prueba **se pone roja** señalando la causa; restaurado, verde |
+| Guardianes de identidad y accesibilidad | `a11y` (18), `control-boundary` (5), `i18n-parity` (4), `boundaries` (1), `brand-pieces` (6) e `images-naming` (6) en verde |
+| `pnpm --filter @hotel/web build` | **OK** · **52** rutas de página y **84** de API compiladas sin errores (medido sobre `.next/app-path-routes-manifest.json`) |

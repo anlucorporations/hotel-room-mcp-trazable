@@ -67,7 +67,7 @@ final. El esquema va por delante del código: las tablas existen, pero aún no l
 ## 4. Arquitectura de información (destino)
 
 ```
-Suite ADMINISTRACIÓN  (/admin)  — sidebar derecha + acordeón (D-29)
+Suite ADMINISTRACIÓN  (/admin)  — sidebar izquierda + acordeón (D-29; **posición redistribuida a la izquierda el 2026-09-29, D-78**)
 ├── 1. Habitación          → inventario, ficha, estados, publicación (D-1…D-26)
 ├── 2. Recepción           → oferta, reservas por confirmar, disponibilidad, cancelaciones (D-34…D-43)
 ├── 3. Actividades         → catálogo, horarios, inscripciones (D-44…D-47)
@@ -117,7 +117,7 @@ D-25 (primer ciclo = shell + Habitación), D-26 (operación primero) y D-24 (cor
   `POST /api/admin/rooms/[id]/publish` (TOTP + huella, D-2/D-18/D-21) — **25 pruebas**.
 - ✅ **Galería**: librería de nombres `room-images` (D-5/D-12/D-20), servido `GET /api/rooms/images/[file]`
   y administración `GET/POST /api/admin/rooms/[id]/images`, `PATCH/DELETE …/[imageId]` — **19 pruebas**.
-- ✅ **Shell de Administración (D-29)**: sidebar **a la derecha**, menú **acordeón de una sección abierta**
+- ✅ **Shell de Administración (D-29)**: sidebar **a la izquierda** (redistribuida el 2026-09-29, **D-78**, al estilo AdminLTE), menú **acordeón de una sección abierta**
   (`adminNav.ts` por secciones), móvil con botón y `aria-expanded`/`aria-controls`.
 - ✅ **UI de la sección Habitación** (`/admin/habitacion`): alta, ficha editable, galería con portada,
   pausar/publicar con modal TOTP y archivar; i18n ES/EN/RU (namespace `rooms` + claves de sección).
@@ -137,7 +137,7 @@ D-25 (primer ciclo = shell + Habitación), D-26 (operación primero) y D-24 (cor
 
 - **Objetivo:** la sección 1 del back-office, operativa de punta a punta.
 - **Alcance:**
-  - `AdminShell`: **sidebar derecha** + **acordeón** de una sección abierta (D-29), móvil con botón.
+  - `AdminShell`: **sidebar izquierda** + **acordeón** de una sección abierta (D-29; izquierda desde **D-78**), móvil con cajón.
   - Alta/edición de **habitación**: nº único, tipo fijo, capacidad, camas, descripciones
     (ES obligatorio; EN/RU con respaldo), m² y servicios (D-7, D-21, D-22).
   - **Galería** por habitación: JPG ≤2 MB, máx. 5, portada, alt text (D-5, D-12, D-20).
