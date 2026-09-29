@@ -672,4 +672,60 @@ mismo criterio que la release web-only de §15. **No** se tocó contrato (sigue 
 
 ---
 
-*Despliegue GCP · hotelMCP · actualizado 2026-09-29 (release `v10`: suite pública completa en producción)*
+## 21. Release `v11` — manuales por caso de uso y back-office AdminLTE (2026-09-29)
+
+**Qué se desplegó.** Release **solo de web**: los dos commits de la release (`f53dd9b` manuales por
+caso de uso y `5f76ba3` shell AdminLTE D-78) tocan `apps/web/`, `docs/` y `RepoTecnico/`, pero **no**
+`packages/`, migraciones ni contrato. `worker`, `mcp` y `monitor` **no se reconstruyen** y siguen en
+`v9` (mismo criterio web-only de §15 y §20). No se tocó contrato (`0xc66A…7b6F`, bloque 314), ni base
+de datos, ni se ejecutó siembra o reset.
+
+| Paso | Detalle |
+|---|---|
+| Push | `638b73f..5f76ba3` en los tres remotos (`origin` gitlab.com, `github`, `codecrypto`) |
+| Imagen | Cloud Build `web:v11` (2m47s, build `33823f18-98a5-413d-8796-99734f542208`) con los mismos `NEXT_PUBLIC_*` de v2–v10 (chainId 31337, contrato `0xc66ab83418c20a65c3f8e83b3d11c8c3a6097b6f`, bloque 314, faucet `0xdFdE…f75b`, `NEXT_PUBLIC_SITE_URL` de producción) |
+| Revisión | `hotel-mcp-web-00011-xvb` al 100 % de tráfico (sustituye a `00010-kvr`, que queda como rollback) |
+| Configuración | Desplegada **solo con `--image`**: se conservan las **18** variables de entorno y los **9** secretos |
+| Componentes intactos | `hotel-mcp-worker` (`worker:v9`) y `hotel-mcp-mcp` (`mcp:v9`) |
+
+### Qué entra en la release
+
+- **32 manuales por caso de uso** (técnicos en `RepoTecnico/Manuales/05-casos-de-uso/` y literales en
+  `docs/Manuales/05-casos-de-uso/`) en 9 bloques ordenados por la **iniciación del sistema**, con
+  **32 infografías** SVG y el **mapa de iniciación**; `manuals.generated.ts` pasa a **35 manuales** y
+  `/ayuda` los agrupa por bloque (i18n ES/EN/RU). `docs/pdf/` y `apps/web/public/manual/` regenerados.
+- **Back-office AdminLTE (D-78/D-79)**: sidebar izquierda plegable, navbar, migas de pan derivadas de
+  la ruta y `admin-shell.test.ts`.
+
+### Verificación (despliegue real)
+
+| Comprobación | Resultado |
+|---|---|
+| `pnpm --filter @hotel/web test` (antes del despliegue) | **70 ficheros · 537 pruebas** en verde |
+| Guardianes de manuales e imágenes | `manuals-sync` + `images-naming` → **14/14** |
+| `/health/ready` | **200** · `READY` (postgres, redis y `polygonRPC` **UP**) |
+| Home | **200** (134 KB) |
+| `/ayuda` | **200** (214 KB) con las **32** tarjetas de caso de uso, los 9 bloques y el mapa |
+| `/ayuda/cu-16-roles` | **200** con el texto del manual y la infografía embebida |
+| `/manual/manual-cu-16-roles.pdf` | **200 `application/pdf`** (106 KB) |
+| `/manual/imagenes/doc-cu-16-roles.svg` · `doc-mapa-iniciacion-sistema.svg` | **200 `image/svg+xml`** |
+| 9 páginas de la suite pública | `/empresa`, `/instalaciones`, `/habitaciones`, `/servicios`, `/experiencias`, `/actividades`, `/planes`, `/resenas`, `/contacto` → **200** |
+| Regresión de rutas | `/catalogo`, `/reventa`, `/mis-noches`, `/admin`, `/recepcion`, `/housekeeping`, `/mantenimiento`, `/asistente`, `/checkin`, `/historico`, `/privacidad` → **200** |
+| APIs protegidas | `/api/reception/overview`, `/api/housekeeping/shifts`, `/api/mantenimiento/board` y `/api/admin/actividades/activities` → **401** |
+| Worker / MCP (v9, sin cambios) | worker `/health` con `lag 0` y `aggregateLag 0` (bloque 478); mcp `/health` → `ok` (bloque 478) |
+
+**Corrección de la traza de §20**: la API protegida de actividades es
+`/api/admin/actividades/activities` (en español); la ruta en inglés (`/api/admin/activities/...`)
+devuelve **404**.
+
+**Estado esperado que NO es una avería.** El worker sigue devolviendo `status: down` con
+`emailDegraded: true` por el SMTP de relleno (`smtp.invalid`), el mismo invariante de §19 y §20;
+`processingDegraded` es `false`.
+
+**Rollback.** La revisión anterior sigue disponible y sin tráfico:
+`gcloud run services update-traffic hotel-mcp-web --to-revisions=hotel-mcp-web-00010-kvr=100`.
+`worker`, `mcp` y `monitor` no se tocaron, así que no requieren acción.
+
+---
+
+*Despliegue GCP · hotelMCP · actualizado 2026-09-29 (release `v11`: manuales por caso de uso + back-office AdminLTE)*
