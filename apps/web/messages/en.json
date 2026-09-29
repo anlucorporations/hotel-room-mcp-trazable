@@ -503,6 +503,8 @@
       "openMenu": "Open menu",
       "closeMenu": "Close menu",
       "footer": "Administration panel",
+      "ayuda": "Help",
+      "sessionTitle": "Session",
       "mint": "Mint night",
       "dashboard": "Metrics",
       "royalty": "Royalty",

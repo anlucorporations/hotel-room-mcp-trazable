@@ -59,6 +59,14 @@ export type AdminSectionKey =
  */
 export type AdminIconKey = "bed" | "bell" | "sparkles" | "ticket" | "gear" | "chart" | "sliders" | "server";
 
+/** Subgrupo anidado dentro del panel de una sección (D-80). */
+export interface AdminNavGroup {
+  readonly labelKey: AdminNavLabelKey;
+  /** Icono de la cabecera del subgrupo (visible también con el sidebar plegado a mini). */
+  readonly icon: AdminIconKey;
+  readonly items: readonly AdminNavItem[];
+}
+
 /** Sección del sidebar: una cabecera desplegable con sus entradas (D-29). */
 export interface AdminNavSection {
   readonly key: AdminSectionKey;
@@ -66,15 +74,36 @@ export interface AdminNavSection {
   /** Icono de la cabecera; es lo único visible con el sidebar plegado a mini. */
   readonly icon: AdminIconKey;
   readonly items: readonly AdminNavItem[];
+  /**
+   * Subgrupo **reservado al owner** (`DEFAULT_ADMIN_ROLE`) que se renderiza dentro del panel de esta
+   * sección (D-80, 2026-09-29): integra las funciones especiales de Sistemas en Administración y
+   * retira el bloque que vivía aparte en el sidebar. El gating real lo imponen rutas y APIs.
+   */
+  readonly ownerGroup?: AdminNavGroup;
 }
 
 /**
- * Secciones del back-office (D-29: sidebar derecha con menú acordeón, **una sección abierta a la vez**).
+ * Sección **Sistemas** (incremento v3, RF-41): gestión de la plataforma, reservada al owner
+ * (`DEFAULT_ADMIN_ROLE`). La primera entrada es la portada del grupo. Desde **D-80** no es un bloque
+ * aparte del sidebar: se consume como `ownerGroup` del panel **Administración**.
+ */
+export const ADMIN_SYSTEMS_NAV: readonly AdminNavItem[] = [
+  { href: "/admin/sistemas", labelKey: "systems", role: "DEFAULT_ADMIN_ROLE" },
+  { href: "/admin/sistemas/contratos", labelKey: "contracts", role: "DEFAULT_ADMIN_ROLE" },
+  { href: "/admin/sistemas/usuarios", labelKey: "systemUsers", role: "DEFAULT_ADMIN_ROLE" },
+  { href: "/admin/sistemas/finanzas", labelKey: "finances", role: "DEFAULT_ADMIN_ROLE" },
+  { href: "/admin/sistemas/operaciones", labelKey: "operations", role: "DEFAULT_ADMIN_ROLE" },
+  { href: "/admin/sistemas/ajustes", labelKey: "settings", role: "DEFAULT_ADMIN_ROLE" },
+];
+
+/**
+ * Secciones del back-office (D-29: menú acordeón, **una sección abierta a la vez**; distribución
+ * AdminLTE desde D-78).
  *
- * Es la única fuente de la navegación: `ADMIN_NAV` se deriva de aquí para quien necesite la lista plana.
- * Las secciones que aún no tienen pantallas (Actividades, Mantenimiento) se incorporarán en sus fases;
- * hoy se listan solo las que existen, para no ofrecer enlaces muertos. Housekeeping entra en F3 con su
- * panel de Lencería (el tablero vive en la ruta de personal `/housekeeping`, D-62).
+ * Es la única fuente de la navegación: `ADMIN_NAV` se deriva de aquí para quien necesite la lista
+ * plana. Las secciones que aún no tienen pantallas se incorporarán en sus fases; hoy se listan solo
+ * las que existen, para no ofrecer enlaces muertos. Housekeeping entra en F3 con su panel de Lencería
+ * (el tablero vive en la ruta de personal `/housekeeping`, D-62).
  */
 export const ADMIN_NAV_SECTIONS: readonly AdminNavSection[] = [
   {
@@ -129,6 +158,8 @@ export const ADMIN_NAV_SECTIONS: readonly AdminNavSection[] = [
       // F6 · D-58: moderación previa de las reseñas de los huéspedes.
       { href: "/admin/resenas", labelKey: "resenas", role: "DEFAULT_ADMIN_ROLE" },
     ],
+    // D-80: las funciones especiales de Sistemas se integran en este panel (antes vivían aparte).
+    ownerGroup: { labelKey: "systems", icon: "server", items: ADMIN_SYSTEMS_NAV },
   },
   {
     key: "plataforma",
@@ -142,24 +173,13 @@ export const ADMIN_NAV_SECTIONS: readonly AdminNavSection[] = [
   },
 ];
 
-/** Lista plana derivada de las secciones (compatibilidad con consumidores existentes). */
-export const ADMIN_NAV: readonly AdminNavItem[] = ADMIN_NAV_SECTIONS.flatMap((section) => section.items);
+/** Todas las entradas que se pintan dentro del panel de una sección (propias + subgrupo del owner). */
+export function sectionItems(section: AdminNavSection): readonly AdminNavItem[] {
+  return [...section.items, ...(section.ownerGroup?.items ?? [])];
+}
 
-/**
- * Sección **Sistemas** (incremento v3, RF-41): gestión de la plataforma, visible y accesible
- * **solo** para el owner (`DEFAULT_ADMIN_ROLE`). La primera entrada es la portada del grupo.
- */
-export const ADMIN_SYSTEMS_NAV: readonly AdminNavItem[] = [
-  { href: "/admin/sistemas", labelKey: "systems", role: "DEFAULT_ADMIN_ROLE" },
-  { href: "/admin/sistemas/contratos", labelKey: "contracts", role: "DEFAULT_ADMIN_ROLE" },
-  { href: "/admin/sistemas/usuarios", labelKey: "systemUsers", role: "DEFAULT_ADMIN_ROLE" },
-  { href: "/admin/sistemas/finanzas", labelKey: "finances", role: "DEFAULT_ADMIN_ROLE" },
-  { href: "/admin/sistemas/operaciones", labelKey: "operations", role: "DEFAULT_ADMIN_ROLE" },
-  { href: "/admin/sistemas/ajustes", labelKey: "settings", role: "DEFAULT_ADMIN_ROLE" },
-];
-
-/** Icono del grupo Sistemas (el único que queda visible con el sidebar plegado). */
-export const ADMIN_SYSTEMS_ICON: AdminIconKey = "server";
+/** Lista plana derivada de las secciones (incluidos los subgrupos del owner). */
+export const ADMIN_NAV: readonly AdminNavItem[] = ADMIN_NAV_SECTIONS.flatMap((section) => sectionItems(section));
 
 // ---------------------------------------------------------------------------
 // Derivaciones puras de la ruta (sin React): son la parte verificable del shell.
@@ -174,13 +194,16 @@ export function isActiveHref(pathname: string, href: string): boolean {
 }
 
 /**
- * Sección del acordeón que contiene la ruta activa, o `null` si la ruta es del grupo **Sistemas**
- * (que no es acordeón) o no pertenece a ninguna sección. Devolver `null` en vez de «la primera» es
- * intencionado: con el sidebar plegado/expandido no queremos abrir una sección que no es la actual.
+ * Sección del acordeón que contiene la ruta activa —incluido lo que hoy vive dentro del subgrupo del
+ * owner (**D-80**: `/admin/sistemas/*` pertenece a Administración)—, o `null` si la ruta no pertenece a
+ * ninguna sección. Devolver `null` en vez de «la primera» es intencionado: con el sidebar
+ * plegado/expandido no queremos abrir una sección que no es la actual.
  */
 export function sectionForPathname(pathname: string): AdminSectionKey | null {
   return (
-    ADMIN_NAV_SECTIONS.find((section) => section.items.some((item) => isActiveHref(pathname, item.href)))?.key ?? null
+    ADMIN_NAV_SECTIONS.find((section) =>
+      sectionItems(section).some((item) => isActiveHref(pathname, item.href)),
+    )?.key ?? null
   );
 }
 
@@ -198,13 +221,23 @@ function bestMatch<T extends { readonly href: string }>(pathname: string, items:
   return best;
 }
 
-/** Entrada de navegación (con su sección de origen) que corresponde a la ruta activa. */
-export function navEntryForPathname(
-  pathname: string,
-): { readonly section: AdminNavSection; readonly item: AdminNavItem } | null {
+/** Resultado de resolver la ruta activa sobre la navegación. */
+export interface AdminNavMatch {
+  readonly section: AdminNavSection;
+  readonly item: AdminNavItem;
+  /** Presente cuando la entrada pertenece al subgrupo del owner (D-80). */
+  readonly group?: AdminNavGroup;
+}
+
+/** Entrada de navegación (con su sección y, en su caso, su subgrupo) para la ruta activa. */
+export function navEntryForPathname(pathname: string): AdminNavMatch | null {
   for (const section of ADMIN_NAV_SECTIONS) {
-    const item = bestMatch(pathname, section.items);
-    if (item) return { section, item };
+    const direct = bestMatch(pathname, section.items);
+    if (direct) return { section, item: direct };
+    if (section.ownerGroup) {
+      const grouped = bestMatch(pathname, section.ownerGroup.items);
+      if (grouped) return { section, item: grouped, group: section.ownerGroup };
+    }
   }
   return null;
 }
@@ -216,27 +249,25 @@ export interface AdminBreadcrumb {
 }
 
 /**
- * Migas de pan de la plantilla (AdminLTE): **Inicio → sección → entrada**. Se derivan de la ruta,
- * no de props, para no tener que tocar las 23 páginas del back-office (alcance acordado del
- * rediseño: solo el shell y el dashboard). Ruta desconocida ⇒ sin migas (la plantilla no inventa
- * un camino que no existe).
+ * Migas de pan de la plantilla (AdminLTE): **Inicio → sección → [subgrupo] → entrada**. Se derivan de
+ * la ruta, no de props, para no tener que tocar las páginas del back-office: cada panel sigue titulando
+ * con su `AdminPanel`. Ruta desconocida ⇒ sin migas (la plantilla no inventa un camino que no existe).
  */
 export function breadcrumbForPathname(pathname: string): readonly AdminBreadcrumb[] {
-  const systems = bestMatch(pathname, ADMIN_SYSTEMS_NAV);
-  if (systems) {
-    // El grupo Sistemas es plano: Inicio → Sistemas → entrada (sin repetir la portada).
-    return systems.href === ADMIN_SYSTEMS_NAV[0]?.href
-      ? [{ href: systems.href, labelKey: systems.labelKey }]
-      : [{ href: ADMIN_SYSTEMS_NAV[0]!.href, labelKey: ADMIN_SYSTEMS_NAV[0]!.labelKey }, { href: systems.href, labelKey: systems.labelKey }];
+  const match = navEntryForPathname(pathname);
+  if (!match) return [];
+
+  const crumbs: AdminBreadcrumb[] = [
+    { href: match.section.items[0]!.href, labelKey: match.section.labelKey },
+  ];
+  // Nivel intermedio: el subgrupo del owner (p. ej. Administración › Sistemas › Ajustes).
+  if (match.group) {
+    crumbs.push({ href: match.group.items[0]!.href, labelKey: match.group.labelKey });
   }
-
-  const entry = navEntryForPathname(pathname);
-  if (!entry) return [];
-
-  const crumbs: AdminBreadcrumb[] = [{ href: entry.section.items[0]!.href, labelKey: entry.section.labelKey }];
-  // Si la etiqueta de la entrada repite la de la sección (p. ej. Actividades), una sola miga.
-  if (entry.item.labelKey !== entry.section.labelKey && entry.item.href !== crumbs[0]!.href) {
-    crumbs.push({ href: entry.item.href, labelKey: entry.item.labelKey });
+  // La entrada solo aporta una miga nueva si no repite destino o etiqueta del nivel anterior.
+  const parent = crumbs[crumbs.length - 1]!;
+  if (match.item.labelKey !== parent.labelKey && match.item.href !== parent.href) {
+    crumbs.push({ href: match.item.href, labelKey: match.item.labelKey });
   }
   return crumbs;
 }

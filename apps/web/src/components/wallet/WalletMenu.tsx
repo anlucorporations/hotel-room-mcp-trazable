@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useId, useRef, useState } from "react";
+import { Fragment, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -61,11 +61,29 @@ const SUITE_ACTIONS = new Set<WalletMenuAction>([
  * Accesible por teclado: `aria-expanded`, cierre con `Escape`, foco al primer elemento al abrir y
  * retorno del foco al botón al cerrar (RF-40.3).
  */
-export function WalletMenu({ session }: { session?: AdminSession }) {
+/** Ancho del panel desplegable (`w-64`): se fija a propósito para poder anclarlo al viewport. */
+const PANEL_WIDTH_PX = 256;
+/** Separación del disparador y margen mínimo contra los bordes de la ventana. */
+const PANEL_GAP_PX = 8;
+const VIEWPORT_MARGIN_PX = 8;
+
+export interface WalletMenuProps {
+  readonly session?: AdminSession;
+  /**
+   * `"header"` (por defecto): panel en `absolute`, como siempre —la cabecera pública no recorta.
+   * `"sidebar"`: panel **fijo al viewport**, medido sobre el disparador. Es lo que necesita el
+   * back-office, donde el menú vive dentro del sidebar (`AdminLTE`) cuyo contenedor tiene
+   * `overflow-y-auto`: un descendiente `absolute` quedaría recortado por ese scroll.
+   */
+  readonly variant?: "header" | "sidebar";
+}
+
+export function WalletMenu({ session, variant = "header" }: WalletMenuProps) {
   const t = useTranslations("walletMenu");
   const router = useRouter();
   const onboarding = useOnboarding();
   const [open, setOpen] = useState(false);
+  const [panelStyle, setPanelStyle] = useState<CSSProperties | undefined>(undefined);
   const panelId = useId();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -74,6 +92,42 @@ export function WalletMenu({ session }: { session?: AdminSession }) {
   const isOwner = session?.isOwner ?? false;
   const isConnected = onboarding.isConnected;
   const isWrongNetwork = onboarding.isWrongNetwork;
+
+  /**
+   * Anclaje al viewport (variante `sidebar`). Se mide primero con una altura estimada y se vuelve a
+   * medir en el siguiente frame, cuando el panel ya existe y su altura es real: así el cambio de lado
+   * (debajo → encima del disparador) no depende de un número escrito a mano.
+   */
+  useLayoutEffect(() => {
+    if (!open || variant !== "sidebar") return;
+
+    const place = () => {
+      const trigger = buttonRef.current?.getBoundingClientRect();
+      if (!trigger) return;
+      const height = panelRef.current?.offsetHeight ?? 320;
+      const spaceBelow = window.innerHeight - trigger.bottom;
+      const top =
+        spaceBelow >= height + PANEL_GAP_PX
+          ? trigger.bottom + PANEL_GAP_PX
+          : Math.max(VIEWPORT_MARGIN_PX, trigger.top - height - PANEL_GAP_PX);
+      const left = Math.min(
+        Math.max(VIEWPORT_MARGIN_PX, trigger.right - PANEL_WIDTH_PX),
+        Math.max(VIEWPORT_MARGIN_PX, window.innerWidth - PANEL_WIDTH_PX - VIEWPORT_MARGIN_PX),
+      );
+      setPanelStyle({ position: "fixed", top, left, width: PANEL_WIDTH_PX });
+    };
+
+    place();
+    const raf = requestAnimationFrame(place);
+    window.addEventListener("resize", place);
+    // `capture: true`: el sidebar tiene su propio scroll, que no burbuja.
+    window.addEventListener("scroll", place, true);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open, variant]);
 
   useEffect(() => {
     if (!open) return;
@@ -123,6 +177,15 @@ export function WalletMenu({ session }: { session?: AdminSession }) {
       ? short(onboarding.address)
       : t("notConnected");
 
+  // En el sidebar (`ocean`) el disparador ocupa la fila completa: así el nombre de usuario no se
+  // trunca contra los chips y el área táctil llega al ancho útil del panel.
+  const triggerClass = [
+    "inline-flex min-h-touch items-center gap-2 rounded-pill border px-3 text-small font-medium transition-colors",
+    variant === "sidebar"
+      ? "w-full justify-between border-line-strong bg-shell text-ink hover:bg-sand-2"
+      : "border-line bg-shell text-ink hover:bg-sand-2",
+  ].join(" ");
+
   return (
     <div className="relative">
       <button
@@ -133,7 +196,7 @@ export function WalletMenu({ session }: { session?: AdminSession }) {
         aria-controls={panelId}
         aria-label={open ? t("close") : t("open")}
         onClick={() => setOpen((value) => !value)}
-        className="inline-flex min-h-touch items-center gap-2 rounded-pill border border-line bg-shell px-3 text-small font-medium text-ink transition-colors hover:bg-sand-2"
+        className={triggerClass}
       >
         <span
           aria-hidden="true"
@@ -168,7 +231,12 @@ export function WalletMenu({ session }: { session?: AdminSession }) {
             role="menu"
             aria-label={t("menuLabel")}
             data-testid="wallet-menu-panel"
-            className="absolute right-0 top-full z-50 mt-2 w-64 rounded-brand-lg border border-line bg-shell p-2 shadow-card"
+            style={panelStyle}
+            className={[
+              "z-50 rounded-brand-lg border border-line bg-shell p-2 shadow-card",
+              // `absolute` solo en la variante de cabecera; en `sidebar` manda `panelStyle` (fixed).
+              panelStyle ? "" : "absolute right-0 top-full mt-2 w-64",
+            ].join(" ")}
           >
             <p className="px-3 py-2 text-micro uppercase tracking-wide text-ink-soft">
               {hasSession ? t("sessionTitle") : t("walletTitle")}

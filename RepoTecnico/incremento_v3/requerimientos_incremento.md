@@ -36,7 +36,7 @@
 
 | ID | Requerimiento | Prioridad |
 |---|---|---|
-| RF-41 | El sistema deberá exponer una sección **Sistemas** visible y accesible **solo** para la sesión con `DEFAULT_ADMIN_ROLE` (owner), con las subsecciones Contratos, Usuarios, Finanzas y Operaciones. | Alta |
+| RF-41 | El sistema deberá exponer las funciones de **Sistemas** visibles y accesibles **solo** para la sesión con `DEFAULT_ADMIN_ROLE` (owner), con las subsecciones Contratos, Usuarios, Finanzas y Operaciones. **Enmendado 2026-09-29 (D-80)**: se materializan como **subgrupo anidado en el panel Administración** del sidebar, no como sección independiente; el alcance y el gating no cambian. | Alta |
 | RF-41.1 | Ocultar Sistemas en la UI **no** es la seguridad: cada ruta y API de Sistemas deberá exigir `DEFAULT_ADMIN_ROLE` en el servidor. | Alta |
 | RF-42 | **Usuarios**: listar los operadores (`username`, rol, activo, bloqueo, última actualización), **crear o rotar** credenciales (contraseña + TOTP + códigos de rescate mostrados **una sola vez**) y **activar/desactivar**. | Alta |
 | RF-42.1 | El listado **nunca** deberá devolver `password_hash` ni `totp_secret_enc`. | Alta |
@@ -92,3 +92,13 @@
 4. ¿Qué operaciones de usuarios? → **listar, crear/rotar, activar/desactivar** (D-43).
 5. ¿Contratos/Finanzas con acciones? → **sí, gobernanza y retirada dentro de Sistemas** (D-44).
 6. ¿Seguridad propia? → **rotar MFA y cambiar contraseña** (D-45, confirmado por el alcance del menú).
+
+---
+
+## 7. Enmienda de presentación (2026-09-29 · D-80/D-81)
+
+| Requisito | Qué cambia | Qué NO cambia |
+|---|---|---|
+| RF-41 | La agrupación visual: Sistemas pasa a ser un **subgrupo dentro del panel Administración** del sidebar (`adminNav.ts → ownerGroup`). | Accesibilidad reservada al owner, subsecciones, rutas y APIs (RF-41.1 sigue vigente). |
+| RF-40 | El menú de cuenta/wallet se renderiza en el **panel Administración**, no en la barra superior (`WalletMenu variant="sidebar"`). | Contenido del menú, acciones y criterios Gherkin de CU-40. |
+| — | La **barra superior** queda con un único destino de navegación: la sección **Ayuda**. | Los controles estructurales (hamburguesa del cajón en móvil). |

@@ -16,14 +16,13 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { BREAKPOINT_TABLET_PX, type RoleName } from "@hotel/shared/domain";
 import { WalletMenu } from "@/components/wallet/WalletMenu";
-import { ADMIN_ICONS, ChevronIcon, CollapseIcon, MenuIcon } from "./adminIcons";
+import { ADMIN_ICONS, ChevronIcon, CollapseIcon, HelpIcon, MenuIcon, UserIcon } from "./adminIcons";
 import {
   ADMIN_NAV_SECTIONS,
-  ADMIN_SYSTEMS_ICON,
-  ADMIN_SYSTEMS_NAV,
   breadcrumbForPathname,
   isActiveHref,
   sectionForPathname,
+  type AdminNavGroup,
   type AdminNavItem,
   type AdminNavLabelKey,
   type AdminSectionKey,
@@ -235,35 +234,19 @@ function Sidebar({
                 {section.items.map((item) => (
                   <li key={item.href}>{renderItem(item)}</li>
                 ))}
+
+                {/* Subgrupo del owner (D-80): las funciones especiales de Sistemas, integradas en el
+                    panel Administración. El gating real lo imponen rutas y APIs. */}
+                {section.ownerGroup && session.isOwner && (
+                  <OwnerGroup group={section.ownerGroup} navLabel={navLabel} renderItem={renderItem} />
+                )}
+
+                {/* Bloque de sesión (D-81): usuario + billetera, dentro del panel Administración. */}
+                {section.key === "administracion" && <SessionBlock session={session} />}
               </ul>
             </div>
           );
         })}
-
-        {/* Sistemas (RF-41): solo el owner. El gating real lo imponen las rutas y las APIs. */}
-        {session.isOwner && (
-          <div data-testid="nav-systems" className="mt-4 flex flex-col gap-1 border-t border-champagne/30 pt-3">
-            {mini ? (
-              // Plegado: un solo destino (la portada del grupo) con el nombre accesible.
-              <Link
-                href={ADMIN_SYSTEMS_NAV[0]!.href}
-                title={t("nav.systems")}
-                className="flex min-h-touch items-center gap-2 rounded-brand px-3 text-small font-semibold text-champagne transition-colors hover:bg-ocean-soft"
-              >
-                <SystemIcon className="flex-none" />
-                <span className="tablet:sr-only">{t("nav.systems")}</span>
-              </Link>
-            ) : (
-              <>
-                <span className="flex items-center gap-2 px-3 pb-1 text-micro font-semibold uppercase tracking-wider text-champagne">
-                  <SystemIcon className="flex-none" />
-                  {t("nav.systems")}
-                </span>
-                {ADMIN_SYSTEMS_NAV.map(renderItem)}
-              </>
-            )}
-          </div>
-        )}
       </nav>
 
       {/* Pie del sidebar: contexto de la aplicación, oculto con el sidebar plegado. */}
@@ -274,67 +257,80 @@ function Sidebar({
   );
 }
 
-/** Icono del grupo Sistemas (evita repetir la indirección del `Record` de secciones). */
-function SystemIcon({ className }: { readonly className?: string }) {
-  const Icon = ADMIN_ICONS[ADMIN_SYSTEMS_ICON];
-  return <Icon className={className} />;
-}
-
-function RoleChips({ roles }: { roles: readonly RoleName[] }) {
-  const t = useTranslations("admin");
-  // En móvil los chips saturan el ancho (UX#40): se colapsan tras un contador «ROLES (N)»
-  // expandible; desde tablet se muestran siempre expandidos.
-  const [open, setOpen] = useState(false);
-
-  const chips = (
-    <ul data-testid="admin-roles" className="flex flex-wrap items-center gap-1.5">
-      {roles.map((role) => (
-        <li
-          key={role}
-          className="rounded-pill bg-sand-2 px-2.5 py-1 text-micro font-semibold uppercase tracking-wide text-sea-deep"
-        >
-          {ROLE_LABEL[role]}
-        </li>
-      ))}
-    </ul>
-  );
-
+/**
+ * Subgrupo anidado dentro del panel de una sección, reservado al owner (**D-80**): es la integración
+ * de las funciones especiales de Sistemas en el panel Administración. Se dibuja como una fila de
+ * encabezado con su icono y las entradas debajo, separadas por un filete para que el nivel jerárquico
+ * sea visible sin recurrir solo al color (WCAG 1.4.1).
+ */
+function OwnerGroup({
+  group,
+  navLabel,
+  renderItem,
+}: {
+  group: AdminNavGroup;
+  navLabel: (key: AdminNavLabelKey) => string;
+  renderItem: (item: AdminNavItem) => ReactNode;
+}) {
+  const GroupIcon = ADMIN_ICONS[group.icon];
   return (
-    <>
-      {/* Móvil: contador expandible para no saturar el ancho de la topbar. */}
-      <div className="relative tablet:hidden">
-        <button
-          type="button"
-          data-testid="admin-roles-toggle"
-          aria-expanded={open}
-          onClick={() => setOpen((v) => !v)}
-          className="rounded-pill bg-sand-2 px-2.5 py-1 text-micro font-semibold uppercase tracking-wide text-sea-deep"
-        >
-          {t("rolesCount", { count: roles.length })}
-        </button>
-        {open && (
-          <div className="absolute left-0 top-full z-50 mt-1 rounded-brand border border-line bg-shell p-2 shadow-card">
-            {chips}
-          </div>
-        )}
-      </div>
-      {/* Tablet+: chips siempre visibles. */}
-      <div className="hidden tablet:block">{chips}</div>
-    </>
+    <li data-testid="nav-owner-group" className="mt-2 flex flex-col gap-1 border-t border-champagne/30 pt-2">
+      <span className="flex items-center gap-2 px-3 pb-1 text-micro font-semibold uppercase tracking-wider text-champagne">
+        <GroupIcon className="flex-none" />
+        {navLabel(group.labelKey)}
+      </span>
+      {group.items.map(renderItem)}
+    </li>
   );
 }
 
 /**
- * Barra superior (navbar de AdminLTE): hamburguesa del cajón en móvil, roles de la sesión y el
- * menú unificado de billetera/usuario. Es `sticky` para que el contexto no se pierda al bajar.
+ * Bloque de sesión del panel Administración (**D-81**): usuario + rol, roles de la sesión y el menú
+ * unificado de billetera (conectar / cambiar red / desconectar, Mi seguridad, Salir — RF-40).
+ *
+ * Vive **dentro del panel**, no en la barra superior, que desde esta decisión queda para un único
+ * destino: la sección Ayuda. El `WalletMenu` se usa con `variant="sidebar"` porque el desplegable
+ * necesita anclarse al viewport: el sidebar es un contenedor con `overflow-y-auto` y recortaría un
+ * descendiente en `absolute`.
+ */
+function SessionBlock({ session }: { session: AdminSession }) {
+  const t = useTranslations("admin");
+
+  return (
+    <li data-testid="admin-session-block" className="mt-3 flex flex-col gap-2 border-t border-champagne/30 pt-3">
+      <span className="flex items-center gap-2 px-3 text-micro font-semibold uppercase tracking-wider text-champagne">
+        <UserIcon className="flex-none" />
+        {t("nav.sessionTitle")}
+      </span>
+      <div className="px-3">
+        <WalletMenu session={session} variant="sidebar" />
+      </div>
+      <ul data-testid="admin-roles" className="flex flex-wrap items-center gap-1.5 px-3">
+        {session.roles.map((role) => (
+          <li
+            key={role}
+            className="rounded-pill bg-sand-2 px-2.5 py-1 text-micro font-semibold uppercase tracking-wide text-sea-deep"
+          >
+            {ROLE_LABEL[role]}
+          </li>
+        ))}
+      </ul>
+    </li>
+  );
+}
+
+/**
+ * Barra superior (**D-81**): su único destino de navegación es la sección **Ayuda**. Lo demás se fue
+ * del navbar —los roles y la billetera viven ahora en el panel Administración del sidebar— y solo
+ * quedan los controles estructurales: la hamburguesa que abre el cajón en móvil y, allí mismo, la
+ * marca (en escritorio preside el sidebar). Es `sticky` para que el acceso a Ayuda no se pierda al
+ * bajar por una tabla larga.
  */
 function Topbar({
-  session,
   drawerOpen,
   onToggleDrawer,
   toggleRef,
 }: {
-  session: AdminSession;
   drawerOpen: boolean;
   onToggleDrawer: () => void;
   toggleRef: RefObject<HTMLButtonElement>;
@@ -367,10 +363,15 @@ function Topbar({
           <span className="truncate">{t("brandTitle")}</span>
         </Link>
 
-        <div className="ml-auto flex items-center gap-2">
-          {session.roles.length > 0 && <RoleChips roles={session.roles} />}
-          {/* Menú unificado de la billetera/usuario (RF-40): identidad + rol + accesos + salir. */}
-          <WalletMenu session={session} />
+        <div className="ml-auto flex items-center">
+          <Link
+            href="/ayuda"
+            data-testid="admin-help-link"
+            className="inline-flex min-h-touch items-center gap-2 rounded-pill border border-line-strong px-3 text-small font-medium text-ink transition-colors hover:bg-sand-2"
+          >
+            <HelpIcon className="flex-none" />
+            {t("nav.ayuda")}
+          </Link>
         </div>
       </div>
     </header>
@@ -543,7 +544,6 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar
-          session={session}
           drawerOpen={drawerOpen}
           onToggleDrawer={() => setDrawerOpen((open) => !open)}
           toggleRef={toggleRef}

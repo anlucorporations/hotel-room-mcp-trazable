@@ -153,6 +153,27 @@ export function ChevronIcon(props: AdminIconProps) {
   );
 }
 
+/** Ayuda (único destino de la barra superior, D-81): interrogante en círculo. */
+export function HelpIcon(props: AdminIconProps) {
+  return (
+    <Glyph {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .9-1 1.6v.3" />
+      <path d="M12 17.2h.01" />
+    </Glyph>
+  );
+}
+
+/** Cabecera del bloque de sesión del panel Administración (D-81): persona. */
+export function UserIcon(props: AdminIconProps) {
+  return (
+    <Glyph {...props}>
+      <circle cx="12" cy="8" r="3.5" />
+      <path d="M5 20c0-3.6 3.1-5.8 7-5.8s7 2.2 7 5.8" />
+    </Glyph>
+  );
+}
+
 /**
  * Icono de cada sección. El tipo `Record<AdminIconKey, …>` obliga a que **toda** sección del acordeón
  * tenga icono: si se añade una sección sin icono, `tsc` falla (no hay que confiar en una prueba).

@@ -1994,6 +1994,8 @@ fases de la hoja de ruta:
 
 | **Release `v11` en GCP** | Release **solo de web** (los commits `f53dd9b` de manuales y `5f76ba3` de AdminLTE no tocan `packages/`, migraciones ni contrato): `web:v11` construida con Cloud Build y desplegada **solo con `--image`**, conservando **18 variables y 9 secretos**; `worker`, `mcp` y `monitor` siguen en `v9`. Push en los tres remotos. Detalle y rollback en `despliegue_gcp.md` §21 | `/health/ready` **READY**; home **200**; `/ayuda` **200** con las **32** tarjetas de caso de uso, los 9 bloques y el mapa de iniciación; `/ayuda/cu-16-roles` **200** con infografía; PDF **200 `application/pdf`**; 9 páginas públicas y 11 rutas de regresión **200**; APIs protegidas **401**; worker `lag 0` (bloque 478). Corrección de la traza de §20: la API de actividades es `/api/admin/actividades/activities` |
 
+| **Reparto de las barras del back-office** | Navbar reducido a un solo destino —**Ayuda**— (**D-81**) y **bloque de sesión** (usuario + roles + `WalletMenu`) trasladado al final del panel Administración; **Sistemas integrado** en ese panel como subgrupo reservado al owner (**D-80**), con migas de tres niveles y `WalletMenu` con variante `sidebar` anclada al viewport. Detalle en §33 | `admin-shell.test.ts` pasa de **13 a 23 pruebas**, con **tres sondas de falsificación** en rojo (billetera devuelta a la navbar, subgrupo sin gating de owner, desplegable sin re-anclaje al scroll); suite completa **70 ficheros · 547 pruebas**; RF-41/RF-40 enmendados en `incremento_v3/requerimientos_incremento.md` §7; typecheck, lint y build OK |
+
 **Hallazgos que destaparon los guardianes nuevos (C.1–C.3)**: (a) `text-caption`/`text-body-lg` de la
 escala tipográfica nueva se leían como «color desconocido» — corregido y con **prueba que deriva la
 lista del preset real**; (b) la paridad i18n **no estaba verificada por ninguna prueba**: el guardián
@@ -2169,3 +2171,101 @@ de pan derivadas de la ruta**, `content-wrapper` y pie— **manteniendo los toke
 | **Falsificación del guardián** | Reintroducido `hidden={!open}` + `flex` → la prueba **se pone roja** señalando la causa; restaurado, verde |
 | Guardianes de identidad y accesibilidad | `a11y` (18), `control-boundary` (5), `i18n-parity` (4), `boundaries` (1), `brand-pieces` (6) e `images-naming` (6) en verde |
 | `pnpm --filter @hotel/web build` | **OK** · **52** rutas de página y **84** de API compiladas sin errores (medido sobre `.next/app-path-routes-manifest.json`) |
+
+---
+
+## 33. Reparto de las barras del back-office: Ayuda arriba, sesión y Sistemas en Administración (2026-09-29)
+
+**Petición del responsable**: modificar las barras de navegación de la suite de administración para
+que (1) **la barra superior solo albergue el acceso a la sección Ayuda**; (2) el **panel
+Administración incluya el menú de usuario y la conexión/desconexión de la billetera**; (3) el mismo
+panel **integre las funciones especiales de Sistemas**.
+
+### Decisiones de la entrevista (3)
+
+| # | Pregunta | Decisión |
+|---|---|---|
+| 1 | Contenido exacto de la barra superior | **Ayuda + botón de menú en móvil**. Se retiran marca (escritorio), chips de roles y billetera. La hamburguesa se conserva porque sin ella el cajón de navegación sería inalcanzable en pantallas pequeñas |
+| 2 | Forma del bloque usuario + billetera | **Bloque de sesión al final del panel Administración**: cabecera con icono, usuario + rol y el desplegable `WalletMenu` reutilizado (RF-40), más los chips de roles de la sesión. No se duplica la lógica del menú |
+| 3 | Integración de Sistemas | **Subgrupo anidado** dentro de Administración, visible solo para el owner, con sus seis entradas; **desaparece el bloque aparte** que había bajo el acordeón |
+
+**D-80 (decisión del cliente, aplicada).** Las funciones especiales de **Sistemas** (RF-41) se integran
+en el **panel Administración** como subgrupo reservado al owner. Cambia solo la **agrupación visual**:
+el gating, las rutas y las APIs siguen exigiendo `DEFAULT_ADMIN_ROLE` en servidor (RF-41.1).
+
+**D-81 (decisión del cliente, aplicada).** La **barra superior** del back-office queda para un único
+destino de navegación —**Ayuda**— y el **bloque de sesión** (usuario, roles y billetera) se traslada al
+panel Administración. El contenido del menú de cuenta no varía (CU-40).
+
+### Hecho
+
+- **`adminNav.ts`**: nuevo tipo `AdminNavGroup` y campo opcional `ownerGroup` en `AdminNavSection`;
+  `ADMIN_SYSTEMS_NAV` se declara **antes** de las secciones y se consume como `ownerGroup` de
+  Administración. Derivaciones puras adaptadas: `sectionItems`, `ADMIN_NAV` (ahora incluye el
+  subgrupo), `sectionForPathname` (`/admin/sistemas/*` abre **Administración**), `navEntryForPathname`
+  (devuelve `group`) y `breadcrumbForPathname` (**Inicio → sección → subgrupo → entrada**).
+- **`AdminLayout.tsx`**: `Topbar` reducida a hamburguesa + marca móvil + enlace a Ayuda
+  (`data-testid="admin-help-link"`); fuera `RoleChips` y `WalletMenu`. En el panel de cada sección se
+  renderizan `OwnerGroup` (condicionado a `session.isOwner`) y `SessionBlock` (solo en Administración).
+  El bloque «Sistemas» independiente queda eliminado.
+- **`WalletMenu.tsx`**: prop `variant?: "header" \| "sidebar"` (por defecto `"header"`, comportamiento
+  idéntico al de siempre en la cabecera pública). La variante `sidebar` **ancla el desplegable al
+  viewport** midiendo el disparador, porque el sidebar es un contenedor con `overflow-y-auto` y un
+  descendiente `absolute` habría resultado **recortado** contra su borde inferior. Se recoloca solo si
+  no cabe hacia abajo, y se re-mide en `resize` y en `scroll` con `capture: true` (el scroll del
+  sidebar no burbuja).
+- **`adminIcons.tsx`**: `HelpIcon` (interrogante en círculo) y `UserIcon` (cabecera del bloque de
+  sesión), decorativos y con `currentColor`.
+- **i18n**: claves `admin.nav.ayuda` y `admin.nav.sessionTitle` en ES/EN/RU (paridad verificada).
+- **Requisito enmendado**: `RepoTecnico/incremento_v3/requerimientos_incremento.md` §7 registra el
+  cambio de presentación de RF-41/RF-40 sin alterar su alcance ni sus criterios Gherkin.
+
+### Verificación
+
+| Comprobación | Resultado |
+|---|---|
+| `pnpm --filter @hotel/web typecheck` · `lint` | **OK** · **0 errores** (los 2 avisos previos, ajenos) |
+| `admin-shell.test.ts` | **23 pruebas** (de 13 a 23): derivaciones con subgrupo, migas de tres niveles, reparto de barras y anclaje del desplegable |
+| **Falsificación** (3 sondas) | Devolver `WalletMenu` a la navbar → rojo · quitar el gating `session.isOwner` del subgrupo → rojo · suprimir el re-anclaje al `scroll` → rojo. Restaurado, verde |
+| Guardianes de identidad y accesibilidad | `a11y` 18 · `control-boundary` 5 · `table-semantics` 5 · `cyrillic-fonts` 4 · `i18n-parity` 4 · `boundaries` 1 · `admin-roles` 6 · `suite-access` 6 → verde |
+| Pruebas de wallet y menú | `wallet-menu-items` 7 · `switchChainError` 6 → verde (el menú público no cambia) |
+| `pnpm --filter @hotel/web build` | **OK** (exit 0) · **52** rutas de página y **84** de API (`.next/app-path-routes-manifest.json`) |
+
+### Lo que NO se pudo verificar aquí (y por qué)
+
+Se intentó la **verificación visual real** del back-office (render con sesión, cajón móvil y
+desplegable abierto). No fue posible en este entorno y **no se afirma nada al respecto**:
+
+- La suite `/admin/*` exige sesión canónica, y `/api/auth/session` termina en una lectura de
+  PostgreSQL (`countRemainingRecoveryCodes`). **No hay servidor Postgres en el host**: solo cliente
+  (`~/tools/postgres` trae `psql`/`pg_dump`, no `postgres`/`initdb`), sin `docker` ni `podman`.
+- Se montó un sustituto: Redis en memoria propio (RESP, verificado contra `ioredis`) y **PGlite**
+  (Postgres 18.3 compilado a WASM) expuesto por el protocolo wire con `@electric-sql/pglite-socket`,
+  sobre el esquema real del producto (**44 tablas** creadas). El resultado útil es que **descartó**
+  un defecto nuestro: `SELECT COALESCE(NULL, TRUE)`, `NOW()`, `INSERT … RETURNING` y
+  `ON CONFLICT DO UPDATE` funcionan todos sobre PGlite; quien falla es la **capa socket**, que corta
+  la conexión contra el cliente `pg` del pool. Por eso `/health/ready` devolvió
+  `postgres: DOWN · "Connection terminated unexpectedly"` y el render de `/admin/dashboard` nunca
+  llegó a completarse.
+- El navegador sí está disponible cargando librerías propias
+  (`LD_LIBRARY_PATH=/home/dsh/tools/libs/…`), pero la **página nunca llegó a pintarse**, así que no
+  hay captura de pantalla del shell con sesión.
+
+**Pendiente para la ventana del responsable (con base de datos real):** revisar visualmente el
+back-office autenticado —cajón móvil, plegado a mini, bloque de sesión y subgrupo Sistemas— y abrir
+el desplegable de billetera dentro del sidebar para confirmar en pantalla lo que la sonda de layout
+midió fuera del DOM.
+
+### Verificación empírica que SÍ se obtuvo (fuera del DOM)
+
+Sonda con Chromium real (`chromium_headless_shell` + `LD_LIBRARY_PATH` de `~/tools/libs`) sobre el
+mismo mecanismo de colocación que usa `WalletMenu`:
+
+| Medición | Resultado |
+|---|---|
+| Panel en `absolute` dentro de un contenedor con `overflow-y-auto` | sobresale **343 px** del borde inferior del sidebar → **recortado** |
+| Panel anclado al viewport (variante `sidebar`) | `top 572 → bottom 894` con ventana de 900 px: **dentro del viewport** |
+| Cambio de lado cuando abajo no cabe | **confirmado** (`ladoCambiado: true`) |
+
+Esto es lo que justifica la variante `sidebar`: sin ella, el menú de usuario habría quedado cortado
+contra el pie del sidebar en cuanto el disparador estuviera cerca del borde inferior.
