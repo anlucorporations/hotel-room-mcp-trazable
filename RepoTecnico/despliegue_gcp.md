@@ -728,4 +728,51 @@ devuelve **404**.
 
 ---
 
-*Despliegue GCP · hotelMCP · actualizado 2026-09-29 (release `v11`: manuales por caso de uso + back-office AdminLTE)*
+## 22. Release `v12` — reparto de las barras del back-office (D-80/D-81) (2026-09-29)
+
+**Qué se desplegó.** Release **solo de web**: el commit `095b8cd` toca `apps/web/` y `RepoTecnico/`,
+pero **no** `packages/`, migraciones ni contrato. `worker`, `mcp` y `monitor` **no se reconstruyen** y
+siguen en `v9`. No se tocó contrato (`0xc66A…7b6F`, bloque 314), ni base de datos, ni se ejecutó
+siembra o reset.
+
+| Paso | Detalle |
+|---|---|
+| Imagen | Cloud Build `web:v12` (3m21s, build `a1381ad3-be3b-4aca-bb62-846c30bfb43d`) con los mismos `NEXT_PUBLIC_*` de v2–v11 (chainId 31337, contrato `0xc66ab83418c20a65c3f8e83b3d11c8c3a6097b6f`, bloque 314, faucet `0xdFdE…f75b`, `NEXT_PUBLIC_SITE_URL` de producción) |
+| Revisión | `hotel-mcp-web-00012-wpl` al 100 % de tráfico (sustituye a `00011-xvb`, que queda como rollback) |
+| Configuración | Desplegada **solo con `--image`**: conservadas las **18** variables y los **9** secretos |
+| Push previo | `095b8cd` subido a los tres remotos de `anlucorporations` (rama `Hotel-DSH-GCP`) |
+
+### Verificación (despliegue real)
+
+| Comprobación | Resultado |
+|---|---|
+| `/health/ready` | **200** · `READY` (postgres, redis y `polygonRPC` **UP**) |
+| Home | **200** (134 KB) · `<title>Hotel Marina del Sol</title>` |
+| `/ayuda` (destino único de la nueva barra superior) | **200** (214 KB) |
+| Regresión pública | 16 rutas (`/catalogo`, `/reservar`, `/reventa`, `/mis-noches`, `/habitaciones`, `/empresa`, `/contacto`, `/resenas`, `/planes`, `/servicios`, `/experiencias`, `/actividades`, `/instalaciones`, `/historico`, `/asistente`, `/checkin`) → **200** |
+| Suites sin sesión | `/admin/dashboard`, `/recepcion`, `/housekeeping`, `/mantenimiento` → **200** con la pantalla de acceso; **0 coincidencias** de los marcadores del panel (`metric-primary-volume`, `ChartFigure`) en el HTML |
+| APIs protegidas | `/api/housekeeping/shifts`, `/api/mantenimiento/board`, `/api/admin/actividades/activities` y `/api/auth/session` → **401** |
+| Imagen social | `/opengraph-image` → **200 `image/png`, PNG válido 1200×630 (106 KB)** |
+| Worker / MCP (v9, intactos) | worker `lag 0` y `aggregateLag 0` (bloque 478); mcp `ok` (bloque 478) |
+
+**Estado esperado que NO es una avería.** El worker sigue devolviendo `status: down` con
+`emailDegraded: true` por el SMTP de relleno (`smtp.invalid`); `processingDegraded` es `false`
+(mismo invariante que §19–§21).
+
+**Hallazgo de esta verificación (defecto previo, no de `v12`).** Al pedir `/admin/dashboard` **sin
+sesión**, el HTML servido **no contiene ninguna marca del shell nuevo** (`admin-sidebar`,
+`admin-nav-toggle`, `admin-help-link`, `nav-section-administracion`): el gate RSC devuelve
+`AdminSignInScreen`, que tiene **su propia plantilla** (header con `WalletBar`) y no pasa por
+`AdminLayout`. Es decir, **el rediseño D-78/D-80/D-81 solo se ve con sesión iniciada**; la pantalla
+de acceso —y las cuatro suites que la reutilizan: `/admin`, `/recepcion`, `/housekeeping`,
+`/mantenimiento`— conserva la distribución anterior. Confirmado leyendo el código: siete ficheros
+importan `AdminSignInScreen`. Queda como corrección pendiente (unificar el gate bajo la misma
+plantilla o decidir explícitamente que el acceso sea una página exenta).
+
+**Rollback.** La revisión anterior sigue disponible y sin tráfico:
+`gcloud run services update-traffic hotel-mcp-web --to-revisions=hotel-mcp-web-00011-xvb=100`.
+`worker`, `mcp` y `monitor` no se tocaron.
+
+---
+
+*Despliegue GCP · hotelMCP · actualizado 2026-09-29 (release `v12`: reparto de las barras del back-office)*
