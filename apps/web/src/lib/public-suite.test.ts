@@ -102,6 +102,25 @@ describe("Suites no públicas · puerta de sesión en servidor", () => {
     }
   });
 
+  /**
+   * **D-82** produjo un efecto colateral que este guardián deja fijado: al pasar `AdminSignInScreen`
+   * por la plantilla del back-office, las suites de personal —que reutilizan ese componente— sirven
+   * ahora el acceso **con la marca y el título de Administración**, no con los suyos
+   * (`reception.gateTitle` = «Acceso de recepción», que hoy no se usa en el gate). La puerta sigue
+   * siendo correcta —nadie ve un panel sin sesión—, pero es una decisión de producto pendiente.
+   */
+  it("el acceso sin sesión de las suites de personal usa aún el acceso genérico (efecto D-82)", () => {
+    for (const suite of GATED) {
+      if (suite.role === null) continue; // `/admin` sí es su propio ámbito.
+      const source = read(join(APP_DIR, suite.path));
+      expect(source, `${suite.path} debe seguir sirviendo el acceso canónico`).toMatch(
+        /if \(!session\.ok\) return <AdminSignInScreen \/>/,
+      );
+      // Mientras no exista variante por suite, el acceso compartido es el comportamiento esperado.
+      expect(source, `${suite.path} todavía no define pantalla de acceso propia`).not.toMatch(/gate=/);
+    }
+  });
+
   it("cada suite de personal exige SU rol (el owner entra a todas)", () => {
     for (const suite of GATED) {
       if (suite.role === null) continue;

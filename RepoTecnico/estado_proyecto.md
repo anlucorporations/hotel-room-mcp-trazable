@@ -2000,6 +2000,8 @@ fases de la hoja de ruta:
 
 | **Acceso unificado bajo la plantilla (D-82)** | Cierra el hallazgo de la release `v12`: `AdminSignInScreen` pintaba su propia plantilla y por eso el HTML servido **sin sesión** no contenía ninguna marca del shell AdminLTE. `AdminLayout` gana el prop `gate` y el acceso se compone a través del shell; retirado el `WalletBar` del acceso. Detalle en §34 | `admin-shell.test.ts` pasa de **23 a 27 pruebas** y `admin-auth-guardian.test.ts` de **4 a 5**, con **tres sondas de falsificación** en rojo; suite completa **70 ficheros · 552 pruebas**; typecheck, lint y build OK |
 
+| **Release `v13` en GCP** | Release **solo de web** del acceso unificado (**D-82**, commit `7a263b6`): `web:v13` construida con Cloud Build y desplegada **solo con `--image`**, conservando **18 variables y 9 secretos**; `worker`, `mcp` y `monitor` siguen en `v9`. Detalle y rollback en `despliegue_gcp.md` §23 | **El HTML servido sin sesión contiene ya la plantilla del shell** (`admin-sidebar`, `admin-nav-toggle`, `admin-help-link`, pie «Panel de administración») con el `<h1>` canónico y **cero** marcadores de panel ⇒ hallazgo de §22 cerrado con evidencia de tráfico real; `/health/ready` **READY**; 18 rutas públicas **200**; APIs protegidas **401**; imagen social **1200×630**; worker `lag 0` (bloque 479). **Efecto colateral medido**: las suites de personal muestran ahora el acceso del back-office (título y marca), no el suyo |
+
 **Hallazgos que destaparon los guardianes nuevos (C.1–C.3)**: (a) `text-caption`/`text-body-lg` de la
 escala tipográfica nueva se leían como «color desconocido» — corregido y con **prueba que deriva la
 lista del preset real**; (b) la paridad i18n **no estaba verificada por ninguna prueba**: el guardián
@@ -2326,12 +2328,17 @@ defecto de plantilla, y queda declarada abajo.
 
 ### Pendiente declarado (no ocultado)
 
-1. **No se ha podido comprobar el HTML servido con este arreglo**: el entorno sigue sin servidor
-   Postgres (`~/tools/postgres` solo trae cliente; no hay `docker`/`podman`), así que el gate de
-   servidor devuelve el acceso por falta de sesión y la verificación de §22 no es reproducible aquí.
-   Lo que sí queda probado es el **contrato estructural** (guardián + falsificación): el acceso se
-   compone ahora a través de `AdminLayout`.
-2. **Suites de personal**: decidir si su acceso debe mostrar el título de su namespace
-   (`Acceso de recepción`, `Acceso del personal`) en lugar de la tarjeta genérica de back-office, y
-   con qué plantilla. No se ha tocado en este incremento para no mezclar una decisión de producto con
-   el cierre del defecto.
+1. ~~No se ha podido comprobar el HTML servido~~ — **comprobado al desplegar `v13`**
+   (`despliegue_gcp.md` §23): `/admin/dashboard` sin sesión devuelve 200 con `admin-sidebar`,
+   `admin-nav-toggle`, `admin-help-link` y el pie del shell, el `<h1>` canónico D-04 y **cero**
+   marcadores de panel. En local seguía sin ser reproducible (no hay servidor PostgreSQL en el host),
+   pero el gate responde igual en producción, que es donde importa.
+2. **Suites de personal — efecto colateral MEDIDO en `v12`→`v13`**: al reutilizar
+   `AdminSignInScreen`, las tres suites sirven ahora el acceso **del back-office** (marca y
+   `admin.gateTitle` = «Back-office · acceso con contraseña y TOTP») en lugar del suyo
+   (`reception.gateTitle` = «Acceso de recepción»). La puerta y el rol exigido siguen siendo los de
+   cada suite, así que no hay fallo de seguridad: es confusión de ámbito. Queda **fijado en código**
+   con una prueba en `public-suite.test.ts` («el acceso sin sesión de las suites de personal usa aún
+   el acceso genérico»), que fallará el día que se dé una variante propia —que es lo deseado—. Decisión
+   de producto pendiente: variante por suite (título + plantilla propios dentro de `PublicShell`) o
+   aceptar el acceso unificado.

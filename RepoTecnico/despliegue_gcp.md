@@ -776,7 +776,7 @@ plantilla del acceso en las suites de personal.
 
 ---
 
-## 23. Corrección `v13` — acceso del back-office bajo la misma plantilla (D-82) (2026-09-29)
+## 23. Release `v13` — acceso del back-office bajo la misma plantilla (D-82) (2026-09-30)
 
 **Qué se corrigió.** El hallazgo de §22: `/admin/dashboard` **sin sesión** devolvía un HTML sin ninguna
 marca del shell AdminLTE porque `AdminSignInScreen` pintaba su propia plantilla y no pasaba por
@@ -791,15 +791,43 @@ marca del shell AdminLTE porque `AdminSignInScreen` pintaba su propia plantilla 
 | Guardianes | `admin-shell.test.ts` **23 → 27** pruebas y `admin-auth-guardian.test.ts` **4 → 5**, con tres sondas de falsificación (plantilla propia recuperada, rama `gate` neutralizada, sidebar pintado sin sesión) |
 
 **Verificación local.** `pnpm --filter @hotel/web test` **70 ficheros · 552 pruebas**; `typecheck` OK;
-`lint` 0 errores en los ficheros tocados; `build` OK (**52** páginas, **84** API). **No** se ha podido
-reproducir aquí la comprobación HTTP del HTML servido: este entorno sigue sin servidor PostgreSQL
-(solo cliente en `~/tools/postgres`, sin `docker`/`podman`), por lo que el gate responde acceso por
-falta de sesión. La garantía obtenida es estructural, no de tráfico.
+`lint` 0 errores en los ficheros tocados; `build` OK (**52** páginas, **84** API). En local **no** era
+posible comprobar el HTML servido (sin servidor PostgreSQL en el host), así que esa comprobación se
+hizo **contra producción** al desplegar, que es donde el gate responde de verdad.
 
-**Despliegue.** Pendiente de orden del responsable: imagen `web:v13` y despliegue **solo con
-`--image`** sobre `hotel-mcp-web`, conservando las 18 variables y los 9 secretos. Rollback:
-`gcloud run services update-traffic hotel-mcp-web --to-revisions=hotel-mcp-web-00012-wpl=100`.
+### Despliegue ejecutado (2026-09-30)
+
+| Paso | Detalle |
+|---|---|
+| Imagen | Cloud Build `web:v13` (4m39s, build `fe95ac54-a87e-49f6-af98-a9159cc5fd63`) con los mismos `NEXT_PUBLIC_*` de v2–v12 (contrato `0xc66ab83418c20a65c3f8e83b3d11c8c3a6097b6f`, bloque 314) |
+| Revisión | `hotel-mcp-web-00013-vjh` al 100 % (rollback disponible: `00012-wpl`) |
+| Configuración | **Solo con `--image`**: conservadas las **18** variables y los **9** secretos |
+| Sin cambios | `worker:v9`, `mcp:v9` y `monitor:v9`; contrato, base de datos y siembra intactos |
+
+### Verificación en producción (la que faltaba en §22)
+
+| Comprobación | Resultado |
+|---|---|
+| `/health/ready` | **200** · `READY` (postgres, redis y `polygonRPC` **UP**) |
+| **`/admin/dashboard` sin sesión** | **200** (92 KB) · el HTML **ya contiene la plantilla del shell**: `admin-sidebar`, `admin-nav-toggle`, `admin-help-link` y el pie «Panel de administración» presentes; `<h1>` canónico D-04; **cero** marcadores de panel (`metric-primary-volume`, `ChartFigure`) ⇒ **hallazgo de §22 cerrado con evidencia de tráfico real** |
+| Regresión pública | 18 rutas (`/`, catálogo, reserva, reventa, mis noches, las 9 de sección, histórico, asistente, check-in, ayuda) → **200** |
+| Suites de personal sin sesión | `/recepcion`, `/housekeeping`, `/mantenimiento` → **200**, puerta correcta y sin panel |
+| APIs protegidas | `/api/housekeeping/shifts`, `/api/mantenimiento/board`, `/api/admin/actividades/activities`, `/api/auth/session` → **401** |
+| Imagen social | `/opengraph-image` → **200 `image/png`**, PNG válido **1200×630** |
+| Worker / MCP (v9) | worker `lag 0` y `aggregateLag 0` (bloque 479); mcp `ok` (bloque 479). El `status: down` con `emailDegraded: true` sigue siendo el SMTP de relleno (§19–§22) |
+
+**Efecto colateral detectado al verificar (y su estado).** Las tres suites de personal reutilizan
+`AdminSignInScreen`, así que desde D-82 su pantalla de acceso **también** se sirve bajo la plantilla
+del **back-office**: muestran la marca y el título de Administración
+(`admin.gateTitle` = «Back-office · acceso con contraseña y TOTP») en lugar del suyo
+(`reception.gateTitle` = «Acceso de recepción»). No es un fallo de seguridad —la puerta y el rol exigido
+siguen siendo los de cada suite— pero sí una confusión de ámbito. Queda fijado en código con una prueba
+en `public-suite.test.ts` («el acceso sin sesión de las suites de personal usa aún el acceso genérico»)
+y pendiente de decisión de producto: dar a `AdminSignInScreen` una variante por suite (título y
+plantilla propios) o aceptar el acceso unificado.
+
+**Rollback.** `gcloud run services update-traffic hotel-mcp-web --to-revisions=hotel-mcp-web-00012-wpl=100`.
 
 ---
 
-*Despliegue GCP · hotelMCP · actualizado 2026-09-29 (corrección `v13` pendiente de desplegar: acceso unificado, D-82)*
+*Despliegue GCP · hotelMCP · actualizado 2026-09-30 (release `v13`: acceso del back-office unificado, D-82)*
