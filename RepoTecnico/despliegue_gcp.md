@@ -865,3 +865,36 @@ plantilla propios) o aceptar el acceso unificado.
 `/snap/google-cloud-cli/current/bin/gcloud` con `CLOUDSDK_CONFIG=~/.config/gcloud` funciona sin
 elevación: sustituye al camino «gcloud no es utilizable» declarado en §29 y §35.
 
+
+---
+
+## 25. Release `v14` COMPLETA — las cuatro imágenes al día (mcp y monitor incluidos) (2026-09-30)
+
+**Petición del responsable**: `/push` y desplegar la última versión en GCP. El push se ejecutó a los
+tres remotos de `anlucorporations` (`codecrypto`, `github`, `origin`): `7a263b6..ecd94ab` en la rama
+`Hotel-DSH-GCP`. §24 había dejado web y worker en `v14`; mcp y monitor seguían en `v9` (su código no
+cambió —el diff contra el commit de v13 está vacío en `apps/mcp` y `packages/shared`—, pero la release
+queda uniforme).
+
+| Paso | Detalle |
+|---|---|
+| Imagen `mcp:v14` | Cloud Build (build `9b454d9b-0280-4767-8ac0-6bf87ecfafd1`, 2m30s), fuente local = lo mismo que se subió a los remotos |
+| Revisión mcp | `hotel-mcp-mcp-00005-tnl` al 100 % (rollback: `00004-bl7`) · **8/8 variables conservadas**, cero cambiadas (comparado revisión a revisión) |
+| Imagen `monitor:v14` | Cloud Build (build `73a0e863-8aa7-4e5b-ac5c-539b3dd05f38`, 2m7s) |
+| Worker pool del monitor | `bash infra/gcp/deploy-monitor.sh …/monitor:v14` con `PATH=/snap/google-cloud-cli/current/bin:$PATH` (el envoltorio del snap sigue roto; el binario directo funciona): HTTP 200, imagen actualizada, **8 env/secretos conservados** |
+| Contrato / BD / siembra | intactos (`0xc66A…7b6F`, bloque 314) |
+
+### Verificación (despliegue real)
+
+| Comprobación | Resultado |
+|---|---|
+| Web `/health/ready` | **200** · READY (postgres, redis, polygonRPC UP) |
+| Worker `/health` | `lag 0`, `aggregateLag 0`, head 479 (`emailDegraded` = SMTP de relleno, §19–§24) |
+| MCP `/health` | `ok`, bloque 479 |
+| Imágenes servidas | web `v14` · worker `v14` · mcp `v14` · monitor `v14` |
+| Regresión pública | `/`, `/catalogo`, `/reservar`, `/reventa`, `/mis-noches`, `/asistente`, `/ayuda`, `/historico` → **200** |
+| Catálogo sin fantasmas | **0** coincidencias de los 6 tokenIds vendidos (§35) |
+
+**Rollback.** mcp: `gcloud run services update-traffic hotel-mcp-mcp --to-revisions=hotel-mcp-mcp-00004-bl7=100`;
+monitor: volver a ejecutar `deploy-monitor.sh` con `monitor:v9`; web/worker: las revisiones de §24.
+
