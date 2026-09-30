@@ -275,3 +275,40 @@ dependencia externa.
 ---
 
 *Entornos globales · actualizar al cerrar M0 (plantilla de entorno, Redis y credenciales) y al confirmar la necesidad de GCP.*
+
+
+---
+
+## pgAdmin y la base de datos del hotel (análisis GCP · 2026-09-30)
+
+**Dónde vive el pgAdmin.** Servicio Cloud Run `mcc-pgadmin` en el proyecto **`mcc-ecommerce`**
+(región `europe-west1`, URL `https://mcc-pgadmin-slzlptbcla-ew.a.run.app`, imagen
+`dpage/pgadmin4:latest`). La contraseña viene del secreto `PGADMIN_PASSWORD` del mismo proyecto.
+El acceso está abierto a `allUsers` (solo lo protege el login de pgAdmin): **endurecimiento
+pendiente** (IAP o invoke-only, fijar la versión de la imagen).
+
+**La base de datos del hotel** es Cloud SQL **`hotel-mcp-pg`** (PostgreSQL 18, `europe-west1-b`,
+proyecto **`hotel-mcp`**, IP privada `10.104.0.3` en el rango PSA `10.104.0.0/29`, red propia
+`hotel-mcp-vpc` / subred `hotel-mcp-euw1` 10.10.0.0/24, **sin IP pública**).
+
+**Intento de conectarlos (direct VPC entre proyectos) — resultado: NO es posible con los recursos
+actuales.** Se ejecutó y verificó: API de Service Networking habilitada en `mcc-ecommerce`;
+concesiones `roles/compute.networkUser` a la SA de pgadmin y al agente serverless del consumidor
+sobre la red y la subred del host; prueba de Shared VPC vía IAM con `X-Goog-Compute-Target-Project`.
+Cloud Run rechazó la revisión con «Access to the subnetwork hotel-mcp-euw1 is not allowed»: el
+mecanismo exige que `hotel-mcp` sea **host project designado** (recurso `compute.networks` con
+consumidores compartidos), y este SDK no expone ese comando; además un conector VPC propio quedó en
+ERROR por conflicto de rangos con la subred automática de `default`. **Todo fue revertido**: el
+pgadmin quedó exactamente como estaba (imagen dpage, puerto 8080 con sonda coherente, secreto
+intacto, UI respondiendo 200) y se retiraron las concesiones de exceso (`compute.networkAdmin`).
+
+**Caminos viables para administrar la BD del hotel (elegir uno):**
+1. **Proxy local + cliente** (inmediato, sin tocar producción): `~/tools/cloud-sql-proxy` ya está
+   instalado → `cloud-sql-proxy hotel-mcp:europe-west1:hotel-mcp-pg` y conectar psql/pgcli a
+   localhost:5432. Requiere rol `roles/cloudsql.client` para la cuenta personal (se concede solo si
+   se pide).
+2. **PgAdmin dentro del proyecto del hotel** (recomendado para uso estable): desplegar
+   `dpage/pgadmin4` en `hotel-mcp` con direct VPC sobre `hotel-mcp-euw1` (misma red: sin Shared
+   VPC), `ingress internal` o IAP, credenciales en Secret Manager. ~15 minutos de trabajo.
+3. **Consola de Google** → Cloud SQL → `hotel-mcp-pg` → pestaña *SQL*: cero infraestructura nueva,
+   válido para consultas puntuales.
