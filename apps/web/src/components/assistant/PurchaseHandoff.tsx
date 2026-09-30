@@ -155,16 +155,30 @@ export function PurchaseHandoff({ purchase }: { purchase: PreparedPurchase }) {
       )}
       {review.verifyFailed && (
         <div data-testid="handoff-verify-failed" role="alert" className="text-small">
-          <p className="text-terracotta-text">{t("handoff.verifyFailed")}</p>
-          <button
-            type="button"
-            data-testid="handoff-verify-retry"
-            onClick={review.refetch}
-            className="mt-1 font-semibold text-sea underline hover:text-sea-deep"
-          >
-            {t("handoff.verifyRetry")}
-          </button>
+          {/* §35: «noche ya vendida» no es un problema de conexión; se dice con nombre. */}
+          <p className="text-terracotta-text">
+            {review.soldOnceState === "sold" ? t("handoff.nightAlreadySold") : t("handoff.verifyFailed")}
+          </p>
+          {review.soldOnceState !== "sold" && (
+            <button
+              type="button"
+              data-testid="handoff-verify-retry"
+              onClick={review.refetch}
+              className="mt-1 font-semibold text-sea underline hover:text-sea-deep"
+            >
+              {t("handoff.verifyRetry")}
+            </button>
+          )}
         </div>
+      )}
+      {!review.verifyFailed && review.soldOnceState === "sold" && (
+        <p
+          data-testid="handoff-night-sold"
+          role="alert"
+          className="text-small text-terracotta-text"
+        >
+          {t("handoff.nightAlreadySold")}
+        </p>
       )}
       {review.reverify && !review.verified && !review.verifyFailed && (
         <p

@@ -2342,3 +2342,97 @@ defecto de plantilla, y queda declarada abajo.
    el acceso genérico»), que fallará el día que se dé una variante propia —que es lo deseado—. Decisión
    de producto pendiente: variante por suite (título + plantilla propios dentro de `PublicShell`) o
    aceptar el acceso unificado.
+
+---
+
+## 35. Diagnóstico en producción (GCP) del error «No pudimos verificar el precio on-chain» (2026-09-30)
+
+**Petición del responsable**: antes de tocar el entorno local, verificar la versión desplegada en GCP.
+
+**El mensaje**. Corresponde a `verifyFailed` del paso «Revisar tu reserva»
+(`apps/web/src/components/buy/usePurchaseReview.ts:103`): salta cuando el cliente **no puede leer el
+precio on-chain** (`priceOf`/`listingOf`) del contrato. Es el mecanismo de seguridad ADR-11: sin
+lectura no se firma. La causa NO es el RPC ni la red: `/health/ready` responde `READY`
+(postgres/redis/polygonRPC `UP`), el worker marca `lag 0`, y las lecturas `priceOf` contra el Anvil
+de producción (`https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app`, chainId 31337, contrato
+`0xc66a…7b6F`, v12) responden con normalidad desde esta máquina.
+
+**Causa raíz medida (dos defectos reales, ambos de coherencia catálogo ↔ cadena):**
+
+1. **Reseña fantasma en el catálogo primario → la verificación del cliente cae.** El flujo público
+   construye la tx con `value = priceWei` del **catálogo**, pero el contrato exige
+   `msg.value == _price[tokenId]` (compra **primaria**). Para una noche ya vendida que el catálogo aún
+   ofrece como primaria, el `expectedPriceWei` enviado es el precio del **listado de reventa** (o un
+   valor desfasado) y la lectura/comparación del cliente no cierra → `verifyFailed`. Medido on-chain:
+   las **6 noches vendidas** siguen apareciendo disponibles porque el índice PostgreSQL no las marcó
+   `SOLD` (ver punto 2), y `buy()` sobre ellas revierte con `NightNotAvailable` (selector observado
+   `0x192c75e3`/`0x0dd2ebbe`). El guardián hizo su trabajo: bloqueó la firma de una compra que la
+   cadena iba a rechazar — pero el origen es un catálogo sucio, no un fallo del cliente.
+2. **El worker nunca procesa los eventos `Sale` → el índice `nfts` queda obsoleto.** Evidencia dura:
+   - Cadena: 96 `Mint`, **7 `Sale`** (bloques 379–384 y 386), 1 `Listed`, 1 `RoyaltyPaid`; head 479.
+   - `/aggregates` del worker SÍ cuenta `soldCount: 6` → el listener **sí ve los Sale** al apilar.
+   - Pero el catálogo servido por BD (`queryCatalog status='AVAILABLE'`) los sigue ofreciendo: la
+     ruta de consolidación `NFTSold` → `updateNFTStatus(...,'SOLD')` (`packages/shared/src/events/listener.ts:310`)
+     **no está materializada en la imagen desplegada del worker** o falla al escribir. Coincide con el pendiente
+     operativo nº 3 de §29: *«Redesplegar worker (y web) con la imagen de este cierre»* — el worker de
+     producción sigue en `worker:f8` anterior a F8-cierre. Además `/health` del worker responde
+     `"status":"down"` con `emailDegraded: true` (sin SMTP), lo que degrada el checkpoint de email
+     pero **no** explica el estado obsoleto del índice.
+   - Consecuencia directa para el huésped: ve en `/` y `/catalogo` noches **ya vendidas**, pulsa
+     Reservar, y el paso «Revisar» se queda en rojo con este mensaje.
+
+**Verificaciones complementarias (todo en verde, descartadas como causa):** contrato desplegado =
+bytecode local exacto (sha256 del `deployedBytecode` idéntico); `paused() == false`; reloj del Anvil
+en hora (+0 respecto a real, sin deriva); registro de habitaciones correcto (101–150, `roomTypeOf`
+OK); `isRoomRegistered` OK; los 6 `ownerOf` de las noches vendidas apuntan a compradores reales;
+reventa (`108-20261103`, listada a 0,15 ETH y revendida) cerrada correctamente (`listingOf` vacío,
+`buyResale` revierte `NotListed`/`NightNotResellable` como debe).
+
+**Acción correctiva propuesta (Fase 3 · ciclo pequeño, sin cambios de modelo de datos):**
+
+1. **Redesplegar el `worker` con la revisión actual** (la de F8-cerrada/v12) para que la consolidación
+   `NFTSold → SOLD` del índice vuelva a ejecutarse; tras el despliegue, forzar un barrido de
+   reconciliación y comprobar que `queryCatalog(AVAILABLE)` deja de devolver las 6 noches vendidas.
+2. **Endurecer el catálogo por BD** (defensa en profundidad): aunque el índice esté sano, la vista
+   pública debería contrastar el `status` de BD con una lectura barata on-chain (`soldOnce`) en las
+   noches que se van a servir, o el `POST` de reserva/revisión debería volver a comprobar
+   `_soldOnce[tokenId]` antes de ofrecer firmar. Elimina la clase entera de «fantasmas» si el índice
+   vuelve a ir tarde.
+3. **Mejorar el mensaje del paso «Revisar»** (producto): hoy «comprueba tu conexión» es engañoso
+   cuando la causa real es que la noche ya no está disponible; conviene distinguir «noche ya vendida
+   — elige otra» de «fallo de red». Afecta a `usePurchaseReview` + i18n ES/EN/RU.
+
+**Pendiente de decidir por el responsable**: ejecutar (1) requiere ventana de despliegue (gcloud no
+es utilizable desde este entorno, igual que en §29); (2) y (3) son código y pueden hacerse aquí.
+
+### Cierre de (2) y (3) — código entregado el mismo día (2026-09-30)
+
+**(2) Catálogo endurecido** (`apps/web/src/lib/nights.ts`): nuevo `filterSoldOnChain` +
+`classifySoldOnce` + lector inyectable `SoldOnceReader` (patrón DIP idéntico a
+`onchain-ownership`). El camino de BD de `fetchCatalog` pasa ahora por la lectura on-chain
+`soldOnce` de cada noche servida: las confirmadas como vendidas **se retiran**; las que no se
+pudieron leer **se conservan** (fallar en abierto: un pico de red no debe ocultar inventario sano;
+la garantía final sigue siendo la re-verificación del paso «Revisar»). Concurrencia acotada con el
+mismo `RPC_CONCURRENCY` de siempre.
+
+**(3) Mensaje honesto en el paso «Revisar»**: `usePurchaseReview` añade la lectura auxiliar
+`soldOnce` (solo primaria; reventa queda en `"unknown"` porque su autoridad es `listingOf`) y expone
+`soldOnceState ∈ {checking, sold, free, unknown}`. Con la cadena respondiendo «vendido», tanto el
+catálogo (`BuyButton`) como el asistente (`PurchaseHandoff`) dicen **«Esta noche ya está vendida.
+Elige otra noche»** con enlace acción al catálogo, en lugar del engañoso «comprueba tu conexión».
+El reintento de lectura se conserva para el fallo de red puro. i18n ES/EN/RU con paridad
+(claves `buy.nightAlreadySold`, `buy.pickAnotherNight`, `assistant.handoff.nightAlreadySold`).
+
+| Verificación | Resultado |
+|---|---|
+| Pruebas nuevas | `nights-sold-guardian.test.ts` **6** + `purchase-review-messages.test.ts` **17** = **23** ✅ |
+| **Falsificación** | quitar el filtro del catálogo → **6 rojas**; neutralizar la rama nueva del botón → **1 roja**; restaurado → 23/23 ✅ |
+| `pnpm --filter @hotel/web typecheck` | ✅ |
+| `pnpm --filter @hotel/web lint` | ✅ 0 errores (los 2 avisos previos, ajenos) |
+| `pnpm --filter @hotel/web test` | **72 ficheros · 576 pruebas** ✅ |
+| `pnpm --filter @hotel/shared test` | **45 ficheros · 418 pruebas** ✅ |
+| `pnpm --filter @hotel/web build` | ✅ (advertencias previas, sin errores nuevos) |
+
+**Queda pendiente (1)**: redesplegar el `worker` con la revisión actual (ventana del responsable;
+`gcloud` no es utilizable desde este entorno). Con (2) en producción, el síntoma desaparece aunque
+el índice siga desfasado; con (1), además, el índice vuelve a ser verdad.

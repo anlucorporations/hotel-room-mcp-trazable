@@ -185,15 +185,43 @@ export function BuyButton({
             )}
             {review.verifyFailed && (
               <div data-testid="review-verify-failed" role="alert" className="mt-3 text-small">
-                <p className="text-terracotta-text">{t("verifyFailed")}</p>
-                <button
-                  type="button"
-                  data-testid="review-verify-retry"
-                  onClick={review.refetch}
-                  className="mt-2 font-semibold text-sea underline hover:text-sea-deep"
+                {/* §35: si la cadena YA respondió que la noche está vendida, el problema no es la
+                    conexión del huésped: se lo decimos con nombre y le ofrecemos otra noche. */}
+                <p className="text-terracotta-text">
+                  {review.soldOnceState === "sold" ? t("nightAlreadySold") : t("verifyFailed")}
+                </p>
+                {review.soldOnceState === "sold" ? (
+                  <Link
+                    href="/catalogo"
+                    data-testid="review-pick-another"
+                    className="mt-2 inline-block font-semibold text-sea underline hover:text-sea-deep"
+                  >
+                    {t("pickAnotherNight")}
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    data-testid="review-verify-retry"
+                    onClick={review.refetch}
+                    className="mt-2 font-semibold text-sea underline hover:text-sea-deep"
+                  >
+                    {t("verifyRetry")}
+                  </button>
+                )}
+              </div>
+            )}
+            {/* §35: noche ya vendida detectada aunque las lecturas de precio funcionen (el índice
+                desfasado ofrece como disponible una noche que `buy` rechazaría). */}
+            {!review.verifyFailed && review.soldOnceState === "sold" && (
+              <div data-testid="review-night-sold" role="alert" className="mt-3 text-small">
+                <p className="text-terracotta-text">{t("nightAlreadySold")}</p>
+                <Link
+                  href="/catalogo"
+                  data-testid="review-pick-another"
+                  className="mt-2 inline-block font-semibold text-sea underline hover:text-sea-deep"
                 >
-                  {t("verifyRetry")}
-                </button>
+                  {t("pickAnotherNight")}
+                </Link>
               </div>
             )}
             {/* El precio cambió on-chain: re-verificación con causa+acción (UX#7). */}

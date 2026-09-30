@@ -139,6 +139,64 @@ export async function fetchContractPaused(): Promise<boolean> {
 }
 
 /**
+ * Estado on-chain de venta de una noche (§35 · defensa contra «fantasmas» del índice).
+ * Tres estados, sin colapsar el tercero en los otros dos (mismo patrón que `onchain-ownership`):
+ *   - `"sold"`     → el contrato confirmó `soldOnce == true`: NO es comprable como primaria.
+ *   - `"free"`     → el contrato respondió `soldOnce == false`: libre (el índice decía bien).
+ *   - `"unknown"`  → no se pudo leer (RPC caído/revert): **se conserva** la noche —fallar en
+ *     abierto aquí sería peor: ocultaría inventario sano ante un pico de red— y la re-verificación
+ *     del paso «Revisar» sigue siendo la garantía final antes de firmar.
+ */
+export type OnChainSoldState = "sold" | "free" | "unknown";
+
+/** Lector inyectable (DIP): los tests no necesitan red. */
+export interface SoldOnceReader {
+  soldOnce(tokenId: bigint): Promise<boolean>;
+}
+
+/** Lector real: `soldOnce` del contrato canónico por RPC (una lectura barata por noche). */
+export const viemSoldOnceReader: SoldOnceReader = {
+  soldOnce: (tokenId) =>
+    serverPublicClient().readContract({
+      address: contractAddress,
+      abi: hotelNightsAbi,
+      functionName: "soldOnce",
+      args: [tokenId],
+    }) as Promise<boolean>,
+};
+
+/** Clasifica el resultado: solo `true` explícito retira la noche; todo lo demás se conserva. */
+export function classifySoldOnce(read: boolean | null): OnChainSoldState {
+  if (read === true) return "sold";
+  if (read === false) return "free";
+  return "unknown";
+}
+
+/**
+ * Retira del catálogo las noches que el CONTRATO ya dio por vendidas (`soldOnce == true`), aunque
+ * el índice PostgreSQL siga anunciándolas como `AVAILABLE` (§35: worker desactualizado → noches
+ * fantasma → el huésped recibía «No pudimos verificar el precio on-chain» al reservarlas).
+ *
+ * Cada lectura se aísla: un revert o timeout puntual degrada a `unknown` y **conserva** la noche
+ * (misma resiliencia que `fetchResaleMarket`). Concurrencia acotada con `RPC_CONCURRENCY`.
+ */
+export async function filterSoldOnChain(
+  nights: readonly NightView[],
+  reader: SoldOnceReader = viemSoldOnceReader,
+): Promise<NightView[]> {
+  const states = await mapWithConcurrency(nights, RPC_CONCURRENCY, async (night) => {
+    let read: boolean | null = null;
+    try {
+      read = await reader.soldOnce(BigInt(night.tokenId));
+    } catch {
+      read = null;
+    }
+    return classifySoldOnce(read);
+  });
+  return nights.filter((_, index) => states[index] !== "sold");
+}
+
+/**
  * Catálogo PRIMARIO (RF-01, D-07): noches `DISPONIBLE` del hotel dentro de la ventana.
  *
  * Ya NO incorpora los listados de reventa: esos viven en `fetchResaleMarket()` y en su propia
@@ -151,7 +209,7 @@ export async function fetchCatalog(): Promise<NightView[]> {
   try {
     const catalog = await nftsRepo.queryCatalog({ status: "AVAILABLE", limit: 100 });
     if (catalog && catalog.items && catalog.items.length > 0) {
-      return catalog.items
+      const fromDb = catalog.items
         .map((nft) => {
           const parts = nft.checkInDate.split("-").map(Number);
           const y = parts[0] ?? 2026;
@@ -177,6 +235,10 @@ export async function fetchCatalog(): Promise<NightView[]> {
         // con `NightExpired`. El catálogo no debe ofrecer lo que la cadena va a revertir.
         .filter((night) => inWindow(night.dateYYYYMMDD, today, end))
         .sort((a, b) => a.dateYYYYMMDD - b.dateYYYYMMDD);
+      // §35: el índice es un espejo, la autoridad es el contrato. Aunque la fila diga `AVAILABLE`,
+      // si `soldOnce` responde `true` la noche NO se sirve: eso es exactamente lo que producía el
+      // error de verificación en producción cuando el worker iba desfasado.
+      return await filterSoldOnChain(fromDb);
     }
   } catch (dbErr) {
     // Si la BD no está disponible, degradación elegante al RPC on-chain

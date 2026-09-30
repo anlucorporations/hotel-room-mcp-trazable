@@ -13,6 +13,9 @@ import { hotelNightsAbi } from "@hotel/shared/abi";
 import { activeChain, contractAddress } from "@/config/chain";
 import { reverifyPurchase, type ClientReverifyResult } from "@/components/assistant/reverify";
 
+/** Estado de la lectura auxiliar `soldOnce` (§35): distinguir «noche ya vendida» de «fallo de red». */
+export type SoldOnceState = "unknown" | "checking" | "sold" | "free";
+
 /** Datos legibles de la tx de compra que se muestran al usuario antes de firmar (§5.3). */
 export interface PurchaseReview {
   /** `tokenId` REAL decodificado del calldata (lo que de verdad se firmaría). */
@@ -34,6 +37,12 @@ export interface PurchaseReview {
    * (RPC caído, calldata indecodificable) — distinto de «el precio no coincide» (MINOR#22).
    */
   readonly verifyFailed: boolean;
+  /**
+   * Estado de `soldOnce` on-chain para compras PRIMARIAS (§35). Cuando vale `"sold"` la noche ya
+   * está vendida en la cadena: el mensaje correcto es «elige otra noche», no «comprueba tu
+   * conexión». Para reventa queda `"unknown"` (su autoridad es `listingOf`, y `reverify` ya avisa).
+   */
+  readonly soldOnceState: SoldOnceState;
   /** Re-lanza la lectura del precio on-chain para reintentar la verificación. */
   readonly refetch: () => void;
 }
@@ -66,6 +75,19 @@ export function usePurchaseReview(tx: PurchaseTxData, expectedTokenId: bigint): 
     functionName: isResale ? "listingOf" : "priceOf",
     args: callTokenId !== undefined ? [callTokenId] : undefined,
     query: { enabled: callTokenId !== undefined, staleTime: 0, refetchOnMount: "always" },
+  });
+
+  // §35: lectura auxiliar `soldOnce` en compras primarias. El catálogo puede servir una noche ya
+  // vendida si el índice va desfasado (worker parado); entonces `priceOf` sigue respondiendo un
+  // precio y la comparación cierra bien, pero `buy` revertiría. Saber `soldOnce == true` permite
+  // decir la verdad («esta noche ya está vendida, elige otra») en vez del genérico «comprueba tu
+  // conexión». En reventa no aplica: su autoridad es `listingOf` (ya leída arriba).
+  const soldRead = useReadContract({
+    address: contractAddress,
+    abi: hotelNightsAbi,
+    functionName: "soldOnce",
+    args: callTokenId !== undefined && !isResale ? [callTokenId] : undefined,
+    query: { enabled: callTokenId !== undefined && !isResale, staleTime: 0, refetchOnMount: "always" },
   });
   const onChainPrice: bigint | undefined = isResale
     ? (priceRead.data as { price: bigint } | undefined)?.price
@@ -102,6 +124,18 @@ export function usePurchaseReview(tx: PurchaseTxData, expectedTokenId: bigint): 
   // precio on-chain falló (RPC). NO es lo mismo que «el precio no coincide» (eso lo dice reverify).
   const verifyFailed = callTokenId === undefined || priceRead.isError;
 
+  // §35: estado de `soldOnce` (solo primaria). `isPending` cubre tanto «aún no se ha lanzado»
+  // como «en vuelo»; ante cualquier duda el consumidor queda en `"unknown"` y no cambia su mensaje.
+  const soldOnceState: SoldOnceState = isResale
+    ? "unknown"
+    : soldRead.data === true
+      ? "sold"
+      : soldRead.data === false
+        ? "free"
+        : soldRead.isPending && callTokenId !== undefined
+          ? "checking"
+          : "unknown";
+
   return {
     tokenId: displayTokenId,
     room,
@@ -114,6 +148,7 @@ export function usePurchaseReview(tx: PurchaseTxData, expectedTokenId: bigint): 
     verified: reverify?.ok === true,
     verifying,
     verifyFailed,
+    soldOnceState,
     refetch,
   };
 }

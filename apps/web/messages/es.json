@@ -309,7 +309,9 @@
     "txError": {
       "rejected": "Has cancelado la firma. Puedes intentarlo de nuevo cuando quieras.",
       "failed": "No se pudo completar la reserva. Revisa que estés en la red correcta y vuelve a intentarlo."
-    }
+    },
+    "nightAlreadySold": "Esta noche ya está vendida. Elige otra noche del catálogo.",
+    "pickAnotherNight": "Elegir otra noche"
   },
   "myNights": {
     "title": "Mis noches",
@@ -767,7 +769,8 @@
       "txError": {
         "rejected": "Has cancelado la firma. Puedes intentarlo de nuevo.",
         "failed": "No se pudo completar la reserva. Revisa la red y vuelve a intentarlo."
-      }
+      },
+      "nightAlreadySold": "Esta noche ya está vendida. Pide otra al asistente o elígela en el catálogo."
     }
   },
   "contractPaused": {

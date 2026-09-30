@@ -309,7 +309,9 @@
     "txError": {
       "rejected": "Signature was cancelled.",
       "failed": "Transaction failed. Please check network and try again."
-    }
+    },
+    "nightAlreadySold": "This night is already sold. Pick another night from the catalogue.",
+    "pickAnotherNight": "Pick another night"
   },
   "myNights": {
     "title": "My Nights",
@@ -767,7 +769,8 @@
       "txError": {
         "rejected": "Signature cancelled.",
         "failed": "Could not complete booking."
-      }
+      },
+      "nightAlreadySold": "This night is already sold. Ask the assistant for another or pick one in the catalogue."
     }
   },
   "contractPaused": {
