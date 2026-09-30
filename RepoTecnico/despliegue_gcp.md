@@ -831,3 +831,37 @@ plantilla propios) o aceptar el acceso unificado.
 ---
 
 *Despliegue GCP · hotelMCP · actualizado 2026-09-30 (release `v13`: acceso del back-office unificado, D-82)*
+---
+
+## 24. Release `v14` — worker con el índice SOLD corregido + web con el catálogo endurecido (§35) (2026-09-30)
+
+**Qué se desplegó.** Cierre del pendiente operativo nº 1 de §35 y del nº 3 de §29. Dos servicios:
+
+| Paso | Detalle |
+|---|---|
+| Imagen `worker:v14` | Cloud Build (build `c29cd8ba-273c-4ba4-90a3-9c47323a7bcd`, 2m46s), fuente local en el commit §35 |
+| Revisión worker | `hotel-mcp-worker-00008-fnt` al 100 % (anterior: `00007-scm` con `worker:v9`) |
+| Imagen `web:v14` | Cloud Build (build `79de2c1c-0f68-4312-b9b3-a5b81e66401f`, 3m59s) con los mismos `NEXT_PUBLIC_*` de v2–v13 (chainId 31337, contrato `0xc66a…7b6F`, bloque 314, faucet `0xdFdE…f75b`, `NEXT_PUBLIC_SITE_URL=https://hotelmarinadelsol.es`) |
+| Revisión web | `hotel-mcp-web-00014-sn9` al 100 % (rollback: `00013-vjh`) |
+| Configuración | Ambos desplegados **solo con `--image`** (`services update` + `--no-traffic` → verificación de entorno → `update-traffic`): **18/18 variables conservadas, cero cambiadas** (comparado revisión a revisión vía `run revisions describe --format json`) |
+| Sin cambios | `mcp:v9` y `monitor:v9`; contrato, base de datos y siembra intactos |
+| Push | El commit §35 queda **local** (sin push a remotos, por decisión del responsable); la imagen se construyó desde esa fuente |
+
+### Verificación (despliegue real)
+
+| Comprobación | Resultado |
+|---|---|
+| Logs del worker tras el arranque | catch-up completo desde el bloque 314: **7 eventos `NFTSold` consolidados** (los 6 vendidos + la reventa) — exactamente lo que la `v9` no había escrito en el índice |
+| Catálogo `/catalogo` | HTTP 200 · **87 noches disponibles** · **cero** de los 6 tokenIds vendidos (`10120261027`, `10820261103`, `11820261110`, `12420261117`, `20220261124`, `21020261201`) — el error §35 ya no es reproducible desde el catálogo |
+| Worker `/health` | `lag 0`, `aggregateLag 0`, head 479; `emailDegraded: true` sigue siendo el SMTP de relleno (§19–§23, no es avería) |
+| `/aggregates` | `soldCount: 6`, `mintedCount: 98`, coherente con la cadena |
+| Web `/health/ready` | **200** · READY (postgres, redis, polygonRPC UP) |
+| Regresión pública | `/`, `/catalogo`, `/reservar`, `/reventa`, `/mis-noches`, `/asistente`, `/ayuda`, `/historico`, `/contacto`, `/planes` → **200** |
+
+**Rollback.** `gcloud run services update-traffic hotel-mcp-web --to-revisions=hotel-mcp-web-00013-vjh=100` y
+`gcloud run services update-traffic hotel-mcp-worker --project hotel-mcp --region europe-west1 --to-revisions=hotel-mcp-worker-00007-scm=100`.
+
+**Nota operativa.** El binario `gcloud` del snap fallaba (`snap-confine … cap_dac_override`) pero
+`/snap/google-cloud-cli/current/bin/gcloud` con `CLOUDSDK_CONFIG=~/.config/gcloud` funciona sin
+elevación: sustituye al camino «gcloud no es utilizable» declarado en §29 y §35.
+

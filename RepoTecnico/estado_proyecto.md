@@ -2433,6 +2433,10 @@ El reintento de lectura se conserva para el fallo de red puro. i18n ES/EN/RU con
 | `pnpm --filter @hotel/shared test` | **45 ficheros · 418 pruebas** ✅ |
 | `pnpm --filter @hotel/web build` | ✅ (advertencias previas, sin errores nuevos) |
 
-**Queda pendiente (1)**: redesplegar el `worker` con la revisión actual (ventana del responsable;
-`gcloud` no es utilizable desde este entorno). Con (2) en producción, el síntoma desaparece aunque
-el índice siga desfasado; con (1), además, el índice vuelve a ser verdad.
+**(1) Redesplegado el mismo día (release `v14`, 2026-09-30 — detalle en `despliegue_gcp.md` §24).**
+El binario del snap fallaba (`snap-confine`) pero `/snap/google-cloud-cli/current/bin/gcloud` con
+`CLOUDSDK_CONFIG` sí funciona. Cloud Build `worker:v14` + `web:v14` desde el commit local §35 (sin
+push); despliegue **solo con `--image`** y verificación revisión a revisión: **18/18 variables
+conservadas** en ambos servicios. Evidencia de cierre: los logs del worker muestran los **7 eventos
+`NFTSold` consolidados** que la `v9` nunca escribió, y `/catalogo` sirve **87 noches sin ninguna de
+las 6 vendidas fantasma**. Regresión pública completa en 200. **§35 CERRADO en sus tres puntos.**
