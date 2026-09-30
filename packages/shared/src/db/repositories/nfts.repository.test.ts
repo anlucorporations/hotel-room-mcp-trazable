@@ -166,4 +166,39 @@ describe("NFTsRepository (US-04, US-07b)", () => {
       expect(recorded.blockNumber).toBe(123456);
     });
   });
+
+  describe("listGhostPrimarySales (F9 · catálogo ↔ eventos)", () => {
+    it("debe preguntar por ventas primarias con índice AVAILABLE y sin reventa activa", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [] });
+
+      await repository.listGhostPrimarySales();
+
+      expect(mockPool.query).toHaveBeenCalledTimes(1);
+      const sql = String((mockPool.query.mock.calls[0] as unknown[])[0]);
+      // Las tres condiciones son la definición de «fantasma»; si alguna se pierde, vuelven las
+      // noches invendibles del §35 o se ocultan reventas legítimas.
+      expect(sql).toContain("se.is_secondary = FALSE");
+      expect(sql).toContain("n.status = 'AVAILABLE'");
+      expect(sql).toContain("l.active = TRUE");
+      expect(sql).toContain("NOT EXISTS");
+    });
+
+    it("debe mapear fila a la forma del catálogo (tokenId, habitación numérica, fecha ISO)", async () => {
+      mockPool.query.mockResolvedValueOnce({
+        rows: [
+          { token_id: "10820261103", room_number: 108, check_in_date: "2026-11-03" },
+          { token_id: "10120261015", room_number: 101, check_in_date: "2026-10-15" },
+        ],
+      });
+
+      const ghosts = await repository.listGhostPrimarySales();
+
+      expect(ghosts).toEqual([
+        { tokenId: "10820261103", roomNumber: 108, checkInDate: "2026-11-03" },
+        { tokenId: "10120261015", roomNumber: 101, checkInDate: "2026-10-15" },
+      ]);
+      // `room_number` es INT en la BD: se normaliza a número para coincidir con `mapRowToNFT`.
+      expect(typeof ghosts[0]!.roomNumber).toBe("number");
+    });
+  });
 });

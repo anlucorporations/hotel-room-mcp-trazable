@@ -228,6 +228,7 @@
     "emptyHint": "Prueba con otras fechas, tipos de habitación o un precio máximo mayor. Pronto añadiremos más disponibilidad.",
     "emptyNoListings": "Aún no hay noches publicadas",
     "emptyNoListingsHint": "Vuelve pronto: estamos preparando nuevas noches frente al Mediterráneo.",
+    "syncingNotice": "Hemos retirado {count} noche que ya está vendida. Estamos sincronizando el calendario: puede aparecer disponibilidad nueva en unos minutos.",
     "clearFilters": "Quitar filtros",
     "degraded": "No se pudo cargar el catálogo. Revisa tu conexión e inténtalo de nuevo.",
     "retry": "Reintentar",

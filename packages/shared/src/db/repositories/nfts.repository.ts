@@ -256,6 +256,44 @@ export class NFTsRepository {
     );
   }
 
+  /**
+   * F9 · noches que el **registro de ventas** (eventos on-chain) confirma vendidas en primaria y que,
+   * sin embargo, el índice sigue ofreciendo como `AVAILABLE`: las «fantasmas» del §35. La cadena
+   * rechaza `buy` sobre ellas (`NightNotAvailable`) y el huésped recibía un mensaje de red.
+   *
+   * Por qué esta consulta y no una resta de agregados: una noche vendida puede volver al mercado por
+   * su dueño con una **reventa activa**; entonces sí es ofertable (por `buyResale`, en su propia
+   * vista), así que contarla como fantasma sería un falso positivo. Se excluyen explícitamente los
+   * `token_id` con listado activo. Solo ventas **primarias**: una secundaria no cambia la condición
+   * de inventario del hotel.
+   */
+  async listGhostPrimarySales(): Promise<
+    Array<{ tokenId: string; roomNumber: number; checkInDate: string }>
+  > {
+    const res = await this.pool.query(
+      `SELECT DISTINCT se.token_id,
+              n.room_number,
+              to_char(n.check_in_date, 'YYYY-MM-DD') AS check_in_date
+         FROM sale_events se
+         JOIN nfts n ON n.token_id = se.token_id
+        WHERE se.is_secondary = FALSE
+          AND n.status = 'AVAILABLE'
+          AND NOT EXISTS (
+            SELECT 1 FROM listings l WHERE l.token_id = se.token_id AND l.active = TRUE
+          )
+        ORDER BY se.token_id::NUMERIC ASC`,
+    );
+    // `room_number` es `INT` y `check_in_date` es `DATE`: el mapeo coincide con `mapRowToNFT`
+    // (número y `AAAA-MM-DD`), para que el consumidor no tenga dos formatos de la misma noche.
+    return res.rows.map(
+      (row: { token_id: string; room_number: number; check_in_date: string }) => ({
+        tokenId: row.token_id,
+        roomNumber: Number(row.room_number),
+        checkInDate: String(row.check_in_date),
+      }),
+    );
+  }
+
   async recordSaleEvent(sale: SaleEventRecord): Promise<SaleEventRecord> {
     const res = await this.pool.query(
       `INSERT INTO sale_events (

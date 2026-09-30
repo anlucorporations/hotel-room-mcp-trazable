@@ -197,12 +197,53 @@ export async function filterSoldOnChain(
 }
 
 /**
+ * Resultado del catálogo: la lista ofertable y **cuántas noches se ocultaron** porque las fuentes
+ * off-chain las confirman vendidas (F9/§35). El contador existe para que la pantalla pueda ser
+ * honesta: sin él, un índice desfasado se ve igual que un hotel lleno y el huésped no tiene forma
+ * de saber que está viendo menos inventario del que hay.
+ */
+export interface CatalogResult {
+  readonly nights: NightView[];
+  /** Noches retiradas del catálogo por estar ya vendidas (0 = catálogo limpio). */
+  readonly hiddenSoldCount: number;
+}
+
+/** Noche confirmada como vendida por el registro de eventos (F9). */
+export interface GhostNight {
+  readonly tokenId: string;
+}
+
+/**
+ * Retira del catálogo las noches que el **registro de ventas** confirma primariamente vendidas,
+ * aunque el índice siga ofreciéndolas. Corrección estructural del §35.
+ *
+ * La clasificación («índice dice libre / eventos dicen vendida») vive en
+ * `@hotel/shared/domain` —`classifyNightIntegrity`/`shouldHideNight`— y se ejerce en la **consulta**
+ * (`NFTsRepository.listGhostPrimarySales`: venta primaria, índice `AVAILABLE` y `NOT EXISTS` de
+ * reventa activa). Aquí solo queda la proyección mecánica sobre la lista ya resuelta: retirar por
+ * `tokenId`. Un `Set` para no escanear la lista por noche, sin red.
+ *
+ * Por qué la decisión está en SQL y no en este bucle: la exclusión de reventas activas necesita el
+ * join con `listings`, que aquí no tenemos; duplicar la regla en memoria produciría dos verdades.
+ */
+export function excludeGhosts(
+  nights: readonly NightView[],
+  ghosts: readonly GhostNight[],
+): NightView[] {
+  if (ghosts.length === 0) return [...nights];
+  // `Set` en lugar de escanear la lista por noche: el catálogo va a 100 noches y las fantasmas son
+  // el caso raro, pero no queremos un O(n·m) en el camino de render.
+  const ghostTokens = new Set(ghosts.map((ghost) => ghost.tokenId));
+  return nights.filter((night) => !ghostTokens.has(night.tokenId));
+}
+
+/**
  * Catálogo PRIMARIO (RF-01, D-07): noches `DISPONIBLE` del hotel dentro de la ventana.
  *
  * Ya NO incorpora los listados de reventa: esos viven en `fetchResaleMarket()` y en su propia
  * vista. Una noche vendida en primaria deja de ofrecerse aquí aunque después se revenda.
  */
-export async function fetchCatalog(): Promise<NightView[]> {
+export async function fetchCatalog(): Promise<CatalogResult> {
   const { today, end } = windowBounds();
 
   // 1. Intento primario vía base de datos off-chain
@@ -235,10 +276,27 @@ export async function fetchCatalog(): Promise<NightView[]> {
         // con `NightExpired`. El catálogo no debe ofrecer lo que la cadena va a revertir.
         .filter((night) => inWindow(night.dateYYYYMMDD, today, end))
         .sort((a, b) => a.dateYYYYMMDD - b.dateYYYYMMDD);
-      // §35: el índice es un espejo, la autoridad es el contrato. Aunque la fila diga `AVAILABLE`,
-      // si `soldOnce` responde `true` la noche NO se sirve: eso es exactamente lo que producía el
-      // error de verificación en producción cuando el worker iba desfasado.
-      return await filterSoldOnChain(fromDb);
+
+      // F9 · capa estructural: el registro de ventas (eventos on-chain ya consolidados) es la
+      // autoridad sobre si una noche primaria sigue siendo inventario del hotel. Si el índice dice
+      // `AVAILABLE`, existe venta primaria y NO hay reventa activa, esa noche se retira **sin
+      // preguntar a la red**. Cierra el §35 en su origen (worker desfasado → noches fantasma →
+      // «No pudimos verificar el precio on-chain») y quita lecturas RPC del camino caliente.
+      const ghosts = await nftsRepo.listGhostPrimarySales();
+      if (ghosts.length > 0) {
+        // No es silencio: el desfase entre índice y eventos tiene que verse para poder accionar
+        // (reconciliar/redesplegar el worker), que es justo lo que faltó la primera vez.
+        console.warn(
+          `[fetchCatalog] índice desfasado: ${ghosts.length} noche(s) vendida(s) aún AVAILABLE · ` +
+            `tokens ${ghosts.map((ghost) => ghost.tokenId).join(", ")}`,
+        );
+      }
+      const withoutGhosts = excludeGhosts(fromDb, ghosts);
+
+      // §35 · segunda capa, on-chain: aunque ambas fuentes de BD cuadren, la verdad es del contrato.
+      // Se conserva lo que no se pudo leer (un pico de red no debe ocultar inventario sano).
+      const nights = await filterSoldOnChain(withoutGhosts);
+      return { nights, hiddenSoldCount: Math.max(0, fromDb.length - nights.length) };
     }
   } catch (dbErr) {
     // Si la BD no está disponible, degradación elegante al RPC on-chain
@@ -272,7 +330,10 @@ export async function fetchCatalog(): Promise<NightView[]> {
     byToken.set(id, { tokenId: id, room: Number(room), dateYYYYMMDD: date, type, priceWei: price.toString(), saleType: "PRIMARY" });
   }
 
-  return [...byToken.values()].sort((a, b) => a.dateYYYYMMDD - b.dateYYYYMMDD);
+  // En el camino on-chain no hay nada que «ocultar»: `sold` sale de los propios logs, así que no
+  // existe desfase entre dos fuentes y avisar de sincronización sería mentira.
+  const fallbackNights = [...byToken.values()].sort((a, b) => a.dateYYYYMMDD - b.dateYYYYMMDD);
+  return { nights: fallbackNights, hiddenSoldCount: 0 };
 }
 
 /**

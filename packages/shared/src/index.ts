@@ -16,6 +16,7 @@ export * from "./domain/mint-window";
 export * from "./domain/token-id";
 export * from "./domain/night-state";
 export * from "./domain/aggregates";
+export * from "./domain/index-integrity";
 export * from "./domain/purchase-tx";
 export * from "./domain/ipfs";
 export * from "./domain/faucet";

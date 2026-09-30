@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
-import { classifySoldOnce, filterSoldOnChain, type NightView } from "./nights";
+import { classifySoldOnce, excludeGhosts, filterSoldOnChain, type NightView } from "./nights";
 
 /**
  * Guardián §35 — **el catálogo no ofrece noches que la cadena ya vendió**.
@@ -62,17 +62,64 @@ describe("filterSoldOnChain (§35: la autoridad es el contrato, no el índice)",
   });
 });
 
-describe("fetchCatalog usa el guardón on-chain en el camino de BD (estructural)", () => {
+describe("fetchCatalog: las dos capas del camino de BD (estructural)", () => {
   const source = readFileSync(fileURLToPath(new URL("./nights.ts", import.meta.url)), "utf8");
 
-  it("el resultado de BD pasa por filterSoldOnChain antes de devolverse", () => {
-    // FALSO POSITIVO EVITADO: la llamada debe estar en el bloque de BD (después del sort del
-    // `fromDb`), no solo definida en el fichero.
-    expect(source).toMatch(/return await filterSoldOnChain\(fromDb\)/);
+  it("F9 · capa 1: el catálogo consulta el registro de ventas y proyecta la exclusión", () => {
+    // La llamada tiene que estar EN EL BLOQUE DE BD y su resultado consumido: basta con definirla
+    // o con invocarla sin usar lo que devuelve para que el guardián quede decorativo.
+    expect(source).toMatch(/const ghosts = await nftsRepo\.listGhostPrimarySales\(\)/);
+    expect(source).toMatch(/excludeGhosts\(fromDb, ghosts\)/);
+    expect(source).toMatch(/withoutGhosts/);
+  });
+
+  it("§35 · capa 2: lo que sobrevive a la capa 1 pasa además por la lectura on-chain", () => {
+    // Falso positivo evitado (y actualizado en F9): antes se filtraba `fromDb` a secas; ahora la
+    // autoridad de BD ya descontó fantasmas y queda la del contrato como segunda comprobación.
+    expect(source).toMatch(/await filterSoldOnChain\(withoutGhosts\)/);
+  });
+
+  it("el orden es capa 1 → capa 2 (no al revés: sin eso la exclusión estructural no existe)", () => {
+    const layerOne = source.indexOf("listGhostPrimarySales()");
+    const layerTwo = source.indexOf("filterSoldOnChain(withoutGhosts)");
+    expect(layerOne).toBeGreaterThan(-1);
+    expect(layerTwo).toBeGreaterThan(layerOne);
+  });
+
+  it("el desfase se registra, no se silencia", () => {
+    expect(source).toMatch(/console\.warn\(\s*\[?`?\[fetchCatalog\] índice desfasado/);
   });
 
   it("el lector real usa `soldOnce` sobre el contrato canónico", () => {
     expect(source).toContain('functionName: "soldOnce"');
     expect(source).toContain("contractAddress");
+  });
+});
+
+describe("excludeGhosts (F9: proyección mecánica de la exclusión resuelta en SQL)", () => {
+  it("retira exactamente los tokens confirmados y conserva el resto en orden", () => {
+    const nights = [night("10120261015"), night("10820261103"), night("20120261201")];
+    const kept = excludeGhosts(nights, [{ tokenId: "10820261103" }]);
+    expect(kept.map((n) => n.tokenId)).toEqual(["10120261015", "20120261201"]);
+  });
+
+  it("sin fantasmas devuelve la lista íntegra (copia, no la misma referencia)", () => {
+    const nights = [night("10120261015")];
+    const kept = excludeGhosts(nights, []);
+    expect(kept).toEqual(nights);
+    expect(kept).not.toBe(nights);
+  });
+
+  it("una noche repetida en la lista de fantasmas no duplica ni pierde inventario", () => {
+    const nights = [night("10120261015"), night("10820261103")];
+    const kept = excludeGhosts(nights, [{ tokenId: "10120261015" }, { tokenId: "10120261015" }]);
+    expect(kept.map((n) => n.tokenId)).toEqual(["10820261103"]);
+  });
+
+  it("no toca noches que los eventos desconocen (la duda se conserva, §35)", () => {
+    const nights = [night("10120261015"), night("99920261015")];
+    expect(excludeGhosts(nights, [{ tokenId: "10120261015" }]).map((n) => n.tokenId)).toEqual([
+      "99920261015",
+    ]);
   });
 });

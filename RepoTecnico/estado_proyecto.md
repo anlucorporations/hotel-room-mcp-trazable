@@ -2002,6 +2002,8 @@ fases de la hoja de ruta:
 
 | **Release `v13` en GCP** | Release **solo de web** del acceso unificado (**D-82**, commit `7a263b6`): `web:v13` construida con Cloud Build y desplegada **solo con `--image`**, conservando **18 variables y 9 secretos**; `worker`, `mcp` y `monitor` siguen en `v9`. Detalle y rollback en `despliegue_gcp.md` §23 | **El HTML servido sin sesión contiene ya la plantilla del shell** (`admin-sidebar`, `admin-nav-toggle`, `admin-help-link`, pie «Panel de administración») con el `<h1>` canónico y **cero** marcadores de panel ⇒ hallazgo de §22 cerrado con evidencia de tráfico real; `/health/ready` **READY**; 18 rutas públicas **200**; APIs protegidas **401**; imagen social **1200×630**; worker `lag 0` (bloque 479). **Efecto colateral medido**: las suites de personal muestran ahora el acceso del back-office (título y marca), no el suyo |
 
+| **F9 · integridad catálogo ↔ cadena** | El catálogo deja de depender solo del índice: dos capas (exclusión estructural por `sale_events` + lectura `soldOnce`) y aviso honesto cuando se ocultan noches. **Lección registrada**: el control por agregados (`minted − sold`) se descartó porque una noche revendida sigue siendo ofertable. Detalle en §36 | `@hotel/shared` **430 pruebas**, `@hotel/web` **583** (guardián 6 → **13**), `@hotel/worker` **132**; **tres sondas de falsificación** en rojo; typecheck, lint y build OK |
+
 **Hallazgos que destaparon los guardianes nuevos (C.1–C.3)**: (a) `text-caption`/`text-body-lg` de la
 escala tipográfica nueva se leían como «color desconocido» — corregido y con **prueba que deriva la
 lista del preset real**; (b) la paridad i18n **no estaba verificada por ninguna prueba**: el guardián
@@ -2441,3 +2443,50 @@ release `v14` completa también para mcp y monitor); despliegue **solo con `--im
 verificación revisión a revisión: **18/18 variables conservadas** en ambos servicios. Evidencia de cierre: los logs del worker muestran los **7 eventos
 `NFTSold` consolidados** que la `v9` nunca escribió, y `/catalogo` sirve **87 noches sin ninguna de
 las 6 vendidas fantasma**. Regresión pública completa en 200. **§35 CERRADO en sus tres puntos.**
+
+---
+
+## 36. F9 · Integridad catálogo ↔ cadena: el índice no puede mandar solo (2026-09-30)
+
+**Petición del responsable**: continuar la Fase 3. Elegido con entrevista (3 preguntas): **ciclo F9
+· integridad catálogo ↔ cadena**, degradación **«ocultar las fantasmas»** y **código + desplegar**.
+
+### El hallazgo que cambió el diseño (y por qué NO hay un contador global)
+
+El primer intento medía el desfase restando agregados: `esperado = minted − sold − burned` contra
+`available`. **La propia prueba lo tumbó**: una noche vendida y después listada en reventa sigue siendo
+inventario ofertable, así que restar ventas primarias al total produce falsos positivos —el caso real
+de producción (7 `Sale`, 1 de ellos revendido) caía justo ahí. Se descartó el enfoque y la regla
+definitiva es **por `tokenId`**: dos fuentes dicen cosas distintas de *la misma noche* o nada.
+
+Queda registrado como lección de diseño: `minted − sold` no es un techo de disponibilidad cuando
+existe mercado secundario.
+
+### Hecho
+
+| Pieza | Cambio |
+|---|---|
+| `packages/shared/src/domain/index-integrity.ts` *(nuevo)* | Dominio puro: `classifyNightIntegrity` → `ok` / `ghost` / `deficit` / `indeterminate`; `shouldHideNight`; `summarizeNightIntegrity` (listas deduplicadas y ordenadas para logs deterministas). Exportado por el barril raíz **y** por `@hotel/shared/domain` (`browser.ts`), sin dependencias de Node (contrato isomorfo verificado por grep) |
+| `NFTsRepository.listGhostPrimarySales()` *(nuevo)* | La decisión se ejerce en SQL: venta **primaria** + índice `AVAILABLE` + `NOT EXISTS` de reventa **activa**. Devuelve `{tokenId, roomNumber, checkInDate}` con los mismos tipos que `mapRowToNFT` |
+| `apps/web/src/lib/nights.ts` | `fetchCatalog` pasa a devolver **`CatalogResult { nights, hiddenSoldCount }`** y aplica **dos capas** en el camino de BD: 1ª estructural (`excludeGhosts`, sin red) y 2ª on-chain (`filterSoldOnChain`, §35). El desfase se **registra** (`console.warn` con los tokens), no se silencia. El fallback RPC devuelve `hiddenSoldCount: 0`: allí no hay dos fuentes que contradecirse, avisar de sincronización sería mentira |
+| `/catalogo` | Aviso honesto `role="status"` (`data-testid="catalog-sync-notice"`) con par `info`/`info-bg` ya declarado y medido, estilo de los avisos existentes (`rounded-brand-lg border … bg-…-bg`) |
+| i18n | `catalog.syncingNotice` en ES/EN/RU, paridad y placeholder `{count}` idénticos en los tres idiomas |
+
+### Verificación
+
+| Comprobación | Resultado |
+|---|---|
+| `@hotel/shared` test | **46 ficheros · 430 pruebas** (nuevas: 8 del dominio + 2 del repositorio) |
+| `@hotel/web` test | **72 ficheros · 583 pruebas** (guardián `nights-sold-guardian` de 6 → **13**: dos capas, orden capa 1 → capa 2, desfase registrado, 4 pruebas de `excludeGhosts`) |
+| `@hotel/worker` test | **15 ficheros · 132 pruebas** |
+| **Falsificación** (3 sondas) | quitar la proyección de la exclusión → rojo · silenciar el `console.warn` del desfase → rojo · eliminar la consulta de ventas → **2 rojas** (capa 1 y orden). Restaurado: 13/13 |
+| typecheck · lint · build | OK · **0 errores** (los 2 avisos previos, ajenos) · **52** páginas y **84** API |
+
+**Lo que este ciclo NO arregla (declarado).** No corrige la causa del desfase: si el worker deja de
+consolidar `NFTSold`, el índice seguirá mintiendo y ahora el catálogo lo oculta y lo dice. La
+reconciliación del índice sigue siendo operativa (redesplegar/barra de eventos), y la segunda capa
+on-chain continúa siendo la autoridad final antes de firmar.
+
+**Pendiente abierto detectado aquí**: `sale_events` registra también las reventas, pero la consulta de
+fantasmas filtra `is_secondary = FALSE` a propósito; si algún día se quiere el mismo contraste sobre el
+mercado secundario hará falta una regla distinta (la oferta mandaría `listings`, no `nfts.status`).

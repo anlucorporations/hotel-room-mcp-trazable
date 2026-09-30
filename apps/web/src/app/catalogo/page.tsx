@@ -3,7 +3,7 @@ import { BookingBar } from "@/components/booking/BookingBar";
 import { CatalogClient } from "@/components/CatalogClient";
 import { DegradedState } from "@/components/DegradedState";
 import { PublicShell } from "@/components/layout/PublicShell";
-import { fetchCatalog, fetchContractPaused, type NightView } from "@/lib/nights";
+import { fetchCatalog, fetchContractPaused } from "@/lib/nights";
 
 // Lectura por RPC en cada request (la caché vive en TanStack en cliente, ADR-09).
 export const dynamic = "force-dynamic";
@@ -23,7 +23,11 @@ export default async function CatalogPage() {
     fetchCatalog(),
     fetchContractPaused(),
   ]);
-  const nights: NightView[] | null = catalogResult.status === "fulfilled" ? catalogResult.value : null;
+  const catalog = catalogResult.status === "fulfilled" ? catalogResult.value : null;
+  const nights = catalog?.nights ?? null;
+  // F9: cuántas noches se retiraron por estar ya vendidas. Sirve para decirlo con honestidad en
+  // lugar de dejar que un índice desfasado se parezca a un hotel lleno.
+  const hiddenSoldCount = catalog?.hiddenSoldCount ?? 0;
   const paused: boolean | null = pausedResult.status === "fulfilled" ? pausedResult.value : null;
 
   return (
@@ -42,7 +46,19 @@ export default async function CatalogPage() {
           <DegradedState />
         </div>
       ) : (
-        <CatalogClient nights={nights} paused={paused} />
+        <>
+          {hiddenSoldCount > 0 && (
+            // Aviso de sincronización, no de error: lo que se oculta es lo que la cadena ya vendió.
+            <p
+              data-testid="catalog-sync-notice"
+              role="status"
+              className="mx-auto mt-6 w-full max-w-6xl rounded-brand-lg border border-info/40 bg-info-bg px-5 py-3 text-small text-info"
+            >
+              {t("syncingNotice", { count: hiddenSoldCount })}
+            </p>
+          )}
+          <CatalogClient nights={nights} paused={paused} />
+        </>
       )}
     </PublicShell>
   );

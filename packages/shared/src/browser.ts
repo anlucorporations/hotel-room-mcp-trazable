@@ -40,6 +40,9 @@ export * from "./domain/mint-window";
 export * from "./domain/token-id";
 export * from "./domain/night-state";
 export * from "./domain/aggregates";
+// F9 · integridad catálogo ↔ cadena: medir el desfase del índice es aritmética pura, y la capa de
+// datos (worker y RSC) necesita la misma función para no decidir cada uno por su lado.
+export * from "./domain/index-integrity";
 export * from "./domain/purchase-tx";
 export * from "./domain/ipfs";
 export * from "./domain/faucet";

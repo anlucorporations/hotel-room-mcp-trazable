@@ -228,6 +228,7 @@
     "emptyHint": "Try different dates, room types, or higher price ceiling.",
     "emptyNoListings": "No nights published yet",
     "emptyNoListingsHint": "Check back soon: we are preparing new rooms by the sea.",
+    "syncingNotice": "We removed {count} night that is already sold. The calendar is syncing: new availability may appear within minutes.",
     "clearFilters": "Clear filters",
     "degraded": "Could not load the catalog. Check your connection and try again.",
     "retry": "Retry",
