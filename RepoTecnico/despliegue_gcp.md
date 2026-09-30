@@ -766,8 +766,9 @@ sesión**, el HTML servido **no contiene ninguna marca del shell nuevo** (`admin
 `AdminLayout`. Es decir, **el rediseño D-78/D-80/D-81 solo se ve con sesión iniciada**; la pantalla
 de acceso —y las cuatro suites que la reutilizan: `/admin`, `/recepcion`, `/housekeeping`,
 `/mantenimiento`— conserva la distribución anterior. Confirmado leyendo el código: siete ficheros
-importan `AdminSignInScreen`. Queda como corrección pendiente (unificar el gate bajo la misma
-plantilla o decidir explícitamente que el acceso sea una página exenta).
+importan `AdminSignInScreen`. Corregido en **D-82** (§23): `AdminLayout`
+acepta el prop `gate` y el acceso se compone bajo la misma plantilla; queda pendiente decidir la
+plantilla del acceso en las suites de personal.
 
 **Rollback.** La revisión anterior sigue disponible y sin tráfico:
 `gcloud run services update-traffic hotel-mcp-web --to-revisions=hotel-mcp-web-00011-xvb=100`.
@@ -775,4 +776,30 @@ plantilla o decidir explícitamente que el acceso sea una página exenta).
 
 ---
 
-*Despliegue GCP · hotelMCP · actualizado 2026-09-29 (release `v12`: reparto de las barras del back-office)*
+## 23. Corrección `v13` — acceso del back-office bajo la misma plantilla (D-82) (2026-09-29)
+
+**Qué se corrigió.** El hallazgo de §22: `/admin/dashboard` **sin sesión** devolvía un HTML sin ninguna
+marca del shell AdminLTE porque `AdminSignInScreen` pintaba su propia plantilla y no pasaba por
+`AdminLayout`. La seguridad era correcta (gate RSC + cero marcadores de panel); lo roto era la
+**distribución partida en dos plantillas**.
+
+| Cambio | Detalle |
+|---|---|
+| `AdminLayout.tsx` | Nuevo prop `gate?: boolean`; con `gate` se renderiza el `shell` con `SignInGate` como contenido. Sidebar y migas siguen condicionados a `hasSession` (sin sesión no hay navegación que mostrar) |
+| `AdminSignInScreen.tsx` | Deja de tener plantilla propia (70 líneas → envoltorio mínimo): delega en `<AdminLayout gate>` y conserva el `router.refresh()` del gate. Retirado el `WalletBar` del acceso (sin sesión no hay nada que firmar; la billetera vive en el bloque de sesión, D-81) |
+| Suites de personal | **No unificadas a propósito**: van dentro de `PublicShell`, que ya aporta cabecera y `<main id="contenido">`; anidar `AdminLayout` produciría dos `<header>`, dos `<main>` y dos pies (regresión de landmarks). Queda pendiente decidir su pantalla de acceso |
+| Guardianes | `admin-shell.test.ts` **23 → 27** pruebas y `admin-auth-guardian.test.ts` **4 → 5**, con tres sondas de falsificación (plantilla propia recuperada, rama `gate` neutralizada, sidebar pintado sin sesión) |
+
+**Verificación local.** `pnpm --filter @hotel/web test` **70 ficheros · 552 pruebas**; `typecheck` OK;
+`lint` 0 errores en los ficheros tocados; `build` OK (**52** páginas, **84** API). **No** se ha podido
+reproducir aquí la comprobación HTTP del HTML servido: este entorno sigue sin servidor PostgreSQL
+(solo cliente en `~/tools/postgres`, sin `docker`/`podman`), por lo que el gate responde acceso por
+falta de sesión. La garantía obtenida es estructural, no de tráfico.
+
+**Despliegue.** Pendiente de orden del responsable: imagen `web:v13` y despliegue **solo con
+`--image`** sobre `hotel-mcp-web`, conservando las 18 variables y los 9 secretos. Rollback:
+`gcloud run services update-traffic hotel-mcp-web --to-revisions=hotel-mcp-web-00012-wpl=100`.
+
+---
+
+*Despliegue GCP · hotelMCP · actualizado 2026-09-29 (corrección `v13` pendiente de desplegar: acceso unificado, D-82)*

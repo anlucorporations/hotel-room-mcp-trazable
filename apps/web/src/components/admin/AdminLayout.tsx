@@ -439,6 +439,12 @@ function Footer() {
 /**
  * Pantalla de acceso canónica (D-04): usuario + contraseña + TOTP obligatorio.
  * No usa SIWE: la wallet ya no autoriza el back-office.
+ *
+ * D-82: se pinta **dentro del `<main>` del shell**, así que el acceso comparte con el panel la
+ * distribución AdminLTE (barra superior con Ayuda y pie). El `WalletBar` que antes presidía esta
+ * pantalla se retira: sin sesión no hay paneles que firmar, y la billetera sigue disponible con
+ * sesión en el bloque de sesión del panel Administración (D-81). El estado de carga lo gestiona el
+ * propio formulario (`CredentialForm`), por lo que aquí no se duplica el aviso de sesión.
  */
 function SignInGate({ session }: { session: AdminSession }) {
   const t = useTranslations("admin");
@@ -453,14 +459,19 @@ function SignInGate({ session }: { session: AdminSession }) {
 
 /**
  * Plantilla del back-office (docs/SRS.md §7), **redistribuida al estilo AdminLTE** (decisión del
- * responsable, 2026-09-29): sidebar fija a la izquierda con marca y acordeón, navbar superior con
- * roles y billetera, `content-header` con migas, `content-wrapper` y pie.
+ * responsable, 2026-09-29): sidebar fija a la izquierda con marca y acordeón, navbar superior,
+ * `content-header` con migas, `content-wrapper` y pie.
  *
  * Centraliza la sesión canónica (D-04): sin sesión muestra la pantalla de acceso (usuario +
  * contraseña + TOTP); con sesión, las entradas/paneles se habilitan o deshabilitan según el rol.
  * Es el shell de admin, NO el `PublicShell` público.
+ *
+ * @param gate Acceso en lugar del contenido (**D-82**), usado por `AdminSignInScreen` para que la
+ *             pantalla de acceso comparta la plantilla del panel. Las suites de personal
+ *             (`/recepcion`, `/housekeeping`, `/mantenimiento`) siguen fuera: su acceso es una
+ *             tarjeta propia con el título de su namespace y van dentro de `PublicShell`.
  */
-export function AdminLayout({ children }: { children: ReactNode }) {
+export function AdminLayout({ children, gate = false }: { children: ReactNode; gate?: boolean }) {
   const t = useTranslations("admin");
   const session = useAdminSession();
   const pathname = usePathname();
@@ -558,6 +569,12 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       </div>
     </div>
   );
+
+  if (gate) {
+    // Acceso renderizado bajo la misma plantilla que el panel (D-82): sin sidebar y sin migas,
+    // porque todavía no hay sesión que las justifique.
+    return shell(<SignInGate session={session} />);
+  }
 
   if (session.isLoading) {
     return shell(

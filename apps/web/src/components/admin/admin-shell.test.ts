@@ -250,3 +250,47 @@ describe("Back-office · reparto de las barras (D-80 y D-81)", () => {
     expect(wallet).toContain('variant = "header"');
   });
 });
+
+/**
+ * **D-82** — arreglo del hallazgo destapado al verificar la release `v12`: `/admin/dashboard` sin
+ * sesión devolvía un HTML que **no contenía ninguna marca del shell** porque `AdminSignInScreen`
+ * pintaba su propia plantilla (`div` + `header` con `WalletBar` + `main`) y no pasaba por
+ * `AdminLayout`. El rediseño AdminLTE solo era visible con sesión iniciada.
+ */
+describe("Back-office · acceso unificado bajo la plantilla (D-82)", () => {
+  const signInSource = readFileSync(
+    fileURLToPath(new URL("./AdminSignInScreen.tsx", import.meta.url)),
+    "utf8",
+  );
+
+  it("la pantalla de acceso se delega en el shell con `gate`", () => {
+    expect(signInSource).toContain("<AdminLayout gate>");
+    expect(source).toContain("gate = false }: { children: ReactNode; gate?: boolean }");
+    expect(source).toMatch(/if \(gate\) \{[\s\S]{0,320}shell\(<SignInGate session=\{session\} \/>\)/);
+  });
+
+  it("el acceso ya NO pinta una plantilla paralela (ni header propio ni billetera)", () => {
+    // Reglas derivadas del defecto: si reaparece cualquiera de ellas, el acceso vuelve a vivir fuera
+    // del shell y deja de verse la distribución.
+    expect(signInSource).not.toMatch(/<(header|main)\b/);
+    expect(signInSource).not.toContain("min-h-screen");
+    // Se prohíbe por **import**: la documentación explica precisamente que `WalletBar` se retiró, y
+    // buscar la palabra suelta castigaría el comentario en lugar del defecto.
+    expect(signInSource).not.toMatch(/^import .*WalletBar/m);
+    expect(signInSource).not.toMatch(/^import .*CredentialForm/m);
+  });
+
+  it("el acceso conserva el título canónico D-04 dentro del contenido del shell", () => {
+    expect(source).toContain('{t("gateTitle")}');
+    // El `<h1>` vive ahora en el shell (`SignInGate`), no en la pantalla de acceso: así el acceso es
+    // un envoltorio mínimo y no puede volver a traer marcado estructural.
+    expect(signInSource).not.toMatch(/<h1\b/);
+    const h1s = source.match(/<h1 /g) ?? [];
+    expect(h1s.length).toBe(1);
+  });
+
+  it("sin sesión no se pintan el sidebar ni las migas (no hay navegación que mostrar)", () => {
+    expect(source).toMatch(/\{hasSession && \(\n\s+<Sidebar/);
+    expect(source).toMatch(/\{hasSession && <ContentHeader \/>}/);
+  });
+});

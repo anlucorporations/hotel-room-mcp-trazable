@@ -65,4 +65,21 @@ describe("Guardián de sesión en el render del back-office (M7 · H1)", () => {
       expect(source, `${page} no debe leer datos en el servidor`).not.toMatch(/await fetch|fetchAggregates|nftsRepo/);
     }
   });
+
+  /**
+   * **D-82** — el gate estructura la respuesta, pero hasta la release `v12` la pantalla de acceso
+   * pintaba su propia plantilla y por eso el HTML servido **sin sesión** no contenía ninguna marca del
+   * shell redistribuido: seguridad correcta, distribución partida en dos. Se fija aquí (y no solo en
+   * `admin-shell.test.ts`) porque es una propiedad del **gate**, no del panel.
+   */
+  it("la pantalla de acceso se renderiza bajo la plantilla del back-office, no en paralelo", () => {
+    const signIn = read("components/admin/AdminSignInScreen.tsx");
+
+    expect(signIn).toContain("<AdminLayout gate>");
+    // Prohibido por import (la prosa puede citar lo retirado): si vuelve el header propio, el
+    // acceso deja de compartir distribución con el panel.
+    expect(signIn).not.toMatch(/^import .*WalletBar/m);
+    expect(signIn).not.toMatch(/<(header|main)\b/);
+    expect(signIn).not.toContain("min-h-screen");
+  });
 });

@@ -1996,7 +1996,9 @@ fases de la hoja de ruta:
 
 | **Reparto de las barras del back-office** | Navbar reducido a un solo destino —**Ayuda**— (**D-81**) y **bloque de sesión** (usuario + roles + `WalletMenu`) trasladado al final del panel Administración; **Sistemas integrado** en ese panel como subgrupo reservado al owner (**D-80**), con migas de tres niveles y `WalletMenu` con variante `sidebar` anclada al viewport. Detalle en §33 | `admin-shell.test.ts` pasa de **13 a 23 pruebas**, con **tres sondas de falsificación** en rojo (billetera devuelta a la navbar, subgrupo sin gating de owner, desplegable sin re-anclaje al scroll); suite completa **70 ficheros · 547 pruebas**; RF-41/RF-40 enmendados en `incremento_v3/requerimientos_incremento.md` §7; typecheck, lint y build OK |
 
-| **Release `v12` en GCP** | Release **solo de web** del reparto de barras (**D-80/D-81**, commit `095b8cd`): `web:v12` construida con Cloud Build y desplegada **solo con `--image`**, conservando **18 variables y 9 secretos**; `worker`, `mcp` y `monitor` siguen en `v9`. Detalle y rollback en `despliegue_gcp.md` §22 | `/health/ready` **READY**; home **200** (134 KB); `/ayuda` **200**; **16 rutas públicas** de regresión **200**; las cuatro suites sin sesión sirven el gate con **cero** marcadores de panel; APIs protegidas **401**; imagen social **1200×630**; worker `lag 0` (bloque 478). **Hallazgo**: el rediseño del back-office **no se ve sin sesión** —`AdminSignInScreen` tiene plantilla propia y no pasa por `AdminLayout`—, pendiente de unificar |
+| **Release `v12` en GCP** | Release **solo de web** del reparto de barras (**D-80/D-81**, commit `095b8cd`): `web:v12` construida con Cloud Build y desplegada **solo con `--image`**, conservando **18 variables y 9 secretos**; `worker`, `mcp` y `monitor` siguen en `v9`. Detalle y rollback en `despliegue_gcp.md` §22 | `/health/ready` **READY**; home **200** (134 KB); `/ayuda` **200**; **16 rutas públicas** de regresión **200**; las cuatro suites sin sesión sirven el gate con **cero** marcadores de panel; APIs protegidas **401**; imagen social **1200×630**; worker `lag 0` (bloque 478). **Hallazgo**: el rediseño del back-office **no se veía sin sesión** —`AdminSignInScreen` tenía plantilla propia y no pasaba por `AdminLayout`—; **cerrado en §34 (D-82)** |
+
+| **Acceso unificado bajo la plantilla (D-82)** | Cierra el hallazgo de la release `v12`: `AdminSignInScreen` pintaba su propia plantilla y por eso el HTML servido **sin sesión** no contenía ninguna marca del shell AdminLTE. `AdminLayout` gana el prop `gate` y el acceso se compone a través del shell; retirado el `WalletBar` del acceso. Detalle en §34 | `admin-shell.test.ts` pasa de **23 a 27 pruebas** y `admin-auth-guardian.test.ts` de **4 a 5**, con **tres sondas de falsificación** en rojo; suite completa **70 ficheros · 552 pruebas**; typecheck, lint y build OK |
 
 **Hallazgos que destaparon los guardianes nuevos (C.1–C.3)**: (a) `text-caption`/`text-body-lg` de la
 escala tipográfica nueva se leían como «color desconocido» — corregido y con **prueba que deriva la
@@ -2271,3 +2273,65 @@ mismo mecanismo de colocación que usa `WalletMenu`:
 
 Esto es lo que justifica la variante `sidebar`: sin ella, el menú de usuario habría quedado cortado
 contra el pie del sidebar en cuanto el disparador estuviera cerca del borde inferior.
+
+---
+
+## 34. Acceso del back-office unificado bajo la plantilla AdminLTE (2026-09-29) · **cierra el hallazgo de §33/`v12`**
+
+**Petición del responsable**: «soluciona el hallazgo que destapó esta verificación».
+
+**El defecto.** `/admin/dashboard` sin sesión respondía **200 con la pantalla de acceso correcta** y
+**cero marcadores del panel** —la seguridad estaba bien—, pero ese HTML **no contenía ninguna marca
+del shell nuevo** (`admin-sidebar`, `admin-nav-toggle`, `admin-help-link`,
+`nav-section-administracion`). La causa: `app/admin/layout.tsx` renderiza `AdminSignInScreen`, y ese
+componente pintaba **su propia plantilla** (`div min-h-screen` + `header` con marca y `WalletBar` +
+`main`) en lugar de pasar por `AdminLayout`. Resultado: la distribución D-78/D-80/D-81 solo era
+visible **con sesión iniciada**, y existían dos plantillas paralelas para el mismo back-office.
+
+**D-82 (decisión del responsable, aplicada).** La **pantalla de acceso del back-office se renderiza
+bajo la misma plantilla** que el panel. Se resuelve dando a `AdminLayout` un prop `gate?: boolean`:
+con `gate` se pinta el `shell` con `SignInGate` como contenido. El acceso conserva su `<h1>` canónico
+(D-04) y el `CredentialForm`, y **mantiene sidebar y migas ocultos** porque aún no hay sesión que los
+justifique. Se retira el `WalletBar` del acceso: sin sesión no hay transacción que firmar, y la
+billetera ya vive en el bloque de sesión del panel Administración (D-81).
+
+**Alcance deliberado.** Solo se unifica el acceso del **back-office** (`/admin/**`, incluido Sistemas).
+Las suites de personal (`/recepcion`, `/housekeeping`, `/mantenimiento`) siguen sirviendo la misma
+tarjeta **fuera del shell**: van dentro de `PublicShell`, que ya aporta cabecera y `<main id="contenido">`,
+y anidar `AdminLayout` dentro habría producido dos `<header>`, dos `<main>` y dos pies en el mismo
+documento (regresión de landmarks que axe reporta). Además esas tres rutas muestran hoy la tarjeta
+genérica de back-office aunque tienen sus propios títulos de namespace (`reception.gateTitle`,
+`housekeeping.gateTitle`, `maintenance.gateTitle`): es una **mejora pendiente de producto**, no un
+defecto de plantilla, y queda declarada abajo.
+
+### Hecho
+
+- `AdminLayout.tsx` — prop `gate`, rama `if (gate) return shell(<SignInGate … />)` antes del caso de
+  carga, documentación del porqué y retirada del `WalletBar` del acceso.
+- `AdminSignInScreen.tsx` — pasa de 70 líneas con plantilla propia a un **envoltorio mínimo** que
+  delega en `<AdminLayout gate>`; conserva el `router.refresh()` que reevalúa el gate RSC al obtener
+  sesión.
+- Guardianes: `admin-shell.test.ts` **23 → 27 pruebas** (nuevo `describe` D-82) y
+  `admin-auth-guardian.test.ts` **4 → 5** (la propiedad del gate, que es del acceso y no del panel).
+
+### Verificación
+
+| Comprobación | Resultado |
+|---|---|
+| `pnpm --filter @hotel/web test` | **70 ficheros · 552 pruebas** en verde (antes 547) |
+| **Falsificación** (3 sondas) | Devolver la plantilla propia al acceso → **3 pruebas en rojo**; neutralizar la rama `gate` del shell → rojo; pintar el sidebar sin sesión → rojo. Restaurado, **27/27** |
+| `typecheck` · `lint` | **OK** · **0 errores** en los ficheros tocados |
+| `pnpm --filter @hotel/web build` | **OK** (exit 0) · **52** páginas y **84** rutas de API |
+| Prohibiciones fijadas | En el acceso: ningún `<header>`/`<main>`/`<h1>` propio, sin `min-h-screen`, sin import de `WalletBar` ni de `CredentialForm`; en el shell, un único `<h1>` |
+
+### Pendiente declarado (no ocultado)
+
+1. **No se ha podido comprobar el HTML servido con este arreglo**: el entorno sigue sin servidor
+   Postgres (`~/tools/postgres` solo trae cliente; no hay `docker`/`podman`), así que el gate de
+   servidor devuelve el acceso por falta de sesión y la verificación de §22 no es reproducible aquí.
+   Lo que sí queda probado es el **contrato estructural** (guardián + falsificación): el acceso se
+   compone ahora a través de `AdminLayout`.
+2. **Suites de personal**: decidir si su acceso debe mostrar el título de su namespace
+   (`Acceso de recepción`, `Acceso del personal`) en lugar de la tarjeta genérica de back-office, y
+   con qué plantilla. No se ha tocado en este incremento para no mezclar una decisión de producto con
+   el cierre del defecto.
