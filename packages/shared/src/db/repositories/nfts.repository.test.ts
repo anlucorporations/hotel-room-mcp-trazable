@@ -200,5 +200,33 @@ describe("NFTsRepository (US-04, US-07b)", () => {
       // `room_number` es INT en la BD: se normaliza a número para coincidir con `mapRowToNFT`.
       expect(typeof ghosts[0]!.roomNumber).toBe("number");
     });
+
+    /**
+     * **Regresión del defecto de la release `v15`.** La consulta se escribió como
+     * `SELECT DISTINCT … ORDER BY se.token_id::NUMERIC`, y PostgreSQL la rechaza:
+     * «for SELECT DISTINCT, ORDER BY expressions must appear in select list». El error no se veía en
+     * estas pruebas porque el pool está mockeado (**un mock no valida SQL**): en producción, la
+     * excepción hacía que `fetchCatalog` cayera al respaldo por RPC en cada petición y la capa F9
+     * quedaba inerte. La forma `GROUP BY` deduplica igual y admite expresiones en el `ORDER BY`.
+     *
+     * Se reproduce aquí la regla, no el texto: **si hay `DISTINCT`, el `ORDER BY` no puede usar una
+     * expresión** (cast incluido) fuera de la lista de selección. La validación de sintaxis real se
+     * hizo contra un motor PostgreSQL (PGlite) y quedó registrada en `estado_proyecto.md` §37.
+     */
+    it("NO usa `SELECT DISTINCT` con `ORDER BY` de expresión (SQL inválido en PostgreSQL)", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [] });
+
+      await repository.listGhostPrimarySales();
+
+      const sql = String((mockPool.query.mock.calls[0] as unknown[])[0]);
+      const orderBy = /ORDER BY\s+([^\n]+)/i.exec(sql)?.[1]?.trim() ?? "";
+
+      // La deduplicación se hace con GROUP BY (admite ORDER BY por expresión).
+      expect(sql).toMatch(/GROUP BY\s+se\.token_id/i);
+      // Y no se vuelve a la forma que rompió producción.
+      expect(sql).not.toMatch(/SELECT\s+DISTINCT/i);
+      // El orden sigue siendo determinista (numérico, no alfabético).
+      expect(orderBy).toMatch(/se\.token_id::NUMERIC/i);
+    });
   });
 });

@@ -270,10 +270,17 @@ export class NFTsRepository {
   async listGhostPrimarySales(): Promise<
     Array<{ tokenId: string; roomNumber: number; checkInDate: string }>
   > {
+    // OJO (defecto detectado en producción, release v15): esta consulta era
+    // `SELECT DISTINCT … ORDER BY se.token_id::NUMERIC`, y PostgreSQL la RECHAZA —
+    // «for SELECT DISTINCT, ORDER BY expressions must appear in select list»— porque el orden usa una
+    // expresión (el cast) que no está en la lista de selección. Al lanzar, `fetchCatalog` caía a su
+    // respaldo por RPC en cada petición y la capa F9 quedaba inerte (y el aviso, invisible).
+    // `GROUP BY` deduplica igual y **sí** admite expresiones en el ORDER BY, así que la forma es
+    // inmune a esa trampa. El guardián `ghost-query-shape` fija la regla.
     const res = await this.pool.query(
-      `SELECT DISTINCT se.token_id,
-              n.room_number,
-              to_char(n.check_in_date, 'YYYY-MM-DD') AS check_in_date
+      `SELECT se.token_id,
+              MIN(n.room_number) AS room_number,
+              MIN(to_char(n.check_in_date, 'YYYY-MM-DD')) AS check_in_date
          FROM sale_events se
          JOIN nfts n ON n.token_id = se.token_id
         WHERE se.is_secondary = FALSE
@@ -281,6 +288,7 @@ export class NFTsRepository {
           AND NOT EXISTS (
             SELECT 1 FROM listings l WHERE l.token_id = se.token_id AND l.active = TRUE
           )
+        GROUP BY se.token_id
         ORDER BY se.token_id::NUMERIC ASC`,
     );
     // `room_number` es `INT` y `check_in_date` es `DATE`: el mapeo coincide con `mapRowToNFT`

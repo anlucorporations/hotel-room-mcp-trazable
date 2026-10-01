@@ -898,3 +898,86 @@ queda uniforme).
 **Rollback.** mcp: `gcloud run services update-traffic hotel-mcp-mcp --to-revisions=hotel-mcp-mcp-00004-bl7=100`;
 monitor: volver a ejecutar `deploy-monitor.sh` con `monitor:v9`; web/worker: las revisiones de §24.
 
+---
+
+## 26. Releases `v15` y `v16` — F9 (integridad catálogo ↔ cadena): dos hallazgos operativos (2026-10-01)
+
+**Qué se desplegó.** La release **F9** (`ecbbb8c`/`9dd0d62`): el catálogo contrasta el índice con el
+registro de ventas y retira las noches ya vendidas, con aviso honesto cuando oculta inventario. Toca
+`packages/shared` (dominio + repositorio) y la web, pero la API nueva **solo la consume el catálogo**
+(verificado por búsqueda): `worker`, `mcp` y `monitor` siguen en `v14`.
+
+### Hallazgo 1 · El tráfico estaba **fijado por nombre**, así que `--image` no tenía efecto
+
+El primer despliegue (`web:v15`, build `69ae6b02`, 3m38s) creó la revisión `00015-jhk`, **pero Cloud Run
+la retiró 32 s después** («Revision retired») y el tráfico siguió en `00014-sn9`. Causa: la
+configuración deseada del servicio tenía `spec.traffic` **fijado a una revisión concreta por nombre**:
+
+```
+[ { "percent": 100, "revisionName": "hotel-mcp-web-00014-sn9" } ]
+```
+
+Con tráfico fijado por nombre, `gcloud run deploy --image` actualiza la plantilla pero **no** mueve el
+tráfico; la revisión nueva queda sin tráfico y Cloud Run la retira. La imagen del template sí quedaba
+en `v15`, lo que hacía el estado especialmente engañoso (el `describe` decía `v15` mientras el tráfico
+servía `v14`).
+
+**Procedimiento corregido (usado ya en `v16` y recomendado en adelante):**
+
+```bash
+# 1) crear la revisión SIN tráfico y con etiqueta (así no se retira y tiene URL propia de canario)
+gcloud run deploy hotel-mcp-web --image=<img> --no-traffic --tag=<tag>
+# 2) verificar el canario en https://<tag>---<servicio>-<hash>.run.app
+# 3) mover el tráfico cuando el canario está verde
+gcloud run services update-traffic hotel-mcp-web --to-revisions=<revisión>=100
+```
+
+`--to-latest` **no existe** en este SDK para `gcloud run deploy` (sí en `update-traffic`), así que el
+paso 3 se hace por nombre de revisión.
+
+### Hallazgo 2 · La consulta nueva era **SQL inválido** y la capa F9 quedaba inerte en producción
+
+Con `v15` sirviendo, los logs de `00017-hoh` mostraban en **cada** petición del catálogo:
+
+```
+[fetchCatalog] Fallback a escaneo RPC: error: for SELECT DISTINCT, ORDER BY expressions must appear in select list
+  routine: 'transformDistinctClause'
+```
+
+`listGhostPrimarySales` usaba `SELECT DISTINCT … ORDER BY se.token_id::NUMERIC`, y PostgreSQL rechaza
+ordenar por una **expresión** que no está en la lista de selección cuando hay `DISTINCT`. Consecuencia
+real: la excepción hacía que `fetchCatalog` cayera a su **respaldo por RPC en cada petición**, la capa
+estructural F9 no se ejecutaba nunca y el aviso de sincronización era inalcanzable.
+
+**Por qué no lo detectaron las pruebas:** el doble del pool está mockeado (**un mock no valida SQL**);
+las aserciones comprobaban subcadenas, no sintaxis. **Corrección**: `GROUP BY se.token_id` (deduplica
+igual y admite expresiones en el `ORDER BY`), más un guardián que prohíbe la forma `DISTINCT` en esa
+consulta. La sintaxis se validó además contra un **motor PostgreSQL real** (PGlite, PostgreSQL 18.3
+compilado a WASM) con un caso de cada tipo, y esa misma prueba **reprodujo el rechazo** de la forma
+antigua.
+
+### Estado final (verificado)
+
+| Paso | Detalle |
+|---|---|
+| Imagen | Cloud Build `web:v16` (4m51s, build `35f944ef`), con los mismos `NEXT_PUBLIC_*` (contrato `0xc66A…7b6F`, bloque 314) |
+| Revisión | `hotel-mcp-web-00019-jef` (**tag `v16`**) al **100 %** del tráfico |
+| Configuración | Solo con `--image` + `--no-traffic` + `update-traffic`: **18 variables y 9 secretos** conservados |
+| Sin cambios | `worker:v14`, `mcp:v14`, `monitor:v14`; contrato, base de datos y siembra intactos |
+
+| Comprobación | Resultado |
+|---|---|
+| Canario `v16` **antes** de mover tráfico | `/health/ready` **200 READY**; `/catalogo` **200**; aviso renderizado **0** (sin fantasmas); **logs sin el error de SQL ni respaldo RPC** |
+| Logs de `v15` (comparativa) | El error `DISTINCT` aparecía en cada petición (`transformDistinctClause`) |
+| Producción en `v16` | `/health/ready` **READY** (postgres/redis/polygonRPC UP); `/catalogo` **200** y aviso **0**; logs limpios |
+| Regresión | `/`, `/habitaciones`, `/reservar`, `/reventa`, `/historico`, `/ayuda`, `/admin/dashboard` → **200**; `/api/auth/session` y `/api/housekeeping/shifts` → **401** |
+| Pruebas | `@hotel/shared` **431** (nuevo guardián de forma SQL), `@hotel/web` **583**, `@hotel/worker` **132**; typecheck y build OK |
+
+**Nota sobre el aviso.** No aparece porque `hiddenSoldCount` es **0**: desde `v14` el índice de
+producción está sano y no hay noches vendidas ofreciéndose. El aviso es la red de seguridad para
+cuando vuelva a desfasarse, no un estado permanente.
+
+**Rollback.** La revisión anterior **sin el defecto** es `v14`:
+`gcloud run services update-traffic hotel-mcp-web --to-revisions=hotel-mcp-web-00014-sn9=100`.
+(`00017-hoh`/`v15` es funcional pero con el SQL roto cayendo al respaldo RPC: no usarla como destino
+de rollback.) Las etiquetas `v15` y `v16` se conservan como URLs de canario.

@@ -2004,6 +2004,8 @@ fases de la hoja de ruta:
 
 | **F9 · integridad catálogo ↔ cadena** | El catálogo deja de depender solo del índice: dos capas (exclusión estructural por `sale_events` + lectura `soldOnce`) y aviso honesto cuando se ocultan noches. **Lección registrada**: el control por agregados (`minted − sold`) se descartó porque una noche revendida sigue siendo ofertable. Detalle en §36 | `@hotel/shared` **430 pruebas**, `@hotel/web` **583** (guardián 6 → **13**), `@hotel/worker` **132**; **tres sondas de falsificación** en rojo; typecheck, lint y build OK |
 
+| **Releases `v15`/`v16` en GCP (F9)** | Desplegada la integridad catálogo ↔ cadena. Dos hallazgos operativos: (1) el tráfico del servicio estaba **fijado por nombre**, así que `deploy --image` creaba y **retiraba** la revisión sin servirla; (2) la consulta nueva era **SQL inválido** (`DISTINCT` + `ORDER BY` de expresión) y la capa F9 quedaba inerte cayendo al respaldo RPC. Corregido con `GROUP BY`, guardián de forma y validación contra PostgreSQL real; procedimiento de despliegue con canario etiquetado. Detalle en `despliegue_gcp.md` §26 y §37 | `@hotel/shared` **431** · `@hotel/web` **583** · `@hotel/worker` **132**; guardián SQL **falsificado**; canario `v16` con logs limpios **antes** de mover tráfico; producción `00019-jef` al 100 % con `/health/ready` READY, `/catalogo` 200, aviso 0, 7 rutas de regresión 200, APIs 401 y **18 variables/9 secretos** conservados |
+
 **Hallazgos que destaparon los guardianes nuevos (C.1–C.3)**: (a) `text-caption`/`text-body-lg` de la
 escala tipográfica nueva se leían como «color desconocido» — corregido y con **prueba que deriva la
 lista del preset real**; (b) la paridad i18n **no estaba verificada por ninguna prueba**: el guardián
@@ -2490,3 +2492,61 @@ on-chain continúa siendo la autoridad final antes de firmar.
 **Pendiente abierto detectado aquí**: `sale_events` registra también las reventas, pero la consulta de
 fantasmas filtra `is_secondary = FALSE` a propósito; si algún día se quiere el mismo contraste sobre el
 mercado secundario hará falta una regla distinta (la oferta mandaría `listings`, no `nfts.status`).
+
+
+---
+
+## 37. F9 desplegada (`v15`→`v16`): dos hallazgos operativos y una lección sobre los mocks (2026-10-01)
+
+**Corrección a §36.** Allí se declaró la capa estructural F9 como verificada (pruebas + falsificación).
+Era cierto **en local**, pero el despliegue demostró que en producción **no llegó a ejecutarse** hasta
+`v16`. Este apartado documenta los dos hallazgos y lo que cambia en la forma de verificar.
+
+### Hallazgo 1 · Un mock no valida SQL
+
+`listGhostPrimarySales` se escribió como `SELECT DISTINCT … ORDER BY se.token_id::NUMERIC`. PostgreSQL
+lo rechaza —«for SELECT DISTINCT, ORDER BY expressions must appear in select list», confirmado en los
+logs de producción con `routine: 'transformDistinctClause'`—. Las pruebas no lo vieron porque el doble
+del pool está mockeado: se comprobaban **subcadenas** de la consulta, nunca su sintaxis. En producción
+la excepción se tragaba el `try` de `fetchCatalog`, que caía a su respaldo por RPC en **cada**
+petición: el catálogo seguía sirviendo (200) mientras la capa nueva estaba muerta, y el aviso de
+sincronización era inalcanzable.
+
+**Qué cambia**:
+- La forma es `GROUP BY se.token_id` (deduplica igual y admite expresiones en el `ORDER BY`).
+- Guardián nuevo en `nfts.repository.test.ts`: prohibido `SELECT DISTINCT` en esa consulta, exigido
+  `GROUP BY` y `ORDER BY … ::NUMERIC`. **Falsificado**: restaurar la forma de `v15` pone la prueba en
+  rojo.
+- La sintaxis se validó contra un **motor PostgreSQL real** (PGlite 0.5.8 · PostgreSQL 18.3 WASM) con
+  un caso de cada tipo: fantasma (venta primaria sin reventa) → devuelta; vendida **con reventa
+  activa** → excluida; solo venta secundaria → excluida; noche sana → fuera; ya `SOLD` → fuera. La
+  misma prueba **reproduce el rechazo** de la forma antigua, así que el defecto queda caracterizado,
+  no solo corregido.
+- **Regla adoptada**: cuando una consulta sea nueva o cambie de forma, validarla contra un motor real
+  (PGlite vale) antes de desplegar; el mock sirve para la lógica de mapeo, no para la sintaxis.
+
+### Hallazgo 2 · El tráfico de `hotel-mcp-web` estaba **fijado por nombre**
+
+El primer `v15` creó la revisión `00015-jhk` y Cloud Run la **retiró a los 32 s**: el `spec.traffic`
+del servicio fijaba el 100 % a `00014-sn9` por nombre, así que la revisión nueva no recibía tráfico y
+Cloud Run la daba de baja. El `describe` mostraba `image: web:v15` mientras el tráfico servía `v14`:
+un estado engañoso que solo se detecta mirando `status.traffic`.
+
+**Procedimiento corregido y probado en `v16`**: `deploy --no-traffic --tag=<tag>` → verificar el
+canario en su URL propia → `update-traffic --to-revisions=<revisión>=100`. (`--to-latest` no existe en
+`gcloud run deploy` de este SDK.) Detalle en `despliegue_gcp.md` §26.
+
+### Estado
+
+| Comprobación | Resultado |
+|---|---|
+| `@hotel/shared` · `@hotel/web` · `@hotel/worker` | **431** · **583** · **132** pruebas en verde |
+| Falsificación del guardián SQL | Restaurar la forma `DISTINCT` → **rojo**; restaurado → verde |
+| Canario `v16` (tag) antes de mover tráfico | `/health/ready` **READY**, `/catalogo` **200**, aviso **0**, **logs sin error de SQL ni respaldo RPC** |
+| Producción `v16` (`hotel-mcp-web-00019-jef`, 100 %) | `/health/ready` **READY**; `/catalogo` **200**; 7 rutas de regresión **200**; APIs protegidas **401**; **18 variables y 9 secretos** conservados |
+| Comparativa `v15` | El error `DISTINCT` aparecía en cada petición del catálogo |
+
+**Lección de método**: las cifras de prueba en verde no acreditan que una capa **se ejecute** en
+producción. Lo que lo acreditó aquí fue leer los logs de la revisión nueva y verlos limpios (y verlos
+sucios en la anterior). Un despliegue con canario etiquetado permitió además detectarlo **antes** de
+exponerlo al huésped.
