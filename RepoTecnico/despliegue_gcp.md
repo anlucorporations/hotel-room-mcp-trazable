@@ -981,3 +981,41 @@ cuando vuelva a desfasarse, no un estado permanente.
 `gcloud run services update-traffic hotel-mcp-web --to-revisions=hotel-mcp-web-00014-sn9=100`.
 (`00017-hoh`/`v15` es funcional pero con el SQL roto cayendo al respaldo RPC: no usarla como destino
 de rollback.) Las etiquetas `v15` y `v16` se conservan como URLs de canario.
+
+---
+
+## 27. Release `v17` — mismo código, procedencia cerrada (2026-10-01)
+
+**Por qué esta release si `v16` ya traía la corrección.** `v15` y `v16` se construyeron de un árbol de
+trabajo **aún sin pushear** (se desplegó antes de commitear el arreglo SQL). `web:v17` se construye ya
+desde el commit **`0829481`**, que está en los tres remotos de `anlucorporations`, así que la imagen en
+producción y el código versionado **coinciden**. Es una release de trazabilidad, **no de comportamiento**:
+queda dicho expresamente para que nadie busque un cambio funcional que no existe.
+
+**Push previo:** `a8db3a5..0829481` en `origin` (gitlab.com), `github` y `codecrypto`; verificado tras
+`fetch` — los tres remotos y `HEAD` en `0829481`.
+
+| Paso | Detalle |
+|---|---|
+| Imagen | Cloud Build `web:v17` (3m37s, build `fe869060-1fc5-45e3-879e-2d58ec4701fa`), mismos `NEXT_PUBLIC_*` (contrato `0xc66A…7b6F`, bloque 314) |
+| Procedimiento | El de §26: `--no-traffic --tag=v17` → **canario verificado** → `update-traffic --to-revisions=…=100` |
+| Revisión | `hotel-mcp-web-00021-tid` al **100 %** (rollback: `00019-jef`, misma código; anterior a F9: `00014-sn9`) |
+| Configuración | **18 variables y 9 secretos** conservados |
+| Sin cambios | `worker:v14`, `mcp:v14`, `monitor:v14`; contrato, base de datos y siembra intactos |
+
+### Verificación (producción)
+
+| Comprobación | Resultado |
+|---|---|
+| Canario **antes** de mover tráfico | `/health/ready` **200 READY**; `/catalogo` **200**; `/` y `/admin/dashboard` **200**; **logs sin el error `DISTINCT` ni respaldo RPC** |
+| `/health/ready` | **READY** (postgres, redis y `polygonRPC` **UP**) |
+| `/catalogo` | **200 · 154.716 B — idéntico byte a byte a la baseline de `v16`**, lo que confirma empíricamente que no hay delta funcional; aviso renderizado **0** (sin fantasmas) |
+| Regresión | **18 rutas públicas** → **200**; las cuatro suites sin sesión sirven el gate con **cero** marcadores de panel |
+| APIs protegidas | `/api/housekeeping/shifts`, `/api/mantenimiento/board`, `/api/admin/actividades/activities`, `/api/auth/session` → **401** |
+| Imagen social | **200 `image/png`**, PNG válido **1200×630** (105.863 B) |
+| Worker / MCP (v14) | `lag 0` y `aggregateLag 0` (bloque 479); mcp `ok`. El `emailDegraded: true` sigue siendo el SMTP de relleno (§19–§26) |
+| Logs de la revisión servida | Ninguna consulta del catálogo falló |
+
+**Rollback.** `gcloud run services update-traffic hotel-mcp-web --to-revisions=hotel-mcp-web-00019-jef=100`
+(`v16`, mismo código) o `hotel-mcp-web-00014-sn9=100` (previo a F9). Las etiquetas `v15`, `v16` y `v17`
+permanecen como URLs de canario.
