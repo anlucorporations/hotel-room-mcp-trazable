@@ -1019,3 +1019,44 @@ queda dicho expresamente para que nadie busque un cambio funcional que no existe
 **Rollback.** `gcloud run services update-traffic hotel-mcp-web --to-revisions=hotel-mcp-web-00019-jef=100`
 (`v16`, mismo código) o `hotel-mcp-web-00014-sn9=100` (previo a F9). Las etiquetas `v15`, `v16` y `v17`
 permanecen como URLs de canario.
+
+---
+
+## 28. Release `v18` — identidad visual «Brisa Marina» en producción (2026-10-02)
+
+**Qué se desplegó.** El rediseño visual completo (`b761a3e`, *feat(identidad): rediseño visual «Brisa
+Marina» v2.0.0 en toda la web*): sistema de color nuevo, tipografías `Playfair Display` + `Manrope`
+con cirílico nativo, 142 ficheros migrados y el arreglo de las claves i18n de `/contacto`. **Solo la
+web**: `worker`, `mcp` y `monitor` no tienen delta (la identidad vive en `apps/web`, en el preset
+compartido y en las piezas de marca).
+
+**Push previo:** `0829481..b761a3e` en **`github`** (rama `Hotel-DSH-GCP`). **`codecrypto` (GitLab)
+rechaza la autenticación** —no hay credenciales válidas en el entorno; es el bloqueante **B-0**, que
+sigue pendiente de que el responsable regenere el token. La release queda por tanto versionada en
+GitHub y **no** en GitLab.
+
+| Paso | Detalle |
+|---|---|
+| Imagen | Cloud Build `web:v18` (**3m03s**, build `b3ed7710-b192-4984-a1ec-69dadb6c11f2`), mismos `NEXT_PUBLIC_*` (chainId 31337, contrato `0xc66a…7b6f`, bloque 314, faucet `0xdFdE…f75b`, `NEXT_PUBLIC_SITE_URL` = la URL de `run.app`, **igual que en `v17`**, verificado en los metadatos servidos para no regresar el `og:image`) |
+| Procedimiento | El de §26: `--no-traffic --tag=v18` → **canario verificado** → `update-traffic --to-revisions=…=100` |
+| Revisión | `hotel-mcp-web-00023-rep` al **100 %** |
+| Configuración | **18 variables y 9 secretos conservados, cero cambiadas** (comparado servicio a servicio antes/después), misma cuenta de servicio `hotel-mcp-run@` y misma VPC `hotel-mcp-vpc`/`hotel-mcp-euw1` |
+| Sin cambios | `worker:v14`, `mcp:v14`, `monitor:v14`; contrato, base de datos y siembra intactos |
+| Fuera de la release | El arreglo **D-84** (redondeo al céntimo) quedó **excluido a propósito**: su suite está **roja** (`exchange-service.test.ts`: «una tarifa que ni llega a un céntimo … es null» → `expected 1 to be null`). La imagen se construyó con ese trabajo apartado, no desde el árbol sucio |
+
+### Verificación (canario y producción)
+
+| Comprobación | Resultado |
+|---|---|
+| Canario **antes** de mover tráfico | `/health/ready` **200 READY** (postgres, redis, `polygonRPC` **UP**); **8 rutas** → **200**; **logs sin `severity>=ERROR`** y **sin `MISSING_MESSAGE`** |
+| Paleta servida (CSS real) | `--mist #f4f9fc`, `--azure #0f6c9c`, `--navy #0e2a3f`, `--coral-text #a34222` presentes; **cero** restos de `--sand`/`--sea`; `.bg-mist` generado |
+| `axe` sobre el canario (navegador real) | `/`, `/catalogo`, `/contacto`, `/admin/dashboard` → **0 violaciones `critical`/`serious`**; consola **sin** errores ni avisos i18n |
+| Defecto i18n corregido | `/contacto` renderiza **«Cómo llegar»** y **«Registro de viajeros»**; **0** claves crudas (`home.howToArrive.*`/`home.travelers.*`) |
+| Producción tras el cambio de tráfico | `/health/ready` **200**; `/`, `/catalogo`, `/contacto`, `/reservar`, `/reventa`, `/historico`, `/ayuda`, `/habitaciones`, `/admin/dashboard` → **200**; el CSS servido es el de la paleta nueva |
+| Etiquetas de canario | `v15`, `v16`, `v17` y `v18` conviven como URLs propias |
+
+**Rollback.** `gcloud run services update-traffic hotel-mcp-web --project hotel-mcp --region europe-west1 --to-revisions=hotel-mcp-web-00021-tid=100` (vuelve a `v17`, el estado inmediatamente anterior).
+
+**Nota de método.** El build sube el **árbol de trabajo**, no el commit: por eso, antes de construir, el
+trabajo en curso ajeno a la release se apartó en un `stash` (y se restauró al terminar). Sin ese paso, la
+imagen habría llevado lógica a medio terminar que **no está en ningún commit**.

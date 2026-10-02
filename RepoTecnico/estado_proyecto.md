@@ -2630,6 +2630,20 @@ mismo elemento, que compone el alfa y mide.
 | Capturas del producto real | `pantalla-landing.png` · `pantalla-catalogo.png` · `pantalla-contacto.png` (y `-antes-del-arreglo.png` como evidencia del defecto) · `pantalla-admin-acceso.png` · `pantalla-admin-dashboard.png` · `pantalla-admin-minteo.png` · `pantalla-recepcion.png` — servidor real, build de producción; el back-office con sesión real vía login + TOTP y **consola sin `MISSING_MESSAGE`** |
 | Manuales regenerados | `pnpm --filter @hotel/web manuals` → **35 manuales · 428 secciones**, 0 restos de la paleta anterior en `docs/pdf/` |
 
+### Publicación: push y release `v18` en GCP (2026-10-02)
+
+| Paso | Detalle |
+|---|---|
+| Commit | **`b761a3e`** — *feat(identidad): rediseño visual «Brisa Marina» v2.0.0 en toda la web* (256 ficheros) |
+| Push | **`github`**: `0829481..b761a3e` (rama `Hotel-DSH-GCP`) ✅ · **`codecrypto` (GitLab): rechazado** — sin credenciales válidas en el entorno (**B-0** sigue abierto, hay que regenerar el token) |
+| Imagen | Cloud Build **`web:v18`** (3m03s, build `b3ed7710-b192-4984-a1ec-69dadb6c11f2`) con los `NEXT_PUBLIC_*` de `v17` |
+| Revisión | **`hotel-mcp-web-00023-rep`** al **100 %** (canario `v18` verificado antes de mover tráfico) |
+| Rollback | `gcloud run services update-traffic hotel-mcp-web --to-revisions=hotel-mcp-web-00021-tid=100` |
+| Configuración | **18 variables y 9 secretos conservados, cero diferencias**; misma SA y VPC |
+| Verificación en producción | `/health/ready` **READY**; 9 rutas → **200**; el CSS servido trae `--mist/--azure/--navy/--coral-text` y **cero** restos de `--sand/--sea`; `axe` **0 violaciones** en el canario; logs **sin errores ni `MISSING_MESSAGE`** |
+| Fuera de la release | El arreglo **D-84** (redondeo al céntimo) se apartó en un `stash` durante el build: su test está **rojo** y no podía entrar en la imagen. El trabajo sigue en el árbol, sin commitear |
+| Detalle de método | `gcloud builds submit` empaqueta el **árbol de trabajo**, no el commit: sin apartar el trabajo en curso, la imagen habría llevado lógica no versionada |
+
 ### Hallazgo colateral del escaneo: cuatro claves i18n rotas (corregido + guardián nuevo)
 
 El escaneo axe destapó algo **ajeno al rediseño pero real**: el servidor registraba
