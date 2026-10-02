@@ -5,9 +5,9 @@ import { useTranslations } from "next-intl";
 import type { AdminSession } from "./useAdminSession";
 
 const ACTION =
-  "min-h-touch rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60";
+  "min-h-touch rounded-pill bg-azure px-5 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-60";
 const FIELD =
-  "min-h-touch w-full rounded-brand border border-line-strong bg-shell px-3 text-ink outline-none focus:border-sea";
+  "min-h-touch w-full rounded-brand border border-line-strong bg-shell px-3 text-ink outline-none focus:border-azure";
 
 /**
  * Formulario de acceso canónico (D-04) en dos pasos.
@@ -84,7 +84,7 @@ export function CredentialForm({ session }: { session: AdminSession }) {
             setUseRecovery((value) => !value);
             session.resetAuth();
           }}
-          className="text-small font-medium text-sea-deep underline"
+          className="text-small font-medium text-azure-deep underline"
         >
           {useRecovery ? t("useTotpInstead") : t("useRecoveryInstead")}
         </button>
@@ -99,7 +99,7 @@ export function CredentialForm({ session }: { session: AdminSession }) {
           {isSigningIn ? t("signingIn") : ""}
         </p>
         {errorKey && (
-          <p data-testid="auth-error" role="alert" className="text-terracotta-text">
+          <p data-testid="auth-error" role="alert" className="text-coral-text">
             {t(errorKey)}
           </p>
         )}
@@ -157,7 +157,7 @@ export function CredentialForm({ session }: { session: AdminSession }) {
         {isSigningIn ? t("signingIn") : ""}
       </p>
       {errorKey && (
-        <p data-testid="auth-error" role="alert" className="text-terracotta-text">
+        <p data-testid="auth-error" role="alert" className="text-coral-text">
           {t(errorKey)}
         </p>
       )}

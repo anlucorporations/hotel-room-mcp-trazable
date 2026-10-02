@@ -85,7 +85,7 @@ export function ReceptionDashboard() {
 
   if (!allowed) {
     return (
-      <p data-testid="reception-role-denied" role="alert" className="rounded-brand-lg border border-line bg-sand-2 px-5 py-8 text-ink-soft">
+      <p data-testid="reception-role-denied" role="alert" className="rounded-brand-lg border border-line bg-mist-2 px-5 py-8 text-ink-soft">
         {t("roleDenied")}
       </p>
     );
@@ -100,7 +100,7 @@ export function ReceptionDashboard() {
     <div className="flex flex-col gap-6">
       <p className="text-small text-ink-soft">{t("signedAs", { username: sessionUsername })}</p>
 
-      <div role="tablist" aria-label={t("tabsLabel")} className="flex rounded-pill border border-line bg-sand-2 p-1">
+      <div role="tablist" aria-label={t("tabsLabel")} className="flex rounded-pill border border-line bg-mist-2 p-1">
         {(["today", "checkin", "checkout", "activities"] as const).map((item) => (
           <button
             key={item}
@@ -110,7 +110,7 @@ export function ReceptionDashboard() {
             data-testid={`reception-tab-${item}`}
             onClick={() => setTab(item)}
             className={`min-h-touch flex-1 rounded-pill px-4 text-small font-semibold transition ${
-              tab === item ? "bg-sea text-shell shadow-sm" : "text-ink-soft hover:text-ink"
+              tab === item ? "bg-azure text-shell shadow-sm" : "text-ink-soft hover:text-ink"
             }`}
           >
             {t(`tab${item.charAt(0).toUpperCase()}${item.slice(1)}` as "tabToday")}

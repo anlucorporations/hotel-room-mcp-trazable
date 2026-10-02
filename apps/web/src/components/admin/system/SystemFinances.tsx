@@ -54,14 +54,14 @@ export function SystemFinances() {
         <button
           type="button"
           onClick={() => void load()}
-          className="min-h-touch rounded-pill border border-line px-4 text-small font-semibold text-ink transition-colors hover:bg-sand-2"
+          className="min-h-touch rounded-pill border border-line px-4 text-small font-semibold text-ink transition-colors hover:bg-mist-2"
         >
           {t("refresh")}
         </button>
       </div>
 
       {error && (
-        <p role="alert" data-testid="finances-error" className="mt-3 rounded-brand border border-terracotta-text/40 bg-sand-2 px-4 py-3 text-small text-terracotta-text">
+        <p role="alert" data-testid="finances-error" className="mt-3 rounded-brand border border-coral-text/40 bg-mist-2 px-4 py-3 text-small text-coral-text">
           {error}
         </p>
       )}

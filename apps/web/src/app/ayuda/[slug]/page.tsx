@@ -70,7 +70,7 @@ export default async function ManualPage({ params }: { params: { slug: string } 
             href={manual.pdf}
             download
             aria-label={t("downloadPdfAria")}
-            className="inline-flex flex-none items-center justify-center gap-2 rounded-brand border border-line bg-shell px-4 py-2 text-small font-semibold text-ink shadow-sm transition hover:bg-sand-2 focus:outline-none focus:ring-2 focus:ring-sea"
+            className="inline-flex flex-none items-center justify-center gap-2 rounded-brand border border-line bg-shell px-4 py-2 text-small font-semibold text-ink shadow-sm transition hover:bg-mist-2 focus:outline-none focus:ring-2 focus:ring-azure"
           >
             <svg
               width="16"
@@ -94,7 +94,7 @@ export default async function ManualPage({ params }: { params: { slug: string } 
         <div className="flex flex-col gap-10 tablet:flex-row tablet:items-start">
           <nav
             aria-label={t("sectionsLabel")}
-            className="w-full flex-none rounded-brand border border-line bg-sand-2 p-4 tablet:sticky tablet:top-[88px] tablet:max-h-[calc(100vh-120px)] tablet:w-64 tablet:overflow-y-auto"
+            className="w-full flex-none rounded-brand border border-line bg-mist-2 p-4 tablet:sticky tablet:top-[88px] tablet:max-h-[calc(100vh-120px)] tablet:w-64 tablet:overflow-y-auto"
           >
             <p className="text-micro font-semibold uppercase tracking-[0.12em] text-ink-soft">
               {t("topicsLabel")}
@@ -102,7 +102,7 @@ export default async function ManualPage({ params }: { params: { slug: string } 
             <ul className="mt-3 flex flex-col gap-2 text-small">
               {topics.map((topic) => (
                 <li key={topic.id}>
-                  <a href={`#${topic.id}`} className="font-medium text-ink hover:text-sea">
+                  <a href={`#${topic.id}`} className="font-medium text-ink hover:text-azure">
                     {topic.title}
                   </a>
                   {topic.children.length > 0 ? (

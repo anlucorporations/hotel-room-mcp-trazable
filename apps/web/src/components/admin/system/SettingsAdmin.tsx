@@ -19,9 +19,9 @@ interface Settings {
 }
 
 const FIELD =
-  "min-h-touch w-full rounded-brand border border-line-strong bg-shell px-3 text-ink outline-none focus:border-sea";
+  "min-h-touch w-full rounded-brand border border-line-strong bg-shell px-3 text-ink outline-none focus:border-azure";
 const ACTION =
-  "min-h-touch rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60";
+  "min-h-touch rounded-pill bg-azure px-5 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-60";
 
 const FIELDS: ReadonlyArray<{ key: keyof Settings; min: number; max: number; labelKey: string }> = [
   { key: "mint_window_days", min: 1, max: 365, labelKey: "windowDays" },
@@ -95,7 +95,7 @@ export function SettingsAdmin() {
         <p
           data-testid="settings-notice"
           role={notice.kind === "error" ? "alert" : "status"}
-          className={notice.kind === "error" ? "text-terracotta-text" : "text-sea-deep"}
+          className={notice.kind === "error" ? "text-coral-text" : "text-azure-deep"}
         >
           {notice.text}
         </p>

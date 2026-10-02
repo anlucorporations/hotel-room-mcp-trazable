@@ -56,9 +56,9 @@ export default async function CompanyPage() {
       <PageSection id="company-facts" title={t("facts.title")}>
         <dl className="grid gap-4 tablet:grid-cols-2 desktop:grid-cols-4">
           {facts.map((fact) => (
-            <div key={fact.label} className="rounded-brand border border-line bg-sand-2/60 p-5">
+            <div key={fact.label} className="rounded-brand border border-line bg-mist-2/60 p-5">
               <dt className="text-small text-ink-soft">{fact.label}</dt>
-              <dd className="mt-1 font-display text-h2 font-semibold text-sea-deep">{fact.value}</dd>
+              <dd className="mt-1 font-display text-h2 font-semibold text-azure-deep">{fact.value}</dd>
             </div>
           ))}
         </dl>
@@ -69,7 +69,7 @@ export default async function CompanyPage() {
         <p className="mt-5">
           <Link
             href="/catalogo"
-            className="inline-flex min-h-touch items-center rounded-pill bg-sea px-5 text-small font-semibold text-shell transition-colors hover:bg-sea-deep"
+            className="inline-flex min-h-touch items-center rounded-pill bg-azure px-5 text-small font-semibold text-shell transition-colors hover:bg-azure-deep"
           >
             {t("cta.button")}
           </Link>

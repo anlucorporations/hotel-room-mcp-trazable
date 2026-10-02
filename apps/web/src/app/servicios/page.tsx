@@ -46,7 +46,7 @@ export default async function ServicesPage() {
         <ul className="grid gap-3 tablet:grid-cols-2">
           {STAY.map((key) => (
             <li key={key} className="flex gap-2 rounded-brand border border-line bg-shell p-4 text-small text-ink">
-              <span aria-hidden="true" className="text-sea-deep">
+              <span aria-hidden="true" className="text-azure-deep">
                 ·
               </span>
               {t(`stay.${key}`)}
@@ -59,7 +59,7 @@ export default async function ServicesPage() {
         <p>
           <Link
             href="/ayuda"
-            className="inline-flex min-h-touch items-center rounded-pill bg-sea px-5 text-small font-semibold text-shell transition-colors hover:bg-sea-deep"
+            className="inline-flex min-h-touch items-center rounded-pill bg-azure px-5 text-small font-semibold text-shell transition-colors hover:bg-azure-deep"
           >
             {t("help.button")}
           </Link>

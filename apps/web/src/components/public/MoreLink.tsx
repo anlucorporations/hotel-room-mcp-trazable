@@ -23,7 +23,7 @@ export function MoreLink({
       <Link
         href={href}
         aria-label={`${label}: ${section}`}
-        className="inline-flex min-h-touch items-center gap-1 rounded-pill border border-sea px-4 text-small font-semibold text-sea transition-colors hover:bg-sea-deep hover:text-shell"
+        className="inline-flex min-h-touch items-center gap-1 rounded-pill border border-azure px-4 text-small font-semibold text-azure transition-colors hover:bg-azure-deep hover:text-shell"
       >
         {label}
         <span aria-hidden="true">→</span>

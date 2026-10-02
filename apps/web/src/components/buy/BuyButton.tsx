@@ -17,7 +17,7 @@ import { usePurchaseReview } from "./usePurchaseReview";
 import { useBuyNight } from "./useBuyNight";
 
 const PRIMARY_BTN =
-  "min-h-touch w-full rounded-brand bg-sea px-4 py-2 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60";
+  "min-h-touch w-full rounded-brand bg-azure px-4 py-2 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-60";
 const GHOST_BTN =
   "min-h-touch w-full rounded-brand border border-line px-4 py-2 font-semibold text-ink disabled:opacity-60";
 
@@ -139,7 +139,7 @@ export function BuyButton({
       </button>
 
       {insufficientBalance && balance !== undefined && (
-        <div data-testid="insufficient-balance" role="status" className="mt-2 text-small text-terracotta-text">
+        <div data-testid="insufficient-balance" role="status" className="mt-2 text-small text-coral-text">
           <p>
             {t("insufficientBalanceDetail", {
               missing: formatEther(shortfall),
@@ -178,7 +178,7 @@ export function BuyButton({
               >
                 <span
                   aria-hidden="true"
-                  className="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-sea"
+                  className="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-azure"
                 />
                 {t("verifyingPrice")}
               </p>
@@ -187,14 +187,14 @@ export function BuyButton({
               <div data-testid="review-verify-failed" role="alert" className="mt-3 text-small">
                 {/* §35: si la cadena YA respondió que la noche está vendida, el problema no es la
                     conexión del huésped: se lo decimos con nombre y le ofrecemos otra noche. */}
-                <p className="text-terracotta-text">
+                <p className="text-coral-text">
                   {review.soldOnceState === "sold" ? t("nightAlreadySold") : t("verifyFailed")}
                 </p>
                 {review.soldOnceState === "sold" ? (
                   <Link
                     href="/catalogo"
                     data-testid="review-pick-another"
-                    className="mt-2 inline-block font-semibold text-sea underline hover:text-sea-deep"
+                    className="mt-2 inline-block font-semibold text-azure underline hover:text-azure-deep"
                   >
                     {t("pickAnotherNight")}
                   </Link>
@@ -203,7 +203,7 @@ export function BuyButton({
                     type="button"
                     data-testid="review-verify-retry"
                     onClick={review.refetch}
-                    className="mt-2 font-semibold text-sea underline hover:text-sea-deep"
+                    className="mt-2 font-semibold text-azure underline hover:text-azure-deep"
                   >
                     {t("verifyRetry")}
                   </button>
@@ -214,11 +214,11 @@ export function BuyButton({
                 desfasado ofrece como disponible una noche que `buy` rechazaría). */}
             {!review.verifyFailed && review.soldOnceState === "sold" && (
               <div data-testid="review-night-sold" role="alert" className="mt-3 text-small">
-                <p className="text-terracotta-text">{t("nightAlreadySold")}</p>
+                <p className="text-coral-text">{t("nightAlreadySold")}</p>
                 <Link
                   href="/catalogo"
                   data-testid="review-pick-another"
-                  className="mt-2 inline-block font-semibold text-sea underline hover:text-sea-deep"
+                  className="mt-2 inline-block font-semibold text-azure underline hover:text-azure-deep"
                 >
                   {t("pickAnotherNight")}
                 </Link>
@@ -229,14 +229,14 @@ export function BuyButton({
               <p
                 data-testid="review-reverify-error"
                 role="alert"
-                className="mt-3 text-small text-terracotta-text"
+                className="mt-3 text-small text-coral-text"
               >
                 {t("reverifyFailed")}
               </p>
             )}
             {/* Rechazo/fallo de firma: el usuario vuelve a «Revisar» y puede reintentar (punto 4). */}
             {txErrorKind && (
-              <p data-testid="buy-tx-error" role="alert" className="mt-3 text-small text-terracotta-text">
+              <p data-testid="buy-tx-error" role="alert" className="mt-3 text-small text-coral-text">
                 {t(`txError.${txErrorKind}`)}
               </p>
             )}
@@ -270,7 +270,7 @@ export function BuyButton({
         errorActions={
           <>
             {txErrorKind && (
-              <p data-testid="buy-tx-error" role="alert" className="text-small text-terracotta-text">
+              <p data-testid="buy-tx-error" role="alert" className="text-small text-coral-text">
                 {t(`txError.${txErrorKind}`)}
               </p>
             )}

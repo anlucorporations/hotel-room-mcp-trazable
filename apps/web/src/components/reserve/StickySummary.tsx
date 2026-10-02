@@ -68,7 +68,7 @@ export function StickySummary({
         ) : (
           <p className="flex flex-wrap items-baseline justify-between gap-2">
             <span className="text-small font-medium text-ink-soft">{t("total")}</span>
-            <span className="font-display text-h3 font-semibold text-sea-deep" data-testid="reserve-summary-total">
+            <span className="font-display text-h3 font-semibold text-azure-deep" data-testid="reserve-summary-total">
               {eur(totalCents)}
             </span>
           </p>

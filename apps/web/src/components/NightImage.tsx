@@ -28,7 +28,7 @@ export function NightImage({
         data-testid="img-fallback"
         role="img"
         aria-label={alt}
-        className="flex h-full w-full items-center justify-center bg-gradient-to-br from-sea to-olive font-display text-small tracking-wide text-shell"
+        className="flex h-full w-full items-center justify-center bg-gradient-to-br from-azure to-fern font-display text-small tracking-wide text-shell"
       >
         Imagen no disponible
       </div>

@@ -164,7 +164,7 @@ export function HousekeepingBoard() {
 
   if (!allowed) {
     return (
-      <p data-testid="housekeeping-role-denied" role="alert" className="rounded-brand-lg border border-line bg-sand-2 px-5 py-8 text-ink-soft">
+      <p data-testid="housekeeping-role-denied" role="alert" className="rounded-brand-lg border border-line bg-mist-2 px-5 py-8 text-ink-soft">
         {t("roleDenied")}
       </p>
     );
@@ -186,7 +186,7 @@ export function HousekeepingBoard() {
         <span>{t("signedAs", { username: sessionUsername })}</span>
         <span
           data-testid="housekeeping-live"
-          className={`rounded-pill px-2 py-0.5 text-micro font-semibold ${live ? "bg-success/15 text-success" : "bg-sand-2 text-ink-soft"}`}
+          className={`rounded-pill px-2 py-0.5 text-micro font-semibold ${live ? "bg-success/15 text-success" : "bg-mist-2 text-ink-soft"}`}
         >
           {live ? t("live") : t("reconnecting")}
         </span>
@@ -214,7 +214,7 @@ export function HousekeepingBoard() {
               value={date}
               onChange={(event) => setDate(event.target.value)}
               data-testid="housekeeping-date"
-              className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
+              className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
             />
           </label>
           <label className="flex flex-col gap-1 text-small">
@@ -223,7 +223,7 @@ export function HousekeepingBoard() {
               value={shiftLabel}
               onChange={(event) => setShiftLabel(event.target.value as ShiftLabel)}
               data-testid="housekeeping-shift-label"
-              className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
+              className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
             >
               <option value="MANANA">{t("shiftManana")}</option>
               <option value="TARDE">{t("shiftTarde")}</option>
@@ -240,7 +240,7 @@ export function HousekeepingBoard() {
                 body: JSON.stringify({ date, label: shiftLabel, supervisor: sessionUsername }),
               })
             }
-            className="min-h-touch rounded-pill bg-sea px-4 text-small font-semibold text-shell disabled:opacity-50"
+            className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell disabled:opacity-50"
           >
             {t("createShift")}
           </button>
@@ -254,7 +254,7 @@ export function HousekeepingBoard() {
               value={assignees}
               onChange={(event) => setAssignees(event.target.value)}
               data-testid="housekeeping-assignees"
-              className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
+              className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
             />
           </label>
           <button
@@ -268,7 +268,7 @@ export function HousekeepingBoard() {
                 body: JSON.stringify({ shiftId: selectedShift.id, assignees: people }),
               })
             }
-            className="min-h-touch rounded-pill bg-sea-deep px-4 text-small font-semibold text-shell disabled:opacity-50"
+            className="min-h-touch rounded-pill bg-azure-deep px-4 text-small font-semibold text-shell disabled:opacity-50"
           >
             {t("autoAssign")}
           </button>
@@ -296,7 +296,7 @@ export function HousekeepingBoard() {
                   <span className="font-display text-h3 font-semibold text-ink">
                     {t("room")} {assignment.roomNumber ?? "—"}
                   </span>
-                  <span className="rounded-pill bg-sand-2 px-2 py-0.5 text-micro font-semibold text-ink-soft">
+                  <span className="rounded-pill bg-mist-2 px-2 py-0.5 text-micro font-semibold text-ink-soft">
                     {t(assignment.status === "DONE" ? "statusDone" : assignment.status === "IN_PROGRESS" ? "statusInProgress" : "statusPending")}
                   </span>
                 </div>
@@ -311,7 +311,7 @@ export function HousekeepingBoard() {
                         headers: { "content-type": "application/json" },
                         body: JSON.stringify({ action: "start" }),
                       })}
-                      className="min-h-touch flex-1 rounded-pill border border-sea px-3 text-small font-semibold text-sea disabled:opacity-40"
+                      className="min-h-touch flex-1 rounded-pill border border-azure px-3 text-small font-semibold text-azure disabled:opacity-40"
                     >
                       {t("start")}
                     </button>
@@ -323,7 +323,7 @@ export function HousekeepingBoard() {
                         headers: { "content-type": "application/json" },
                         body: JSON.stringify({ action: "complete" }),
                       })}
-                      className="min-h-touch flex-1 rounded-pill bg-olive px-3 text-small font-semibold text-shell disabled:opacity-40"
+                      className="min-h-touch flex-1 rounded-pill bg-fern px-3 text-small font-semibold text-shell disabled:opacity-40"
                     >
                       {t("complete")}
                     </button>
@@ -344,7 +344,7 @@ export function HousekeepingBoard() {
         ) : (
           <ul className="flex flex-col gap-2">
             {unassigned.map((room) => (
-              <li key={room.roomId} className="flex flex-wrap items-center gap-2 rounded-brand-lg border border-line bg-sand-2 px-4 py-2">
+              <li key={room.roomId} className="flex flex-wrap items-center gap-2 rounded-brand-lg border border-line bg-mist-2 px-4 py-2">
                 <span className="font-medium text-ink">
                   {t("room")} {room.roomNumber}
                 </span>
@@ -371,7 +371,7 @@ export function HousekeepingBoard() {
                       body: JSON.stringify({ shiftId: selectedShift.id, roomId: room.roomId, assignee: name }),
                     });
                   }}
-                  className="min-h-touch rounded-pill border border-sea px-3 text-small font-semibold text-sea disabled:opacity-40"
+                  className="min-h-touch rounded-pill border border-azure px-3 text-small font-semibold text-azure disabled:opacity-40"
                 >
                   {t("assignManually")}
                 </button>

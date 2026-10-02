@@ -1,77 +1,77 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" aria-labelledby="t d">
   <title id="t">CU-07 · Comprar una noche que otro cliente revende: abrir la reventa, elegir la noche, reservar, revisar el listado y firmar en la cartera</title>
   <desc id="d">Cinco tarjetas numeradas unidas por flechas. La primera abre la página de reventa; la segunda elige una noche marcada como Reventa y lee su precio; la tercera pulsa Reservar reventa y conecta la cartera; la cuarta comprueba los cinco datos y verifica el listado en la red; la quinta firma en la cartera y espera la confirmación. Abajo se resume quién puede hacerlo, qué se consigue y qué pasa si algo falla.</desc>
-  <rect width="1600" height="900" fill="#FBF6EC"/>
-  <rect x="0" y="0" width="1600" height="156" fill="#08424A"/>
-  <text x="60" y="66" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#C5A880" letter-spacing="2">CU-07 · BLOQUE 4</text>
+  <rect width="1600" height="900" fill="#F4F9FC"/>
+  <rect x="0" y="0" width="1600" height="156" fill="#0A4F75"/>
+  <text x="60" y="66" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#C3D4E0" letter-spacing="2">CU-07 · BLOQUE 4</text>
   <text x="60" y="122" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="42" font-weight="700" fill="#FFFFFF">Comprar una noche que otro cliente revende</text>
 
   <!-- paso 1 -->
-  <rect x="60" y="210" width="270" height="420" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
-  <circle cx="195" cy="300" r="36" fill="#08424A"/>
+  <rect x="60" y="210" width="270" height="420" rx="18" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <circle cx="195" cy="300" r="36" fill="#0A4F75"/>
   <text x="195" y="312" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">1</text>
-  <text x="195" y="408" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#1B2327">Abrir la reventa</text>
-  <text x="195" y="474" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Entra en /reventa y</text>
-  <text x="195" y="506" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">mira el contador.</text>
-  <path d="M96 530 H294" stroke="#E7DCC6" stroke-width="2" fill="none"/>
-  <rect x="90" y="546" width="210" height="48" rx="14" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
-  <text x="195" y="577" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">Mercado abierto</text>
+  <text x="195" y="408" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#101F2C">Abrir la reventa</text>
+  <text x="195" y="474" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#41566A">Entra en /reventa y</text>
+  <text x="195" y="506" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#41566A">mira el contador.</text>
+  <path d="M96 530 H294" stroke="#DBE7EF" stroke-width="2" fill="none"/>
+  <rect x="90" y="546" width="210" height="48" rx="14" fill="#E6F0F6" stroke="#DBE7EF" stroke-width="2"/>
+  <text x="195" y="577" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0F6C9C">Mercado abierto</text>
 
   <!-- paso 2 -->
-  <rect x="360" y="210" width="270" height="420" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
-  <circle cx="495" cy="300" r="36" fill="#08424A"/>
+  <rect x="360" y="210" width="270" height="420" rx="18" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <circle cx="495" cy="300" r="36" fill="#0A4F75"/>
   <text x="495" y="312" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">2</text>
-  <text x="495" y="408" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#1B2327">Elegir la noche</text>
-  <text x="495" y="474" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Lee habitación,</text>
-  <text x="495" y="506" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">fecha y precio.</text>
-  <path d="M396 530 H594" stroke="#E7DCC6" stroke-width="2" fill="none"/>
-  <rect x="390" y="546" width="210" height="48" rx="14" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
-  <text x="495" y="577" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">Etiqueta Reventa</text>
+  <text x="495" y="408" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#101F2C">Elegir la noche</text>
+  <text x="495" y="474" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#41566A">Lee habitación,</text>
+  <text x="495" y="506" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#41566A">fecha y precio.</text>
+  <path d="M396 530 H594" stroke="#DBE7EF" stroke-width="2" fill="none"/>
+  <rect x="390" y="546" width="210" height="48" rx="14" fill="#E6F0F6" stroke="#DBE7EF" stroke-width="2"/>
+  <text x="495" y="577" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0F6C9C">Etiqueta Reventa</text>
 
   <!-- paso 3 -->
-  <rect x="660" y="210" width="270" height="420" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
-  <circle cx="795" cy="300" r="36" fill="#08424A"/>
+  <rect x="660" y="210" width="270" height="420" rx="18" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <circle cx="795" cy="300" r="36" fill="#0A4F75"/>
   <text x="795" y="312" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">3</text>
-  <text x="795" y="408" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#1B2327">Reservar la reventa</text>
-  <text x="795" y="474" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Conecta la cartera</text>
-  <text x="795" y="506" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">si te la pide.</text>
-  <path d="M696 530 H894" stroke="#E7DCC6" stroke-width="2" fill="none"/>
-  <rect x="690" y="546" width="210" height="48" rx="14" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
-  <text x="795" y="577" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">Listado activo</text>
+  <text x="795" y="408" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#101F2C">Reservar la reventa</text>
+  <text x="795" y="474" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#41566A">Conecta la cartera</text>
+  <text x="795" y="506" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#41566A">si te la pide.</text>
+  <path d="M696 530 H894" stroke="#DBE7EF" stroke-width="2" fill="none"/>
+  <rect x="690" y="546" width="210" height="48" rx="14" fill="#E6F0F6" stroke="#DBE7EF" stroke-width="2"/>
+  <text x="795" y="577" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0F6C9C">Listado activo</text>
 
   <!-- paso 4 -->
-  <rect x="960" y="210" width="270" height="420" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
-  <circle cx="1095" cy="300" r="36" fill="#08424A"/>
+  <rect x="960" y="210" width="270" height="420" rx="18" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <circle cx="1095" cy="300" r="36" fill="#0A4F75"/>
   <text x="1095" y="312" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">4</text>
-  <text x="1095" y="408" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#1B2327">Revisar y verificar</text>
-  <text x="1095" y="474" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Comprueba los cinco</text>
-  <text x="1095" y="506" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">datos y el listado.</text>
-  <path d="M996 530 H1194" stroke="#E7DCC6" stroke-width="2" fill="none"/>
-  <rect x="990" y="546" width="210" height="48" rx="14" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
-  <text x="1095" y="577" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">Listado en red</text>
+  <text x="1095" y="408" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#101F2C">Revisar y verificar</text>
+  <text x="1095" y="474" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#41566A">Comprueba los cinco</text>
+  <text x="1095" y="506" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#41566A">datos y el listado.</text>
+  <path d="M996 530 H1194" stroke="#DBE7EF" stroke-width="2" fill="none"/>
+  <rect x="990" y="546" width="210" height="48" rx="14" fill="#E6F0F6" stroke="#DBE7EF" stroke-width="2"/>
+  <text x="1095" y="577" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0F6C9C">Listado en red</text>
 
   <!-- paso 5 -->
-  <rect x="1260" y="210" width="270" height="420" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
-  <circle cx="1395" cy="300" r="36" fill="#08424A"/>
+  <rect x="1260" y="210" width="270" height="420" rx="18" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <circle cx="1395" cy="300" r="36" fill="#0A4F75"/>
   <text x="1395" y="312" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">5</text>
-  <text x="1395" y="408" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#1B2327">Firmar en la cartera</text>
-  <text x="1395" y="474" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Firma y espera</text>
-  <text x="1395" y="506" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">unos segundos.</text>
-  <path d="M1296 530 H1494" stroke="#E7DCC6" stroke-width="2" fill="none"/>
-  <rect x="1290" y="546" width="210" height="48" rx="14" fill="#E3EFE7"/>
-  <text x="1395" y="577" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#2F6B4F">¡Noche reservada!</text>
+  <text x="1395" y="408" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#101F2C">Firmar en la cartera</text>
+  <text x="1395" y="474" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#41566A">Firma y espera</text>
+  <text x="1395" y="506" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#41566A">unos segundos.</text>
+  <path d="M1296 530 H1494" stroke="#DBE7EF" stroke-width="2" fill="none"/>
+  <rect x="1290" y="546" width="210" height="48" rx="14" fill="#E2F2E9"/>
+  <text x="1395" y="577" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#1F7A4D">¡Noche reservada!</text>
 
-  <text x="345" y="428" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0E5A63">&#8594;</text>
-  <text x="645" y="428" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0E5A63">&#8594;</text>
-  <text x="945" y="428" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0E5A63">&#8594;</text>
-  <text x="1245" y="428" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0E5A63">&#8594;</text>
+  <text x="345" y="428" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0F6C9C">&#8594;</text>
+  <text x="645" y="428" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0F6C9C">&#8594;</text>
+  <text x="945" y="428" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0F6C9C">&#8594;</text>
+  <text x="1245" y="428" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0F6C9C">&#8594;</text>
 
-  <rect x="0" y="740" width="1600" height="160" fill="#F3EAD8"/>
-  <text x="60" y="790" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#4C575C" letter-spacing="1.5">QUIÉN</text>
-  <text x="60" y="838" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#1B2327">Cualquiera con cartera</text>
-  <text x="590" y="790" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#4C575C" letter-spacing="1.5">QUÉ CONSIGUES</text>
-  <text x="590" y="838" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#1B2327">La noche, ya tuya</text>
-  <text x="1120" y="790" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#4C575C" letter-spacing="1.5">SI FALLA</text>
-  <text x="1120" y="838" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#1B2327">Si el vendedor la</text>
-  <text x="1120" y="872" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#1B2327">retira, elige otra</text>
+  <rect x="0" y="740" width="1600" height="160" fill="#E6F0F6"/>
+  <text x="60" y="790" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#41566A" letter-spacing="1.5">QUIÉN</text>
+  <text x="60" y="838" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#101F2C">Cualquiera con cartera</text>
+  <text x="590" y="790" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#41566A" letter-spacing="1.5">QUÉ CONSIGUES</text>
+  <text x="590" y="838" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#101F2C">La noche, ya tuya</text>
+  <text x="1120" y="790" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#41566A" letter-spacing="1.5">SI FALLA</text>
+  <text x="1120" y="838" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#101F2C">Si el vendedor la</text>
+  <text x="1120" y="872" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#101F2C">retira, elige otra</text>
 </svg>

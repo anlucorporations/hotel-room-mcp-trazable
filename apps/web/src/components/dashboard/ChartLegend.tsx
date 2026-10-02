@@ -31,6 +31,6 @@ export function ChartLegend({
 
 /** Colores de las dos series de venta, tomados de la paleta real (una sola fuente). */
 export const SERIES_COLORS = {
-  primary: PALETTE.sea,
-  secondary: PALETTE["terracotta-text"],
+  primary: PALETTE.azure,
+  secondary: PALETTE["coral-text"],
 } as const;

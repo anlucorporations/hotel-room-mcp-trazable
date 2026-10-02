@@ -13,7 +13,7 @@ import { useListNight } from "./useListNight";
 import type { OwnedNight } from "./useMyNights";
 
 const PRIMARY_BTN =
-  "min-h-touch w-full rounded-brand bg-sea px-4 py-2 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60";
+  "min-h-touch w-full rounded-brand bg-azure px-4 py-2 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-60";
 const GHOST_BTN =
   "min-h-touch w-full rounded-brand border border-line px-4 py-2 font-semibold text-ink disabled:opacity-60";
 
@@ -97,16 +97,16 @@ export function MyNightCard({
       <div className="flex flex-1 flex-col gap-2 p-4">
         <div className="flex items-center justify-between">
           <h3 className="font-display font-semibold text-ink">{t("room", { room: night.room })}</h3>
-          <span className="rounded-pill bg-sand-2 px-2 py-0.5 text-micro font-semibold text-ink-soft">
+          <span className="rounded-pill bg-mist-2 px-2 py-0.5 text-micro font-semibold text-ink-soft">
             {TYPE_LABEL[night.type]}
           </span>
         </div>
         <p className="text-small text-ink-soft">{formatNightDate(night.dateYYYYMMDD)}</p>
 
         {isListed ? (
-          <span className="text-micro font-semibold text-terracotta-text">{t("listedBadge")}</span>
+          <span className="text-micro font-semibold text-coral-text">{t("listedBadge")}</span>
         ) : (
-          <span className="text-micro font-semibold text-sea-deep">{t("ownedBadge")}</span>
+          <span className="text-micro font-semibold text-azure-deep">{t("ownedBadge")}</span>
         )}
 
         {/* Resguardo de check-in (RF-07): solo tiene sentido en una noche no consumida ni revendida. */}
@@ -137,7 +137,7 @@ export function MyNightCard({
                 />
               </label>
               {priceError && (
-                <p data-testid={`list-error-${night.tokenId}`} role="alert" className="text-small text-terracotta-text">
+                <p data-testid={`list-error-${night.tokenId}`} role="alert" className="text-small text-coral-text">
                   {t("invalidPrice")}
                 </p>
               )}
@@ -191,7 +191,7 @@ export function MyNightCard({
             <p
               data-testid={`list-tx-error-${night.tokenId}`}
               role="alert"
-              className="text-small text-terracotta-text"
+              className="text-small text-coral-text"
             >
               {t(txErrorKey)}
             </p>

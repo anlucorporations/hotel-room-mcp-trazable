@@ -117,7 +117,7 @@ export function MaintenanceBoard() {
   }
   if (!allowed) {
     return (
-      <p data-testid="maintenance-role-denied" role="alert" className="rounded-brand-lg border border-line bg-sand-2 px-5 py-8 text-ink-soft">
+      <p data-testid="maintenance-role-denied" role="alert" className="rounded-brand-lg border border-line bg-mist-2 px-5 py-8 text-ink-soft">
         {t("roleDenied")}
       </p>
     );
@@ -151,7 +151,7 @@ export function MaintenanceBoard() {
             value={date}
             onChange={(event) => setDate(event.target.value)}
             data-testid="maintenance-date"
-            className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
+            className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
           />
         </label>
       </div>
@@ -176,10 +176,10 @@ export function MaintenanceBoard() {
                   <span className="font-display text-h3 font-semibold text-ink">
                     {t("room")} {incident.roomNumber ?? "—"}
                   </span>
-                  <span className={`rounded-pill px-2 py-0.5 text-micro font-semibold ${incident.priority === "HIGH" ? "bg-terracotta/20 text-ink" : "bg-sand-2 text-ink-soft"}`}>
+                  <span className={`rounded-pill px-2 py-0.5 text-micro font-semibold ${incident.priority === "HIGH" ? "bg-coral/20 text-ink" : "bg-mist-2 text-ink-soft"}`}>
                     {t(`priority.${incident.priority}`)}
                   </span>
-                  <span className="rounded-pill bg-sand-2 px-2 py-0.5 text-micro font-semibold text-ink-soft">
+                  <span className="rounded-pill bg-mist-2 px-2 py-0.5 text-micro font-semibold text-ink-soft">
                     {t(incident.status === "IN_PROGRESS" ? "statusInProgress" : "statusOpen")}
                   </span>
                 </div>
@@ -194,7 +194,7 @@ export function MaintenanceBoard() {
                       type="button"
                       disabled={busy}
                       onClick={() => incidentAction(incident.id, "assign")}
-                      className="min-h-touch rounded-pill border border-sea px-3 text-small font-semibold text-sea disabled:opacity-40"
+                      className="min-h-touch rounded-pill border border-azure px-3 text-small font-semibold text-azure disabled:opacity-40"
                     >
                       {t("assignMe")}
                     </button>
@@ -203,7 +203,7 @@ export function MaintenanceBoard() {
                     type="button"
                     disabled={busy}
                     onClick={() => incidentAction(incident.id, "resolve")}
-                    className="min-h-touch rounded-pill bg-olive px-3 text-small font-semibold text-shell disabled:opacity-40"
+                    className="min-h-touch rounded-pill bg-fern px-3 text-small font-semibold text-shell disabled:opacity-40"
                   >
                     {t("resolve")}
                   </button>
@@ -231,19 +231,19 @@ export function MaintenanceBoard() {
         ) : (
           <ul className="flex flex-col gap-2">
             {dueTasks.map((task) => (
-              <li key={task.id} data-testid={`maint-task-${task.planCode}`} className={`flex flex-wrap items-center gap-2 rounded-brand-lg border px-4 py-2 ${task.overdue ? "border-warning/50 bg-warning-bg" : "border-line bg-sand-2"}`}>
+              <li key={task.id} data-testid={`maint-task-${task.planCode}`} className={`flex flex-wrap items-center gap-2 rounded-brand-lg border px-4 py-2 ${task.overdue ? "border-warning/50 bg-warning-bg" : "border-line bg-mist-2"}`}>
                 <span className="font-medium text-ink">{task.planName ?? task.planCode}</span>
                 <span className="text-micro text-ink-soft">
                   {task.equipment}
                   {task.roomNumber ? ` · ${t("room")} ${task.roomNumber}` : ""} · {t("dueDate", { date: task.dueDate })}
                 </span>
-                {task.overdue && <span className="rounded-pill bg-terracotta/20 px-2 py-0.5 text-micro font-semibold text-ink">{t("overdue")}</span>}
+                {task.overdue && <span className="rounded-pill bg-coral/20 px-2 py-0.5 text-micro font-semibold text-ink">{t("overdue")}</span>}
                 <div className="ml-auto flex gap-2">
                   <button
                     type="button"
                     disabled={busy}
                     onClick={() => taskAction(task.id, "complete")}
-                    className="min-h-touch rounded-pill bg-olive px-3 text-small font-semibold text-shell disabled:opacity-40"
+                    className="min-h-touch rounded-pill bg-fern px-3 text-small font-semibold text-shell disabled:opacity-40"
                   >
                     {t("complete")}
                   </button>

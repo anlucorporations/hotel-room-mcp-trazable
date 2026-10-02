@@ -89,13 +89,13 @@ const NON_TEXT_PROPERTIES = new Set(["border", "ring", "divide", "outline", "sha
 export type ColorRole = "foreground" | "background" | "other";
 
 export interface ColorUtility {
-  /** Utilidad tal cual aparece en el código, p. ej. `hover:text-sea-deep`. */
+  /** Utilidad tal cual aparece en el código, p. ej. `hover:text-azure-deep`. */
   readonly raw: string;
   /** Variable(es) de Tailwind que la preceden (`hover`, `focus-visible`, `tablet`…). */
   readonly variants: readonly string[];
   /** Token de color, p. ej. `sea-deep`, `white`. */
   readonly token: string;
-  /** Opacidad declarada (`bg-sea/10` → 10), o `null` si no lleva modificador. */
+  /** Opacidad declarada (`bg-azure/10` → 10), o `null` si no lleva modificador. */
   readonly opacityPercent: number | null;
   readonly role: ColorRole;
   /** `true` si el token no es de la paleta de marca ni un neutro admitido (color inventado). */
@@ -151,7 +151,7 @@ const roleOf = (property: string): ColorRole => {
 
 /**
  * Normaliza la utilidad a `(propiedad, token)`. Resuelve las formas que no son `propiedad-color`
- * directas: borde por lado (`border-t-sea`) y ancho/offset de anillo (`ring-2`, `ring-offset-2`),
+ * directas: borde por lado (`border-t-azure`) y ancho/offset de anillo (`ring-2`, `ring-offset-2`),
  * devolviendo `null` cuando la utilidad no pinta ningún color.
  */
 function splitUtility(base: string): { property: string; token: string } | null {
@@ -163,7 +163,7 @@ function splitUtility(base: string): { property: string; token: string } | null 
   if (property === "bg" && rest[0] === "gradient") return null;
   // `shadow-card`, `shadow-modal`: elevación, no color.
   if (property === "shadow") return null;
-  // `border-t-sea` / `divide-x-sea`: el color va después del lado.
+  // `border-t-azure` / `divide-x-azure`: el color va después del lado.
   if (rest.length > 1 && ["t", "b", "l", "r", "x", "y"].includes(rest[0]!)) {
     return { property, token: rest.slice(1).join("-") };
   }

@@ -14,9 +14,9 @@ import { useAdminTxCopy } from "./adminTxCopy";
 import { classifyAdminTxError } from "./adminTxError";
 
 const PRIMARY =
-  "min-h-touch rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60";
+  "min-h-touch rounded-pill bg-azure px-5 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-60";
 const DANGER =
-  "min-h-touch rounded-pill bg-terracotta px-5 font-semibold text-shell transition-colors hover:opacity-90 disabled:opacity-60";
+  "min-h-touch rounded-pill bg-coral px-5 font-semibold text-shell transition-colors hover:opacity-90 disabled:opacity-60";
 const FIELD = "min-h-touch w-full rounded-brand border border-line-strong bg-shell px-3 text-ink";
 
 const ROLE_LABEL: Readonly<Record<RoleName, string>> = {
@@ -189,7 +189,7 @@ export function AdminRoles() {
             </button>
           </div>
           {roleError && (
-            <p id={roleErrorId} data-testid="roles-error" role="alert" className="text-terracotta-text">
+            <p id={roleErrorId} data-testid="roles-error" role="alert" className="text-coral-text">
               {roleError}
             </p>
           )}
@@ -260,7 +260,7 @@ export function AdminRoles() {
               id={ownerErrorId}
               data-testid="roles-owner-error"
               role="alert"
-              className="text-terracotta-text"
+              className="text-coral-text"
             >
               {ownerError}
             </p>
@@ -269,7 +269,7 @@ export function AdminRoles() {
       </AdminCard>
 
       {txErrorKind && (
-        <p role="alert" className="text-terracotta-text">
+        <p role="alert" className="text-coral-text">
           {t(`txError.${txErrorKind}`)}
         </p>
       )}

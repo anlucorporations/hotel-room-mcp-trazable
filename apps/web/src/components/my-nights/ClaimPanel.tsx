@@ -7,7 +7,7 @@ import { formatEth } from "@/lib/format";
 import { useClaim } from "./useClaim";
 
 const BTN =
-  "min-h-touch rounded-pill bg-sea px-5 py-2 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60";
+  "min-h-touch rounded-pill bg-azure px-5 py-2 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-60";
 
 /** Panel de cobro (pull-payment) del saldo pendiente de reventas (CU-07, docs/SRS.md §9). */
 export function ClaimPanel({
@@ -29,7 +29,7 @@ export function ClaimPanel({
   return (
     <section
       data-testid="claim-panel"
-      className="flex flex-col gap-3 rounded-brand-lg border border-line bg-sand-2 px-4 py-4 tablet:flex-row tablet:items-center tablet:justify-between"
+      className="flex flex-col gap-3 rounded-brand-lg border border-line bg-mist-2 px-4 py-4 tablet:flex-row tablet:items-center tablet:justify-between"
     >
       <div>
         <h2 className="font-display font-semibold text-ink">{t("pendingTitle")}</h2>

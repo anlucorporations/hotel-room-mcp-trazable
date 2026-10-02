@@ -93,7 +93,7 @@ export function SiteHeader() {
   const session = useAdminSession();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-sand/85 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-line bg-mist/85 backdrop-blur">
       <div className="mx-auto flex h-[68px] w-full max-w-6xl items-center gap-4 px-5 sm:gap-5">
         <Link
           href="/"
@@ -105,7 +105,7 @@ export function SiteHeader() {
             className="h-[34px] w-[34px] flex-none rounded-full shadow-[inset_0_0_0_1.5px_rgba(255,255,255,0.4)]"
             style={{
               background:
-                "radial-gradient(circle at 32% 30%, var(--gold), var(--terracotta) 55%, var(--sea) 130%)",
+                "radial-gradient(circle at 32% 30%, var(--amber), var(--coral) 55%, var(--azure) 130%)",
             }}
           />
           <span className="flex flex-col">
@@ -153,7 +153,7 @@ export function SiteHeader() {
                       <Link
                         href={item.href}
                         aria-current={isActiveRoute(pathname, item.href) ? "page" : undefined}
-                        className="flex min-h-touch items-center rounded-brand-sm px-3 text-small text-ink-soft transition-colors hover:bg-sand-2 hover:text-ink"
+                        className="flex min-h-touch items-center rounded-brand-sm px-3 text-small text-ink-soft transition-colors hover:bg-mist-2 hover:text-ink"
                       >
                         {t(item.labelKey)}
                       </Link>
@@ -216,7 +216,7 @@ function MobileNav({ pathname }: { pathname: string }) {
         aria-expanded={open}
         aria-controls={panelId}
         aria-label={open ? t("menuClose") : t("menuOpen")}
-        className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-brand-sm text-ink transition-colors hover:bg-sand-2"
+        className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-brand-sm text-ink transition-colors hover:bg-mist-2"
       >
         <span aria-hidden="true" className="relative block h-4 w-5">
           <span
@@ -249,7 +249,7 @@ function MobileNav({ pathname }: { pathname: string }) {
           <nav
             id={panelId}
             aria-label={t("navLabel")}
-            className="absolute left-0 right-0 top-[68px] z-40 border-b border-line bg-sand px-5 py-3 shadow-[0_10px_30px_rgba(0,0,0,0.08)]"
+            className="absolute left-0 right-0 top-[68px] z-40 border-b border-line bg-mist px-5 py-3 shadow-[0_10px_30px_rgba(0,0,0,0.08)]"
           >
             {[{ labelKey: null, items: PRIMARY_ITEMS }, ...NAV_GROUPS].map((group, groupIndex) => (
               <div key={group.labelKey ?? "primary"} className={groupIndex === 0 ? "" : "mt-3 border-t border-line pt-3"}>

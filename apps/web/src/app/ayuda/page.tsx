@@ -35,7 +35,7 @@ function ManualCard({
     <li className="flex">
       <article className="flex w-full flex-col gap-3 rounded-brand border border-line bg-shell p-5 shadow-sm">
         <h3 className="font-display text-h3 font-semibold leading-snug">
-          <Link href={`/ayuda/${manual.slug}`} className="transition-colors hover:text-sea">
+          <Link href={`/ayuda/${manual.slug}`} className="transition-colors hover:text-azure">
             {manual.title}
           </Link>
         </h3>
@@ -47,7 +47,7 @@ function ManualCard({
         <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-2 pt-1">
           <Link
             href={`/ayuda/${manual.slug}`}
-            className="text-small font-semibold text-sea-deep underline transition-colors hover:text-terracotta-text"
+            className="text-small font-semibold text-azure-deep underline transition-colors hover:text-coral-text"
           >
             {read}
           </Link>
@@ -87,7 +87,7 @@ export default async function AyudaPage() {
           <p className="mt-1 text-body text-ink-soft">{t("tagline")}</p>
         </header>
 
-        <p className="rounded-brand border border-line bg-sand-2 px-4 py-3 text-small text-ink-soft">
+        <p className="rounded-brand border border-line bg-mist-2 px-4 py-3 text-small text-ink-soft">
           {t("testNetworkNote")} {t("spanishOnly")}
         </p>
 
@@ -116,7 +116,7 @@ export default async function AyudaPage() {
             <p className="mt-1 text-small text-ink-soft">{t("cuTagline")}</p>
           </div>
 
-          <figure className="overflow-hidden rounded-brand border border-line bg-sand-2">
+          <figure className="overflow-hidden rounded-brand border border-line bg-mist-2">
             {/* eslint-disable-next-line @next/next/no-img-element -- SVG de manual servido estático */}
             <img
               src="/manual/imagenes/doc-mapa-iniciacion-sistema.svg"
@@ -127,7 +127,7 @@ export default async function AyudaPage() {
 
           {blocks.map((group) => (
             <div key={group.block} className="flex flex-col gap-4">
-              <h3 className="font-display text-h4 font-semibold tracking-tight text-sea-deep">
+              <h3 className="font-display text-h4 font-semibold tracking-tight text-azure-deep">
                 {group.block}
               </h3>
               <nav aria-label={group.block}>

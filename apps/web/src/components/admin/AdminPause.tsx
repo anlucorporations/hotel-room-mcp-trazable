@@ -12,9 +12,9 @@ import { useAdminTxCopy } from "./adminTxCopy";
 import { classifyAdminTxError } from "./adminTxError";
 
 const PRIMARY =
-  "min-h-touch rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60";
+  "min-h-touch rounded-pill bg-azure px-5 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-60";
 const DANGER =
-  "min-h-touch rounded-pill bg-terracotta px-5 font-semibold text-shell transition-colors hover:opacity-90 disabled:opacity-60";
+  "min-h-touch rounded-pill bg-coral px-5 font-semibold text-shell transition-colors hover:opacity-90 disabled:opacity-60";
 
 /** Acción de pausa pendiente de confirmación explícita (UX#21). */
 type PendingAction = "pause" | "unpause";
@@ -93,7 +93,7 @@ export function AdminPause() {
       </div>
 
       {txErrorKind && (
-        <p role="alert" className="mt-3 text-terracotta-text">
+        <p role="alert" className="mt-3 text-coral-text">
           {t(`txError.${txErrorKind}`)}
         </p>
       )}

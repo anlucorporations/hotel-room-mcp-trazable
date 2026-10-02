@@ -36,11 +36,11 @@ interface Reservation {
 type Notice = { kind: "ok" | "error"; text: string };
 
 const FIELD =
-  "min-h-touch w-full rounded-brand border border-line-strong bg-shell px-3 text-ink outline-none focus:border-sea";
+  "min-h-touch w-full rounded-brand border border-line-strong bg-shell px-3 text-ink outline-none focus:border-azure";
 const ACTION =
-  "min-h-touch rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60";
+  "min-h-touch rounded-pill bg-azure px-5 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-60";
 const GHOST =
-  "min-h-touch rounded-pill border border-line px-4 text-small font-medium text-ink transition-colors hover:bg-sand-2 disabled:opacity-60";
+  "min-h-touch rounded-pill border border-line px-4 text-small font-medium text-ink transition-colors hover:bg-mist-2 disabled:opacity-60";
 
 /** Fecha local en formato ISO `YYYY-MM-DD`. */
 function todayIso(): string {
@@ -197,7 +197,7 @@ export function ReservationsAdmin() {
   }
   if (!allowed) {
     return (
-      <p role="alert" data-testid="reception-role-denied" className="rounded-brand-lg border border-line bg-sand-2 px-5 py-8 text-ink-soft">
+      <p role="alert" data-testid="reception-role-denied" className="rounded-brand-lg border border-line bg-mist-2 px-5 py-8 text-ink-soft">
         {t("roleDenied")}
       </p>
     );
@@ -209,7 +209,7 @@ export function ReservationsAdmin() {
         <p
           data-testid="reservations-notice"
           role={notice.kind === "error" ? "alert" : "status"}
-          className={notice.kind === "error" ? "text-terracotta-text" : "text-sea-deep"}
+          className={notice.kind === "error" ? "text-coral-text" : "text-azure-deep"}
         >
           {notice.text}
         </p>

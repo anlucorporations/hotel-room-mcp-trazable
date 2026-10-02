@@ -4,17 +4,18 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 /**
- * Guardián de la **cascada cirílica** (propuesta de imagen visual §3.4, decisión del 2026-09-27).
+ * Guardián de la **tipografía cirílica** (sistema «Brisa Marina», Manual_Identidad_Visual.md v2.0.0).
  *
- * El producto tiene paridad ES/EN/RU, pero **Fraunces** (display) no publica el subconjunto
- * `cyrillic` y **Hanken Grotesk** (UI) solo el bloque *extendido* (U+0460–052F), sin el rango ruso
- * básico (U+0400–045F): el locale RU caía a `Georgia`/`system-ui`. La solución aprobada es una
- * cascada **glifo a glifo** — las fuentes de marca para ES/EN y un respaldo cirílico después en la
- * pila, cargado **solo** con ese subconjunto y sin `preload` (para no penalizar el LCP de ES/EN).
+ * El producto declara paridad ES/EN/RU. En el sistema anterior («Mediterráneo editorial») las
+ * fuentes de marca no cubrían el ruso y hacía falta una cascada glifo a glifo con dos respaldos
+ * `preload: false` (Playfair + Inter cirílicos). En «Brisa Marina» las DOS fuentes de marca —
+ * **Playfair Display** (display) y **Manrope** (UI)— publican el subconjunto `cyrillic`, así que
+ * el locale RU queda cubierto por las propias fuentes de marca y la cascada de respaldo desaparece.
  *
- * Este test es **estático** a propósito: no puede consultar la cobertura de glifos de Google, pero sí
- * impedir que la cascada desaparezca, se invierta el orden o se precargue el cirílico a todos los
- * usuarios. La evidencia de cobertura por familia está en `RepoTecnico/propuesta_imagen_visual.md` §7.2.
+ * Este test es **estático** a propósito: no puede consultar la cobertura de glifos de Google, pero
+ * sí impedir que una familia de marca se cargue SIN el subconjunto cirílico (regresión del RU),
+ * que se reintroduzcan respaldos precargados que penalicen el LCP, o que las pilas del preset y
+ * de la hoja de estilos deriven.
  */
 
 const SRC_ROOT = fileURLToPath(new URL("../../", import.meta.url));
@@ -26,49 +27,47 @@ const preset = require("../../../../../packages/config/tailwind/preset.cjs") as 
   theme: { extend: { fontFamily: Record<string, string[]> } };
 };
 
-describe("Accesibilidad tipográfica · cascada cirílica para el locale RU", () => {
-  it("declara las dos familias de respaldo con el subconjunto cirílico y SIN precarga", () => {
+describe("Accesibilidad tipográfica · cirílico cubierto por las fuentes de marca", () => {
+  it("las dos familias de marca se cargan con los subconjuntos latin Y cyrillic", () => {
     for (const [family, variable] of [
       ["Playfair_Display", "--font-playfair"],
-      ["Inter", "--font-inter"],
+      ["Manrope", "--font-manrope"],
     ] as const) {
-      const call = new RegExp(
-        `const \\w+ = ${family}\\(\\{([^}]*)\\}\\)`,
-        "s",
-      ).exec(layoutSource);
+      const call = new RegExp(`const \\w+ = ${family}\\(\\{([^}]*)\\}\\)`, "s").exec(layoutSource);
       expect(call, `no se declara ${family} en layout.tsx`).not.toBeNull();
       const body = call![1]!;
-      expect(body, `${family} debe pedir el subconjunto cirílico`).toMatch(
-        /subsets:\s*\[\s*["']cyrillic["']\s*\]/,
+      expect(body, `${family} debe pedir el subconjunto cirílico (paridad ES/EN/RU)`).toMatch(
+        /subsets:\s*\[[^\]]*["']cyrillic["'][^\]]*\]/,
       );
-      expect(body, `${family} no debe precargarse (penaliza el LCP de ES/EN)`).toMatch(
-        /preload:\s*false/,
+      expect(body, `${family} debe pedir el subconjunto latino`).toMatch(
+        /subsets:\s*\[[^\]]*["']latin["'][^\]]*\]/,
       );
       expect(body, `${family} debe exponer ${variable}`).toContain(variable);
+      expect(body, `${family} debe usar display swap`).toContain('display: "swap"');
     }
   });
 
-  it("aplica las variables de las cuatro familias al documento", () => {
-    for (const variable of [
-      "fraunces.variable",
-      "hanken.variable",
-      "playfairCyrillic.variable",
-      "interCyrillic.variable",
-    ]) {
+  it("no quedan respaldos cirílicos separados (la cascada glifo a glifo se retiró)", () => {
+    expect(layoutSource).not.toContain("Inter");
+    expect(layoutSource).not.toContain("Fraunces");
+    expect(layoutSource).not.toContain("Hanken");
+    expect(layoutSource).not.toMatch(/preload:\s*false/);
+  });
+
+  it("aplica las variables de las dos familias al documento", () => {
+    for (const variable of ["playfair.variable", "manrope.variable"]) {
       expect(layoutSource, `falta ${variable} en <html className>`).toContain(variable);
     }
   });
 
-  it("el respaldo va DESPUÉS de la fuente de marca en las pilas del preset", () => {
+  it("las pilas del preset empiezan por la fuente de marca", () => {
     expect(preset.theme.extend.fontFamily.display).toEqual([
-      "var(--font-fraunces)",
       "var(--font-playfair)",
       "Georgia",
       "serif",
     ]);
     expect(preset.theme.extend.fontFamily.sans).toEqual([
-      "var(--font-hanken)",
-      "var(--font-inter)",
+      "var(--font-manrope)",
       "system-ui",
       "-apple-system",
       "sans-serif",
@@ -76,13 +75,11 @@ describe("Accesibilidad tipográfica · cascada cirílica para el locale RU", ()
   });
 
   it("las pilas base de la hoja de estilos respetan el mismo orden", () => {
-    // Cuerpo: Hanken → Inter → sistema.
+    // Cuerpo: Manrope → sistema.
+    expect(globalsSource).toMatch(/font-family:\s*var\(--font-manrope\),\s*system-ui/);
+    // Titulares: Playfair → serif del sistema.
     expect(globalsSource).toMatch(
-      /font-family:\s*var\(--font-hanken\),\s*var\(--font-inter\),\s*system-ui/,
-    );
-    // Titulares: Fraunces → Playfair → serif del sistema.
-    expect(globalsSource).toMatch(
-      /font-family:\s*var\(--font-fraunces\),\s*var\(--font-playfair\),\s*Georgia,\s*serif/,
+      /font-family:\s*var\(--font-playfair\),\s*Georgia,\s*serif/,
     );
   });
 });

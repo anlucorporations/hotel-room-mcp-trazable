@@ -213,9 +213,9 @@ export function CatalogClient({
           <div
             data-testid="empty-state"
             role="status"
-            className="flex flex-col items-center rounded-brand-lg border border-dashed border-line bg-sand-2 px-5 py-16 text-center"
+            className="flex flex-col items-center rounded-brand-lg border border-dashed border-line bg-mist-2 px-5 py-16 text-center"
           >
-            <span className="mb-3.5 text-sea opacity-60">
+            <span className="mb-3.5 text-azure opacity-60">
               <EmptyIcon />
             </span>
             {filtersActive ? (
@@ -226,7 +226,7 @@ export function CatalogClient({
                 <button
                   type="button"
                   onClick={onClearFilters}
-                  className="mt-5 inline-flex min-h-touch items-center rounded-pill border border-line bg-shell px-5 font-semibold text-ink transition-colors hover:border-sea hover:text-sea"
+                  className="mt-5 inline-flex min-h-touch items-center rounded-pill border border-line bg-shell px-5 font-semibold text-ink transition-colors hover:border-azure hover:text-azure"
                 >
                   {t("clearFilters")}
                 </button>
@@ -275,7 +275,7 @@ export function CatalogClient({
               data-testid="load-more"
               aria-label={t("loadMore")}
               onClick={onLoadMore}
-              className="inline-flex min-h-touch min-w-[200px] items-center justify-center rounded-pill border border-line bg-shell px-6 font-semibold text-ink transition-colors hover:border-sea hover:text-sea"
+              className="inline-flex min-h-touch min-w-[200px] items-center justify-center rounded-pill border border-line bg-shell px-6 font-semibold text-ink transition-colors hover:border-azure hover:text-azure"
             >
               {t("loadMore")}
             </button>

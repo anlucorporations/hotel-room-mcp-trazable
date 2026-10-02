@@ -63,7 +63,7 @@ export function IncidentsAdmin() {
   }
   if (!session.sessionUsername || !session.hasRole("DEFAULT_ADMIN_ROLE")) {
     return (
-      <p data-testid="incidents-role-denied" role="alert" className="rounded-brand-lg border border-line bg-sand-2 px-5 py-8 text-ink-soft">
+      <p data-testid="incidents-role-denied" role="alert" className="rounded-brand-lg border border-line bg-mist-2 px-5 py-8 text-ink-soft">
         {t("roleDeniedAdmin")}
       </p>
     );
@@ -77,7 +77,7 @@ export function IncidentsAdmin() {
           value={status}
           onChange={(event) => setStatus(event.target.value)}
           data-testid="incidents-status"
-          className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
+          className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
         >
           <option value="">{t("filterAll")}</option>
           {MAINTENANCE_STATUSES.map((option) => (

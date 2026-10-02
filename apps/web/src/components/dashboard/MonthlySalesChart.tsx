@@ -29,7 +29,7 @@ export function MonthlySalesChart({ points }: { points: readonly MonthlyChartPoi
     return (
       <p
         data-testid="monthly-empty"
-        className="rounded-brand-lg border border-dashed border-line bg-sand-2 px-4 py-6 text-center text-small text-ink-soft"
+        className="rounded-brand-lg border border-dashed border-line bg-mist-2 px-4 py-6 text-center text-small text-ink-soft"
       >
         {t("charts.monthly.empty")}
       </p>

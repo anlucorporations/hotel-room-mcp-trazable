@@ -64,7 +64,7 @@ export function ReviewsModeration() {
   }
   if (!session.sessionUsername || !session.hasRole("DEFAULT_ADMIN_ROLE")) {
     return (
-      <p data-testid="reviews-role-denied" role="alert" className="rounded-brand-lg border border-line bg-sand-2 px-5 py-8 text-ink-soft">
+      <p data-testid="reviews-role-denied" role="alert" className="rounded-brand-lg border border-line bg-mist-2 px-5 py-8 text-ink-soft">
         {t("roleDenied")}
       </p>
     );
@@ -97,7 +97,7 @@ export function ReviewsModeration() {
           value={status}
           onChange={(event) => setStatus(event.target.value as (typeof STATUSES)[number])}
           data-testid="reviews-status"
-          className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
+          className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
         >
           {STATUSES.map((option) => (
             <option key={option} value={option}>
@@ -123,7 +123,7 @@ export function ReviewsModeration() {
           {reviews.map((review) => (
             <li key={review.id} className="flex flex-col gap-3 rounded-brand-lg border border-line bg-shell p-4 shadow-card">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-body text-sea-deep" aria-label={t("ratingLabel", { rating: review.rating })}>
+                <span className="text-body text-azure-deep" aria-label={t("ratingLabel", { rating: review.rating })}>
                   <span aria-hidden="true">{"★".repeat(review.rating)}</span>
                   <span aria-hidden="true" className="text-ink-soft/40">{"★".repeat(5 - review.rating)}</span>
                 </span>
@@ -142,13 +142,13 @@ export function ReviewsModeration() {
                       value={reasons[review.id] ?? ""}
                       onChange={(event) => setReasons((current) => ({ ...current, [review.id]: event.target.value }))}
                       placeholder={t("reasonPlaceholder")}
-                      className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
+                      className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
                     />
                   </label>
                   <button
                     type="button"
                     onClick={() => void moderate(review, "approve")}
-                    className="min-h-touch rounded-pill bg-olive px-4 text-small font-semibold text-shell"
+                    className="min-h-touch rounded-pill bg-fern px-4 text-small font-semibold text-shell"
                   >
                     {t("approve")}
                   </button>

@@ -1,7 +1,7 @@
 # Estado del proyecto — Hotel Marina del Sol
 
 > **Proyecto**: `hotel-room-mcp-trazable` · **Rama de push**: `Hotel-DSH-GCP` (solo remotos de `anlucorporations`) · **Fecha**: 2026-09-27
-> **Fase del proceso**: Fase 1 reconstruida (este documento + `requerimientos.md`, `diccionario_datos.md`, `entornos_globales.md`) · Fase 2 con auditoría ya ejecutada · **Fase 3: M0–M9 cerrados y verificados · Plan de reestructuración: F0–F6 completadas y F8 CERRADA (corte ejecutado en GCP + ventana de acuñación completa con barrido global y aviso de agotamiento); F7 (administración financiera) queda fuera de esta entrega (3.ª versión)**
+> **Fase del proceso**: Fase 1 reconstruida (este documento + `requerimientos.md`, `diccionario_datos.md`, `entornos_globales.md`) · Fase 2 con auditoría ya ejecutada · **Fase 3: M0–M9 cerrados y verificados · Plan de reestructuración: F0–F6 completadas y F8 CERRADA (corte ejecutado en GCP + ventana de acuñación completa con barrido global y aviso de agotamiento); F7 (administración financiera) queda fuera de esta entrega (3.ª versión) · Rediseño visual «Brisa Marina» v2.0.0 aplicado a `apps/web` (§38)**
 > **Memoria de trabajo**: este archivo. Se actualiza de forma incremental en cada ciclo.
 
 ---
@@ -811,11 +811,11 @@ Estado verificado del servidor MCP y de su conexión con la web, con los servici
 | Protección DNS-rebinding | **Activa**: con un `MCP_ALLOWED_HOSTS` que no incluye el puerto, el MCP responde **403 `Invalid Host header`** (comprobado) |
 | Asistente conversacional | **No operativo por configuración**: `ANTHROPIC_API_KEY` está **vacía** en el `.env`, así que `/api/assistant` responde **503** `ASSISTANT_UNAVAILABLE` y la UI muestra su estado alternativo (`assistant-unavailable`) con navegación manual |
 
-**Hallazgo del entorno (no del código)**: el puerto **8788, que el MCP tenía configurado, lo ocupa un
-proceso `python` ajeno al proyecto** (`python -m http.server 8788 --directory C:\GGTO\proyecto\app`,
-iniciado el 2026-09-23 a las 15:35). Con ese proceso escuchando, el MCP **no puede arrancar**
-(`EADDRINUSE`). **Resuelto**: `MCP_PORT=8790` en el `.env`, con `MCP_BASE_URL`, `MONITOR_TARGETS` y
-`MCP_ALLOWED_HOSTS` alineados. No se ha tocado el proceso del otro proyecto.
+**Hallazgo del entorno (no del código)**: el puerto **8788, que el MCP tenía configurado, lo ocupaba un
+proceso `python` ajeno al proyecto** (un servidor de ficheros estático, iniciado el 2026-09-23 a las
+15:35). Con ese proceso escuchando, el MCP **no puede arrancar** (`EADDRINUSE`). **Resuelto**:
+`MCP_PORT=8790` en el `.env`, con `MCP_BASE_URL`, `MONITOR_TARGETS` y `MCP_ALLOWED_HOSTS` alineados.
+No se ha tocado el proceso ajeno.
 
 ### Despliegue local del sistema completo (2026-09-23)
 
@@ -2552,3 +2552,158 @@ canario en su URL propia → `update-traffic --to-revisions=<revisión>=100`. (`
 producción. Lo que lo acreditó aquí fue leer los logs de la revisión nueva y verlos limpios (y verlos
 sucios en la anterior). Un despliegue con canario etiquetado permitió además detectarlo **antes** de
 exponerlo al huésped.
+
+---
+
+## 38. Rediseño visual «Brisa Marina» — identidad completa de `apps/web` (2026-10) · `@asistenteProyecto` + `@visualUiUx`
+
+### Encargo y calibración
+
+Encargo del responsable: *«identidad visual para todo el proyecto, fresca con estilo profesional;
+estilo AdminLTE para la suite de administrador y landing page para la página principal»*. La
+entrevista de calibración (bloque de 3) fijó: **rediseño completo desde cero** (no evolución
+aditiva), dirección **más luminosa y aérea**, alcance **solo `apps/web`**.
+
+Antes de tocar nada se auditó el acoplamiento real: el proyecto **ya tenía** identidad implementada
+(`Manual_Identidad_Visual.md` v1.2.2, «Mediterráneo editorial»), **AdminLTE ya aplicado** al
+back-office (v1.2.0) y **landing ya existente** (hero + `BookingBar`). El rediseño **conserva la
+arquitectura de información y la distribución AdminLTE** —que son las que el responsable pidió— y
+sustituye el sistema visual completo: vocabulario de tokens, valores, tipografías y elevación.
+
+### Qué cambió
+
+| Pieza | Antes | Ahora |
+|---|---|---|
+| Lienzo | `sand #FBF6EC` (arena cálida) | **`mist #F4F9FC`** (porcelana fría) |
+| Primario | `sea #0E5A63` (teal apagado) | **`azure #0F6C9C`** (azur vívido) |
+| Registro oscuro | `ocean #0F2C3F` | **`navy #0E2A3F`** (marino frío) · `navy-soft` |
+| Acento | `terracotta` / `terracotta-text` | **`coral` / `coral-text`** |
+| Detalle premium | `gold` / `champagne` | **`amber` / `pearl`** |
+| Estado disponible | `olive #5E6B45` | **`fern #276E4C`** |
+| Display | Fraunces (sin cirílico) | **Playfair Display** (cirílico nativo) |
+| UI | Hanken Grotesk + respaldo Inter | **Manrope** (cirílico nativo) |
+| Cascada cirílica | 2 respaldos `preload:false` | **eliminada**: la cubre la marca |
+| Elevación | sombras con tinte teal cálido | **sombras frías y difusas** (marino/azur) |
+
+### Método (por qué no se rompió nada)
+
+1. **Fuentes de verdad identificadas y reescritas a la vez**: `packages/config/tailwind/preset.cjs`
+   (tokens), `apps/web/src/lib/a11y/palette.ts` (espejo medible), `apps/web/src/app/globals.css`
+   (`:root` de runtime), `apps/web/src/app/layout.tsx` (fuentes) y `scripts/design/contrast-audit.mjs`
+   (instrumento).
+2. **Migración token a token con script acotado por contexto** (`/tmp/migrate-brisa.mjs`): solo
+   utilidades de clase, variables CSS, accesos `PALETTE.x`, cadenas exactas de token en los tests de
+   paleta y HEX de la paleta. **No** se tocó prosa ni textos de traducción (la primera búsqueda daba
+   falsos positivos como «proce**sand**o»). Resultado: **141 ficheros, 3.184 reemplazos** en un paso,
+   con los guardianes como red de seguridad.
+3. **7 guardianes adaptados, no desactivados**: `cyrillic-fonts.test.ts` se reescribió para exigir la
+   cobertura cirílica de **las fuentes de marca**; `a11y.test.ts`, `brand-pieces.test.ts`,
+   `control-boundary.test.ts` y `admin-shell.test.ts` siguen midiendo sobre el preset real.
+4. **Piezas de marca migradas**: los **42 SVG** de `docs/imagenes`, la maqueta
+   `docs/ux-mockups/catalogo.html`, la imagen social generada en código y el generador de manuales
+   `apps/web/scripts/build-manuals.mjs`.
+5. **Documentación alineada**: `Manual_Identidad_Visual.md` **v2.0.0** (reescrito),
+   `docs/DISENO-UX.md` §2, `docs/ACCESIBILIDAD-WCAG.md` **v2.0.0** y el nuevo
+   `RepoTecnico/analisis_visual.md` (informe de Fase 1 del skill).
+
+### Dos correcciones que salieron de medir (no de mirar)
+
+- `warning` pasó de `#96690E` a **`#8A5F0C`**: sobre su propia banda daba **4,29:1** (no AA).
+- `fern` pasó de `#2E7D57` a **`#276E4C`**: el chip «LIBRE» de recepción
+  (`text-fern` sobre `bg-fern/10`) daba **4,18:1**; ahora **5,04:1**.
+
+Ninguna de las dos la habría detectado una revisión visual: las encontró el guardián de pares del
+mismo elemento, que compone el alfa y mide.
+
+### Estado
+
+| Comprobación | Resultado |
+|---|---|
+| `node scripts/design/contrast-audit.mjs` | **50 pares** · **0** por debajo de su mínimo |
+| Guardianes de identidad (`vitest run src/lib src/components/admin`) | **36 ficheros · 277 pruebas en verde** |
+| Suite completa de `@hotel/web` | **72 ficheros · 584 pruebas en verde** |
+| `pnpm --filter @hotel/web typecheck` | verde (hubo que reconstruir `@hotel/shared`: su `dist` estaba obsoleto) |
+| `pnpm --filter @hotel/web build` | verde, **20/20 páginas** y fuentes `woff2` descargadas |
+| Ficheros con el sistema nuevo | **142** (código, guardianes, ilustraciones, maqueta y documentación) |
+| Evidencia visual | `RepoTecnico/evidencias/identidad-brisa-marina.png` (hoja de identidad a 2x) + `.html` openable, **generados** por `scripts/design/brand-sheet.mjs` desde el preset y las fuentes reales del build |
+| **Escaneo axe con navegador real** | **70/70** (35 rutas × `chromium` + `Pixel 5`) **sin violaciones `critical`/`serious`**, sobre el build de producción con PostgreSQL 16 y Redis 7 locales y RPC/worker apagados a propósito |
+| Capturas del producto real | `pantalla-landing.png` · `pantalla-catalogo.png` · `pantalla-contacto.png` (y `-antes-del-arreglo.png` como evidencia del defecto) · `pantalla-admin-acceso.png` · `pantalla-admin-dashboard.png` · `pantalla-admin-minteo.png` · `pantalla-recepcion.png` — servidor real, build de producción; el back-office con sesión real vía login + TOTP y **consola sin `MISSING_MESSAGE`** |
+| Manuales regenerados | `pnpm --filter @hotel/web manuals` → **35 manuales · 428 secciones**, 0 restos de la paleta anterior en `docs/pdf/` |
+
+### Hallazgo colateral del escaneo: cuatro claves i18n rotas (corregido + guardián nuevo)
+
+El escaneo axe destapó algo **ajeno al rediseño pero real**: el servidor registraba
+`MISSING_MESSAGE` en cada petición de `/contacto` y el huésped veía el literal `home.travelers.title`.
+Causa: la página pedía `home.travelers.*` y `home.howToArrive.*` mientras las cuatro claves viven en el
+namespace **`contact`**; en el mismo barrido apareció un `system.operationsTitle2` huérfano que el
+back-office (`SystemOperations`) pedía como `system.operationsTitle`.
+
+- **Corregido**: los tres enlaces a su namespace real (sin inventar copy: se usan las traducciones que
+  ya existían en ES/EN/RU) y renombrada la clave huérfana en los tres catálogos.
+- **Blindado**: guardián nuevo `apps/web/src/lib/i18n-keys.test.ts`, que resuelve estáticamente los
+  enlaces `getTranslations("ns")`/`useTranslations("ns")` de `src/**` y exige que **toda clave pedida
+  exista en ES, EN y RU**. El guardián de paridad no podía verlo: una clave ausente en los **tres**
+  idiomas es «paritaria». Límite declarado: las claves con plantilla (49) no son resolubles.
+- **Lección de método**: el defecto llevaba en el producto desde la suite pública (commit del
+  2026-09-28) y **ninguna** de las 584 pruebas lo veía; lo encontró *ejecutar el sistema y leer su
+  consola*, no una aserción.
+
+### Cómo se reprodujo el entorno de la verificación (y cómo se restauró)
+
+El escaneo axe y las capturas exigen el sistema **en marcha**. En este entorno no había servicios
+levantados; se usaron los paquetes ya extraídos en `/tmp` (los dejó una sesión anterior):
+
+```bash
+# PostgreSQL 16 (datos en /tmp/pgdata)
+export LD_LIBRARY_PATH=/tmp/pgroot/usr/lib/x86_64-linux-gnu:/tmp/pgroot/usr/lib/postgresql/16/lib
+/tmp/pgroot/usr/lib/postgresql/16/bin/pg_ctl -D /tmp/pgdata -l /tmp/pg-start.log \
+  -o "-p 5432 -k /tmp -c listen_addresses=127.0.0.1" start
+
+# Redis 7 (script de la sesión anterior; escucha en loopback + IP del host y sin autenticación)
+sh /tmp/redis7/start-redis.sh
+
+# App con el backend apagado a propósito (mide también los estados degradados)
+cd apps/web && RPC_URL=http://127.0.0.1:1 WORKER_BASE_URL=http://127.0.0.1:1 \
+  SESSION_SECRET=e2e-test-secret ANTHROPIC_API_KEY= pnpm start --port 3100
+```
+
+Notas de la sesión: el navegador de Playwright necesita `LD_LIBRARY_PATH` apuntando a las
+bibliotecas extraídas (`/tmp/playwright-libs/extracted/usr/lib/x86_64-linux-gnu`) y `pnpm manuals`
+también (genera los PDF con el mismo navegador). Se aprovisionó un operador **local de pruebas**
+(`admin@marinadelsol.es`, `DEFAULT_ADMIN_ROLE`) para capturar el back-office con sesión real:
+conviene rotarlo con el mismo comando de aprovisionamiento y **no reutilizar esa contraseña**.
+Al terminar se **pararon los tres servicios** (PostgreSQL, Redis y la app): el entorno queda como
+estaba.
+
+### Cierre de aplicación: ninguna superficie viva con la imagen anterior (2026-10)
+
+Barrido final (tokens y HEX del sistema anterior en todo el repositorio, excluidos los documentos que
+son **registro histórico**). Superficies vivas **con la identidad nueva**:
+
+| Superficie | Estado |
+|---|---|
+| `apps/web` (tokens, CSS, fuentes, 48 rutas y sus suites) | ✅ migrada y verificada (584→588 pruebas en verde) |
+| `docs/imagenes/*.svg` (42 piezas) + `opengraph-image.tsx` + `docs/ux-mockups/catalogo.html` | ✅ migradas (guardián `brand-pieces.test.ts` deriva los HEX del preset) |
+| `docs/pdf/**` (35 manuales) y `apps/web/public/manual/**` | ✅ regenerados con `pnpm --filter @hotel/web manuals` |
+| Documentación viva: `DISENO-UX.md`, `ACCESIBILIDAD-WCAG.md`, `Manual_Identidad_Visual.md` v2.0.0, `analisis_visual.md` | ✅ al día |
+| **Instrucciones de producción futura** (rol CREATIVO y equipo de manuales) | ✅ `RepoTecnico/Manuales/05-casos-de-uso/00-BRIEF-equipo-manuales.md` (tabla de paleta + tipografías + reglas de color) y `docs/imagenes/README.md` (guía de estilo) actualizados a «Brisa Marina» |
+
+**Se conservan a propósito con los valores antiguos** (son el registro de lo decidido entonces, no
+instrucciones): `propuestaVisual-Hotel.md`, `propuesta_imagen_visual.md`, las secciones históricas de
+este documento, la tabla antes/después de `analisis_visual.md` y el changelog del manual.
+
+Verificación tras el barrido: guardianes de documentación en verde (`images-naming`, `brand-pieces`,
+`help/manuals-sync`, `i18n-keys` → **24/24**).
+
+### Pendiente derivado (declarado, no oculto)
+
+1. **Escaneo axe con datos reales** (dashboard con cifras y gráficas): el spec fuerza vistas
+   degradadas; requiere una base poblada y Anvil con noches vivas.
+2. La **app nativa del hotel** (llave NFC, conserjería, chat de mayordomía) sigue **fuera** del alcance
+   de esta entrega: es la 3.ª versión (D-49/D-50) y no existe dominio de negocio para ella en el
+   modelo. Si se aborda, será un ciclo propio con su propio sistema visual.
+3. El **modo noche** del personal sigue propuesto y no aprobado (multiplicaría la matriz de pares).
+4. Detalle cosmético observado en el back-office: la marca del sidebar se recorta («Panel · Mari…») por
+   el ancho del panel. No se toca porque el contrato del shell está fijado por `admin-shell.test.ts`;
+   queda a decisión del responsable (acortar la etiqueta o permitir dos líneas).
+

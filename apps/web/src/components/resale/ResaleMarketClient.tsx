@@ -31,9 +31,9 @@ export function ResaleMarketClient({
       <div
         data-testid="resale-empty"
         role="status"
-        className="flex flex-col items-center rounded-brand-lg border border-dashed border-line bg-sand-2 px-5 py-16 text-center"
+        className="flex flex-col items-center rounded-brand-lg border border-dashed border-line bg-mist-2 px-5 py-16 text-center"
       >
-        <span aria-hidden="true" className="mb-3.5 text-sea opacity-60">
+        <span aria-hidden="true" className="mb-3.5 text-azure opacity-60">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
             <path d="M3 7h18M6 7V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12" />
             <path d="M10 11v6M14 11v6" />
@@ -44,7 +44,7 @@ export function ResaleMarketClient({
         <Link
           href="/"
           data-testid="resale-back-catalog"
-          className="mt-5 inline-flex min-h-touch items-center rounded-pill border border-line bg-shell px-5 font-semibold text-ink transition-colors hover:border-sea hover:text-sea"
+          className="mt-5 inline-flex min-h-touch items-center rounded-pill border border-line bg-shell px-5 font-semibold text-ink transition-colors hover:border-azure hover:text-azure"
         >
           {t("backToCatalog")}
         </Link>

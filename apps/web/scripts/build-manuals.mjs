@@ -671,31 +671,31 @@ function parseManual(markdown, { slug, imageOf, file }) {
 /** CSS del documento imprimible: paleta y tipografías reales del proyecto. */
 const PRINT_CSS = `
   :root {
-    --sand: #fbf6ec;
-    --sand-2: #f3ead8;
+    --mist: #f4f9fc;
+    --mist-2: #e6f0f6;
     --shell: #ffffff;
-    --line: #e7dcc6;
-    --ink: #1b2327;
-    --ink-soft: #4c575c;
-    --sea: #0e5a63;
-    --sea-deep: #08424a;
-    --terracotta: #c0542e;
-    --olive: #5e6b45;
-    --gold: #c68a2e;
+    --line: #dbe7ef;
+    --ink: #101f2c;
+    --ink-soft: #41566a;
+    --azure: #0f6c9c;
+    --azure-deep: #0a4f75;
+    --coral: #c4522c;
+    --fern: #276e4c;
+    --amber: #b98324;
   }
   @page { size: A4; }
   * { box-sizing: border-box; }
   html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   body {
     margin: 0;
-    background: var(--sand);
+    background: var(--mist);
     color: var(--ink);
-    font-family: "Hanken Grotesk", "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-family: "Manrope", "Segoe UI", system-ui, -apple-system, sans-serif;
     font-size: 11.5pt;
     line-height: 1.55;
   }
-  h1, h2, h3 { font-family: "Fraunces", Georgia, "Times New Roman", serif; color: var(--ink); }
-  a { color: var(--sea-deep); text-decoration: underline; text-decoration-thickness: 0.5px; }
+  h1, h2, h3 { font-family: "Playfair Display", Georgia, "Times New Roman", serif; color: var(--ink); }
+  a { color: var(--azure-deep); text-decoration: underline; text-decoration-thickness: 0.5px; }
 
   .cover {
     page-break-after: always;
@@ -704,25 +704,25 @@ const PRINT_CSS = `
        portada no se mezcle con el índice y no desborde a una segunda página. */
     height: 277mm;
     padding: 16mm 18mm 12mm;
-    background: var(--sand);
-    border-bottom: 6mm solid var(--sea);
+    background: var(--mist);
+    border-bottom: 6mm solid var(--azure);
   }
   .cover .eyebrow {
     font-size: 9.5pt;
     letter-spacing: 0.22em;
     text-transform: uppercase;
-    color: var(--terracotta);
+    color: var(--coral);
     margin: 0 0 8mm;
   }
   .cover h1 { font-size: 28pt; line-height: 1.08; margin: 0 0 5mm; letter-spacing: -0.01em; }
-  .cover .rule { width: 32mm; height: 3px; background: var(--gold); margin: 0 0 6mm; }
-  .cover .subtitle { font-size: 12pt; color: var(--sea-deep); margin: 0 0 3mm; font-weight: 600; }
+  .cover .rule { width: 32mm; height: 3px; background: var(--amber); margin: 0 0 6mm; }
+  .cover .subtitle { font-size: 12pt; color: var(--azure-deep); margin: 0 0 3mm; font-weight: 600; }
   .cover .date { font-size: 10.5pt; color: var(--ink-soft); margin: 0; }
   .cover .lead {
     margin-top: 10mm;
     padding: 5mm 6mm;
     background: var(--shell);
-    border-left: 3px solid var(--sea);
+    border-left: 3px solid var(--azure);
     border-radius: 3px;
     color: var(--ink-soft);
     font-size: 10.5pt;
@@ -740,7 +740,7 @@ const PRINT_CSS = `
   .toc li { margin: 0 0 2.4mm; }
   .toc li.level-3 { margin-left: 8mm; font-size: 10.5pt; color: var(--ink-soft); }
   .toc a { text-decoration: none; }
-  .toc .num { color: var(--terracotta); font-weight: 700; margin-right: 2mm; }
+  .toc .num { color: var(--coral); font-weight: 700; margin-right: 2mm; }
 
   .content { padding: 0 18mm 18mm; }
   .manual-section { break-inside: auto; }
@@ -750,7 +750,7 @@ const PRINT_CSS = `
     margin: 12mm 0 4mm;
     padding-top: 3mm;
     border-top: 2px solid var(--line);
-    color: var(--sea-deep);
+    color: var(--azure-deep);
     break-after: avoid;
     page-break-after: avoid;
   }
@@ -758,7 +758,7 @@ const PRINT_CSS = `
   h3.section {
     font-size: 13pt;
     margin: 8mm 0 3mm;
-    color: var(--terracotta);
+    color: var(--coral);
     break-after: avoid;
     page-break-after: avoid;
   }
@@ -767,7 +767,7 @@ const PRINT_CSS = `
   code {
     font-family: "DejaVu Sans Mono", "Consolas", monospace;
     font-size: 0.92em;
-    background: var(--sand-2);
+    background: var(--mist-2);
     border: 1px solid var(--line);
     border-radius: 3px;
     padding: 0 0.3em;
@@ -777,7 +777,7 @@ const PRINT_CSS = `
     margin: 0 0 4mm;
     padding: 3mm 5mm;
     background: var(--shell);
-    border-left: 3px solid var(--gold);
+    border-left: 3px solid var(--amber);
     color: var(--ink-soft);
   }
   blockquote p { margin: 0; }
@@ -795,19 +795,19 @@ const PRINT_CSS = `
   thead { display: table-header-group; }
   tr { break-inside: avoid; page-break-inside: avoid; }
   th {
-    background: var(--sea-deep);
+    background: var(--azure-deep);
     color: #ffffff;
     text-align: left;
     font-weight: 600;
     padding: 2.4mm 3mm;
-    border: 1px solid var(--sea-deep);
+    border: 1px solid var(--azure-deep);
   }
   td {
     padding: 2.4mm 3mm;
     border: 1px solid var(--line);
     vertical-align: top;
   }
-  tbody tr:nth-child(even) td { background: var(--sand); }
+  tbody tr:nth-child(even) td { background: var(--mist); }
   figure { margin: 0 0 5mm; break-inside: avoid; page-break-inside: avoid; }
   p > img { max-width: 100%; height: auto; }
   figure img {
@@ -831,7 +831,7 @@ const PRINT_CSS = `
 
 /** Pie de página del PDF: título del manual + «Página X de Y». */
 function footerTemplate(title) {
-  return `<div style="width:100%;font-family:'Hanken Grotesk','Segoe UI',sans-serif;font-size:8pt;color:#4c575c;padding:0 14mm;display:flex;justify-content:space-between;">
+  return `<div style="width:100%;font-family:'Manrope','Segoe UI',sans-serif;font-size:8pt;color:#41566a;padding:0 14mm;display:flex;justify-content:space-between;">
     <span>${escapeHtml(title)}</span>
     <span>Página <span class="pageNumber"></span> de <span class="totalPages"></span></span>
   </div>`;
@@ -839,7 +839,7 @@ function footerTemplate(title) {
 
 /** Cabecera del PDF: nombre de la plataforma. */
 function headerTemplate() {
-  return `<div style="width:100%;font-family:'Hanken Grotesk','Segoe UI',sans-serif;font-size:8pt;color:#4c575c;padding:0 14mm;">
+  return `<div style="width:100%;font-family:'Manrope','Segoe UI',sans-serif;font-size:8pt;color:#41566a;padding:0 14mm;">
     <span>Hotel Marina del Sol · manuales</span>
   </div>`;
 }

@@ -1107,7 +1107,7 @@
     "fieldSold": "Noches vendidas",
     "fieldMinted": "Noches minteadas",
     "fieldBurned": "Noches quemadas",
-    "operationsTitle2": "Operaciones",
+    "operationsTitle": "Operaciones",
     "workerDown": "El worker no responde; no se puede leer su estado.",
     "fieldWorkerStatus": "Estado del worker",
     "checkedAt": "Actualizado a las {at}",
@@ -1409,7 +1409,8 @@
       "total": "Total",
       "unknown": "El importe se confirma al retener la noche."
     },
-    "nightsRequired": "Elige una salida posterior a la entrada."
+    "nightsRequired": "Elige una salida posterior a la entrada.",
+    "priceUnavailable": "No podemos confirmar el precio de esta habitación ahora mismo. Inténtalo en unos minutos o elige otra noche."
   },
   "content": {
     "adminTitle": "Contenido de la web",

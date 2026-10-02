@@ -35,7 +35,7 @@ export function AdminPanel({
         <p
           data-testid="role-denied"
           role="alert"
-          className="rounded-brand-lg border border-line bg-sand-2 px-5 py-8 text-ink-soft"
+          className="rounded-brand-lg border border-line bg-mist-2 px-5 py-8 text-ink-soft"
         >
           {t("roleDenied")}
         </p>
@@ -45,13 +45,13 @@ export function AdminPanel({
         <div
           data-testid="session-expired-block"
           role="alert"
-          className="flex flex-col items-start gap-3 rounded-brand-lg border border-line bg-sand-2 px-5 py-8 text-ink"
+          className="flex flex-col items-start gap-3 rounded-brand-lg border border-line bg-mist-2 px-5 py-8 text-ink"
         >
-          <p className="text-terracotta-text">{t("authExpired")}</p>
+          <p className="text-coral-text">{t("authExpired")}</p>
           <button
             type="button"
             onClick={() => void signOut()}
-            className="min-h-touch rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep"
+            className="min-h-touch rounded-pill bg-azure px-5 font-semibold text-shell transition-colors hover:bg-azure-deep"
           >
             {t("logout")}
           </button>

@@ -68,7 +68,7 @@ export default async function RoomsPage() {
         <ol className="grid gap-4 tablet:grid-cols-3">
           {BUYING_STEPS.map((step, index) => (
             <li key={step} className="rounded-brand border border-line bg-shell p-5">
-              <p className="text-micro font-bold uppercase tracking-[0.14em] text-terracotta-text">
+              <p className="text-micro font-bold uppercase tracking-[0.14em] text-coral-text">
                 {index + 1}
               </p>
               <p className="mt-2 text-small text-ink">{t(`buying.${step}`)}</p>
@@ -78,13 +78,13 @@ export default async function RoomsPage() {
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
             href="/catalogo"
-            className="inline-flex min-h-touch items-center rounded-pill bg-sea px-5 text-small font-semibold text-shell transition-colors hover:bg-sea-deep"
+            className="inline-flex min-h-touch items-center rounded-pill bg-azure px-5 text-small font-semibold text-shell transition-colors hover:bg-azure-deep"
           >
             {t("cta")}
           </Link>
           <Link
             href="/ayuda"
-            className="inline-flex min-h-touch items-center rounded-pill border border-sea px-5 text-small font-semibold text-sea transition-colors hover:bg-sea-deep hover:text-shell"
+            className="inline-flex min-h-touch items-center rounded-pill border border-azure px-5 text-small font-semibold text-azure transition-colors hover:bg-azure-deep hover:text-shell"
           >
             {t("help")}
           </Link>

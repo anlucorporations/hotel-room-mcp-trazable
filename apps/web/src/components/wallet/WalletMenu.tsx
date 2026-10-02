@@ -39,7 +39,7 @@ function short(address: string): string {
 }
 
 const ITEM =
-  "flex min-h-touch w-full items-center gap-2 rounded-brand-sm px-3 text-left text-small text-ink transition-colors hover:bg-sand-2";
+  "flex min-h-touch w-full items-center gap-2 rounded-brand-sm px-3 text-left text-small text-ink transition-colors hover:bg-mist-2";
 
 /** Claves de acción que abren otra suite (D-77), para agruparlas bajo un encabezado. */
 const SUITE_ACTIONS = new Set<WalletMenuAction>([
@@ -182,8 +182,8 @@ export function WalletMenu({ session, variant = "header" }: WalletMenuProps) {
   const triggerClass = [
     "inline-flex min-h-touch items-center gap-2 rounded-pill border px-3 text-small font-medium transition-colors",
     variant === "sidebar"
-      ? "w-full justify-between border-line-strong bg-shell text-ink hover:bg-sand-2"
-      : "border-line bg-shell text-ink hover:bg-sand-2",
+      ? "w-full justify-between border-line-strong bg-shell text-ink hover:bg-mist-2"
+      : "border-line bg-shell text-ink hover:bg-mist-2",
   ].join(" ");
 
   return (
@@ -200,13 +200,13 @@ export function WalletMenu({ session, variant = "header" }: WalletMenuProps) {
       >
         <span
           aria-hidden="true"
-          className={`h-2 w-2 flex-none rounded-full ${isConnected ? "bg-olive" : "bg-ink-soft/50"}`}
+          className={`h-2 w-2 flex-none rounded-full ${isConnected ? "bg-fern" : "bg-ink-soft/50"}`}
         />
         <span data-testid="wallet-menu-title" className="max-w-[16ch] truncate">
           {title}
         </span>
         {hasSession && roleKey && (
-          <span className="rounded-pill bg-sand-2 px-2 py-0.5 text-micro font-semibold uppercase tracking-wide text-sea-deep">
+          <span className="rounded-pill bg-mist-2 px-2 py-0.5 text-micro font-semibold uppercase tracking-wide text-azure-deep">
             {t(roleKey as "roleDefaultAdmin")}
           </span>
         )}

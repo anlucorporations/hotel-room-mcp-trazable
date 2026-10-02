@@ -16,7 +16,7 @@ import { useOnboarding } from "@/components/wallet/useOnboarding";
 import type { PreparedPurchase } from "@/lib/assistant/types";
 
 const PRIMARY_BTN =
-  "min-h-touch rounded-brand bg-sea px-4 py-2 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60";
+  "min-h-touch rounded-brand bg-azure px-4 py-2 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-60";
 
 /** Acorta una dirección 0x para microcopy de firma («0x12…ab»), igual que `WalletBar`. */
 function shortAddress(address: string): string {
@@ -87,7 +87,7 @@ export function PurchaseHandoff({ purchase }: { purchase: PreparedPurchase }) {
       <div
         data-testid="handoff-success"
         role="status"
-        className="flex flex-col gap-2 rounded-brand border border-line bg-sand-2 p-4"
+        className="flex flex-col gap-2 rounded-brand border border-line bg-mist-2 p-4"
       >
         <h3 className="font-display font-semibold text-ink">{t("handoff.successTitle")}</h3>
         <p className="text-small text-ink">{t("handoff.successBody")}</p>
@@ -106,7 +106,7 @@ export function PurchaseHandoff({ purchase }: { purchase: PreparedPurchase }) {
   return (
     <div
       data-testid="purchase-handoff"
-      className="flex flex-col gap-2 rounded-brand border border-line bg-sand-2 p-4"
+      className="flex flex-col gap-2 rounded-brand border border-line bg-mist-2 p-4"
     >
       <h3 className="font-display font-semibold text-ink">{t("handoff.title")}</h3>
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-small text-ink">
@@ -148,7 +148,7 @@ export function PurchaseHandoff({ purchase }: { purchase: PreparedPurchase }) {
         >
           <span
             aria-hidden="true"
-            className="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-sea"
+            className="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-azure"
           />
           {t("handoff.verifying")}
         </p>
@@ -156,7 +156,7 @@ export function PurchaseHandoff({ purchase }: { purchase: PreparedPurchase }) {
       {review.verifyFailed && (
         <div data-testid="handoff-verify-failed" role="alert" className="text-small">
           {/* §35: «noche ya vendida» no es un problema de conexión; se dice con nombre. */}
-          <p className="text-terracotta-text">
+          <p className="text-coral-text">
             {review.soldOnceState === "sold" ? t("handoff.nightAlreadySold") : t("handoff.verifyFailed")}
           </p>
           {review.soldOnceState !== "sold" && (
@@ -164,7 +164,7 @@ export function PurchaseHandoff({ purchase }: { purchase: PreparedPurchase }) {
               type="button"
               data-testid="handoff-verify-retry"
               onClick={review.refetch}
-              className="mt-1 font-semibold text-sea underline hover:text-sea-deep"
+              className="mt-1 font-semibold text-azure underline hover:text-azure-deep"
             >
               {t("handoff.verifyRetry")}
             </button>
@@ -175,7 +175,7 @@ export function PurchaseHandoff({ purchase }: { purchase: PreparedPurchase }) {
         <p
           data-testid="handoff-night-sold"
           role="alert"
-          className="text-small text-terracotta-text"
+          className="text-small text-coral-text"
         >
           {t("handoff.nightAlreadySold")}
         </p>
@@ -184,7 +184,7 @@ export function PurchaseHandoff({ purchase }: { purchase: PreparedPurchase }) {
         <p
           data-testid="handoff-reverify-error"
           role="alert"
-          className="text-small text-terracotta-text"
+          className="text-small text-coral-text"
         >
           {t("handoff.reverifyFailed")}
         </p>
@@ -195,7 +195,7 @@ export function PurchaseHandoff({ purchase }: { purchase: PreparedPurchase }) {
         <p
           data-testid="handoff-insufficient-balance"
           role="status"
-          className="text-small text-terracotta-text"
+          className="text-small text-coral-text"
         >
           {t("handoff.insufficientBalance", {
             missing: formatEther(shortfall),
@@ -207,7 +207,7 @@ export function PurchaseHandoff({ purchase }: { purchase: PreparedPurchase }) {
       )}
 
       {txErrorKind && (
-        <p data-testid="handoff-tx-error" role="alert" className="text-small text-terracotta-text">
+        <p data-testid="handoff-tx-error" role="alert" className="text-small text-coral-text">
           {t(`handoff.txError.${txErrorKind}`)}
         </p>
       )}
@@ -248,7 +248,7 @@ export function PurchaseHandoff({ purchase }: { purchase: PreparedPurchase }) {
         errorActions={
           <>
             {txErrorKind && (
-              <p data-testid="handoff-modal-tx-error" role="alert" className="text-small text-terracotta-text">
+              <p data-testid="handoff-modal-tx-error" role="alert" className="text-small text-coral-text">
                 {t(`handoff.txError.${txErrorKind}`)}
               </p>
             )}

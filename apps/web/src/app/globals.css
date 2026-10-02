@@ -2,41 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Sistema visual «Mediterráneo editorial» (docs/SRS.md §7) + tokens aditivos del registro oscuro
-   y de estados (RepoTecnico/propuesta_imagen_visual.md §3.2). Espejo de runtime del preset. */
+/* Sistema visual «Brisa Marina» (docs/SRS.md §7 · Manual_Identidad_Visual.md v2.0.0).
+   Espejo de runtime del preset: registro luminoso y aéreo (porcelana fría, azur vívido,
+   marino profundo para el registro oscuro y la suite AdminLTE, coral de atención). */
 :root {
-  --sand: #fbf6ec;
-  --sand-2: #f3ead8;
+  --mist: #f4f9fc;
+  --mist-2: #e6f0f6;
   --shell: #ffffff;
-  --line: #e7dcc6;
-  --ink: #1b2327;
-  --ink-soft: #4c575c;
-  --sea: #0e5a63;
-  --sea-deep: #08424a;
-  --terracotta: #c0542e;
-  --terracotta-text: #a8431f;
-  --olive: #5e6b45;
-  --gold: #c68a2e;
-  --ocean: #0f2c3f;
-  --ocean-soft: #16455e;
-  --champagne: #c5a880;
-  --line-strong: #8f7f5f;
-  --success: #2f6b4f;
-  --success-bg: #e3efe7;
-  --warning: #8a5a12;
-  --warning-bg: #f7e9c9;
-  --error: #9e2b1f;
-  --error-bg: #f8e3de;
-  --info: #14556b;
-  --info-bg: #dceaf1;
+  --line: #dbe7ef;
+  --line-strong: #6b8296;
+  --ink: #101f2c;
+  --ink-soft: #41566a;
+  --azure: #0f6c9c;
+  --azure-deep: #0a4f75;
+  --navy: #0e2a3f;
+  --navy-soft: #1a4160;
+  --pearl: #c3d4e0;
+  --coral: #c4522c;
+  --coral-text: #a34222;
+  --amber: #b98324;
+  --fern: #276e4c;
+  --success: #1f7a4d;
+  --success-bg: #e2f2e9;
+  --warning: #8a5f0c;
+  --warning-bg: #fbf0d6;
+  --error: #b3261e;
+  --error-bg: #fae5e3;
+  --info: #0f6380;
+  --info-bg: #e0eff5;
   --ease: cubic-bezier(0.21, 0.68, 0.27, 0.99);
 }
 
 @layer base {
   body {
-    @apply bg-sand text-ink antialiased;
-    /* Cascada cirílica: Inter cubre el ruso (Fraunces/Hanken no lo incluyen). Ver propuesta §3.4. */
-    font-family: var(--font-hanken), var(--font-inter), system-ui, -apple-system, sans-serif;
+    @apply bg-mist text-ink antialiased;
+    /* Manrope cubre ES/EN/RU (subconjuntos latin + cyrillic cargados en layout.tsx). */
+    font-family: var(--font-manrope), system-ui, -apple-system, sans-serif;
     font-size: 1.0625rem;
     line-height: 1.5;
   }
@@ -44,7 +45,7 @@
   h1,
   h2,
   h3 {
-    font-family: var(--font-fraunces), var(--font-playfair), Georgia, serif;
+    font-family: var(--font-playfair), Georgia, serif;
     color: var(--ink);
   }
 
@@ -58,11 +59,11 @@
     font: inherit;
   }
 
-  /* Foco visible de marca: doble anillo arena + teal (WCAG 2.4.7 / 1.4.11). */
+  /* Foco visible de marca: doble anillo porcelana + azur (WCAG 2.4.7 / 1.4.11). */
   :where(a, button, input, select, textarea, [tabindex]):focus-visible {
-    outline: 2px solid var(--sea);
+    outline: 2px solid var(--azure);
     outline-offset: 2px;
-    box-shadow: 0 0 0 4px var(--sand-2);
+    box-shadow: 0 0 0 4px var(--mist-2);
     border-radius: 8px;
   }
 }

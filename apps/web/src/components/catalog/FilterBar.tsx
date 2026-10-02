@@ -39,11 +39,11 @@ const TYPES: readonly NightType[] = ["simple", "doble", "suite"];
 
 const CHIP_BASE =
   "inline-flex min-h-touch flex-none items-center gap-2 whitespace-nowrap rounded-pill border px-4 text-small font-semibold transition-colors";
-const CHIP_ON = "border-sea bg-sea text-shell";
-const CHIP_OFF = "border-line bg-shell text-ink-soft hover:border-sea hover:text-sea";
+const CHIP_ON = "border-azure bg-azure text-shell";
+const CHIP_OFF = "border-line bg-shell text-ink-soft hover:border-azure hover:text-azure";
 
 const CONTROL_BASE =
-  "min-h-touch rounded-pill border border-line bg-shell px-4 text-small text-ink transition-colors focus:border-sea focus:outline-none focus:ring-2 focus:ring-sea/40";
+  "min-h-touch rounded-pill border border-line bg-shell px-4 text-small text-ink transition-colors focus:border-azure focus:outline-none focus:ring-2 focus:ring-azure/40";
 
 function Chip({
   pressed,
@@ -96,7 +96,7 @@ export function FilterBar({
   return (
     <section
       aria-label={t("filtersLabel")}
-      className="sticky top-[68px] z-30 border-b border-line bg-sand/90 py-4 backdrop-blur"
+      className="sticky top-[68px] z-30 border-b border-line bg-mist/90 py-4 backdrop-blur"
     >
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-5">
         <div className="flex items-center gap-3">

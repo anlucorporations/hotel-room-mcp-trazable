@@ -3,86 +3,81 @@
 > Deriva de [`REQUISITOS.md`](./REQUISITOS.md), [`CASOS-DE-USO.md`](./CASOS-DE-USO.md),
 > [`DISENO-TECNICO.md`](./DISENO-TECNICO.md) y [`PLAN-DE-PRUEBAS.md`](./PLAN-DE-PRUEBAS.md).
 > Mockup de referencia del catálogo: [`ux-mockups/catalogo.html`](./ux-mockups/catalogo.html).
-> **Fecha:** 2026-06-04
+> **Fecha:** 2026-06-04 · **Actualizado:** 2026-10 (rediseño «Brisa Marina» v2.0.0)
 
 ---
 
 ## 1. Concepto y principios de diseño
 
-**Concepto: «Mediterráneo editorial».** El producto es cripto, pero el usuario es un
-viajero. El diseño transmite un **hotel boutique de la costa de Alicante** —luz, calidez,
-confianza— y **esconde la complejidad web3** tras un lenguaje de hospitalidad.
+**Concepto: «Brisa Marina».** El producto es cripto, pero el usuario es un
+viajero. El diseño transmite un **hotel boutique de la costa de Alicante** —luz, aire,
+confianza— y **esconde la complejidad web3** tras un lenguaje de hospitalidad. El registro es
+**luminoso y aéreo**: porcelana fría de fondo, azur vívido para la acción y marino profundo solo
+para lo que debe pesar (hero, pie y la suite de administración).
 
 | Principio | Aplicación |
 |-----------|-----------|
 | **La hospitalidad primero** | Vocabulario de viajero, no de cripto: «Reservar» (no «Mint/Buy»), «Traspasar» (no «Transfer»), «Tus noches» (no «Tu wallet»). El NFT nunca se nombra en la UI pública. |
-| **Confianza para pagar** | CTAs en teal profundo (alto contraste), sellos de «pago verificado», histórico público accesible, estados de transacción siempre visibles y explicados. |
+| **Confianza para pagar** | CTAs en azur profundo (alto contraste), sellos de «pago verificado», histórico público accesible, estados de transacción siempre visibles y explicados. |
 | **Mobile-first real** | Diseñado a 320 px primero; áreas táctiles ≥44 px; sin scroll horizontal; el pulgar alcanza las acciones. |
-| **Luz, no oscuridad** | Fondo arena cálido; fotografía protagonista; cripto-dark evitado a propósito. |
+| **Luz, no oscuridad** | Fondo porcelana luminoso; fotografía protagonista; cripto-dark evitado a propósito. |
 | **Calma > densidad** | Una acción primaria por pantalla; jerarquía tipográfica fuerte; aire. |
 
-**Diferenciador memorable:** la combinación de **serif editorial cálida (Fraunces)** con
-foto a sangre y paleta de arena/mar hace que parezca el sitio de un hotel real con encanto,
+**Diferenciador memorable:** la combinación de **serif elegante (Playfair Display)** con
+foto a sangre y paleta de porcelana/mar hace que parezca el sitio de un hotel real con encanto,
 no un marketplace de NFTs.
 
 ---
 
-## 2. Design tokens
+## 2. Design tokens — sistema «Brisa Marina» (v2.0.0, 2026-10)
+
+> Rediseño completo aprobado por el responsable: sustituye a «Mediterráneo editorial».
+> Dirección **luminosa y aérea** (porcelana fría, azur vívido, marino profundo para el registro
+> oscuro y la suite AdminLTE, coral para la atención). Fuente de verdad:
+> `RepoTecnico/Manual_Identidad_Visual.md` + `packages/config/tailwind/preset.cjs`.
 
 ### 2.1 Color (con ratio de contraste sobre su fondo de uso)
 
 | Token | Hex | Uso | Contraste |
 |-------|-----|-----|-----------|
-| `--sand` | `#FBF6EC` | Fondo de página | — |
-| `--sand-2` | `#F3EAD8` | Superficie alterna, estados | — |
+| `--mist` | `#F4F9FC` | Fondo de página (porcelana fría) | — |
+| `--mist-2` | `#E6F0F6` | Superficie alterna, estados | — |
 | `--shell` | `#FFFFFF` | Cards, superficies elevadas | — |
-| `--line` | `#E7DCC6` | Bordes, separadores | — |
-| `--ink` | `#1B2327` | Texto principal | **14.0:1** sobre sand ✅ |
-| `--ink-soft` | `#4C575C` | Texto secundario | **7.0:1** sobre sand ✅ |
-| `--sea` | `#0E5A63` | **Primario** (CTA, enlaces, foco de marca) | **7.2:1** con blanco ✅ |
-| `--sea-deep` | `#08424A` | Hover de primario | >9:1 ✅ |
-| `--terracotta` | `#C0542E` | Acento en **fondos** (badge Reventa, dot) — **no** como texto pequeño | 4.6:1 sobre blanco; **4.29:1 sobre arena ❌** |
-| `--terracotta-text` | `#A8431F` | Acento como **texto** sobre arena (eyebrow, mensajes de error) | **5.0:1** sobre sand ✅ |
-| `--olive` | `#5E6B45` | Estado «disponible», sage | 4.8:1 con blanco ✅ |
-| `--gold` | `#C68A2E` | Detalle premium (Suite) | usar con `--ink` encima |
-| `--ocean` **(nuevo)** | `#0F2C3F` | Superficie oscura editorial: hero, pie, cabecera de administración | **13,4:1** con `sand` · 14,5:1 con `shell` ✅ |
-| `--ocean-soft` **(nuevo)** | `#16455E` | Superficie oscura secundaria; hover sobre oscuro | 4,54:1 con `champagne` ✅ |
-| `--champagne` **(nuevo)** | `#C5A880` | Detalle premium **solo sobre oscuro** (filetes, iconos, cifras) | 6,39:1 sobre `ocean` ✅ · **2,26:1 sobre blanco ❌** |
-| `--line-strong` **(nuevo)** | `#8F7F5F` | **Frontera de controles** (`input`/`select`/`textarea`), WCAG 1.4.11 — aplicado en los **89 controles** con borde y protegido por `control-boundary.test.ts` | 3,91:1 blanco · 3,63:1 arena · 3,27:1 arena-2 ✅ |
-| `--success` / `--success-bg` **(nuevos)** | `#2F6B4F` / `#E3EFE7` | Confirmaciones | 6,29:1 con blanco · 5,32:1 sobre su fondo ✅ |
-| `--warning` / `--warning-bg` **(nuevos)** | `#8A5A12` / `#F7E9C9` | Avisos (ventana corta, stock, preventivo) | 5,49:1 sobre arena · 4,91:1 sobre su fondo ✅ |
-| `--error` / `--error-bg` **(nuevos)** | `#9E2B1F` / `#F8E3DE` | Errores y bloqueos | 7,45:1 con blanco · 6,04:1 sobre su fondo ✅ |
-| `--info` / `--info-bg` **(nuevos)** | `#14556B` / `#DCEAF1` | Información y ayuda | 7,67:1 sobre arena · 6,72:1 sobre su fondo ✅ |
+| `--line` | `#DBE7EF` | Bordes decorativos, separadores | — |
+| `--ink` | `#101F2C` | Texto principal | **15.8:1** sobre mist ✅ |
+| `--ink-soft` | `#41566A` | Texto secundario | **7.2:1** sobre mist ✅ |
+| `--azure` | `#0F6C9C` | **Primario** (CTA, enlaces, foco de marca) | **5.8:1** con blanco ✅ |
+| `--azure-deep` | `#0A4F75` | Hover de primario, títulos de marca | **8.8:1** con blanco ✅ |
+| `--coral` | `#C4522C` | Acento en **fondos** (badge Reventa, dot) — con texto blanco | 4.57:1 con blanco ✅ |
+| `--coral-text` | `#A34222` | Acento como **texto** sobre claro (eyebrow, avisos) | **6.25:1** sobre shell · 5.89:1 sobre mist ✅ |
+| `--fern` | `#276E4C` | Estado «disponible» | 5.8:1 sobre mist · 5.0:1 sobre su tinte al 10 % ✅ |
+| `--amber` | `#B98324` | Detalle premium (Suite) | usar con `--ink` encima (5.1:1); nunca como texto sobre claro |
+| `--navy` | `#0E2A3F` | Superficie oscura: hero, pie, **sidebar AdminLTE** | **14.8:1** con `shell` · 13.9:1 con `mist` ✅ |
+| `--navy-soft` | `#1A4160` | Superficie oscura secundaria; hover sobre oscuro | 10.7:1 con `shell` ✅ |
+| `--pearl` | `#C3D4E0` | Detalle premium **solo sobre oscuro** (filetes, iconos, cifras) | 9.7:1 sobre `navy` · 7.0:1 sobre `navy-soft` ✅ · **1.5:1 sobre blanco ❌** |
+| `--line-strong` | `#6B8296` | **Frontera de controles** (`input`/`select`/`textarea`), WCAG 1.4.11 — protegido por `control-boundary.test.ts` | 3.99:1 shell · 3.77:1 mist · 3.45:1 mist-2 ✅ |
+| `--success` / `--success-bg` | `#1F7A4D` / `#E2F2E9` | Confirmaciones | 5.3:1 con blanco · 4.6:1 sobre su fondo ✅ |
+| `--warning` / `--warning-bg` | `#8A5F0C` / `#FBF0D6` | Avisos (ventana corta, stock, preventivo) | 5.0:1 sobre su fondo · 5.3:1 sobre mist ✅ |
+| `--error` / `--error-bg` | `#B3261E` / `#FAE5E3` | Errores y bloqueos | 6.5:1 con blanco · 5.4:1 sobre su fondo ✅ |
+| `--info` / `--info-bg` | `#0F6380` / `#E0EFF5` | Información y ayuda | 5.7:1 sobre su fondo · 6.4:1 sobre mist ✅ |
 
-> **Decisión de accesibilidad:** el CTA primario es **teal** (7:1) por confianza y
-> contraste. `--terracotta` solo se usa en **fondos** (badges/dot); como **texto sobre
-> arena** se usa `--terracotta-text` (#A8431F, 5:1). El **anillo de foco NO es terracota**
-> (daba 1.71:1 sobre el CTA teal): es un **doble anillo arena + teal** con ≥3:1 contra
-> ambos colores adyacentes (WCAG 1.4.11 / 2.4.7).
+> **Decisión de accesibilidad:** el CTA primario es **azur** (5.8:1 con blanco) por confianza y
+> contraste. `--coral` solo se usa en **fondos** con texto blanco; como **texto sobre claro** se usa
+> `--coral-text` (#A34222, 6.25:1). El **anillo de foco** es un **doble anillo porcelana + azur**
+> con ≥3:1 contra los colores adyacentes (WCAG 1.4.11 / 2.4.7).
 >
-> **Aplicación al producto (2026-09-27)**: los cuatro **estados semánticos** ya se usan en el
-> producto (18 ficheros): los banners de error pasan a `error`/`error-bg`, las confirmaciones a
-> `success`/`success-bg`, los avisos (plazo vencido, stock bajo) a `warning`/`warning-bg` y la insignia
-> «en directo» a `success`. El registro marino entra en la **sidebar de administración** (`bg-ocean`
-> con la pastilla activa en `bg-shell text-ocean`).
-
-> **Evolución del 2026-09-27** (aprobada a partir de `RepoTecnico/propuesta_imagen_visual.md`): los
-> **12 tokens originales no cambian**; se **añaden** el registro oscuro (`ocean`, `ocean-soft`), el
-> detalle `champagne` (solo sobre oscuro), el borde de controles `line-strong` y los cuatro estados
-> semánticos. **Velo del hero**: `bg-ocean/65` (compuesto `#637682` sobre blanco) → **4,73:1** con
-> texto blanco; al 55 % daba 3,52:1 (solo texto grande). Los **32 pares medidos** y su veredicto se
-> reproducen con `node scripts/design/contrast-audit.mjs`.
+> **Velo del hero**: `bg-navy/65` (compuesto `#627582` sobre blanco) → **4.79:1** con texto blanco
+> y 4.51:1 con `mist`. Por debajo del 65 % no se usa: al 35 % el compuesto cae a 2.10:1 (prohibido
+> incluso para texto grande). Los **50 pares medidos** y su veredicto se reproducen con
+> `node scripts/design/contrast-audit.mjs`.
 
 ### 2.2 Tipografía
 
-- **Display:** `Fraunces` (serif variable, óptico) — titulares, precios, nombres de habitación.
-- **UI/cuerpo:** `Hanken Grotesk` — navegación, texto, formularios, botones.
-- **Cascada cirílica (2026-09-27):** Fraunces **no publica** el subconjunto `cyrillic` y Hanken
-  Grotesk solo el *extendido* (sin el rango ruso básico U+0400–045F), así que el locale RU caía a
-  `Georgia`/`system-ui`. Se añade un **respaldo glifo a glifo**: `Playfair Display` (display) e
-  `Inter` (UI) cargados **solo** con el subconjunto `cyrillic` y `preload: false`, tras la fuente de
-  marca en la pila (`var(--font-fraunces), var(--font-playfair), …`). ES/EN no cambian. Guardián:
-  `apps/web/src/lib/a11y/cyrillic-fonts.test.ts`.
+- **Display:** `Playfair Display` (serif elegante, subconjuntos latin + **cyrillic**) — titulares, precios, nombres de habitación.
+- **UI/cuerpo:** `Manrope` (geométrica fresca, subconjuntos latin + **cyrillic**) — navegación, texto, formularios, botones.
+- **Ruso (RU):** las dos fuentes de marca publican el subconjunto `cyrillic`, así que el locale RU
+  queda cubierto **por la propia marca**; la cascada glifo a glifo con respaldos del sistema
+  anterior se retiró. Guardián: `apps/web/src/lib/a11y/cyrillic-fonts.test.ts`.
 - **Escala** (mobile → desktop con `clamp`): `display` `2.8→5rem` · H1 `2.3→4.1rem` · H2 `1.6→2.2rem`
   · H3 `1.3rem` · H4 `1.075rem` · `body-lg 1.1875rem` · cuerpo `1.0625rem (17px)` · `body-sm 0.95rem`
   · small `0.9rem` · `caption 0.82rem` · `overline 0.78rem` (+0,14em) · micro `0.78rem` · `code 0.9rem`.
@@ -92,8 +87,8 @@ no un marketplace de NFTs.
 
 - **Espaciado** (escala 4px): 4 · 8 · 12 · 16 · 20 · 24 · 28 · 32 · 40 · 48 · 64 · 96.
 - **Radios:** `--r-xs 6` · `--r-sm 10` · `--r-md 16` · `--r-lg 22` · `--r-pill 999`.
-- **Sombras:** `sm` (reposo), `md` (hover card), `lg` (elevación/modal) — todas con tinte teal cálido;
-  el resumen flotante de reserva reutiliza `md`.
+- **Sombras:** `card` (reposo), `card-hover` (hover y resumen flotante), `modal` (modales y menús) —
+  frías y suaves, teñidas con el marino/azur de marca (registro «aéreo»: nunca sombras duras ni negras).
 - **Motion:** `--ease cubic-bezier(.21,.68,.27,.99)`; reveal escalonado al cargar (≤0.6s);
   hover card `translateY(-5px)` + zoom de foto. **Respeta `prefers-reduced-motion`.**
 
@@ -107,31 +102,31 @@ no un marketplace de NFTs.
 
 ### 2.5 Piezas de marca y vista previa social (Fase D)
 
-- **Ilustraciones** (`docs/imagenes/*.svg`): las nueve piezas están dentro de la paleta y lo vigila
-  `brand-pieces.test.ts`, que **deriva los HEX del preset real** (una pieza nueva no puede introducir
-  un color que el sistema no tenga). Cada SVG lleva `role="img"` y `<title>` porque son imágenes de
-  contenido en los manuales.
-- **Registro marino**: la **portada** y los títulos de las pantallas de recepción y reventa adoptan
-  `ocean #0F2C3F` (antes `sea-deep`) — el marino es la superficie oscura del sistema. El `gold` se
-  mantiene en claro; el `champagne` solo aparece sobre oscuro (la imagen social).
+- **Ilustraciones** (`docs/imagenes/*.svg`): las piezas están dentro de la paleta «Brisa Marina» y lo
+  vigila `brand-pieces.test.ts`, que **deriva los HEX del preset real** (una pieza nueva no puede
+  introducir un color que el sistema no tenga). Cada SVG lleva `role="img"` y `<title>` porque son
+  imágenes de contenido en los manuales.
+- **Registro marino**: la **portada** y los títulos de las pantallas de recepción y reventa usan
+  `navy #0E2A3F` — el marino es la superficie oscura del sistema. El `amber` se mantiene en claro;
+  el `pearl` solo aparece sobre oscuro (sidebar AdminLTE, hero, imagen social).
 - **Vista previa social**: `app/opengraph-image.tsx` **genera** la imagen 1200×630 con los tokens
-  (`ocean`→`ocean-soft`, titular arena, eyebrow champagne, filete terracota) en vez de ser un PNG
+  (`navy`→`navy-soft`, titular porcelana, eyebrow perla, filete coral) en vez de ser un PNG
   suelto: no puede desincronizarse de la paleta y se regenera sola. El `<head>` declara `og:*` y
   `twitter:card`. En producción hay que definir **`NEXT_PUBLIC_SITE_URL`** (en desarrollo cae a
   `http://localhost:3000`).
-- **Maqueta del catálogo** (`docs/ux-mockups/catalogo.html`): al día con los tokens nuevos, el hero en
-  registro marino y la **barra de reserva** entregada en la Fase C.2.
+- **Maqueta del catálogo** (`docs/ux-mockups/catalogo.html`): al día con los tokens de «Brisa
+  Marina», el hero en registro marino y la **barra de reserva** entregada en la Fase C.2.
 
 ---
 
 ## 3. Librería de componentes (Atomic Design)
 
 ### Átomos
-- **Botón** (`.btn`): variantes `primary` (teal), `ghost` (borde), `danger` (admin); min-height 44px.
+- **Botón** (`.btn`): variantes `primary` (azur), `ghost` (borde), `danger` (admin); min-height 44px.
 - **Chip de filtro**: toggle accesible (`aria-pressed`), scroll horizontal en móvil.
-- **Badge**: tipo de habitación / `Suite` (gold) / `Reventa` (terracota).
-- **Input / Select / DatePicker**, **Etiqueta**, **Precio** (Fraunces + sufijo ETH), **Dot de estado**.
-- **Stars** (`components/home/Stars.tsx`): calificación como **imagen con nombre accesible** (`role="img"` + `aria-label`, glifos `aria-hidden`); rellenas en `terracotta-text` (6,0:1 sobre blanco) y vacías al 25 % de opacidad. La lógica pura vive en `lib/stars.ts` (notas corruptas se acotan, no se inventan).
+- **Badge**: tipo de habitación / `Suite` (amber) / `Reventa` (coral).
+- **Input / Select / DatePicker**, **Etiqueta**, **Precio** (Playfair Display + sufijo ETH), **Dot de estado**.
+- **Stars** (`components/home/Stars.tsx`): calificación como **imagen con nombre accesible** (`role="img"` + `aria-label`, glifos `aria-hidden`); rellenas en `coral-text` (6,25:1 sobre blanco) y vacías al 25 % de opacidad. La lógica pura vive en `lib/stars.ts` (notas corruptas se acotan, no se inventan).
 - **Icono** (stroke 2px, set propio: calendario, marcador, ola, wallet, check, alerta).
 
 ### Moléculas
@@ -142,7 +137,7 @@ no un marketplace de NFTs.
 - **MetricCard** (dashboard): valor + etiqueta + periodo + sparkline.
 - **ChatBubble** + **ChatComposer** (asistente).
 - **Pagination / LoadMore**: botón «cargar más» (`load-more`) con estado de carga incremental, fin de lista (`end-of-list`), anuncio `aria-live` y gestión de foco al añadir resultados (RNF-02, ventana de 90 días).
-- **SuiteCard** (`components/home/SuiteCard.tsx`): tarjeta **horizontal** de habitación publicada (foto + tipo + capacidad + camas + m² + descripción + CTA al catálogo). Sin precio: la tarifa se publica solo donde se puede comprobar contra la cadena. Sin foto se pinta igual (banda arena).
+- **SuiteCard** (`components/home/SuiteCard.tsx`): tarjeta **horizontal** de habitación publicada (foto + tipo + capacidad + camas + m² + descripción + CTA al catálogo). Sin precio: la tarifa se publica solo donde se puede comprobar contra la cadena. Sin foto se pinta igual (banda porcelana).
 - **ExperienceCard** (`components/home/ExperienceCard.tsx`): imagen de la galería con el **texto alternativo como pie visible** (y `alt=""` para no leerlo dos veces); sin alt, nombre accesible genérico.
 - **TestimonialCard** (`components/home/TestimonialCard.tsx`): reseña **aprobada** (D-58) con `Stars`, cita en serif y pie «huésped verificado».
 - **BookingBar** (`components/booking/BookingBar.tsx`): barra de reserva con entrada, salida y huéspedes que lleva a `/reservar?from=…&to=…&guests=…`. Valida en el propio formulario las reglas del dominio (`lib/booking.ts`: la noche de hoy no es vendible, la salida debe ser posterior) y explica el problema en línea (`role="alert"`) en vez de dejar avanzar. Montada **flotando** sobre el borde del hero en `/` y **en línea** en `/catalogo`.
@@ -150,12 +145,12 @@ no un marketplace de NFTs.
 
 ### Organismos
 - **AdminSidebar** en registro marino (Fase F): la navegación del back-office vive en una tarjeta
-  `bg-ocean` con enlaces `text-sand` (13,4:1), secciones en `champagne` (6,4:1) y la entrada activa como
-  pastilla `bg-shell text-ocean` (14,5:1), con filetes `border-champagne/30`.
+  `bg-navy` con enlaces `text-mist` (13,4:1), secciones en `pearl` (9,7:1) y la entrada activa como
+  pastilla `bg-shell text-navy` (14,5:1), con filetes `border-pearl/30`.
 - **Header** (marca + nav + wallet), **Hero editorial**, **CatalogGrid**, **HistoryTable**,
   **DashboardGrid**, **MintForm** (admin), **ChatPanel**, **TxModal** (confirmación de compra),
   **OnboardingSheet** (instalar/añadir red), **ResaleManager** (fijar/actualizar/cancelar precio de reventa + `claim`), **EmptyState / DegradedState**.
-- **Hero de la home pública** (`components/home/Hero.tsx`, Fase C): foto a sangre de la portada (`hotel_images` sección `HERO`) con **velo marino `bg-ocean/65`** (4,93:1 con texto blanco) y titular en serif con la palabra destacada en `champagne`. Sin portada cae a `bg-ocean` plano; la imagen va **sin** `lazy` porque es el LCP.
+- **Hero de la home pública** (`components/home/Hero.tsx`, Fase C): foto a sangre de la portada (`hotel_images` sección `HERO`) con **velo marino `bg-navy/65`** (4,79:1 con texto blanco) y titular en serif con la palabra destacada en `pearl`. Sin portada cae a `bg-navy` plano; la imagen va **sin** `lazy` porque es el LCP.
 - **DataTable** (`components/ui/DataTable.tsx`, Fase C.3): tabla **densa** de las suites de personal (recepción, housekeeping, mantenimiento, administración) con `<caption>` solo para lectores, `scope="col"`/`scope="row"`, región desplazable con nombre y `tabIndex={0}` (WCAG 2.1.1), densidad `compact`/`comfortable`, cabecera fija opcional y columnas ocultables en móvil **sin sacarlas del DOM**. No conoce el dominio: recibe columnas y filas. La vigila `table-semantics.test.ts`, que **deriva la regla de todas las tablas del producto**.
 
 ### Plantillas
@@ -194,7 +189,7 @@ estados: empty-state / degraded-state+retry / img-fallback / end-of-list
 │ ★ Suite · Habitación 201              │
 │ Domingo 15 jun 2026 · 1 noche         │
 │ 0,5 ETH                               │
-│ [ Reservar esta noche ]   (teal, 44h) │
+│ [ Reservar esta noche ]   (azur, 44h) │
 │ ✓ Pago verificado en red segura       │
 │ Detalles · Cómo funciona el traspaso  │
 └───────────────────────────────────────┘
@@ -273,7 +268,7 @@ Sin wallet (no-wallet)          Red incorrecta (wrong-network)
 `wrong-network` con botón «Cambiar de red» (`wallet_addEthereumChain`).
 
 ### 5.2 Estados de la noche (reflejan la máquina de estados del contrato)
-`Disponible` (oliva) · `Reventa` (terracota) · `Suite` (gold) · `Vendida` (atenuada) ·
+`Disponible` (helecho) · `Reventa` (coral) · `Suite` (amber) · `Vendida` (atenuada) ·
 `Expirada` (gris, no comprable). Coherentes con CASOS §4.
 
 ### 5.3 Estados de transacción (RNF-19) — `TxModal` / `TxToast`
@@ -307,7 +302,7 @@ mensaje `insufficient-balance` (CU-05 05a / TC-E2E-021).
 ## 6. Accesibilidad (RNF-20, WCAG 2.1 AA) y rendimiento (RNF-11)
 
 - **Contraste:** todas las parejas texto/fondo ≥ 4.5:1 (cuerpo) y ≥ 3:1 (texto grande/UI) — ver §2.1.
-- **Teclado:** todo operable; `:focus-visible` con anillo terracota 3px; orden lógico; **skip link**.
+- **Teclado:** todo operable; `:focus-visible` con doble anillo porcelana + azur; orden lógico; **skip link**.
 - **Semántica:** landmarks (`header/nav/main/footer`), `aria-pressed` en chips, `aria-live` en
   contador y toasts, `alt` descriptivo en cada foto, `aria-current` en navegación.
 - **Táctil:** objetivos ≥ 44×44 px (botones, chips, guardar, composer).

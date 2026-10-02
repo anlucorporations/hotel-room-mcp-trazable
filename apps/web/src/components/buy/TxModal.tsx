@@ -217,7 +217,7 @@ export function TxModal({
             <span
               aria-hidden="true"
               aria-busy="true"
-              className="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-sea"
+              className="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-azure"
             />
           )}
           {liveText}
@@ -226,7 +226,7 @@ export function TxModal({
         {/* Aviso ASERTIVO separado solo para el fallo de la tx (MAJOR#7). Respeta el copy por
             contexto (MAJOR#9): en back-office el mensaje es genérico, no «no se completó la reserva». */}
         {phase === "reverted" && (
-          <p role="alert" className="mt-2 text-small text-terracotta-text">
+          <p role="alert" className="mt-2 text-small text-coral-text">
             {copy?.statusHint?.reverted ?? t("statusHint.reverted")}
           </p>
         )}

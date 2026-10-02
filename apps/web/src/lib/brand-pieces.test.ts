@@ -59,12 +59,12 @@ describe("Identidad visual · piezas de marca dentro de la paleta", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("la portada adopta el registro marino (`ocean`), no el teal antiguo, en mar y titular", () => {
+  it("la portada adopta el registro marino (`navy`) de «Brisa Marina» en mar y titular", () => {
     const cover = readFileSync(`${IMAGES_DIR}/doc-portada-hotel.svg`, "utf8");
-    const ocean = preset.theme.extend.colors.ocean!.toUpperCase();
-    expect(cover.toUpperCase()).toContain(ocean);
-    // El titular de la portada usa el marino (no el `sea-deep` de la generación anterior).
-    expect(cover).toMatch(/font-size="76"[^>]*fill="#0F2C3F"/);
+    const navy = preset.theme.extend.colors.navy!.toUpperCase();
+    expect(cover.toUpperCase()).toContain(navy);
+    // El titular de la portada usa el marino `navy` del sistema «Brisa Marina».
+    expect(cover).toMatch(/font-size="76"[^>]*fill="#0E2A3F"/);
   });
 
   it("la imagen social se genera con tokens de la paleta", () => {

@@ -41,7 +41,7 @@ export default async function ActivitiesPage() {
                   {pick(locale, activity.descriptionEs, activity.descriptionEn, activity.descriptionRu)}
                 </p>
                 {activity.priceCents > 0 && (
-                  <p className="mt-2 text-small font-semibold text-sea-deep">
+                  <p className="mt-2 text-small font-semibold text-azure-deep">
                     {home("activities.price", {
                       price: (activity.priceCents / 100).toFixed(2),
                       currency: activity.currency,

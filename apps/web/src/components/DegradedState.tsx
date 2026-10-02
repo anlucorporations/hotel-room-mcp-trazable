@@ -20,9 +20,9 @@ export function DegradedState({
     <div
       data-testid="degraded-state"
       role="alert"
-      className="flex flex-col items-center rounded-brand-lg border border-dashed border-line bg-sand-2 px-5 py-12 text-center"
+      className="flex flex-col items-center rounded-brand-lg border border-dashed border-line bg-mist-2 px-5 py-12 text-center"
     >
-      <span aria-hidden="true" className="mb-3.5 text-sea opacity-60">
+      <span aria-hidden="true" className="mb-3.5 text-azure opacity-60">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
           <path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
         </svg>
@@ -32,7 +32,7 @@ export function DegradedState({
         type="button"
         data-testid="retry"
         onClick={() => router.refresh()}
-        className="mt-5 inline-flex min-h-touch items-center rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep"
+        className="mt-5 inline-flex min-h-touch items-center rounded-pill bg-azure px-5 font-semibold text-shell transition-colors hover:bg-azure-deep"
       >
         {retryLabel ?? t("retry")}
       </button>

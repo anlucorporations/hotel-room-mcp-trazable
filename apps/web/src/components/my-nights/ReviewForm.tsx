@@ -26,7 +26,7 @@ export function ReviewForm({ tokenId }: { tokenId: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-2 min-h-touch rounded-pill border border-sea px-4 text-small font-semibold text-sea"
+        className="mt-2 min-h-touch rounded-pill border border-azure px-4 text-small font-semibold text-azure"
       >
         {t("formOpen")}
       </button>
@@ -37,7 +37,7 @@ export function ReviewForm({ tokenId }: { tokenId: string }) {
 
   return (
     <form
-      className="mt-3 flex flex-col gap-2 rounded-brand border border-line bg-sand-2 p-3"
+      className="mt-3 flex flex-col gap-2 rounded-brand border border-line bg-mist-2 p-3"
       onSubmit={(event) => {
         event.preventDefault();
         void submit(rating, comment.trim());
@@ -70,7 +70,7 @@ export function ReviewForm({ tokenId }: { tokenId: string }) {
         />
       </label>
       {error && (
-        <p role="alert" className="text-small text-terracotta-text">
+        <p role="alert" className="text-small text-coral-text">
           {error}
         </p>
       )}
@@ -78,7 +78,7 @@ export function ReviewForm({ tokenId }: { tokenId: string }) {
         <button
           type="submit"
           disabled={busy}
-          className="min-h-touch rounded-pill bg-sea px-4 text-small font-semibold text-shell disabled:opacity-50"
+          className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell disabled:opacity-50"
         >
           {busy ? t("submitting") : t("submit")}
         </button>

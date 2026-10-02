@@ -40,7 +40,7 @@ export function TxReceipt({
   return (
     <div
       data-testid={testId}
-      className="mt-3 rounded-brand bg-sand-2 px-3 py-2 text-micro text-ink-soft"
+      className="mt-3 rounded-brand bg-mist-2 px-3 py-2 text-micro text-ink-soft"
     >
       <p className="font-semibold text-ink">{t("receipt")}</p>
       {explorer ? (
@@ -49,7 +49,7 @@ export function TxReceipt({
           href={explorer}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-1 inline-block break-all font-semibold text-sea underline hover:text-sea-deep"
+          className="mt-1 inline-block break-all font-semibold text-azure underline hover:text-azure-deep"
         >
           {t("viewTransaction")}
         </a>
@@ -62,7 +62,7 @@ export function TxReceipt({
             type="button"
             data-testid="receipt-copy"
             onClick={copy}
-            className="shrink-0 rounded-brand border border-line px-2 py-1 font-semibold text-ink hover:bg-sand"
+            className="shrink-0 rounded-brand border border-line px-2 py-1 font-semibold text-ink hover:bg-mist"
           >
             {copied ? t("copied") : t("copyHash")}
           </button>

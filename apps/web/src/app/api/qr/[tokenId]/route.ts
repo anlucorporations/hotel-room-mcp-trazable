@@ -75,7 +75,7 @@ export async function GET(
         errorCorrectionLevel: "M",
         margin: 1,
         width: 512,
-        color: { dark: "#1B2327", light: "#FFFFFF" },
+        color: { dark: "#101F2C", light: "#FFFFFF" },
       });
     } catch (qrError) {
       // El resguardo sigue siendo válido sin la imagen (recepción puede pegar el token), así que un

@@ -27,21 +27,21 @@ function CalendarIcon() {
 function StatusBadge({ night, t }: { night: NightView; t: ReturnType<typeof useTranslations> }) {
   if (night.saleType === "SECONDARY") {
     return (
-      <span className="absolute left-3.5 top-3.5 rounded-pill bg-terracotta px-3 py-1.5 text-micro font-bold text-shell shadow-card">
+      <span className="absolute left-3.5 top-3.5 rounded-pill bg-coral px-3 py-1.5 text-micro font-bold text-shell shadow-card">
         {t("resale")}
       </span>
     );
   }
   if (night.type === "suite") {
     return (
-      <span className="absolute left-3.5 top-3.5 rounded-pill bg-gold px-3 py-1.5 text-micro font-bold text-ink shadow-card">
+      <span className="absolute left-3.5 top-3.5 rounded-pill bg-amber px-3 py-1.5 text-micro font-bold text-ink shadow-card">
         {t("suite")}
       </span>
     );
   }
   return (
-    <span className="absolute left-3.5 top-3.5 inline-flex items-center gap-2 rounded-pill bg-shell/90 px-3 py-1.5 text-micro font-bold text-sea-deep shadow-card backdrop-blur">
-      <span aria-hidden="true" className="h-2 w-2 rounded-full bg-olive" />
+    <span className="absolute left-3.5 top-3.5 inline-flex items-center gap-2 rounded-pill bg-shell/90 px-3 py-1.5 text-micro font-bold text-azure-deep shadow-card backdrop-blur">
+      <span aria-hidden="true" className="h-2 w-2 rounded-full bg-fern" />
       {t("available")}
     </span>
   );
@@ -132,7 +132,7 @@ export function NightCard({
           {paused ? (
             <p
               data-testid="night-paused"
-              className="rounded-pill border border-line bg-sand-2 px-4 py-2.5 text-center text-small font-semibold text-ink-soft"
+              className="rounded-pill border border-line bg-mist-2 px-4 py-2.5 text-center text-small font-semibold text-ink-soft"
             >
               {t("buyPaused")}
             </p>

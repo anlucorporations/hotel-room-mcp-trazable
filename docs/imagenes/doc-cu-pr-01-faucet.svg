@@ -1,77 +1,77 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" aria-labelledby="t d">
   <title id="t">CU-PR-01 · Conseguir dinero de prueba: conectar la cartera, pulsar el botón, firmar y recibir</title>
   <desc id="d">Cinco tarjetas numeradas unidas por flechas. La primera conecta la cartera en la web de pruebas; la segunda comprueba que la red es la correcta; la tercera pulsa el botón Conseguir ETH de prueba; la cuarta firma la petición en la cartera; la quinta muestra el saldo con 30 ETH y la espera de 24 horas. Abajo se resume quién puede pedirlo, qué se consigue y qué pasa si algo falla.</desc>
-  <rect width="1600" height="900" fill="#FBF6EC"/>
-  <rect x="0" y="0" width="1600" height="156" fill="#08424A"/>
-  <text x="60" y="66" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#C5A880" letter-spacing="2">CU-PR-01 · BLOQUE 7</text>
+  <rect width="1600" height="900" fill="#F4F9FC"/>
+  <rect x="0" y="0" width="1600" height="156" fill="#0A4F75"/>
+  <text x="60" y="66" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#C3D4E0" letter-spacing="2">CU-PR-01 · BLOQUE 7</text>
   <text x="60" y="122" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="42" font-weight="700" fill="#FFFFFF">Conseguir dinero de prueba</text>
 
   <!-- paso 1 -->
-  <rect x="60" y="210" width="270" height="420" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
-  <circle cx="195" cy="300" r="36" fill="#08424A"/>
+  <rect x="60" y="210" width="270" height="420" rx="18" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <circle cx="195" cy="300" r="36" fill="#0A4F75"/>
   <text x="195" y="312" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">1</text>
-  <text x="195" y="408" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#1B2327">Conectar cartera</text>
-  <text x="195" y="474" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Abre la web</text>
-  <text x="195" y="506" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">y conecta la cartera.</text>
-  <path d="M96 530 H294" stroke="#E7DCC6" stroke-width="2" fill="none"/>
-  <rect x="90" y="546" width="210" height="48" rx="14" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
-  <text x="195" y="577" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">Red de pruebas</text>
+  <text x="195" y="408" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#101F2C">Conectar cartera</text>
+  <text x="195" y="474" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#41566A">Abre la web</text>
+  <text x="195" y="506" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#41566A">y conecta la cartera.</text>
+  <path d="M96 530 H294" stroke="#DBE7EF" stroke-width="2" fill="none"/>
+  <rect x="90" y="546" width="210" height="48" rx="14" fill="#E6F0F6" stroke="#DBE7EF" stroke-width="2"/>
+  <text x="195" y="577" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0F6C9C">Red de pruebas</text>
 
   <!-- paso 2 -->
-  <rect x="360" y="210" width="270" height="420" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
-  <circle cx="495" cy="300" r="36" fill="#08424A"/>
+  <rect x="360" y="210" width="270" height="420" rx="18" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <circle cx="495" cy="300" r="36" fill="#0A4F75"/>
   <text x="495" y="312" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">2</text>
-  <text x="495" y="408" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#1B2327">Mirar la red</text>
-  <text x="495" y="474" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Debe ser la red de</text>
-  <text x="495" y="506" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">pruebas, no otra.</text>
-  <path d="M396 530 H594" stroke="#E7DCC6" stroke-width="2" fill="none"/>
-  <rect x="390" y="546" width="210" height="48" rx="14" fill="#F7E9C9"/>
-  <text x="495" y="577" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#8A5A12">Solo pruebas</text>
+  <text x="495" y="408" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#101F2C">Mirar la red</text>
+  <text x="495" y="474" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#41566A">Debe ser la red de</text>
+  <text x="495" y="506" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#41566A">pruebas, no otra.</text>
+  <path d="M396 530 H594" stroke="#DBE7EF" stroke-width="2" fill="none"/>
+  <rect x="390" y="546" width="210" height="48" rx="14" fill="#FBF0D6"/>
+  <text x="495" y="577" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#8A5F0C">Solo pruebas</text>
 
   <!-- paso 3 -->
-  <rect x="660" y="210" width="270" height="420" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
-  <circle cx="795" cy="300" r="36" fill="#08424A"/>
+  <rect x="660" y="210" width="270" height="420" rx="18" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <circle cx="795" cy="300" r="36" fill="#0A4F75"/>
   <text x="795" y="312" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">3</text>
-  <text x="795" y="408" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#1B2327">Pulsar el botón</text>
-  <text x="795" y="474" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Pulsa el botón de</text>
-  <text x="795" y="506" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">ETH de prueba.</text>
-  <path d="M696 530 H894" stroke="#E7DCC6" stroke-width="2" fill="none"/>
-  <rect x="690" y="546" width="210" height="48" rx="14" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
-  <text x="795" y="577" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">Botón en la barra</text>
+  <text x="795" y="408" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#101F2C">Pulsar el botón</text>
+  <text x="795" y="474" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#41566A">Pulsa el botón de</text>
+  <text x="795" y="506" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#41566A">ETH de prueba.</text>
+  <path d="M696 530 H894" stroke="#DBE7EF" stroke-width="2" fill="none"/>
+  <rect x="690" y="546" width="210" height="48" rx="14" fill="#E6F0F6" stroke="#DBE7EF" stroke-width="2"/>
+  <text x="795" y="577" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0F6C9C">Botón en la barra</text>
 
   <!-- paso 4 -->
-  <rect x="960" y="210" width="270" height="420" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
-  <circle cx="1095" cy="300" r="36" fill="#08424A"/>
+  <rect x="960" y="210" width="270" height="420" rx="18" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <circle cx="1095" cy="300" r="36" fill="#0A4F75"/>
   <text x="1095" y="312" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">4</text>
-  <text x="1095" y="408" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#1B2327">Firmar petición</text>
-  <text x="1095" y="474" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Revisa en tu cartera</text>
-  <text x="1095" y="506" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">y confirma la firma.</text>
-  <path d="M996 530 H1194" stroke="#E7DCC6" stroke-width="2" fill="none"/>
-  <rect x="990" y="546" width="210" height="48" rx="14" fill="#F3EAD8" stroke="#E7DCC6" stroke-width="2"/>
-  <text x="1095" y="577" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0E5A63">Tú firmas</text>
+  <text x="1095" y="408" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#101F2C">Firmar petición</text>
+  <text x="1095" y="474" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#41566A">Revisa en tu cartera</text>
+  <text x="1095" y="506" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#41566A">y confirma la firma.</text>
+  <path d="M996 530 H1194" stroke="#DBE7EF" stroke-width="2" fill="none"/>
+  <rect x="990" y="546" width="210" height="48" rx="14" fill="#E6F0F6" stroke="#DBE7EF" stroke-width="2"/>
+  <text x="1095" y="577" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#0F6C9C">Tú firmas</text>
 
   <!-- paso 5 -->
-  <rect x="1260" y="210" width="270" height="420" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
-  <circle cx="1395" cy="300" r="36" fill="#08424A"/>
+  <rect x="1260" y="210" width="270" height="420" rx="18" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <circle cx="1395" cy="300" r="36" fill="#0A4F75"/>
   <text x="1395" y="312" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" font-weight="700" fill="#FFFFFF">5</text>
-  <text x="1395" y="408" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#1B2327">Ver el saldo</text>
-  <text x="1395" y="474" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Llegan 30 ETH;</text>
-  <text x="1395" y="506" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">repite en 24 horas.</text>
-  <path d="M1296 530 H1494" stroke="#E7DCC6" stroke-width="2" fill="none"/>
-  <rect x="1290" y="546" width="210" height="48" rx="14" fill="#E3EFE7"/>
-  <text x="1395" y="577" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#2F6B4F">Espera 24 horas</text>
+  <text x="1395" y="408" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#101F2C">Ver el saldo</text>
+  <text x="1395" y="474" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#41566A">Llegan 30 ETH;</text>
+  <text x="1395" y="506" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#41566A">repite en 24 horas.</text>
+  <path d="M1296 530 H1494" stroke="#DBE7EF" stroke-width="2" fill="none"/>
+  <rect x="1290" y="546" width="210" height="48" rx="14" fill="#E2F2E9"/>
+  <text x="1395" y="577" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#1F7A4D">Espera 24 horas</text>
 
-  <text x="345" y="428" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0E5A63">&#8594;</text>
-  <text x="645" y="428" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0E5A63">&#8594;</text>
-  <text x="945" y="428" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0E5A63">&#8594;</text>
-  <text x="1245" y="428" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0E5A63">&#8594;</text>
+  <text x="345" y="428" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0F6C9C">&#8594;</text>
+  <text x="645" y="428" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0F6C9C">&#8594;</text>
+  <text x="945" y="428" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0F6C9C">&#8594;</text>
+  <text x="1245" y="428" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0F6C9C">&#8594;</text>
 
-  <rect x="0" y="740" width="1600" height="160" fill="#F3EAD8"/>
-  <text x="60" y="790" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#4C575C" letter-spacing="1.5">QUIÉN</text>
-  <text x="60" y="838" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#1B2327">Tester con cartera en pruebas</text>
-  <text x="590" y="790" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#4C575C" letter-spacing="1.5">QUÉ CONSIGUES</text>
-  <text x="590" y="838" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#1B2327">30 ETH de prueba para practicar</text>
-  <text x="1120" y="790" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#4C575C" letter-spacing="1.5">SI FALLA</text>
-  <text x="1120" y="838" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#1B2327">Sin fondos o aún en espera:</text>
-  <text x="1120" y="872" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#1B2327">avisa o espera tu turno</text>
+  <rect x="0" y="740" width="1600" height="160" fill="#E6F0F6"/>
+  <text x="60" y="790" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#41566A" letter-spacing="1.5">QUIÉN</text>
+  <text x="60" y="838" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#101F2C">Tester con cartera en pruebas</text>
+  <text x="590" y="790" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#41566A" letter-spacing="1.5">QUÉ CONSIGUES</text>
+  <text x="590" y="838" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#101F2C">30 ETH de prueba para practicar</text>
+  <text x="1120" y="790" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#41566A" letter-spacing="1.5">SI FALLA</text>
+  <text x="1120" y="838" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#101F2C">Sin fondos o aún en espera:</text>
+  <text x="1120" y="872" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#101F2C">avisa o espera tu turno</text>
 </svg>

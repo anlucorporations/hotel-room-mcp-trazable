@@ -17,7 +17,7 @@ export function TopResoldTable({ rows }: { rows: readonly TopResoldRow[] }) {
     return (
       <p
         data-testid="top-resold-empty"
-        className="rounded-brand-lg border border-dashed border-line bg-sand-2 px-4 py-6 text-center text-small text-ink-soft"
+        className="rounded-brand-lg border border-dashed border-line bg-mist-2 px-4 py-6 text-center text-small text-ink-soft"
       >
         {t("charts.topResold.empty")}
       </p>
@@ -61,7 +61,7 @@ export function TopResoldTable({ rows }: { rows: readonly TopResoldRow[] }) {
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.tokenId} className="odd:bg-sand-2/50">
+              <tr key={row.tokenId} className="odd:bg-mist-2/50">
                 <th scope="row" className="px-2 py-1.5 text-left font-semibold text-ink">
                   {row.rank}
                 </th>

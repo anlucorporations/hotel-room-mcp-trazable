@@ -86,11 +86,11 @@ describe("Accesibilidad · la paleta medida ES la paleta real (H-21)", () => {
   });
 
   it("los colores de las series de las gráficas se distinguen del fondo de la tarjeta", () => {
-    // Las series de las gráficas son `sea` (primaria) y `terracotta-text` (reventa), declaradas en
+    // Las series de las gráficas son `azure` (primaria) y `coral-text` (reventa), declaradas en
     // `ChartLegend.SERIES_COLORS` a partir de la paleta real; el guardián de abajo comprueba ese
     // enlace en el código. Aquí se mide que cada relleno se distinga del fondo blanco de la
     // tarjeta (WCAG 1.4.11, 3:1 para elementos no textuales).
-    for (const token of ["sea", "terracotta-text"] as const) {
+    for (const token of ["azure", "coral-text"] as const) {
       const { ratio } = verifyWcagAA(PALETTE[token], PALETTE.shell, true);
       expect(ratio, `${token} sobre shell`).toBeGreaterThanOrEqual(3);
     }
@@ -122,14 +122,14 @@ describe("Accesibilidad · utilidades de color usadas en el producto", () => {
     for (const { file, classes } of usages) {
       // Un literal con condicional (`?`) o interpolación (`${}`) mezcla RAMAS distintas: emparejar
       // su texto con su fondo daría pares que nunca se pintan juntos (`text-ink-soft` de la rama
-      // A con `bg-sea` de la rama B). Esos colores siguen verificados por la regla de combinaciones
+      // A con `bg-azure` de la rama B). Esos colores siguen verificados por la regla de combinaciones
       // declaradas, que es la que cubre los estados condicionales.
       if (/[?]|\$\{/.test(classes)) continue;
 
       // El emparejamiento es **por variante** (2026-09-28). Antes se cruzaba todo texto con todo
-      // fondo del mismo literal, y eso denunciaba pares imposibles: `text-sea … hover:bg-sea-deep
+      // fondo del mismo literal, y eso denunciaba pares imposibles: `text-azure … hover:bg-azure-deep
       // hover:text-shell` pintaba el texto en arena al pasar el ratón, pero el escáner medía el
-      // `text-sea` de reposo contra el fondo del hover (1,41:1). La regla real de CSS es la
+      // `text-azure` de reposo contra el fondo del hover (1,41:1). La regla real de CSS es la
       // herencia: en una variante sin color propio se hereda el de reposo, y eso sí se comprueba.
       const byVariant = new Map<string, { fg: ColorUtility[]; bg: ColorUtility[] }>();
       for (const utility of parseColorUtilities(classes)) {
@@ -155,7 +155,7 @@ describe("Accesibilidad · utilidades de color usadas en el producto", () => {
             const bgHex = tokenHex(background.token);
             if (bgHex === null) continue;
             // El fondo puede llevar opacidad (p. ej. `bg-ink/40`): se compone sobre el lienzo.
-            const effectiveBg = blendOver(bgHex, PALETTE.sand, background.opacityPercent);
+            const effectiveBg = blendOver(bgHex, PALETTE.mist, background.opacityPercent);
             const effectiveFg = blendOver(fgHex, effectiveBg, foreground.opacityPercent);
             const { ratio } = verifyWcagAA(effectiveFg, effectiveBg, false);
             if (ratio < 4.5) {
@@ -174,10 +174,10 @@ describe("Accesibilidad · utilidades de color usadas en el producto", () => {
 
   it("el escáner ve también los colores de constantes, ternarios y plantillas (M7 · H7)", () => {
     const synthetic = [
-      'const DANGER = "rounded-brand bg-sand-2 text-terracotta-text";',
-      "const BUTTON = 'bg-sea text-shell';",
-      "const CHIP = `bg-sand text-ink`;",
-      '<button className={`flex-1 ${active ? "bg-sea text-shell" : "text-ink-soft"}`} />',
+      'const DANGER = "rounded-brand bg-mist-2 text-coral-text";',
+      "const BUTTON = 'bg-azure text-shell';",
+      "const CHIP = `bg-mist text-ink`;",
+      '<button className={`flex-1 ${active ? "bg-azure text-shell" : "text-ink-soft"}`} />',
     ].join("\n");
 
     const classes = extractClassAttributes(synthetic);
@@ -186,11 +186,11 @@ describe("Accesibilidad · utilidades de color usadas en el producto", () => {
       .map((utility) => utility.raw);
 
     // Los tres literales de constante (que antes quedaban fuera) y las dos ramas del ternario.
-    expect(tokens).toContain("bg-sand-2");
-    expect(tokens).toContain("text-terracotta-text");
-    expect(tokens).toContain("bg-sea");
+    expect(tokens).toContain("bg-mist-2");
+    expect(tokens).toContain("text-coral-text");
+    expect(tokens).toContain("bg-azure");
     expect(tokens).toContain("text-shell");
-    expect(tokens).toContain("bg-sand");
+    expect(tokens).toContain("bg-mist");
     expect(tokens).toContain("text-ink");
     expect(tokens).toContain("text-ink-soft");
   });
@@ -341,8 +341,8 @@ describe("Accesibilidad · invariantes reales sobre los ficheros del producto", 
     const legend = source("components/dashboard/ChartLegend.tsx");
     expect(legend).toContain("<ul");
     expect(legend).toContain("aria-hidden");
-    expect(legend).toMatch(/primary:\s*PALETTE\.sea\b/);
-    expect(legend).toMatch(/secondary:\s*PALETTE\["terracotta-text"\]/);
+    expect(legend).toMatch(/primary:\s*PALETTE\.azure\b/);
+    expect(legend).toMatch(/secondary:\s*PALETTE\["coral-text"\]/);
   });
 
   it("las tablas de datos declaran encabezados de columna y de fila", () => {
@@ -357,7 +357,7 @@ describe("Accesibilidad · invariantes reales sobre los ficheros del producto", 
 describe("Accesibilidad · matemática del contraste (WCAG 2.1)", () => {
   it("blanco sobre negro = 21:1 y un color consigo mismo = 1:1", () => {
     expect(verifyWcagAA("#FFFFFF", "#000000").ratio).toBe(21);
-    expect(verifyWcagAA("#0E5A63", "#0E5A63").ratio).toBe(1);
+    expect(verifyWcagAA("#0F6C9C", "#0F6C9C").ratio).toBe(1);
   });
 
   it("el umbral de texto grande es 3:1 y el de texto normal 4.5:1", () => {

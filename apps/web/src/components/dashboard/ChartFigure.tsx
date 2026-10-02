@@ -69,7 +69,7 @@ export function ChartFigure({
       {legend !== undefined && <div className="mt-2">{legend}</div>}
 
       <details className="mt-3">
-        <summary className="cursor-pointer text-micro font-semibold text-sea underline">
+        <summary className="cursor-pointer text-micro font-semibold text-azure underline">
           {`Ver los datos de «${title}»`}
         </summary>
         <table className="mt-3 w-full border-collapse text-small">
@@ -89,7 +89,7 @@ export function ChartFigure({
           </thead>
           <tbody>
             {tableRows.map((row, index) => (
-              <tr key={index} className="odd:bg-sand-2/50">
+              <tr key={index} className="odd:bg-mist-2/50">
                 {row.map((cell, cellIndex) => (
                   <td
                     key={cellIndex}

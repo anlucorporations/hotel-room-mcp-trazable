@@ -31,7 +31,7 @@ export function FrontOfficeShell({ children }: { children: ReactNode }) {
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={`min-h-touch rounded-pill px-4 text-small font-medium transition-colors ${
-                active ? "bg-sea text-shell" : "text-ink-soft hover:bg-sand-2 hover:text-ink"
+                active ? "bg-azure text-shell" : "text-ink-soft hover:bg-mist-2 hover:text-ink"
               } flex items-center`}
             >
               {t(item.labelKey)}

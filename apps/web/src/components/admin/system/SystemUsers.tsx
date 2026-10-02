@@ -36,11 +36,11 @@ interface ProvisionResult {
 }
 
 const FIELD =
-  "min-h-touch w-full rounded-brand border border-line-strong bg-shell px-3 text-ink outline-none focus:border-sea";
+  "min-h-touch w-full rounded-brand border border-line-strong bg-shell px-3 text-ink outline-none focus:border-azure";
 const ACTION =
-  "min-h-touch rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60";
+  "min-h-touch rounded-pill bg-azure px-5 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-60";
 const GHOST =
-  "min-h-touch rounded-pill border border-line px-4 font-semibold text-ink transition-colors hover:bg-sand-2 disabled:opacity-60";
+  "min-h-touch rounded-pill border border-line px-4 font-semibold text-ink transition-colors hover:bg-mist-2 disabled:opacity-60";
 
 /**
  * Sistemas → Usuarios (RF-42, CU-42).
@@ -142,7 +142,7 @@ export function SystemUsers() {
   return (
     <div className="flex flex-col gap-6">
       {error && (
-        <p role="alert" data-testid="system-users-error" className="rounded-brand border border-terracotta-text/40 bg-sand-2 px-4 py-3 text-small text-terracotta-text">
+        <p role="alert" data-testid="system-users-error" className="rounded-brand border border-coral-text/40 bg-mist-2 px-4 py-3 text-small text-coral-text">
           {error}
         </p>
       )}
@@ -182,7 +182,7 @@ export function SystemUsers() {
                     <tr key={user.username} className="border-b border-line/60">
                       <td className="px-2 py-2 font-mono text-micro">
                         {user.username}
-                        {isSelf && <span className="ml-2 rounded-pill bg-sand-2 px-2 py-0.5 text-micro">{t("selfBadge")}</span>}
+                        {isSelf && <span className="ml-2 rounded-pill bg-mist-2 px-2 py-0.5 text-micro">{t("selfBadge")}</span>}
                       </td>
                       <td className="px-2 py-2">{t(ROLE_LABEL_KEY[user.role])}</td>
                       <td className="px-2 py-2">{user.active ? t("stateActive") : t("stateInactive")}</td>

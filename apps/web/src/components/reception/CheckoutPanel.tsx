@@ -8,9 +8,9 @@ import type { Charge, CheckoutReceipt, Reservation } from "./types";
 type ApiFetch = (input: string, init?: RequestInit) => Promise<Response>;
 
 const FIELD =
-  "min-h-touch w-full rounded-brand border border-line-strong bg-shell px-3 text-ink outline-none focus:border-sea";
+  "min-h-touch w-full rounded-brand border border-line-strong bg-shell px-3 text-ink outline-none focus:border-azure";
 const ACTION =
-  "min-h-touch rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-50";
+  "min-h-touch rounded-pill bg-azure px-5 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-50";
 
 const INCIDENT_KEY: Readonly<Record<CheckoutIncidentKind, string>> = {
   DANOS: "incidentDanos",
@@ -175,7 +175,7 @@ export function CheckoutPanel({
       </section>
 
       {error && (
-        <p role="alert" data-testid="checkout-error" className="rounded-brand border border-terracotta-text/40 bg-sand-2 px-4 py-3 text-small text-terracotta-text">
+        <p role="alert" data-testid="checkout-error" className="rounded-brand border border-coral-text/40 bg-mist-2 px-4 py-3 text-small text-coral-text">
           {error}
         </p>
       )}
@@ -277,7 +277,7 @@ export function CheckoutPanel({
 
             <label className="mt-4 flex flex-col gap-1 text-small text-ink">
               {t("notesLabel")}
-              <textarea rows={2} value={notes} onChange={(event) => setNotes(event.target.value)} data-testid="checkout-notes" className="w-full rounded-brand border border-line-strong bg-sand-2 p-3 text-small text-ink outline-none focus:border-sea" />
+              <textarea rows={2} value={notes} onChange={(event) => setNotes(event.target.value)} data-testid="checkout-notes" className="w-full rounded-brand border border-line-strong bg-mist-2 p-3 text-small text-ink outline-none focus:border-azure" />
             </label>
 
             <p className="mt-3 text-small text-ink-soft">

@@ -6,11 +6,11 @@ import type { DayStats, Reservation, RoomCell } from "./types";
 
 /** Clase de color de cada estado de habitación (paleta del proyecto, contraste AA). */
 const ROOM_STATUS_CLASS: Readonly<Record<RoomBoardStatus, string>> = {
-  LIBRE: "border-olive/40 bg-olive/10 text-olive",
-  PENDIENTE: "border-gold/50 bg-gold/10 text-ink",
-  RESERVADA: "border-sea/40 bg-sea/10 text-sea-deep",
-  OCUPADA: "border-warning/50 bg-warning-bg text-terracotta-text",
-  SALIDA: "border-line bg-sand-2 text-ink-soft",
+  LIBRE: "border-fern/40 bg-fern/10 text-fern",
+  PENDIENTE: "border-amber/50 bg-amber/10 text-ink",
+  RESERVADA: "border-azure/40 bg-azure/10 text-azure-deep",
+  OCUPADA: "border-warning/50 bg-warning-bg text-coral-text",
+  SALIDA: "border-line bg-mist-2 text-ink-soft",
   BLOQUEADA: "border-ink-soft/40 bg-ink-soft/10 text-ink-soft",
 };
 
@@ -49,21 +49,21 @@ export function DayBoard({
             data-testid="reception-date"
             value={date}
             onChange={(event) => onDateChange(event.target.value)}
-            className="min-h-touch rounded-brand border border-line-strong bg-shell px-3 text-ink outline-none focus:border-sea"
+            className="min-h-touch rounded-brand border border-line-strong bg-shell px-3 text-ink outline-none focus:border-azure"
           />
         </label>
         <button
           type="button"
           onClick={onRefresh}
           disabled={loading}
-          className="min-h-touch rounded-pill border border-line px-5 font-semibold text-ink transition-colors hover:border-sea hover:text-sea disabled:opacity-60"
+          className="min-h-touch rounded-pill border border-line px-5 font-semibold text-ink transition-colors hover:border-azure hover:text-azure disabled:opacity-60"
         >
           {loading ? t("loading") : t("refresh")}
         </button>
       </div>
 
       {error && (
-        <p role="alert" data-testid="reception-error" className="rounded-brand border border-terracotta-text/40 bg-sand-2 px-4 py-3 text-terracotta-text">
+        <p role="alert" data-testid="reception-error" className="rounded-brand border border-coral-text/40 bg-mist-2 px-4 py-3 text-coral-text">
           {error}
         </p>
       )}

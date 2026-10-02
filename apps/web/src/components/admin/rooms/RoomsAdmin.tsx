@@ -59,11 +59,11 @@ interface WindowOverviewRoom {
 }
 
 const FIELD =
-  "min-h-touch w-full rounded-brand border border-line-strong bg-shell px-3 text-ink outline-none focus:border-sea";
+  "min-h-touch w-full rounded-brand border border-line-strong bg-shell px-3 text-ink outline-none focus:border-azure";
 const ACTION =
-  "min-h-touch rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60";
+  "min-h-touch rounded-pill bg-azure px-5 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-60";
 const GHOST =
-  "min-h-touch rounded-pill border border-line px-4 text-small font-medium text-ink transition-colors hover:bg-sand-2 disabled:opacity-60";
+  "min-h-touch rounded-pill border border-line px-4 text-small font-medium text-ink transition-colors hover:bg-mist-2 disabled:opacity-60";
 
 const ROOM_TYPES: readonly RoomType[] = ["SIMPLE", "DOBLE", "SUITE"];
 
@@ -472,7 +472,7 @@ export function RoomsAdmin() {
         <p
           data-testid="rooms-notice"
           role={notice.kind === "error" ? "alert" : "status"}
-          className={notice.kind === "error" ? "text-terracotta-text" : "text-sea-deep"}
+          className={notice.kind === "error" ? "text-coral-text" : "text-azure-deep"}
         >
           {notice.text}
         </p>
@@ -704,7 +704,7 @@ export function RoomsAdmin() {
                           className="h-32 w-full rounded-brand object-cover"
                         />
                         {image.isCover && (
-                          <span className="text-micro font-semibold uppercase tracking-wide text-sea-deep">{t("cover")}</span>
+                          <span className="text-micro font-semibold uppercase tracking-wide text-azure-deep">{t("cover")}</span>
                         )}
                         <div className="flex flex-wrap gap-2">
                           {!image.isCover && (

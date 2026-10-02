@@ -1107,7 +1107,7 @@
     "fieldSold": "Nights sold",
     "fieldMinted": "Nights minted",
     "fieldBurned": "Nights burned",
-    "operationsTitle2": "Operations",
+    "operationsTitle": "Operations",
     "workerDown": "The worker is not responding; its state cannot be read.",
     "fieldWorkerStatus": "Worker status",
     "checkedAt": "Updated at {at}",
@@ -1409,7 +1409,8 @@
       "total": "Total",
       "unknown": "The amount is confirmed when the night is held."
     },
-    "nightsRequired": "Choose a check-out later than the check-in."
+    "nightsRequired": "Choose a check-out later than the check-in.",
+    "priceUnavailable": "We cannot confirm this room's price right now. Try again in a few minutes or pick another night."
   },
   "content": {
     "adminTitle": "Website content",

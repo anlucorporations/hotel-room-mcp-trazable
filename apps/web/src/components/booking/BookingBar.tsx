@@ -69,7 +69,7 @@ export function BookingBar({ variant = "floating" }: { variant?: "floating" | "i
             // La salida nunca puede quedar por detrás de la nueva entrada: se adelanta sola.
             if (value && checkOut <= value) setCheckOut(nextDay(value));
           }}
-          className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3 text-ink"
+          className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3 text-ink"
         />
       </label>
 
@@ -81,7 +81,7 @@ export function BookingBar({ variant = "floating" }: { variant?: "floating" | "i
           value={checkOut}
           min={nextDay(checkIn)}
           onChange={(event) => setCheckOut(event.target.value)}
-          className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3 text-ink"
+          className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3 text-ink"
         />
       </label>
 
@@ -90,7 +90,7 @@ export function BookingBar({ variant = "floating" }: { variant?: "floating" | "i
         <select
           value={guests}
           onChange={(event) => setGuests(Number(event.target.value))}
-          className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3 text-ink"
+          className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3 text-ink"
         >
           {Array.from({ length: MAX_GUESTS }, (_, index) => index + 1).map((value) => (
             <option key={value} value={value}>
@@ -102,13 +102,13 @@ export function BookingBar({ variant = "floating" }: { variant?: "floating" | "i
 
       <button
         type="submit"
-        className="min-h-touch rounded-pill bg-sea px-5 text-small font-semibold text-shell transition-colors hover:bg-sea-deep"
+        className="min-h-touch rounded-pill bg-azure px-5 text-small font-semibold text-shell transition-colors hover:bg-azure-deep"
       >
         {t("submit")}
       </button>
 
       {problem !== null && (
-        <p role="alert" className="text-small text-terracotta-text tablet:col-span-4">
+        <p role="alert" className="text-small text-coral-text tablet:col-span-4">
           {t(`errors.${problem}` as "errors.ANTERIOR_A_MANANA")}
         </p>
       )}

@@ -37,7 +37,7 @@ export default async function HistoricoPage() {
           <a
             href="/api/sales/history?format=csv"
             download
-            className="inline-flex items-center justify-center gap-2 rounded-brand border border-line bg-shell px-4 py-2 text-small font-semibold text-ink shadow-sm transition hover:bg-sand-2 focus:outline-none focus:ring-2 focus:ring-sea"
+            className="inline-flex items-center justify-center gap-2 rounded-brand border border-line bg-shell px-4 py-2 text-small font-semibold text-ink shadow-sm transition hover:bg-mist-2 focus:outline-none focus:ring-2 focus:ring-azure"
           >
             <svg
               width="16"

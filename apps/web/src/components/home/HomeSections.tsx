@@ -53,7 +53,7 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
       </section>
 
       {/* 2 · Servicios */}
-      <section aria-labelledby="home-services" className="border-y border-line/70 bg-sand-2/60 px-5 py-10">
+      <section aria-labelledby="home-services" className="border-y border-line/70 bg-mist-2/60 px-5 py-10">
         <div className="mx-auto w-full max-w-6xl">
           <h2 id="home-services" className="font-display text-h2 font-medium">{t("services.title")}</h2>
           <p className="mt-2 max-w-prose text-small text-ink-soft">{t("services.subtitle")}</p>
@@ -95,7 +95,7 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
       </section>
 
       {/* 4 · Planes informativos (D-69) */}
-      <section aria-labelledby="home-plans" className="border-y border-line/70 bg-sand-2/60 px-5 py-10">
+      <section aria-labelledby="home-plans" className="border-y border-line/70 bg-mist-2/60 px-5 py-10">
         <div className="mx-auto w-full max-w-6xl">
           <h2 id="home-plans" className="font-display text-h2 font-medium">{t("plans.title")}</h2>
           <p className="mt-2 max-w-prose text-small text-ink-soft">{t("plans.subtitle")}</p>
@@ -148,7 +148,7 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
                     {pick(locale, activity.descriptionEs, activity.descriptionEn, activity.descriptionRu)}
                   </p>
                   {activity.priceCents > 0 && (
-                    <p className="mt-2 text-small font-semibold text-sea-deep">
+                    <p className="mt-2 text-small font-semibold text-azure-deep">
                       {t("activities.price", { price: (activity.priceCents / 100).toFixed(2), currency: activity.currency })}
                     </p>
                   )}
@@ -161,7 +161,7 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
       </section>
 
       {/* 6 · Experiencia con galería (D-66, D-70) */}
-      <section aria-labelledby="home-experience" className="border-y border-line/70 bg-sand-2/60 px-5 py-10">
+      <section aria-labelledby="home-experience" className="border-y border-line/70 bg-mist-2/60 px-5 py-10">
         <div className="mx-auto w-full max-w-6xl">
           <h2 id="home-experience" className="font-display text-h2 font-medium">{t("experience.title")}</h2>
           <p className="mt-2 max-w-prose text-small text-ink-soft">{t("experience.subtitle")}</p>
@@ -193,7 +193,7 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
           <h2 id="home-reviews" className="font-display text-h2 font-medium">{t("reviews.title")}</h2>
           <p className="mt-2 max-w-prose text-small text-ink-soft">{t("reviews.subtitle")}</p>
           {content.reviewsSummary.average !== null && (
-            <p className="mt-3 font-display text-h3 font-semibold text-sea-deep" data-testid="reviews-average">
+            <p className="mt-3 font-display text-h3 font-semibold text-azure-deep" data-testid="reviews-average">
               {t("reviews.average", {
                 average: content.reviewsSummary.average.toFixed(2),
                 count: content.reviewsSummary.count,
@@ -214,15 +214,15 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
       </section>
 
       {/* 8 · Contacto y mapa (D-67) */}
-      <section id="contacto" aria-labelledby="home-contact" className="border-t border-line/70 bg-sand-2/60 px-5 py-10">
+      <section id="contacto" aria-labelledby="home-contact" className="border-t border-line/70 bg-mist-2/60 px-5 py-10">
         <div className="mx-auto grid w-full max-w-6xl gap-6 tablet:grid-cols-2">
           <div>
             <h2 id="home-contact" className="font-display text-h2 font-medium">{t("contact.title")}</h2>
             <p className="mt-2 max-w-prose text-small text-ink-soft">{t("contact.subtitle")}</p>
             <address className="mt-4 flex flex-col gap-1 text-small not-italic text-ink">
               <span>{t("contact.address")}</span>
-              <a className="text-sea-deep underline" href={`tel:${t("contact.phoneHref")}`}>{t("contact.phone")}</a>
-              <a className="text-sea-deep underline" href={`mailto:${t("contact.email")}`}>{t("contact.email")}</a>
+              <a className="text-azure-deep underline" href={`tel:${t("contact.phoneHref")}`}>{t("contact.phone")}</a>
+              <a className="text-azure-deep underline" href={`mailto:${t("contact.email")}`}>{t("contact.email")}</a>
             </address>
           </div>
           <div className="overflow-hidden rounded-brand border border-line">
@@ -253,7 +253,7 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
             <li>
               <Link
                 href="/empresa"
-                className="inline-flex min-h-touch items-center rounded-pill border border-sea px-4 text-small font-semibold text-sea transition-colors hover:bg-sea-deep hover:text-shell"
+                className="inline-flex min-h-touch items-center rounded-pill border border-azure px-4 text-small font-semibold text-azure transition-colors hover:bg-azure-deep hover:text-shell"
               >
                 {t("band.company")}
               </Link>
@@ -261,7 +261,7 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
             <li>
               <Link
                 href="/instalaciones"
-                className="inline-flex min-h-touch items-center rounded-pill border border-sea px-4 text-small font-semibold text-sea transition-colors hover:bg-sea-deep hover:text-shell"
+                className="inline-flex min-h-touch items-center rounded-pill border border-azure px-4 text-small font-semibold text-azure transition-colors hover:bg-azure-deep hover:text-shell"
               >
                 {t("band.facilities")}
               </Link>
@@ -269,7 +269,7 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
             <li>
               <Link
                 href="/ayuda"
-                className="inline-flex min-h-touch items-center rounded-pill bg-sea px-4 text-small font-semibold text-shell transition-colors hover:bg-sea-deep"
+                className="inline-flex min-h-touch items-center rounded-pill bg-azure px-4 text-small font-semibold text-shell transition-colors hover:bg-azure-deep"
               >
                 {t("band.help")}
               </Link>

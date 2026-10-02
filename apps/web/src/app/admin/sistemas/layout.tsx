@@ -26,7 +26,7 @@ export default async function SistemasLayout({ children }: { children: ReactNode
           <p
             data-testid="systems-denied"
             role="alert"
-            className="rounded-brand-lg border border-line bg-sand-2 px-5 py-8 text-ink-soft"
+            className="rounded-brand-lg border border-line bg-mist-2 px-5 py-8 text-ink-soft"
           >
             {t("systemsDenied")}
           </p>

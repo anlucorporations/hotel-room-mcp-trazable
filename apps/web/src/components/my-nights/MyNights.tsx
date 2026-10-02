@@ -25,8 +25,8 @@ function todayYYYYMMDD(): number {
 
 const SEG_BASE =
   "inline-flex min-h-touch flex-1 items-center justify-center rounded-pill px-4 text-small font-semibold transition-colors";
-const SEG_ON = "bg-sea text-shell";
-const SEG_OFF = "text-ink-soft hover:text-sea";
+const SEG_ON = "bg-azure text-shell";
+const SEG_OFF = "text-ink-soft hover:text-azure";
 
 /**
  * Página «Mis noches» (CU-06/07, docs/SRS.md §9): la wallet conectada ve sus NFTs-noche y puede listarlos
@@ -76,13 +76,13 @@ export function MyNights() {
 
   if (query.isError) {
     return (
-      <div data-testid="error-mis-noches" className="flex flex-col items-start gap-3 rounded-brand bg-sand-2 px-4 py-6 text-ink-soft">
-        <p className="text-terracotta-text">{t("loadError")}</p>
+      <div data-testid="error-mis-noches" className="flex flex-col items-start gap-3 rounded-brand bg-mist-2 px-4 py-6 text-ink-soft">
+        <p className="text-coral-text">{t("loadError")}</p>
         <button
           type="button"
           data-testid="retry"
           onClick={refetch}
-          className="inline-flex min-h-touch items-center rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep"
+          className="inline-flex min-h-touch items-center rounded-pill bg-azure px-5 font-semibold text-shell transition-colors hover:bg-azure-deep"
         >
           {t("retry")}
         </button>
@@ -103,7 +103,7 @@ export function MyNights() {
         <Link
           href="/mis-noches/mis-reventas"
           data-testid="my-resales-link"
-          className="text-small font-semibold text-sea-deep underline"
+          className="text-small font-semibold text-azure-deep underline"
         >
           {t("resalesLink")}
         </Link>
@@ -147,7 +147,7 @@ export function MyNights() {
       {visibleNights.length === 0 ? (
         <div
           data-testid="empty-mis-noches"
-          className="flex flex-col items-center gap-4 rounded-brand bg-sand-2 px-4 py-10 text-center text-ink-soft"
+          className="flex flex-col items-center gap-4 rounded-brand bg-mist-2 px-4 py-10 text-center text-ink-soft"
         >
           <p>{t(hasAny ? emptyKey : "empty")}</p>
           {/* Sin ninguna noche: CTA para descubrir el catálogo (UX#24). */}
@@ -155,7 +155,7 @@ export function MyNights() {
             <Link
               href="/"
               data-testid="explore-nights"
-              className="inline-flex min-h-touch items-center rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep"
+              className="inline-flex min-h-touch items-center rounded-pill bg-azure px-5 font-semibold text-shell transition-colors hover:bg-azure-deep"
             >
               {t("exploreNights")}
             </Link>

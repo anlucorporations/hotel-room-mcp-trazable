@@ -1,43 +1,27 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Fraunces, Hanken_Grotesk, Inter, Playfair_Display } from "next/font/google";
+import { Manrope, Playfair_Display } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { Providers } from "./providers";
 import "./globals.css";
 
-// Tipografías de marca (docs/SRS.md §7): serif editorial (display) + grotesca (UI).
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  variable: "--font-fraunces",
-  display: "swap",
-  axes: ["opsz"],
-});
-const hanken = Hanken_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-hanken",
-  display: "swap",
-});
-
 /**
- * Respaldo **cirílico** (propuesta de imagen visual §3.4, decisión aprobada el 2026-09-27).
- *
- * Fraunces no publica el subconjunto `cyrillic` y Hanken Grotesk solo el *extendido*, así que hoy el
- * locale RU caía a `Georgia`/`system-ui` (el producto declara paridad ES/EN/RU). La cascada es
- * **glifo a glifo**: ES/EN siguen viendo las fuentes de marca y el ruso toma estas dos, cargadas
- * **solo** en el subconjunto cirílico y con `preload: false` para no penalizar el LCP de ES/EN.
+ * Tipografías de marca «Brisa Marina» (Manual_Identidad_Visual.md v2.0.0): serif elegante
+ * (display) + geométrica fresca (UI). Las DOS familias publican el subconjunto `cyrillic` en
+ * Google Fonts, así que el locale RU queda cubierto por las propias fuentes de marca: ya no hace
+ * falta la cascada glifo a glifo con respaldos sin precarga del sistema anterior. El guardián
+ * `cyrillic-fonts.test.ts` exige que ambas declaren el subconjunto cirílico.
  */
-const playfairCyrillic = Playfair_Display({
-  subsets: ["cyrillic"],
+const playfair = Playfair_Display({
+  subsets: ["latin", "cyrillic"],
   variable: "--font-playfair",
   display: "swap",
-  preload: false,
 });
-const interCyrillic = Inter({
-  subsets: ["cyrillic"],
-  variable: "--font-inter",
+const manrope = Manrope({
+  subsets: ["latin", "cyrillic"],
+  variable: "--font-manrope",
   display: "swap",
-  preload: false,
 });
 
 // Metadata i18n (MINOR#41): título y descripción desde las claves `app.*`.
@@ -80,12 +64,12 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
-      className={`${fraunces.variable} ${hanken.variable} ${playfairCyrillic.variable} ${interCyrillic.variable}`}
+      className={`${playfair.variable} ${manrope.variable}`}
     >
       <body>
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-sea-deep focus:text-shell focus:rounded-brand-sm focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sea"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-azure-deep focus:text-shell focus:rounded-brand-sm focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-azure"
         >
           Saltar al contenido principal
         </a>

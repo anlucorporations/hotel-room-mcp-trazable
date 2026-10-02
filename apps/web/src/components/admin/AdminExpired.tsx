@@ -14,9 +14,9 @@ import { useAdminTxCopy } from "./adminTxCopy";
 import { classifyAdminTxError } from "./adminTxError";
 
 const PRIMARY =
-  "min-h-touch rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60";
+  "min-h-touch rounded-pill bg-azure px-5 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-60";
 const DANGER =
-  "min-h-touch rounded-pill bg-terracotta px-5 font-semibold text-shell transition-colors hover:opacity-90 disabled:opacity-60";
+  "min-h-touch rounded-pill bg-coral px-5 font-semibold text-shell transition-colors hover:opacity-90 disabled:opacity-60";
 const FIELD = "min-h-touch w-full rounded-brand border border-line-strong bg-shell px-3 text-ink";
 
 const DEFAULT_BATCH_MAX = 50; // BURN_BATCH_MAX por defecto (CU-13, docs/SRS.md §9); se confirma on-chain.
@@ -118,7 +118,7 @@ export function AdminExpired() {
           </p>
         )}
         {scan.isError && (
-          <p role="alert" className="text-terracotta-text">
+          <p role="alert" className="text-coral-text">
             {scan.error?.message === "SCAN_CONFIG_INVALID"
               ? t("scanConfigError")
               : t("expiredScanError")}
@@ -128,13 +128,13 @@ export function AdminExpired() {
 
       {/* El escaneo no pudo verificar algunas noches por error de red: recuento incompleto (MINOR#35). */}
       {scanPartial && !scan.isFetching && (
-        <p data-testid="expired-partial" role="alert" className="mt-3 text-small text-terracotta-text">
+        <p data-testid="expired-partial" role="alert" className="mt-3 text-small text-coral-text">
           {t("scanPartialError")}
         </p>
       )}
 
       {scanned.length > 0 && (
-        <ul className="mt-4 flex max-h-48 flex-col gap-1 overflow-auto rounded-brand bg-sand-2 p-3 text-small text-ink">
+        <ul className="mt-4 flex max-h-48 flex-col gap-1 overflow-auto rounded-brand bg-mist-2 p-3 text-small text-ink">
           {scanned.slice(0, max).map((n) => (
             <li key={n.tokenId} className="flex justify-between gap-3">
               <span className="font-mono">{n.tokenId}</span>
@@ -145,7 +145,7 @@ export function AdminExpired() {
       )}
 
       {isPaused && (
-        <p data-testid="expired-paused" role="alert" className="mt-4 text-small text-terracotta-text">
+        <p data-testid="expired-paused" role="alert" className="mt-4 text-small text-coral-text">
           {t("pausedWarning")}
         </p>
       )}
@@ -174,12 +174,12 @@ export function AdminExpired() {
           {t("expiredBurn", { count: batch.length })}
         </button>
         {formError && (
-          <p id={errorId} data-testid="expired-error" role="alert" className="text-terracotta-text">
+          <p id={errorId} data-testid="expired-error" role="alert" className="text-coral-text">
             {formError}
           </p>
         )}
         {!formError && txErrorKind && (
-          <p role="alert" className="text-terracotta-text">
+          <p role="alert" className="text-coral-text">
             {t(`txError.${txErrorKind}`)}
           </p>
         )}
@@ -194,7 +194,7 @@ export function AdminExpired() {
           <div data-testid="expired-confirm" className="flex flex-col gap-2 text-small text-ink">
             <p>{t("expiredConfirm", { count: batch.length })}</p>
             <p className="font-medium">{t("expiredConfirmTokens")}</p>
-            <ul className="max-h-40 overflow-auto rounded-brand bg-sand-2 p-3 font-mono text-micro">
+            <ul className="max-h-40 overflow-auto rounded-brand bg-mist-2 p-3 font-mono text-micro">
               {batch.map((id) => (
                 <li key={id}>{id}</li>
               ))}

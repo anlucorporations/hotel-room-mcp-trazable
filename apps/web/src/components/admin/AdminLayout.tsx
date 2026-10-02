@@ -60,7 +60,7 @@ function BrandMark() {
       className="h-[30px] w-[30px] flex-none rounded-full shadow-[inset_0_0_0_1.5px_rgba(255,255,255,0.4)]"
       style={{
         background:
-          "radial-gradient(circle at 32% 30%, var(--gold), var(--terracotta) 55%, var(--sea) 130%)",
+          "radial-gradient(circle at 32% 30%, var(--amber), var(--coral) 55%, var(--azure) 130%)",
       }}
     />
   );
@@ -120,7 +120,7 @@ function Sidebar({
           aria-disabled="true"
           aria-describedby={lockedHintId}
           title={t("nav.lockedHint")}
-          className="flex min-h-touch items-center gap-2 rounded-brand px-3 text-small font-medium text-sand opacity-50"
+          className="flex min-h-touch items-center gap-2 rounded-brand px-3 text-small font-medium text-mist opacity-50"
         >
           <span aria-hidden="true">·</span>
           {label}
@@ -133,7 +133,7 @@ function Sidebar({
         href={item.href}
         aria-current={active ? "page" : undefined}
         className={`flex min-h-touch items-center gap-2 rounded-brand px-3 text-small font-medium transition-colors ${
-          active ? "bg-shell font-semibold text-ocean" : "text-sand hover:bg-ocean-soft hover:text-shell"
+          active ? "bg-shell font-semibold text-navy" : "text-mist hover:bg-navy-soft hover:text-shell"
         }`}
       >
         <span aria-hidden="true">·</span>
@@ -151,7 +151,7 @@ function Sidebar({
       className={[
         // Móvil: cajón. Cerrado no se pinta (fuera del orden de tabulación).
         drawerOpen ? "fixed inset-y-0 left-0 z-50 flex shadow-modal" : "hidden tablet:flex",
-        "w-72 flex-col bg-ocean text-sand outline-none",
+        "w-72 flex-col bg-navy text-mist outline-none",
         // Escritorio: vuelve al flujo, se pega arriba y mantiene su propio scroll.
         "tablet:sticky tablet:inset-y-auto tablet:top-0 tablet:z-30 tablet:h-screen tablet:overflow-y-auto tablet:shadow-none",
         mini ? "tablet:w-16" : "tablet:w-64",
@@ -176,7 +176,7 @@ function Sidebar({
           aria-label={mini ? t("nav.expandSidebar") : t("nav.collapseSidebar")}
           title={mini ? t("nav.expandSidebar") : t("nav.collapseSidebar")}
           onClick={onToggleMini}
-          className="hidden min-h-touch min-w-touch flex-none items-center justify-center rounded-brand text-champagne transition-colors hover:bg-ocean-soft tablet:inline-flex"
+          className="hidden min-h-touch min-w-touch flex-none items-center justify-center rounded-brand text-pearl transition-colors hover:bg-navy-soft tablet:inline-flex"
         >
           <CollapseIcon collapsed={mini} />
         </button>
@@ -210,7 +210,7 @@ function Sidebar({
                   }
                   setOpenSection((current) => (current === section.key ? null : section.key));
                 }}
-                className="flex min-h-touch items-center gap-2 rounded-brand px-3 text-left text-small font-semibold text-champagne transition-colors hover:bg-ocean-soft"
+                className="flex min-h-touch items-center gap-2 rounded-brand px-3 text-left text-small font-semibold text-pearl transition-colors hover:bg-navy-soft"
               >
                 <SectionIcon className="flex-none" />
                 <span className={labelClass}>{label}</span>
@@ -250,7 +250,7 @@ function Sidebar({
       </nav>
 
       {/* Pie del sidebar: contexto de la aplicación, oculto con el sidebar plegado. */}
-      <p className={`flex-none border-t border-champagne/30 px-4 py-3 text-micro text-champagne ${mini ? "tablet:hidden" : ""}`}>
+      <p className={`flex-none border-t border-pearl/30 px-4 py-3 text-micro text-pearl ${mini ? "tablet:hidden" : ""}`}>
         {t("nav.footer")}
       </p>
     </aside>
@@ -274,8 +274,8 @@ function OwnerGroup({
 }) {
   const GroupIcon = ADMIN_ICONS[group.icon];
   return (
-    <li data-testid="nav-owner-group" className="mt-2 flex flex-col gap-1 border-t border-champagne/30 pt-2">
-      <span className="flex items-center gap-2 px-3 pb-1 text-micro font-semibold uppercase tracking-wider text-champagne">
+    <li data-testid="nav-owner-group" className="mt-2 flex flex-col gap-1 border-t border-pearl/30 pt-2">
+      <span className="flex items-center gap-2 px-3 pb-1 text-micro font-semibold uppercase tracking-wider text-pearl">
         <GroupIcon className="flex-none" />
         {navLabel(group.labelKey)}
       </span>
@@ -297,8 +297,8 @@ function SessionBlock({ session }: { session: AdminSession }) {
   const t = useTranslations("admin");
 
   return (
-    <li data-testid="admin-session-block" className="mt-3 flex flex-col gap-2 border-t border-champagne/30 pt-3">
-      <span className="flex items-center gap-2 px-3 text-micro font-semibold uppercase tracking-wider text-champagne">
+    <li data-testid="admin-session-block" className="mt-3 flex flex-col gap-2 border-t border-pearl/30 pt-3">
+      <span className="flex items-center gap-2 px-3 text-micro font-semibold uppercase tracking-wider text-pearl">
         <UserIcon className="flex-none" />
         {t("nav.sessionTitle")}
       </span>
@@ -309,7 +309,7 @@ function SessionBlock({ session }: { session: AdminSession }) {
         {session.roles.map((role) => (
           <li
             key={role}
-            className="rounded-pill bg-sand-2 px-2.5 py-1 text-micro font-semibold uppercase tracking-wide text-sea-deep"
+            className="rounded-pill bg-mist-2 px-2.5 py-1 text-micro font-semibold uppercase tracking-wide text-azure-deep"
           >
             {ROLE_LABEL[role]}
           </li>
@@ -338,7 +338,7 @@ function Topbar({
   const t = useTranslations("admin");
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-sand/90 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-line bg-mist/90 backdrop-blur">
       <div className="flex min-h-[64px] w-full items-center gap-3 px-4 py-2 tablet:px-5">
         <button
           ref={toggleRef}
@@ -348,7 +348,7 @@ function Topbar({
           aria-controls={SIDEBAR_ID}
           aria-label={drawerOpen ? t("nav.closeMenu") : t("nav.openMenu")}
           onClick={onToggleDrawer}
-          className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-brand border border-line-strong text-ink transition-colors hover:bg-sand-2 tablet:hidden"
+          className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-brand border border-line-strong text-ink transition-colors hover:bg-mist-2 tablet:hidden"
         >
           <MenuIcon />
         </button>
@@ -367,7 +367,7 @@ function Topbar({
           <Link
             href="/ayuda"
             data-testid="admin-help-link"
-            className="inline-flex min-h-touch items-center gap-2 rounded-pill border border-line-strong px-3 text-small font-medium text-ink transition-colors hover:bg-sand-2"
+            className="inline-flex min-h-touch items-center gap-2 rounded-pill border border-line-strong px-3 text-small font-medium text-ink transition-colors hover:bg-mist-2"
           >
             <HelpIcon className="flex-none" />
             {t("nav.ayuda")}
@@ -389,12 +389,12 @@ function ContentHeader() {
   if (crumbs.length === 0) return null;
 
   return (
-    <div className="border-b border-line bg-sand-2/50">
+    <div className="border-b border-line bg-mist-2/50">
       <div className="mx-auto w-full max-w-6xl px-5 py-2.5">
         <nav aria-label={t("nav.breadcrumb")}>
           <ol className="flex flex-wrap items-center gap-2 text-micro text-ink-soft">
             <li>
-              <Link href="/admin/dashboard" className="rounded-brand-xs hover:text-sea">
+              <Link href="/admin/dashboard" className="rounded-brand-xs hover:text-azure">
                 {t("nav.home")}
               </Link>
             </li>
@@ -408,7 +408,7 @@ function ContentHeader() {
                       {t(`nav.${crumb.labelKey}` as `nav.${AdminNavLabelKey}`)}
                     </span>
                   ) : (
-                    <Link href={crumb.href} className="rounded-brand-xs hover:text-sea">
+                    <Link href={crumb.href} className="rounded-brand-xs hover:text-azure">
                       {t(`nav.${crumb.labelKey}` as `nav.${AdminNavLabelKey}`)}
                     </Link>
                   )}
@@ -525,10 +525,10 @@ export function AdminLayout({ children, gate = false }: { children: ReactNode; g
   const hasSession = Boolean(session.sessionUsername);
 
   const shell = (body: ReactNode) => (
-    <div className="flex min-h-screen bg-sand">
+    <div className="flex min-h-screen bg-mist">
       <a
         href="#admin-contenido"
-        className="sr-only z-50 rounded-br-brand-sm bg-sea px-4 py-3 font-semibold text-shell focus:not-sr-only focus:absolute focus:left-0 focus:top-0"
+        className="sr-only z-50 rounded-br-brand-sm bg-azure px-4 py-3 font-semibold text-shell focus:not-sr-only focus:absolute focus:left-0 focus:top-0"
       >
         {t("skipToContent")}
       </a>
@@ -549,7 +549,7 @@ export function AdminLayout({ children, gate = false }: { children: ReactNode; g
           type="button"
           aria-label={t("nav.closeMenu")}
           onClick={() => closeDrawer(true)}
-          className="fixed inset-0 z-40 cursor-default bg-ocean/60 tablet:hidden"
+          className="fixed inset-0 z-40 cursor-default bg-navy/60 tablet:hidden"
         />
       )}
 

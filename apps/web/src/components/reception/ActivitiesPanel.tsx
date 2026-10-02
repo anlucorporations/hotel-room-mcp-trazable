@@ -174,7 +174,7 @@ export function ActivitiesPanel({
             value={date}
             onChange={(event) => setDate(event.target.value)}
             data-testid="activities-date"
-            className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
+            className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
           />
         </label>
       </div>
@@ -200,7 +200,7 @@ export function ActivitiesPanel({
               type="button"
               onClick={() => setSelected(schedule.id)}
               aria-pressed={schedule.id === selected}
-              className={`min-h-touch rounded-pill px-4 text-small font-semibold ${schedule.id === selected ? "bg-sea text-shell" : "border border-line text-ink-soft"}`}
+              className={`min-h-touch rounded-pill px-4 text-small font-semibold ${schedule.id === selected ? "bg-azure text-shell" : "border border-line text-ink-soft"}`}
             >
               {schedule.activityNameEs} · {new Date(schedule.startsAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
               {" · "}
@@ -223,7 +223,7 @@ export function ActivitiesPanel({
                 value={form.reservationId}
                 onChange={(event) => setForm({ ...form, reservationId: event.target.value })}
                 data-testid="activities-reservation"
-                className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
+                className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
               >
                 {reservations.map((reservation) => (
                   <option key={reservation.id} value={reservation.id}>
@@ -239,7 +239,7 @@ export function ActivitiesPanel({
                 min={1}
                 value={form.seats}
                 onChange={(event) => setForm({ ...form, seats: Number(event.target.value) })}
-                className="min-h-touch w-20 rounded-brand-sm border border-line-strong bg-sand px-3"
+                className="min-h-touch w-20 rounded-brand-sm border border-line-strong bg-mist px-3"
               />
             </label>
             <label className="flex items-center gap-2 text-small">
@@ -254,7 +254,7 @@ export function ActivitiesPanel({
             <button
               type="submit"
               disabled={busy || !form.reservationId}
-              className="min-h-touch rounded-pill bg-sea px-4 text-small font-semibold text-shell disabled:opacity-50"
+              className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell disabled:opacity-50"
             >
               {t("book")}
             </button>
@@ -263,7 +263,7 @@ export function ActivitiesPanel({
           {bookings.length > 0 && (
             <ul className="flex flex-col gap-2">
               {bookings.map((booking) => (
-                <li key={booking.id} className="flex flex-wrap items-center gap-2 rounded-brand-lg border border-line bg-sand-2 px-4 py-2 text-small">
+                <li key={booking.id} className="flex flex-wrap items-center gap-2 rounded-brand-lg border border-line bg-mist-2 px-4 py-2 text-small">
                   <span className="text-ink">{t("room")} {reservations.find((r) => r.id === booking.reservationId)?.roomNumber ?? "—"}</span>
                   <span className="text-micro text-ink-soft">{booking.seats} {t("seats")}</span>
                   <span className="rounded-pill bg-shell px-2 py-0.5 text-micro font-semibold text-ink-soft">

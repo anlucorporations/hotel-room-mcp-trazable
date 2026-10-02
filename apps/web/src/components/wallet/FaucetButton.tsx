@@ -6,7 +6,7 @@ import { useOnboarding } from "./useOnboarding";
 
 const TOUCH = "min-h-touch min-w-touch";
 const BTN =
-  `${TOUCH} rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60`;
+  `${TOUCH} rounded-pill bg-azure px-5 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-60`;
 
 /** Formatea un epoch (s) como hora local HH:MM (cuándo estará disponible el faucet). */
 function formatTime(epochSeconds: number): string {
@@ -73,7 +73,7 @@ export function FaucetButton() {
         data-testid="faucet-status"
         role="status"
         aria-live="polite"
-        className={`text-small ${tone === "warn" ? "text-terracotta-text" : "text-ink-soft"}`}
+        className={`text-small ${tone === "warn" ? "text-coral-text" : "text-ink-soft"}`}
       >
         {message}
       </p>

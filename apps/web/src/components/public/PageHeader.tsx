@@ -20,7 +20,7 @@ export function PageHeader({
 }) {
   return (
     <header className="mx-auto w-full max-w-6xl px-5 pb-4 pt-10 desktop:pt-14">
-      <p className="mb-3 text-micro font-bold uppercase tracking-[0.18em] text-terracotta-text">
+      <p className="mb-3 text-micro font-bold uppercase tracking-[0.18em] text-coral-text">
         {eyebrow}
       </p>
       <h1 className="max-w-[22ch] font-display text-h1 font-medium">{title}</h1>
@@ -51,7 +51,7 @@ export function PageSection({
       aria-labelledby={`${id}-title`}
       className={
         tone === "band"
-          ? "border-y border-line/70 bg-sand-2/60 px-5 py-10"
+          ? "border-y border-line/70 bg-mist-2/60 px-5 py-10"
           : "px-5 py-10"
       }
     >

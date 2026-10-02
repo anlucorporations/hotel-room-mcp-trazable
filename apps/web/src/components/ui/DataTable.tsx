@@ -79,7 +79,7 @@ export function DataTable<T>({
         className={`w-full border-collapse ${density === "compact" ? "text-body-sm" : "text-small"}`}
       >
         <caption className="sr-only">{caption}</caption>
-        <thead className={stickyHeader ? "sticky top-0 z-10 bg-sand-2" : "bg-sand-2"}>
+        <thead className={stickyHeader ? "sticky top-0 z-10 bg-mist-2" : "bg-mist-2"}>
           <tr className="border-b border-line text-left text-micro uppercase tracking-wide text-ink-soft">
             {columns.map((column) => (
               <th
@@ -103,7 +103,7 @@ export function DataTable<T>({
             </tr>
           ) : (
             rows.map((row) => (
-              <tr key={rowKey(row)} className="border-b border-line/60 last:border-b-0 odd:bg-sand/40">
+              <tr key={rowKey(row)} className="border-b border-line/60 last:border-b-0 odd:bg-mist/40">
                 {columns.map((column, index) =>
                   index === 0 ? (
                     <th

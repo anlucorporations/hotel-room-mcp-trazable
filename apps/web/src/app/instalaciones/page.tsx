@@ -79,7 +79,7 @@ export default async function FacilitiesPage() {
         <p className="mt-5">
           <Link
             href="/habitaciones"
-            className="inline-flex min-h-touch items-center rounded-pill bg-sea px-5 text-small font-semibold text-shell transition-colors hover:bg-sea-deep"
+            className="inline-flex min-h-touch items-center rounded-pill bg-azure px-5 text-small font-semibold text-shell transition-colors hover:bg-azure-deep"
           >
             {t("rooms.button")}
           </Link>
@@ -91,7 +91,7 @@ export default async function FacilitiesPage() {
         <p className="mt-5">
           <Link
             href="/contacto"
-            className="inline-flex min-h-touch items-center rounded-pill border border-sea px-5 text-small font-semibold text-sea transition-colors hover:bg-sea-deep hover:text-shell"
+            className="inline-flex min-h-touch items-center rounded-pill border border-azure px-5 text-small font-semibold text-azure transition-colors hover:bg-azure-deep hover:text-shell"
           >
             {t("contact.button")}
           </Link>

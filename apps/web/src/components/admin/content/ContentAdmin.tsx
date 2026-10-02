@@ -75,7 +75,7 @@ export function ContentAdmin() {
   }
   if (!session.sessionUsername || !session.hasRole("DEFAULT_ADMIN_ROLE")) {
     return (
-      <p data-testid="content-role-denied" role="alert" className="rounded-brand-lg border border-line bg-sand-2 px-5 py-8 text-ink-soft">
+      <p data-testid="content-role-denied" role="alert" className="rounded-brand-lg border border-line bg-mist-2 px-5 py-8 text-ink-soft">
         {t("roleDenied")}
       </p>
     );
@@ -174,7 +174,7 @@ export function ContentAdmin() {
             value={section}
             onChange={(event) => setSection(event.target.value as Section)}
             data-testid="content-section"
-            className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
+            className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
           >
             {SECTIONS.map((option) => (
               <option key={option} value={option}>{t(`section_${option}` as "section_HERO")}</option>
@@ -201,7 +201,7 @@ export function ContentAdmin() {
                       {t("makeCover")}
                     </button>
                   )}
-                  <button type="button" onClick={() => void removeImage(image.id)} className="min-h-touch flex-1 rounded-pill border border-terracotta/50 px-2 text-micro font-semibold text-terracotta-text">
+                  <button type="button" onClick={() => void removeImage(image.id)} className="min-h-touch flex-1 rounded-pill border border-coral/50 px-2 text-micro font-semibold text-coral-text">
                     {t("delete")}
                   </button>
                 </div>
@@ -217,9 +217,9 @@ export function ContentAdmin() {
           </label>
           <label className="flex flex-col gap-1 text-small">
             <span className="font-medium text-ink">{t("altEs")}</span>
-            <input value={alts.es} onChange={(event) => setAlts({ ...alts, es: event.target.value })} className="min-h-touch w-48 rounded-brand-sm border border-line-strong bg-sand px-3" />
+            <input value={alts.es} onChange={(event) => setAlts({ ...alts, es: event.target.value })} className="min-h-touch w-48 rounded-brand-sm border border-line-strong bg-mist px-3" />
           </label>
-          <button type="submit" className="min-h-touch rounded-pill bg-sea px-4 text-small font-semibold text-shell">
+          <button type="submit" className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell">
             {t("upload")}
           </button>
           <p className="w-full text-micro text-ink-soft">{t("imageHint")}</p>
@@ -239,10 +239,10 @@ export function ContentAdmin() {
                 <span className="text-micro text-ink-soft">
                   {offer.validFrom ?? "—"} → {offer.validTo ?? "—"}
                 </span>
-                <button type="button" onClick={() => void toggleOffer(offer)} className={`ml-auto min-h-touch rounded-pill px-3 text-small font-semibold ${offer.active ? "bg-sea text-shell" : "border border-line text-ink-soft"}`}>
+                <button type="button" onClick={() => void toggleOffer(offer)} className={`ml-auto min-h-touch rounded-pill px-3 text-small font-semibold ${offer.active ? "bg-azure text-shell" : "border border-line text-ink-soft"}`}>
                   {offer.active ? t("active") : t("paused")}
                 </button>
-                <button type="button" onClick={() => void removeOffer(offer)} className="min-h-touch rounded-pill border border-terracotta/50 px-3 text-small font-semibold text-terracotta-text">
+                <button type="button" onClick={() => void removeOffer(offer)} className="min-h-touch rounded-pill border border-coral/50 px-3 text-small font-semibold text-coral-text">
                   {t("delete")}
                 </button>
               </li>
@@ -253,21 +253,21 @@ export function ContentAdmin() {
         <form onSubmit={createOffer} className="flex flex-wrap items-end gap-3 rounded-brand-lg border border-line bg-shell p-4">
           <label className="flex flex-col gap-1 text-small">
             <span className="font-medium text-ink">{t("offerCode")}</span>
-            <input required value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} className="min-h-touch w-32 rounded-brand-sm border border-line-strong bg-sand px-3" />
+            <input required value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} className="min-h-touch w-32 rounded-brand-sm border border-line-strong bg-mist px-3" />
           </label>
           <label className="flex flex-col gap-1 text-small">
             <span className="font-medium text-ink">{t("offerTitle")}</span>
-            <input required value={form.titleEs} onChange={(event) => setForm({ ...form, titleEs: event.target.value })} className="min-h-touch w-56 rounded-brand-sm border border-line-strong bg-sand px-3" />
+            <input required value={form.titleEs} onChange={(event) => setForm({ ...form, titleEs: event.target.value })} className="min-h-touch w-56 rounded-brand-sm border border-line-strong bg-mist px-3" />
           </label>
           <label className="flex flex-col gap-1 text-small">
             <span className="font-medium text-ink">{t("validFrom")}</span>
-            <input type="date" value={form.validFrom} onChange={(event) => setForm({ ...form, validFrom: event.target.value })} className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3" />
+            <input type="date" value={form.validFrom} onChange={(event) => setForm({ ...form, validFrom: event.target.value })} className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3" />
           </label>
           <label className="flex flex-col gap-1 text-small">
             <span className="font-medium text-ink">{t("validTo")}</span>
-            <input type="date" value={form.validTo} onChange={(event) => setForm({ ...form, validTo: event.target.value })} className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3" />
+            <input type="date" value={form.validTo} onChange={(event) => setForm({ ...form, validTo: event.target.value })} className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3" />
           </label>
-          <button type="submit" className="min-h-touch rounded-pill bg-sea px-4 text-small font-semibold text-shell">
+          <button type="submit" className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell">
             {t("createOffer")}
           </button>
         </form>

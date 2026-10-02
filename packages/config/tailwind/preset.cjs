@@ -1,8 +1,14 @@
 /**
- * Preset de Tailwind compartido (mobile-first, RNF-01) + sistema visual «Mediterráneo
- * editorial» (docs/SRS.md §7).
+ * Preset de Tailwind compartido (mobile-first, RNF-01) + sistema visual «Brisa Marina»
+ * (docs/SRS.md §7 · RepoTecnico/Manual_Identidad_Visual.md v2.0.0).
  * Breakpoints: móvil <768 / tablet 768–1024 / desktop >1024.
  * Áreas táctiles mínimas de 44px (utilidades `*-touch`).
+ *
+ * Rediseño 2026-10 (sustituye a «Mediterráneo editorial»): registro luminoso y aéreo —
+ * porcelana fría (`mist`), azur vívido para la acción (`azure`), marino profundo para el
+ * registro oscuro y la suite de administración AdminLTE (`navy`), coral para la atención
+ * (`coral`) y perla/ámbar como detalle premium. Todos los pares están medidos con
+ * `scripts/design/contrast-audit.mjs` (WCAG 2.1 AA mínimo).
  *
  * IMPORTANTE: los breakpoints y el táctil reflejan las constantes de `@hotel/shared`
  * (`BREAKPOINT_TABLET_PX`, `BREAKPOINT_DESKTOP_PX`, `TOUCH_TARGET_MIN_PX`). Al ser un módulo
@@ -18,53 +24,51 @@ module.exports = {
       desktop: "1024px",
     },
     extend: {
-      // Paleta de marca (docs/SRS.md §7 + RepoTecnico/propuesta_imagen_visual.md). Los 12 tokens
-      // originales NO cambian; los nuevos son ADITIVOS (evolución aprobada del sistema visual,
-      // 2026-09-27) y sus pares están medidos con `scripts/design/contrast-audit.mjs`.
+      // Paleta de marca «Brisa Marina» (Manual_Identidad_Visual.md v2.0.0). Este objeto y el
+      // espejo `apps/web/src/lib/a11y/palette.ts` son UN SOLO origen de verdad: el test
+      // `a11y.test.ts` los compara y se pone rojo si divergen.
       colors: {
-        // — Sistema vigente «Mediterráneo editorial» (sin cambios) —
-        sand: "#FBF6EC",
-        "sand-2": "#F3EAD8",
-        shell: "#FFFFFF",
-        line: "#E7DCC6",
-        ink: "#1B2327",
-        "ink-soft": "#4C575C",
-        sea: "#0E5A63",
-        "sea-deep": "#08424A",
-        terracotta: "#C0542E",
-        "terracotta-text": "#A8431F",
-        olive: "#5E6B45",
-        gold: "#C68A2E",
-        // — Registro oscuro editorial (propuesta «Marina Sol» adaptada) —
-        ocean: "#0F2C3F", // superficie oscura (hero, pie, cabecera de administración): 13,42:1 con arena
-        "ocean-soft": "#16455E", // superficie oscura secundaria / hover: 4,54:1 con champagne
-        champagne: "#C5A880", // detalle premium SOLO sobre oscuro (6,39:1 sobre ocean)
-        // — Frontera de controles (WCAG 2.1 · 1.4.11) —
-        "line-strong": "#8F7F5F", // borde de input/select/textarea: 3,27–3,91:1 sobre sand/sand-2/shell
+        // — Fondos luminosos (registro aéreo) —
+        mist: "#F4F9FC", // lienzo de página (porcelana fría)
+        "mist-2": "#E6F0F6", // bandas, filas alternas, estados suaves
+        shell: "#FFFFFF", // tarjetas, formularios, modales
+        // — Texto —
+        ink: "#101F2C", // texto principal (16,74:1 sobre shell)
+        "ink-soft": "#41566A", // texto secundario (7,60:1 sobre shell)
+        // — Marca / acción (azur vívido) —
+        azure: "#0F6C9C", // acción primaria, enlaces, foco (5,76:1 con blanco)
+        "azure-deep": "#0A4F75", // hover y pulsado (8,79:1 con blanco)
+        // — Registro oscuro (hero, pie, suite de administración AdminLTE) —
+        navy: "#0E2A3F", // superficie oscura: 14,77:1 con shell
+        "navy-soft": "#1A4160", // superficie oscura secundaria / hover: 10,67:1 con shell
+        pearl: "#C3D4E0", // detalle premium SOLO sobre oscuro (9,72:1 sobre navy)
+        // — Acento de atención (coral) —
+        coral: "#C4522C", // relleno de atención con texto blanco (4,57:1)
+        "coral-text": "#A34222", // acento como texto (6,25:1 sobre shell)
+        // — Premium sobre claro y estados de habitación —
+        amber: "#B98324", // detalle sobre claro, con `ink` encima (5,05:1)
+        fern: "#276E4C", // etiqueta «disponible» (6,14:1 con blanco; 5,04:1 sobre su tinte al 10 %)
+        // — Bordes —
+        line: "#DBE7EF", // filetes decorativos (no controles)
+        "line-strong": "#6B8296", // frontera de controles (WCAG 1.4.11): 3,45–3,99:1
         // — Estados semánticos (pares medidos ≥ 4,5:1) —
-        success: "#2F6B4F",
-        "success-bg": "#E3EFE7",
-        warning: "#8A5A12",
-        "warning-bg": "#F7E9C9",
-        error: "#9E2B1F",
-        "error-bg": "#F8E3DE",
-        info: "#14556B",
-        "info-bg": "#DCEAF1",
+        success: "#1F7A4D",
+        "success-bg": "#E2F2E9",
+        warning: "#8A5F0C",
+        "warning-bg": "#FBF0D6",
+        error: "#B3261E",
+        "error-bg": "#FAE5E3",
+        info: "#0F6380",
+        "info-bg": "#E0EFF5",
       },
       fontFamily: {
-        // Cascada cirílica (Fase B): ES/EN usan las fuentes de marca; el ruso toma el respaldo
-        // glifo a glifo porque Fraunces no incluye cirílico y Hanken Grotesk solo el bloque
-        // extendido. La decisión y la evidencia están en RepoTecnico/propuesta_imagen_visual.md §3.4.
-        display: ["var(--font-fraunces)", "var(--font-playfair)", "Georgia", "serif"],
-        sans: [
-          "var(--font-hanken)",
-          "var(--font-inter)",
-          "system-ui",
-          "-apple-system",
-          "sans-serif",
-        ],
+        // Tipografías de marca «Brisa Marina»: serif elegante (display) + geométrica fresca (UI).
+        // Las DOS publican el subconjunto `cyrillic`, así que el locale RU queda cubierto por las
+        // fuentes de marca sin cascada por glifo (ver `cyrillic-fonts.test.ts`).
+        display: ["var(--font-playfair)", "Georgia", "serif"],
+        sans: ["var(--font-manrope)", "system-ui", "-apple-system", "sans-serif"],
       },
-      // Escala tipográfica con clamp (móvil → desktop, docs/SRS.md §7 + §3.4 de la propuesta).
+      // Escala tipográfica con clamp (móvil → desktop, docs/SRS.md §7).
       fontSize: {
         display: [
           "clamp(2.8rem, 1.7rem + 4.4vw, 5rem)",
@@ -90,10 +94,11 @@ module.exports = {
         "brand-lg": "22px",
         pill: "9999px",
       },
+      // Elevación «aérea»: sombras frías y suaves teñidas con el marino/azur de marca.
       boxShadow: {
-        card: "0 1px 2px rgba(14,90,99,0.06), 0 2px 6px rgba(14,90,99,0.08)",
-        "card-hover": "0 10px 24px rgba(14,90,99,0.14)",
-        modal: "0 24px 60px rgba(8,66,74,0.24)",
+        card: "0 1px 2px rgba(14,42,63,0.05), 0 4px 12px rgba(15,108,156,0.07)",
+        "card-hover": "0 12px 28px rgba(14,42,63,0.12)",
+        modal: "0 24px 64px rgba(10,42,63,0.22)",
       },
       maxWidth: { prose: "66ch" },
       minHeight: { touch: "44px" },

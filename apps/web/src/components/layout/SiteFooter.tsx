@@ -10,7 +10,7 @@ export function SiteFooter() {
   const t = useTranslations("shell");
 
   return (
-    <footer className="mt-8 border-t border-line bg-sand-2">
+    <footer className="mt-8 border-t border-line bg-mist-2">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-5 py-9 tablet:flex-row tablet:items-center tablet:justify-between">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-small text-ink-soft">
           <span className="font-display font-semibold text-ink">{t("brandTitle")}</span>
@@ -18,9 +18,9 @@ export function SiteFooter() {
           <Link
             href="/historico"
             aria-label={t("footerSealAria")}
-            className="inline-flex items-center gap-2 rounded-pill border border-olive/30 bg-olive/10 px-3 py-1 text-micro font-semibold text-ink-soft transition-colors hover:border-olive/60 hover:text-ink"
+            className="inline-flex items-center gap-2 rounded-pill border border-fern/30 bg-fern/10 px-3 py-1 text-micro font-semibold text-ink-soft transition-colors hover:border-fern/60 hover:text-ink"
           >
-            <span aria-hidden="true" className="h-2 w-2 rounded-full bg-olive" />
+            <span aria-hidden="true" className="h-2 w-2 rounded-full bg-fern" />
             {t("footerTagline")}
           </Link>
         </div>

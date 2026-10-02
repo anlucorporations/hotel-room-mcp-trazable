@@ -20,7 +20,7 @@ export function ContractPausedBanner({ paused }: { readonly paused: boolean | nu
     <p
       data-testid={isPaused ? "contract-paused" : "contract-paused-unknown"}
       role="status"
-      className="rounded-brand border border-terracotta-text/40 bg-sand-2 px-4 py-3 text-small text-terracotta-text"
+      className="rounded-brand border border-coral-text/40 bg-mist-2 px-4 py-3 text-small text-coral-text"
     >
       <strong className="font-semibold">{t(isPaused ? "title" : "unknownTitle")}. </strong>
       {t(isPaused ? "hint" : "unknownHint")}

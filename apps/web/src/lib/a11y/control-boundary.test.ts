@@ -12,7 +12,7 @@ import { PALETTE } from "./palette";
  *
  * Por qué existe: en un `input`/`select`/`textarea` sobre el lienzo arena, el **borde es lo único**
  * que identifica el control (el relleno blanco sobre arena da 1,06:1). El sistema usaba
- * `border-line` (#E7DCC6) para todo —filetes decorativos y controles— y como frontera de control
+ * `border-line` (#DBE7EF) para todo —filetes decorativos y controles— y como frontera de control
  * daba **~1,10:1**, muy por debajo del **3:1** exigido. Axe no lo detecta (el control tiene etiqueta
  * y foco correctos) y el escáner de `className` mide pares **texto/fondo**, no límites de
  * componente: era un punto ciego real del proyecto.
@@ -29,7 +29,7 @@ const SRC_ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const MIN_BOUNDARY_RATIO = 3;
 
 /** Lienzos sobre los que se dibujan los controles (los tres que el producto usa). */
-const CONTROL_SURFACES = ["sand", "sand-2", "shell"] as const;
+const CONTROL_SURFACES = ["mist", "mist-2", "shell"] as const;
 
 /** Borde **estructural** (ancho/lado) — no confundir con un color de borde (`border-line`). */
 const STRUCTURAL_BORDER = /(?:^|\s)border(?:-(?:[trblxy]|\d))?(?=\s|$)/;
@@ -134,7 +134,7 @@ describe("Accesibilidad · frontera de los controles de formulario (H-7 · WCAG 
         .filter((utility) => utility.variants.length > 0)
         .map((utility) => ({ ...utility, file: control.file, tag: control.tag })),
     );
-    // Debe haber al menos un borde de estado declarado (hoy `focus:border-sea` en todos los campos).
+    // Debe haber al menos un borde de estado declarado (hoy `focus:border-azure` en todos los campos).
     expect(stateBorders.length).toBeGreaterThan(0);
     const failures = stateBorders
       .filter((utility) => minRatioOnSurfaces(utility.token) < MIN_BOUNDARY_RATIO)

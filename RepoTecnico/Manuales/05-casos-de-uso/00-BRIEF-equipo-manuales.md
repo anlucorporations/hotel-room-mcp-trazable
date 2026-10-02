@@ -231,29 +231,43 @@ El LITERARIO deja en el preámbulo la referencia a su infografía (una por CU). 
   por flechas; franja inferior con tres etiquetas: **Quién**, **Qué consigues**, **Si falla**.
 - **Texto grande y legible** (≥ 22 px en el viewBox), poco texto por tarjeta.
 
-**Paleta (solo estos colores):**
+**Paleta «Brisa Marina» (solo estos colores; fuente de verdad: `packages/config/tailwind/preset.cjs`):**
 
 | Uso | Token | Hex |
 |-----|-------|-----|
-| Fondo | `sand` | `#FBF6EC` |
+| Fondo | `mist` | `#F4F9FC` |
 | Superficie | `shell` | `#FFFFFF` |
-| Superficie 2 | `sand-2` | `#F3EAD8` |
-| Borde | `line` | `#E7DCC6` |
-| Texto | `ink` | `#1B2327` |
-| Texto suave | `ink-soft` | `#4C575C` |
-| Acción / título | `sea` | `#0E5A63` |
-| Acción oscura | `sea-deep` | `#08424A` |
-| Acento cálido | `terracotta` | `#C0542E` |
-| Aviso | `warning` + `warning-bg` | `#8A5A12` / `#F7E9C9` |
-| Correcto | `success` + `success-bg` | `#2F6B4F` / `#E3EFE7` |
-| Error | `error` + `error-bg` | `#9E2B1F` / `#F8E3DE` |
-| Detalle premium | `gold` | `#C68A2E` |
-| Registro oscuro | `ocean` / `champagne` | `#0F2C3F` / `#C5A880` |
+| Superficie 2 | `mist-2` | `#E6F0F6` |
+| Borde decorativo | `line` | `#DBE7EF` |
+| Frontera de controles | `line-strong` | `#6B8296` |
+| Texto | `ink` | `#101F2C` |
+| Texto suave | `ink-soft` | `#41566A` |
+| Acción / título | `azure` | `#0F6C9C` |
+| Acción oscura | `azure-deep` | `#0A4F75` |
+| Acento de atención (relleno) | `coral` | `#C4522C` |
+| Acento como texto | `coral-text` | `#A34222` |
+| Aviso | `warning` + `warning-bg` | `#8A5F0C` / `#FBF0D6` |
+| Correcto | `success` + `success-bg` | `#1F7A4D` / `#E2F2E9` |
+| Error | `error` + `error-bg` | `#B3261E` / `#FAE5E3` |
+| Información | `info` + `info-bg` | `#0F6380` / `#E0EFF5` |
+| Detalle premium (sobre claro) | `amber` | `#B98324` |
+| Disponible | `fern` | `#276E4C` |
+| Registro oscuro | `navy` / `pearl` (detalle) | `#0E2A3F` / `#C3D4E0` |
 
-Tipografías: `Fraunces, Georgia, 'Times New Roman', serif` para títulos;
-`'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif` para texto.
+Tipografías: `'Playfair Display', Georgia, 'Times New Roman', serif` para títulos;
+`'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif` para texto.
 Puedes leer un SVG ya existente en `docs/imagenes/` (p. ej. `doc-compra-tres-pasos.svg`) para copiar
 el estilo. **No toques las imágenes existentes.**
+
+**Reglas de color que no se negocian** (el guardián `brand-pieces.test.ts` pone la suite roja si una
+infografía usa un HEX que no esté en el preset):
+
+- `pearl` **solo** sobre `navy`/`navy-soft`; `amber` nunca como texto sobre claro (3,31:1) y `line`
+  nunca como frontera de un control (1,19:1): para controles se usa `line-strong`.
+- El velo oscuro de una portada no baja del **65 %** de `navy` (a menos velo el texto blanco deja de
+  cumplir AA).
+- La referencia completa (ratios medidos, tipografías, do's & don'ts) es
+  [`RepoTecnico/Manual_Identidad_Visual.md`](../../Manual_Identidad_Visual.md) **v2.0.0**.
 
 ---
 

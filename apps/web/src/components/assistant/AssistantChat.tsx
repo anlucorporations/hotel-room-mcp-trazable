@@ -93,7 +93,7 @@ export function AssistantChat() {
                   type="button"
                   onClick={() => onSuggestion(s)}
                   disabled={status === "loading"}
-                  className="min-h-touch rounded-pill border border-line bg-sand-2 px-3 py-1 text-small font-medium text-ink transition-colors hover:bg-sand disabled:opacity-60"
+                  className="min-h-touch rounded-pill border border-line bg-mist-2 px-3 py-1 text-small font-medium text-ink transition-colors hover:bg-mist disabled:opacity-60"
                 >
                   {s}
                 </button>
@@ -107,8 +107,8 @@ export function AssistantChat() {
             data-testid={`msg-${m.role}`}
             className={
               m.role === "user"
-                ? "self-end rounded-brand bg-sea px-3 py-2 text-shell"
-                : "self-start rounded-brand bg-sand-2 px-3 py-2 text-ink"
+                ? "self-end rounded-brand bg-azure px-3 py-2 text-shell"
+                : "self-start rounded-brand bg-mist-2 px-3 py-2 text-ink"
             }
           >
             {m.text}
@@ -127,7 +127,7 @@ export function AssistantChat() {
         <div
           data-testid="assistant-unavailable"
           role="alert"
-          className="flex flex-col gap-2 rounded-brand border border-line bg-sand-2 px-4 py-4 text-ink"
+          className="flex flex-col gap-2 rounded-brand border border-line bg-mist-2 px-4 py-4 text-ink"
         >
           <p>{t("unavailable")}</p>
           <div className="flex flex-wrap items-center gap-3">
@@ -137,12 +137,12 @@ export function AssistantChat() {
                 data-testid="assistant-retry"
                 onClick={() => void retry()}
                 disabled={status === "loading"}
-                className="min-h-touch rounded-brand bg-sea px-4 py-2 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60"
+                className="min-h-touch rounded-brand bg-azure px-4 py-2 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-60"
               >
                 {t("retry")}
               </button>
             )}
-            <Link href="/" className="font-semibold text-sea underline">
+            <Link href="/" className="font-semibold text-azure underline">
               {t("manualLink")}
             </Link>
           </div>
@@ -173,7 +173,7 @@ export function AssistantChat() {
           type="submit"
           data-testid="assistant-send"
           disabled={status === "loading" || input.trim().length === 0}
-          className="min-h-touch rounded-brand bg-sea px-4 py-2 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60"
+          className="min-h-touch rounded-brand bg-azure px-4 py-2 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-60"
         >
           {t("send")}
         </button>

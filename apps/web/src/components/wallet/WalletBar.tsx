@@ -27,7 +27,7 @@ export function WalletBar() {
 
   if (!hasWallet) {
     return (
-      <div data-testid="no-wallet" className="rounded-brand-sm bg-sand-2 px-4 py-3 text-small text-terracotta-text">
+      <div data-testid="no-wallet" className="rounded-brand-sm bg-mist-2 px-4 py-3 text-small text-coral-text">
         {t("noWallet")}{" "}
         <a className="font-semibold underline" href="https://metamask.io/download/">
           {t("installMetamask")}
@@ -42,7 +42,7 @@ export function WalletBar() {
         type="button"
         onClick={connect}
         disabled={isConnecting}
-        className={`${TOUCH} rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60`}
+        className={`${TOUCH} rounded-pill bg-azure px-5 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-60`}
       >
         {isConnecting ? t("connecting") : t("connect")}
       </button>
@@ -51,14 +51,14 @@ export function WalletBar() {
 
   if (isWrongNetwork) {
     return (
-      <div data-testid="wrong-network" className="flex flex-col gap-2 rounded-brand-sm bg-sand-2 px-4 py-2 text-small text-terracotta-text">
+      <div data-testid="wrong-network" className="flex flex-col gap-2 rounded-brand-sm bg-mist-2 px-4 py-2 text-small text-coral-text">
         <div className="flex items-center gap-3">
           <span>{t("wrongNetwork")}</span>
           <button
             type="button"
             onClick={switchToAppChain}
             disabled={isSwitchingNetwork}
-            className={`${TOUCH} rounded-pill bg-terracotta px-4 font-semibold text-shell transition-colors hover:opacity-90 disabled:opacity-60`}
+            className={`${TOUCH} rounded-pill bg-coral px-4 font-semibold text-shell transition-colors hover:opacity-90 disabled:opacity-60`}
           >
             {isSwitchingNetwork ? t("switchingNetwork") : t("switchNetwork")}
           </button>
@@ -79,7 +79,7 @@ export function WalletBar() {
         data-testid="wallet-connected"
         className="inline-flex min-h-touch items-center gap-2 rounded-pill border border-line bg-shell px-4 text-small font-medium text-ink"
       >
-        <span aria-hidden="true" className="h-2 w-2 rounded-full bg-olive shadow-[0_0_0_3px_rgba(94,107,69,0.25)]" />
+        <span aria-hidden="true" className="h-2 w-2 rounded-full bg-fern shadow-[0_0_0_3px_rgba(94,107,69,0.25)]" />
         {t("connectedAs", { address: address ? short(address) : "" })}
       </div>
       {/* Faucet (RF-21): se autogestiona — devuelve null si no está configurado o no aplica. */}

@@ -85,7 +85,7 @@ export function ReportIncidentPanel({
             value={roomId}
             onChange={(event) => setRoomId(event.target.value)}
             data-testid="report-room"
-            className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
+            className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
           >
             {rooms.map((room) => (
               <option key={room.id} value={room.id}>
@@ -100,7 +100,7 @@ export function ReportIncidentPanel({
             value={kind}
             onChange={(event) => setKind(event.target.value)}
             data-testid="report-kind"
-            className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
+            className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
           >
             {MAINTENANCE_KINDS.map((option) => (
               <option key={option} value={option}>
@@ -114,7 +114,7 @@ export function ReportIncidentPanel({
           <select
             value={priority}
             onChange={(event) => setPriority(event.target.value)}
-            className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
+            className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
           >
             {MAINTENANCE_PRIORITIES.map((option) => (
               <option key={option} value={option}>
@@ -129,13 +129,13 @@ export function ReportIncidentPanel({
             type="text"
             value={description}
             onChange={(event) => setDescription(event.target.value)}
-            className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
+            className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
           />
         </label>
         <button
           type="submit"
           disabled={busy || !roomId}
-          className="min-h-touch rounded-pill bg-sea px-4 text-small font-semibold text-shell disabled:opacity-50"
+          className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell disabled:opacity-50"
         >
           {t("reportSubmit")}
         </button>
@@ -146,7 +146,7 @@ export function ReportIncidentPanel({
         </p>
       )}
       {error && (
-        <p role="alert" className="mt-2 text-small text-terracotta-text">
+        <p role="alert" className="mt-2 text-small text-coral-text">
           {error}
         </p>
       )}

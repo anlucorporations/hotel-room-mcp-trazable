@@ -33,12 +33,12 @@ export async function SuiteCard({ suite, locale }: { suite: HomeSuite; locale: s
             className="h-48 w-full object-cover tablet:h-full"
           />
         ) : (
-          <div aria-hidden="true" className="h-24 w-full bg-sand-2 tablet:h-full" />
+          <div aria-hidden="true" className="h-24 w-full bg-mist-2 tablet:h-full" />
         )}
 
         <div className="flex flex-col justify-between gap-4 p-5">
           <div>
-            <p className="text-micro font-semibold uppercase tracking-[0.14em] text-terracotta-text">
+            <p className="text-micro font-semibold uppercase tracking-[0.14em] text-coral-text">
               {t("suites.roomLabel", { number: suite.roomNumber })}
             </p>
             <h3 className="mt-1 font-display text-h3 font-medium text-ink">{roomType(suite.roomType)}</h3>
@@ -64,7 +64,7 @@ export async function SuiteCard({ suite, locale }: { suite: HomeSuite; locale: s
           <div>
             <Link
               href="/catalogo"
-              className="inline-flex min-h-touch items-center rounded-pill bg-sea px-5 text-small font-semibold text-shell transition-colors hover:bg-sea-deep"
+              className="inline-flex min-h-touch items-center rounded-pill bg-azure px-5 text-small font-semibold text-shell transition-colors hover:bg-azure-deep"
             >
               {t("suites.cta")}
             </Link>

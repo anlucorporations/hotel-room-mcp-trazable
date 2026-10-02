@@ -156,7 +156,7 @@ describe("Back-office · contrato del shell (regresión del acordeón)", () => {
     expect(source).toContain('event.key === "Escape"');
     expect(source).toContain("setDrawerOpen(false)");
     // El velo solo existe en móvil y es un botón con nombre accesible (no un `div` con onClick).
-    expect(source).toMatch(/aria-label=\{t\("nav\.closeMenu"\)\}[\s\S]{0,160}bg-ocean\/60 tablet:hidden/);
+    expect(source).toMatch(/aria-label=\{t\("nav\.closeMenu"\)\}[\s\S]{0,160}bg-navy\/60 tablet:hidden/);
   });
 
   it("declara las piezas de la distribución AdminLTE (sidebar, navbar, cabecera, main y pie)", () => {

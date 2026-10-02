@@ -19,9 +19,9 @@ interface CheckInSuccess {
 }
 
 const FIELD =
-  "min-h-touch w-full rounded-brand border border-line-strong bg-shell px-3 text-ink outline-none focus:border-sea";
+  "min-h-touch w-full rounded-brand border border-line-strong bg-shell px-3 text-ink outline-none focus:border-azure";
 const ACTION =
-  "min-h-touch rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-50";
+  "min-h-touch rounded-pill bg-azure px-5 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-50";
 
 /**
  * Sección de Check-in (RF-33, CU-32/CU-33): resguardo QR/JWS y búsqueda por **código de
@@ -129,7 +129,7 @@ export function CheckInPanel({
   return (
     <div className="flex flex-col gap-6">
       {isPaused && (
-        <p data-testid="reception-paused" role="status" className="rounded-brand border border-terracotta-text/40 bg-sand-2 px-4 py-3 text-small text-terracotta-text">
+        <p data-testid="reception-paused" role="status" className="rounded-brand border border-coral-text/40 bg-mist-2 px-4 py-3 text-small text-coral-text">
           {t("pausedNotice")}
         </p>
       )}
@@ -156,7 +156,7 @@ export function CheckInPanel({
       )}
 
       {error && (
-        <p role="alert" data-testid="checkin-error-banner" className="rounded-brand border border-terracotta-text/40 bg-sand-2 px-4 py-3 text-small text-terracotta-text">
+        <p role="alert" data-testid="checkin-error-banner" className="rounded-brand border border-coral-text/40 bg-mist-2 px-4 py-3 text-small text-coral-text">
           {error}
         </p>
       )}
@@ -173,7 +173,7 @@ export function CheckInPanel({
               value={ticketJws}
               onChange={(event) => setTicketJws(event.target.value)}
               data-testid="checkin-jws"
-              className="w-full rounded-brand border border-line-strong bg-sand-2 p-3 font-mono text-small text-ink outline-none focus:border-sea"
+              className="w-full rounded-brand border border-line-strong bg-mist-2 p-3 font-mono text-small text-ink outline-none focus:border-azure"
             />
           </label>
           <button type="submit" disabled={loading || !ticketJws.trim() || isPaused} className={ACTION}>
@@ -202,7 +202,7 @@ export function CheckInPanel({
         </form>
 
         {reservation && (
-          <div data-testid="recovery-result" className="mt-4 rounded-brand border border-line bg-sand-2 p-4">
+          <div data-testid="recovery-result" className="mt-4 rounded-brand border border-line bg-mist-2 p-4">
             <p className="font-semibold">{t("checkinRecoveryFound")}</p>
             <dl className="mt-2 grid grid-cols-2 gap-2 text-small">
               <div><dt className="text-ink-soft">{t("colRoom")}</dt><dd className="font-semibold">{reservation.roomNumber}</dd></div>

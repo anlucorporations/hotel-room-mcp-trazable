@@ -3,105 +3,105 @@
   <desc id="cp-desc">Tres recuadros numerados unidos por flechas. El primero, «1 · Elegir», muestra una rejilla de tarjetas de habitación con foto, fecha y precio. El segundo, «2 · Revisar», muestra una ventana con cinco líneas: Habitación, Noche, Importe, Token y Contrato. El tercero, «3 · Firmar», muestra un móvil con el aviso de la cartera. Debajo de los tres, la frase «Se firma exactamente lo que se ha revisado».</desc>
   <defs>
     <filter id="cp-sombra" x="-10%" y="-10%" width="120%" height="130%">
-      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0E5A63" flood-opacity="0.12"/>
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0F6C9C" flood-opacity="0.12"/>
     </filter>
   </defs>
 
-  <rect x="0" y="0" width="1400" height="600" fill="#FBF6EC"/>
+  <rect x="0" y="0" width="1400" height="600" fill="#F4F9FC"/>
 
   <!-- recuadro 1 · Elegir -->
   <g filter="url(#cp-sombra)">
-    <rect x="40" y="70" width="380" height="400" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+    <rect x="40" y="70" width="380" height="400" rx="18" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
   </g>
-  <text x="230" y="126" text-anchor="middle" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="30" font-weight="700" fill="#08424A">1 · Elegir</text>
+  <text x="230" y="126" text-anchor="middle" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="30" font-weight="700" fill="#0A4F75">1 · Elegir</text>
 
   <g>
-    <rect x="64" y="156" width="150" height="140" rx="12" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
-    <rect x="72" y="164" width="134" height="54" rx="8" fill="#0E5A63" fill-opacity="0.16"/>
+    <rect x="64" y="156" width="150" height="140" rx="12" fill="#F4F9FC" stroke="#DBE7EF" stroke-width="2"/>
+    <rect x="72" y="164" width="134" height="54" rx="8" fill="#0F6C9C" fill-opacity="0.16"/>
     <rect x="92" y="190" width="94" height="18" rx="4" fill="#FFFFFF"/>
     <rect x="96" y="182" width="20" height="10" rx="4" fill="#FFFFFF"/>
-    <text x="74" y="248" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" fill="#1B2327">12 jun</text>
-    <text x="74" y="276" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#0E5A63">0,08 ETH</text>
+    <text x="74" y="248" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" fill="#101F2C">12 jun</text>
+    <text x="74" y="276" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#0F6C9C">0,08 ETH</text>
   </g>
   <g>
-    <rect x="246" y="156" width="150" height="140" rx="12" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
-    <rect x="254" y="164" width="134" height="54" rx="8" fill="#0E5A63" fill-opacity="0.16"/>
+    <rect x="246" y="156" width="150" height="140" rx="12" fill="#F4F9FC" stroke="#DBE7EF" stroke-width="2"/>
+    <rect x="254" y="164" width="134" height="54" rx="8" fill="#0F6C9C" fill-opacity="0.16"/>
     <rect x="274" y="190" width="94" height="18" rx="4" fill="#FFFFFF"/>
     <rect x="278" y="182" width="20" height="10" rx="4" fill="#FFFFFF"/>
-    <text x="256" y="248" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" fill="#1B2327">13 jun</text>
-    <text x="256" y="276" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#0E5A63">0,08 ETH</text>
+    <text x="256" y="248" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" fill="#101F2C">13 jun</text>
+    <text x="256" y="276" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#0F6C9C">0,08 ETH</text>
   </g>
   <g>
-    <rect x="64" y="316" width="150" height="140" rx="12" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
-    <rect x="72" y="324" width="134" height="54" rx="8" fill="#0E5A63" fill-opacity="0.16"/>
+    <rect x="64" y="316" width="150" height="140" rx="12" fill="#F4F9FC" stroke="#DBE7EF" stroke-width="2"/>
+    <rect x="72" y="324" width="134" height="54" rx="8" fill="#0F6C9C" fill-opacity="0.16"/>
     <rect x="92" y="350" width="94" height="18" rx="4" fill="#FFFFFF"/>
     <rect x="96" y="342" width="20" height="10" rx="4" fill="#FFFFFF"/>
-    <text x="74" y="408" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" fill="#1B2327">14 jun</text>
-    <text x="74" y="436" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#0E5A63">0,09 ETH</text>
+    <text x="74" y="408" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" fill="#101F2C">14 jun</text>
+    <text x="74" y="436" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#0F6C9C">0,09 ETH</text>
   </g>
   <g>
-    <rect x="246" y="316" width="150" height="140" rx="12" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
-    <rect x="254" y="324" width="134" height="54" rx="8" fill="#0E5A63" fill-opacity="0.16"/>
+    <rect x="246" y="316" width="150" height="140" rx="12" fill="#F4F9FC" stroke="#DBE7EF" stroke-width="2"/>
+    <rect x="254" y="324" width="134" height="54" rx="8" fill="#0F6C9C" fill-opacity="0.16"/>
     <rect x="274" y="350" width="94" height="18" rx="4" fill="#FFFFFF"/>
     <rect x="278" y="342" width="20" height="10" rx="4" fill="#FFFFFF"/>
-    <text x="256" y="408" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" fill="#1B2327">15 jun</text>
-    <text x="256" y="436" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#0E5A63">0,12 ETH</text>
+    <text x="256" y="408" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" fill="#101F2C">15 jun</text>
+    <text x="256" y="436" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#0F6C9C">0,12 ETH</text>
   </g>
 
   <!-- flecha 1 -->
-  <path d="M432 270 H494" stroke="#0E5A63" stroke-width="5" fill="none"/>
-  <polygon points="498,270 476,259 476,281" fill="#0E5A63"/>
+  <path d="M432 270 H494" stroke="#0F6C9C" stroke-width="5" fill="none"/>
+  <polygon points="498,270 476,259 476,281" fill="#0F6C9C"/>
 
   <!-- recuadro 2 · Revisar -->
   <g filter="url(#cp-sombra)">
-    <rect x="510" y="70" width="380" height="400" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+    <rect x="510" y="70" width="380" height="400" rx="18" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
   </g>
-  <text x="700" y="126" text-anchor="middle" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="30" font-weight="700" fill="#08424A">2 · Revisar</text>
-  <rect x="534" y="156" width="332" height="300" rx="14" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
-  <path d="M534 170 a14 14 0 0 1 14 -14 h304 a14 14 0 0 1 14 14 v30 h-332 z" fill="#0E5A63"/>
+  <text x="700" y="126" text-anchor="middle" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="30" font-weight="700" fill="#0A4F75">2 · Revisar</text>
+  <rect x="534" y="156" width="332" height="300" rx="14" fill="#F4F9FC" stroke="#DBE7EF" stroke-width="2"/>
+  <path d="M534 170 a14 14 0 0 1 14 -14 h304 a14 14 0 0 1 14 14 v30 h-332 z" fill="#0F6C9C"/>
   <text x="552" y="185" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#FFFFFF">Revisar tu reserva</text>
 
-  <text x="552" y="236" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" fill="#4C575C">Habitación</text>
-  <text x="848" y="236" text-anchor="end" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#1B2327">118</text>
-  <path d="M548 253 H852" stroke="#E7DCC6" stroke-width="2" fill="none"/>
+  <text x="552" y="236" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" fill="#41566A">Habitación</text>
+  <text x="848" y="236" text-anchor="end" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#101F2C">118</text>
+  <path d="M548 253 H852" stroke="#DBE7EF" stroke-width="2" fill="none"/>
 
-  <text x="552" y="286" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" fill="#4C575C">Noche</text>
-  <text x="848" y="286" text-anchor="end" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#1B2327">12 jun 2026</text>
-  <path d="M548 303 H852" stroke="#E7DCC6" stroke-width="2" fill="none"/>
+  <text x="552" y="286" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" fill="#41566A">Noche</text>
+  <text x="848" y="286" text-anchor="end" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#101F2C">12 jun 2026</text>
+  <path d="M548 303 H852" stroke="#DBE7EF" stroke-width="2" fill="none"/>
 
-  <text x="552" y="336" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" fill="#4C575C">Importe</text>
-  <text x="848" y="336" text-anchor="end" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#1B2327">0,08 ETH</text>
-  <path d="M548 353 H852" stroke="#E7DCC6" stroke-width="2" fill="none"/>
+  <text x="552" y="336" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" fill="#41566A">Importe</text>
+  <text x="848" y="336" text-anchor="end" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#101F2C">0,08 ETH</text>
+  <path d="M548 353 H852" stroke="#DBE7EF" stroke-width="2" fill="none"/>
 
-  <text x="552" y="386" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" fill="#4C575C">Token</text>
-  <text x="848" y="386" text-anchor="end" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#1B2327">42</text>
-  <path d="M548 403 H852" stroke="#E7DCC6" stroke-width="2" fill="none"/>
+  <text x="552" y="386" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" fill="#41566A">Token</text>
+  <text x="848" y="386" text-anchor="end" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#101F2C">42</text>
+  <path d="M548 403 H852" stroke="#DBE7EF" stroke-width="2" fill="none"/>
 
-  <text x="552" y="436" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" fill="#4C575C">Contrato</text>
-  <text x="848" y="436" text-anchor="end" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#1B2327">0x7f3a…9c21</text>
+  <text x="552" y="436" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" fill="#41566A">Contrato</text>
+  <text x="848" y="436" text-anchor="end" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#101F2C">0x7f3a…9c21</text>
 
   <!-- flecha 2 -->
-  <path d="M902 270 H964" stroke="#0E5A63" stroke-width="5" fill="none"/>
-  <polygon points="968,270 946,259 946,281" fill="#0E5A63"/>
+  <path d="M902 270 H964" stroke="#0F6C9C" stroke-width="5" fill="none"/>
+  <polygon points="968,270 946,259 946,281" fill="#0F6C9C"/>
 
   <!-- recuadro 3 · Firmar -->
   <g filter="url(#cp-sombra)">
-    <rect x="980" y="70" width="380" height="400" rx="18" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+    <rect x="980" y="70" width="380" height="400" rx="18" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
   </g>
-  <text x="1170" y="126" text-anchor="middle" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="30" font-weight="700" fill="#08424A">3 · Firmar</text>
-  <rect x="1105" y="160" width="130" height="250" rx="20" fill="#08424A"/>
+  <text x="1170" y="126" text-anchor="middle" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="30" font-weight="700" fill="#0A4F75">3 · Firmar</text>
+  <rect x="1105" y="160" width="130" height="250" rx="20" fill="#0A4F75"/>
   <rect x="1113" y="172" width="114" height="226" rx="14" fill="#FFFFFF"/>
-  <text x="1170" y="205" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" font-weight="700" fill="#08424A">Cartera</text>
-  <path d="M1121 216 H1219" stroke="#E7DCC6" stroke-width="2" fill="none"/>
-  <text x="1170" y="244" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">Importe</text>
-  <text x="1170" y="270" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#1B2327">0,08 ETH</text>
-  <text x="1170" y="298" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">Noche</text>
-  <text x="1170" y="322" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#1B2327">12 jun</text>
-  <rect x="1118" y="336" width="104" height="34" rx="10" fill="#0E5A63"/>
+  <text x="1170" y="205" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" font-weight="700" fill="#0A4F75">Cartera</text>
+  <path d="M1121 216 H1219" stroke="#DBE7EF" stroke-width="2" fill="none"/>
+  <text x="1170" y="244" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#41566A">Importe</text>
+  <text x="1170" y="270" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" fill="#101F2C">0,08 ETH</text>
+  <text x="1170" y="298" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#41566A">Noche</text>
+  <text x="1170" y="322" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#101F2C">12 jun</text>
+  <rect x="1118" y="336" width="104" height="34" rx="10" fill="#0F6C9C"/>
   <text x="1170" y="358" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" font-weight="700" fill="#FFFFFF" textLength="88" lengthAdjust="spacingAndGlyphs">Confirmar</text>
-  <text x="1170" y="445" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Aviso de la cartera</text>
+  <text x="1170" y="445" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#41566A">Aviso de la cartera</text>
 
   <!-- frase común -->
-  <rect x="290" y="500" width="820" height="66" rx="16" fill="#0E5A63" fill-opacity="0.08" stroke="#E7DCC6" stroke-width="2"/>
-  <text x="700" y="543" text-anchor="middle" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="30" font-weight="700" fill="#08424A" textLength="700" lengthAdjust="spacingAndGlyphs">Se firma exactamente lo que se ha revisado</text>
+  <rect x="290" y="500" width="820" height="66" rx="16" fill="#0F6C9C" fill-opacity="0.08" stroke="#DBE7EF" stroke-width="2"/>
+  <text x="700" y="543" text-anchor="middle" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="30" font-weight="700" fill="#0A4F75" textLength="700" lengthAdjust="spacingAndGlyphs">Se firma exactamente lo que se ha revisado</text>
 </svg>

@@ -32,7 +32,7 @@ export default async function ReviewsPage() {
       >
         {summary.average !== null && (
           <p
-            className="mt-4 font-display text-h3 font-semibold text-sea-deep"
+            className="mt-4 font-display text-h3 font-semibold text-azure-deep"
             data-testid="reviews-average"
           >
             {home("reviews.average", {

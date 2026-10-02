@@ -75,7 +75,7 @@ export function ActivitiesAdmin() {
   }
   if (!session.sessionUsername || !session.hasRole("DEFAULT_ADMIN_ROLE")) {
     return (
-      <p data-testid="activities-role-denied" role="alert" className="rounded-brand-lg border border-line bg-sand-2 px-5 py-8 text-ink-soft">
+      <p data-testid="activities-role-denied" role="alert" className="rounded-brand-lg border border-line bg-mist-2 px-5 py-8 text-ink-soft">
         {t("roleDeniedAdmin")}
       </p>
     );
@@ -182,7 +182,7 @@ export function ActivitiesAdmin() {
                     <button
                       type="button"
                       onClick={() => void toggleActivity(activity)}
-                      className={`min-h-touch rounded-pill px-3 text-small font-semibold ${activity.active ? "bg-sea text-shell" : "border border-line text-ink-soft"}`}
+                      className={`min-h-touch rounded-pill px-3 text-small font-semibold ${activity.active ? "bg-azure text-shell" : "border border-line text-ink-soft"}`}
                     >
                       {activity.active ? t("active") : t("paused")}
                     </button>
@@ -196,17 +196,17 @@ export function ActivitiesAdmin() {
         <form onSubmit={createActivity} className="flex flex-wrap items-end gap-3 rounded-brand-lg border border-line bg-shell p-4">
           <label className="flex flex-col gap-1 text-small">
             <span className="font-medium text-ink">{t("code")}</span>
-            <input required value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} className="min-h-touch w-32 rounded-brand-sm border border-line-strong bg-sand px-3" />
+            <input required value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} className="min-h-touch w-32 rounded-brand-sm border border-line-strong bg-mist px-3" />
           </label>
           <label className="flex flex-col gap-1 text-small">
             <span className="font-medium text-ink">{t("name")}</span>
-            <input required value={form.nameEs} onChange={(event) => setForm({ ...form, nameEs: event.target.value })} className="min-h-touch w-48 rounded-brand-sm border border-line-strong bg-sand px-3" />
+            <input required value={form.nameEs} onChange={(event) => setForm({ ...form, nameEs: event.target.value })} className="min-h-touch w-48 rounded-brand-sm border border-line-strong bg-mist px-3" />
           </label>
           <label className="flex flex-col gap-1 text-small">
             <span className="font-medium text-ink">{t("priceCents")}</span>
-            <input type="number" min={0} value={form.priceCents} onChange={(event) => setForm({ ...form, priceCents: Number(event.target.value) })} className="min-h-touch w-28 rounded-brand-sm border border-line-strong bg-sand px-3" />
+            <input type="number" min={0} value={form.priceCents} onChange={(event) => setForm({ ...form, priceCents: Number(event.target.value) })} className="min-h-touch w-28 rounded-brand-sm border border-line-strong bg-mist px-3" />
           </label>
-          <button type="submit" className="min-h-touch rounded-pill bg-sea px-4 text-small font-semibold text-shell">
+          <button type="submit" className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell">
             {t("createActivity")}
           </button>
         </form>
@@ -241,7 +241,7 @@ export function ActivitiesAdmin() {
                     <button
                       type="button"
                       onClick={() => void toggleSchedule(schedule)}
-                      className={`min-h-touch rounded-pill px-3 text-small font-semibold ${schedule.active ? "bg-sea text-shell" : "border border-line text-ink-soft"}`}
+                      className={`min-h-touch rounded-pill px-3 text-small font-semibold ${schedule.active ? "bg-azure text-shell" : "border border-line text-ink-soft"}`}
                     >
                       {schedule.active ? t("active") : t("closed")}
                     </button>
@@ -255,7 +255,7 @@ export function ActivitiesAdmin() {
         <form onSubmit={createSchedule} className="flex flex-wrap items-end gap-3 rounded-brand-lg border border-line bg-shell p-4">
           <label className="flex flex-col gap-1 text-small">
             <span className="font-medium text-ink">{t("activity")}</span>
-            <select value={scheduleForm.activityId} onChange={(event) => setScheduleForm({ ...scheduleForm, activityId: event.target.value })} className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3">
+            <select value={scheduleForm.activityId} onChange={(event) => setScheduleForm({ ...scheduleForm, activityId: event.target.value })} className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3">
               {activities.map((activity) => (
                 <option key={activity.id} value={activity.id}>{activity.nameEs}</option>
               ))}
@@ -263,13 +263,13 @@ export function ActivitiesAdmin() {
           </label>
           <label className="flex flex-col gap-1 text-small">
             <span className="font-medium text-ink">{t("startsAt")}</span>
-            <input type="datetime-local" required value={scheduleForm.startsAt} onChange={(event) => setScheduleForm({ ...scheduleForm, startsAt: event.target.value })} className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3" />
+            <input type="datetime-local" required value={scheduleForm.startsAt} onChange={(event) => setScheduleForm({ ...scheduleForm, startsAt: event.target.value })} className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3" />
           </label>
           <label className="flex flex-col gap-1 text-small">
             <span className="font-medium text-ink">{t("capacity")}</span>
-            <input type="number" min={1} required value={scheduleForm.capacity} onChange={(event) => setScheduleForm({ ...scheduleForm, capacity: Number(event.target.value) })} className="min-h-touch w-24 rounded-brand-sm border border-line-strong bg-sand px-3" />
+            <input type="number" min={1} required value={scheduleForm.capacity} onChange={(event) => setScheduleForm({ ...scheduleForm, capacity: Number(event.target.value) })} className="min-h-touch w-24 rounded-brand-sm border border-line-strong bg-mist px-3" />
           </label>
-          <button type="submit" className="min-h-touch rounded-pill bg-sea px-4 text-small font-semibold text-shell">
+          <button type="submit" className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell">
             {t("createSchedule")}
           </button>
         </form>

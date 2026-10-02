@@ -13,7 +13,7 @@ import { useAdminTxCopy } from "./adminTxCopy";
 import { classifyAdminTxError } from "./adminTxError";
 
 const SUBMIT =
-  "min-h-touch rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60";
+  "min-h-touch rounded-pill bg-azure px-5 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-60";
 
 /**
  * Fondos (CU-15, docs/SRS.md §9, TREASURER): muestra el balance BRUTO del contrato (`getBalance`/`useBalance`),
@@ -140,7 +140,7 @@ export function AdminFunds() {
       </button>
 
       {txErrorKind && (
-        <p role="alert" className="mt-3 text-terracotta-text">
+        <p role="alert" className="mt-3 text-coral-text">
           {t(`txError.${txErrorKind}`)}
         </p>
       )}

@@ -43,7 +43,7 @@ export default async function DashboardPage() {
           <a
             href="/api/admin/metrics?format=csv"
             download
-            className="inline-flex min-h-touch items-center gap-2 rounded-brand border border-line bg-sand-2 px-3 text-micro font-semibold text-ink transition hover:bg-sand"
+            className="inline-flex min-h-touch items-center gap-2 rounded-brand border border-line bg-mist-2 px-3 text-micro font-semibold text-ink transition hover:bg-mist"
           >
             <svg
               width="14"

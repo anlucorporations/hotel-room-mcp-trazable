@@ -22,6 +22,10 @@ const MAP_EMBED =
  */
 export default async function ContactPage() {
   const home = await getTranslations("home");
+  // El aviso del registro de viajeros (D-13) vive en el namespace `contact`, no en `home`: pedirlo
+  // a `home` devolvía el literal `home.travelers.title` en pantalla (defecto detectado por el
+  // escaneo axe del 2026-10 y ahora cubierto por `src/lib/i18n-keys.test.ts`).
+  const contact = await getTranslations("contact");
   const shell = await getTranslations("shell");
 
   return (
@@ -33,17 +37,17 @@ export default async function ContactPage() {
           <div>
             <address className="flex flex-col gap-2 text-body not-italic text-ink">
               <span>{home("contact.address")}</span>
-              <a className="text-sea-deep underline" href={`tel:${home("contact.phoneHref")}`}>
+              <a className="text-azure-deep underline" href={`tel:${home("contact.phoneHref")}`}>
                 {home("contact.phone")}
               </a>
-              <a className="text-sea-deep underline" href={`mailto:${home("contact.email")}`}>
+              <a className="text-azure-deep underline" href={`mailto:${home("contact.email")}`}>
                 {home("contact.email")}
               </a>
             </address>
             <h3 className="mt-6 font-display text-body font-semibold text-ink">
-              {home("howToArrive.title")}
+              {contact("howToArrive.title")}
             </h3>
-            <p className="mt-1.5 max-w-prose text-small text-ink-soft">{home("howToArrive.body")}</p>
+            <p className="mt-1.5 max-w-prose text-small text-ink-soft">{contact("howToArrive.body")}</p>
           </div>
           <div className="overflow-hidden rounded-brand border border-line">
             <iframe
@@ -57,8 +61,8 @@ export default async function ContactPage() {
         </div>
       </PageSection>
 
-      <PageSection id="contact-travelers" title={home("travelers.title")} tone="band">
-        <p className="max-w-prose text-body text-ink-soft">{home("travelers.body")}</p>
+      <PageSection id="contact-travelers" title={contact("travelers.title")} tone="band">
+        <p className="max-w-prose text-body text-ink-soft">{contact("travelers.body")}</p>
       </PageSection>
     </PublicShell>
   );

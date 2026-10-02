@@ -53,7 +53,7 @@ export default function CheckInPage() {
       errorCorrectionLevel: "M",
       margin: 1,
       width: 512,
-      color: { dark: "#1B2327", light: "#FFFFFF" },
+      color: { dark: "#101F2C", light: "#FFFFFF" },
     })
       .then(setQrDataUrl)
       // Sin imagen, la pantalla sigue sirviendo: el token se puede copiar y pegar en recepción.
@@ -69,11 +69,11 @@ export default function CheckInPage() {
         </header>
 
         {!jws && (
-          <div className="flex flex-col gap-3 rounded-brand-lg border border-line bg-sand-2 p-5">
+          <div className="flex flex-col gap-3 rounded-brand-lg border border-line bg-mist-2 p-5">
             <p role="alert" className="text-body text-ink">
               {t("checkinMissing")}
             </p>
-            <Link href="/mis-noches" className="min-h-touch rounded-brand bg-sea px-4 py-2 text-center font-semibold text-shell">
+            <Link href="/mis-noches" className="min-h-touch rounded-brand bg-azure px-4 py-2 text-center font-semibold text-shell">
               {t("checkinGoToMyNights")}
             </Link>
           </div>
@@ -105,12 +105,12 @@ export default function CheckInPage() {
                 className="mx-auto h-auto w-full max-w-sm rounded-brand-lg border border-line bg-shell p-3"
               />
             ) : (
-              <p className="text-small text-terracotta-text">{t("qrUnavailable")}</p>
+              <p className="text-small text-coral-text">{t("qrUnavailable")}</p>
             )}
 
             <p className="text-small text-ink-soft">{t("checkinStaffHint")}</p>
 
-            <details className="rounded-brand border border-line bg-sand-2 p-3">
+            <details className="rounded-brand border border-line bg-mist-2 p-3">
               <summary className="cursor-pointer text-small font-semibold text-ink">{t("checkinManual")}</summary>
               <textarea
                 data-testid="checkin-jws"

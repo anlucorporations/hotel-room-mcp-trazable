@@ -149,11 +149,11 @@ export function DashboardMetrics({ data }: { data: DashboardAggregates }) {
                 <p className="text-small text-ink-soft">{m.label}</p>
                 <p className="mt-1 font-display text-h3 font-bold text-ink">{m.value}</p>
               </div>
-              <span className="flex h-11 w-11 flex-none items-center justify-center rounded-brand bg-sand-2 text-sea">
+              <span className="flex h-11 w-11 flex-none items-center justify-center rounded-brand bg-mist-2 text-azure">
                 <MetricGlyph icon={m.icon} />
               </span>
             </div>
-            <p className="border-t border-line bg-sand-2 px-4 py-2 text-micro text-ink-soft">
+            <p className="border-t border-line bg-mist-2 px-4 py-2 text-micro text-ink-soft">
               {m.formula}
             </p>
           </li>
@@ -164,7 +164,7 @@ export function DashboardMetrics({ data }: { data: DashboardAggregates }) {
         <p
           data-testid="dashboard-undated"
           role="status"
-          className="rounded-brand border border-terracotta-text/40 bg-sand-2 px-4 py-3 text-small text-terracotta-text"
+          className="rounded-brand border border-coral-text/40 bg-mist-2 px-4 py-3 text-small text-coral-text"
         >
           {t("undatedWarning", { count: data.undatedSalesCount })}
         </p>

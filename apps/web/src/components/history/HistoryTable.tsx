@@ -20,7 +20,7 @@ function TxProof({ hash, label }: { hash: string; label: string }) {
         rel="noopener noreferrer"
         aria-label={label}
         title={hash}
-        className="font-mono text-xs text-sea underline hover:text-sea-deep"
+        className="font-mono text-xs text-azure underline hover:text-azure-deep"
       >
         {short(hash)}
       </a>
@@ -40,7 +40,7 @@ export function HistoryTable({ entries }: { entries: readonly SaleHistoryEntry[]
 
   if (entries.length === 0) {
     return (
-      <p data-testid="history-empty" className="rounded-brand bg-sand-2 px-4 py-10 text-center text-ink-soft">
+      <p data-testid="history-empty" className="rounded-brand bg-mist-2 px-4 py-10 text-center text-ink-soft">
         {t("empty")}
       </p>
     );

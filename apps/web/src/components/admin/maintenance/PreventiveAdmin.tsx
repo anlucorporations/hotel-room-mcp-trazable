@@ -77,7 +77,7 @@ export function PreventiveAdmin() {
   }
   if (!session.sessionUsername || !session.hasRole("DEFAULT_ADMIN_ROLE")) {
     return (
-      <p data-testid="preventive-role-denied" role="alert" className="rounded-brand-lg border border-line bg-sand-2 px-5 py-8 text-ink-soft">
+      <p data-testid="preventive-role-denied" role="alert" className="rounded-brand-lg border border-line bg-mist-2 px-5 py-8 text-ink-soft">
         {t("roleDeniedAdmin")}
       </p>
     );
@@ -178,7 +178,7 @@ export function PreventiveAdmin() {
                     <button
                       type="button"
                       onClick={() => void toggle(plan)}
-                      className={`min-h-touch rounded-pill px-3 text-small font-semibold ${plan.active ? "bg-sea text-shell" : "border border-line text-ink-soft"}`}
+                      className={`min-h-touch rounded-pill px-3 text-small font-semibold ${plan.active ? "bg-azure text-shell" : "border border-line text-ink-soft"}`}
                     >
                       {plan.active ? t("active") : t("paused")}
                     </button>
@@ -202,7 +202,7 @@ export function PreventiveAdmin() {
               required
               value={form.code}
               onChange={(event) => setForm({ ...form, code: event.target.value })}
-              className="min-h-touch w-32 rounded-brand-sm border border-line-strong bg-sand px-3"
+              className="min-h-touch w-32 rounded-brand-sm border border-line-strong bg-mist px-3"
             />
           </label>
           <label className="flex flex-col gap-1 text-small">
@@ -212,7 +212,7 @@ export function PreventiveAdmin() {
               required
               value={form.name}
               onChange={(event) => setForm({ ...form, name: event.target.value })}
-              className="min-h-touch w-48 rounded-brand-sm border border-line-strong bg-sand px-3"
+              className="min-h-touch w-48 rounded-brand-sm border border-line-strong bg-mist px-3"
             />
           </label>
           <label className="flex flex-col gap-1 text-small">
@@ -222,7 +222,7 @@ export function PreventiveAdmin() {
               required
               value={form.equipment}
               onChange={(event) => setForm({ ...form, equipment: event.target.value })}
-              className="min-h-touch w-48 rounded-brand-sm border border-line-strong bg-sand px-3"
+              className="min-h-touch w-48 rounded-brand-sm border border-line-strong bg-mist px-3"
             />
           </label>
           <label className="flex flex-col gap-1 text-small">
@@ -230,7 +230,7 @@ export function PreventiveAdmin() {
             <select
               value={form.periodicity}
               onChange={(event) => setForm({ ...form, periodicity: event.target.value })}
-              className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
+              className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
             >
               {PREVENTIVE_PERIODICITIES.map((option) => (
                 <option key={option} value={option}>{t(`periodicity.${option}`)}</option>
@@ -244,10 +244,10 @@ export function PreventiveAdmin() {
               required
               value={form.firstDueDate}
               onChange={(event) => setForm({ ...form, firstDueDate: event.target.value })}
-              className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
+              className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
             />
           </label>
-          <button type="submit" className="min-h-touch rounded-pill bg-sea px-4 text-small font-semibold text-shell">
+          <button type="submit" className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell">
             {t("createPlan")}
           </button>
         </form>

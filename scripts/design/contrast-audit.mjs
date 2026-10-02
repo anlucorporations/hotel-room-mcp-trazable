@@ -1,12 +1,17 @@
 #!/usr/bin/env node
 /**
- * Instrumento de auditoría de contraste de la **propuesta de imagen visual** (Fase 1 del
- * skill `visual-ui-ux`).
+ * Instrumento de auditoría de contraste del sistema visual **«Brisa Marina»**
+ * (Manual_Identidad_Visual.md v2.0.0 · rediseño 2026-10).
  *
  * Por qué existe: la cultura del proyecto exige instrumento y artefacto para cada afirmación de
  * calidad (ADR-23). Este guion mide con la MISMA matemática de WCAG 2.1 que usa el producto
  * (`apps/web/src/lib/a11y/contrast.ts`: luminancia relativa + ratio sin redondear) y publica una
- * tabla Markdown lista para pegar en `RepoTecnico/propuesta_imagen_visual.md`.
+ * tabla Markdown lista para pegar en el manual de identidad visual.
+ *
+ * Los pares medidos aquí son el superconjunto de `DECLARED_TEXT_ON_BACKGROUND`
+ * (`apps/web/src/lib/a11y/palette.ts`) más los velos compuestos del hero y las fronteras de
+ * control (WCAG 1.4.11). Si un valor de este fichero y del preset divergen, el guardián
+ * `a11y.test.ts` pone roja la suite: este script es documentación ejecutable, no fuente de verdad.
  *
  * Uso:
  *   node scripts/design/contrast-audit.mjs
@@ -67,157 +72,165 @@ const toHsl = (hex) => {
   return { h: Math.round(h), s: Math.round(s * 100), l: Math.round(l * 100) };
 };
 
-const verdict = (value) => {
+const verdict = (value, min = 4.5) => {
+  if (value < min) return "NO conforme ❌";
   if (value >= 7) return "AAA ✅";
   if (value >= 4.5) return "AA ✅";
-  if (value >= 3) return "solo texto grande / gráficos ⚠️";
-  return "NO conforme ❌";
+  return `componente ≥${min}:1 ✅`;
 };
 
-// ── Paletas ────────────────────────────────────────────────────────────────────────────────
+// ── Paleta «Brisa Marina» (espejo de packages/config/tailwind/preset.cjs) ─────────────────
 
-/** Sistema vigente (packages/config/tailwind/preset.cjs) — NO se toca. */
-const ACTUAL = {
-  sand: "#FBF6EC",
-  "sand-2": "#F3EAD8",
+const PALETTE = {
+  mist: "#F4F9FC",
+  "mist-2": "#E6F0F6",
   shell: "#FFFFFF",
-  line: "#E7DCC6",
-  ink: "#1B2327",
-  "ink-soft": "#4C575C",
-  sea: "#0E5A63",
-  "sea-deep": "#08424A",
-  terracotta: "#C0542E",
-  "terracotta-text": "#A8431F",
-  olive: "#5E6B45",
-  gold: "#C68A2E",
-};
-
-/** Paleta del documento `RepoTecnico/propuestaVisual-Hotel.md` (Marina Sol). */
-const DOCUMENTO = {
-  "océano profundo": "#0F2C3F",
-  "arena cálida": "#F7F4EE",
-  "terracota A": "#C86446",
-  "terracota B": "#D96B43",
-  champagne: "#C5A880",
-  blanco: "#FFFFFF",
-  "texto primario": "#1C242B",
-  "texto secundario": "#6B7280",
-};
-
-/** Tokens nuevos propuestos (aditivos: el sistema vigente se queda como está). */
-const NUEVOS = {
-  ocean: "#0F2C3F",
-  "ocean-soft": "#16455E",
-  champagne: "#C5A880",
-  success: "#2F6B4F",
-  "success-text": "#24603F",
-  "success-bg": "#E3EFE7",
-  warning: "#8A5A12",
-  "warning-bg": "#F7E9C9",
-  error: "#9E2B1F",
-  "error-bg": "#F8E3DE",
-  info: "#14556B",
-  "info-bg": "#DCEAF1",
-  "ink-muted": "#6B7280",
-  "ink-disabled": "#9AA3A8",
+  line: "#DBE7EF",
+  "line-strong": "#6B8296",
+  ink: "#101F2C",
+  "ink-soft": "#41566A",
+  azure: "#0F6C9C",
+  "azure-deep": "#0A4F75",
+  navy: "#0E2A3F",
+  "navy-soft": "#1A4160",
+  pearl: "#C3D4E0",
+  coral: "#C4522C",
+  "coral-text": "#A34222",
+  amber: "#B98324",
+  fern: "#276E4C",
+  success: "#1F7A4D",
+  "success-bg": "#E2F2E9",
+  warning: "#8A5F0C",
+  "warning-bg": "#FBF0D6",
+  error: "#B3261E",
+  "error-bg": "#FAE5E3",
+  info: "#0F6380",
+  "info-bg": "#E0EFF5",
 };
 
 const OVERLAY_ALPHA = 0.65;
-const OVERLAY = composite(NUEVOS.ocean, OVERLAY_ALPHA, ACTUAL.shell);
-const OVERLAY_SOFT = composite(NUEVOS.ocean, 0.35, ACTUAL.shell);
+const OVERLAY = composite(PALETTE.navy, OVERLAY_ALPHA, PALETTE.shell);
+const OVERLAY_SOFT = composite(PALETTE.navy, 0.35, PALETTE.shell);
 
-// ── Pares a medir ──────────────────────────────────────────────────────────────────────────
+// ── Pares a medir (texto ≥4.5:1 · componentes/fronteras ≥3:1) ─────────────────────────────
 
-const PARES_DOCUMENTO = [
-  ["#0F2C3F", "#F7F4EE", "Titular marino sobre arena (hero, textos largos)"],
-  ["#0F2C3F", "#FFFFFF", "Titular marino sobre blanco (tarjetas)"],
-  ["#FFFFFF", "#0F2C3F", "Texto blanco sobre superficie marina (footer, velo)"],
-  ["#C86446", "#F7F4EE", "Terracota A como TEXTO sobre arena (CTA en texto, enlaces)"],
-  ["#C86446", "#FFFFFF", "Terracota A como TEXTO sobre blanco"],
-  ["#FFFFFF", "#C86446", "Texto blanco sobre botón terracota A"],
-  ["#D96B43", "#F7F4EE", "Terracota B como TEXTO sobre arena"],
-  ["#FFFFFF", "#D96B43", "Texto blanco sobre botón terracota B"],
-  ["#C5A880", "#FFFFFF", "Champagne como TEXTO sobre blanco (estrellas, cifras)"],
-  ["#C5A880", "#F7F4EE", "Champagne como TEXTO sobre arena"],
-  ["#C5A880", "#0F2C3F", "Champagne sobre marina (filetes, iconos)"],
-  ["#1C242B", "#F7F4EE", "Texto primario del documento sobre arena"],
-  ["#6B7280", "#FFFFFF", "Texto secundario del documento sobre blanco"],
-  ["#6B7280", "#F7F4EE", "Texto secundario del documento sobre arena"],
+const PARES_TEXTO = [
+  ["#101F2C", "#FFFFFF", "ink sobre shell (texto principal en tarjetas)"],
+  ["#101F2C", "#F4F9FC", "ink sobre mist (texto principal sobre lienzo)"],
+  ["#101F2C", "#E6F0F6", "ink sobre mist-2 (bandas, filas alternas)"],
+  ["#41566A", "#FFFFFF", "ink-soft sobre shell (texto secundario)"],
+  ["#41566A", "#F4F9FC", "ink-soft sobre mist (texto secundario)"],
+  ["#41566A", "#E6F0F6", "ink-soft sobre mist-2 (texto secundario)"],
+  ["#0F6C9C", "#FFFFFF", "azure sobre shell (enlaces, acción como texto)"],
+  ["#0F6C9C", "#F4F9FC", "azure sobre mist (enlaces)"],
+  ["#0A4F75", "#FFFFFF", "azure-deep sobre shell (títulos de marca, hover)"],
+  ["#0A4F75", "#F4F9FC", "azure-deep sobre mist (títulos de marca)"],
+  ["#A34222", "#FFFFFF", "coral-text sobre shell (avisos, etiquetas)"],
+  ["#A34222", "#F4F9FC", "coral-text sobre mist (avisos, etiquetas)"],
+  ["#276E4C", "#FFFFFF", "fern sobre shell (etiqueta «disponible»)"],
+  ["#276E4C", "#F4F9FC", "fern sobre mist (etiqueta «disponible»)"],
+  ["#276E4C", composite("#276E4C", 0.10, "#F4F9FC"), "fern sobre su tinte al 10 % (chip LIBRE de recepción)"],
+  ["#101F2C", "#DBE7EF", "ink sobre line (chips sobre separador)"],
+  ["#41566A", "#DBE7EF", "ink-soft sobre line (chips sobre separador)"],
+  ["#FFFFFF", "#0F6C9C", "shell sobre azure (botón primario)"],
+  ["#FFFFFF", "#0A4F75", "shell sobre azure-deep (botón primario hover)"],
+  ["#FFFFFF", "#C4522C", "shell sobre coral (relleno de atención)"],
+  ["#FFFFFF", "#A34222", "shell sobre coral-text (aviso invertido)"],
+  ["#FFFFFF", "#276E4C", "shell sobre fern (etiqueta disponible invertida)"],
+  ["#101F2C", "#B98324", "ink sobre amber (etiqueta premium en claro)"],
+  ["#F4F9FC", "#0E2A3F", "mist sobre navy (registro oscuro: hero, pie, AdminLTE)"],
+  ["#FFFFFF", "#0E2A3F", "shell sobre navy (registro oscuro)"],
+  ["#FFFFFF", "#1A4160", "shell sobre navy-soft (hover en sidebar)"],
+  ["#0E2A3F", "#FFFFFF", "navy sobre shell (pastilla activa del sidebar, títulos)"],
+  ["#C3D4E0", "#0E2A3F", "pearl sobre navy (detalle premium en oscuro)"],
+  ["#C3D4E0", "#1A4160", "pearl sobre navy-soft (filetes, etiquetas)"],
+  ["#FFFFFF", OVERLAY, `shell sobre velo navy ${Math.round(OVERLAY_ALPHA * 100)} % (texto del hero)`],
+  ["#F4F9FC", OVERLAY, `mist sobre velo navy ${Math.round(OVERLAY_ALPHA * 100)} % (texto del hero)`],
+  ["#1F7A4D", "#E2F2E9", "success sobre success-bg (banda de confirmación)"],
+  ["#1F7A4D", "#F4F9FC", "success sobre mist (confirmación como texto)"],
+  ["#8A5F0C", "#FBF0D6", "warning sobre warning-bg (banda de aviso)"],
+  ["#8A5F0C", "#F4F9FC", "warning sobre mist (aviso como texto)"],
+  ["#B3261E", "#FAE5E3", "error sobre error-bg (banda de error)"],
+  ["#B3261E", "#F4F9FC", "error sobre mist (error como texto)"],
+  ["#0F6380", "#E0EFF5", "info sobre info-bg (banda informativa)"],
+  ["#0F6380", "#F4F9FC", "info sobre mist (información como texto)"],
+  ["#101F2C", "#E2F2E9", "ink sobre success-bg (texto principal en banda)"],
+  ["#101F2C", "#FBF0D6", "ink sobre warning-bg (texto principal en banda)"],
+  ["#101F2C", "#FAE5E3", "ink sobre error-bg (texto principal en banda)"],
+  ["#101F2C", "#E0EFF5", "ink sobre info-bg (texto principal en banda)"],
+  ["#FFFFFF", "#1F7A4D", "shell sobre success (relleno de confirmación)"],
+  ["#FFFFFF", "#B3261E", "shell sobre error (relleno de error)"],
 ];
 
-const PARES_NUEVOS = [
-  ["#FBF6EC", "#0F2C3F", "Arena sobre marina (hero oscuro, pie de página)"],
-  ["#FFFFFF", OVERLAY, `Blanco sobre velo marino ${Math.round(OVERLAY_ALPHA * 100)} % (texto del hero)`],
-  ["#FBF6EC", OVERLAY, `Arena sobre velo marino ${Math.round(OVERLAY_ALPHA * 100)} % (texto del hero)`],
-  ["#FFFFFF", OVERLAY_SOFT, "Blanco sobre velo marino 35 % (peor caso: imagen clara debajo)"],
-  ["#C5A880", "#0F2C3F", "Champagne sobre marina (filete decorativo ≥3:1)"],
-  ["#C5A880", "#16455E", "Champagne sobre marina suave (borde/icono)"],
-  ["#C68A2E", "#1B2327", "gold sobre ink (estrellas sobre superficie oscura)"],
-  ["#24603F", "#FBF6EC", "success-text sobre arena"],
-  ["#FFFFFF", "#2F6B4F", "Blanco sobre success (fondo)"],
-  ["#8A5A12", "#FBF6EC", "warning-text sobre arena"],
-  ["#1B2327", "#F7E9C9", "Texto principal sobre fondo warning"],
-  ["#9E2B1F", "#FBF6EC", "error-text sobre arena"],
-  ["#FFFFFF", "#9E2B1F", "Blanco sobre error (fondo)"],
-  ["#14556B", "#FBF6EC", "info-text sobre arena"],
-  ["#14556B", "#DCEAF1", "info-text sobre fondo info"],
-  ["#C0542E", "#FFFFFF", "terracotta VIGENTE como fondo de botón (texto blanco)"],
-  ["#A8431F", "#FBF6EC", "terracotta-text VIGENTE sobre arena (enlaces, avisos)"],
-  ["#4C575C", "#FBF6EC", "ink-soft VIGENTE sobre arena (texto secundario)"],
+const PARES_COMPONENTE = [
+  ["#6B8296", "#F4F9FC", "line-strong sobre mist (frontera de control, WCAG 1.4.11)", 3],
+  ["#6B8296", "#E6F0F6", "line-strong sobre mist-2 (frontera de control)", 3],
+  ["#6B8296", "#FFFFFF", "line-strong sobre shell (frontera de control)", 3],
+  ["#0F6C9C", "#FFFFFF", "azure como serie de gráfica sobre tarjeta (1.4.11)", 3],
+  ["#A34222", "#FFFFFF", "coral-text como serie de gráfica sobre tarjeta (1.4.11)", 3],
+];
+
+// Combinaciones PROHIBIDAS (se miden para documentar el porqué, no para aprobarlas):
+const PARES_PROHIBIDOS = [
+  ["#FFFFFF", OVERLAY_SOFT, "shell sobre velo navy 35 %: ni siquiera texto grande (prohibido; el velo mínimo es 65 %)"],
+  ["#C3D4E0", "#FFFFFF", "pearl como texto sobre claro (solo vale sobre navy/navy-soft)"],
+  ["#B98324", "#FFFFFF", "amber como texto sobre blanco (detalle decorativo, nunca texto)"],
+  ["#DBE7EF", "#F4F9FC", "line como frontera de control sobre mist (1,19:1; usar line-strong)"],
 ];
 
 // ── Salida ─────────────────────────────────────────────────────────────────────────────────
 
-const row = (fg, bg, use) => {
+const row = (fg, bg, use, min = 4.5) => {
   const value = ratio(fg, bg);
-  return `| \`${fg}\` | \`${bg}\` | ${value.toFixed(2)}:1 | ${verdict(value)} | ${use} |`;
+  return `| \`${fg}\` | \`${bg}\` | ${value.toFixed(2)}:1 | ${verdict(value, min)} | ${use} |`;
 };
 
 const paletteTable = (title, palette) =>
   [
     `### ${title}`,
     "",
-    "| Token | HEX | HSL | Muestra |",
-    "|---|---|---|---|",
+    "| Token | HEX | HSL |",
+    "|---|---|---|",
     ...Object.entries(palette).map(([name, hex]) => {
       const { h, s, l } = toHsl(hex);
-      return `| \`${name}\` | \`${hex}\` | hsl(${h} ${s}% ${l}%) | ![](${hex}) |`;
+      return `| \`${name}\` | \`${hex}\` | hsl(${h} ${s}% ${l}%) |`;
     }),
     "",
   ].join("\n");
 
-const pairsTable = (title, pairs) =>
+const pairsTable = (title, pairs, min = 4.5) =>
   [
     `### ${title}`,
     "",
-    "| Texto | Fondo | Ratio | Veredicto AA/AAA | Uso previsto |",
+    "| Texto | Fondo | Ratio | Veredicto | Uso previsto |",
     "|---|---|---|---|---|",
-    ...pairs.map(([fg, bg, use]) => row(fg, bg, use)),
+    ...pairs.map((p) => row(p[0], p[1], p[2], p[3] ?? min)),
     "",
   ].join("\n");
 
-console.log("# Auditoría de contraste — propuesta de imagen visual\n");
+console.log("# Auditoría de contraste — sistema visual «Brisa Marina» (v2.0.0)\n");
 console.log(`> Fórmula WCAG 2.1 (luminancia relativa + ratio sin redondear). Velo compuesto:`);
-console.log(`> \`ocean\` ${NUEVOS.ocean} al ${Math.round(OVERLAY_ALPHA * 100)} % sobre blanco = \`${OVERLAY}\`;`);
+console.log(`> \`navy\` ${PALETTE.navy} al ${Math.round(OVERLAY_ALPHA * 100)} % sobre blanco = \`${OVERLAY}\`;`);
 console.log(`> al 35 % = \`${OVERLAY_SOFT}\`.`);
 console.log(`> Excepción declarada: el texto **deshabilitado** queda fuera del requisito de contraste`);
 console.log(`> (WCAG 2.1 · 1.4.3, «inactive user interface components»); se documenta como exento.\n`);
-console.log(paletteTable("1. Sistema vigente («Mediterráneo editorial»)", ACTUAL));
-console.log(paletteTable("2. Paleta del documento de referencia (Marina Sol)", DOCUMENTO));
-console.log(paletteTable("3. Tokens nuevos propuestos (aditivos)", NUEVOS));
-console.log(pairsTable("4. Pares del documento de referencia", PARES_DOCUMENTO));
-console.log(pairsTable("5. Pares de los tokens nuevos", PARES_NUEVOS));
+console.log(paletteTable("1. Paleta «Brisa Marina» (preset real)", PALETTE));
+console.log(pairsTable("2. Pares de texto (mínimo 4.5:1)", PARES_TEXTO));
+console.log(pairsTable("3. Componentes no textuales y fronteras (mínimo 3:1)", PARES_COMPONENTE, 3));
+console.log(
+  pairsTable("4. Combinaciones PROHIBIDAS (medidas para documentar)", PARES_PROHIBIDOS.map((p) => [...p, 99])),
+);
 
 const failing = [
-  ...PARES_DOCUMENTO.map(([fg, bg, use]) => ({ fg, bg, use, value: ratio(fg, bg), origen: "documento" })),
-  ...PARES_NUEVOS.map(([fg, bg, use]) => ({ fg, bg, use, value: ratio(fg, bg), origen: "nuevos" })),
-].filter((pair) => pair.value < 4.5);
+  ...PARES_TEXTO.map(([fg, bg, use]) => ({ fg, bg, use, min: 4.5, value: ratio(fg, bg) })),
+  ...PARES_COMPONENTE.map(([fg, bg, use, min]) => ({ fg, bg, use, min, value: ratio(fg, bg) })),
+].filter((pair) => pair.value < pair.min);
 
 console.log("### Resumen\n");
-console.log(`- Pares medidos: **${PARES_DOCUMENTO.length + PARES_NUEVOS.length}**`);
-console.log(`- Por debajo de AA (4,5:1) para texto normal: **${failing.length}**`);
+console.log(`- Pares medidos: **${PARES_TEXTO.length + PARES_COMPONENTE.length}**`);
+console.log(`- Por debajo de su mínimo: **${failing.length}**`);
 for (const pair of failing) {
-  console.log(`  - \`${pair.fg}\` sobre \`${pair.bg}\` = ${pair.value.toFixed(2)}:1 — ${pair.use}`);
+  console.log(`  - \`${pair.fg}\` sobre \`${pair.bg}\` = ${pair.value.toFixed(2)}:1 (mín ${pair.min}) — ${pair.use}`);
 }
 
 if (process.argv.includes("--json")) {
@@ -225,14 +238,14 @@ if (process.argv.includes("--json")) {
   console.log(
     JSON.stringify(
       {
+        sistema: "Brisa Marina v2.0.0",
         overlay: { alpha: OVERLAY_ALPHA, onWhite: OVERLAY, soft: OVERLAY_SOFT },
-        actual: ACTUAL,
-        documento: DOCUMENTO,
-        nuevos: NUEVOS,
-        pares: [...PARES_DOCUMENTO, ...PARES_NUEVOS].map(([fg, bg, use]) => ({
+        palette: PALETTE,
+        pares: [...PARES_TEXTO, ...PARES_COMPONENTE].map(([fg, bg, use, min]) => ({
           fg,
           bg,
           use,
+          min: min ?? 4.5,
           ratio: Number(ratio(fg, bg).toFixed(2)),
         })),
       },

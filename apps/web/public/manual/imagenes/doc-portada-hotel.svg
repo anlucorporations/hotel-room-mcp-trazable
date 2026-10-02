@@ -3,41 +3,41 @@
   <desc id="ph-desc">Ilustración de portada. Se ve la fachada blanca del hotel con toldos terracota, una palmera a cada lado y el mar al fondo. Sobre el cielo aparecen el nombre «Hotel Marina del Sol» y, debajo, en una sola línea, «50 habitaciones · Alicante · noches en propiedad».</desc>
   <defs>
     <linearGradient id="ph-cielo" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#FBF6EC"/>
-      <stop offset="100%" stop-color="#C68A2E" stop-opacity="0.28"/>
+      <stop offset="0%" stop-color="#F4F9FC"/>
+      <stop offset="100%" stop-color="#B98324" stop-opacity="0.28"/>
     </linearGradient>
     <linearGradient id="ph-mar" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#0E5A63"/>
-      <stop offset="100%" stop-color="#0F2C3F"/>
+      <stop offset="0%" stop-color="#0F6C9C"/>
+      <stop offset="100%" stop-color="#0E2A3F"/>
     </linearGradient>
     <filter id="ph-sombra" x="-10%" y="-10%" width="120%" height="130%">
-      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0E5A63" flood-opacity="0.14"/>
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0F6C9C" flood-opacity="0.14"/>
     </filter>
   </defs>
 
   <!-- cielo -->
-  <rect x="0" y="0" width="1600" height="380" fill="#FBF6EC"/>
+  <rect x="0" y="0" width="1600" height="380" fill="#F4F9FC"/>
   <rect x="0" y="0" width="1600" height="380" fill="url(#ph-cielo)"/>
-  <circle cx="1286" cy="118" r="84" fill="#C68A2E" fill-opacity="0.34"/>
+  <circle cx="1286" cy="118" r="84" fill="#B98324" fill-opacity="0.34"/>
 
   <!-- mar -->
   <rect x="0" y="380" width="1600" height="222" fill="url(#ph-mar)"/>
-  <rect x="1136" y="380" width="300" height="24" fill="#C68A2E" fill-opacity="0.30"/>
-  <path d="M0 442 H1600 M0 480 H1600 M0 522 H1600 M0 562 H1600" stroke="#FBF6EC" stroke-opacity="0.22" stroke-width="4" fill="none"/>
+  <rect x="1136" y="380" width="300" height="24" fill="#B98324" fill-opacity="0.30"/>
+  <path d="M0 442 H1600 M0 480 H1600 M0 522 H1600 M0 562 H1600" stroke="#F4F9FC" stroke-opacity="0.22" stroke-width="4" fill="none"/>
 
   <!-- paseo marítimo -->
-  <rect x="0" y="592" width="1600" height="308" fill="#E7DCC6"/>
-  <path d="M100 592 V900 M300 592 V900 M500 592 V900 M700 592 V900 M900 592 V900 M1100 592 V900 M1300 592 V900 M1500 592 V900" stroke="#0E5A63" stroke-opacity="0.10" stroke-width="4" fill="none"/>
-  <rect x="0" y="598" width="1600" height="10" fill="#08424A"/>
-  <rect x="0" y="642" width="1600" height="6" fill="#08424A" fill-opacity="0.72"/>
-  <path d="M60 598 V706 M180 598 V706 M300 598 V706 M420 598 V706 M540 598 V706 M660 598 V706 M780 598 V706 M900 598 V706 M1020 598 V706 M1140 598 V706 M1260 598 V706 M1380 598 V706 M1500 598 V706" stroke="#08424A" stroke-width="7" stroke-opacity="0.85" fill="none"/>
+  <rect x="0" y="592" width="1600" height="308" fill="#DBE7EF"/>
+  <path d="M100 592 V900 M300 592 V900 M500 592 V900 M700 592 V900 M900 592 V900 M1100 592 V900 M1300 592 V900 M1500 592 V900" stroke="#0F6C9C" stroke-opacity="0.10" stroke-width="4" fill="none"/>
+  <rect x="0" y="598" width="1600" height="10" fill="#0A4F75"/>
+  <rect x="0" y="642" width="1600" height="6" fill="#0A4F75" fill-opacity="0.72"/>
+  <path d="M60 598 V706 M180 598 V706 M300 598 V706 M420 598 V706 M540 598 V706 M660 598 V706 M780 598 V706 M900 598 V706 M1020 598 V706 M1140 598 V706 M1260 598 V706 M1380 598 V706 M1500 598 V706" stroke="#0A4F75" stroke-width="7" stroke-opacity="0.85" fill="none"/>
 
   <!-- edificio del hotel -->
-  <rect x="378" y="210" width="844" height="470" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="3"/>
-  <rect x="356" y="180" width="888" height="34" rx="8" fill="#C0542E"/>
-  <rect x="378" y="672" width="844" height="14" rx="7" fill="#0E5A63" fill-opacity="0.14"/>
+  <rect x="378" y="210" width="844" height="470" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="3"/>
+  <rect x="356" y="180" width="888" height="34" rx="8" fill="#C4522C"/>
+  <rect x="378" y="672" width="844" height="14" rx="7" fill="#0F6C9C" fill-opacity="0.14"/>
 
-  <g fill="#0E5A63" fill-opacity="0.16" stroke="#0E5A63" stroke-width="2">
+  <g fill="#0F6C9C" fill-opacity="0.16" stroke="#0F6C9C" stroke-width="2">
     <rect x="429" y="252" width="92" height="84" rx="6"/>
     <rect x="559" y="252" width="92" height="84" rx="6"/>
     <rect x="689" y="252" width="92" height="84" rx="6"/>
@@ -57,7 +57,7 @@
     <rect x="949" y="476" width="92" height="84" rx="6"/>
     <rect x="1079" y="476" width="92" height="84" rx="6"/>
   </g>
-  <g fill="#08424A" fill-opacity="0.40">
+  <g fill="#0A4F75" fill-opacity="0.40">
     <rect x="423" y="336" width="104" height="6" rx="3"/>
     <rect x="553" y="336" width="104" height="6" rx="3"/>
     <rect x="683" y="336" width="104" height="6" rx="3"/>
@@ -73,46 +73,46 @@
   </g>
 
   <!-- entrada principal -->
-  <rect x="714" y="548" width="172" height="24" rx="8" fill="#C0542E"/>
-  <rect x="740" y="580" width="120" height="100" rx="8" fill="#0E5A63"/>
-  <rect x="790" y="580" width="4" height="100" fill="#FBF6EC" fill-opacity="0.55"/>
-  <rect x="700" y="680" width="200" height="12" rx="6" fill="#08424A" fill-opacity="0.22"/>
+  <rect x="714" y="548" width="172" height="24" rx="8" fill="#C4522C"/>
+  <rect x="740" y="580" width="120" height="100" rx="8" fill="#0F6C9C"/>
+  <rect x="790" y="580" width="4" height="100" fill="#F4F9FC" fill-opacity="0.55"/>
+  <rect x="700" y="680" width="200" height="12" rx="6" fill="#0A4F75" fill-opacity="0.22"/>
 
   <!-- palmeras -->
   <g filter="url(#ph-sombra)">
-    <path d="M178 828 Q 182 640 184 470 L 196 470 Q 198 640 202 828 Z" fill="#C68A2E"/>
-    <ellipse cx="140" cy="452" rx="58" ry="15" transform="rotate(-22 140 452)" fill="#5E6B45"/>
-    <ellipse cx="240" cy="452" rx="58" ry="15" transform="rotate(22 240 452)" fill="#5E6B45"/>
-    <ellipse cx="126" cy="484" rx="62" ry="14" transform="rotate(-8 126 484)" fill="#5E6B45"/>
-    <ellipse cx="254" cy="484" rx="62" ry="14" transform="rotate(8 254 484)" fill="#5E6B45"/>
-    <ellipse cx="190" cy="424" rx="52" ry="14" fill="#5E6B45"/>
-    <circle cx="190" cy="466" r="10" fill="#08424A"/>
+    <path d="M178 828 Q 182 640 184 470 L 196 470 Q 198 640 202 828 Z" fill="#B98324"/>
+    <ellipse cx="140" cy="452" rx="58" ry="15" transform="rotate(-22 140 452)" fill="#276E4C"/>
+    <ellipse cx="240" cy="452" rx="58" ry="15" transform="rotate(22 240 452)" fill="#276E4C"/>
+    <ellipse cx="126" cy="484" rx="62" ry="14" transform="rotate(-8 126 484)" fill="#276E4C"/>
+    <ellipse cx="254" cy="484" rx="62" ry="14" transform="rotate(8 254 484)" fill="#276E4C"/>
+    <ellipse cx="190" cy="424" rx="52" ry="14" fill="#276E4C"/>
+    <circle cx="190" cy="466" r="10" fill="#0A4F75"/>
   </g>
   <g filter="url(#ph-sombra)">
-    <path d="M1398 828 Q 1402 640 1404 470 L 1416 470 Q 1418 640 1422 828 Z" fill="#C68A2E"/>
-    <ellipse cx="1360" cy="452" rx="58" ry="15" transform="rotate(-22 1360 452)" fill="#5E6B45"/>
-    <ellipse cx="1460" cy="452" rx="58" ry="15" transform="rotate(22 1460 452)" fill="#5E6B45"/>
-    <ellipse cx="1346" cy="484" rx="62" ry="14" transform="rotate(-8 1346 484)" fill="#5E6B45"/>
-    <ellipse cx="1474" cy="484" rx="62" ry="14" transform="rotate(8 1474 484)" fill="#5E6B45"/>
-    <ellipse cx="1410" cy="424" rx="52" ry="14" fill="#5E6B45"/>
-    <circle cx="1410" cy="466" r="10" fill="#08424A"/>
+    <path d="M1398 828 Q 1402 640 1404 470 L 1416 470 Q 1418 640 1422 828 Z" fill="#B98324"/>
+    <ellipse cx="1360" cy="452" rx="58" ry="15" transform="rotate(-22 1360 452)" fill="#276E4C"/>
+    <ellipse cx="1460" cy="452" rx="58" ry="15" transform="rotate(22 1460 452)" fill="#276E4C"/>
+    <ellipse cx="1346" cy="484" rx="62" ry="14" transform="rotate(-8 1346 484)" fill="#276E4C"/>
+    <ellipse cx="1474" cy="484" rx="62" ry="14" transform="rotate(8 1474 484)" fill="#276E4C"/>
+    <ellipse cx="1410" cy="424" rx="52" ry="14" fill="#276E4C"/>
+    <circle cx="1410" cy="466" r="10" fill="#0A4F75"/>
   </g>
 
   <!-- sombrillas y tumbonas del paseo -->
   <g>
-    <rect x="322" y="706" width="8" height="146" rx="4" fill="#08424A"/>
-    <path d="M254 712 Q 326 636 398 712 Z" fill="#C0542E"/>
-    <rect x="212" y="852" width="126" height="26" rx="12" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
-    <rect x="212" y="828" width="14" height="30" rx="6" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2" transform="rotate(-18 219 843)"/>
+    <rect x="322" y="706" width="8" height="146" rx="4" fill="#0A4F75"/>
+    <path d="M254 712 Q 326 636 398 712 Z" fill="#C4522C"/>
+    <rect x="212" y="852" width="126" height="26" rx="12" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+    <rect x="212" y="828" width="14" height="30" rx="6" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2" transform="rotate(-18 219 843)"/>
   </g>
   <g>
-    <rect x="1258" y="706" width="8" height="146" rx="4" fill="#08424A"/>
-    <path d="M1190 712 Q 1262 636 1334 712 Z" fill="#C0542E"/>
-    <rect x="1250" y="852" width="126" height="26" rx="12" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
-    <rect x="1362" y="828" width="14" height="30" rx="6" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2" transform="rotate(18 1369 843)"/>
+    <rect x="1258" y="706" width="8" height="146" rx="4" fill="#0A4F75"/>
+    <path d="M1190 712 Q 1262 636 1334 712 Z" fill="#C4522C"/>
+    <rect x="1250" y="852" width="126" height="26" rx="12" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+    <rect x="1362" y="828" width="14" height="30" rx="6" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2" transform="rotate(18 1369 843)"/>
   </g>
 
   <!-- nombre y línea de presentación -->
-  <text x="800" y="112" text-anchor="middle" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="76" font-weight="700" fill="#0F2C3F" textLength="840" lengthAdjust="spacingAndGlyphs">Hotel Marina del Sol</text>
-  <text x="800" y="164" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" fill="#4C575C" textLength="830" lengthAdjust="spacingAndGlyphs">50 habitaciones · Alicante · noches en propiedad</text>
+  <text x="800" y="112" text-anchor="middle" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="76" font-weight="700" fill="#0E2A3F" textLength="840" lengthAdjust="spacingAndGlyphs">Hotel Marina del Sol</text>
+  <text x="800" y="164" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="30" fill="#41566A" textLength="830" lengthAdjust="spacingAndGlyphs">50 habitaciones · Alicante · noches en propiedad</text>
 </svg>

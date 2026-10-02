@@ -24,7 +24,7 @@ import { classifyAdminTxError } from "./adminTxError";
 
 const FIELD = "min-h-touch rounded-brand border border-line-strong bg-shell px-3 text-ink";
 const SUBMIT =
-  "min-h-touch rounded-pill bg-sea px-5 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60";
+  "min-h-touch rounded-pill bg-azure px-5 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-60";
 
 function parseDateInput(value: string): { yyyymmdd: number; valid: boolean } {
   const [y, m, d] = value.split("-").map(Number);
@@ -262,7 +262,7 @@ export function AdminMint() {
         {/* Pausa del contrato (M8 · H4 de la verificación de M7): `mint` es `whenNotPaused`, así
             que con el sistema en pausa no se ofrece la operación en lugar de dejar que revierta. */}
         {isPaused && (
-          <p data-testid="mint-paused" role="status" className="text-small text-terracotta-text">
+          <p data-testid="mint-paused" role="status" className="text-small text-coral-text">
             {t("pausedWarning")}
           </p>
         )}
@@ -278,17 +278,17 @@ export function AdminMint() {
         </button>
 
         {formError && (
-          <p id={errorId} data-testid="mint-error" role="alert" className="text-terracotta-text">
+          <p id={errorId} data-testid="mint-error" role="alert" className="text-coral-text">
             {formError}
           </p>
         )}
         {!formError && txErrorKind && (
-          <p data-testid="mint-tx-error" role="alert" className="text-terracotta-text">
+          <p data-testid="mint-tx-error" role="alert" className="text-coral-text">
             {t(`txError.${txErrorKind}`)}
           </p>
         )}
         {mintedTokenId && (
-          <p data-testid="mint-success" className="text-sea-deep font-semibold">
+          <p data-testid="mint-success" className="text-azure-deep font-semibold">
             {t("minted", { tokenId: mintedTokenId })}
           </p>
         )}
@@ -329,7 +329,7 @@ export function AdminMint() {
               </label>
 
               {mfaError && (
-                <p data-testid="mfa-error" role="alert" className="text-small text-terracotta-text">
+                <p data-testid="mfa-error" role="alert" className="text-small text-coral-text">
                   {mfaError}
                 </p>
               )}
@@ -348,7 +348,7 @@ export function AdminMint() {
                   type="submit"
                   data-testid="mfa-submit-btn"
                   disabled={isSubmittingMfa || mfaCode.length !== 6}
-                  className="rounded-pill bg-sea px-4 py-2 text-small font-semibold text-white hover:bg-sea-deep disabled:opacity-50"
+                  className="rounded-pill bg-azure px-4 py-2 text-small font-semibold text-white hover:bg-azure-deep disabled:opacity-50"
                 >
                   {isSubmittingMfa ? t("processing") : t("mfaConfirm")}
                 </button>

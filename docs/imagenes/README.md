@@ -38,9 +38,13 @@ alguien que no conoce el sistema**: dicen qué tiene que verse, no cómo está h
 3. En los manuales solo hay que cambiar la línea de texto por la imagen:
    `![descripción](imagenes/nombre-del-fichero.png)`.
 
-**Paleta de la marca** (para que todo combine): arena clara de fondo (`sand`), blanco (`shell`),
-verde azulado oscuro (`sea`) para acciones y títulos, terracota para avisos, verde oliva para
-«correcto» y dorado para la etiqueta de suite. Nada de colores fuera de estos.
+**Paleta de la marca «Brisa Marina»** (para que todo combine; fuente de verdad:
+`packages/config/tailwind/preset.cjs` y [`RepoTecnico/Manual_Identidad_Visual.md`](../../RepoTecnico/Manual_Identidad_Visual.md)
+v2.0.0): porcelana fría de fondo (`mist #F4F9FC`), blanco (`shell`), **azur** (`azure #0F6C9C`) para
+acciones y títulos, **coral** (`coral #C4522C`) para avisos, **helecho** (`fern #276E4C`) para
+«correcto» y **ámbar** (`amber #B98324`) para la etiqueta de suite. El registro oscuro es **marino**
+(`navy #0E2A3F` con detalle `pearl #C3D4E0`). Nada de colores fuera de estos: el guardián
+`brand-pieces.test.ts` deriva los HEX del preset real y pone la suite roja si una pieza usa otro.
 
 ## Imágenes necesarias
 
@@ -95,7 +99,7 @@ flowchart TD
 Las **32 infografías** de los manuales por caso de uso (más el mapa de iniciación) se generan con el
 brief `RepoTecnico/Manuales/05-casos-de-uso/00-BRIEF-equipo-manuales.md`, se referencian desde
 `docs/Manuales/05-casos-de-uso/**` y se sirven en `/manual/imagenes/`. Mismo estilo y misma paleta
-que las anteriores: banda `sea-deep` con el número de CU, 3–5 pasos numerados en tarjetas y una
+que las anteriores: banda `navy` con el número de CU, 3–5 pasos numerados en tarjetas y una
 franja inferior con **Quién · Qué consigues · Si falla**.
 
 | Fichero | Caso de uso representado | Bloque |

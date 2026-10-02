@@ -62,7 +62,7 @@ export function SuppliesAdmin() {
 
   if (!session.sessionUsername || !session.hasRole("DEFAULT_ADMIN_ROLE")) {
     return (
-      <p data-testid="supplies-role-denied" role="alert" className="rounded-brand-lg border border-line bg-sand-2 px-5 py-8 text-ink-soft">
+      <p data-testid="supplies-role-denied" role="alert" className="rounded-brand-lg border border-line bg-mist-2 px-5 py-8 text-ink-soft">
         {t("roleDenied")}
       </p>
     );
@@ -134,10 +134,10 @@ export function SuppliesAdmin() {
             {items.map((item) => {
               const low = item.thresholdQty > 0 && item.stockQty <= item.thresholdQty;
               return (
-                <tr key={item.id} className={`border-b border-line/60 ${low ? "bg-terracotta/5" : ""}`}>
+                <tr key={item.id} className={`border-b border-line/60 ${low ? "bg-coral/5" : ""}`}>
                   <th scope="row" className="py-2 text-left font-medium text-ink">
                     {item.nameEs}
-                    {low && <span className="ml-2 rounded-pill bg-terracotta/20 px-2 py-0.5 text-micro text-ink">{t("low")}</span>}
+                    {low && <span className="ml-2 rounded-pill bg-coral/20 px-2 py-0.5 text-micro text-ink">{t("low")}</span>}
                   </th>
                   <td className="py-2 text-ink">{item.stockQty} {item.unit}</td>
                   <td className="py-2 text-ink-soft">{item.thresholdQty}</td>
@@ -149,12 +149,12 @@ export function SuppliesAdmin() {
                         aria-label={t("restockFor", { item: item.nameEs })}
                         value={quantities[item.id] ?? ""}
                         onChange={(event) => setQuantities((current) => ({ ...current, [item.id]: event.target.value }))}
-                        className="min-h-touch w-20 rounded-brand-sm border border-line-strong bg-sand px-2"
+                        className="min-h-touch w-20 rounded-brand-sm border border-line-strong bg-mist px-2"
                       />
                       <button
                         type="button"
                         onClick={() => void restock(item)}
-                        className="min-h-touch rounded-pill bg-sea px-3 text-small font-semibold text-shell"
+                        className="min-h-touch rounded-pill bg-azure px-3 text-small font-semibold text-shell"
                       >
                         {t("restockAction")}
                       </button>

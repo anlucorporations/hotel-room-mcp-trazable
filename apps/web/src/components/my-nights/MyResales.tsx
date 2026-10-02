@@ -81,7 +81,7 @@ export function MyResales() {
   if (query.isError) {
     return (
       <div className="flex flex-col items-start gap-3">
-        <p role="alert" className="text-terracotta-text">{t("loadError")}</p>
+        <p role="alert" className="text-coral-text">{t("loadError")}</p>
         <button type="button" onClick={refresh} className="min-h-touch rounded-pill border border-line px-5 font-semibold text-ink">
           {t("retry")}
         </button>
@@ -94,7 +94,7 @@ export function MyResales() {
       {newSales.length > 0 && (
         <div data-testid="resales-news" role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-brand-lg border border-success/40 bg-success-bg px-4 py-3">
           <p className="text-ink">{t("news", { count: newSales.length })}</p>
-          <button type="button" onClick={markSeen} data-testid="resales-mark-seen" className="min-h-touch rounded-pill bg-sea px-5 font-semibold text-shell">
+          <button type="button" onClick={markSeen} data-testid="resales-mark-seen" className="min-h-touch rounded-pill bg-azure px-5 font-semibold text-shell">
             {t("markSeen")}
           </button>
         </div>
@@ -105,7 +105,7 @@ export function MyResales() {
           <h2 id="published-title" className="font-display text-h3 font-semibold">
             {t("publishedTitle")}
           </h2>
-          <Link href="/mis-noches" className="text-small font-semibold text-sea-deep underline">
+          <Link href="/mis-noches" className="text-small font-semibold text-azure-deep underline">
             {t("publishMore")}
           </Link>
         </div>
@@ -159,7 +159,7 @@ export function MyResales() {
         <div>
           <h2 id="notices-title" className="font-display font-semibold text-ink">{t("pushTitle")}</h2>
           <p className="text-small text-ink-soft">{t("pushHint")}</p>
-          {push.error && <p className="text-small text-terracotta-text">{t("pushError")}</p>}
+          {push.error && <p className="text-small text-coral-text">{t("pushError")}</p>}
         </div>
         {push.state === "unsupported" ? (
           <span className="text-small text-ink-soft">{t("pushUnsupported")}</span>
@@ -168,7 +168,7 @@ export function MyResales() {
             {t("pushDisable")}
           </button>
         ) : (
-          <button type="button" onClick={() => void push.enable()} disabled={push.busy} data-testid="push-enable" className="min-h-touch rounded-pill bg-sea px-5 font-semibold text-shell">
+          <button type="button" onClick={() => void push.enable()} disabled={push.busy} data-testid="push-enable" className="min-h-touch rounded-pill bg-azure px-5 font-semibold text-shell">
             {push.busy ? t("processing") : t("pushEnable")}
           </button>
         )}

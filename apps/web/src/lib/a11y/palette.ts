@@ -1,42 +1,49 @@
 /**
  * Utilidades de color de la paleta de marca: **tokens reales** del preset compartido
- * (`packages/config/tailwind/preset.cjs`) y del sistema visual «Mediterráneo editorial».
+ * (`packages/config/tailwind/preset.cjs`) y del sistema visual «Brisa Marina»
+ * (RepoTecnico/Manual_Identidad_Visual.md v2.0.0).
  *
  * Por qué existe este espejo en TypeScript: el preset es un módulo CommonJS de build que el
  * cliente no debe empaquetar (Tailwind lo consume en tiempo de compilación), pero las gráficas
  * —que pintan SVG con valores concretos, no con clases— y los tests de contraste necesitan los
  * MISMOS valores. La divergencia silenciosa está prohibida por un test guardián
- * (`palette.test.ts`) que compara este objeto con el preset real: si alguien cambia el preset y no
+ * (`a11y.test.ts`) que compara este objeto con el preset real: si alguien cambia el preset y no
  * este fichero (o al revés), la suite se pone roja. Es exactamente el defecto H-21 de la auditoría
  * («la certificación WCAG se medía contra colores que no existen en el preset»).
  */
 export const PALETTE = {
-  // — Sistema vigente «Mediterráneo editorial» (sin cambios) —
-  sand: "#FBF6EC",
-  "sand-2": "#F3EAD8",
+  // — Fondos luminosos (registro aéreo) —
+  mist: "#F4F9FC",
+  "mist-2": "#E6F0F6",
   shell: "#FFFFFF",
-  line: "#E7DCC6",
-  ink: "#1B2327",
-  "ink-soft": "#4C575C",
-  sea: "#0E5A63",
-  "sea-deep": "#08424A",
-  terracotta: "#C0542E",
-  "terracotta-text": "#A8431F",
-  olive: "#5E6B45",
-  gold: "#C68A2E",
-  // — Tokens aditivos del sistema visual (propuesta de imagen visual, 2026-09-27) —
-  ocean: "#0F2C3F",
-  "ocean-soft": "#16455E",
-  champagne: "#C5A880",
-  "line-strong": "#8F7F5F",
-  success: "#2F6B4F",
-  "success-bg": "#E3EFE7",
-  warning: "#8A5A12",
-  "warning-bg": "#F7E9C9",
-  error: "#9E2B1F",
-  "error-bg": "#F8E3DE",
-  info: "#14556B",
-  "info-bg": "#DCEAF1",
+  // — Texto —
+  ink: "#101F2C",
+  "ink-soft": "#41566A",
+  // — Marca / acción (azur vívido) —
+  azure: "#0F6C9C",
+  "azure-deep": "#0A4F75",
+  // — Registro oscuro (hero, pie, suite de administración AdminLTE) —
+  navy: "#0E2A3F",
+  "navy-soft": "#1A4160",
+  pearl: "#C3D4E0",
+  // — Acento de atención (coral) —
+  coral: "#C4522C",
+  "coral-text": "#A34222",
+  // — Premium sobre claro y estados de habitación —
+  amber: "#B98324",
+  fern: "#276E4C",
+  // — Bordes —
+  line: "#DBE7EF",
+  "line-strong": "#6B8296",
+  // — Estados semánticos —
+  success: "#1F7A4D",
+  "success-bg": "#E2F2E9",
+  warning: "#8A5F0C",
+  "warning-bg": "#FBF0D6",
+  error: "#B3261E",
+  "error-bg": "#FAE5E3",
+  info: "#0F6380",
+  "info-bg": "#E0EFF5",
 } as const;
 
 /** Token de color de la paleta de marca. */
@@ -58,14 +65,14 @@ export const NEUTRAL_COLOR_TOKENS: readonly string[] = [
 
 /**
  * Hex de los neutros admitidos, para poder **medir** su contraste (no solo aceptarlos): sin esto,
- * `text-white` sobre `bg-sea` quedaría fuera de la verificación y sería un punto ciego.
+ * `text-white` sobre `bg-azure` quedaría fuera de la verificación y sería un punto ciego.
  */
 export const NEUTRAL_HEX: Readonly<Record<string, string>> = {
   white: "#FFFFFF",
   black: "#000000",
   transparent: "#FFFFFF",
-  current: "#1B2327",
-  inherit: "#1B2327",
+  current: "#101F2C",
+  inherit: "#101F2C",
   none: "#FFFFFF",
 };
 
@@ -84,43 +91,46 @@ export const DECLARED_TEXT_ON_BACKGROUND: ReadonlyArray<{
   readonly where: string;
 }> = [
   { foreground: "ink", background: "shell", where: "texto principal sobre tarjeta blanca" },
-  { foreground: "ink", background: "sand", where: "texto principal sobre lienzo arena" },
-  { foreground: "ink", background: "sand-2", where: "texto principal sobre banda arena-2" },
+  { foreground: "ink", background: "mist", where: "texto principal sobre lienzo porcelana" },
+  { foreground: "ink", background: "mist-2", where: "texto principal sobre banda mist-2" },
   { foreground: "ink-soft", background: "shell", where: "texto secundario sobre tarjeta blanca" },
-  { foreground: "ink-soft", background: "sand", where: "texto secundario sobre lienzo arena" },
-  { foreground: "ink-soft", background: "sand-2", where: "texto secundario sobre banda arena-2" },
-  { foreground: "sea", background: "shell", where: "enlace/acción sobre tarjeta blanca" },
-  { foreground: "sea-deep", background: "shell", where: "título de marca sobre tarjeta blanca" },
-  { foreground: "sea-deep", background: "sand", where: "título de marca sobre lienzo arena" },
-  { foreground: "terracotta-text", background: "shell", where: "aviso/etiqueta sobre tarjeta blanca" },
-  { foreground: "terracotta-text", background: "sand", where: "aviso/etiqueta sobre lienzo arena" },
-  { foreground: "olive", background: "shell", where: "etiqueta secundaria sobre tarjeta blanca" },
-  { foreground: "shell", background: "sea", where: "texto blanco sobre acción primaria" },
-  { foreground: "shell", background: "sea-deep", where: "texto blanco sobre acción profunda" },
-  { foreground: "shell", background: "terracotta-text", where: "texto blanco sobre aviso terracota" },
-  { foreground: "shell", background: "olive", where: "texto blanco sobre etiqueta oliva" },
+  { foreground: "ink-soft", background: "mist", where: "texto secundario sobre lienzo porcelana" },
+  { foreground: "ink-soft", background: "mist-2", where: "texto secundario sobre banda mist-2" },
+  { foreground: "azure", background: "shell", where: "enlace/acción sobre tarjeta blanca" },
+  { foreground: "azure-deep", background: "shell", where: "título de marca sobre tarjeta blanca" },
+  { foreground: "azure-deep", background: "mist", where: "título de marca sobre lienzo porcelana" },
+  { foreground: "coral-text", background: "shell", where: "aviso/etiqueta sobre tarjeta blanca" },
+  { foreground: "coral-text", background: "mist", where: "aviso/etiqueta sobre lienzo porcelana" },
+  { foreground: "fern", background: "shell", where: "etiqueta secundaria sobre tarjeta blanca" },
+  { foreground: "shell", background: "azure", where: "texto blanco sobre acción primaria" },
+  { foreground: "shell", background: "azure-deep", where: "texto blanco sobre acción profunda" },
+  { foreground: "shell", background: "coral", where: "texto blanco sobre relleno de atención" },
+  { foreground: "shell", background: "coral-text", where: "texto blanco sobre aviso coral" },
+  { foreground: "shell", background: "fern", where: "texto blanco sobre etiqueta helecho" },
+  { foreground: "ink", background: "amber", where: "etiqueta premium (ink sobre ámbar)" },
   { foreground: "ink", background: "line", where: "texto principal sobre separador (chips)" },
   { foreground: "ink-soft", background: "line", where: "texto secundario sobre separador (chips)" },
-  { foreground: "white", background: "sea", where: "texto blanco (utilidad) sobre acción primaria" },
-  { foreground: "white", background: "sea-deep", where: "texto blanco (utilidad) sobre acción profunda" },
+  { foreground: "white", background: "azure", where: "texto blanco (utilidad) sobre acción primaria" },
+  { foreground: "white", background: "azure-deep", where: "texto blanco (utilidad) sobre acción profunda" },
   { foreground: "white", background: "ink", where: "texto sobre velo oscuro de marca (modal/menú)" },
   { foreground: "ink", background: "white", where: "texto principal sobre panel blanco (modales)" },
   { foreground: "ink-soft", background: "white", where: "texto secundario sobre panel blanco" },
-  // Registro oscuro editorial (`ocean`) y detalle premium: medidos en `scripts/design/contrast-audit.mjs`.
-  { foreground: "sand", background: "ocean", where: "texto arena sobre superficie marina" },
-  { foreground: "shell", background: "ocean", where: "texto blanco sobre superficie marina" },
-  { foreground: "ocean", background: "shell", where: "título marino sobre tarjeta blanca (sidebar activo)" },
-  { foreground: "champagne", background: "ocean", where: "detalle champagne sobre marina (iconos, cifras)" },
-  { foreground: "champagne", background: "ocean-soft", where: "filete/etiqueta champagne sobre marina suave" },
+  // Registro oscuro (`navy`) y detalle premium: medidos en `scripts/design/contrast-audit.mjs`.
+  { foreground: "mist", background: "navy", where: "texto porcelana sobre superficie marina" },
+  { foreground: "shell", background: "navy", where: "texto blanco sobre superficie marina" },
+  { foreground: "shell", background: "navy-soft", where: "texto blanco sobre superficie marina suave" },
+  { foreground: "navy", background: "shell", where: "título marino sobre tarjeta blanca (sidebar activo)" },
+  { foreground: "pearl", background: "navy", where: "detalle perla sobre marina (iconos, cifras)" },
+  { foreground: "pearl", background: "navy-soft", where: "filete/etiqueta perla sobre marina suave" },
   // Estados semánticos: el color de estado se usa como texto sobre su propio fondo teñido.
   { foreground: "success", background: "success-bg", where: "confirmación sobre su fondo teñido" },
-  { foreground: "success", background: "sand", where: "confirmación como texto sobre arena" },
+  { foreground: "success", background: "mist", where: "confirmación como texto sobre porcelana" },
   { foreground: "warning", background: "warning-bg", where: "aviso sobre su fondo teñido" },
-  { foreground: "warning", background: "sand", where: "aviso como texto sobre arena" },
+  { foreground: "warning", background: "mist", where: "aviso como texto sobre porcelana" },
   { foreground: "error", background: "error-bg", where: "error sobre su fondo teñido" },
-  { foreground: "error", background: "sand", where: "error como texto sobre arena" },
+  { foreground: "error", background: "mist", where: "error como texto sobre porcelana" },
   { foreground: "info", background: "info-bg", where: "información sobre su fondo teñido" },
-  { foreground: "info", background: "sand", where: "información como texto sobre arena" },
+  { foreground: "info", background: "mist", where: "información como texto sobre porcelana" },
   { foreground: "ink", background: "success-bg", where: "texto principal sobre banda de confirmación" },
   { foreground: "ink", background: "warning-bg", where: "texto principal sobre banda de aviso" },
   { foreground: "ink", background: "error-bg", where: "texto principal sobre banda de error" },

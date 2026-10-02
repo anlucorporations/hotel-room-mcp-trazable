@@ -6,7 +6,7 @@ import { useTicket } from "./useTicket";
 import type { OwnedNight } from "./useMyNights";
 
 const PRIMARY_BTN =
-  "min-h-touch w-full rounded-brand bg-sea px-4 py-2 font-semibold text-shell transition-colors hover:bg-sea-deep disabled:opacity-60";
+  "min-h-touch w-full rounded-brand bg-azure px-4 py-2 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-60";
 const GHOST_BTN =
   "min-h-touch w-full rounded-brand border border-line px-4 py-2 font-semibold text-ink disabled:opacity-60";
 
@@ -28,7 +28,7 @@ export function TicketView({ night }: { night: OwnedNight }) {
     <section
       data-testid={`ticket-${night.tokenId}`}
       aria-labelledby={`ticket-heading-${night.tokenId}`}
-      className="mt-4 flex flex-col gap-2 rounded-brand border border-line bg-sand-2 p-3"
+      className="mt-4 flex flex-col gap-2 rounded-brand border border-line bg-mist-2 p-3"
     >
       <h4
         id={`ticket-heading-${night.tokenId}`}
@@ -53,7 +53,7 @@ export function TicketView({ night }: { night: OwnedNight }) {
       )}
 
       {error && (
-        <p data-testid={`ticket-error-${night.tokenId}`} role="alert" className="text-small text-terracotta-text">
+        <p data-testid={`ticket-error-${night.tokenId}`} role="alert" className="text-small text-coral-text">
           {error}
         </p>
       )}
@@ -71,7 +71,7 @@ export function TicketView({ night }: { night: OwnedNight }) {
               className="mx-auto h-auto w-full max-w-[16rem] rounded-brand bg-shell p-2"
             />
           ) : (
-            <p className="text-small text-terracotta-text">{t("qrUnavailable")}</p>
+            <p className="text-small text-coral-text">{t("qrUnavailable")}</p>
           )}
 
           <p className="text-small text-ink">

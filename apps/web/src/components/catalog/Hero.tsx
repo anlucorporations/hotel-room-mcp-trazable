@@ -16,7 +16,7 @@ export function Hero() {
         <svg
           aria-hidden="true"
           viewBox="0 0 200 60"
-          className="absolute right-0 top-10 hidden w-56 text-sea opacity-50 tablet:block"
+          className="absolute right-0 top-10 hidden w-56 text-azure opacity-50 tablet:block"
           fill="none"
         >
           <path
@@ -33,12 +33,12 @@ export function Hero() {
           />
         </svg>
 
-        <p className="mb-3.5 text-micro font-bold uppercase tracking-[0.18em] text-terracotta-text">
+        <p className="mb-3.5 text-micro font-bold uppercase tracking-[0.18em] text-coral-text">
           {t("eyebrow")}
         </p>
         <h1 id="hero-title" className="max-w-[16ch] font-display text-h1 font-medium">
           <span className="sr-only">Hotel Marina del Sol — </span>
-          {t("titleLead")} <em className="not-italic text-sea">{t("titleHighlight")}</em>
+          {t("titleLead")} <em className="not-italic text-azure">{t("titleHighlight")}</em>
           {t("titleTail")}
         </h1>
         <p className="mt-4 max-w-prose text-body text-ink-soft">{t("subcopy")}</p>

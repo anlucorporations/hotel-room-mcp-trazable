@@ -2,7 +2,7 @@
  * GENERADO por `apps/web/scripts/build-manuals.mjs` — NO EDITAR A MANO.
  *
  * Regenerar con: `pnpm --filter @hotel/web run manuals` (o `pnpm build:manuals`).
- * Última generación: 29 de septiembre de 2026
+ * Última generación: 2 de octubre de 2026
  *
  * Fuentes: 35 manuales — 3 generales (docs/manual-*.md) + 32 casos de uso (docs/Manuales/05-casos-de-uso/**)
  */

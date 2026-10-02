@@ -3,38 +3,38 @@
   <desc id="pr-desc">Maqueta de la pantalla de recepción. Arriba, el título «Validación de Recepción &amp; Check-in» y las dos pestañas «Escaneo QR / JWS» y «Protocolo de Contingencia (Sin Móvil)». A la izquierda, la caja del resguardo con un lector de mano escaneando un móvil. A la derecha, el botón «Confirmar Check-in Inmediato» y, debajo, el cartel verde de éxito con la habitación, la fecha y la línea «Anclado on-chain: 0x…».</desc>
   <defs>
     <filter id="pr-sombra" x="-10%" y="-10%" width="120%" height="130%">
-      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0E5A63" flood-opacity="0.12"/>
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0F6C9C" flood-opacity="0.12"/>
     </filter>
   </defs>
 
-  <rect x="0" y="0" width="1400" height="900" fill="#FBF6EC"/>
+  <rect x="0" y="0" width="1400" height="900" fill="#F4F9FC"/>
 
   <g filter="url(#pr-sombra)">
-    <rect x="30" y="30" width="1340" height="840" rx="20" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
+    <rect x="30" y="30" width="1340" height="840" rx="20" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
   </g>
 
   <!-- cabecera -->
-  <text x="70" y="108" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="40" font-weight="700" fill="#0F2C3F">Validación de Recepción &amp; Check-in</text>
-  <text x="70" y="146" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Valida el resguardo del huésped y anota el check-in en la cadena.</text>
+  <text x="70" y="108" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="40" font-weight="700" fill="#0E2A3F">Validación de Recepción &amp; Check-in</text>
+  <text x="70" y="146" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#41566A">Valida el resguardo del huésped y anota el check-in en la cadena.</text>
 
   <!-- pestañas -->
-  <rect x="70" y="180" width="320" height="54" rx="27" fill="#0E5A63"/>
-  <text x="230" y="214" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#FBF6EC">Escaneo QR / JWS</text>
-  <rect x="406" y="180" width="490" height="54" rx="27" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
-  <text x="651" y="214" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C" textLength="448" lengthAdjust="spacingAndGlyphs">Protocolo de Contingencia (Sin Móvil)</text>
+  <rect x="70" y="180" width="320" height="54" rx="27" fill="#0F6C9C"/>
+  <text x="230" y="214" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#F4F9FC">Escaneo QR / JWS</text>
+  <rect x="406" y="180" width="490" height="54" rx="27" fill="#F4F9FC" stroke="#DBE7EF" stroke-width="2"/>
+  <text x="651" y="214" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#41566A" textLength="448" lengthAdjust="spacingAndGlyphs">Protocolo de Contingencia (Sin Móvil)</text>
 
   <!-- caja del resguardo -->
-  <rect x="70" y="270" width="630" height="430" rx="16" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
-  <text x="100" y="315" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#1B2327">Token JWS o URL del Resguardo</text>
-  <rect x="100" y="335" width="540" height="54" rx="10" fill="#FFFFFF" stroke="#E7DCC6" stroke-width="2"/>
-  <text x="116" y="370" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">eyJhbGciOiJIUzI1NiIsInR5cCI6…</text>
+  <rect x="70" y="270" width="630" height="430" rx="16" fill="#F4F9FC" stroke="#DBE7EF" stroke-width="2"/>
+  <text x="100" y="315" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#101F2C">Token JWS o URL del Resguardo</text>
+  <rect x="100" y="335" width="540" height="54" rx="10" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <text x="116" y="370" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#41566A">eyJhbGciOiJIUzI1NiIsInR5cCI6…</text>
 
   <!-- haz del lector -->
-  <polygon points="404,452 250,428 250,486 404,478" fill="#C68A2E" fill-opacity="0.28"/>
+  <polygon points="404,452 250,428 250,486 404,478" fill="#B98324" fill-opacity="0.28"/>
   <!-- móvil del huésped -->
-  <rect x="150" y="420" width="140" height="250" rx="20" fill="#08424A"/>
+  <rect x="150" y="420" width="140" height="250" rx="20" fill="#0A4F75"/>
   <rect x="158" y="432" width="124" height="226" rx="14" fill="#FFFFFF"/>
-  <g fill="#1B2327">
+  <g fill="#101F2C">
     <rect x="178" y="468" width="24" height="24" rx="3"/>
     <rect x="182" y="472" width="16" height="16" fill="#FFFFFF"/>
     <rect x="186" y="476" width="8" height="8"/>
@@ -59,31 +59,31 @@
     <rect x="246" y="612" width="8" height="8"/>
     <rect x="262" y="596" width="8" height="8"/>
   </g>
-  <text x="220" y="640" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#1B2327">12 jun 2026</text>
+  <text x="220" y="640" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#101F2C">12 jun 2026</text>
   <!-- lector de mano -->
-  <rect x="400" y="430" width="170" height="76" rx="16" fill="#08424A"/>
-  <rect x="384" y="452" width="20" height="32" rx="6" fill="#0E5A63"/>
-  <rect x="468" y="504" width="34" height="46" rx="12" fill="#08424A"/>
-  <text x="485" y="596" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">Lector de mano</text>
-  <text x="220" y="678" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#4C575C">Resguardo del huésped</text>
+  <rect x="400" y="430" width="170" height="76" rx="16" fill="#0A4F75"/>
+  <rect x="384" y="452" width="20" height="32" rx="6" fill="#0F6C9C"/>
+  <rect x="468" y="504" width="34" height="46" rx="12" fill="#0A4F75"/>
+  <text x="485" y="596" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#41566A">Lector de mano</text>
+  <text x="220" y="678" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#41566A">Resguardo del huésped</text>
 
   <!-- botón de confirmación -->
-  <rect x="740" y="270" width="590" height="76" rx="16" fill="#0E5A63"/>
-  <text x="1035" y="318" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#FBF6EC" textLength="420" lengthAdjust="spacingAndGlyphs">Confirmar Check-in Inmediato</text>
-  <text x="740" y="380" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#4C575C">Validando en &lt; 500ms…</text>
+  <rect x="740" y="270" width="590" height="76" rx="16" fill="#0F6C9C"/>
+  <text x="1035" y="318" text-anchor="middle" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#F4F9FC" textLength="420" lengthAdjust="spacingAndGlyphs">Confirmar Check-in Inmediato</text>
+  <text x="740" y="380" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#41566A">Validando en &lt; 500ms…</text>
 
   <!-- cartel verde de éxito -->
-  <rect x="740" y="410" width="590" height="290" rx="16" fill="#5E6B45"/>
-  <circle cx="1288" cy="452" r="22" fill="#FBF6EC" fill-opacity="0.25"/>
-  <path d="M1278 452 l8 9 l14 -17" stroke="#FBF6EC" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="768" y="462" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#FBF6EC">¡Check-in Confirmado Exitosamente!</text>
-  <path d="M768 482 H1302" stroke="#FBF6EC" stroke-opacity="0.35" stroke-width="2" fill="none"/>
-  <text x="768" y="522" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#FBF6EC">Habitación 118 · Noche 12 jun 2026</text>
-  <text x="768" y="558" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#FBF6EC">Token de la noche: 42</text>
-  <text x="768" y="594" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#FBF6EC">Anclado on-chain: 0x…</text>
-  <text x="768" y="646" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#FBF6EC">Registrado en la cadena: no se puede repetir.</text>
+  <rect x="740" y="410" width="590" height="290" rx="16" fill="#276E4C"/>
+  <circle cx="1288" cy="452" r="22" fill="#F4F9FC" fill-opacity="0.25"/>
+  <path d="M1278 452 l8 9 l14 -17" stroke="#F4F9FC" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="768" y="462" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#F4F9FC">¡Check-in Confirmado Exitosamente!</text>
+  <path d="M768 482 H1302" stroke="#F4F9FC" stroke-opacity="0.35" stroke-width="2" fill="none"/>
+  <text x="768" y="522" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#F4F9FC">Habitación 118 · Noche 12 jun 2026</text>
+  <text x="768" y="558" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" fill="#F4F9FC">Token de la noche: 42</text>
+  <text x="768" y="594" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#F4F9FC">Anclado on-chain: 0x…</text>
+  <text x="768" y="646" font-family="'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="18" fill="#F4F9FC">Registrado en la cadena: no se puede repetir.</text>
 
   <!-- nota final -->
-  <rect x="70" y="730" width="1260" height="90" rx="16" fill="#FBF6EC" stroke="#E7DCC6" stroke-width="2"/>
-  <text x="700" y="786" text-anchor="middle" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="24" font-weight="700" fill="#08424A" textLength="600" lengthAdjust="spacingAndGlyphs">Sin el cartel verde, el check-in no está hecho.</text>
+  <rect x="70" y="730" width="1260" height="90" rx="16" fill="#F4F9FC" stroke="#DBE7EF" stroke-width="2"/>
+  <text x="700" y="786" text-anchor="middle" font-family="Fraunces, Georgia, 'Times New Roman', serif" font-size="24" font-weight="700" fill="#0A4F75" textLength="600" lengthAdjust="spacingAndGlyphs">Sin el cartel verde, el check-in no está hecho.</text>
 </svg>

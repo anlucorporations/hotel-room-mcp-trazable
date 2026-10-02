@@ -6,9 +6,9 @@ import { starsFor } from "@/lib/stars";
  * La calificación es una **imagen con nombre accesible** (`role="img"` + `aria-label`): un lector de
  * pantalla anuncia «4 de 5 estrellas» y no cinco glifos sueltos. Los caracteres van `aria-hidden`.
  *
- * Color: `terracotta-text` (6,02:1 sobre blanco, 5,59:1 sobre arena) y no `gold`, que sobre claro se
- * queda en 2,97:1 — el dorado está reservado a superficies oscuras. Las estrellas vacías usan el
- * mismo token con opacidad: la información la lleva el relleno, no el color.
+ * Color: `coral-text` (6,25:1 sobre blanco, 5,89:1 sobre porcelana) y no `amber`, que sobre claro se
+ * queda en 3,31:1 — el dorado está reservado a rellenos y a superficies oscuras. Las estrellas vacías
+ * usan el mismo token con opacidad: la información la lleva el relleno, no el color.
  */
 export function Stars({
   rating,
@@ -33,7 +33,7 @@ export function Stars({
         <span
           key={index}
           aria-hidden="true"
-          className={filled ? "text-terracotta-text" : "text-terracotta-text/25"}
+          className={filled ? "text-coral-text" : "text-coral-text/25"}
         >
           ★
         </span>
