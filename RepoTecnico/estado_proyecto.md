@@ -2709,6 +2709,20 @@ este documento, la tabla antes/después de `analisis_visual.md` y el changelog d
 Verificación tras el barrido: guardianes de documentación en verde (`images-naming`, `brand-pieces`,
 `help/manuals-sync`, `i18n-keys` → **24/24**).
 
+### Publicación: push y release `v19` en GCP (2026-10-03)
+
+| Paso | Detalle |
+|---|---|
+| Commit | **`20aae23`** — *feat(admin): acceso sin recargar, Sistemas al primer nivel y gestión completa de habitaciones* (33 ficheros) |
+| Push | **`github`** y **`codecrypto` (GitLab)** → `7080df2..20aae23`. GitLab, que venía rechazando la autenticación (B-0), **aceptó** en esta ocasión |
+| Imágenes | `worker:v19` (2m09s) y `web:v19` (2m47s), construidas desde el commit |
+| Revisión | **`hotel-mcp-worker-00010-jut`** (aplica la migración con `runMigrations` al arrancar) y **`hotel-mcp-web-00025-tec`**, ambas al **100 %** |
+| Configuración | Web: **18 variables y 9 secretos conservados, cero diferencias**; misma SA y VPC |
+| Producción | 6 rutas → **200**, `/health/ready` **READY**, logs sin errores; worker con `lag 0` y `aggregateLag 0` |
+| Rollback | `update-traffic … --to-revisions=hotel-mcp-web-00023-rep=100` (web) y `…worker-00008-fnt=100` (worker) |
+| Fuera de la release | D-84 (test rojo) apartado en un `stash` durante los builds y restaurado después |
+| Límite declarado | Las pantallas nuevas del panel no se pudieron ejercitar en producción (requieren sesión de owner con TOTP); se verificaron en navegador local y contra PostgreSQL real antes de desplegar |
+
 ### Pendiente derivado (declarado, no oculto)
 
 1. **Escaneo axe con datos reales** (dashboard con cifras y gráficas): el spec fuerza vistas

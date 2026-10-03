@@ -1060,3 +1060,51 @@ GitHub y **no** en GitLab.
 **Nota de método.** El build sube el **árbol de trabajo**, no el commit: por eso, antes de construir, el
 trabajo en curso ajeno a la release se apartó en un `stash` (y se restauró al terminar). Sin ese paso, la
 imagen habría llevado lógica a medio terminar que **no está en ningún commit**.
+
+---
+
+## 40. Release `v19` — gestión de habitaciones y navegación del panel (2026-10-03)
+
+**Qué se desplegó.** El ciclo del 2026-10-02/03 (`20aae23`, *feat(admin): acceso sin recargar,
+Sistemas al primer nivel y gestión completa de habitaciones*): el arreglo del acceso (el formulario
+ya no exige recargar), la sección **Sistemas** al primer nivel del sidebar, y la **ficha ampliada de
+habitación** (columnas y tablas nuevas, API, formulario flotante con fotos, tabla resumen, ficha
+reutilizable por perfil y calendario de publicaciones/ocupación).
+
+**Por qué esta release necesita DOS imágenes.** Las migraciones de esquema las aplica el **worker** al
+arrancar (`apps/worker/src/main.ts` → `runMigrations`). La web nueva consulta columnas y tablas que no
+existían en `v18` (`rooms.view_kind`, `decor_*`, `room_space_types`, `room_spaces`), así que desplegar
+solo la web habría dejado la API de habitaciones en error. Se construyó y desplegó **worker:v19**
+primero (aplica el DDL, idempotente) y después **web:v19**.
+
+**Push previo:** `7080df2..20aae23` en **`github`** y en **`codecrypto` (GitLab)**. GitLab, que había
+rechazado la autenticación en las releases anteriores (B-0), **aceptó el push en esta ocasión**: ambos
+remotos quedan al día.
+
+| Paso | Detalle |
+|---|---|
+| Imágenes | Cloud Build `worker:v19` (**2m09s**, build `91b024f2-e58e-4df0-a681-0a9d2abc1788`) y `web:v19` (**2m47s**, build `802fa87b-c336-4277-a3c9-c3245767dce9`), desde el commit `20aae23` |
+| Procedimiento | El de §26: `--no-traffic --tag=v19` → canario verificado → `update-traffic --to-revisions=…=100` |
+| Revisiones | **`hotel-mcp-worker-00010-jut`** y **`hotel-mcp-web-00025-tec`** al **100 %** |
+| Configuración | Web: **18 variables y 9 secretos conservados, cero cambiadas** (comparación antes/después), misma cuenta de servicio y VPC |
+| Fuera de la release | El arreglo **D-84** (redondeo al céntimo) se apartó en un `stash` durante los builds por seguir con su test rojo, y se restauró al terminar |
+
+### Verificación
+
+| Comprobación | Resultado |
+|---|---|
+| Worker canario | `/health`: `lag 0`, `aggregateLag 0`, head 479, **sin errores** en logs y **sin** aviso de esquema no disponible; el `503` de la respuesta es el estado conocido del SMTP de relleno (`emailDegraded`, §19–§27) |
+| Web canario (antes de mover tráfico) | **8 rutas** → **200** (`/`, `/catalogo`, `/habitaciones`, `/reservar`, `/contacto`, `/ayuda`, `/admin/dashboard`, `/health/ready`); CSS con la paleta «Brisa Marina» (`--mist`, `--azure`) y **sin** restos de la anterior |
+| `axe` sobre el canario | `/`, `/catalogo`, `/contacto`, `/admin/dashboard` → **0 violaciones `critical`/`serious`**; consola sin errores ni `MISSING_MESSAGE` |
+| Producción tras el cambio de tráfico | `/`, `/health/ready`, `/catalogo`, `/contacto`, `/habitaciones`, `/admin/dashboard` → **200**; logs de la revisión servida **sin errores** |
+| Etiquetas de canario | `v15`…`v19` conviven como URLs propias |
+
+**Límite declarado de esta verificación.** Las pantallas **nuevas del panel** (formulario flotante,
+tabla resumen, ficha y calendario) **no se pudieron ejercitar en producción**: `/admin/**` exige sesión
+de owner (contraseña + TOTP) y no se dispone de credenciales. Se verificaron en navegador real antes de
+desplegar (axe 0, matriz de perfiles y 35 días de calendario; evidencias en `RepoTecnico/evidencias`)
+y se validaron contra PostgreSQL real (migración idempotente y `base_datos.sql` en transacción con
+`ROLLBACK`). La comprobación que queda para el responsable es **abrir `/admin/habitacion` con su
+sesión** y recorrer alta → ficha → calendario.
+
+**Rollback.** `gcloud run services update-traffic hotel-mcp-web --project hotel-mcp --region europe-west1 --to-revisions=hotel-mcp-web-00023-rep=100` (vuelve a `v18`) y, para el worker, `--to-revisions=hotel-mcp-worker-00008-fnt=100`. Las columnas nuevas **no** se revierten (son aditivas y la versión anterior las ignora).
