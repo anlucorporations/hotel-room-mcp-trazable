@@ -151,6 +151,21 @@ no un marketplace de NFTs.
   **DashboardGrid**, **MintForm** (admin), **ChatPanel**, **TxModal** (confirmación de compra),
   **OnboardingSheet** (instalar/añadir red), **ResaleManager** (fijar/actualizar/cancelar precio de reventa + `claim`), **EmptyState / DegradedState**.
 - **Hero de la home pública** (`components/home/Hero.tsx`, Fase C): foto a sangre de la portada (`hotel_images` sección `HERO`) con **velo marino `bg-navy/65`** (4,79:1 con texto blanco) y titular en serif con la palabra destacada en `pearl`. Sin portada cae a `bg-navy` plano; la imagen va **sin** `lazy` porque es el LCP.
+- **RoomDetailCard** (`components/rooms/RoomDetailCard.tsx`, 2026-10-02): **ficha de habitación reutilizable**.
+  Componente de presentación puro (recibe la ficha y sus conjuntos por props; no usa el contexto del
+  back-office), de modo que se monta desde administración, recepción, housekeeping, mantenimiento o la
+  web pública con perfil `GUEST`. Pinta **secciones según el perfil** (`ROOM_SECTIONS_BY_PROFILE`:
+  físicas, decorativas, servicios, espacios, publicaciones y comercial —owner todo; recepción sin
+  comercial; limpieza y mantenimiento sin publicaciones ni comercial; huésped con disponibilidad
+  publicada—); las secciones no visibles **no existen en el DOM**.
+- **RoomCalendar** (`components/rooms/RoomCalendar.tsx` + lógica pura en `lib/room-calendar.ts`): calendario
+  mensual con cuatro estados —**publicada**, **reservada**, **ambas**, **libre**— cada uno con color,
+  símbolo y `aria-label` por día (el color no es el único canal), leyenda, resumen `role="status"` con
+  los días publicados y reservados del mes y navegación de mes anterior/siguiente.
+- **RoomFormDialog** (`components/admin/rooms/RoomFormDialog.tsx`, 2026-10-02): **alta y edición flotantes**
+  de la ficha (físicas, decoración, servicios, espacios) con carga de **hasta 4 fotos** reescaladas en el
+  navegador antes de subirlas. Comparte `ModalShell` con el modal de TOTP (foco, trampa de foco, `Escape`,
+  devolución del foco) y recibe `apiFetch` por props para poder probarse fuera del shell.
 - **DataTable** (`components/ui/DataTable.tsx`, Fase C.3): tabla **densa** de las suites de personal (recepción, housekeeping, mantenimiento, administración) con `<caption>` solo para lectores, `scope="col"`/`scope="row"`, región desplazable con nombre y `tabIndex={0}` (WCAG 2.1.1), densidad `compact`/`comfortable`, cabecera fija opcional y columnas ocultables en móvil **sin sacarlas del DOM**. No conoce el dominio: recibe columnas y filas. La vigila `table-semantics.test.ts`, que **deriva la regla de todas las tablas del producto**.
 
 ### Plantillas

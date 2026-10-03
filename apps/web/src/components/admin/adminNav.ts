@@ -51,21 +51,14 @@ export type AdminSectionKey =
   | "actividades"
   | "mantenimiento"
   | "administracion"
-  | "plataforma";
+  | "plataforma"
+  | "sistemas";
 
 /**
  * Icono de una sección (AdminLTE). El catálogo vive en `adminIcons.tsx` como
  * `Record<AdminIconKey, …>`, así que una clave nueva **sin dibujo** rompe `tsc`.
  */
 export type AdminIconKey = "bed" | "bell" | "sparkles" | "ticket" | "gear" | "chart" | "sliders" | "server";
-
-/** Subgrupo anidado dentro del panel de una sección (D-80). */
-export interface AdminNavGroup {
-  readonly labelKey: AdminNavLabelKey;
-  /** Icono de la cabecera del subgrupo (visible también con el sidebar plegado a mini). */
-  readonly icon: AdminIconKey;
-  readonly items: readonly AdminNavItem[];
-}
 
 /** Sección del sidebar: una cabecera desplegable con sus entradas (D-29). */
 export interface AdminNavSection {
@@ -74,18 +67,16 @@ export interface AdminNavSection {
   /** Icono de la cabecera; es lo único visible con el sidebar plegado a mini. */
   readonly icon: AdminIconKey;
   readonly items: readonly AdminNavItem[];
-  /**
-   * Subgrupo **reservado al owner** (`DEFAULT_ADMIN_ROLE`) que se renderiza dentro del panel de esta
-   * sección (D-80, 2026-09-29): integra las funciones especiales de Sistemas en Administración y
-   * retira el bloque que vivía aparte en el sidebar. El gating real lo imponen rutas y APIs.
-   */
-  readonly ownerGroup?: AdminNavGroup;
 }
 
 /**
  * Sección **Sistemas** (incremento v3, RF-41): gestión de la plataforma, reservada al owner
- * (`DEFAULT_ADMIN_ROLE`). La primera entrada es la portada del grupo. Desde **D-80** no es un bloque
- * aparte del sidebar: se consume como `ownerGroup` del panel **Administración**.
+ * (`DEFAULT_ADMIN_ROLE`). La primera entrada es la portada del grupo.
+ *
+ * **2026-10-02 (petición del responsable):** Sistemas vuelve a ser una **sección de primer nivel**
+ * del sidebar —al mismo nivel que Habitación o Recepción—, con su propia cabecera, configuración y
+ * efectos. Entre D-80 (2026-09-29) y esta fecha vivía como subgrupo dentro del panel Administración;
+ * ese anidamiento se retiró y con él el concepto de subgrupo (`ownerGroup`).
  */
 export const ADMIN_SYSTEMS_NAV: readonly AdminNavItem[] = [
   { href: "/admin/sistemas", labelKey: "systems", role: "DEFAULT_ADMIN_ROLE" },
@@ -158,8 +149,6 @@ export const ADMIN_NAV_SECTIONS: readonly AdminNavSection[] = [
       // F6 · D-58: moderación previa de las reseñas de los huéspedes.
       { href: "/admin/resenas", labelKey: "resenas", role: "DEFAULT_ADMIN_ROLE" },
     ],
-    // D-80: las funciones especiales de Sistemas se integran en este panel (antes vivían aparte).
-    ownerGroup: { labelKey: "systems", icon: "server", items: ADMIN_SYSTEMS_NAV },
   },
   {
     key: "plataforma",
@@ -171,15 +160,19 @@ export const ADMIN_NAV_SECTIONS: readonly AdminNavSection[] = [
       { href: "/admin/contenido", labelKey: "contenido", role: "DEFAULT_ADMIN_ROLE" },
     ],
   },
+  {
+    // 2026-10-02: sección de primer nivel propia (antes, subgrupo de Administración por D-80).
+    // Reservada al owner: sus entradas se dibujan deshabilitadas para el resto de perfiles, que es
+    // como el shell representa «existe pero no es para ti» (el gating real lo imponen rutas y APIs).
+    key: "sistemas",
+    labelKey: "systems",
+    icon: "server",
+    items: ADMIN_SYSTEMS_NAV,
+  },
 ];
 
-/** Todas las entradas que se pintan dentro del panel de una sección (propias + subgrupo del owner). */
-export function sectionItems(section: AdminNavSection): readonly AdminNavItem[] {
-  return [...section.items, ...(section.ownerGroup?.items ?? [])];
-}
-
-/** Lista plana derivada de las secciones (incluidos los subgrupos del owner). */
-export const ADMIN_NAV: readonly AdminNavItem[] = ADMIN_NAV_SECTIONS.flatMap((section) => sectionItems(section));
+/** Lista plana derivada de las secciones (para quien necesite todos los destinos). */
+export const ADMIN_NAV: readonly AdminNavItem[] = ADMIN_NAV_SECTIONS.flatMap((section) => section.items);
 
 // ---------------------------------------------------------------------------
 // Derivaciones puras de la ruta (sin React): son la parte verificable del shell.
@@ -194,15 +187,14 @@ export function isActiveHref(pathname: string, href: string): boolean {
 }
 
 /**
- * Sección del acordeón que contiene la ruta activa —incluido lo que hoy vive dentro del subgrupo del
- * owner (**D-80**: `/admin/sistemas/*` pertenece a Administración)—, o `null` si la ruta no pertenece a
- * ninguna sección. Devolver `null` en vez de «la primera» es intencionado: con el sidebar
- * plegado/expandido no queremos abrir una sección que no es la actual.
+ * Sección del acordeón que contiene la ruta activa, o `null` si la ruta no pertenece a ninguna.
+ * Devolver `null` en vez de «la primera» es intencionado: con el sidebar plegado/expandido no
+ * queremos abrir una sección que no es la actual.
  */
 export function sectionForPathname(pathname: string): AdminSectionKey | null {
   return (
     ADMIN_NAV_SECTIONS.find((section) =>
-      sectionItems(section).some((item) => isActiveHref(pathname, item.href)),
+      section.items.some((item) => isActiveHref(pathname, item.href)),
     )?.key ?? null
   );
 }
@@ -225,19 +217,13 @@ function bestMatch<T extends { readonly href: string }>(pathname: string, items:
 export interface AdminNavMatch {
   readonly section: AdminNavSection;
   readonly item: AdminNavItem;
-  /** Presente cuando la entrada pertenece al subgrupo del owner (D-80). */
-  readonly group?: AdminNavGroup;
 }
 
-/** Entrada de navegación (con su sección y, en su caso, su subgrupo) para la ruta activa. */
+/** Entrada de navegación (con su sección) para la ruta activa. */
 export function navEntryForPathname(pathname: string): AdminNavMatch | null {
   for (const section of ADMIN_NAV_SECTIONS) {
     const direct = bestMatch(pathname, section.items);
     if (direct) return { section, item: direct };
-    if (section.ownerGroup) {
-      const grouped = bestMatch(pathname, section.ownerGroup.items);
-      if (grouped) return { section, item: grouped, group: section.ownerGroup };
-    }
   }
   return null;
 }
@@ -249,9 +235,12 @@ export interface AdminBreadcrumb {
 }
 
 /**
- * Migas de pan de la plantilla (AdminLTE): **Inicio → sección → [subgrupo] → entrada**. Se derivan de
- * la ruta, no de props, para no tener que tocar las páginas del back-office: cada panel sigue titulando
- * con su `AdminPanel`. Ruta desconocida ⇒ sin migas (la plantilla no inventa un camino que no existe).
+ * Migas de pan de la plantilla (AdminLTE): **Inicio → sección → entrada**. Se derivan de la ruta, no
+ * de props, para no tener que tocar las páginas del back-office: cada panel sigue titulando con su
+ * `AdminPanel`. Ruta desconocida ⇒ sin migas (la plantilla no inventa un camino que no existe).
+ *
+ * Desde el 2026-10-02 ya no hay nivel intermedio: Sistemas es una sección de primer nivel (antes era
+ * un subgrupo de Administración, D-80, y añadía una miga propia).
  */
 export function breadcrumbForPathname(pathname: string): readonly AdminBreadcrumb[] {
   const match = navEntryForPathname(pathname);
@@ -260,10 +249,6 @@ export function breadcrumbForPathname(pathname: string): readonly AdminBreadcrum
   const crumbs: AdminBreadcrumb[] = [
     { href: match.section.items[0]!.href, labelKey: match.section.labelKey },
   ];
-  // Nivel intermedio: el subgrupo del owner (p. ej. Administración › Sistemas › Ajustes).
-  if (match.group) {
-    crumbs.push({ href: match.group.items[0]!.href, labelKey: match.group.labelKey });
-  }
   // La entrada solo aporta una miga nueva si no repite destino o etiqueta del nivel anterior.
   const parent = crumbs[crumbs.length - 1]!;
   if (match.item.labelKey !== parent.labelKey && match.item.href !== parent.href) {

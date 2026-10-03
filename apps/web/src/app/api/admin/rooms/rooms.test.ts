@@ -17,6 +17,15 @@ const { mockRepo } = vi.hoisted(() => ({
     archiveRoom: vi.fn(),
     listImages: vi.fn(),
     listPublications: vi.fn(),
+    // Ficha ampliada (2026-10-02).
+    listAmenityCodes: vi.fn(),
+    listRoomSpaces: vi.fn(),
+    listReservedNights: vi.fn(),
+    listRoomTypes: vi.fn(),
+    listAmenityCatalog: vi.fn(),
+    listSpaceTypes: vi.fn(),
+    setRoomAmenities: vi.fn(),
+    setRoomSpaces: vi.fn(),
   },
 }));
 
@@ -40,6 +49,15 @@ const room = {
   descriptionEn: null,
   descriptionRu: null,
   baseRateWei: null,
+  viewKind: null,
+  hasBalcony: false,
+  isAccessible: false,
+  decorStyle: null,
+  decorPalette: null,
+  decorMaterials: null,
+  decorNotesEs: null,
+  decorNotesEn: null,
+  decorNotesRu: null,
   publicationStatus: "DRAFT",
   operationalStatus: "CLEAN",
   archivedAt: null,
@@ -123,15 +141,40 @@ describe("API /api/admin/rooms/[id] (F1 · D-8, D-19)", () => {
     expect(res.status).toBe(404);
   });
 
-  it("GET devuelve la ficha con galería y publicaciones", async () => {
+  it("GET devuelve la ficha con galería, publicaciones, servicios, espacios y ocupación", async () => {
     mockRepo.findById.mockResolvedValueOnce(room);
     mockRepo.listImages.mockResolvedValueOnce([]);
     mockRepo.listPublications.mockResolvedValueOnce([]);
+    mockRepo.listAmenityCodes.mockResolvedValueOnce(["WIFI"]);
+    mockRepo.listRoomSpaces.mockResolvedValueOnce([{ spaceCode: "BANO", sizeM2: 6, sortOrder: 3 }]);
+    mockRepo.listReservedNights.mockResolvedValueOnce(["2026-10-12"]);
     const res = await getGET(request("GET"), idParams());
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.room.id).toBe("room-1");
     expect(data.images).toEqual([]);
+    expect(data.amenities).toEqual(["WIFI"]);
+    expect(data.spaces).toHaveLength(1);
+    expect(data.reservedNights).toEqual(["2026-10-12"]);
+    // La ventana del calendario se resuelve por defecto (semestre alrededor de hoy).
+    expect(typeof data.window.from).toBe("string");
+  });
+
+  it("GET admite la ventana del calendario por query", async () => {
+    mockRepo.findById.mockResolvedValueOnce(room);
+    mockRepo.listImages.mockResolvedValueOnce([]);
+    mockRepo.listPublications.mockResolvedValueOnce([]);
+    mockRepo.listAmenityCodes.mockResolvedValueOnce([]);
+    mockRepo.listRoomSpaces.mockResolvedValueOnce([]);
+    mockRepo.listReservedNights.mockResolvedValueOnce([]);
+    const res = await getGET(
+      request("GET", "http://localhost:3000/api/admin/rooms/room-1?from=2026-11-01&to=2026-11-30"),
+      idParams(),
+    );
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.window).toEqual({ from: "2026-11-01", to: "2026-11-30" });
+    expect(mockRepo.listReservedNights).toHaveBeenCalledWith("room-1", "2026-11-01", "2026-11-30");
   });
 
   it("PATCH actualiza campos parciales", async () => {

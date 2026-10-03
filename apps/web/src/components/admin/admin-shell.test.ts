@@ -50,27 +50,24 @@ describe("Back-office · derivación de la ruta (parte pura)", () => {
     expect(sectionForPathname("/admin/housekeeping/lenceria")).toBe("housekeeping");
   });
 
-  it("las rutas de Sistemas abren el panel Administración (D-80: ya no son un bloque aparte)", () => {
-    expect(sectionForPathname("/admin/sistemas/ajustes")).toBe("administracion");
-    expect(sectionForPathname("/admin/sistemas")).toBe("administracion");
+  it("las rutas de Sistemas abren su propia sección (2026-10-02: ya no son subgrupo de Administración)", () => {
+    expect(sectionForPathname("/admin/sistemas/ajustes")).toBe("sistemas");
+    expect(sectionForPathname("/admin/sistemas")).toBe("sistemas");
     // Ruta ajena a cualquier sección: `null`, nunca «la primera».
     expect(sectionForPathname("/admin")).toBeNull();
     expect(sectionForPathname("/catalogo")).toBeNull();
   });
 
-  it("la entrada activa se resuelve con su sección y su subgrupo de origen", () => {
+  it("la entrada activa se resuelve con su sección de primer nivel", () => {
     expect(navEntryForPathname("/admin/resenas")?.section.key).toBe("administracion");
     expect(navEntryForPathname("/admin/resenas")?.item.href).toBe("/admin/resenas");
-    expect(navEntryForPathname("/admin/resenas")?.group).toBeUndefined();
-    // Las del subgrupo del owner llevan `group` poblado.
     const ajustes = navEntryForPathname("/admin/sistemas/ajustes");
-    expect(ajustes?.section.key).toBe("administracion");
-    expect(ajustes?.group?.labelKey).toBe("systems");
+    expect(ajustes?.section.key).toBe("sistemas");
     expect(ajustes?.item.href).toBe("/admin/sistemas/ajustes");
     expect(navEntryForPathname("/catalogo")).toBeNull();
   });
 
-  it("las migas son Inicio → sección → [subgrupo] → entrada, sin repetir niveles", () => {
+  it("las migas son Inicio → sección → entrada, sin repetir niveles", () => {
     expect(breadcrumbForPathname("/admin/mantenimiento/preventivo")).toEqual([
       { href: "/admin/mantenimiento/incidencias", labelKey: "mantenimiento" },
       { href: "/admin/mantenimiento/preventivo", labelKey: "preventivo" },
@@ -79,22 +76,20 @@ describe("Back-office · derivación de la ruta (parte pura)", () => {
     expect(breadcrumbForPathname("/admin/actividades")).toEqual([
       { href: "/admin/actividades", labelKey: "actividades" },
     ]);
-    // D-80: los tres niveles —Administración › Sistemas › Ajustes—.
+    // Sistemas es sección de primer nivel (2026-10-02): dos niveles, no tres.
     expect(breadcrumbForPathname("/admin/sistemas/ajustes")).toEqual([
-      { href: "/admin/dashboard", labelKey: "administracion" },
       { href: ADMIN_SYSTEMS_NAV[0]!.href, labelKey: "systems" },
       { href: "/admin/sistemas/ajustes", labelKey: "settings" },
     ]);
-    // La portada del subgrupo no duplica su propia miga.
+    // La portada de la sección no duplica su propia miga.
     expect(breadcrumbForPathname("/admin/sistemas")).toEqual([
-      { href: "/admin/dashboard", labelKey: "administracion" },
       { href: "/admin/sistemas", labelKey: "systems" },
     ]);
     // Ruta sin correspondencia: la plantilla no inventa un camino.
     expect(breadcrumbForPathname("/admin")).toEqual([]);
   });
 
-  it("`ADMIN_NAV` incluye las entradas del subgrupo (ningún destino queda fuera de la lista plana)", () => {
+  it("`ADMIN_NAV` incluye las entradas de Sistemas (ningún destino queda fuera de la lista plana)", () => {
     const flat = new Set(ADMIN_NAV.map((item) => item.href));
     for (const item of ADMIN_SYSTEMS_NAV) expect(flat.has(item.href)).toBe(true);
   });
@@ -106,23 +101,15 @@ describe("Back-office · iconos del sidebar", () => {
     expect(missing.map((section) => `${section.key} :: ${section.icon}`)).toEqual([]);
   });
 
-  it("los subgrupos del owner también tienen icono dibujado (D-80)", () => {
-    const missing = ADMIN_NAV_SECTIONS.filter(
-      (section) => section.ownerGroup && ADMIN_ICONS[section.ownerGroup.icon] === undefined,
-    );
-    expect(missing.map((section) => section.key)).toEqual([]);
-  });
-
-  it("Sistemas está integrado en Administración y no existe como bloque aparte (D-80)", () => {
-    const administracion = ADMIN_NAV_SECTIONS.find((section) => section.key === "administracion");
-    expect(administracion?.ownerGroup?.labelKey).toBe("systems");
-    expect(administracion?.ownerGroup?.items.map((item) => item.href)).toEqual(
-      ADMIN_SYSTEMS_NAV.map((item) => item.href),
-    );
-    // Ninguna otra sección debe heredar el subgrupo por accidente.
-    expect(ADMIN_NAV_SECTIONS.filter((section) => section.ownerGroup).map((s) => s.key)).toEqual([
-      "administracion",
-    ]);
+  it("Sistemas es una sección de primer nivel con sus propias entradas (2026-10-02)", () => {
+    const sistemas = ADMIN_NAV_SECTIONS.find((section) => section.key === "sistemas");
+    expect(sistemas?.labelKey).toBe("systems");
+    expect(sistemas?.items.map((item) => item.href)).toEqual(ADMIN_SYSTEMS_NAV.map((item) => item.href));
+    // Está al mismo nivel que las demás: ninguna sección anida ya un subgrupo.
+    expect(ADMIN_NAV_SECTIONS.every((section) => !("ownerGroup" in section))).toBe(true);
+    // Reservada al owner: todas sus entradas exigen `DEFAULT_ADMIN_ROLE` (la sección se dibuja, pero
+    // sus destinos salen deshabilitados para el resto de perfiles).
+    expect(sistemas?.items.every((item) => item.role === "DEFAULT_ADMIN_ROLE")).toBe(true);
   });
 
   it("los iconos declarados son componentes invocables (no un `Record` a medias)", () => {
@@ -232,12 +219,11 @@ describe("Back-office · reparto de las barras (D-80 y D-81)", () => {
     expect(source).toContain('data-testid="admin-session-block"');
   });
 
-  it("el subgrupo del owner se pinta dentro del panel y condicionado a ser owner (D-80)", () => {
-    expect(source).toContain("section.ownerGroup && session.isOwner &&");
-    expect(source).toContain('data-testid="nav-owner-group"');
-    // Y el bloque aparte que había bajo el `</nav>` ya no existe.
-    expect(source).not.toContain('data-testid="nav-systems"');
-    expect(source).not.toContain("ADMIN_SYSTEMS_NAV.map");
+  it("ninguna sección anida ya un subgrupo: Sistemas se pinta como una sección más (2026-10-02)", () => {
+    expect(source).not.toContain("section.ownerGroup");
+    expect(source).not.toContain('data-testid="nav-owner-group"');
+    // El sidebar recorre las secciones declaradas: Sistemas entra por la misma vía que Habitación.
+    expect(source).toContain("ADMIN_NAV_SECTIONS.map(");
   });
 
   it("el desplegable de billetera se ancla al viewport en la variante sidebar", () => {
@@ -292,5 +278,35 @@ describe("Back-office · acceso unificado bajo la plantilla (D-82)", () => {
   it("sin sesión no se pintan el sidebar ni las migas (no hay navegación que mostrar)", () => {
     expect(source).toMatch(/\{hasSession && \(\n\s+<Sidebar/);
     expect(source).toMatch(/\{hasSession && <ContentHeader \/>}/);
+  });
+});
+
+/**
+ * **2026-10-02 — el formulario de acceso no desaparecía al iniciar sesión.** El `router.refresh()`
+ * que re-evalúa el gate del servidor vivía en `AdminSignInScreen`, que abría **su propia** instancia
+ * de `useAdminSession`; el formulario usa la de `AdminLayout`. La instancia observada nunca veía el
+ * login, así que el refresco no se disparaba y había que recargar a mano.
+ *
+ * El guardián fija el arreglo por **estructura**, que es lo que se puede afirmar sin navegador: el
+ * refresco vive junto a la sesión que se autentica, y la pantalla de acceso ya no abre una segunda.
+ */
+describe("Back-office · el acceso se resuelve sin recargar (2026-10-02)", () => {
+  const signInSource = readFileSync(
+    fileURLToPath(new URL("./AdminSignInScreen.tsx", import.meta.url)),
+    "utf8",
+  );
+
+  it("el refresco del gate vive en el shell, no en la pantalla de acceso", () => {
+    expect(source).toContain("router.refresh()");
+    expect(source).toMatch(/if \(session\.sessionUsername\) router\.refresh\(\)/);
+  });
+
+  it("la pantalla de acceso no abre una segunda instancia de sesión", () => {
+    // Se prohíbe por **import/uso**, no por la palabra suelta: el comentario del fichero explica
+    // precisamente que esa segunda instancia se retiró, y buscarla a pelo castigaría la explicación.
+    expect(signInSource).not.toMatch(/^import .*useAdminSession/m);
+    expect(signInSource).not.toMatch(/useAdminSession\(\)/);
+    // Sin el hook de router no puede disparar el refresco: es la comprobación estructural real.
+    expect(signInSource).not.toMatch(/^import .*useRouter/m);
   });
 });

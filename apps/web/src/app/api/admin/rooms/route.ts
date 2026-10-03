@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { RoomsRepository, RoomRepositoryError } from "@hotel/shared";
 import { requireRole } from "@/lib/guard";
-import { parseRoomFields } from "@/lib/rooms";
+import { parseAmenityCodes, parseRoomFields, parseRoomSpaces } from "@/lib/rooms";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +47,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: parsed.error, message: parsed.message }, { status: 400 });
   }
 
+  // Servicios y espacios son opcionales en el alta (la ficha se puede completar después). Se validan
+  // ANTES de crear nada, para no dejar una habitación a medias por un cuerpo mal formado.
+  const record = (body ?? {}) as Record<string, unknown>;
+  const amenities = record.amenityCodes === undefined ? null : parseAmenityCodes(record.amenityCodes);
+  if (amenities !== null && !amenities.ok) {
+    return NextResponse.json({ error: amenities.error, message: amenities.message }, { status: 400 });
+  }
+  const spaces = record.spaces === undefined ? null : parseRoomSpaces(record.spaces);
+  if (spaces !== null && !spaces.ok) {
+    return NextResponse.json({ error: spaces.error, message: spaces.message }, { status: 400 });
+  }
+
   try {
     const room = await roomsRepo.createRoom({
       roomNumber: parsed.fields.roomNumber!,
@@ -59,8 +71,26 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       descriptionEn: parsed.fields.descriptionEn ?? null,
       descriptionRu: parsed.fields.descriptionRu ?? null,
       baseRateWei: parsed.fields.baseRateWei ?? null,
+      viewKind: parsed.fields.viewKind ?? null,
+      hasBalcony: parsed.fields.hasBalcony ?? false,
+      isAccessible: parsed.fields.isAccessible ?? false,
+      decorStyle: parsed.fields.decorStyle ?? null,
+      decorPalette: parsed.fields.decorPalette ?? null,
+      decorMaterials: parsed.fields.decorMaterials ?? null,
+      decorNotesEs: parsed.fields.decorNotesEs ?? null,
+      decorNotesEn: parsed.fields.decorNotesEn ?? null,
+      decorNotesRu: parsed.fields.decorNotesRu ?? null,
     });
-    return NextResponse.json({ room }, { status: 201 });
+
+    // Segundo paso (documentado en el repositorio): si fallara, la habitación queda en `DRAFT` y el
+    // operador puede reintentar la edición sin perder la ficha.
+    if (amenities !== null && amenities.ok) await roomsRepo.setRoomAmenities(room.id, amenities.value);
+    if (spaces !== null && spaces.ok) await roomsRepo.setRoomSpaces(room.id, spaces.value);
+
+    return NextResponse.json(
+      { room, amenities: amenities?.ok ? amenities.value : [], spaces: spaces?.ok ? spaces.value : [] },
+      { status: 201 },
+    );
   } catch (error: unknown) {
     if (error instanceof RoomRepositoryError && error.code === "ROOM_NUMBER_TAKEN") {
       return NextResponse.json({ error: error.code, message: error.message }, { status: 409 });

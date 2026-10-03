@@ -7,7 +7,13 @@ import {
   type RoomPublicationStatus,
 } from "@hotel/shared";
 import { requireRole } from "@/lib/guard";
-import { OPERATIONAL_STATUSES, PUBLICATION_STATUSES, parseRoomFields } from "@/lib/rooms";
+import {
+  OPERATIONAL_STATUSES,
+  PUBLICATION_STATUSES,
+  parseAmenityCodes,
+  parseRoomFields,
+  parseRoomSpaces,
+} from "@/lib/rooms";
 
 export const dynamic = "force-dynamic";
 
@@ -17,22 +23,33 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-/** GET /api/admin/rooms/[id] — ficha con su galería y sus publicaciones (D-1, D-5, D-18). */
+/**
+ * GET /api/admin/rooms/[id] — ficha con su galería, sus publicaciones, sus servicios, sus espacios y
+ * las noches ocupadas de la ventana pedida (D-1, D-5, D-18; ficha ampliada 2026-10-02).
+ *
+ * La ventana del calendario llega por `?from=YYYY-MM-DD&to=YYYY-MM-DD`; sin parámetros se devuelve un
+ * semestre alrededor de hoy, que es lo que cabe en la ficha sin pedir nada más.
+ */
 export async function GET(request: NextRequest, { params }: RouteParams): Promise<NextResponse> {
   const auth = await requireRole(request, "DEFAULT_ADMIN_ROLE");
   if (!auth.ok) return auth.response;
 
   const { id } = await params;
+  const from = isoDateOr(request.nextUrl.searchParams.get("from"), -30);
+  const to = isoDateOr(request.nextUrl.searchParams.get("to"), 150);
   try {
     const room = await roomsRepo.findById(id);
     if (!room) {
       return NextResponse.json({ error: "ROOM_NOT_FOUND", message: "La habitación no existe." }, { status: 404 });
     }
-    const [images, publications] = await Promise.all([
+    const [images, publications, amenities, spaces, reservedNights] = await Promise.all([
       roomsRepo.listImages(id),
       roomsRepo.listPublications(id),
+      roomsRepo.listAmenityCodes(id),
+      roomsRepo.listRoomSpaces(id),
+      roomsRepo.listReservedNights(id, from, to),
     ]);
-    return NextResponse.json({ room, images, publications });
+    return NextResponse.json({ room, images, publications, amenities, spaces, reservedNights, window: { from, to } });
   } catch (error: unknown) {
     console.error("[API /api/admin/rooms/[id]] GET:", error);
     return NextResponse.json(
@@ -40,6 +57,14 @@ export async function GET(request: NextRequest, { params }: RouteParams): Promis
       { status: 500 },
     );
   }
+}
+
+/** Fecha `YYYY-MM-DD` desplazada `offsetDays` desde hoy, o el valor recibido si es válido. */
+function isoDateOr(value: string | null, offsetDays: number): string {
+  if (value !== null && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() + offsetDays);
+  return date.toISOString().slice(0, 10);
 }
 
 /**
@@ -64,11 +89,24 @@ export async function PATCH(request: NextRequest, { params }: RouteParams): Prom
     return NextResponse.json({ error: parsed.error, message: parsed.message }, { status: 400 });
   }
 
+  // Servicios y espacios: si vienen, se validan ANTES de escribir la ficha (misma regla que el alta).
+  const amenities = body.amenityCodes === undefined ? null : parseAmenityCodes(body.amenityCodes);
+  if (amenities !== null && !amenities.ok) {
+    return NextResponse.json({ error: amenities.error, message: amenities.message }, { status: 400 });
+  }
+  const spaces = body.spaces === undefined ? null : parseRoomSpaces(body.spaces);
+  if (spaces !== null && !spaces.ok) {
+    return NextResponse.json({ error: spaces.error, message: spaces.message }, { status: 400 });
+  }
+
   try {
     let room = Object.keys(parsed.fields).length > 0 ? await roomsRepo.updateRoom(id, parsed.fields) : await roomsRepo.findById(id);
     if (!room) {
       return NextResponse.json({ error: "ROOM_NOT_FOUND", message: "La habitación no existe." }, { status: 404 });
     }
+
+    if (amenities !== null && amenities.ok) await roomsRepo.setRoomAmenities(id, amenities.value);
+    if (spaces !== null && spaces.ok) await roomsRepo.setRoomSpaces(id, spaces.value);
 
     if (body.publicationStatus !== undefined) {
       const status = body.publicationStatus;
@@ -102,7 +140,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams): Prom
       room = await roomsRepo.setOperationalStatus(id, status as RoomOperationalStatus, auth.session.username);
     }
 
-    return NextResponse.json({ room });
+    return NextResponse.json({
+      room,
+      ...(amenities !== null && amenities.ok ? { amenities: amenities.value } : {}),
+      ...(spaces !== null && spaces.ok ? { spaces: spaces.value } : {}),
+    });
   } catch (error: unknown) {
     if (error instanceof RoomRepositoryError) {
       return NextResponse.json({ error: error.code, message: error.message }, { status: 409 });

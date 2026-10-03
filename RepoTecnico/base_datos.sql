@@ -368,6 +368,18 @@ CREATE TABLE IF NOT EXISTS rooms (
     description_en TEXT NULL,
     description_ru TEXT NULL,
     base_rate_wei NUMERIC(78, 0) NULL,
+    -- Ficha ampliada (2026-10-02): físicas de la vista, accesibilidad y decoración. Las columnas
+    -- decorativas cortas son descriptor técnico; las notas son de cara al huésped y van en los tres
+    -- idiomas (igual que las descripciones).
+    view_kind VARCHAR(12) NULL,
+    has_balcony BOOLEAN NOT NULL DEFAULT FALSE,
+    is_accessible BOOLEAN NOT NULL DEFAULT FALSE,
+    decor_style VARCHAR(20) NULL,
+    decor_palette VARCHAR(120) NULL,
+    decor_materials VARCHAR(200) NULL,
+    decor_notes_es TEXT NULL,
+    decor_notes_en TEXT NULL,
+    decor_notes_ru TEXT NULL,
     -- Dos estados INDEPENDIENTES (D-19): publicación y operativo.
     publication_status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
     operational_status VARCHAR(12) NOT NULL DEFAULT 'CLEAN',
@@ -379,6 +391,10 @@ CREATE TABLE IF NOT EXISTS rooms (
         CHECK (publication_status IN ('DRAFT', 'PUBLISHED', 'PAUSED', 'MAINTENANCE', 'OUT_OF_SERVICE')),
     CONSTRAINT rooms_operational_status_check
         CHECK (operational_status IN ('CLEAN', 'DIRTY', 'OCCUPIED')),
+    CONSTRAINT rooms_view_kind_check
+        CHECK (view_kind IS NULL OR view_kind IN ('SEA', 'GARDEN', 'INTERIOR')),
+    CONSTRAINT rooms_decor_style_check
+        CHECK (decor_style IS NULL OR decor_style IN ('MEDITERRANEAN', 'CONTEMPORARY', 'CLASSIC', 'RUSTIC', 'MINIMAL')),
     -- Para publicar se exige descripción en español (D-21).
     CONSTRAINT rooms_publish_requires_es CHECK (
         publication_status <> 'PUBLISHED' OR description_es IS NOT NULL
@@ -418,6 +434,42 @@ CREATE TABLE IF NOT EXISTS room_amenity_links (
     amenity_code VARCHAR(40) NOT NULL REFERENCES room_amenities(code) ON UPDATE CASCADE,
     PRIMARY KEY (room_id, amenity_code)
 );
+
+-- Espacios de la habitación (2026-10-02): catálogo cerrado con nombre trilingüe + superficie por
+-- habitación (mismo patrón catálogo + enlace que los servicios). El formulario ofrece opciones
+-- cerradas y la ficha no depende de texto libre.
+CREATE TABLE IF NOT EXISTS room_space_types (
+    code VARCHAR(20) PRIMARY KEY,
+    name_es VARCHAR(40) NOT NULL,
+    name_en VARCHAR(40) NOT NULL,
+    name_ru VARCHAR(40) NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS room_spaces (
+    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    space_code VARCHAR(20) NOT NULL REFERENCES room_space_types(code) ON UPDATE CASCADE,
+    size_m2 NUMERIC(6, 2) NULL CHECK (size_m2 IS NULL OR size_m2 > 0),
+    sort_order INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (room_id, space_code)
+);
+
+CREATE INDEX IF NOT EXISTS idx_room_spaces_room ON room_spaces(room_id);
+
+-- Migración incremental (2026-10-02): la ficha ampliada entra también en bases ya creadas. El
+-- IF NOT EXISTS de la columna hace idempotente el bloque; el CHECK va en línea para que no puedan
+-- coexistir dos restricciones equivalentes.
+ALTER TABLE rooms ADD COLUMN IF NOT EXISTS view_kind VARCHAR(12) NULL
+    CHECK (view_kind IS NULL OR view_kind IN ('SEA', 'GARDEN', 'INTERIOR'));
+ALTER TABLE rooms ADD COLUMN IF NOT EXISTS has_balcony BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE rooms ADD COLUMN IF NOT EXISTS is_accessible BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE rooms ADD COLUMN IF NOT EXISTS decor_style VARCHAR(20) NULL
+    CHECK (decor_style IS NULL OR decor_style IN ('MEDITERRANEAN', 'CONTEMPORARY', 'CLASSIC', 'RUSTIC', 'MINIMAL'));
+ALTER TABLE rooms ADD COLUMN IF NOT EXISTS decor_palette VARCHAR(120) NULL;
+ALTER TABLE rooms ADD COLUMN IF NOT EXISTS decor_materials VARCHAR(200) NULL;
+ALTER TABLE rooms ADD COLUMN IF NOT EXISTS decor_notes_es TEXT NULL;
+ALTER TABLE rooms ADD COLUMN IF NOT EXISTS decor_notes_en TEXT NULL;
+ALTER TABLE rooms ADD COLUMN IF NOT EXISTS decor_notes_ru TEXT NULL;
 
 -- Publicaciones ancladas (D-2, D-18): huella del contenido + nº de habitación + fecha.
 CREATE TABLE IF NOT EXISTS room_publications (
@@ -936,6 +988,16 @@ INSERT INTO room_amenities (code, name_es, name_en, name_ru, sort_order) VALUES
     ('BALCONY',     'Balcón',             'Balcony',          'Балкон',             6),
     ('SEA_VIEW',    'Vistas al mar',      'Sea view',         'Вид на море',        7),
     ('MINIBAR',     'Minibar',            'Minibar',          'Мини-бар',           8)
+ON CONFLICT (code) DO NOTHING;
+
+-- Espacios de la ficha (2026-10-02).
+INSERT INTO room_space_types (code, name_es, name_en, name_ru, sort_order) VALUES
+    ('DORMITORIO', 'Dormitorio', 'Bedroom',        'Спальня',     1),
+    ('SALON',      'Salón',      'Living room',    'Гостиная',    2),
+    ('BANO',       'Baño',       'Bathroom',       'Ванная',      3),
+    ('TERRAZA',    'Terraza',    'Terrace',        'Терраса',     4),
+    ('COCINA',     'Cocina',     'Kitchen',        'Кухня',       5),
+    ('VESTIDOR',   'Vestidor',   'Walk-in closet', 'Гардеробная', 6)
 ON CONFLICT (code) DO NOTHING;
 
 -- Ventana global de acuñado en días (D-11).

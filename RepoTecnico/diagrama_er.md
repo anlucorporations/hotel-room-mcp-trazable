@@ -299,7 +299,7 @@ erDiagram
 
 ## 6. Dominio habitaciones, reseñas y contenido público (F1/F5)
 
-### 6.1 `room_types`, `rooms`, `room_images`, `room_amenities`, `room_amenity_links`, `room_publications`, `room_status_history`, `reviews`, `platform_settings`
+### 6.1 `room_types`, `rooms`, `room_images`, `room_amenities`, `room_amenity_links`, `room_space_types`, `room_spaces`, `room_publications`, `room_status_history`, `reviews`, `platform_settings`
 
 > Modelo del ente *Habitación* (Suite Administración → sección 1.1) y de las **reseñas** de la suite
 > pública. Decisiones D-1…D-28. `nfts` se referencia sin repetir sus atributos (está definida en §2.1).
@@ -330,6 +330,15 @@ erDiagram
         TEXT description_en "Descripción EN (opcional; respaldo)"
         TEXT description_ru "Descripción RU (opcional; respaldo)"
         NUMERIC(78,0) base_rate_wei "Tarifa base (opcional)"
+        VARCHAR(12) view_kind "SEA · GARDEN · INTERIOR (2026-10-02)"
+        BOOLEAN has_balcony "Balcón o terraza"
+        BOOLEAN is_accessible "Accesible PMR"
+        VARCHAR(20) decor_style "MEDITERRANEAN · CONTEMPORARY · CLASSIC · RUSTIC · MINIMAL"
+        VARCHAR(120) decor_palette "Paleta decorativa (texto corto)"
+        VARCHAR(200) decor_materials "Materiales destacados"
+        TEXT decor_notes_es "Notas de decoración ES"
+        TEXT decor_notes_en "Notas de decoración EN"
+        TEXT decor_notes_ru "Notas de decoración RU"
         VARCHAR(20) publication_status "DRAFT · PUBLISHED · PAUSED · MAINTENANCE · OUT_OF_SERVICE (D-19)"
         VARCHAR(12) operational_status "CLEAN · DIRTY · OCCUPIED (D-19)"
         TIMESTAMP archived_at "NULL = vigente; con fecha = archivada (D-8)"
@@ -364,6 +373,21 @@ erDiagram
     room_amenity_links {
         UUID room_id PK "PK compuesta; FK a rooms"
         VARCHAR(40) amenity_code PK "PK compuesta; FK a room_amenities"
+    }
+
+    room_space_types {
+        VARCHAR(20) code PK "DORMITORIO · SALON · BANO · TERRAZA · COCINA · VESTIDOR"
+        VARCHAR(40) name_es "Nombre ES"
+        VARCHAR(40) name_en "Nombre EN"
+        VARCHAR(40) name_ru "Nombre RU"
+        INT sort_order "Orden"
+    }
+
+    room_spaces {
+        UUID room_id PK "PK compuesta; FK a rooms ON DELETE CASCADE"
+        VARCHAR(20) space_code PK "PK compuesta; FK a room_space_types"
+        NUMERIC(6,2) size_m2 "Superficie del espacio (opcional)"
+        INT sort_order "Orden"
     }
 
     room_publications {
@@ -415,6 +439,8 @@ erDiagram
     rooms ||--o{ room_images : "tiene"
     rooms ||--o{ room_amenity_links : "ofrece"
     room_amenities ||--o{ room_amenity_links : "se asigna a"
+    rooms ||--o{ room_spaces : "se compone de"
+    room_space_types ||--o{ room_spaces : "tipifica"
     rooms ||--o{ room_publications : "se publica con"
     rooms ||--o{ room_status_history : "registra"
     room_types ||--o{ reviews : "se reseña como"

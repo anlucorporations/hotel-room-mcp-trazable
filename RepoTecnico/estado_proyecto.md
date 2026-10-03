@@ -2720,4 +2720,121 @@ Verificación tras el barrido: guardianes de documentación en verde (`images-na
 4. Detalle cosmético observado en el back-office: la marca del sidebar se recorta («Panel · Mari…») por
    el ancho del panel. No se toca porque el contrato del shell está fijado por `admin-shell.test.ts`;
    queda a decisión del responsable (acortar la etiqueta o permitir dos líneas).
+---
 
+## 39. Panel de administración: acceso sin recargar, Sistemas al primer nivel y gestión de habitaciones (2026-10-02) · `@asistenteProyecto`
+
+### Lo pedido por el responsable
+
+1. Al iniciar sesión, el formulario no desaparecía hasta recargar la página.
+2. En el panel: (2.1) sacar **Sistemas** del panel Administración y ponerlo al primer nivel del sidebar;
+   (2.2) en la sección **Habitación**: alta con formulario flotante (físicas, decorativas, servicios,
+   espacios y hasta 4 fotos), tabla solo de resumen con ficha flotante al seleccionar, y una **ficha
+   reutilizable** con secciones según el perfil del usuario y un calendario de días publicados y
+   reservados.
+
+### 1 · El acceso ya no exige recargar (defecto real corregido)
+
+**Causa raíz.** `AdminSignInScreen` abría **su propia** instancia de `useAdminSession` y en ella
+observaba `sessionUsername` para lanzar `router.refresh()`; el formulario, en cambio, usa la instancia
+de `AdminLayout`. La instancia observada **nunca** veía el login, así que el refresco que re-evalúa el
+gate del servidor no se disparaba nunca.
+
+**Arreglo.** El refresco vive ahora en `SignInGate` (dentro de `AdminLayout`), que es quien comparte la
+sesión con `CredentialForm`; `AdminSignInScreen` queda como envoltorio sin estado. **Guardián nuevo**
+en `admin-shell.test.ts` («Back-office · el acceso se resuelve sin recargar»): fija que el refresco está
+en el shell y que la pantalla de acceso no abre una segunda sesión (comprobado por import/uso, no por la
+palabra suelta del comentario).
+
+### 2.1 · Sistemas, sección de primer nivel (revierte D-80)
+
+`adminNav.ts`: se retira el concepto de **subgrupo** (`AdminNavGroup`/`ownerGroup`) y **Sistemas** pasa a
+ser una sección propia (`key: "sistemas"`, icono `server`) con sus seis entradas, al mismo nivel que
+Habitación o Recepción. Las migas pasan de tres niveles (Administración › Sistemas › Ajustes) a dos
+(Sistemas › Ajustes). El bloque de sesión (D-81) sigue dentro del panel Administración. El guardián del
+shell se actualizó en consecuencia (y comprueba que ninguna sección anida ya subgrupos y que las
+entradas de Sistemas siguen reservadas al owner).
+
+### 2.2 · Gestión de habitaciones
+
+**Modelo de datos (migración incremental, validada contra PostgreSQL real).** `rooms` gana nueve
+columnas (vista `SEA|GARDEN|INTERIOR`, balcón, accesible PMR, estilo decorativo
+`MEDITERRANEAN|CONTEMPORARY|CLASSIC|RUSTIC|MINIMAL`, paleta, materiales y notas de decoración ES/EN/RU)
+con sus `CHECK`, y nacen `room_space_types` (catálogo trilingüe de espacios, con semilla de seis) y
+`room_spaces` (espacio + superficie por habitación). Los tres artefactos de datos
+(`diccionario_datos.md`, `diagrama_er.md`, `base_datos.sql`) se actualizaron en el mismo turno.
+
+**Verificación contra el motor (lección de F9).** La migración se aplicó **dos veces** sobre la base de
+desarrollo (idempotente) y `base_datos.sql` se ejecutó entero dentro de una transacción con `ROLLBACK`
+(0 errores). El SQL de reemplazo de conjuntos se probó contra PostgreSQL real y **destapó dos defectos
+que un mock no ve**:
+
+| Defecto detectado | Corrección |
+|---|---|
+| `WITH removed AS (DELETE …) INSERT … ON CONFLICT` en una sola sentencia: el `ON CONFLICT` evalúa la instantánea **previa** al borrado, así que los servicios que ya estaban se saltaban y **se perdían** (medido: `WIFI, AC, TV` → reemplazo por `WIFI, MINIBAR` dejaba solo `MINIBAR`) | `setRoomAmenities`/`setRoomSpaces` pasan a **transacción explícita** (DELETE + INSERT) sobre el pool inyectado |
+| `unnest($2::varchar[]) AS code` sin lista de columnas: el alias nombra la tabla y el `SELECT` insertaba **cero filas** | Alias con columnas explícitas: `AS t(code)` |
+
+**API.** `GET /api/admin/rooms/[id]` devuelve además servicios, espacios y las **noches ocupadas** de la
+ventana pedida (`?from&to`, por defecto un semestre alrededor de hoy); `POST`/`PATCH` aceptan
+`amenityCodes` y `spaces` (validados antes de escribir, para no dejar fichas a medias); y
+`GET /api/admin/rooms/options` sirve los tres catálogos del formulario. Las listas cerradas viven ahora
+en `apps/web/src/lib/room-fields.ts` (sin `server-only`), de modo que **la validación del servidor y el
+formulario comparten una sola fuente** —antes `RoomsAdmin` duplicaba los tipos a mano.
+
+**Matriz de visibilidad de la ficha** (decisión del responsable, en `room-fields.ts`): owner todo;
+recepción físicas/servicios/espacios/publicaciones; housekeeping y mantenimiento
+físicas/decorativas/servicios/espacios (sin comercial); huésped físicas/decorativas/servicios/espacios y
+disponibilidad publicada.
+
+**i18n.** 65 claves nuevas en los tres catálogos (`admin.room*`), añadidas **antes** de la UI para que
+las dos delegaciones de interfaz no compitieran por los mismos ficheros.
+
+**Riesgo señalado (no resuelto en este ciclo).** Las fotos de habitación se escriben en el sistema de
+ficheros del contenedor (`ROOM_IMAGES_DIR`, por defecto `docs/imagenes`). El servicio `hotel-mcp-web` de
+Cloud Run **no monta ningún volumen**, así que en producción las fotos subidas se pierden al
+redesplegar o al escalar a otra instancia. Es un riesgo **preexistente** (D-5/D-12/D-20) que la nueva
+carga de fotos hace visible; la corrección natural es un bucket de Cloud Storage (o un volumen GCS) como
+ciclo propio.
+
+### Estado
+
+| Comprobación | Resultado |
+|---|---|
+| Migración sobre PostgreSQL real (dos pasadas) | **idempotente**; 9 columnas, 2 tablas y 6 semillas verificadas |
+| `base_datos.sql` completo en transacción con `ROLLBACK` | **0 errores** (idempotente sobre base ya migrada) |
+| Repositorio de habitaciones (`@hotel/shared`) | **25 pruebas** (17 previas + 8 nuevas) |
+| Parseo y reglas de la ficha (`apps/web/src/lib/rooms.test.ts`) | **20 pruebas** (10 nuevas) |
+| API de habitaciones | **46 pruebas** (5 ficheros) |
+| Guardián del shell del back-office | **28 pruebas** |
+| Interfaz (formulario flotante, tabla resumen y ficha con calendario) | entregada por dos agentes en paralelo; verificada (abajo) |
+| Pruebas focalizadas de la web (`src/lib`, `src/components`, `api/admin/rooms`) | **409 pruebas** en verde (49 ficheros) |
+
+### Interfaz entregada y verificada (2026-10-02)
+
+| Pieza | Ficheros | Qué hace |
+|---|---|---|
+| Formulario flotante | `components/admin/rooms/RoomFormDialog.tsx`, `ModalShell.tsx`, `useModalDialog.ts`, `room-dto.ts` | `role="dialog"` + `aria-modal` + foco/trampa/`Escape`; secciones físicas, decoración, servicios, espacios y **hasta 4 fotos** reescaladas en el navegador (`createImageBitmap` + `canvas`, lado mayor 1600 px, JPEG 0,75) antes de subirlas; la portada se marca tras crear la ficha |
+| Tabla resumen + ficha flotante | `components/admin/rooms/RoomsAdmin.tsx` | Columnas de resumen (nº, tipo, capacidad, camas, m², precio en ETH, estado, estado operativo) y apertura de la **ficha flotante** que monta el componente reutilizable |
+| Ficha reutilizable | `components/rooms/RoomDetailCard.tsx` | Secciones por **perfil** (matriz del responsable), sin depender del contexto de administración; contrato de cliente propio (no importa el barril de servidor) |
+| Calendario | `components/rooms/RoomCalendar.tsx`, `lib/room-calendar.ts` (+ test) | Cuatro estados (publicada, reservada, ambas, libre) con leyenda, símbolo y `aria-label` por día, resumen `role="status"` y navegación de mes |
+
+**Verificación en navegador real** (con una ruta temporal de vista previa, ya eliminada, porque el sandbox
+borró PostgreSQL y Redis de `/tmp` y no era posible el recorrido con base de datos):
+
+| Comprobación | Resultado |
+|---|---|
+| `axe` sobre el **formulario** abierto | **0 violaciones** `critical`/`serious` |
+| `axe` sobre la **ficha** (owner y huésped) | **0 violaciones** `critical`/`serious` (tras corregir el defecto de contraste que se detalla abajo) |
+| Secciones por perfil medidas en el DOM | OWNER **6** · GUEST **5** · sección comercial en GUEST **0** |
+| Calendario | 35 días pintados con estado y `aria-label`; leyenda con las cuatro clases |
+| Evidencia | `RepoTecnico/evidencias/panel-formulario-habitacion.png` y `panel-ficha-habitacion.png` |
+
+**Defecto real que destapó el escaneo (corregido).** Los días de los meses vecinos del calendario se
+atenuaban con `opacity-60`: el texto quedaba en **2,87:1** sobre blanco (axe, `color-contrast`, serio).
+Se sustituyó por un **borde discontinuo** — señal que además no depende del color (WCAG 1.4.1) — dejando
+los colores de estado del sistema. Un mock no lo habría visto: hizo falta renderizar y medir.
+
+**Ajuste de arquitectura derivado de verificar.** `RoomFormDialog` pedía `apiFetch` al contexto del
+panel (`useAdminContext`), lo que impedía montarlo fuera del shell y por tanto probarlo en navegador.
+Ahora lo recibe **por props** (el panel se lo pasa): se puede montar y probar aislado, y el acoplamiento
+con el shell baja.

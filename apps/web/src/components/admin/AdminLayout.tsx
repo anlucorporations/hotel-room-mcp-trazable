@@ -12,7 +12,7 @@ import {
   type RefObject,
 } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { BREAKPOINT_TABLET_PX, type RoleName } from "@hotel/shared/domain";
 import { WalletMenu } from "@/components/wallet/WalletMenu";
@@ -22,7 +22,6 @@ import {
   breadcrumbForPathname,
   isActiveHref,
   sectionForPathname,
-  type AdminNavGroup,
   type AdminNavItem,
   type AdminNavLabelKey,
   type AdminSectionKey,
@@ -235,12 +234,6 @@ function Sidebar({
                   <li key={item.href}>{renderItem(item)}</li>
                 ))}
 
-                {/* Subgrupo del owner (D-80): las funciones especiales de Sistemas, integradas en el
-                    panel Administración. El gating real lo imponen rutas y APIs. */}
-                {section.ownerGroup && session.isOwner && (
-                  <OwnerGroup group={section.ownerGroup} navLabel={navLabel} renderItem={renderItem} />
-                )}
-
                 {/* Bloque de sesión (D-81): usuario + billetera, dentro del panel Administración. */}
                 {section.key === "administracion" && <SessionBlock session={session} />}
               </ul>
@@ -254,33 +247,6 @@ function Sidebar({
         {t("nav.footer")}
       </p>
     </aside>
-  );
-}
-
-/**
- * Subgrupo anidado dentro del panel de una sección, reservado al owner (**D-80**): es la integración
- * de las funciones especiales de Sistemas en el panel Administración. Se dibuja como una fila de
- * encabezado con su icono y las entradas debajo, separadas por un filete para que el nivel jerárquico
- * sea visible sin recurrir solo al color (WCAG 1.4.1).
- */
-function OwnerGroup({
-  group,
-  navLabel,
-  renderItem,
-}: {
-  group: AdminNavGroup;
-  navLabel: (key: AdminNavLabelKey) => string;
-  renderItem: (item: AdminNavItem) => ReactNode;
-}) {
-  const GroupIcon = ADMIN_ICONS[group.icon];
-  return (
-    <li data-testid="nav-owner-group" className="mt-2 flex flex-col gap-1 border-t border-pearl/30 pt-2">
-      <span className="flex items-center gap-2 px-3 pb-1 text-micro font-semibold uppercase tracking-wider text-pearl">
-        <GroupIcon className="flex-none" />
-        {navLabel(group.labelKey)}
-      </span>
-      {group.items.map(renderItem)}
-    </li>
   );
 }
 
@@ -448,6 +414,22 @@ function Footer() {
  */
 function SignInGate({ session }: { session: AdminSession }) {
   const t = useTranslations("admin");
+  const router = useRouter();
+
+  /**
+   * Al conceder sesión hay que **re-evaluar el gate del servidor** (`app/admin/layout.tsx`), que es
+   * quien decide entre la pantalla de acceso y el panel: la cookie ya está puesta, pero el árbol RSC
+   * servido sigue siendo el del acceso.
+   *
+   * **Defecto corregido el 2026-10-02.** El `router.refresh()` vivía en `AdminSignInScreen`, que
+   * abría **su propia** instancia de `useAdminSession`; el formulario, en cambio, usa la instancia de
+   * `AdminLayout`. La instancia de la pantalla nunca veía el login, así que la condición no se
+   * cumplía nunca y el formulario se quedaba en pantalla hasta recargar a mano. Aquí el efecto vive
+   * donde vive la sesión que de verdad se autentica; `AdminSignInScreen` queda como envoltorio.
+   */
+  useEffect(() => {
+    if (session.sessionUsername) router.refresh();
+  }, [session.sessionUsername, router]);
 
   return (
     <div className="mx-auto flex max-w-md flex-col items-start gap-4 rounded-brand-lg border border-line bg-shell p-6 shadow-card">

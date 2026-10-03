@@ -347,7 +347,7 @@ Incidencias marcadas al verificar la habitación en el check-out (vocabulario ce
 
 Índice: `(checkout_id)`.
 
-### 3.8 Dominio habitaciones (`room_types`, `rooms`, `room_images`, `room_amenities`, `room_amenity_links`, `room_publications`, `room_status_history`) — **PROPUESTA F1**
+### 3.8 Dominio habitaciones (`room_types`, `rooms`, `room_images`, `room_amenities`, `room_amenity_links`, `room_space_types`, `room_spaces`, `room_publications`, `room_status_history`) — **PROPUESTA F1**
 
 Modelo del ente *Habitación* (Suite Administración → sección 1). Gestionado por el **administrador con
 wallet** (D-1); la ficha vive en PostgreSQL (D-2) y la **BD es la fuente única del maestro** (D-3). Sin PII
@@ -378,6 +378,13 @@ Semilla: `SIMPLE` (500 bps), `DOBLE` (500 bps), `SUITE` (1000 bps).
 | `description_es` | `TEXT` | sí | — | Descripción en español; **obligatoria para publicar** (D-6, D-21), impuesta por `CHECK` |
 | `description_en` / `description_ru` | `TEXT` | sí | — | Opcionales; respaldo al español (D-6) |
 | `base_rate_wei` | `NUMERIC(78,0)` | sí | — | Tarifa base (opcional) |
+| `view_kind` | `VARCHAR(12)` | sí | — | Vista exterior: `SEA` · `GARDEN` · `INTERIOR`; `CHECK` (2026-10-02) |
+| `has_balcony` | `BOOLEAN` | no | `FALSE` | Balcón o terraza (2026-10-02) |
+| `is_accessible` | `BOOLEAN` | no | `FALSE` | Habitación accesible (PMR) (2026-10-02) |
+| `decor_style` | `VARCHAR(20)` | sí | — | `MEDITERRANEAN` · `CONTEMPORARY` · `CLASSIC` · `RUSTIC` · `MINIMAL`; `CHECK` |
+| `decor_palette` | `VARCHAR(120)` | sí | — | Paleta decorativa (descriptor corto) |
+| `decor_materials` | `VARCHAR(200)` | sí | — | Materiales destacados |
+| `decor_notes_es` / `decor_notes_en` / `decor_notes_ru` | `TEXT` | sí | — | Notas de decoración para el huésped, por idioma |
 | `publication_status` | `VARCHAR(20)` | no | `'DRAFT'` | `DRAFT` · `PUBLISHED` · `PAUSED` · `MAINTENANCE` · `OUT_OF_SERVICE` (D-19) |
 | `operational_status` | `VARCHAR(12)` | no | `'CLEAN'` | `CLEAN` · `DIRTY` · `OCCUPIED`; lo actualiza housekeeping/recepción (D-19) |
 | `archived_at` | `TIMESTAMP` | sí | — | `NULL` = vigente; con fecha = archivada, **nunca borrada** (D-8) |
@@ -409,6 +416,14 @@ Semilla: `SIMPLE` (500 bps), `DOBLE` (500 bps), `SUITE` (1000 bps).
 Semilla inicial: `WIFI`, `AC`, `HEATING`, `TV`, `PRIVATE_BATH`, `BALCONY`, `SEA_VIEW`, `MINIBAR`.
 `room_amenity_links`: PK compuesta `(room_id, amenity_code)`; FKs a `rooms(id)` `ON DELETE CASCADE` y a
 `room_amenities(code)` `ON UPDATE CASCADE`.
+
+#### `room_space_types` y `room_spaces` — espacios de la habitación (2026-10-02)
+`room_space_types`: `code VARCHAR(20)` PK (`DORMITORIO` · `SALON` · `BANO` · `TERRAZA` · `COCINA` ·
+`VESTIDOR`), `name_es`/`name_en`/`name_ru VARCHAR(40) NOT NULL`, `sort_order INT`. Catálogo cerrado con
+semilla reejecutable, igual que los servicios.
+`room_spaces`: PK compuesta `(room_id, space_code)`; `size_m2 NUMERIC(6,2)` opcional con `CHECK (> 0)`;
+`sort_order INT`; FKs a `rooms(id)` `ON DELETE CASCADE` y a `room_space_types(code)` `ON UPDATE CASCADE`;
+índice `(room_id)`. Es el conjunto que el formulario de la ficha ofrece como casillas + superficie.
 
 #### `room_publications` — publicaciones ancladas
 | Campo | Tipo | Nulo | Default | Descripción |

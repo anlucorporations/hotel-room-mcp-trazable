@@ -1,4 +1,4 @@
-import type { Pool, QueryResultRow } from "pg";
+import type { Pool, PoolClient, QueryResultRow } from "pg";
 import { getDbPool } from "../pool";
 
 /**
@@ -27,6 +27,12 @@ export type RoomPublicationStatus =
 /** Estado operativo (lo actualizan housekeeping/recepción, D-19). */
 export type RoomOperationalStatus = "CLEAN" | "DIRTY" | "OCCUPIED";
 
+/** Vista exterior de la habitación (ficha ampliada, 2026-10-02). */
+export type RoomViewKind = "SEA" | "GARDEN" | "INTERIOR";
+
+/** Estilo decorativo de la habitación (ficha ampliada, 2026-10-02). */
+export type RoomDecorStyle = "MEDITERRANEAN" | "CONTEMPORARY" | "CLASSIC" | "RUSTIC" | "MINIMAL";
+
 /** Dimensión del historial de estados. */
 export type RoomStatusKind = "PUBLICATION" | "OPERATIONAL";
 
@@ -44,12 +50,58 @@ export interface RoomRecord {
   descriptionRu: string | null;
   /** Tarifa base en wei como cadena (NUMERIC(78,0)); `null` si no se fijó. */
   baseRateWei: string | null;
+  // — Ficha ampliada (2026-10-02): físicas de la vista, accesibilidad y decoración —
+  viewKind: RoomViewKind | null;
+  hasBalcony: boolean;
+  isAccessible: boolean;
+  decorStyle: RoomDecorStyle | null;
+  decorPalette: string | null;
+  decorMaterials: string | null;
+  decorNotesEs: string | null;
+  decorNotesEn: string | null;
+  decorNotesRu: string | null;
   publicationStatus: RoomPublicationStatus;
   operationalStatus: RoomOperationalStatus;
   /** `null` = vigente; con fecha = archivada y nunca borrada (D-8). */
   archivedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+/** Espacio de una habitación (catálogo cerrado + superficie). */
+export interface RoomSpaceRecord {
+  spaceCode: string;
+  sizeM2: number | null;
+  sortOrder: number;
+}
+
+/** Entrada del catálogo de espacios (nombres trilingües). */
+export interface RoomSpaceTypeRecord {
+  code: string;
+  nameEs: string;
+  nameEn: string;
+  nameRu: string;
+  sortOrder: number;
+}
+
+/** Entrada del catálogo de servicios/amenidades. */
+export interface RoomAmenityRecord {
+  code: string;
+  nameEs: string;
+  nameEn: string;
+  nameRu: string;
+  sortOrder: number;
+}
+
+/** Entrada del catálogo de tipos de habitación. */
+export interface RoomTypeRecord {
+  code: RoomTypeCode;
+  nameEs: string;
+  nameEn: string;
+  nameRu: string;
+  baseCapacity: number;
+  royaltyBps: number;
+  sortOrder: number;
 }
 
 /** Imagen de la galería de una habitación. */
@@ -108,9 +160,30 @@ export interface CreateRoomInput {
   descriptionEn?: string | null;
   descriptionRu?: string | null;
   baseRateWei?: string | null;
+  // — Ficha ampliada (2026-10-02) —
+  viewKind?: RoomViewKind | null;
+  hasBalcony?: boolean;
+  isAccessible?: boolean;
+  decorStyle?: RoomDecorStyle | null;
+  decorPalette?: string | null;
+  decorMaterials?: string | null;
+  decorNotesEs?: string | null;
+  decorNotesEn?: string | null;
+  decorNotesRu?: string | null;
 }
 
 export type UpdateRoomInput = Partial<CreateRoomInput>;
+
+/**
+ * Servicios y espacios no viven en `rooms` sino en tablas de enlace, así que se asignan con sus
+ * propios métodos (`setRoomAmenities` / `setRoomSpaces`). La API los aplica **después** del alta: si
+ * el segundo paso fallara, la habitación queda en `DRAFT` (nunca publicada a medias) y el operador
+ * puede reintentar la edición sin perder la ficha.
+ */
+export interface SetRoomSpaceInput {
+  spaceCode: string;
+  sizeM2?: number | null;
+}
 
 export interface AddRoomImageInput {
   roomId: string;
@@ -184,8 +257,12 @@ export class RoomsRepository {
       const res = await this.pool.query(
         `INSERT INTO rooms (
             room_number, floor, room_type, capacity, beds, size_m2,
-            description_es, description_en, description_ru, base_rate_wei
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            description_es, description_en, description_ru, base_rate_wei,
+            view_kind, has_balcony, is_accessible,
+            decor_style, decor_palette, decor_materials,
+            decor_notes_es, decor_notes_en, decor_notes_ru
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+                   $11, $12, $13, $14, $15, $16, $17, $18, $19)
          RETURNING *`,
         [
           input.roomNumber,
@@ -198,6 +275,15 @@ export class RoomsRepository {
           input.descriptionEn ?? null,
           input.descriptionRu ?? null,
           input.baseRateWei ?? null,
+          input.viewKind ?? null,
+          input.hasBalcony ?? false,
+          input.isAccessible ?? false,
+          input.decorStyle ?? null,
+          input.decorPalette ?? null,
+          input.decorMaterials ?? null,
+          input.decorNotesEs ?? null,
+          input.decorNotesEn ?? null,
+          input.decorNotesRu ?? null,
         ],
       );
       return mapRoom(res.rows[0]);
@@ -225,6 +311,15 @@ export class RoomsRepository {
       ["descriptionEn", "description_en"],
       ["descriptionRu", "description_ru"],
       ["baseRateWei", "base_rate_wei"],
+      ["viewKind", "view_kind"],
+      ["hasBalcony", "has_balcony"],
+      ["isAccessible", "is_accessible"],
+      ["decorStyle", "decor_style"],
+      ["decorPalette", "decor_palette"],
+      ["decorMaterials", "decor_materials"],
+      ["decorNotesEs", "decor_notes_es"],
+      ["decorNotesEn", "decor_notes_en"],
+      ["decorNotesRu", "decor_notes_ru"],
     ];
 
     const sets: string[] = [];
@@ -467,6 +562,171 @@ export class RoomsRepository {
     );
     return res.rows.map(mapPublication);
   }
+
+  // ---------------------------------------------------------------------------
+  // Ficha ampliada (2026-10-02): catálogos, servicios, espacios y calendario
+  // ---------------------------------------------------------------------------
+
+  /** Catálogo de tipos de habitación (nombre trilingüe + royalty inmutable). */
+  async listRoomTypes(): Promise<RoomTypeRecord[]> {
+    const res = await this.pool.query(`SELECT * FROM room_types ORDER BY sort_order ASC`);
+    return res.rows.map((row) => ({
+      code: row.code as RoomTypeCode,
+      nameEs: row.name_es as string,
+      nameEn: row.name_en as string,
+      nameRu: row.name_ru as string,
+      baseCapacity: row.base_capacity as number,
+      royaltyBps: row.royalty_bps as number,
+      sortOrder: row.sort_order as number,
+    }));
+  }
+
+  /** Catálogo de servicios/amenidades que el formulario puede ofrecer. */
+  async listAmenityCatalog(): Promise<RoomAmenityRecord[]> {
+    const res = await this.pool.query(`SELECT * FROM room_amenities ORDER BY sort_order ASC`);
+    return res.rows.map((row) => ({
+      code: row.code as string,
+      nameEs: row.name_es as string,
+      nameEn: row.name_en as string,
+      nameRu: row.name_ru as string,
+      sortOrder: row.sort_order as number,
+    }));
+  }
+
+  /** Catálogo de espacios (dormitorio, baño, terraza…). */
+  async listSpaceTypes(): Promise<RoomSpaceTypeRecord[]> {
+    const res = await this.pool.query(`SELECT * FROM room_space_types ORDER BY sort_order ASC`);
+    return res.rows.map((row) => ({
+      code: row.code as string,
+      nameEs: row.name_es as string,
+      nameEn: row.name_en as string,
+      nameRu: row.name_ru as string,
+      sortOrder: row.sort_order as number,
+    }));
+  }
+
+  /** Servicios asignados a una habitación (códigos del catálogo). */
+  async listAmenityCodes(roomId: string): Promise<string[]> {
+    const res = await this.pool.query(
+      `SELECT l.amenity_code
+         FROM room_amenity_links l
+         JOIN room_amenities a ON a.code = l.amenity_code
+        WHERE l.room_id = $1
+        ORDER BY a.sort_order ASC`,
+      [roomId],
+    );
+    return res.rows.map((row) => row.amenity_code as string);
+  }
+
+  /**
+   * Reemplaza los servicios de una habitación.
+   *
+   * **Por qué en transacción y en dos sentencias** (defecto detectado al validar contra PostgreSQL
+   * real, 2026-10-02): con el `DELETE` y el `INSERT` en una sola sentencia (CTE), el `ON CONFLICT`
+   * evalúa la **instantánea previa** al borrado, así que los códigos que ya estaban se saltaban y se
+   * perdían. Dentro de una transacción, el `INSERT` sí ve el borrado anterior y el conjunto queda
+   * exactamente como llega.
+   */
+  async setRoomAmenities(roomId: string, codes: readonly string[]): Promise<void> {
+    await this.inTransaction(async (client) => {
+      await client.query(`DELETE FROM room_amenity_links WHERE room_id = $1`, [roomId]);
+      if (codes.length === 0) return;
+      await client.query(
+        `INSERT INTO room_amenity_links (room_id, amenity_code)
+         SELECT $1, code FROM unnest($2::varchar[]) AS t(code)
+         ON CONFLICT (room_id, amenity_code) DO NOTHING`,
+        [roomId, [...codes]],
+      );
+    });
+  }
+
+  /** Espacios de una habitación con su superficie, en el orden del catálogo. */
+  async listRoomSpaces(roomId: string): Promise<RoomSpaceRecord[]> {
+    const res = await this.pool.query(
+      `SELECT s.space_code, s.size_m2, s.sort_order
+         FROM room_spaces s
+         JOIN room_space_types t ON t.code = s.space_code
+        WHERE s.room_id = $1
+        ORDER BY t.sort_order ASC`,
+      [roomId],
+    );
+    return res.rows.map((row) => ({
+      spaceCode: row.space_code as string,
+      sizeM2: row.size_m2 === null || row.size_m2 === undefined ? null : Number(row.size_m2),
+      sortOrder: row.sort_order as number,
+    }));
+  }
+
+  /** Reemplaza los espacios de una habitación (misma transacción y mismo motivo que los servicios). */
+  async setRoomSpaces(roomId: string, spaces: readonly SetRoomSpaceInput[]): Promise<void> {
+    await this.inTransaction(async (client) => {
+      await client.query(`DELETE FROM room_spaces WHERE room_id = $1`, [roomId]);
+      if (spaces.length === 0) return;
+      await client.query(
+        `INSERT INTO room_spaces (room_id, space_code, size_m2, sort_order)
+         SELECT $1, code, size, ord
+           FROM unnest($2::varchar[], $3::numeric[], $4::int[]) AS t(code, size, ord)`,
+        [
+          roomId,
+          spaces.map((space) => space.spaceCode),
+          spaces.map((space) => space.sizeM2 ?? null),
+          spaces.map((_, index) => index + 1),
+        ],
+      );
+    });
+  }
+
+  /**
+   * Ejecuta varias sentencias en una transacción sobre el **pool inyectado** (no el global): los
+   * tests doblan el pool y así siguen pudiendo hacerlo.
+   */
+  private async inTransaction<T>(work: (client: PoolClient) => Promise<T>): Promise<T> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const result = await work(client);
+      await client.query("COMMIT");
+      return result;
+    } catch (error: unknown) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Noches **reservadas o vendidas** de una habitación en una ventana (para el calendario de la
+   * ficha). Se unen las dos fuentes que el sistema considera «ocupada»:
+   *
+   *   · `reservation_nights` con una reserva viva (`PENDING`/`CONFIRMED`/`COMPLETED`);
+   *   · `nfts` con estado distinto de `AVAILABLE` (`SOLD`, `CONFIRMING`, `CHECKED_IN`, `BURNED`).
+   *
+   * Se devuelven como fechas `YYYY-MM-DD` ordenadas y sin repetir.
+   */
+  async listReservedNights(roomId: string, from: string, to: string): Promise<string[]> {
+    const res = await this.pool.query(
+      `SELECT DISTINCT to_char(night, 'YYYY-MM-DD') AS night
+         FROM (
+           SELECT rn.night_date AS night
+             FROM reservation_nights rn
+             JOIN reservations r ON r.id = rn.reservation_id
+            WHERE rn.room_id = $1
+              AND rn.night_date BETWEEN $2::date AND $3::date
+              AND r.status IN ('PENDING', 'CONFIRMED', 'COMPLETED')
+           UNION ALL
+           SELECT n.check_in_date AS night
+             FROM nfts n
+             JOIN rooms ro ON ro.room_number = n.room_number
+            WHERE ro.id = $1
+              AND n.check_in_date BETWEEN $2::date AND $3::date
+              AND n.status <> 'AVAILABLE'
+         ) AS ocupadas
+        ORDER BY night ASC`,
+      [roomId, from, to],
+    );
+    return res.rows.map((row) => row.night as string);
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -486,6 +746,16 @@ function mapRoom(row: QueryResultRow): RoomRecord {
     descriptionEn: (row.description_en as string | null) ?? null,
     descriptionRu: (row.description_ru as string | null) ?? null,
     baseRateWei: (row.base_rate_wei as string | null) ?? null,
+    // Ficha ampliada (2026-10-02).
+    viewKind: (row.view_kind as RoomViewKind | null) ?? null,
+    hasBalcony: (row.has_balcony as boolean | null) ?? false,
+    isAccessible: (row.is_accessible as boolean | null) ?? false,
+    decorStyle: (row.decor_style as RoomDecorStyle | null) ?? null,
+    decorPalette: (row.decor_palette as string | null) ?? null,
+    decorMaterials: (row.decor_materials as string | null) ?? null,
+    decorNotesEs: (row.decor_notes_es as string | null) ?? null,
+    decorNotesEn: (row.decor_notes_en as string | null) ?? null,
+    decorNotesRu: (row.decor_notes_ru as string | null) ?? null,
     publicationStatus: row.publication_status as RoomPublicationStatus,
     operationalStatus: row.operational_status as RoomOperationalStatus,
     archivedAt: (row.archived_at as Date | null) ?? null,

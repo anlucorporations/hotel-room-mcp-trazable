@@ -281,4 +281,125 @@ describe("RoomsRepository (D-1…D-26)", () => {
       expect(pub.txHash).toBeNull();
     });
   });
+
+  /**
+   * Ficha ampliada (2026-10-02): físicas de la vista, accesibilidad, decoración, servicios y espacios.
+   * El SQL de reemplazo se validó además contra un **PostgreSQL real** (ver `estado_proyecto.md`);
+   * aquí se fija la forma de las sentencias y el mapeo, que es lo que un mock sí puede afirmar.
+   */
+  describe("ficha ampliada: campos, servicios y espacios", () => {
+    /** Pool con cliente transaccional, que es lo que usan los reemplazos de conjuntos. */
+    function withTransactionalClient(): { query: Mock; release: Mock } {
+      const client = { query: vi.fn().mockResolvedValue({ rows: [] }), release: vi.fn() };
+      (mockPool as unknown as { connect: Mock }).connect = vi.fn().mockResolvedValue(client);
+      return client;
+    }
+
+    it("el alta escribe las columnas nuevas y sus valores", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [roomRow()] });
+      await repository.createRoom({
+        roomNumber: 101,
+        roomType: "DOBLE",
+        capacity: 2,
+        beds: 2,
+        viewKind: "SEA",
+        hasBalcony: true,
+        isAccessible: true,
+        decorStyle: "MEDITERRANEAN",
+        decorPalette: "arena",
+        decorMaterials: "lino",
+        decorNotesEs: "Notas",
+      });
+      const [sql, values] = mockPool.query.mock.calls[0];
+      expect(String(sql)).toContain("view_kind");
+      expect(String(sql)).toContain("decor_notes_ru");
+      expect(values).toContain("SEA");
+      expect(values).toContain("MEDITERRANEAN");
+      expect(values).toContain("arena");
+    });
+
+    it("mapea la ficha ampliada y es tolerante con una fila antigua sin esas columnas", async () => {
+      mockPool.query.mockResolvedValueOnce({
+        rows: [roomRow({ view_kind: "GARDEN", has_balcony: true, is_accessible: false, decor_style: "CLASSIC", decor_palette: "verde", decor_materials: "roble", decor_notes_es: "n", decor_notes_en: null, decor_notes_ru: null })],
+      });
+      const room = await repository.findById("room-1");
+      expect(room?.viewKind).toBe("GARDEN");
+      expect(room?.hasBalcony).toBe(true);
+      expect(room?.decorStyle).toBe("CLASSIC");
+
+      mockPool.query.mockResolvedValueOnce({ rows: [roomRow()] });
+      const legacy = await repository.findById("room-1");
+      expect(legacy?.viewKind).toBeNull();
+      expect(legacy?.hasBalcony).toBe(false);
+      expect(legacy?.decorPalette).toBeNull();
+    });
+
+    it("la edición parcial incluye las columnas decorativas", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [roomRow()] });
+      await repository.updateRoom("room-1", { decorStyle: "RUSTIC", isAccessible: true });
+      const [sql, values] = mockPool.query.mock.calls[0];
+      expect(String(sql)).toContain("decor_style");
+      expect(String(sql)).toContain("is_accessible");
+      expect(values).toContain("RUSTIC");
+    });
+
+    it("reemplaza los servicios en una transacción (borra y vuelve a insertar)", async () => {
+      const client = withTransactionalClient();
+      await repository.setRoomAmenities("room-1", ["WIFI", "AC"]);
+      const statements = client.query.mock.calls.map((call) => String(call[0]));
+      expect(statements).toContain("BEGIN");
+      expect(statements.some((sql) => sql.includes("DELETE FROM room_amenity_links"))).toBe(true);
+      expect(statements.some((sql) => sql.includes("INSERT INTO room_amenity_links"))).toBe(true);
+      expect(statements).toContain("COMMIT");
+      expect(client.release).toHaveBeenCalled();
+    });
+
+    it("un conjunto vacío deja la habitación sin servicios (solo borra)", async () => {
+      const client = withTransactionalClient();
+      await repository.setRoomAmenities("room-1", []);
+      const statements = client.query.mock.calls.map((call) => String(call[0]));
+      expect(statements.some((sql) => sql.includes("DELETE FROM room_amenity_links"))).toBe(true);
+      expect(statements.some((sql) => sql.includes("INSERT INTO room_amenity_links"))).toBe(false);
+    });
+
+    it("si falla la inserción de espacios, revierte la transacción", async () => {
+      const client = withTransactionalClient();
+      client.query.mockImplementation(async (sql: string) => {
+        if (String(sql).includes("INSERT INTO room_spaces")) throw new Error("boom");
+        return { rows: [] };
+      });
+      await expect(repository.setRoomSpaces("room-1", [{ spaceCode: "BANO", sizeM2: 6 }])).rejects.toThrow("boom");
+      const statements = client.query.mock.calls.map((call) => String(call[0]));
+      expect(statements).toContain("ROLLBACK");
+      expect(client.release).toHaveBeenCalled();
+    });
+
+    it("lista servicios y espacios con sus catálogos", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [{ amenity_code: "WIFI" }, { amenity_code: "AC" }] });
+      expect(await repository.listAmenityCodes("room-1")).toEqual(["WIFI", "AC"]);
+
+      mockPool.query.mockResolvedValueOnce({ rows: [{ space_code: "BANO", size_m2: "6.00", sort_order: 3 }] });
+      expect(await repository.listRoomSpaces("room-1")).toEqual([{ spaceCode: "BANO", sizeM2: 6, sortOrder: 3 }]);
+
+      mockPool.query.mockResolvedValueOnce({ rows: [{ code: "WIFI", name_es: "Wi-Fi", name_en: "Wi-Fi", name_ru: "Wi-Fi", sort_order: 1 }] });
+      expect((await repository.listAmenityCatalog())[0]).toMatchObject({ code: "WIFI", nameEs: "Wi-Fi" });
+
+      mockPool.query.mockResolvedValueOnce({ rows: [{ code: "DORMITORIO", name_es: "Dormitorio", name_en: "Bedroom", name_ru: "Спальня", sort_order: 1 }] });
+      expect((await repository.listSpaceTypes())[0]?.nameRu).toBe("Спальня");
+
+      mockPool.query.mockResolvedValueOnce({ rows: [{ code: "SUITE", name_es: "Suite", name_en: "Suite", name_ru: "Люкс", base_capacity: 2, royalty_bps: 1000, sort_order: 3 }] });
+      expect((await repository.listRoomTypes())[0]).toMatchObject({ code: "SUITE", royaltyBps: 1000 });
+    });
+
+    it("el calendario une reservas y noches vendidas y devuelve fechas ISO", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [{ night: "2026-10-12" }, { night: "2026-10-13" }] });
+      const nights = await repository.listReservedNights("room-1", "2026-10-01", "2026-10-31");
+      expect(nights).toEqual(["2026-10-12", "2026-10-13"]);
+      const [sql, values] = mockPool.query.mock.calls[0];
+      expect(String(sql)).toContain("reservation_nights");
+      expect(String(sql)).toContain("nfts");
+      expect(String(sql)).toContain("status <> 'AVAILABLE'");
+      expect(values).toEqual(["room-1", "2026-10-01", "2026-10-31"]);
+    });
+  });
 });
