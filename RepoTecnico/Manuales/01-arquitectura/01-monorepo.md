@@ -81,7 +81,7 @@
 | `scripts/sync-deployment.ts` | Añade `abiHash` y valida contra el esquema del registro |
 | `scripts/gen-abi.ts` | Regenera los ABI de `packages/shared/src/abi/**` |
 | `scripts/e2e/m4…m7*.ts` | Los cuatro guiones E2E on-chain |
-| `scripts/inject-data.ts` | **Inyección de datos** (`pnpm --filter @hotel/contracts inject:data`): deja la topología de cuentas (cuenta 0 propietaria, 1 check-in, 2 y 3 usuarios), los roles on-chain, los operadores de la BD y un surtido de noches con ventas y reventas. Ver [`docs/inyeccion-datos.md`](../../../docs/inyeccion-datos.md) |
+| `scripts/inject-data.ts` | **Inyección de datos** (`pnpm --filter @hotel/contracts inject:data`): deja la topología de cuentas (cuenta 0 desplegador/tesorería, 1 admin/minter, 2 burner, 3 recepción, 4–9 huéspedes), los roles on-chain, los operadores de la BD y un surtido de noches con ventas y reventas. Ver [`docs/inyeccion-datos.md`](../../../docs/inyeccion-datos.md) |
 | `scripts/verify-accounts.ts` | Comprobación **de solo lectura** de la topología: roles de cada cuenta y tesorería |
 | `scripts/dev-accounts.ts` | Las cuatro cuentas de desarrollo de Anvil, en un solo sitio (vectores públicos de prueba) |
 | `deployments/` | Registro **crudo** escrito por Foundry (no versionado); el canónico vive en `packages/shared/deployments/<chainId>.json` |

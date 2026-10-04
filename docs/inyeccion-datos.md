@@ -16,15 +16,17 @@ misma topología.
 
 | # | Dirección | Papel | Roles on-chain que le corresponden |
 |---|---|---|---|
-| **0** | `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` | **Propietario / administrador** (y tesorería) | `DEFAULT_ADMIN_ROLE`, `MINTER_ROLE`, `PAUSER_ROLE`, `BURNER_ROLE`, `TREASURER_ROLE` y `RECEPTION_ROLE` |
-| **1** | `0x70997970C51812dc3A010C7d01b50e0d17dc79C8` | **Operador de check-in** | `RECEPTION_ROLE` |
-| **2** | `0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC` | **Usuario de reservas A** | ninguno |
-| **3** | `0x90F79bf6EB2c4f870365E785982E1f101E93b906` | **Usuario de reservas B** | ninguno |
+| **0** | `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` | **Desplegador y tesorería** (`treasury`) | ninguno tras el *handover* del despliegue |
+| **1** | `0x70997970C51812dc3A010C7d01b50e0d17dc79C8` | **Administrador con wallet** (back-office) | `DEFAULT_ADMIN_ROLE`, `MINTER_ROLE`, `PAUSER_ROLE` y `TREASURER_ROLE` |
+| **2** | `0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC` | **Hot-wallet de quema** | `BURNER_ROLE` |
+| **3** | `0x90F79bf6EB2c4f870365e785982E1f101e93b906` | **Hot-wallet de recepción** | `RECEPTION_ROLE` |
+| **4–9** | *(pool determinista de Anvil)* | **Huéspedes simulados** | ninguno |
 
-**Por qué el propietario tiene todos los roles**: es el operador del hotel. Con la cuenta 0 se puede
-mintear inventario, pausar el sistema, quemar caducadas, retirar fondos y hacer check-in. Las cuentas
-2 y 3 **no administran nada**: compran, revenden y cobran con su propia wallet (la web nunca firma por
-ellas, ADR-11).
+**Separación de funciones** (manual de seguridad §2.1): cada hot-wallet interna tiene **su papel** —
+el desplegador custodia la tesorería pero **no firma** operaciones; el administrador con wallet (cuenta
+1) gobierna, mintea, pausa y retira; la quema y el check-in firman desde sus wallets dedicadas (2 y 3).
+Las cuentas 4–9 **no administran nada**: compran, revenden y cobran con su propia wallet (la web nunca
+firma por ellas, ADR-11).
 
 > **Nota sobre roles heredados**: si el contrato se desplegó con una topología anterior, alguna cuenta
 > puede conservar roles de más (por ejemplo, la cuenta 1 como administrador antiguo). El script **no
@@ -40,20 +42,23 @@ pnpm --filter @hotel/contracts inject:data
 ```
 
 1. **Comprueba el entorno**: RPC, `chainId`, que haya contrato desplegado, la tesorería y el saldo de
-   las cuatro cuentas (avisa si alguna no tiene gas).
+   las diez cuentas (avisa si alguna no tiene gas).
 2. **Concede los roles on-chain** que falten. Es **idempotente**: solo firma lo que no está.
    Los concede quien tiene `DEFAULT_ADMIN_ROLE` en ese momento (se puede forzar con
    `ROLE_GRANTOR_PRIVATE_KEY`).
 3. **Aprovisiona los operadores** de la base de datos y **los imprime una sola vez**:
-   - `admin@hotel.es` → administración (cuenta 0)
-   - `recepcion@hotel.es` → recepción (cuenta 1)
+   - `admin@hotel.es` → administración (asociada a la cuenta 1)
+   - `recepcion@hotel.es` → recepción (asociada a la cuenta 3)
 
    Si un operador **ya existe, no se rota**: rotar la semilla invalidaría el autenticador de quien ya
    entra. Para rotarla de forma explícita, `--rotate-operators`.
 4. **Inyecta inventario y reservas**: mintea seis noches (dos de cada tipo del maestro: simple, doble y
    suite) en fechas futuras evitando las que ya existen, las compra en **venta primaria** con las
-   cuentas 2 y 3, y publica una **reventa** de la cuenta 3 que recompra la cuenta 2. Resultado: el
-   histórico, el panel y el catálogo tienen ventas primarias y secundarias reales.
+   cuentas 4–9 (un huésped por noche), y publica una **reventa** de la cuenta 7 que recompra la
+   cuenta 4. Resultado: el
+   histórico, el panel y el catálogo tienen ventas primarias y secundarias reales. Tras la
+   compra, el script ancla **dos check-ins** con la hot-wallet de recepción (`markCheckedIn`) y deja
+   el royalty de la reventa pendiente de retirar en el contrato.
 
 ## 3. Opciones
 

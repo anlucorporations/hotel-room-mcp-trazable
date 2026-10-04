@@ -2,37 +2,37 @@
  * Inyeccion de datos de la plataforma (`@inyectaDatos`) sobre Anvil, con una topologia de cuentas
  * EXPLICITA y verificable.
  *
- * ── Cuentas (claves de desarrollo publicadas por Anvil; no son secretos) ─────────────────────────
+ * ── Cuentas (claves del pool determinista de Anvil; vectores publicos de prueba) ───────────────
  *
  *   #  Direccion                                     Papel en el sistema
- *   0  0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266    **Propietario / administrador**: titular de
- *                                                    TODOS los roles y de la tesoreria. Acceso a
- *                                                    todas las funciones del sistema en modo admin.
- *   1  0x70997970C51812dc3A010C7d01b50e0d17dc79C8    **Operador de check-in** (RECEPTION_ROLE).
- *   2  0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC    **Usuario de reservas A** (compra primaria).
- *   3  0x90F79bf6EB2c4f870365E785982E1f101E93b906    **Usuario de reservas B** (compra primaria y
- *                                                    reventa: lista su noche para que A la recompre).
+ *   0  0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266    **Desplegador y tesoreria**: recibe los fondos
+ *                                                    (`treasury`); sin rol on-chain tras el handover.
+ *   1  0x70997970C51812dc3A010C7d01b50e0d17dc79C8    **Administrador con wallet**: DEFAULT_ADMIN,
+ *                                                    MINTER, PAUSER y TREASURER.
+ *   2  0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC    **Hot-wallet de quema** (BURNER_ROLE).
+ *   3  0x90F79bf6EB2c4f870365e785982E1f101E93b906    **Hot-wallet de recepcion** (RECEPTION_ROLE).
+ *   4-9 *(pool determinista)*                        **Huespedes simulados**: compran, revenden y
+ *                                                    cobran con su propia wallet (ADR-11).
  *
- * Los usuarios 2 y 3 quedan con acceso a la interfaz **con su propia wallet**: la web nunca firma
- * por ellos (ADR-11), asi que su papel es comprar, revender y cobrar, no administrar.
+ * La matriz interna (0-3) sigue la separacion de funciones: una hot-wallet = un solo proposito.
+ * Ver RepoTecnico/BaseOperaciones/cuentas_anvil.md.
  *
  * ── Que hace el script, en orden ────────────────────────────────────────────────────────────────
  *
  *   1. Comprueba el entorno: RPC, `chainId`, contrato desplegado y saldo de cada cuenta.
- *   2. **Roles on-chain**: concede al propietario los seis roles (admin, minter, pauser, burner,
- *      treasurer y reception) y RECEPTION_ROLE al operador de check-in. Es idempotente: solo firma
- *      lo que falta. Los concede quien TIENE `DEFAULT_ADMIN_ROLE` en ese momento (`ROLE_GRANTOR_...`,
- *      por defecto la cuenta 0).
- *   3. **Operadores en la base de datos**: aprovisiona el operador de administracion (cuenta 0) y el
- *      de recepcion (cuenta 1) con contrasena + TOTP, y los IMPRIME UNA VEZ. Si el operador ya
- *      existe, NO rota sus credenciales (eso invalidaria su autenticador): usa `--rotate-operators`.
+ *   2. **Roles on-chain**: comprueba la topologia desplegada (admin/minter/pauser/treasurer en la
+ *      cuenta 1; burner en la 2; reception en la 3) y concede SOLO lo que falte. Es idempotente.
+ *      Concede quien TIENE `DEFAULT_ADMIN_ROLE` (autodetectado, o `ROLE_GRANTOR_PRIVATE_KEY`).
+ *   3. **Operadores en la base de datos**: aprovisiona el operador de administracion (asociado a la
+ *      cuenta 1) y el de recepcion (cuenta 3) con contrasena + TOTP, y los IMPRIME UNA VEZ. Si el
+ *      operador ya existe, NO rota sus credenciales: usa `--rotate-operators`.
  *   3.5 **Registro de habitaciones (F8 · D-3/D-10/D-14)**: vuelca el maestro de las 50 habitaciones
- *      en `rooms` (idempotente) y registra on-chain las que falten (`registerRoom`). El contrato
- *      arranca vacio (D-13) y `mint` exige la habitacion registrada, asi que este paso va ANTES del
- *      inventario. Contra un contrato anterior al corte F8 se omite con un aviso.
- *   4. **Inventario y reservas**: mintea noches de los tres tipos del maestro en fechas futuras
- *      (evitando las que ya existen), las compra en primaria con las cuentas de usuario, y publica
- *      una reventa del usuario B. Deja el historico con ventas primarias y secundarias reales.
+ *      en `rooms` (idempotente) y registra on-chain las que falten (`registerRoom`, DEFAULT_ADMIN).
+ *      El contrato arranca vacio (D-13) y `mint` exige la habitacion registrada, asi que este paso
+ *      va ANTES del inventario. Contra un contrato anterior al corte F8 se omite con un aviso.
+ *   4. **Inventario y reservas**: mintea noches (`mint`, MINTER_ROLE) de los tres tipos del maestro
+ *      en fechas futuras, las compra en primaria los huespedes 4-9, y publica una reventa entre
+ *      huespedes. Deja el historico con ventas primarias y secundarias reales.
  *
  * ── Uso ─────────────────────────────────────────────────────────────────────────────────────────
  *
@@ -71,7 +71,7 @@ import {
   type NightType,
 } from "@hotel/shared/domain";
 import { hotelNightsAbi } from "@hotel/shared/abi";
-import { ANVIL_ACCOUNTS } from "./dev-accounts";
+import { ANVIL_KEYS_BY_INDEX } from "./dev-accounts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..", "..", "..");
@@ -116,38 +116,31 @@ interface AccountPlan {
   readonly account: ReturnType<typeof privateKeyToAccount>;
 }
 
-const owner: AccountPlan = {
-  slot: 0,
-  label: "propietario/administrador",
-  account: privateKeyToAccount(ANVIL_ACCOUNTS.owner),
-};
-const receptionOperator: AccountPlan = {
-  slot: 1,
-  label: "operador de check-in",
-  account: privateKeyToAccount(ANVIL_ACCOUNTS.reception),
-};
-const userA: AccountPlan = {
-  slot: 2,
-  label: "usuario de reservas A",
-  account: privateKeyToAccount(ANVIL_ACCOUNTS.userA),
-};
-const userB: AccountPlan = {
-  slot: 3,
-  label: "usuario de reservas B",
-  account: privateKeyToAccount(ANVIL_ACCOUNTS.userB),
-};
+/** Topologia interna aprobada: una hot-wallet = un solo proposito (cuentas_anvil.md). */
+const plan = (slot: number, label: string): AccountPlan => ({
+  slot,
+  label,
+  account: privateKeyToAccount(ANVIL_KEYS_BY_INDEX[slot]!),
+});
 
-const ACCOUNTS = [owner, receptionOperator, userA, userB] as const;
+const owner = plan(0, "desplegador y tesoreria (sin rol on-chain tras el handover)");
+const adminMinter = plan(1, "administrador con wallet: DEFAULT_ADMIN + MINTER + PAUSER + TREASURER");
+const burner = plan(2, "hot-wallet de quema (BURNER_ROLE)");
+const receptionOperator = plan(3, "hot-wallet de recepcion (RECEPTION_ROLE)");
+const GUESTS: readonly AccountPlan[] = [4, 5, 6, 7, 8, 9].map((slot) =>
+  plan(slot, `huesped simulado #${slot}`),
+);
+
+const ACCOUNTS = [owner, adminMinter, burner, receptionOperator, ...GUESTS] as const;
 
 /** Rol on-chain → cuenta que debe tenerlo (topologia pedida). */
 const ROLES: readonly { name: string; slot: number; why: string }[] = [
-  { name: "DEFAULT_ADMIN_ROLE", slot: 0, why: "gobierno del contrato (conceder/revocar roles)" },
-  { name: "MINTER_ROLE", slot: 0, why: "publicar noches desde el back-office" },
-  { name: "PAUSER_ROLE", slot: 0, why: "pausar y reanudar el sistema" },
-  { name: "BURNER_ROLE", slot: 0, why: "quema programada de noches caducadas" },
-  { name: "TREASURER_ROLE", slot: 0, why: "retirar los fondos de la tesoreria" },
-  { name: "RECEPTION_ROLE", slot: 0, why: "el propietario conserva acceso a recepcion" },
-  { name: "RECEPTION_ROLE", slot: 1, why: "operador de check-in del mostrador" },
+  { name: "DEFAULT_ADMIN_ROLE", slot: 1, why: "gobierno del contrato (conceder/revocar roles)" },
+  { name: "MINTER_ROLE", slot: 1, why: "publicar noches desde el back-office" },
+  { name: "PAUSER_ROLE", slot: 1, why: "pausar y reanudar el sistema" },
+  { name: "TREASURER_ROLE", slot: 1, why: "retirar los fondos de la tesoreria" },
+  { name: "BURNER_ROLE", slot: 2, why: "quema programada de noches caducadas" },
+  { name: "RECEPTION_ROLE", slot: 3, why: "ancla on-chain del check-in" },
 ];
 
 /**
@@ -438,7 +431,7 @@ async function provisionOperators(): Promise<void> {
   roomsFromDb = await seedRoomsIntoDb();
 
   const operators = [
-    { plan: owner, role: "DEFAULT_ADMIN_ROLE" as const, username: "admin@hotel.es" },
+    { plan: adminMinter, role: "DEFAULT_ADMIN_ROLE" as const, username: "admin@hotel.es" },
     { plan: receptionOperator, role: "RECEPTION_ROLE" as const, username: "recepcion@hotel.es" },
   ];
 
@@ -517,7 +510,7 @@ async function registerRooms(): Promise<void> {
       log(`  [dry-run]      registraria hab. ${entry.room} (${entry.roomType})`);
       continue;
     }
-    const hash = await send(owner, "registerRoom", [BigInt(entry.room), entry.roomType]);
+    const hash = await send(adminMinter, "registerRoom", [BigInt(entry.room), entry.roomType]);
     registered += 1;
     log(`  registrada     hab. ${entry.room} (${entry.roomType}) · tx ${hash}`);
   }
@@ -539,13 +532,14 @@ interface NightPlan {
  * el filtro por tipo y el desglose del panel tengan contenido real.
  */
 const NIGHTS: readonly NightPlan[] = [
-  { room: 101, type: "simple", priceEth: "0.05", buyer: userA },
-  { room: 108, type: "simple", priceEth: "0.06", buyer: userB },
-  { room: 118, type: "doble", priceEth: "0.09", buyer: userA },
-  { room: 124, type: "doble", priceEth: "0.1", buyer: userB },
-  { room: 202, type: "suite", priceEth: "0.25", buyer: userA },
-  { room: 210, type: "suite", priceEth: "0.3", buyer: userB },
+  { room: 101, type: "simple", priceEth: "0.05", buyer: GUESTS[0]! },
+  { room: 108, type: "simple", priceEth: "0.06", buyer: GUESTS[1]! },
+  { room: 118, type: "doble", priceEth: "0.09", buyer: GUESTS[2]! },
+  { room: 124, type: "doble", priceEth: "0.1", buyer: GUESTS[3]! },
+  { room: 202, type: "suite", priceEth: "0.25", buyer: GUESTS[4]! },
+  { room: 210, type: "suite", priceEth: "0.3", buyer: GUESTS[5]! },
 ];
+
 
 /** Primera fecha futura (desde `offsetDays`) cuya noche de esa habitacion NO exista todavia. */
 async function firstFreeDate(room: number, chainNowSeconds: bigint, offsetDays: number): Promise<bigint> {
@@ -563,7 +557,7 @@ async function injectInventory(): Promise<void> {
   const now = await chainNow();
   const mintedTokens: { plan: NightPlan; tokenId: bigint }[] = [];
 
-  // 4.1 Minteo con la cuenta propietaria (MINTER_ROLE).
+  // 4.1 Minteo con el administrador con wallet (MINTER_ROLE, cuenta 1).
   for (const [index, night] of NIGHTS.entries()) {
     const tokenId = await firstFreeDate(night.room, now, 30 + index * 7);
     const type = roomTypeOf(night.room);
@@ -585,7 +579,7 @@ async function injectInventory(): Promise<void> {
       log(`                 metadata: "${metadata.name}" · imagen ${metadata.image}`);
       continue;
     }
-    const hash = await send(owner, "mint", [
+    const hash = await send(adminMinter, "mint", [
       BigInt(night.room),
       BigInt(dateYYYYMMDD),
       parseEther(night.priceEth),
@@ -606,21 +600,23 @@ async function injectInventory(): Promise<void> {
     log(`  comprada       ${tokenId} por cuenta ${plan.buyer.slot} (${plan.buyer.label}) · tx ${hash}`);
   }
 
-  // 4.3 Reventa: el usuario B lista una de sus noches y A la recompra (genera royalty real).
+  // 4.3 Reventa: huesped #7 lista una de sus noches y huesped #4 la recompra (royalty real).
   if (!values["no-reservations"]) {
-    const resale = mintedTokens.find((entry) => entry.plan.buyer === userB);
+    const seller = GUESTS[3]!;
+    const buyer = GUESTS[0]!;
+    const resale = mintedTokens.find((entry) => entry.plan.buyer === seller);
     if (resale) {
       const resalePrice = parseEther("0.15");
-      const listHash = await send(userB, "list", [resale.tokenId, resalePrice]);
-      log(`  listada        ${resale.tokenId} por cuenta 3 a 0.15 ETH · tx ${listHash}`);
+      const listHash = await send(seller, "list", [resale.tokenId, resalePrice]);
+      log(`  listada        ${resale.tokenId} por cuenta ${seller.slot} a 0.15 ETH · tx ${listHash}`);
 
-      const buyHash = await send(userA, "buyResale", [resale.tokenId], resalePrice);
-      log(`  revendida      ${resale.tokenId} a cuenta 2 · tx ${buyHash}`);
+      const buyHash = await send(buyer, "buyResale", [resale.tokenId], resalePrice);
+      log(`  revendida      ${resale.tokenId} a cuenta ${buyer.slot} · tx ${buyHash}`);
 
       const ownerNow = await ownerOf(resale.tokenId);
-      log(`  titular ahora  ${ownerNow} (esperado ${userA.account.address})`);
-      if (ownerNow?.toLowerCase() !== userA.account.address.toLowerCase()) {
-        throw new Error("la reventa no dejo la noche en manos del usuario A");
+      log(`  titular ahora  ${ownerNow} (esperado ${buyer.account.address})`);
+      if (ownerNow?.toLowerCase() !== buyer.account.address.toLowerCase()) {
+        throw new Error("la reventa no dejo la noche en manos del huesped comprador");
       }
     }
   }
@@ -630,7 +626,8 @@ async function injectInventory(): Promise<void> {
   for (const { plan, tokenId } of mintedTokens) {
     const holder = await ownerOf(tokenId);
     const sold = await soldOnce(tokenId);
-    const label = holder?.toLowerCase() === userA.account.address.toLowerCase() ? "usuario A" : holder?.toLowerCase() === userB.account.address.toLowerCase() ? "usuario B" : holder;
+    const huesped = GUESTS.find((g) => g.account.address.toLowerCase() === holder?.toLowerCase());
+    const label = huesped ? `huesped #${huesped.slot}` : holder ?? "(sin titular)";
     log(`  ${tokenId} · hab. ${plan.room} (${plan.type}) · vendida=${sold} · titular=${label}`);
   }
 }

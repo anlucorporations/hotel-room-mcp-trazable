@@ -33,10 +33,10 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 | Variable | Obligatoria | Ejemplo | Si falta |
 |---|---|---|---|
-| `DEPLOYER_PRIVATE_KEY` | Sí, para desplegar | `0xac0974…ff80` (cuenta 0 de Anvil) | `forge script` no arranca: `vm.envUint` revienta |
-| `MINTER_RELAYER_PRIVATE_KEY` | Sí para el alta de inventario desde back-office | `0x59c6995e…690d` (cuenta 1) | El minteo on-chain no puede firmarse |
-| `BURNER_BOT_PRIVATE_KEY` | Sí para la quema | `0x5de4111a…365a` (cuenta 2) | Sin `BURNER_ROLE` operativo la quema no se firma |
-| `RECEPTION_WALLET_PRIVATE_KEY` | Sí para el check-in | `0x7c852118…07a6` (cuenta 3) | El check-in falla en cerrado (503 `ANCLAJE_NO_CONFIGURADO`) |
+| `DEPLOYER_PRIVATE_KEY` | Sí, para desplegar | clave `0xac0974…ff80` → dirección `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` (cuenta 0 de Anvil) | `forge script` no arranca: `vm.envUint` revienta |
+| `MINTER_RELAYER_PRIVATE_KEY` | Sí para el alta de inventario desde back-office | clave `0x59c6995e…690d` → dirección `0x70997970C51812dc3A010C7d01b50e0d17dc79C8` (cuenta 1 de Anvil) | El minteo on-chain no puede firmarse |
+| `BURNER_BOT_PRIVATE_KEY` | Sí para la quema | clave `0x5de4111a…365a` → dirección `0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC` (cuenta 2 de Anvil) | Sin `BURNER_ROLE` operativo la quema no se firma |
+| `RECEPTION_WALLET_PRIVATE_KEY` | Sí para el check-in | clave `0x7c852118…07a6` → dirección `0x90F79bf6EB2c4f870365e785982E1f101e93b906` (cuenta 3 de Anvil) | El check-in falla en cerrado (503 `ANCLAJE_NO_CONFIGURADO`) |
 | `GNOSIS_SAFE_ADDRESS` | No (alcance D-11, pendiente B-7) | vacío | No hay multisig: la gobernanza queda en el EOA admin |
 | `ADMIN_ADDRESS`, `TREASURY_ADDRESS`, `MINTER_ADDRESS`, `RECEPTION_ADDRESS`, `PAUSER_ADDRESS`, `BURNER_ADDRESS`, `TREASURER_ADDRESS`, `MIN_LISTING_PRICE` | Solo las lee `Deploy.s.sol` | `ADMIN_ADDRESS` = cuenta 1 | Sin ellas los roles recaen por defecto en el **desplegador** |
 | `DEPLOY_FAUCET` | No (`false` por defecto) | `true` solo en local | El faucet no se despliega (ADR-13) |
