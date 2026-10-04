@@ -2723,6 +2723,18 @@ Verificación tras el barrido: guardianes de documentación en verde (`images-na
 | Fuera de la release | D-84 (test rojo) apartado en un `stash` durante los builds y restaurado después |
 | Límite declarado | Las pantallas nuevas del panel no se pudieron ejercitar en producción (requieren sesión de owner con TOTP); se verificaron en navegador local y contra PostgreSQL real antes de desplegar |
 
+### Release `v20`: precios en euros correctos (2026-10-04)
+
+| Paso | Detalle |
+|---|---|
+| Commits | **`b63a8bd`** (fix D-84 de tasas: redondeo al céntimo, sin tasa inventada, fuentes del nativo) y **`9714ec1`** (utilidades de inyección de datos y su documentación) |
+| Push | `75cde47..9714ec1` en **github** y **codecrypto** |
+| Imagen / revisión | **`web:v20`** → **`hotel-mcp-web-00027-dil`** al **100 %**; worker sin cambios |
+| Defecto medido (A/B) | `v19`: **0 céntimos** (la reserva se bloqueaba) → canario `v20` con caché envenenada: **1** → producción `v20` con caché renovada: **11 948 céntimos (119,48 €/noche)** |
+| Hallazgo operativo | La clave de caché `hotel:rates:pol_eur` es **agnóstica del activo**: mientras `v19` servía tráfico, reescribía la tasa de POL cada 5 minutos y la revisión nueva la leía. Al mover el tráfico y expirar el TTL, la tasa convergió a la de ETH (medido cada 55 s) |
+| Pendiente derivado | Renombrar la clave de caché para que dependa del activo (dos líneas + prueba): **propuesto**, no incluido |
+| Verificación | 8 rutas de producción → **200**, logs sin errores, `@hotel/shared` **444 pruebas** en verde |
+
 ### Pendiente derivado (declarado, no oculto)
 
 1. **Escaneo axe con datos reales** (dashboard con cifras y gráficas): el spec fuerza vistas

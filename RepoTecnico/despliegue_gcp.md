@@ -1108,3 +1108,57 @@ y se validaron contra PostgreSQL real (migración idempotente y `base_datos.sql`
 sesión** y recorrer alta → ficha → calendario.
 
 **Rollback.** `gcloud run services update-traffic hotel-mcp-web --project hotel-mcp --region europe-west1 --to-revisions=hotel-mcp-web-00023-rep=100` (vuelve a `v18`) y, para el worker, `--to-revisions=hotel-mcp-worker-00008-fnt=100`. Las columnas nuevas **no** se revierten (son aditivas y la versión anterior las ignora).
+
+---
+
+## 41. Release `v20` — precios en euros correctos (D-84) y su efecto medido (2026-10-04)
+
+**Qué se desplegó.** El arreglo **D-84** (`b63a8bd`): `weiToEurCents` redondea al céntimo en lugar de
+truncar y `null` queda para lo no convertible; se retira la tasa de emergencia `1,7` (la de POL) y se
+corrigen las fuentes para pedir el **nativo de la cadena** (`ids=ethereum` / `ETH+EUR`), que era la
+causa raíz. Con ello, la ruta pública de reservas deja de responder 409 «no hay tarifa publicada»
+cuando la habitación sí la tiene. Se incluye también la utilidad de inyección de datos y su
+documentación (`9714ec1`, solo scripts y docs: **no entra en las imágenes**).
+
+**Push previo:** `75cde47..9714ec1` en **`github`** y **`codecrypto` (GitLab)**.
+
+| Paso | Detalle |
+|---|---|
+| Imagen | Cloud Build **`web:v20`** (3m12s, build `5b8021ba-a1db-4c8f-93c9-9474f12e4852`) desde `9714ec1`; el worker no cambia |
+| Revisión | **`hotel-mcp-web-00027-dil`** al **100 %** (canario `v20` verificado antes de mover tráfico) |
+| Configuración | 18 variables y 9 secretos conservados; misma SA y VPC |
+| Rollback | `gcloud run services update-traffic hotel-mcp-web --project hotel-mcp --region europe-west1 --to-revisions=hotel-mcp-web-00025-tec=100` |
+
+### El defecto, medido en producción (A/B antes/después)
+
+La única habitación publicada (nº 101, `baseRateWei = 0,05 nativo`) permitió ver el defecto y su
+corrección con la misma petición:
+
+| Versión servida | `perNightCents` | Lectura |
+|---|---|---|
+| `v19` (antes) | **0** | El precio se truncaba a 0 → la reserva se bloqueaba con 409 | 
+| `v20` canario, con la caché aún envenenada | **1** | Ya no es 0, pero la tasa era la de POL (~0,11 €) |
+| `v20` en producción, caché renovada | **11 948** (119,48 €) | Tasa ETH real (2 389,6 €) |
+
+### Hallazgo operativo: la caché compartida acopla la revisión vieja con la nueva
+
+La clave de caché de la tasa es **`hotel:rates:pol_eur`**, un nombre heredado de la época en que se
+cobraba en POL y **agnóstico del activo**. Durante el canario, la revisión antigua (`v19`) seguía
+sirviendo el 100 % del tráfico y **reescribía esa misma clave con la tasa de POL cada 5 minutos**, así
+que la revisión nueva leía la tasa equivocada: el precio pasó de 0 a 1 céntimo, no a 119,48 €. Al
+mover el tráfico, la revisión antigua dejó de escribir y, al expirar el TTL (300 s), la nueva refrescó
+la tasa correcta (verificado midiendo cada 55 s hasta la convergencia).
+
+**Recomendación (no incluida en esta release).** Renombrar la clave a algo dependiente del activo
+(p. ej. `hotel:rates:eur_per_native`) o incluir el activo en la clave, para que un cambio de divisa no
+pueda reutilizar un valor viejo. Es un cambio de dos líneas con prueba, pero exige otra release; se
+deja propuesto y documentado en lugar de colarlo en esta.
+
+### Verificación
+
+| Comprobación | Resultado |
+|---|---|
+| Canario (antes de mover tráfico) | `/health/ready` **200**; `/`, `/catalogo`, `/reservar`, `/contacto`, `/admin/dashboard` → **200** |
+| Precio tras la convergencia de la caché | **119,48 €/noche** para la habitación 101 (antes 0) |
+| Producción | `/`, `/health/ready`, `/catalogo`, `/reservar`, `/contacto`, `/mis-noches`, `/habitaciones`, `/admin/dashboard` → **200**; logs de la revisión servida **sin errores** |
+| Pruebas | `@hotel/shared` **444** (46 ficheros), incluidas las 12 de tasas con la frontera del redondeo fijada |
