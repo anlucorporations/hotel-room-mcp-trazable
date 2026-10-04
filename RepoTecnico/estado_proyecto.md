@@ -2943,3 +2943,23 @@ en el primer momento (F8 · D-4).
 **Pendiente de verificación visual.** El recorrido en navegador con `axe` (patrón de §39) queda para la
 próxima ventana con PostgreSQL/Redis levantados: aquí no hay servidor de la app en marcha, así que la
 evidencia visual de este ciclo no se ha capturado. Lo verificado es compilación + pruebas + lint.
+
+### Despliegue (release v21 → v22)
+
+| Paso | Detalle |
+|---|---|
+| `push` | `e9793b8` a los tres remotos de `anlucorporations` (`origin`, `github`, `codecrypto`), rama `Hotel-DSH-GCP` |
+| Imagen | `web:v22` (Cloud Build `96d6aece…`, 2m48s) — solo `web`; `worker`/`mcp`/`monitor` no cambian |
+| Revisión | `hotel-mcp-web-00030-xaf` sirviendo el **100 %** del tráfico; etiqueta `v22` |
+| Canario | La `v21` (`00029-fey`) se retiró y **eliminó**: su verificación en producción destapó el defecto del `bigint` |
+| Verificación | 50 habitaciones con `reservedNights` **numérico**, ventana hoy→+150d, 6 con reservas; endpoints masivos 401/403/400 según contrato |
+
+**Defecto real que destapó la verificación en producción.** `reservedNights` viajaba como **cadena**
+(``"1"``) porque `COUNT()` es `bigint` y node-postgres lo entrega así; el cast `as number` no convierte
+en ejecución. Con `=== 0` estricto, **PUBLICAR y ACTIVAR/DESACTIVAR** habrían quedado deshabilitadas
+para todo el mundo (fallo silencioso: botones siempre en gris, sin error). Corregido en el repositorio
+(`Number(row.nights)`), en la regla pura (`reservedNightsOf`) y al cargar el listado; el test del
+repositorio ahora devuelve **cadenas**, como el driver. Detalle en `despliegue_gcp.md` §42.
+
+> **Ninguna acción masiva se ejecutó contra producción**: publicar, liberar o conmutar estado mutan
+> datos reales y requieren orden explícita del responsable.

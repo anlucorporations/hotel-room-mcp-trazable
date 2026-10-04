@@ -1162,3 +1162,68 @@ deja propuesto y documentado en lugar de colarlo en esta.
 | Precio tras la convergencia de la caché | **119,48 €/noche** para la habitación 101 (antes 0) |
 | Producción | `/`, `/health/ready`, `/catalogo`, `/reservar`, `/contacto`, `/mis-noches`, `/habitaciones`, `/admin/dashboard` → **200**; logs de la revisión servida **sin errores** |
 | Pruebas | `@hotel/shared` **444** (46 ficheros), incluidas las 12 de tasas con la frontera del redondeo fijada |
+
+---
+
+## 42. Release `v21`→`v22` — tablero de habitaciones: iconos, acciones rápidas y masivas (2026-10-04)
+
+**Qué se despliega.** El tablero de Habitaciones del back-office (§40 de `estado_proyecto.md`): iconos
+por estado (publicación y operativo) con distintivo «Reservada», columna de **acciones rápidas**
+(Publicar / Reservar / Activar-Desactivar) en lugar del botón «Ver ficha», y **acciones masivas** desde
+la cabecera (Publicar / Liberar / Activar-Desactivar) con casillas solo para las habitaciones elegibles.
+Toca `packages/shared` (dos métodos de lectura nuevos) y `apps/web`; **no** hay migración de esquema.
+
+**Solo se despliega `web`.** Verificado por búsqueda: `countReservedNightsByRooms` y
+`listReleaseableReservationIds` solo los consume la API de la web. `worker`, `mcp` y `monitor` siguen en
+sus revisiones (mismo criterio que la release F9, §26).
+
+| Paso | Detalle |
+|---|---|
+| Imagen `v21` | Cloud Build `96d6…`/`eebac739` · `web:v21` · 2m58s · **SUCCESS** |
+| Revisión `v21` | `hotel-mcp-web-00029-fey`, al **0 %** de tráfico con etiqueta `v21` (canario) |
+| **Defecto detectado en el canario** | `GET /api/admin/rooms` devolvía `reservedNights` como **cadena** (`"1"`) |
+| Imagen `v22` | Cloud Build `96d6aece-44b6-4843-a1bc-91d508e21052` · `web:v22` · 2m48s · **SUCCESS** |
+| Revisión `v22` | `hotel-mcp-web-00030-xaf` → **100 %** del tráfico; etiqueta `v22` |
+| Limpieza | Etiqueta `v21` retirada y revisión `00029-fey` **eliminada** (no quedan canarios rotos) |
+
+### El defecto que destapó la verificación en producción (y por qué no lo vio el test)
+
+`COUNT()` en PostgreSQL es `bigint` y **node-postgres lo entrega como cadena**. El repositorio lo
+mapeaba con `as number` (un cast de TypeScript, que no convierte nada en tiempo de ejecución), así que
+la API publicaba `"1"`. Con ese valor, las reglas del tablero comparaban `reservedNights === 0` (estricto)
+y **PUBLICAR y ACTIVAR/DESACTIVAR quedaban deshabilitadas para todas las habitaciones** — un fallo
+silencioso que la interfaz no habría delatado como error, solo como acciones siempre en gris.
+
+Los tests unitarios no lo vieron porque el mock del repositorio devolvía un **número**
+(`{ nights: 3 }`), no la cadena que produce el driver. La corrección va en tres capas:
+
+1. **Repositorio**: `Number(row.nights)` al construir el mapa (arregla el origen).
+2. **Regla pura**: `reservedNightsOf()` normaliza en `room-bulk.ts` (defensa en profundidad).
+3. **Carga del listado**: la web normaliza `reservedNights` al recibir la respuesta.
+
+Y el test del repositorio pasa a devolver **cadenas** (`{ nights: "3" }`), que es lo que el driver
+entrega de verdad, más 4 pruebas nuevas en `room-bulk.test.ts` para el caso cadena.
+
+### Verificación (despliegue real)
+
+| Comprobación | Resultado |
+|---|---|
+| Canario `v22` · `/health/ready` | **200** · `READY` (postgres, redis y RPC `UP`) |
+| Canario `v22` · `/`, `/admin/habitacion` | **200** / **200** (pantalla de acceso: el gate protege el contenido) |
+| Código nuevo en el chunk servido | `rooms-bulk-toggle`, `room-quick-publish`, `room-reserved`, `room-select`, `bulk/publish|release|toggle` **presentes** |
+| Endpoints nuevos sin sesión | `POST /api/admin/rooms/bulk/{publish,release,toggle}` → **401** (existen y protegen) |
+| Login E2E con la cuenta owner sembrada (TOTP) | MFA **200** · sesión válida |
+| **`GET /api/admin/rooms` (owner)** | **200** · **50** habitaciones · `reservedNights` **en todas** y **numérico** (`1`, no `"1"`) |
+| `reservedWindow` | `2026-10-04 → 2027-03-03` (hoy → +150 días, lo diseñado) |
+| Habitaciones con noches reservadas | **6** (coincide con las noches vendidas sembradas) |
+| `bulk/publish` sin TOTP (con sesión) | **403** `MFA_REQUIRED` — valida antes de tocar nada |
+| `bulk/release` y `bulk/toggle` con lote vacío | **400** `INVALID_BODY` |
+| URL pública tras mover tráfico | Mismas comprobaciones **200** y `reservedNights` **numérico** |
+
+> Las acciones masivas **no** se ejecutaron contra producción: publicar, liberar o conmutar estado
+> mutan datos reales y eso requiere orden explícita del responsable. Lo verificado es que las rutas
+> existen, validan y calculan el lote (`reservedNights` numérico y ventana correcta).
+
+**Lección para el próximo ciclo.** Un `as number` sobre una columna de agregado **no** convierte: el
+mock debe devolver el tipo que devuelve el driver (cadena para `bigint`/`numeric`), o el defecto viaja
+hasta producción. Esta es la misma familia de fallo que §37 («una lección sobre los mocks»).
