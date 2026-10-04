@@ -7,19 +7,49 @@ import { getCachedEURRate, setCachedEURRate } from "../redis/client";
  * diezmilésimas (`r = round(tasa × 10000)`), `cents = wei × r / 1e20`. Se calcula en `bigint` para no
  * perder precisión con importes grandes; el resultado cabe holgadamente en `number`.
  *
+ * **D-84 (defecto de la `v17`, síntoma «el catálogo no me deja reservar»)**: esta función devolvía
+ * `0` tanto cuando el importe o la tasa eran inválidos **como** cuando el valor real era menor de un
+ * céntimo, porque la división entera **truncaba**. Con la tasa equivocada (POL en vez de ETH, ver
+ * `ExchangeRateService`) una noche de 0,05 ETH daba `0,0056 €` → `0` céntimos, y la ruta de reserva
+ * respondía `409 PRICE_UNAVAILABLE` diciendo que la habitación «no tiene tarifa publicada» cuando sí
+ * la tiene. Ahora:
+ *   · **redondea** al céntimo (no tira hacia abajo);
+ *   · devuelve **`null`** cuando no se puede convertir (tasa ausente/no finita/≤ 0, importe no
+ *     positivo, o un resultado que ni siquiera llega a un céntimo). `null` significa «no sabemos el
+ *     precio», que es una cosa muy distinta de «cuesta 0 €» y obliga al llamador a decirlo.
+ *
  * Es una función **pura** (sin red) para poder probarla y para que el precio de una reserva pública
  * sea reproducible.
  */
-export function weiToEurCents(wei: bigint | string, rateEurPerNative: number): number {
-  if (!Number.isFinite(rateEurPerNative) || rateEurPerNative <= 0) return 0;
-  const value = typeof wei === "string" ? BigInt(wei) : wei;
-  if (value <= 0n) return 0;
+export function weiToEurCents(
+  wei: bigint | string,
+  rateEurPerNative: number | null | undefined,
+): number | null {
+  if (typeof rateEurPerNative !== "number" || !Number.isFinite(rateEurPerNative) || rateEurPerNative <= 0) {
+    return null;
+  }
+  let value: bigint;
+  try {
+    value = typeof wei === "string" ? BigInt(wei) : wei;
+  } catch {
+    return null;
+  }
+  if (value <= 0n) return null;
+
   const r = BigInt(Math.round(rateEurPerNative * 10000));
-  return Number((value * r) / 10n ** 20n);
+  if (r <= 0n) return null;
+  // Media unidad del divisor = redondeo al céntimo más cercano (1e20 / 2 = 5e19).
+  const cents = Number((value * r + 5n * 10n ** 19n) / 10n ** 20n);
+  return cents > 0 ? cents : null;
 }
 
 export interface RateResponse {
-  rate: number;
+  /**
+   * Eur por unidad nativa, o `null` cuando **ninguna** fuente lo pudo dar. Antes se inventaba un
+   * `1.7` de emergencia (que era la tasa de POL) y el precio salía redondo y falso: sin tasa no hay
+   * precio, y eso se comunica como `null` (D-84).
+   */
+  rate: number | null;
   updatedAt: string;
   source: "cache" | "coingecko" | "binance" | "default";
   stale: boolean;
@@ -34,22 +64,57 @@ function isJsonObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
+/** Proveedor de reserva: ratio USD→EUR usado SOLO si el par configurado es USD. */
+const USD_TO_EUR = 0.92;
+
+/**
+ * Fuentes de la tasa. **D-84**: el proyecto cobró siempre en el nativo de la cadena (`CURRENCY_SYMBOL
+ * = "ETH"`, `packages/shared/src/constants.ts:11`), pero estas URLs pedían **POL** (`matic-network` /
+ * `POLUSDT`), herencia del roadmap de Polygon de D-12. Con la tasa de POL (0,112 EUR medido) una
+ * noche de 0,05 ETH valía «0,0056 €» → 0 céntimos → el huésped no podía reservar.
+ *
+ * Se puede reconfigurar por entorno sin tocar código (`RATE_COINGECKO_URL` y
+ * `BINANCE_FALLBACK_API_URL`, esta última ya declarada en `.env.example` y hasta ahora **ignorada**).
+ */
+const DEFAULT_COINGECKO_URL =
+  "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=eur";
+const DEFAULT_BINANCE_URL = "https://api.binance.com/api/v3/ticker/price?symbol=ETH%2BEUR";
+
 export class ExchangeRateService {
-  private static readonly DEFAULT_RATE = 1.7; // 1 POL ≈ 1.70 EUR (default de emergencia)
   private coingeckoFailures = 0;
   private lastCoingeckoFailure = 0;
   private readonly CIRCUIT_BREAKER_RESET_MS = 60000; // 1 minuto
 
   constructor(
-    private readonly coingeckoUrl = "https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=eur",
-    private readonly binanceUrl = "https://api.binance.com/api/v3/ticker/price?symbol=POLUSDT",
+    private readonly coingeckoUrl = process.env.RATE_COINGECKO_URL?.trim() || DEFAULT_COINGECKO_URL,
+    private readonly binanceUrl = process.env.BINANCE_FALLBACK_API_URL?.trim() || DEFAULT_BINANCE_URL,
   ) {}
 
   /**
-   * Obtiene la tasa de cambio POL/EUR.
+   * Clave de la respuesta de CoinGecko: **se deriva de la URL** (`ids=<clave>`) en lugar de estar
+   * escrita a mano. Así reconfigurar la moneda no puede dejar el parseador leyendo la clave anterior
+   * (que era exactamente el defecto silencioso de POL).
+   */
+  private coingeckoKey(): string {
+    const ids = new URL(this.coingeckoUrl).searchParams.get("ids");
+    return ids?.split(",")[0]?.trim() || "ethereum";
+  }
+
+  /** ¿El par de Binance pide euros directamente (`…EUR`)? Si no, es USD y hay que convertirlo. */
+  private binanceQuotesEur(): boolean {
+    try {
+      const symbol = new URL(this.binanceUrl).searchParams.get("symbol") ?? "";
+      return /EUR(\/|$)/i.test(symbol) || /\+EUR$/i.test(symbol);
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Obtiene la tasa de cambio **EUR por unidad del nativo de la cadena** (hoy ETH, D-84).
    * 1. Consulta caché en Redis (< 5ms).
    * 2. Si no hay caché, consulta fuentes externas (CoinGecko → Binance).
-   * 3. Si falla la red, devuelve caché vencida o tasa por defecto.
+   * 3. Si fallan todas, `rate: null`: **sin tasa no hay precio**, y el llamador lo dice.
    */
   async getRate(): Promise<RateResponse> {
     // 1. Intentar lectura de caché en Redis
@@ -101,10 +166,12 @@ export class ExchangeRateService {
       }
     }
 
-    // Si ambos fallaron, intentar recuperar el último valor conocido de Redis o default
+    // Ninguna fuente respondió: NO se inventa un número (D-84). `rate: null` obliga al llamador a
+    // decir «precio no disponible» en lugar de cobrar 0 € o bloquear la reserva con un 409 que
+    // culpa a la habitación de un fallo nuestro.
     if (rate === null) {
       return {
-        rate: ExchangeRateService.DEFAULT_RATE,
+        rate: null,
         updatedAt: new Date().toISOString(),
         source: "default",
         stale: true,
@@ -147,10 +214,12 @@ export class ExchangeRateService {
       const res = await fetch(this.coingeckoUrl, { signal: controller.signal });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: unknown = await res.json();
-      const entry = isJsonObject(data) ? data["matic-network"] : undefined;
+      // Clave derivada de `ids=` (D-84): antes estaba fijada a `matic-network`, de modo que cambiar
+      // la moneda en la URL dejaba el parseador leyendo la clave vieja y la tasa se caía a nulo.
+      const entry = isJsonObject(data) ? data[this.coingeckoKey()] : undefined;
       const val = isJsonObject(entry) ? entry.eur : undefined;
       if (typeof val !== "number" || isNaN(val) || val <= 0) {
-        throw new Error("Respuesta inválida de CoinGecko");
+        throw new Error(`Respuesta inválida de CoinGecko (clave "${this.coingeckoKey()}")`);
       }
       return val;
     } finally {
@@ -162,17 +231,23 @@ export class ExchangeRateService {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3000);
     try {
-      // POL/USDT en Binance (asumiendo 1 USDT ≈ 0.92 EUR de referencia o usando conversión directa)
       const res = await fetch(this.binanceUrl, { signal: controller.signal });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: unknown = await res.json();
-      const priceUsd = parseFloat(String(isJsonObject(data) ? data.price : undefined));
-
-      if (isNaN(priceUsd) || priceUsd <= 0) {
+      const price = parseFloat(String(isJsonObject(data) ? data.price : undefined));
+      if (isNaN(price) || price <= 0) {
         throw new Error("Respuesta inválida de Binance");
       }
-      // Conversión aproximada USD a EUR (ratio 0.92)
-      return Math.round(priceUsd * 0.92 * 1000) / 1000;
+
+      // Par EUR (p. ej. `ETH+EUR`): el precio ya es euros, no se convierte nada.
+      if (this.binanceQuotesEur()) return price;
+
+      // Par USD: se convierte con un ratio fijo. Es una **aproximación** y se registra: llegar aquí
+      // significa que el proveedor primario falló y que el precio mostrado lleva esa holgura.
+      console.warn(
+        `[ExchangeRate] USD→EUR aproximado por ${USD_TO_EUR} (par no cotizado en EUR): ${this.binanceUrl}`,
+      );
+      return Math.round(price * USD_TO_EUR * 1000) / 1000;
     } finally {
       clearTimeout(timeout);
     }

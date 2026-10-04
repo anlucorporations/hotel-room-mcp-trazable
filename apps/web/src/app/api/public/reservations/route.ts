@@ -83,8 +83,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const nights = nightsBetween(checkInDate, checkOutDate).length;
     const rate = await rates.getRate();
-    const perNightCents = room.baseRateWei ? weiToEurCents(room.baseRateWei, rate.rate) : 0;
-    if (perNightCents <= 0) {
+    const perNightCents = room.baseRateWei ? weiToEurCents(room.baseRateWei, rate.rate) : null;
+
+    // D-84: antes las dos causas compartían un mismo 409 que culpaba a la habitación. Con la tasa de
+    // POL (0,112 EUR) el céntimo truncado daba 0 y el huésped leía «no tiene tarifa publicada» teniendo
+    // tarifa. Ahora cada causa dice lo suyo:
+    //   · sin tasa EUR → fallo NUESTRO del proveedor: 503 reintentable (no se crea la reserva).
+    //   · sin tarifa publicable (o un valor que no llega ni a un céntimo) → 409 de estado.
+    if (rate.rate === null) {
+      return NextResponse.json(
+        {
+          error: "RATE_UNAVAILABLE",
+          message: "No podemos calcular el precio en euros ahora mismo. Inténtalo en unos minutos.",
+        },
+        { status: 503 },
+      );
+    }
+    if (perNightCents === null) {
       return NextResponse.json(
         { error: "PRICE_UNAVAILABLE", message: "La habitación no tiene tarifa publicada todavía." },
         { status: 409 },

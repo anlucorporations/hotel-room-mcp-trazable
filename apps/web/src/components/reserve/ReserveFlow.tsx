@@ -113,6 +113,14 @@ export function ReserveFlow({ initial }: { initial?: BookingQuery } = {}) {
     };
   }, [rooms, form.roomId, form.checkInDate, form.checkOutDate, t]);
 
+  /**
+   * D-84: con habitación elegida pero precio en euros no calculable, la reserva **no se ofrece**.
+   * Antes el botón estaba activo y el error llegaba después del clic con un 409 que culpaba a la
+   * habitación («no tiene tarifa publicada») de un fallo nuestro (la tasa). Mostrar «no podemos
+   * confirmar el precio» antes de intentar la retención es honesto y evita el paso fallido.
+   */
+  const priceUnknown = form.roomId !== "" && summary.perNightCents === null;
+
   const refreshStatus = useCallback(async (id: string): Promise<void> => {
     const res = await fetch(`/api/public/reservations/${id}`);
     if (!res.ok) return;
@@ -185,7 +193,7 @@ export function ReserveFlow({ initial }: { initial?: BookingQuery } = {}) {
             value={form.roomId}
             onChange={(event) => setForm({ ...form, roomId: event.target.value })}
             data-testid="reserve-room"
-            className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
+            className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
           >
             {rooms.length === 0 && <option value="">{t("noRooms")}</option>}
             {rooms.map((room) => (
@@ -203,7 +211,7 @@ export function ReserveFlow({ initial }: { initial?: BookingQuery } = {}) {
               required
               value={form.checkInDate}
               onChange={(event) => setForm({ ...form, checkInDate: event.target.value })}
-              className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
+              className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
             />
           </label>
           <label className="flex flex-col gap-1 text-small">
@@ -213,7 +221,7 @@ export function ReserveFlow({ initial }: { initial?: BookingQuery } = {}) {
               required
               value={form.checkOutDate}
               onChange={(event) => setForm({ ...form, checkOutDate: event.target.value })}
-              className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
+              className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
             />
           </label>
           <label className="flex min-w-[16rem] flex-1 flex-col gap-1 text-small">
@@ -223,19 +231,26 @@ export function ReserveFlow({ initial }: { initial?: BookingQuery } = {}) {
               value={form.email}
               onChange={(event) => setForm({ ...form, email: event.target.value })}
               placeholder={t("emailPlaceholder")}
-              className="min-h-touch rounded-brand-sm border border-line-strong bg-sand px-3"
+              className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
             />
           </label>
         </div>
         <button
           type="submit"
-          disabled={busy || !form.roomId || summary.nights === 0}
-          className="min-h-touch self-start rounded-pill bg-sea px-5 text-small font-semibold text-shell disabled:opacity-50"
+          disabled={busy || !form.roomId || summary.nights === 0 || priceUnknown}
+          aria-disabled={busy || !form.roomId || summary.nights === 0 || priceUnknown}
+          className="min-h-touch self-start rounded-pill bg-azure px-5 text-small font-semibold text-shell disabled:opacity-50"
         >
           {busy ? t("reserving") : t("reserve")}
         </button>
         {summary.nights === 0 && (
-          <p className="text-small text-terracotta-text">{t("nightsRequired")}</p>
+          <p className="text-small text-coral-text">{t("nightsRequired")}</p>
+        )}
+        {/* D-84: el motivo del botón bloqueado se dice al lado, no se deja adivinar. */}
+        {priceUnknown && (
+          <p data-testid="reserve-price-unknown" role="alert" className="text-small text-coral-text">
+            {t("priceUnavailable")}
+          </p>
         )}
       </form>
 
@@ -246,7 +261,7 @@ export function ReserveFlow({ initial }: { initial?: BookingQuery } = {}) {
       )}
 
       {created && (
-        <section aria-labelledby="reserve-created" className="flex flex-col gap-3 rounded-brand-lg border border-line bg-sand-2 p-5">
+        <section aria-labelledby="reserve-created" className="flex flex-col gap-3 rounded-brand-lg border border-line bg-mist-2 p-5">
           <h2 id="reserve-created" className="font-display text-h3 font-semibold text-ink">{t("heldTitle")}</h2>
           <p className="text-small text-ink">{t("heldBody", { reference: created.payment.reference })}</p>
           <dl className="grid gap-1 text-small">
@@ -274,7 +289,7 @@ export function ReserveFlow({ initial }: { initial?: BookingQuery } = {}) {
               type="button"
               disabled={busy}
               onClick={() => void settle()}
-              className="min-h-touch rounded-pill bg-sea px-4 text-small font-semibold text-shell disabled:opacity-50"
+              className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell disabled:opacity-50"
             >
               {t("settle")}
             </button>
