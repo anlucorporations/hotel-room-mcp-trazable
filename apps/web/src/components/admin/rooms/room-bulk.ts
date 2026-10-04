@@ -21,19 +21,33 @@ import type { AdminRoom } from "./room-dto";
 /** Acción masiva del tablero. */
 export type BulkAction = "PUBLISH" | "RELEASE" | "TOGGLE";
 
+/**
+ * Noches reservadas como **número**.
+ *
+ * El repositorio ya convierte el `COUNT()` (bigint de PostgreSQL, que node-postgres entrega como
+ * cadena) a número, pero aquí se normaliza otra vez: si un JSON trajera `"0"`, la comparación estricta
+ * `=== 0` de las reglas de abajo fallaría en silencio y PUBLICAR/ACTIVAR quedarían deshabilitadas para
+ * todo el mundo (defecto detectado al verificar la release v21 en producción, 2026-10-04).
+ */
+export function reservedNightsOf(room: Pick<AdminRoom, "reservedNights">): number {
+  const value = Number(room.reservedNights);
+  return Number.isFinite(value) ? value : 0;
+}
+
 /** ¿Esta habitación se puede marcar para esta acción masiva? */
 export function isRoomEligibleForBulk(room: AdminRoom, action: BulkAction): boolean {
+  const reservedNights = reservedNightsOf(room);
   switch (action) {
     case "PUBLISH":
       return (
         room.publicationStatus !== "PUBLISHED" &&
         room.operationalStatus === "CLEAN" &&
-        room.reservedNights === 0
+        reservedNights === 0
       );
     case "RELEASE":
-      return room.reservedNights > 0;
+      return reservedNights > 0;
     case "TOGGLE":
-      return room.publicationStatus === "PUBLISHED" && room.reservedNights === 0;
+      return room.publicationStatus === "PUBLISHED" && reservedNights === 0;
   }
 }
 

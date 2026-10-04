@@ -44,7 +44,7 @@ import {
   QuickToggleIcon,
   ReservedIcon,
 } from "./roomIcons";
-import { isRoomEligibleForBulk, selectableRoomIds, type BulkAction } from "./room-bulk";
+import { isRoomEligibleForBulk, reservedNightsOf, selectableRoomIds, type BulkAction } from "./room-bulk";
 import { useMintWindow } from "./useMintWindow";
 
 /**
@@ -254,7 +254,14 @@ export function RoomsAdmin() {
       const res = await apiFetch("/api/admin/rooms");
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || t("loadError"));
-      setRooms(data.rooms ?? []);
+      // `reservedNights` se normaliza a número (el `COUNT()` de PostgreSQL viaja como cadena en JSON):
+      // las reglas y el distintivo del tablero comparan con `=== 0` (2026-10-04).
+      setRooms(
+        ((data.rooms ?? []) as AdminRoom[]).map((room) => ({
+          ...room,
+          reservedNights: reservedNightsOf(room),
+        })),
+      );
     } catch (error: unknown) {
       setNotice({ kind: "error", text: error instanceof Error ? error.message : t("loadError") });
     } finally {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isRoomEligibleForBulk, selectableRoomIds } from "./room-bulk";
+import { isRoomEligibleForBulk, reservedNightsOf, selectableRoomIds } from "./room-bulk";
 import type { AdminRoom } from "./room-dto";
 
 /** Habitación mínima del tablero: solo lo que miran las reglas de elegibilidad. */
@@ -96,5 +96,31 @@ describe("selectableRoomIds", () => {
     expect(selectableRoomIds(rooms, "PUBLISH")).toEqual(["a", "d"]);
     expect(selectableRoomIds(rooms, "RELEASE")).toEqual(["c"]);
     expect(selectableRoomIds(rooms, "TOGGLE")).toEqual(["b"]);
+  });
+});
+
+describe("reservedNightsOf · regresión bigint→cadena (release v21, 2026-10-04)", () => {
+  it("normaliza una cadena numérica a número", () => {
+    expect(reservedNightsOf(room({ reservedNights: "0" as unknown as number }))).toBe(0);
+    expect(reservedNightsOf(room({ reservedNights: "3" as unknown as number }))).toBe(3);
+  });
+
+  it("trata un valor no numérico como 0", () => {
+    expect(reservedNightsOf(room({ reservedNights: "x" as unknown as number }))).toBe(0);
+    expect(reservedNightsOf(room({ reservedNights: null as unknown as number }))).toBe(0);
+  });
+
+  it("PUBLICAR y ACTIVAR siguen habilitadas cuando el JSON trae «0» como cadena", () => {
+    const clean = room({ publicationStatus: "DRAFT", reservedNights: "0" as unknown as number });
+    expect(isRoomEligibleForBulk(clean, "PUBLISH")).toBe(true);
+
+    const published = room({ publicationStatus: "PUBLISHED", reservedNights: "0" as unknown as number });
+    expect(isRoomEligibleForBulk(published, "TOGGLE")).toBe(true);
+  });
+
+  it("LIBERAR reconoce las reservas cuando llegan como cadena", () => {
+    const reserved = room({ reservedNights: "2" as unknown as number });
+    expect(isRoomEligibleForBulk(reserved, "RELEASE")).toBe(true);
+    expect(isRoomEligibleForBulk(reserved, "PUBLISH")).toBe(false);
   });
 });

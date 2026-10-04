@@ -769,7 +769,9 @@ export class RoomsRepository {
       [ids, from, to],
     );
     for (const row of res.rows) {
-      result.set(row.room_id as string, row.nights as number);
+      // `COUNT()` es `bigint`: node-postgres lo entrega como CADENA. Se convierte aquí para que la API
+      // publique un número real — si viajara "0", las reglas del tablero (`=== 0`) fallarían (2026-10-04).
+      result.set(row.room_id as string, Number(row.nights));
     }
     return result;
   }

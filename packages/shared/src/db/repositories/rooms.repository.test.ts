@@ -405,9 +405,12 @@ describe("RoomsRepository (D-1…D-26)", () => {
 
   describe("countReservedNightsByRooms (2026-10-04, tablero Admin)", () => {
     it("devuelve roomId → nº de noches y deja fuera a las sin reservas", async () => {
-      mockPool.query.mockResolvedValueOnce({ rows: [{ room_id: "room-1", nights: 3 }, { room_id: "room-2", nights: 1 }] });
+      // `COUNT()` llega como CADENA desde node-postgres (bigint): el repositorio debe convertirla a
+      // número o las reglas del tablero (`=== 0`) fallarán (defecto detectado en la release v21).
+      mockPool.query.mockResolvedValueOnce({ rows: [{ room_id: "room-1", nights: "3" }, { room_id: "room-2", nights: "1" }] });
       const counts = await repository.countReservedNightsByRooms(["room-1", "room-2", "room-3"], "2026-10-01", "2026-10-31");
       expect(counts.get("room-1")).toBe(3);
+      expect(typeof counts.get("room-1")).toBe("number");
       expect(counts.get("room-2")).toBe(1);
       expect(counts.has("room-3")).toBe(false);
       const [sql, values] = mockPool.query.mock.calls[0];
