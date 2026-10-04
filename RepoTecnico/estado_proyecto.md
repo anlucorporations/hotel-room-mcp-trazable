@@ -2864,3 +2864,82 @@ los colores de estado del sistema. Un mock no lo habría visto: hizo falta rende
 panel (`useAdminContext`), lo que impedía montarlo fuera del shell y por tanto probarlo en navegador.
 Ahora lo recibe **por props** (el panel se lo pasa): se puede montar y probar aislado, y el acoplamiento
 con el shell baja.
+
+---
+
+## 40. Tablero de habitaciones: iconos de estado, acciones rápidas y acciones masivas (2026-10-04) · `@asistenteProyecto`
+
+**Petición del responsable** (Admin → subsección Habitaciones):
+1. el listado muestra un **icono** que distingue si la habitación está Publicada, Reservada u Ocupada, y
+   si está Limpia, En Mantenimiento o Activa;
+2. se **elimina el botón «Ver ficha»** y se sustituye por una **zona de acciones rápidas** (Publicar,
+   Reservar, Activar/Desactivar), **solo iconos**;
+3. en la **cabecera de la tabla** un **icono de acciones masivas**: al activarlo aparecen casillas de
+   selección (primera columna, oculta fuera de ese modo) y **solo se pueden marcar** las elegibles por
+   acción — PUBLICAR: habilitada (limpia y sin reserva) y no publicada; LIBERAR: las reservadas;
+   ACTIVAR/DESACTIVAR: las activas y sin reserva.
+
+**Hallazgo de vocabulario (resuelto con el responsable antes de codificar).** Tres de los estados
+pedidos **no existen como tales** en el modelo: `rooms` tiene `publicationStatus`
+(`DRAFT`/`PUBLISHED`/`PAUSED`/`MAINTENANCE`/`OUT_OF_SERVICE`) y `operationalStatus`
+(`CLEAN`/`DIRTY`/`OCCUPIED`), y **«Reservada» no es un estado**: las reservas viven por noche en
+`reservations`/`reservation_nights` (y `nfts` para noches vendidas). Se acordó (4/4 respuestas
+recomendadas):
+
+| Concepto pedido | Decisión acordada |
+|---|---|
+| **Reservada** | Derivado: ≥1 noche ocupada en la ventana **hoy → +150 días** (misma ventana que la ficha). No cambia el modelo de datos. |
+| **LIBERAR** | Cancela las reservas **activas** (`PENDING`/`CONFIRMED`) con noches en esa ventana (los tokens no se cancelan por esta vía). |
+| **Activa** / Activar-Desactivar | «Activa» = `PUBLISHED`; la acción conmuta `PUBLISHED` ↔ `PAUSED`, **sin TOTP**. |
+| **Reservar** (acción rápida) | Abre la **ficha** en su sección de calendario (las reservas son por fecha). |
+| **PUBLICAR masivo** | Un **único TOTP** para el lote; anclaje on-chain **best-effort** por habitación (`PENDING_ANCHOR` si falta). |
+
+**Extensión de API necesaria (regla de reanudación).** `PATCH /api/admin/rooms/[id]` rechazaba pasar a
+`PUBLISHED` (exige TOTP, D-2/D-18). Como la acción pedida es «sin TOTP», se admitió **`PAUSED →
+PUBLISHED`** por `PATCH` — es **reanudar** una ficha ya publicada y anclada, no una publicación nueva.
+Desde cualquier otro estado se mantiene el flujo con TOTP.
+
+### Cambios por capa
+
+| Capa | Cambio |
+|---|---|
+| `packages/shared` · `RoomsRepository` | `countReservedNightsByRooms(ids, from, to)` (una consulta para todo el lote) y `listReleaseableReservationIds(roomId, from, to)` (solo `PENDING`/`CONFIRMED`). |
+| `GET /api/admin/rooms` | Añade `reservedNights` por habitación y `reservedWindow` (hoy → +150 días). |
+| `PATCH /api/admin/rooms/[id]` | Admite `PUBLISHED` **solo desde `PAUSED`** (reanudación). |
+| `POST /api/admin/rooms/bulk/publish` | Nuevo: lote + **un** TOTP, `txHashes` opcionales, resultado por habitación; una sola habitación no tumba al resto. |
+| `POST /api/admin/rooms/bulk/release` | Nuevo: cancela las reservas activas de la ventana. Sin TOTP (la cancelación de reservas nunca lo exigió). |
+| `POST /api/admin/rooms/bulk/toggle` | Nuevo: `PUBLISHED` ↔ `PAUSED`; `NOT_TOGGLEABLE` desde el resto de estados. |
+| `components/admin/rooms/roomIcons.tsx` | Nuevo: 15 iconos SVG **en línea** (patrón de `adminIcons.tsx`) — sin dependencias de terceros y con color por token. |
+| `components/admin/rooms/room-bulk.ts` | Nuevo: reglas de elegibilidad **puras** (una sola fuente para la interfaz). |
+| `components/admin/rooms/RoomsAdmin.tsx` | Iconos por estado + distintivo «Reservada»; columna de acciones rápidas; cabecera masiva con selección y contadores; `publishBatch` con anclaje best-effort. |
+| `messages/{es,en,ru}.json` | 18 claves nuevas en el namespace `admin` (paridad en los tres idiomas). |
+
+### Verificación del ciclo
+
+| Comprobación | Resultado |
+|---|---|
+| `tsc --noEmit` (`apps/web`) | **0 errores** |
+| `eslint` de `components/admin/rooms` y `app/api/admin/rooms` | **0 avisos** |
+| `vitest` de `app/api/admin/rooms/**` | **63/63** (incluye `bulk/bulk.test.ts`: 15 nuevas) |
+| `vitest` de `RoomsRepository` | **28/28** (3 nuevas para los métodos masivos) |
+| `vitest` de `components/admin/rooms/room-bulk.test.ts` | **11/11** (reglas de elegibilidad) |
+| `vitest` de **todo** `@hotel/web` (suite completa) | **649/649** en 76 archivos, **0 fallos** (incluye `boundaries.test.ts`) |
+| Guardianes de i18n (`i18n-keys`, `i18n-parity`) y `admin-shell` | **36/36** |
+| `next build` de `@hotel/web` | **exit 0**; se genera `admin/habitacion` (`page.js` + chunk de cliente) |
+
+**Sin migración de base de datos.** El ciclo **no** toca el modelo: `reservedNights` es una consulta
+derivada sobre `reservations`/`reservation_nights`/`nfts`, y las tres acciones masivas usan métodos ya
+existentes (`setPublicationStatus`, `cancelReservation`) más los dos nuevos de lectura. Por tanto
+`base_datos.sql`, `diccionario_datos.md` y `diagrama_er.md` **no cambian** (se mantienen sincronizados
+al no haber cambio de esquema).
+
+**Clave retirada.** Al eliminar el botón «Ver ficha» quedó huérfana `roomOpenDetail` en el namespace
+`admin`: se ha retirado de los tres idiomas (los guardianes `i18n-keys`/`i18n-parity` siguen en verde).
+
+**El acuñado de ventana sobrevive a la acción rápida.** `runMintWindow` leía solo de la ficha abierta; ahora
+acepta el id de la habitación, de modo que publicar desde la fila (sin abrir ficha) sigue acuñando la ventana
+en el primer momento (F8 · D-4).
+
+**Pendiente de verificación visual.** El recorrido en navegador con `axe` (patrón de §39) queda para la
+próxima ventana con PostgreSQL/Redis levantados: aquí no hay servidor de la app en marcha, así que la
+evidencia visual de este ciclo no se ha capturado. Lo verificado es compilación + pruebas + lint.

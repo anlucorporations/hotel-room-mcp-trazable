@@ -14,6 +14,20 @@ const roomsRepo = new RoomsRepository();
  * Protegida: exige `DEFAULT_ADMIN_ROLE` (owner). Por defecto **excluye las archivadas** (D-8);
  * `?includeArchived=true` las incluye para el historial.
  */
+/**
+ * Ventana para el distintivo «Reservada» del tablero (2026-10-04): de hoy a +150 días, el mismo
+ * horizonte «to» que usa la ficha por defecto. Las noches del pasado no importan: una habitación
+ * solo está reservada para el futuro.
+ */
+const RESERVED_WINDOW_DAYS = 150;
+
+/** Fecha UTC `YYYY-MM-DD` desplazada `offsetDays` desde hoy. */
+function isoDateFromToday(offsetDays: number): string {
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() + offsetDays);
+  return date.toISOString().slice(0, 10);
+}
+
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const auth = await requireRole(request, "DEFAULT_ADMIN_ROLE");
   if (!auth.ok) return auth.response;
@@ -21,7 +35,21 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const includeArchived = request.nextUrl.searchParams.get("includeArchived") === "true";
     const rooms = await roomsRepo.listRooms({ includeArchived });
-    return NextResponse.json({ rooms });
+
+    // Distintivo «Reservada» (2026-10-04): una sola query agrupa las noches ocupadas del lote
+    // (reservas vivas PENDING/CONFIRMED/COMPLETED + tokens vendidos). Ausente = 0.
+    const from = isoDateFromToday(0);
+    const to = isoDateFromToday(RESERVED_WINDOW_DAYS);
+    const counts = await roomsRepo.countReservedNightsByRooms(
+      rooms.map((room) => room.id),
+      from,
+      to,
+    );
+
+    return NextResponse.json({
+      reservedWindow: { from, to },
+      rooms: rooms.map((room) => ({ ...room, reservedNights: counts.get(room.id) ?? 0 })),
+    });
   } catch (error: unknown) {
     console.error("[API /api/admin/rooms] GET:", error);
     return NextResponse.json(

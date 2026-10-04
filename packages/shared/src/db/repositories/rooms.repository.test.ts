@@ -402,4 +402,36 @@ describe("RoomsRepository (D-1…D-26)", () => {
       expect(values).toEqual(["room-1", "2026-10-01", "2026-10-31"]);
     });
   });
+
+  describe("countReservedNightsByRooms (2026-10-04, tablero Admin)", () => {
+    it("devuelve roomId → nº de noches y deja fuera a las sin reservas", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [{ room_id: "room-1", nights: 3 }, { room_id: "room-2", nights: 1 }] });
+      const counts = await repository.countReservedNightsByRooms(["room-1", "room-2", "room-3"], "2026-10-01", "2026-10-31");
+      expect(counts.get("room-1")).toBe(3);
+      expect(counts.get("room-2")).toBe(1);
+      expect(counts.has("room-3")).toBe(false);
+      const [sql, values] = mockPool.query.mock.calls[0];
+      expect(String(sql)).toContain("COUNT(DISTINCT night)");
+      expect(String(sql)).toContain("ANY($1::uuid[])");
+      expect(values).toEqual([["room-1", "room-2", "room-3"], "2026-10-01", "2026-10-31"]);
+    });
+
+    it("no dispara query si la lista está vacía", async () => {
+      const counts = await repository.countReservedNightsByRooms([], "2026-10-01", "2026-10-31");
+      expect(counts.size).toBe(0);
+      expect(mockPool.query).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("listReleaseableReservationIds (2026-10-04, acción «Liberar»)", () => {
+    it("solo devuelve reservas PENDING/CONFIRMED con noches en la ventana", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [{ reservation_id: "res-1" }, { reservation_id: "res-2" }] });
+      const ids = await repository.listReleaseableReservationIds("room-1", "2026-10-01", "2026-10-31");
+      expect(ids).toEqual(["res-1", "res-2"]);
+      const [sql, values] = mockPool.query.mock.calls[0];
+      expect(String(sql)).toContain("status IN ('PENDING', 'CONFIRMED')");
+      expect(String(sql)).not.toContain("COMPLETED");
+      expect(values).toEqual(["room-1", "2026-10-01", "2026-10-31"]);
+    });
+  });
 });

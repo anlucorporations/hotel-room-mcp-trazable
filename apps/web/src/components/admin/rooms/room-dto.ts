@@ -45,6 +45,12 @@ export interface AdminRoom {
   decorNotesRu: string | null;
   publicationStatus: RoomPublicationStatus;
   operationalStatus: RoomOperationalStatus;
+  /**
+   * Noches distintas ocupadas por reservas vivas o tokens vendidos en la ventana de hoy a +150 días
+   * (2026-10-04, tablero Admin): la lista la aporta `GET /api/admin/rooms` para el distintivo
+   * «Reservada». `0` = sin reservas en la ventana.
+   */
+  reservedNights: number;
   /** ISO; `null` = vigente (archivada nunca se borra, D-8). */
   archivedAt: string | null;
   createdAt: string;

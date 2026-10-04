@@ -727,6 +727,77 @@ export class RoomsRepository {
     );
     return res.rows.map((row) => row.night as string);
   }
+
+  /**
+   * **Conteo masivo de noches ocupadas por habitación** (2026-10-04, tablero Admin): permite saber
+   * en una sola consulta si cada habitación del listado tiene reservas vivas dentro de la ventana
+   * sin disparar una query por fila. Mismas dos fuentes que `listReservedNights`:
+   *
+   *   · `reservation_nights` con reserva viva (`PENDING`/`CONFIRMED`/`COMPLETED`);
+   *   · `nfts` con estado distinto de `AVAILABLE`.
+   *
+   * Devuelve `roomId → nº de noches distintas`; las habitaciones sin ninguna noche no aparecen en el
+   * mapa (el caller trata la ausencia como 0).
+   */
+  async countReservedNightsByRooms(
+    roomIds: readonly string[],
+    from: string,
+    to: string,
+  ): Promise<Map<string, number>> {
+    const result = new Map<string, number>();
+    if (roomIds.length === 0) return result;
+    const ids = [...new Set(roomIds)];
+    const res = await this.pool.query(
+      `SELECT ro.id AS room_id, COUNT(DISTINCT night) AS nights
+         FROM (
+           SELECT rn.room_id AS room_id, rn.night_date AS night
+             FROM reservation_nights rn
+             JOIN reservations r ON r.id = rn.reservation_id
+            WHERE rn.room_id = ANY($1::uuid[])
+              AND rn.night_date BETWEEN $2::date AND $3::date
+              AND r.status IN ('PENDING', 'CONFIRMED', 'COMPLETED')
+           UNION ALL
+           SELECT ro2.id AS room_id, n.check_in_date AS night
+             FROM nfts n
+             JOIN rooms ro2 ON ro2.room_number = n.room_number
+            WHERE ro2.id = ANY($1::uuid[])
+              AND n.check_in_date BETWEEN $2::date AND $3::date
+              AND n.status <> 'AVAILABLE'
+         ) AS ocupadas
+         JOIN rooms ro ON ro.id = ocupadas.room_id
+        GROUP BY ro.id`,
+      [ids, from, to],
+    );
+    for (const row of res.rows) {
+      result.set(row.room_id as string, row.nights as number);
+    }
+    return result;
+  }
+
+  /**
+   * **Reservas liberables de una habitación** (2026-10-04, acción masiva «Liberar»): ids de las
+   * reservas **activas** (`PENDING`/`CONFIRMED`) que tienen al menos una noche dentro de la ventana.
+   *
+   * Solo estas dos son cancelables: `COMPLETED` ya está liquidada y los `nfts` (noches minted) no se
+   * cancelan por la vía de reservas. Vacío = nada que liberar.
+   */
+  async listReleaseableReservationIds(
+    roomId: string,
+    from: string,
+    to: string,
+  ): Promise<string[]> {
+    const res = await this.pool.query(
+      `SELECT DISTINCT r.id AS reservation_id
+         FROM reservations r
+         JOIN reservation_nights rn ON rn.reservation_id = r.id
+        WHERE rn.room_id = $1
+          AND r.status IN ('PENDING', 'CONFIRMED')
+          AND rn.night_date BETWEEN $2::date AND $3::date
+        ORDER BY r.id`,
+      [roomId, from, to],
+    );
+    return res.rows.map((row) => row.reservation_id as string);
+  }
 }
 
 // -----------------------------------------------------------------------------

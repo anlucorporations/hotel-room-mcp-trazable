@@ -26,6 +26,8 @@ const { mockRepo } = vi.hoisted(() => ({
     listSpaceTypes: vi.fn(),
     setRoomAmenities: vi.fn(),
     setRoomSpaces: vi.fn(),
+    // Tablero 2026-10-04 (distintivo «Reservada»).
+    countReservedNightsByRooms: vi.fn(),
   },
 }));
 
@@ -89,6 +91,7 @@ describe("API /api/admin/rooms (F1 · D-1, D-7)", () => {
 
   it("GET excluye las archivadas por defecto", async () => {
     mockRepo.listRooms.mockResolvedValueOnce([room]);
+    mockRepo.countReservedNightsByRooms.mockResolvedValueOnce(new Map());
     const res = await listGET(request("GET"));
     expect(res.status).toBe(200);
     expect(mockRepo.listRooms).toHaveBeenCalledWith({ includeArchived: false });
@@ -96,8 +99,19 @@ describe("API /api/admin/rooms (F1 · D-1, D-7)", () => {
 
   it("GET incluye las archivadas con ?includeArchived=true", async () => {
     mockRepo.listRooms.mockResolvedValueOnce([room]);
+    mockRepo.countReservedNightsByRooms.mockResolvedValueOnce(new Map());
     await listGET(request("GET", "http://localhost:3000/api/admin/rooms?includeArchived=true"));
     expect(mockRepo.listRooms).toHaveBeenCalledWith({ includeArchived: true });
+  });
+
+  it("GET añade reservedNights por habitación (0 si no hay noches ocupadas, 2026-10-04)", async () => {
+    mockRepo.listRooms.mockResolvedValueOnce([room]);
+    mockRepo.countReservedNightsByRooms.mockResolvedValueOnce(new Map([["room-1", 3]]));
+    const res = await listGET(request("GET"));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.rooms[0].reservedNights).toBe(3);
+    expect(data.reservedWindow).toMatchObject({ from: expect.any(String), to: expect.any(String) });
   });
 
   it("POST rechaza un tipo de habitación no admitido (D-22)", async () => {
@@ -184,13 +198,27 @@ describe("API /api/admin/rooms/[id] (F1 · D-8, D-19)", () => {
     expect(mockRepo.updateRoom).toHaveBeenCalledWith("room-1", { capacity: 3 });
   });
 
-  it("PATCH rechaza publicar por esta vía (exige TOTP, D-2/D-18)", async () => {
+  it("PATCH rechaza publicar por esta vía desde DRAFT (exige TOTP, D-2/D-18)", async () => {
     mockRepo.findById.mockResolvedValueOnce(room);
     const res = await PATCH(request("PATCH", undefined, { publicationStatus: "PUBLISHED" }), idParams());
     expect(res.status).toBe(400);
     const data = await res.json();
     expect(data.error).toBe("USE_PUBLISH_ENDPOINT");
     expect(mockRepo.setPublicationStatus).not.toHaveBeenCalled();
+  });
+
+  it("PATCH sí reanuda desde PAUSED a PUBLISHED sin TOTP (reanudación, 2026-10-04)", async () => {
+    const paused = { ...room, publicationStatus: "PAUSED" as const };
+    mockRepo.findById.mockResolvedValueOnce(paused);
+    mockRepo.setPublicationStatus.mockResolvedValueOnce({ ...paused, publicationStatus: "PUBLISHED" });
+    const res = await PATCH(request("PATCH", undefined, { publicationStatus: "PUBLISHED" }), idParams());
+    expect(res.status).toBe(200);
+    expect(mockRepo.setPublicationStatus).toHaveBeenCalledWith(
+      "room-1",
+      "PUBLISHED",
+      "admin@hotel.es",
+      expect.stringMatching(/Reanudada/),
+    );
   });
 
   it("PATCH sí permite pausar (D-19)", async () => {

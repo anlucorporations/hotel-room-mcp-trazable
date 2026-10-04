@@ -70,7 +70,8 @@ function isoDateOr(value: string | null, offsetDays: number): string {
 /**
  * PATCH /api/admin/rooms/[id] — edita la ficha y/o cambia el estado.
  *
- * Cambiar a `PUBLISHED` **no** se admite por aquí: la publicación exige TOTP y deja huella anclada
+ * Cambiar a `PUBLISHED` **solo** se admite por aquí desde `PAUSED` (reanudación de una ficha ya
+ * publicada y anclada, 2026-10-04): una publicación nueva exige TOTP y deja huella anclada
  * (D-2/D-18) y vive en `POST /publish`. El resto de estados (pausar, mantenimiento, fuera de
  * servicio, volver a borrador) sí se pueden fijar aquí.
  */
@@ -110,7 +111,17 @@ export async function PATCH(request: NextRequest, { params }: RouteParams): Prom
 
     if (body.publicationStatus !== undefined) {
       const status = body.publicationStatus;
-      if (status === "PUBLISHED") {
+      if (typeof status !== "string" || !PUBLICATION_STATUSES.includes(status as RoomPublicationStatus)) {
+        return NextResponse.json(
+          { error: "INVALID_STATUS", message: `Estado no válido (admitidos: ${PUBLICATION_STATUSES.join(", ")}).` },
+          { status: 400 },
+        );
+      }
+      // Reanudación (2026-10-04, tablero Admin): volver a `PUBLISHED` por esta vía solo se admite
+      // desde `PAUSED` — la ficha ya fue publicada y quedó anclada, y reanudar la venta es un cambio
+      // simple de estado. Desde cualquier otro estado, publicar sigue exigiendo el flujo con TOTP
+      // (D-2/D-18): `POST /api/admin/rooms/[id]/publish`.
+      if (status === "PUBLISHED" && room.publicationStatus !== "PAUSED") {
         return NextResponse.json(
           {
             error: "USE_PUBLISH_ENDPOINT",
@@ -119,13 +130,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams): Prom
           { status: 400 },
         );
       }
-      if (typeof status !== "string" || !PUBLICATION_STATUSES.includes(status as RoomPublicationStatus)) {
-        return NextResponse.json(
-          { error: "INVALID_STATUS", message: `Estado no válido (admitidos: ${PUBLICATION_STATUSES.join(", ")}).` },
-          { status: 400 },
-        );
-      }
-      const reason = typeof body.reason === "string" ? body.reason : undefined;
+      const reason =
+        typeof body.reason === "string"
+          ? body.reason
+          : status === "PUBLISHED"
+            ? "Reanudada desde back-office (2026-10-04)"
+            : undefined;
       room = await roomsRepo.setPublicationStatus(id, status as RoomPublicationStatus, auth.session.username, reason);
     }
 

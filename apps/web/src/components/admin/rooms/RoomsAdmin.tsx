@@ -1,6 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ComponentProps, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ComponentProps,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { formatEther } from "viem";
 import { useAccount, useConfig, useSignMessage } from "wagmi";
@@ -19,6 +27,24 @@ import {
   type AdminRoomDetail,
   type AdminRoomOptions,
 } from "./room-dto";
+import {
+  BulkCancelIcon,
+  BulkReleaseIcon,
+  BulkSelectIcon,
+  CleanIcon,
+  DirtyIcon,
+  DraftIcon,
+  MaintenanceIcon,
+  OccupiedIcon,
+  OutOfServiceIcon,
+  PausedIcon,
+  PublishedIcon,
+  QuickPublishIcon,
+  QuickReserveIcon,
+  QuickToggleIcon,
+  ReservedIcon,
+} from "./roomIcons";
+import { isRoomEligibleForBulk, selectableRoomIds, type BulkAction } from "./room-bulk";
 import { useMintWindow } from "./useMintWindow";
 
 /**
@@ -30,7 +56,16 @@ import { useMintWindow } from "./useMintWindow";
  * fichas flotantes:
  *   · el **formulario** (`RoomFormDialog`) para el alta y la edición de la ficha completa;
  *   · la **ficha de detalle** (esta pantalla, con el componente reutilizable `RoomDetailCard`), al
- *     pulsar una fila o su botón «Ver ficha».
+ *     pulsar una fila o el icono «Reservar» de la zona de acciones rápidas.
+ *
+ * **Tablero 2026-10-04 (petición del responsable)**:
+ *   · las columnas de estado muestran un **icono** por estado (publicación y operativo) más el
+ *     distintivo «Reservada» cuando la habitación tiene noches ocupadas en la ventana;
+ *   · la columna de acciones rápidas sustituye al botón «Ver ficha» por **iconos** de Publicar,
+ *     Reservar (abre el calendario) y Activar/Desactivar (`PUBLISHED` ↔ `PAUSED`, sin TOTP);
+ *   · en la **cabecera** de la tabla vive el icono de **acciones masivas**: al activarlo aparecen las
+ *     casillas (primera columna) y solo se pueden marcar las habitaciones elegibles para la acción
+ *     activa — regla pura y probada en `room-bulk.ts`.
  *
  * Accesibilidad: cada control es un `<label>` que envuelve su campo, con `data-testid`, `required` y
  * `min-h-touch`; los mensajes de estado usan `role="status"`/`role="alert"`; los tres diálogos
@@ -125,6 +160,50 @@ export function RoomsAdmin() {
   const [mfaCode, setMfaCode] = useState("");
   const totpRef = useRef<HTMLInputElement>(null);
 
+  // — Tablero 2026-10-04: acciones rápidas y masivas (petición del responsable) —
+
+  /** Acción masiva activa; `null` = fuera del modo de selección. */
+  const [bulkAction, setBulkAction] = useState<BulkAction | null>(null);
+  /** Ids seleccionados (siempre subconjunto de las elegibles para la acción activa). */
+  const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(new Set());
+  /** Habitaciones pendientes de publicar: una (acción rápida/ficha) o un lote (masiva). */
+  const [pendingPublish, setPendingPublish] = useState<{ ids: string[] } | null>(null);
+  /** `true` mientras se ejecuta una acción masiva (release/toggle). */
+  const [bulkRunning, setBulkRunning] = useState(false);
+
+  /** Elegibilidad por acción masiva: regla pura y probada en `room-bulk.ts` (2026-10-04). */
+  const isEligibleFor = isRoomEligibleForBulk;
+
+  const toggleSelection = (roomId: string): void => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(roomId)) next.delete(roomId);
+      else next.add(roomId);
+      return next;
+    });
+  };
+
+  /** Marca/desmarca de golpe todas las habitaciones elegibles para la acción activa. */
+  const selectAllEligible = (): void => {
+    if (!bulkAction) return;
+    const eligible = new Set(selectableRoomIds(rooms, bulkAction));
+    if (eligible.size === 0) return;
+    const allSelected = [...eligible].every((id) => selectedIds.has(id));
+    setSelectedIds(allSelected ? new Set() : eligible);
+  };
+
+  /** Cambia de acción masiva y **poda la selección**: solo sobrevive lo que la nueva acción admite. */
+  const changeBulkAction = (action: BulkAction): void => {
+    setBulkAction(action);
+    const eligible = new Set(selectableRoomIds(rooms, action));
+    setSelectedIds((prev) => new Set([...prev].filter((id) => eligible.has(id))));
+  };
+
+  const exitBulkMode = (): void => {
+    setBulkAction(null);
+    setSelectedIds(new Set());
+  };
+
   /** Etiqueta del tipo de habitación con el nombre del catálogo (respaldo: el propio código). */
   const typeLabel = (roomType: string): string =>
     catalogEntryName(options?.roomTypes ?? [], roomType, locale);
@@ -132,6 +211,42 @@ export function RoomsAdmin() {
     t(`status.${status}` as "status.DRAFT");
   const operationalLabel = (status: AdminRoom["operationalStatus"]): string =>
     t(`operational.${status}` as "operational.CLEAN");
+
+  /**
+   * Icono del **estado de publicación** (2026-10-04). El color sale de un token del sistema visual
+   * (nunca un HEX suelto): `success` para publicada, `warning` para borrador/mantenimiento,
+   * `coral-text` para fuera de servicio y `ink-soft` para pausada.
+   */
+  const publicationIcon = (status: AdminRoom["publicationStatus"]): ReactNode => {
+    switch (status) {
+      case "DRAFT":
+        return <DraftIcon className="text-warning" />;
+      case "PUBLISHED":
+        return <PublishedIcon className="text-success" />;
+      case "PAUSED":
+        return <PausedIcon className="text-ink-soft" />;
+      case "MAINTENANCE":
+        return <MaintenanceIcon className="text-warning" />;
+      case "OUT_OF_SERVICE":
+        return <OutOfServiceIcon className="text-coral-text" />;
+      default:
+        return null;
+    }
+  };
+
+  /** Icono del **estado operativo** (2026-10-04): limpia, sucia u ocupada. */
+  const operationalIcon = (status: AdminRoom["operationalStatus"]): ReactNode => {
+    switch (status) {
+      case "CLEAN":
+        return <CleanIcon className="text-success" />;
+      case "DIRTY":
+        return <DirtyIcon className="text-warning" />;
+      case "OCCUPIED":
+        return <OccupiedIcon className="text-ink-soft" />;
+      default:
+        return null;
+    }
+  };
 
   const loadRooms = useCallback(async (): Promise<void> => {
     setListLoading(true);
@@ -251,13 +366,25 @@ export function RoomsAdmin() {
     }
   }
 
+  /**
+   * Confirma la publicación con el TOTP del diálogo. Atiende **dos caminos** (2026-10-04):
+   *   · una sola habitación (acción rápida de fila o botón de la ficha) → flujo unitario de siempre;
+   *   · un lote (acción masiva) → `POST /api/admin/rooms/bulk/publish` con **un** TOTP y anclaje
+   *     on-chain best-effort por habitación.
+   */
   async function handlePublish(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
-    const room = detail?.room;
-    if (!room) return;
+    const targetIds = pendingPublish?.ids ?? (detail?.room ? [detail.room.id] : []);
+    if (targetIds.length === 0) return;
     setPublishing(true);
     setNotice(null);
     try {
+      if (targetIds.length > 1) {
+        await publishBatch(targetIds);
+        return;
+      }
+      const room = rooms.find((entry) => entry.id === targetIds[0]) ?? detail?.room;
+      if (!room) return;
       // Paso 1: huella a firmar/anclar (D-2/D-18).
       const prepRes = await apiFetch(`/api/admin/rooms/${room.id}/publish`);
       const prep = await prepRes.json().catch(() => ({}));
@@ -321,6 +448,7 @@ export function RoomsAdmin() {
       if (!res.ok) throw new Error(data.message || t("publishError"));
       setMfaOpen(false);
       setMfaCode("");
+      setPendingPublish(null);
       setDetail((current) =>
         current ? { ...current, room: (data.room ?? current.room) as AdminRoom } : current,
       );
@@ -329,11 +457,153 @@ export function RoomsAdmin() {
       await loadRooms();
       // F8 · D-4: el primer acuñado de la ventana ocurre al publicar. Si falla, la publicación YA
       // es válida: no se revierte y queda el botón «Acuñar ventana» para reintentar (D-17).
-      await runMintWindow(publishedText);
+      await runMintWindow(publishedText, room.id);
     } catch (error: unknown) {
       setNotice({ kind: "error", text: error instanceof Error ? error.message : t("publishError") });
     } finally {
       setPublishing(false);
+    }
+  }
+
+  /**
+   * Publicación **masiva** (2026-10-04): un solo TOTP para el lote. El anclaje on-chain es
+   * best-effort por habitación — sin wallet o si una transacción falla, esa habitación se publica
+   * igual y queda `PENDING_ANCHOR` (D-18). Nunca revierte por el anclaje.
+   */
+  async function publishBatch(ids: string[]): Promise<void> {
+    const txHashes: Record<string, string> = {};
+    if (isConnected && address) {
+      for (const id of ids) {
+        const room = rooms.find((entry) => entry.id === id);
+        if (!room) continue;
+        try {
+          const prepRes = await apiFetch(`/api/admin/rooms/${room.id}/publish`);
+          const prep = await prepRes.json().catch(() => ({}));
+          const contentHash = typeof prep.contentHash === "string" ? prep.contentHash : undefined;
+          if (!contentHash) continue;
+
+          const registered = (await readContract(config, {
+            address: contractAddress,
+            abi: hotelNightsAbi,
+            functionName: "isRoomRegistered",
+            args: [BigInt(room.roomNumber)],
+          })) as boolean;
+          if (!registered) {
+            const registerHash = await writeContract(config, {
+              address: contractAddress,
+              abi: hotelNightsAbi,
+              functionName: "registerRoom",
+              args: [BigInt(room.roomNumber), room.roomType.toLowerCase()],
+            });
+            await waitForTransactionReceipt(config, { hash: registerHash });
+          }
+          const hash = await writeContract(config, {
+            address: contractAddress,
+            abi: hotelNightsAbi,
+            functionName: "publishRoom",
+            args: [BigInt(room.roomNumber), contentHash as `0x${string}`],
+          });
+          await waitForTransactionReceipt(config, { hash });
+          txHashes[room.id] = hash;
+        } catch {
+          // Best-effort: esta habitación se publica sin anclaje y queda PENDING_ANCHOR.
+        }
+      }
+    }
+
+    const res = await apiFetch("/api/admin/rooms/bulk/publish", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roomIds: ids, confirmTotpCode: mfaCode.trim(), txHashes }),
+    });
+    const data = await res.json().catch(() => ({}));
+    const failed = Array.isArray(data.results)
+      ? (data.results as Array<{ ok?: boolean }>).filter((result) => !result.ok).length
+      : 0;
+    if (!res.ok && failed === ids.length) throw new Error(data.message || ta("roomBulkPublishError"));
+    setMfaOpen(false);
+    setMfaCode("");
+    setPendingPublish(null);
+    setNotice({
+      kind: "ok",
+      text: ta("roomBulkPublishDone", { published: data.published ?? 0, failed }),
+    });
+    exitBulkMode();
+    await loadRooms();
+  }
+
+  /**
+   * Acción rápida **Activar/Desactivar** de una fila (2026-10-04): conmuta `PUBLISHED` ↔ `PAUSED`
+   * por `PATCH`, sin TOTP — la regla de reanudación del servidor admite `PAUSED → PUBLISHED` porque
+   * la ficha ya fue publicada y quedó anclada.
+   */
+  async function handleQuickToggle(room: AdminRoom): Promise<void> {
+    if (room.publicationStatus !== "PUBLISHED" && room.publicationStatus !== "PAUSED") return;
+    const target: AdminRoom["publicationStatus"] =
+      room.publicationStatus === "PUBLISHED" ? "PAUSED" : "PUBLISHED";
+    setNotice(null);
+    try {
+      const res = await apiFetch(`/api/admin/rooms/${room.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ publicationStatus: target }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || t("saveError"));
+      await loadRooms();
+      if (detail?.room.id === room.id) setDetailVersion((value) => value + 1);
+    } catch (error: unknown) {
+      setNotice({ kind: "error", text: error instanceof Error ? error.message : t("saveError") });
+    }
+  }
+
+  /** Acción masiva **Liberar** (2026-10-04): cancela las reservas activas de la selección. */
+  async function handleBulkRelease(): Promise<void> {
+    if (selectedIds.size === 0) return;
+    setBulkRunning(true);
+    setNotice(null);
+    try {
+      const selectedCount = selectedIds.size;
+      const res = await apiFetch("/api/admin/rooms/bulk/release", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomIds: [...selectedIds] }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || ta("roomBulkReleaseError"));
+      setNotice({
+        kind: "ok",
+        text: ta("roomBulkReleaseDone", { released: data.released ?? 0, rooms: selectedCount }),
+      });
+      exitBulkMode();
+      await loadRooms();
+    } catch (error: unknown) {
+      setNotice({ kind: "error", text: error instanceof Error ? error.message : ta("roomBulkReleaseError") });
+    } finally {
+      setBulkRunning(false);
+    }
+  }
+
+  /** Acción masiva **Activar/Desactivar** (2026-10-04): conmuta el estado de la selección. */
+  async function handleBulkToggle(): Promise<void> {
+    if (selectedIds.size === 0) return;
+    setBulkRunning(true);
+    setNotice(null);
+    try {
+      const res = await apiFetch("/api/admin/rooms/bulk/toggle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomIds: [...selectedIds] }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || ta("roomBulkToggleError"));
+      setNotice({ kind: "ok", text: ta("roomBulkToggleDone", { toggled: data.toggled ?? 0 }) });
+      exitBulkMode();
+      await loadRooms();
+    } catch (error: unknown) {
+      setNotice({ kind: "error", text: error instanceof Error ? error.message : ta("roomBulkToggleError") });
+    } finally {
+      setBulkRunning(false);
     }
   }
 
@@ -362,11 +632,12 @@ export function RoomsAdmin() {
    * omite las noches ya acuñadas, de modo que sirve tanto para el primer acuñado (al publicar) como
    * para reintentar/extender. `prefix` antepone el resultado de la publicación en el mismo notice.
    */
-  async function runMintWindow(prefix?: string): Promise<void> {
-    const room = detail?.room;
-    if (!room) return;
+  async function runMintWindow(prefix?: string, roomId?: string): Promise<void> {
+    // La acción rápida de fila puede publicar sin ficha abierta: el id explícito gana al de la ficha.
+    const targetId = roomId ?? detail?.room?.id;
+    if (!targetId) return;
     try {
-      const result = await mintWindow.run(room.id);
+      const result = await mintWindow.run(targetId);
       const mintedText = t("mintWindowOk", { minted: result.minted, skipped: result.skipped });
       const combined = prefix ? `${prefix} ${mintedText}` : mintedText;
       setNotice({
@@ -504,6 +775,34 @@ export function RoomsAdmin() {
               <caption className="sr-only">{t("roomsCaption")}</caption>
               <thead>
                 <tr className="text-ink-soft">
+                  <th scope="col" className="px-2 py-2">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        data-testid="rooms-bulk-toggle"
+                        onClick={() => (bulkAction ? exitBulkMode() : changeBulkAction("PUBLISH"))}
+                        aria-pressed={bulkAction !== null}
+                        aria-label={ta("roomBulkSelect")}
+                        title={ta("roomBulkSelect")}
+                        className="rounded p-1 text-ink transition-colors hover:bg-mist-2"
+                      >
+                        <BulkSelectIcon size={16} />
+                      </button>
+                      {bulkAction && (
+                        <input
+                          type="checkbox"
+                          data-testid="rooms-bulk-all"
+                          aria-label={ta("roomBulkSelect")}
+                          checked={
+                            selectableRoomIds(rooms, bulkAction).length > 0 &&
+                            selectableRoomIds(rooms, bulkAction).every((id) => selectedIds.has(id))
+                          }
+                          onChange={selectAllEligible}
+                          className="h-4 w-4"
+                        />
+                      )}
+                    </div>
+                  </th>
                   <th scope="col" className="px-2 py-2">{t("colNumber")}</th>
                   <th scope="col" className="px-2 py-2">{t("colType")}</th>
                   <th scope="col" className="px-2 py-2">{t("colCapacity")}</th>
@@ -512,7 +811,76 @@ export function RoomsAdmin() {
                   <th scope="col" className="px-2 py-2">{ta("roomColRate")}</th>
                   <th scope="col" className="px-2 py-2">{t("colStatus")}</th>
                   <th scope="col" className="px-2 py-2">{t("colOperational")}</th>
-                  <th scope="col" className="px-2 py-2">{ta("roomOpenDetail")}</th>
+                  <th scope="col" className="px-2 py-2">
+                    {bulkAction ? (
+                      <div className="flex flex-wrap items-center gap-1">
+                        <button
+                          type="button"
+                          data-testid="rooms-bulk-publish"
+                          onClick={() => {
+                            if (bulkAction === "PUBLISH" && selectedIds.size > 0) {
+                              setPendingPublish({ ids: [...selectedIds] });
+                              setMfaOpen(true);
+                            } else {
+                              changeBulkAction("PUBLISH");
+                            }
+                          }}
+                          aria-pressed={bulkAction === "PUBLISH"}
+                          aria-label={ta("roomBulkPublish")}
+                          title={ta("roomBulkPublish")}
+                          disabled={bulkRunning || (bulkAction === "PUBLISH" && selectedIds.size === 0)}
+                          className="rounded p-1 text-ink transition-colors hover:bg-mist-2 disabled:opacity-40"
+                        >
+                          <QuickPublishIcon size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          data-testid="rooms-bulk-release"
+                          onClick={() => {
+                            if (bulkAction === "RELEASE") void handleBulkRelease();
+                            else changeBulkAction("RELEASE");
+                          }}
+                          aria-pressed={bulkAction === "RELEASE"}
+                          aria-label={ta("roomBulkRelease")}
+                          title={ta("roomBulkRelease")}
+                          disabled={bulkRunning || (bulkAction === "RELEASE" && selectedIds.size === 0)}
+                          className="rounded p-1 text-ink transition-colors hover:bg-mist-2 disabled:opacity-40"
+                        >
+                          <BulkReleaseIcon size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          data-testid="rooms-bulk-toggle-action"
+                          onClick={() => {
+                            if (bulkAction === "TOGGLE") void handleBulkToggle();
+                            else changeBulkAction("TOGGLE");
+                          }}
+                          aria-pressed={bulkAction === "TOGGLE"}
+                          aria-label={ta("roomBulkToggle")}
+                          title={ta("roomBulkToggle")}
+                          disabled={bulkRunning || (bulkAction === "TOGGLE" && selectedIds.size === 0)}
+                          className="rounded p-1 text-ink transition-colors hover:bg-mist-2 disabled:opacity-40"
+                        >
+                          <QuickToggleIcon size={16} />
+                        </button>
+                        <span className="ml-1 text-small text-ink-soft">
+                          {ta("roomBulkCount", { count: selectedIds.size })}
+                        </span>
+                        <button
+                          type="button"
+                          data-testid="rooms-bulk-cancel"
+                          onClick={exitBulkMode}
+                          aria-label={ta("roomBulkCancel")}
+                          title={ta("roomBulkCancel")}
+                          className="rounded p-1 text-ink transition-colors hover:bg-mist-2"
+                        >
+                          <BulkCancelIcon size={16} />
+                        </button>
+                      </div>
+                    ) : (
+                      ta("roomColActions")
+                    )}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -520,31 +888,103 @@ export function RoomsAdmin() {
                   <tr
                     key={entry.id}
                     data-testid={`room-row-${entry.roomNumber}`}
-                    // La fila entera abre la ficha (comodidad); el control accesible es el botón.
+                    // La fila entera abre la ficha (comodidad); los controles accesibles son los botones.
                     onClick={() => openDetail(entry.id)}
                     className="cursor-pointer border-t border-line transition-colors hover:bg-mist-2"
                   >
+                    {/* Primera columna: casilla de selección masiva (oculta fuera del modo masivo). */}
+                    <td className="px-2 py-2">
+                      {bulkAction && (
+                        <input
+                          type="checkbox"
+                          data-testid={`room-select-${entry.roomNumber}`}
+                          aria-label={`${t("colNumber")} ${entry.roomNumber}`}
+                          checked={selectedIds.has(entry.id)}
+                          disabled={!isEligibleFor(entry, bulkAction)}
+                          onChange={() => toggleSelection(entry.id)}
+                          onClick={(event) => event.stopPropagation()}
+                          className="h-4 w-4 disabled:opacity-30"
+                        />
+                      )}
+                    </td>
                     <td className="px-2 py-2 font-semibold text-ink">{entry.roomNumber}</td>
                     <td className="px-2 py-2">{typeLabel(entry.roomType)}</td>
                     <td className="px-2 py-2">{entry.capacity}</td>
                     <td className="px-2 py-2">{entry.beds}</td>
                     <td className="px-2 py-2">{entry.sizeM2 === null ? "—" : `${entry.sizeM2} m²`}</td>
                     <td className="px-2 py-2">{formatRate(entry.baseRateWei)}</td>
-                    <td className="px-2 py-2">{statusLabel(entry.publicationStatus)}</td>
-                    <td className="px-2 py-2">{operationalLabel(entry.operationalStatus)}</td>
+                    {/* Publicación: icono por estado + distintivo «Reservada» con las noches de la ventana. */}
                     <td className="px-2 py-2">
-                      <button
-                        type="button"
-                        data-testid={`room-open-${entry.roomNumber}`}
-                        onClick={(event) => {
-                          // Sin esto, el clic del botón burbujearía a la fila y pediría dos veces la ficha.
-                          event.stopPropagation();
-                          openDetail(entry.id);
-                        }}
-                        className={GHOST}
-                      >
-                        {ta("roomOpenDetail")}
-                      </button>
+                      <span className="inline-flex items-center gap-1.5">
+                        {publicationIcon(entry.publicationStatus)}
+                        {statusLabel(entry.publicationStatus)}
+                        {entry.reservedNights > 0 && (
+                          <span
+                            data-testid={`room-reserved-${entry.roomNumber}`}
+                            title={ta("roomReservedBadge", { count: entry.reservedNights })}
+                            className="inline-flex items-center text-info"
+                          >
+                            <ReservedIcon size={14} />
+                          </span>
+                        )}
+                      </span>
+                    </td>
+                    <td className="px-2 py-2">
+                      <span className="inline-flex items-center gap-1.5">
+                        {operationalIcon(entry.operationalStatus)}
+                        {operationalLabel(entry.operationalStatus)}
+                      </span>
+                    </td>
+                    {/* Acciones rápidas (2026-10-04): publicar, reservar (abre el calendario) y activar/desactivar. */}
+                    <td className="px-2 py-2">
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          data-testid={`room-quick-publish-${entry.roomNumber}`}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setPendingPublish({ ids: [entry.id] });
+                            setMfaOpen(true);
+                          }}
+                          disabled={entry.publicationStatus === "PUBLISHED"}
+                          aria-label={ta("roomQuickPublish")}
+                          title={ta("roomQuickPublish")}
+                          className="rounded p-1 text-ink transition-colors hover:bg-mist-2 disabled:opacity-30"
+                        >
+                          <QuickPublishIcon size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          data-testid={`room-quick-reserve-${entry.roomNumber}`}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openDetail(entry.id);
+                          }}
+                          aria-label={ta("roomQuickReserve")}
+                          title={ta("roomQuickReserve")}
+                          className="rounded p-1 text-ink transition-colors hover:bg-mist-2"
+                        >
+                          <QuickReserveIcon size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          data-testid={`room-quick-toggle-${entry.roomNumber}`}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void handleQuickToggle(entry);
+                          }}
+                          disabled={entry.publicationStatus !== "PUBLISHED" && entry.publicationStatus !== "PAUSED"}
+                          aria-label={
+                            entry.publicationStatus === "PUBLISHED" ? ta("roomQuickToggleOn") : ta("roomQuickToggleOff")
+                          }
+                          title={
+                            entry.publicationStatus === "PUBLISHED" ? ta("roomQuickToggleOn") : ta("roomQuickToggleOff")
+                          }
+                          className="rounded p-1 text-ink transition-colors hover:bg-mist-2 disabled:opacity-30"
+                        >
+                          <QuickToggleIcon size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -595,7 +1035,10 @@ export function RoomsAdmin() {
                   <button
                     type="button"
                     data-testid="room-publish-open"
-                    onClick={() => setMfaOpen(true)}
+                    onClick={() => {
+                      setPendingPublish({ ids: [room.id] });
+                      setMfaOpen(true);
+                    }}
                     className={ACTION}
                   >
                     {t("publish")}
@@ -697,10 +1140,18 @@ export function RoomsAdmin() {
           title={t("publishTitle")}
           subtitle={t("publishTagline")}
           closeLabel={t("cancel")}
-          onClose={() => setMfaOpen(false)}
+          onClose={() => {
+            setMfaOpen(false);
+            setPendingPublish(null);
+          }}
           testId="room-publish-dialog"
           initialFocus={totpRef}
         >
+          {pendingPublish && pendingPublish.ids.length > 1 && (
+            <p className="mt-3 text-small text-ink-soft" role="status">
+              {ta("roomBulkCount", { count: pendingPublish.ids.length })}
+            </p>
+          )}
           <form onSubmit={handlePublish} className="mt-4 flex flex-col gap-3">
             <label className="flex flex-col gap-1 text-small font-medium text-ink">
               {t("mfaCode")}
