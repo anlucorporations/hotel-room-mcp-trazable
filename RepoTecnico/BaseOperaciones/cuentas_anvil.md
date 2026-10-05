@@ -13,7 +13,7 @@ para el proyecto son las **4 primeras** (cuentas internas / hot-wallets):
 |---|---|---|---|---|
 | 0 | `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` | 10.000 ETH | 0 | **Desplegador** (`DEPLOYER_PRIVATE_KEY`) + tesorería destino de `withdrawFunds` |
 | 1 | `0x70997970C51812dc3A010C7d01b50e0d17dc79C8` | 10.000 ETH | 0 | Hot-wallet MINTER (`MINTER_RELAYER_PRIVATE_KEY`); rol tras redespliegue |
-| 2 | `0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC` | 10.000 ETH | 0 | Hot-wallet BURNER (`BURNER_BOT_PRIVATE_KEY`); rol tras redespliegue |
+| 2 | `0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC` | 10.000 ETH | 0 | Hot-wallet BURNER (`BURNER_BOT_PRIVATE_KEY`); `BURNER_ROLE` **concedido el 2026-10-05** en el contrato vigente |
 | 3 | `0x90F79bf6EB2c4f870365e785982E1f101e93b906` | 10.000 ETH | 0 | Hot-wallet RECEPTION (`RECEPTION_WALLET_PRIVATE_KEY`); rol tras redespliegue |
 | 4–9 | *(resto del pool determinista)* | 10.000 ETH | 0 | **Huéspedes/compradores simulados** (aprobado, Paso 4) |
 
@@ -99,3 +99,28 @@ Adaptación del guion: `packages/contracts/scripts/dev-accounts.ts` (pool por í
 0–9) e `inject-data.ts` (matriz de roles y huéspedes 4–9); manuales `docs/inyeccion-datos.md`
 y `RepoTecnico/Manuales/01-arquitectura/01-monorepo.md` alineados. Credenciales de
 operadores entregadas fuera del repositorio (`/tmp/operadores-inyeccion-local.txt`).
+
+---
+
+## Quema programada — estado verificado (2026-10-05)
+
+**Antes de este ciclo la quema NO se ejecutaba en el despliegue**: el worker no tenía ninguna
+variable de quema, así que `startBurnSchedulerIfConfigured` devolvía `null` y el planificador ni
+siquiera arrancaba (solo quedaba un aviso en los logs).
+
+| Pieza | Estado |
+|---|---|
+| `BURNER_ROLE` | Concedido a la **cuenta 2** (hot-wallet documentada) el 2026-10-05, tx `0x10a4fcff…` (bloque 486). Antes lo tenía el desplegador |
+| Clave del quemador | Secreto `hotel-burner-private-key` (Secret Manager) con `secretAccessor` para `hotel-mcp-run@` y `ci-deployer@` |
+| Worker | `BURNER_WALLET_PRIVATE_KEY` (secreto) + `BURN_HOUR_LOCAL=12`, `BURN_TIMEZONE=Europe/Madrid`, `BURNER_MIN_BALANCE_NATIVE=1` |
+| Cadencia | **Diaria a las 12:00 Europe/Madrid** (hora de salida), con cerrojo `hotel:burn:day:<día>`; `BURN_INTERVAL_MS` solo se usó para verificar y se retiró |
+| Evidencia del ciclo | 2026-10-05 19:42:44 · `planificador de quema: ciclo terminado` → `reason: NO_TOKENS` · `[Burner] No hay noches impagas caducadas pendientes de quema.` |
+| Operador | `0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC` (cuenta 2), saldo 10.000 ETH (umbral 1) |
+
+**Candidatas a quema**: `nfts` con `status = 'AVAILABLE'` y `check_in_date < hoy` (el reloj del ciclo
+es el **de la cadena**, que es el que decide la caducidad en el contrato). Las 7 noches caducadas que
+existían (2026-09-28 → 2026-10-04) **ya estaban quemadas**; hoy no hay ninguna viva con fecha pasada.
+
+> **Pendiente de gobierno**: el desplegador (cuenta 0) **sigue conservando** `BURNER_ROLE` (y el resto).
+> Lo correcto según el diseño es revocárselo y dejar el rol solo en la hot-wallet dedicada; no se hizo
+> en este ciclo para no tocar otros flujos (mint, pausa, tesorería) a la vez.

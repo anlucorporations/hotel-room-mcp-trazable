@@ -1638,3 +1638,48 @@ desplegado (sondeo de solo lectura con `scripts/quien-tiene-noches.ts`):
 > `roomTypeOf` del **maestro antiguo** (101/108 como «Simple»), mientras que la foto sale del maestro
 > vigente (101/108 son **dobles** en la planta nueva). Las noches se acuñaron antes de la
 > redistribuciÃ³n, así que tipo y foto pueden discrepar; se resolverá cuando se acuñe inventario nuevo.
+
+---
+
+## 52. La quema programada de noches caducadas ya se ejecuta (2026-10-05)
+
+**Revisión del proceso** (CU-13 / US-09 / D-03):
+
+| Pieza | Qué hace |
+|---|---|
+| Contrato `HotelNights.burnExpired(uint256[])` | `onlyRole(BURNER_ROLE)`; exige `_isExpired` (fecha del token < hoy) y quema el inventario. `burnBatchMax()` = **50**; `mint` **rechaza** fechas pasadas (`PastDate`), así que no se puede fabricar una caducada |
+| `BurnerService` (`packages/shared`) | Selecciona `nfts` con `status='AVAILABLE'` y `check_in_date < hoy`, comprueba saldo del operador, trocea por `burnBatchMax`, **simula** cada lote antes de enviar y contabiliza los omitidos |
+| `burn-scheduler` (worker) | Una vez al día a las **12:00 Europe/Madrid** (hora de salida), con cerrojo diario en Redis (`hotel:burn:day:<día>`, 26 h) y reloj **de la cadena** (el `block.timestamp` es el que caduca en el contrato). Si el ciclo no se completa, libera el cerrojo para reintentar |
+| Configuración | Requiere `BURNER_WALLET_PRIVATE_KEY`; sin ella el planificador **no arranca** (solo un aviso) |
+
+**Defecto encontrado (el objetivo del ciclo).** El worker desplegado **no tenía ninguna variable de
+quema**: el planificador nunca arrancaba. Además, el tráfico del servicio estaba **fijado por nombre de
+revisión** (`-00010-jut`), así que toda revisión nueva quedaba sin tráfico y Cloud Run la **retiraba en
+el mismo segundo** — un despliegue que *parecía* correcto mientras seguía sirviendo la revisión vieja.
+
+**Qué se hizo:**
+
+| Paso | Detalle |
+|---|---|
+| Rol | `BURNER_ROLE` concedido a la **hot-wallet documentada** (cuenta 2, `0x3C44…`): tx `0x10a4fcff…`, bloque **486**, `status: success`. Antes lo tenía el desplegador |
+| Secreto | `hotel-burner-private-key` en Secret Manager + `secretAccessor` para `hotel-mcp-run@` y `ci-deployer@` (sin IAM la revisión se retiraba) |
+| Worker | `--update-secrets=BURNER_WALLET_PRIVATE_KEY=…` y `--update-env-vars=BURN_HOUR_LOCAL=12,BURN_TIMEZONE=Europe/Madrid,BURNER_MIN_BALANCE_NATIVE=1` |
+| Tráfico | `update-traffic --to-latest` para desbloquear el pin; el spec queda con `latestRevision: true` (los despliegues futuros enrutan solos) |
+| Cadencia | Se verificó con `BURN_INTERVAL_MS=120000` (modo forzado de dev) y **se retiró**: queda en modo **diario** (`intervalMs: 300000`, hora 12, `Europe/Madrid`) |
+
+### Verificación (producción real)
+
+| Comprobación | Resultado |
+|---|---|
+| Planificador activo | `planificador de quema activo · {modo: "diario", hourLocal: 12, timeZone: "Europe/Madrid", dryRun: false, operator: "0x3C44…93BC"}` |
+| **Ciclo ejecutado** | 19:42:44 · `planificador de quema: iniciando ciclo diario (dayKey 2026-10-05)` → `[Burner] No hay noches impagas caducadas pendientes de quema.` → `ciclo terminado {reason: "NO_TOKENS", burnedTokensCount: 0}` |
+| Candidatas hoy | **0**: las 7 caducadas (2026-09-28 → 2026-10-04) **ya estaban quemadas** (`ownerOf` revierte) y la viva más antigua es del **2026-10-05** |
+| Worker sobre la cadena | `lastBlock 486` = `headBlock 486` · **lag 0** · 0 fallos de RPC |
+| Revisión sirviendo | `hotel-mcp-worker-00012-7wv` al **100 %** (tags `v19` conservados) |
+| Pruebas | `packages/shared/src/burner` **13/13** · `burn-scheduler.test.ts` **8/8** |
+
+> **Para ver una quema real** hace falta una noche **indexada** (`nfts`, `AVAILABLE`) cuya fecha pase:
+> el contrato no admite acuñar fechas pasadas, así que la próxima quema ocurrirá con el inventario
+> vivo (p. ej., la noche del 2026-10-05 en cuanto la cadena entre en el 2026-10-06) **siempre que esté
+> en el índice off-chain**. Tras el reset el índice arrancó vacío (§44): lo que se acuñe por la app sí
+> aparecerá; el inventario antiguo que solo existe on-chain no lo verá el quemador.

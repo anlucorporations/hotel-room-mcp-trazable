@@ -3162,3 +3162,14 @@ del despliegue (Anvil en Cloud Run), así que el navegador rechazaba la conexió
 real y retención pública completada (201 + instrucciones de anticipo), además de reserva desde el panel
 del día («1 reservas creadas»). Apareció y se corrigió también una traducción ausente del menú
 (`admin.nav.publishBoard`) con su guardián (`v29`). Detalle en `despliegue_gcp.md` §48–§49.
+
+### Quema programada: revisada y **ejecutándose** (2026-10-05)
+
+El worker desplegado **no tenía ninguna variable de quema**, así que el planificador diario
+(`burnExpired`, 12:00 Europe/Madrid) **nunca arrancaba**. Se concedió `BURNER_ROLE` a la hot-wallet
+documentada (cuenta 2, tx `0x10a4fcff…`, bloque 486), se guardó su clave en el secreto
+`hotel-burner-private-key` (con IAM para la SA del worker) y se activó el planificador. Verificado en
+producción: **ciclo ejecutado** a las 19:42:44 (`reason: NO_TOKENS`, sin caducadas pendientes) y modo
+**diario** restaurado. De paso se descubrió que el tráfico del worker estaba **fijado por nombre de
+revisión**, así que las revisiones nuevas se retiraban al instante: corregido a `latestRevision`.
+Detalle en `despliegue_gcp.md` §52 y `BaseOperaciones/cuentas_anvil.md`.
