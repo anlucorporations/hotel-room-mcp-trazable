@@ -3053,3 +3053,15 @@ que el cambio se aplicó a **ambas** (alcance confirmado con el responsable) y e
 sigue diciendo «En mantenimiento»: el calendario describe el estado, los botones y la columna usan la
 etiqueta corta. También se observa (sin cambiar) que `RoomDetailCard` pinta el **código crudo**
 (`MAINTENANCE`) en dos sitios, no la etiqueta traducida: comportamiento anterior a este ciclo.
+
+### Despliegue (release v23)
+
+| Paso | Detalle |
+|---|---|
+| `push` | `a8e79ac` a los tres remotos de `anlucorporations`, rama `Hotel-DSH-GCP` |
+| Imagen | `web:v23` (Cloud Build `0d649e89…`, 3m10s) — solo `web` |
+| Revisión | `hotel-mcp-web-00033-men` sirviendo el **100 %**; etiqueta `v23` (y `v22` conservada para volver atrás) |
+| Verificación | Rutas nuevas 200 y `/admin/mint` 404; calendario autenticado con 50 habitaciones y 88 días; etiquetas MANTENIMIENTO/SERVICIO servidas y «Fuera de servicio» ausente |
+
+Sin defecto en el canario esta vez, así que no hubo que reconstruir ni retirar revisiones.
+Detalle en `despliegue_gcp.md` §43.

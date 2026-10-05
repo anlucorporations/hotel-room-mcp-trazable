@@ -1227,3 +1227,39 @@ entrega de verdad, más 4 pruebas nuevas en `room-bulk.test.ts` para el caso cad
 **Lección para el próximo ciclo.** Un `as number` sobre una columna de agregado **no** convierte: el
 mock debe devolver el tipo que devuelve el driver (cadena para `bigint`/`numeric`), o el defecto viaja
 hasta producción. Esta es la misma familia de fallo que §37 («una lección sobre los mocks»).
+
+---
+
+## 43. Release `v23` — subsección «Publicar»: CalendarioHabitaciones y gestión del día (2026-10-05)
+
+**Qué se despliega.** La subsección «Publicar» (§41 de `estado_proyecto.md`): tablero de disponibilidad
+por día/semana/mes/trimestre con icono y total por estado, panel del día (publicar, reservar, liberar,
+acuñar la noche y servicios) y el cambio de etiquetas de estado a MANTENIMIENTO / SERVICIO. Sustituye a
+«Publicar noche» (`/admin/mint`), cuyo minteo on-chain pasa al panel del día.
+
+**Solo se despliega `web`.** Los dos métodos nuevos del repositorio son de solo lectura y **solo** los
+consume la API de la web (verificado por búsqueda); `worker`, `mcp` y `monitor` no cambian. Sin
+migración de esquema.
+
+| Paso | Detalle |
+|---|---|
+| `push` | `a8e79ac` a los tres remotos de `anlucorporations` (`origin`, `github`, `codecrypto`), rama `Hotel-DSH-GCP` |
+| Imagen | Cloud Build `0d649e89-8185-418e-8e2c-395fd64e8f21` · `web:v23` · 3m10s · **SUCCESS** |
+| Canario | `hotel-mcp-web-00033-men` al **0 %**, etiqueta `v23`, verificado antes de mover tráfico |
+| Producción | `00033-men` al **100 %**; `v22` queda como etiqueta para volver atrás |
+| Limpieza | No hubo defecto: no se retiró ninguna revisión |
+
+### Verificación (despliegue real)
+
+| Comprobación | Resultado |
+|---|---|
+| Canario y URL pública · `/health/ready` | **200** · `READY` (postgres, redis y RPC `UP`) |
+| Rutas | `/` **200** · `/admin/habitacion` **200** · `/admin/habitacion/publicar` **200** · `/admin/mint` **404** (retirada) |
+| Endpoints nuevos sin sesión | `GET /api/admin/rooms/calendar` (con `?from&to` y con `?date`) → **401** |
+| Login E2E con la cuenta owner sembrada (TOTP) | MFA **200** · sesión válida |
+| Totales (semana 05–11 oct) | **200** · **7** días · `range` correcto · `maintenanceRooms` 0 |
+| Detalle del día (15 oct) | **200** · **50** habitaciones · resumen `{published:1, reserved:0, occupied:0, maintenance:0}` · todas con las cuatro banderas |
+| Rango amplio (05 oct → 31 dic) | **200** · **88** días · publicadas **88**, ocupadas **6**, reservadas **0** |
+| ¿`reserved = 0` es un fallo del SQL? | **No**: `GET /api/reception/reservations` devuelve **0** reservas vivas. El ramal de ocupadas (tokens) sí enciende; el de reservas queda cubierto por pruebas |
+| Etiquetas servidas | `MANTENIMIENTO` y `SERVICIO` presentes; **`Fuera de servicio` ausente** en el HTML público |
+| Imagen del servicio | `…/web:v23` |
