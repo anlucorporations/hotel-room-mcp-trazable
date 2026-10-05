@@ -129,11 +129,36 @@ describe("i18n · claves referenciadas por el código", () => {
     expect([...new Set(missing)]).toEqual([]);
   });
 
-  it("las claves dinámicas quedan declaradas como límite (no se certifican)", () => {
-    // No se exige cero: hay llamadas legítimas con plantilla (`t(\`role.${state}\`)`). El test fija
-    // que el hueco es **conocido y acotado** (49 medidas el 2026-10); si crece sin control, salta y
-    // obliga a revisar por qué en lugar de dejar que se ensanche en silencio.
+  it("las claves dinámicas y los traductores heredados quedan declarados como límite", () => {
+    // No se exige cero: hay llamadas legítimas con plantilla (`t(\`role.${state}\`)`) y ficheros que
+    // heredan el namespace del layout (`getTranslations()` sin argumento). El test fija que los
+    // huecos son **conocidos y acotados** (49 claves dinámicas medidas el 2026-10); si crecen sin
+    // control, salta y obliga a revisar por qué en lugar de dejar que se ensanchen en silencio.
     expect(dynamicKeys).toBeGreaterThan(0);
     expect(dynamicKeys).toBeLessThanOrEqual(60);
+    // El contador de traductores heredados se **informa** aquí: antes se incrementaba y no se leía,
+    // así que el hueco declarado en la cabecera no llegaba a ser visible (lint: variable sin uso).
+    expect(inheritedNamespace).toBeGreaterThanOrEqual(0);
+    expect(inheritedNamespace).toBeLessThanOrEqual(20);
+  });
+});
+
+/**
+ * Las claves del **menú lateral** se resuelven en runtime (`labelKey` + namespace), así que el
+ * escaneo de llamadas `t("…")` no las ve: por ese hueco el menú «Publicar» se quedó sin traducir y
+ * el back-office pintaba `MISSING_MESSAGE: admin.nav.publishBoard` (defecto real del 2026-10-05,
+ * detectado con navegador real). Se comprueban aparte, contra `admin.nav`, en los tres idiomas.
+ */
+describe("claves del menú lateral (adminNav)", () => {
+  it("todas las `labelKey` de adminNav.ts existen en admin.nav · es/en/ru", () => {
+    const source = readFileSync(join(SRC_ROOT, "src/components/admin/adminNav.ts"), "utf8");
+    const labelKeys = [...source.matchAll(/labelKey:\s*"([^"]+)"/g)].map((match) => match[1]!);
+    expect(labelKeys.length).toBeGreaterThan(0);
+    for (const locale of MESSAGES) {
+      const admin = (load(locale) as { admin?: { nav?: Record<string, unknown> } }).admin;
+      const nav = admin?.nav ?? {};
+      const missing = labelKeys.filter((key) => !(key in nav));
+      expect(missing, `${locale}: claves de menú sin traducir`).toEqual([]);
+    }
   });
 });
