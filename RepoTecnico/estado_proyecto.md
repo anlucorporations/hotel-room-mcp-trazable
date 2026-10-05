@@ -2963,3 +2963,93 @@ repositorio ahora devuelve **cadenas**, como el driver. Detalle en `despliegue_g
 
 > **Ninguna acción masiva se ejecutó contra producción**: publicar, liberar o conmutar estado mutan
 > datos reales y requieren orden explícita del responsable.
+
+---
+
+## 41. Subsección «Publicar»: CalendarioHabitaciones y gestión del día (2026-10-04) · `@asistenteProyecto`
+
+**Petición del responsable** (Admin → Habitación → subsección «Publicar»):
+1. un **calendario** con el estado de las habitaciones **por día** (Publicadas, Reservadas, Ocupadas),
+   con **icono y total**, para ver el mapa de lo disponible por **día, semana, mes y trimestre**,
+   reutilizable desde cualquier parte del sistema (`CalendarioHabitaciones`);
+2. al **seleccionar un día**, administrar sus habitaciones (publicar, reservar, liberar) y un **panel
+   de servicios** (mantenimiento y cambio de lencería).
+
+**Decisiones acordadas con el responsable** (5 respuestas):
+
+| Pregunta | Decisión |
+|---|---|
+| Dónde vive | **Reemplaza** la subsección existente «Publicar noche» (`/admin/mint`) |
+| Conteo por día | **Tres contadores independientes** (solape permitido, como «AMBAS» del calendario por habitación) **+ estado «En mantenimiento»** |
+| Acción Publicar | Publica la **habitación completa** (ventana de 90 noches, TOTP), como hoy; sin cambio de modelo |
+| Acción Reservar | **Reserva real** con canal y precio (`createReservation`), `PENDING` con hold de 24 h |
+| Servicios | Mantenimiento → **incidencia** real; Lencería → **asignación de housekeeping** del turno |
+| Minteo on-chain | Se **integra en el panel del día** (no se pierde la capacidad de CU-02) |
+| Acceso | **Owner y recepción**; publicar y acuñar siguen exigiendo owner/`MINTER_ROLE` |
+
+**Dos huecos del modelo que obligaron a decidir.** «Publicar» **no es por día** (la publicación acuña la
+ventana de 90 noches con TOTP), y «cambio de lencería» **no tiene modelo propio** (Lencería es stock:
+`supply_items`), así que se reutiliza la asignación de housekeeping del turno.
+
+### Qué se construyó
+
+| Capa | Pieza |
+|---|---|
+| `packages/shared` · `RoomsRepository` | `listRoomDayStates(from, to)` (mapa disperso por habitación y día: publicado/reservado/ocupado) y `listRoomIdsInMaintenance()` |
+| `apps/web/src/lib/room-board-calendar.ts` | Lógica **pura**: `rangeForView` (día/semana/mes/trimestre en UTC), `enumerateDates`, `aggregateBoardDays`, `isDayRoomEligible` |
+| `GET /api/admin/rooms/calendar` | `?from&to` → totales por día; `?date` → todas las habitaciones con su estado y resumen. Owner + recepción |
+| `POST /api/admin/rooms/bulk/release` | Ahora acepta `date` para liberar **solo esa noche** (además de la ventana por defecto) |
+| `components/rooms/CalendarioHabitaciones.tsx` | Componente **reutilizable** de presentación: vistas, navegación, iconos con totales, leyenda y a11y (icono + texto, `aria-pressed`) |
+| `components/rooms/roomIcons.tsx` | Se **mueve** desde `components/admin/rooms/` a una ubicación neutral para que cualquier módulo lo use |
+| `components/admin/rooms/RoomsBoardAdmin.tsx` | Contenedor: vista, periodo, día seleccionado, lista de habitaciones y selección por elegibilidad |
+| `components/admin/rooms/BoardDayActions.tsx` | Panel del día: publicar (TOTP), reservar (canal/precio), liberar (día), acuñar (integra `AdminMint`) y servicios (incidencia + lencería) |
+| `components/admin/AdminPanel.tsx` | Admite **varios roles** (`requiredRole` acepta lista) para owner + recepción |
+| `adminNav.ts` | «Publicar noche» (`/admin/mint`) se sustituye por «Publicar» (`/admin/habitacion/publicar`) |
+| i18n | 56 claves nuevas en `es`/`en`/`ru` |
+
+### Verificación del ciclo
+
+| Comprobación | Resultado |
+|---|---|
+| `tsc --noEmit` (`apps/web`) | **0 errores** |
+| `eslint` de las piezas nuevas | **0 errores · 0 avisos** |
+| `vitest` de `@hotel/web` (suite completa) | **678/678** en 78 archivos, **0 fallos** (29 pruebas nuevas) |
+| Lógica pura (`room-board-calendar.test.ts`) | **18/18** (vistas, agregación, elegibilidad) |
+| Endpoint del calendario (`calendar.test.ts`) | **6/6** (guardas, totales, detalle del día) |
+| `RoomsRepository` (métodos nuevos) | **3/3** dentro de los 31 del archivo |
+| Guardián de páginas del back-office | Se actualiza la lista: entra `app/admin/habitacion/publicar/page.tsx` y sale `app/admin/mint/page.tsx` |
+| `next build` de `@hotel/web` | **exit 0**; se genera `admin/habitacion/publicar` y desaparece `admin/mint` |
+| Chunk de cliente servido | Contiene `calendario-habitaciones`, `rooms/calendar`, `board-view-`, `board-action-`, `board-run-publish`, `board-mint-form`, `board-maintenance-form`, `board-linen-form`, `board-select-eligible` |
+
+**Sin migración de base de datos.** Los dos métodos nuevos son de **solo lectura** (`listRoomDayStates`,
+`listRoomIdsInMaintenance`) sobre tablas que ya existían (`room_publications`, `reservation_nights`,
+`nfts`, `maintenance_incidents`); las acciones reutilizan endpoints que ya existían o se amplían con un
+parámetro opcional (`bulk/release` acepta `date`). Por tanto `base_datos.sql`, `diccionario_datos.md` y
+`diagrama_er.md` **no cambian**.
+
+**Limitación conocida y documentada.** El estado «En mantenimiento» es **actual** (publicación en
+mantenimiento o incidencia abierta que bloquea la venta): como las incidencias no tienen día
+programado, se pinta en **todos** los días de la vista. Refinarlo a un rango de fechas exigiría añadir
+fechas de planificación a las incidencias (cambio de modelo).
+
+**Pendiente, con su dueño:**
+1. **Manuales**: `docs/` y `manuals.generated.ts` siguen describiendo la pantalla `/admin/mint`, que ya
+   no existe. Toca regenerar con `pnpm --filter @hotel/web run manuals` tras ajustar el manual fuente
+   (tarea del subagente `@manuales`); no se ha editado a mano un archivo generado.
+2. **Verificación visual** con navegador y `axe` (patrón de §39/§40): pendiente de una ventana con
+   PostgreSQL/Redis levantados.
+
+### Ajuste de textos de estado (2026-10-04, petición del responsable)
+
+Los botones de la ficha y la columna «Publicación» de la tabla comparten las claves `rooms.status.*`, así
+que el cambio se aplicó a **ambas** (alcance confirmado con el responsable) y en los **tres idiomas**:
+
+| Clave | Antes | Ahora |
+|---|---|---|
+| `rooms.status.MAINTENANCE` | En mantenimiento / Under maintenance / На обслуживании | **MANTENIMIENTO** / MAINTENANCE / ОБСЛУЖИВАНИЕ |
+| `rooms.status.OUT_OF_SERVICE` | Fuera de servicio / Out of service / Не в эксплуатации | **SERVICIO** / SERVICE / СЕРВИС |
+
+**Consecuencia aceptada.** La **leyenda del calendario** usa otra clave (`admin.boardLegendMaintenance`) y
+sigue diciendo «En mantenimiento»: el calendario describe el estado, los botones y la columna usan la
+etiqueta corta. También se observa (sin cambiar) que `RoomDetailCard` pinta el **código crudo**
+(`MAINTENANCE`) en dos sitios, no la etiqueta traducida: comportamiento anterior a este ciclo.

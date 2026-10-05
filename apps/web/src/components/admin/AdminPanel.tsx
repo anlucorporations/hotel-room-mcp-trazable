@@ -18,12 +18,14 @@ export function AdminPanel({
 }: {
   titleKey: string;
   descriptionKey?: string;
-  requiredRole?: RoleName;
+  /** Rol único o lista: cualquiera de ellos da acceso (el owner los satisface todos, D-30). */
+  requiredRole?: RoleName | readonly RoleName[];
   children: ReactNode;
 }) {
   const t = useTranslations("admin");
   const { hasRole, sessionUsername, signOut } = useAdminContext();
-  const allowed = !requiredRole || hasRole(requiredRole);
+  const required = requiredRole === undefined ? [] : Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+  const allowed = required.length === 0 || required.some((role) => hasRole(role));
 
   return (
     <section className="flex flex-col gap-5">

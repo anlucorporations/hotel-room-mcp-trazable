@@ -55,7 +55,7 @@ describe("Guardián de sesión en el render del back-office (M7 · H1)", () => {
     const pages = [
       "app/admin/caducadas/page.tsx",
       "app/admin/fondos/page.tsx",
-      "app/admin/mint/page.tsx",
+      "app/admin/habitacion/publicar/page.tsx",
       "app/admin/pausa/page.tsx",
       "app/admin/roles/page.tsx",
       "app/admin/royalty/page.tsx",

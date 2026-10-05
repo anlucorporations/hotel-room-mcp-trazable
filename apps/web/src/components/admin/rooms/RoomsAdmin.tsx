@@ -43,7 +43,7 @@ import {
   QuickReserveIcon,
   QuickToggleIcon,
   ReservedIcon,
-} from "./roomIcons";
+} from "@/components/rooms/roomIcons";
 import { isRoomEligibleForBulk, reservedNightsOf, selectableRoomIds, type BulkAction } from "./room-bulk";
 import { useMintWindow } from "./useMintWindow";
 

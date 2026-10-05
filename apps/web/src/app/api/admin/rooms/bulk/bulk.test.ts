@@ -209,6 +209,14 @@ describe("POST /api/admin/rooms/bulk/release (2026-10-04, acción «Liberar»)",
     );
   });
 
+  it("libera solo el día indicado cuando llega `date` (tablero de disponibilidad)", async () => {
+    mockRooms.findById.mockResolvedValue(room);
+    mockRooms.listReleaseableReservationIds.mockResolvedValue(["res-1"]);
+    const res = await bulkReleasePOST(request(`${BASE}/bulk/release`, { roomIds: ["room-1"], date: "2026-11-20" }));
+    expect(res.status).toBe(200);
+    expect(mockRooms.listReleaseableReservationIds).toHaveBeenCalledWith("room-1", "2026-11-20", "2026-11-20");
+  });
+
   it("devuelve released=0 si la habitación solo tiene noches vendidas (sin reservas)", async () => {
     mockRooms.findById.mockResolvedValue(room);
     mockRooms.listReleaseableReservationIds.mockResolvedValue([]);

@@ -41,13 +41,23 @@ function parseDateInput(value: string): { yyyymmdd: number; valid: boolean } {
  * valida (maestro/fecha/precio), se re-confirma el TOTP y se firma la tx, con confirmación
  * legible en `TxModal`.
  */
-export function AdminMint() {
+/**
+ * Props opcionales (2026-10-04): el **panel del día** del tablero de disponibilidad monta este
+ * formulario con la habitación y la fecha ya elegidas. Pasa una `key` distinta por objetivo para que
+ * el cambio reinicie los campos.
+ */
+export interface AdminMintProps {
+  readonly initialRoomNumber?: number;
+  readonly initialDate?: string;
+}
+
+export function AdminMint({ initialRoomNumber, initialDate }: AdminMintProps = {}) {
   const t = useTranslations("admin");
   const txCopy = useAdminTxCopy();
   const { mint, status, hash, error: mintError, reset } = useMintNight();
 
-  const [room, setRoom] = useState("");
-  const [date, setDate] = useState("");
+  const [room, setRoom] = useState(initialRoomNumber === undefined ? "" : String(initialRoomNumber));
+  const [date, setDate] = useState(initialDate ?? "");
   const [priceEth, setPriceEth] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [mintedTokenId, setMintedTokenId] = useState<string | null>(null);

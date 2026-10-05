@@ -437,4 +437,46 @@ describe("RoomsRepository (D-1…D-26)", () => {
       expect(values).toEqual(["room-1", "2026-10-01", "2026-10-31"]);
     });
   });
+
+describe("listRoomDayStates (2026-10-04, tablero de disponibilidad)", () => {
+  it("mapea las banderas y pasa la ventana como parámetros", async () => {
+    mockPool.query.mockResolvedValueOnce({
+      rows: [
+        { room_id: "room-1", day: "2026-10-10", published: true, reserved: true, occupied: false },
+        { room_id: "room-1", day: "2026-10-11", published: true, reserved: false, occupied: false },
+      ],
+    });
+    const states = await repository.listRoomDayStates("2026-10-01", "2026-10-31");
+    expect(states).toEqual([
+      { roomId: "room-1", date: "2026-10-10", published: true, reserved: true, occupied: false },
+      { roomId: "room-1", date: "2026-10-11", published: true, reserved: false, occupied: false },
+    ]);
+    const [sql, values] = mockPool.query.mock.calls[0];
+    expect(String(sql)).toContain("room_publications");
+    expect(String(sql)).toContain("reservation_nights");
+    expect(String(sql)).toContain("nfts");
+    expect(String(sql)).toContain("status = 'COMPLETED'");
+    expect(values).toEqual(["2026-10-01", "2026-10-31"]);
+  });
+
+  it("no inventa banderas cuando la fila trae nulos", async () => {
+    mockPool.query.mockResolvedValueOnce({
+      rows: [{ room_id: "room-1", day: "2026-10-10", published: null, reserved: null, occupied: null }],
+    });
+    const [state] = await repository.listRoomDayStates("2026-10-01", "2026-10-31");
+    expect(state).toEqual({ roomId: "room-1", date: "2026-10-10", published: false, reserved: false, occupied: false });
+  });
+});
+
+describe("listRoomIdsInMaintenance (2026-10-04)", () => {
+  it("une publicación en mantenimiento e incidencias abiertas que bloquean la venta", async () => {
+    mockPool.query.mockResolvedValueOnce({ rows: [{ id: "room-1" }, { id: "room-2" }] });
+    const ids = await repository.listRoomIdsInMaintenance();
+    expect(ids).toEqual(["room-1", "room-2"]);
+    const sql = String(mockPool.query.mock.calls[0][0]);
+    expect(sql).toContain("publication_status = 'MAINTENANCE'");
+    expect(sql).toContain("maintenance_incidents");
+    expect(sql).toContain("blocks_sale = TRUE");
+  });
+});
 });

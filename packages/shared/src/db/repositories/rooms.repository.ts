@@ -68,6 +68,19 @@ export interface RoomRecord {
   updatedAt: Date;
 }
 
+/**
+ * Estado de una habitación en **un día** del tablero de disponibilidad (2026-10-04). Las tres
+ * banderas son independientes: una habitación puede estar publicada y reservada el mismo día.
+ */
+export interface RoomDayStateRecord {
+  roomId: string;
+  /** Fecha UTC `YYYY-MM-DD`. */
+  date: string;
+  published: boolean;
+  reserved: boolean;
+  occupied: boolean;
+}
+
 /** Espacio de una habitación (catálogo cerrado + superficie). */
 export interface RoomSpaceRecord {
   spaceCode: string;
@@ -799,6 +812,87 @@ export class RoomsRepository {
       [roomId, from, to],
     );
     return res.rows.map((row) => row.reservation_id as string);
+  }
+
+  /**
+   * **Estado por habitación y día** para el tablero de disponibilidad (2026-10-04,
+   * `CalendarioHabitaciones`): mapa **disperso** —solo aparecen las parejas habitación/día con algún
+   * estado— con tres banderas independientes. Una misma habitación y día puede estar `published` y
+   * `reserved` a la vez (como la clase «AMBAS» del calendario por habitación).
+   *
+   *   · `published`: el día cae dentro de una ventana `[published_at, unpublished_at]` (extremos
+   *     inclusive; `unpublished_at` nulo = ventana abierta), igual que `lib/room-calendar.ts`.
+   *   · `reserved`: noche de una reserva **viva** (`PENDING`/`CONFIRMED`).
+   *   · `occupied`: noche ya `COMPLETED` (estancia pasada) o con un token no `AVAILABLE`
+   *     (`SOLD`/`CONFIRMING`/`CHECKED_IN`/`BURNED`).
+   *
+   * El **mantenimiento** no se resuelve aquí: no tiene día programado y viaja aparte
+   * (`listRoomIdsInMaintenance`).
+   */
+  async listRoomDayStates(from: string, to: string): Promise<RoomDayStateRecord[]> {
+    const res = await this.pool.query(
+      `SELECT room_id, to_char(night, 'YYYY-MM-DD') AS day,
+              bool_or(published) AS published,
+              bool_or(reserved) AS reserved,
+              bool_or(occupied) AS occupied
+         FROM (
+           SELECT rp.room_id AS room_id, d::date AS night,
+                  TRUE AS published, FALSE AS reserved, FALSE AS occupied
+             FROM room_publications rp
+             CROSS JOIN LATERAL generate_series(
+               GREATEST(rp.published_at::date, $1::date),
+               LEAST(COALESCE(rp.unpublished_at::date, $2::date), $2::date),
+               INTERVAL '1 day'
+             ) AS d
+            WHERE rp.published_at::date <= $2::date
+              AND COALESCE(rp.unpublished_at::date, $2::date) >= $1::date
+           UNION ALL
+           SELECT rn.room_id, rn.night_date, FALSE, TRUE, FALSE
+             FROM reservation_nights rn
+             JOIN reservations r ON r.id = rn.reservation_id
+            WHERE r.status IN ('PENDING', 'CONFIRMED')
+              AND rn.night_date BETWEEN $1::date AND $2::date
+           UNION ALL
+           SELECT rn.room_id, rn.night_date, FALSE, FALSE, TRUE
+             FROM reservation_nights rn
+             JOIN reservations r ON r.id = rn.reservation_id
+            WHERE r.status = 'COMPLETED'
+              AND rn.night_date BETWEEN $1::date AND $2::date
+           UNION ALL
+           SELECT ro.id, n.check_in_date, FALSE, FALSE, TRUE
+             FROM nfts n
+             JOIN rooms ro ON ro.room_number = n.room_number
+            WHERE n.status <> 'AVAILABLE'
+              AND n.check_in_date BETWEEN $1::date AND $2::date
+         ) AS estados
+        GROUP BY room_id, night
+        ORDER BY night ASC, room_id ASC`,
+      [from, to],
+    );
+    return res.rows.map((row) => ({
+      roomId: row.room_id as string,
+      date: row.day as string,
+      published: row.published === true,
+      reserved: row.reserved === true,
+      occupied: row.occupied === true,
+    }));
+  }
+
+  /**
+   * **Habitaciones en mantenimiento** (2026-10-04): publicación en `MAINTENANCE` o incidencia
+   * **abierta** que bloquea la venta (`blocks_sale`). Se devuelve como bandera de estado **actual**
+   * —las incidencias no tienen día programado—, así que el tablero la pinta en todos los días de la
+   * vista y se documenta como limitación conocida.
+   */
+  async listRoomIdsInMaintenance(): Promise<string[]> {
+    const res = await this.pool.query(
+      `SELECT id FROM rooms
+        WHERE archived_at IS NULL AND publication_status = 'MAINTENANCE'
+        UNION
+       SELECT DISTINCT room_id FROM maintenance_incidents
+        WHERE status IN ('OPEN', 'IN_PROGRESS') AND blocks_sale = TRUE`,
+    );
+    return res.rows.map((row) => row.id as string);
   }
 }
 

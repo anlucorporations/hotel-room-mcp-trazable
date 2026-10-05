@@ -3,6 +3,7 @@ import type { RoleName } from "@hotel/shared/domain";
 /** Claves i18n de las etiquetas del sidebar del back-office (namespace `admin.nav`). */
 export type AdminNavLabelKey =
   | "mint"
+  | "publishBoard"
   | "dashboard"
   | "royalty"
   | "pause"
@@ -103,7 +104,10 @@ export const ADMIN_NAV_SECTIONS: readonly AdminNavSection[] = [
     icon: "bed",
     items: [
       { href: "/admin/habitacion", labelKey: "rooms", role: "DEFAULT_ADMIN_ROLE" },
-      { href: "/admin/mint", labelKey: "mint", role: "MINTER_ROLE" },
+      // «Publicar» sustituye a «Publicar noche» (2026-10-04): el tablero de disponibilidad
+      // incluye el minteo on-chain de una noche en su panel del día. La entrada se muestra a
+      // recepción y al owner (que satisface cualquier rol, D-30).
+      { href: "/admin/habitacion/publicar", labelKey: "publishBoard", role: "RECEPTION_ROLE" },
     ],
   },
   {
