@@ -3065,3 +3065,37 @@ etiqueta corta. También se observa (sin cambiar) que `RoomDetailCard` pinta el 
 
 Sin defecto en el canario esta vez, así que no hubo que reconstruir ni retirar revisiones.
 Detalle en `despliegue_gcp.md` §43.
+
+---
+
+## 42. Plataforma inicializada desde cero (2026-10-05) · `@asistenteProyecto`
+
+**Objetivo del responsable:** base off-chain limpia para arrancar el recorrido de casos de uso, **sin**
+reiniciar los servicios globales (Foundry/Anvil y PostgreSQL/Cloud SQL).
+
+**Hecho.** Respaldo verificado (backup nativo `1791211892354` + export
+`gs://hotel-mcp-backups/pre-reset-20261005_145308.sql`), borrado de **36 tablas** operativas y
+conservación de **8** (operadores y catálogos/semillas), con los **dos checkpoints del worker fijados a
+la cabeza de la cadena (479)** para que no reindexe el pasado.
+
+| | Antes | Después |
+|---|---|---|
+| Habitaciones | 50 | **0** |
+| Noches (`nfts`) | 95 | **0** |
+| Ventas (`sale_events`) | 91 | **0** |
+| Operadores | 2 | **2** (conservados) |
+| Catálogos y planes | tipos 3 · servicios 8 · espacios 6 · lencería 4 · planes 1 | **intactos** |
+
+**Verificación:** conteos a cero tras 90 s (el worker no repuebla), `lag 0` en cadena y agregados,
+login E2E con TOTP correcto y catálogos servidos por la API.
+
+**Tres hallazgos documentados en detalle en `despliegue_gcp.md` §44:**
+1. el job documentado `hotel-mcp-inject-data` **no tiene red** y no alcanza la base privada: se creó
+   `hotel-mcp-reset-all` con VPC;
+2. `TRUNCATE … CASCADE` habría borrado `preventive_plans`; el reset usa **`DELETE` ordenado**, con el
+   orden validado por una prueba contra `base_datos.sql`;
+3. el worker se declara `down` por `emailDegraded` (`SMTP_HOST=smtp.invalid`), condición **previa**
+   (revisión del 2026-10-03) y ajena al reset.
+
+**Artefactos nuevos:** `packages/shared/src/db/reset-plan.ts` (+ prueba), `packages/shared/scripts/reset-all.ts`
+(seco por defecto, `--apply`) y el comando `reset:all`.

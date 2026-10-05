@@ -1263,3 +1263,83 @@ migración de esquema.
 | ¿`reserved = 0` es un fallo del SQL? | **No**: `GET /api/reception/reservations` devuelve **0** reservas vivas. El ramal de ocupadas (tokens) sí enciende; el de reservas queda cubierto por pruebas |
 | Etiquetas servidas | `MANTENIMIENTO` y `SERVICIO` presentes; **`Fuera de servicio` ausente** en el HTML público |
 | Imagen del servicio | `…/web:v23` |
+
+---
+
+## 44. Inicialización de la plataforma desde cero — reset off-chain (2026-10-05)
+
+**Petición del responsable:** dejar la plataforma limpia para arrancar el recorrido de casos de uso,
+**eliminando todos los datos de la base off-chain** y **sin reiniciar** los servicios globales
+(Foundry/Anvil y PostgreSQL/Cloud SQL).
+
+### Respaldo previo (obligatorio para el paso destructivo R-2)
+
+| Respaldo | Identificador |
+|---|---|
+| Backup nativo de Cloud SQL | `1791211892354` · `SUCCESSFUL` · «pre-reset plataforma limpia 2026-10-05T14:51:31Z» |
+| Export `.sql` a GCS | `gs://hotel-mcp-backups/pre-reset-20261005_145308.sql` (214 KiB) |
+
+El bucket `hotel-mcp-backups` **no existía** (el runbook lo daba por hecho): se creó en
+`europe-west1` y se concedió `roles/storage.objectAdmin` a la cuenta de servicio de Cloud SQL
+(`p475955050238-6e4cqe@gcp-sa-cloud-sql.iam.gserviceaccount.com`), sin la cual el export devuelve
+`HTTP 412`.
+
+### Hallazgo 1 · El job documentado **no puede** alcanzar la base
+
+`hotel-mcp-inject-data` (el vehículo del runbook F8 para reset y siembra) **no tiene red configurada**
+(`vpcAccess`/`networkInterfaces` vacíos), y Cloud SQL es **solo IP privada** (`10.104.0.3`,
+`ipv4Enabled: false`, red `hotel-mcp-vpc`). Con esa configuración el job no llega a la base: el
+`DATABASE_URL` del secreto apunta justo a esa IP privada. Se creó un job dedicado
+**`hotel-mcp-reset-all`** con el mismo entorno y SA pero **con la red que faltaba**
+(`--network=hotel-mcp-vpc --subnet=hotel-mcp-euw1 --vpc-egress=private-ranges-only`).
+
+También se descubrió que la imagen **no resuelve `tsx` desde la raíz**: hay que invocarlo con
+`pnpm --filter @hotel/shared exec tsx …` (el binario vive en `packages/shared/node_modules/.bin`, no en
+la raíz del monorepo).
+
+### Hallazgo 2 · `TRUNCATE … CASCADE` habría borrado un catálogo
+
+`preventive_plans.room_id → rooms(id) ON DELETE SET NULL`. Con `TRUNCATE rooms CASCADE`, PostgreSQL
+arrastra **todas** las tablas que referencian a `rooms` sin mirar la acción, así que se habrían perdido
+los **planes preventivos** (catálogo que debía conservarse). Por eso el reset usa **`DELETE` ordenado**
+—hijos antes que padres—, que respeta `SET NULL`: los planes sobreviven con `room_id = NULL`.
+
+El orden no se improvisa: vive en `packages/shared/src/db/reset-plan.ts` y
+`reset-plan.test.ts` lo **valida contra `base_datos.sql`** (cobertura de las 46 tablas y orden
+topológico). Si alguien añade una tabla o una FK, la prueba se pone roja antes de ejecutar nada.
+
+### Qué se borró y qué se conservó
+
+| | Tablas |
+|---|---|
+| **Borradas (36)** | habitaciones y toda su ficha (imágenes, servicios, espacios, publicaciones, historial), reservas (noches, contactos, historial), folios, cargos y checkouts, reseñas, actividades y agendas, housekeeping (turnos, asignaciones, registros), movimientos de lencería, incidencias y tareas de mantenimiento, contenido de la web, contingencia de check-in, índice de cadena (`nfts`, `listings`, `sale_events`, histórico y logs del worker), avisos de correo y push, y sesiones |
+| **Conservadas (8)** | `admin_users`, `mfa_recovery_codes` (operadores, para poder entrar), y los catálogos/semillas `room_types`, `room_amenities`, `room_space_types`, `supply_items`, `preventive_plans`, `platform_settings` |
+
+### El detalle que evita que la base se repueble sola
+
+La cadena **no se toca**, así que sigue con sus habitaciones registradas y sus noches. Si se vaciara la
+base dejando los checkpoints a cero, el worker **reindexaría** el pasado y las noches viejas volverían a
+aparecer. El reset fija **antes** de borrar (y en este orden):
+
+1. `worker_checkpoints.last_block` = cabeza de la cadena (**479** en esta ejecución);
+2. `worker_aggregate_counters.last_block` = 479 (misma cabeza, para el procesador de agregados).
+
+Y solo después borra. Si lo hiciera al revés, el worker podría escribir datos viejos en el hueco entre
+el borrado y el ajuste del checkpoint.
+
+### Verificación (producción real)
+
+| Comprobación | Resultado |
+|---|---|
+| Conteos antes → después | `rooms 50→0` · `nfts 95→0` · `sale_events 91→0` · `admin_users 2→2` |
+| Worker tras 90 s (¿repuebla?) | `nfts`, `sale_events` y `rooms` siguen a **0** |
+| Checkpoints del worker (`/health`) | `lastBlock 479` · `headBlock 479` · **`lag 0`** · `aggregateLastBlock 479` · `aggregateLag 0` |
+| Operadores (API) | **2** · login E2E con TOTP **200** |
+| Catálogos (API) | tipos **3** · servicios **8** · espacios **6** · lencería **4** · **planes preventivos 1** |
+| Resto (API) | incidencias **0** · reservas **0** |
+
+> **Observación previa, no causada por el reset.** El worker se declara `down` por `emailDegraded: true`
+> y `/api/admin/system/operations` devuelve **503**. La causa es `SMTP_HOST=smtp.invalid` (placeholder
+> del script `70-deploy-apps.sh`), y la revisión del worker es del **2026-10-03**, dos días anterior a
+> este reset: la degradación ya existía. Los indicadores que sí dependen del reset (lag de cadena y de
+> agregados) están a **0**.

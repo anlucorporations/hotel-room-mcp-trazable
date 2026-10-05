@@ -50,7 +50,8 @@
     "provision:reception": "node --env-file=../../.env --import tsx scripts/create-admin.ts --role RECEPTION_ROLE",
     "backfill:session-traces": "node --env-file=../../.env --import tsx scripts/backfill-session-traces.ts",
     "reset:index": "node --env-file=../../.env --import tsx scripts/reset-index.ts",
-    "clean": "rm -rf dist .turbo coverage *.tsbuildinfo"
+    "clean": "rm -rf dist .turbo coverage *.tsbuildinfo",
+    "reset:all": "node --env-file=../../.env --import tsx scripts/reset-all.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
