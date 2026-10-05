@@ -14,6 +14,7 @@ import {
 import { GETLOGS_MAX_RANGE } from "@hotel/shared/domain";
 import { hotelNightsAbi } from "@hotel/shared/abi";
 import { contractAddress, deploymentBlock } from "@/config/chain";
+import { selectBurnCandidates } from "@/lib/burn-candidates";
 
 /** Una noche del hotel candidata a `burn`: minteada, no vendida y expirada (CU-13, docs/SRS.md §9). */
 export interface ExpiredNight {
@@ -37,6 +38,12 @@ const MINT_EVENT = parseAbiItem(
 const SALE_EVENT = parseAbiItem(
   "event Sale(uint256 indexed tokenId, address indexed seller, address indexed buyer, uint256 price, uint8 saleType)",
 );
+/**
+ * `Burn(uint256 indexed tokenId)`: imprescindible para descontar lo ya quemado. `isExpired` **solo
+ * mira la fecha**, así que un token ya quemado con fecha pasada sigue apareciendo como candidato y
+ * `burnExpired` revertiría con `ERC721NonexistentToken` (defecto real del 2026-10-05).
+ */
+const BURN_EVENT = parseAbiItem("event Burn(uint256 indexed tokenId)");
 
 async function getLogsPaginated<TEvent extends AbiEvent>(
   client: PublicClient,
@@ -90,22 +97,26 @@ async function scanExpired(client: PublicClient): Promise<ExpiredScanResult> {
   // paginación no produciría rangos y devolveríamos 0 en silencio. Fallamos visiblemente.
   if (deploymentBlock > head) throw new Error("SCAN_CONFIG_INVALID");
 
-  const [mints, sales] = await Promise.all([
+  const [mints, sales, burns] = await Promise.all([
     getLogsPaginated(client, MINT_EVENT, deploymentBlock, head),
     getLogsPaginated(client, SALE_EVENT, deploymentBlock, head),
+    getLogsPaginated(client, BURN_EVENT, deploymentBlock, head),
   ]);
 
-  // Excluimos las noches vendidas alguna vez: son de clientes y NO se queman (CU-13 13d).
+  // Excluimos las vendidas alguna vez (son de clientes: `AlreadySold`) y **las ya quemadas**
+  // (`ERC721NonexistentToken`): la UI no ofrece lo que la cadena va a revertir.
   const sold = new Set(sales.map((log) => (log.args.tokenId ?? 0n).toString()));
+  const burned = new Set(burns.map((log) => (log.args.tokenId ?? 0n).toString()));
 
-  const minted = new Map<string, number>();
-  for (const log of mints) {
-    const { tokenId, dateYYYYMMDD } = log.args;
-    if (tokenId === undefined || dateYYYYMMDD === undefined) continue;
-    const id = tokenId.toString();
-    if (sold.has(id)) continue;
-    minted.set(id, Number(dateYYYYMMDD));
-  }
+  const minted = selectBurnCandidates(
+    mints
+      .map((log) => ({ tokenId: log.args.tokenId, dateYYYYMMDD: log.args.dateYYYYMMDD }))
+      .filter((log): log is { tokenId: bigint; dateYYYYMMDD: bigint } =>
+        log.tokenId !== undefined && log.dateYYYYMMDD !== undefined,
+      ),
+    sold,
+    burned,
+  );
 
   const candidates = [...minted.keys()];
   const checks = await Promise.all(candidates.map((id) => checkExpired(client, BigInt(id))));
