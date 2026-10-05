@@ -20,6 +20,13 @@ export interface OwnedNight {
   readonly type: NightType;
   /** Listado activo de reventa, o `null` si no está en venta. */
   readonly listingPriceWei: string | null;
+  /**
+   * **Foto real de su habitación** (2026-10-05), o `null` si esa habitación no tiene ninguna
+   * registrada. La cadena solo trae el número, así que se resuelve aparte contra el maestro
+   * (`GET /api/public/rooms/covers`). Sin foto, la tarjeta usa su imagen de tipo: nunca se enseña la
+   * foto de otra habitación.
+   */
+  readonly coverUrl?: string | null;
 }
 
 /** Una reventa ya cerrada (el usuario fue el vendedor). Base de «Mis reventas» y de sus avisos. */
@@ -196,7 +203,33 @@ async function loadMyNights(
     args: [address],
   });
 
-  return { nights, pendingWei: pending.toString(), resales };
+  // 6) Foto real de cada habitación: la cadena solo trae el número, así que la portada se resuelve
+  //    contra el maestro off-chain en **una** llamada. Falla en blando: sin foto, la tarjeta usa su
+  //    imagen de tipo (nunca se enseña la de otra habitación).
+  const nightsWithCovers = await attachCoverUrls(nights);
+
+  return { nights: nightsWithCovers, pendingWei: pending.toString(), resales };
+}
+
+/**
+ * Añade a cada noche la URL de la **foto de su habitación**.
+ *
+ * `GET /api/public/rooms/covers` resuelve el salto número → portada (el maestro off-chain conoce la
+ * foto; la cadena, solo el número). Si la llamada falla, se devuelven las noches sin `coverUrl` en
+ * lugar de romper «Mis noches»: la foto es un adorno, la noche es el dato.
+ */
+async function attachCoverUrls(nights: readonly OwnedNight[]): Promise<OwnedNight[]> {
+  if (nights.length === 0) return [...nights];
+  const numbers = [...new Set(nights.map((night) => night.room))].join(",");
+  try {
+    const response = await fetch(`/api/public/rooms/covers?numbers=${numbers}`);
+    if (!response.ok) return [...nights];
+    const data = (await response.json()) as { covers?: Record<string, { url?: string }> };
+    const covers = data.covers ?? {};
+    return nights.map((night) => ({ ...night, coverUrl: covers[String(night.room)]?.url ?? null }));
+  } catch {
+    return [...nights];
+  }
 }
 
 /**

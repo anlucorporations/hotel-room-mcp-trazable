@@ -19,6 +19,7 @@ import {
 import { hotelNightsAbi } from "@hotel/shared/abi";
 import { contractAddress, deploymentBlock } from "@/config/chain";
 import { serverPublicClient } from "@/lib/server-client";
+import { roomCoverUrl } from "@/lib/room-image-url";
 
 const nftsRepo = new NFTsRepository();
 const roomsRepo = new RoomsRepository();
@@ -264,7 +265,7 @@ export function withCoverUrls(
 ): NightView[] {
   return nights.map((night) => {
     const cover = covers.get(night.room);
-    return { ...night, coverUrl: cover ? `/api/rooms/images/${cover.fileName}` : null };
+    return { ...night, coverUrl: cover ? roomCoverUrl(cover.fileName) : null };
   });
 }
 
