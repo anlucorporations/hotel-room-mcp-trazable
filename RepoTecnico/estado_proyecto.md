@@ -3099,3 +3099,31 @@ login E2E con TOTP correcto y catálogos servidos por la API.
 
 **Artefactos nuevos:** `packages/shared/src/db/reset-plan.ts` (+ prueba), `packages/shared/scripts/reset-all.ts`
 (seco por defecto, `--apply`) y el comando `reset:all`.
+
+---
+
+## 43. `@planta`: esquema de habitaciones inyectado (2026-10-05) · `@inyectaDatos`
+
+**Petición del responsable**: analizar la estructura del alta de habitación y crear un script
+(**`@planta`**, exclusivo de este proyecto) que poblara la planta: por planta 3 dobles para familias
+pequeñas, 2 suites de lujo para ejecutivos y 5 simples para parejas, con **TV y aire acondicionado en
+todas**, usando las imágenes de `docs/imagenes` por tipo y rellenando el texto que faltaba.
+
+**Decisiones acordadas** (5 respuestas): las plantas son **1, 2, 3 y 4** (se incluyó el 2.º); los
+servicios que el catálogo **no** sabe codificar (servicio a la habitación, escritorio de trabajo,
+jacuzzi, iluminación graduable) van **redactados en la descripción**; «vista a la piscina» se
+representa con `viewKind = GARDEN`; y los precios son **0,06 ETH (simple) · 0,10 ETH (doble) ·
+0,80 ETH (suite)**, todas en `DRAFT` para que publicar forme parte del recorrido de casos de uso.
+
+**Resultado (verificado en producción):** **40 habitaciones** (101–110, 201–210, 301–310, 401–410) ·
+12 dobles · 8 suites · 20 simples, cada una con sus servicios, espacios, descripciones en es/en/ru y
+su **foto registrada en `room_images`** (`is_cover`) y servida por `/api/rooms/images/<fichero>`.
+
+**Dos hallazgos operativos** (detalle en `BaseOperaciones/estado_inyeccion.md`):
+1. el alta en ráfaga devuelve **429 del límite del borde (WAF)**; el script reintenta con retroceso,
+   pero lo decisivo fue **consultar primero el listado** para no gastar cuota en altas que ya existen;
+2. las fotos **se sirven desde el contenedor**: además de la fila off-chain, los 40 ficheros quedan en
+   `docs/imagenes/` del repositorio para que viajen en la imagen de la web (garantía entre instancias).
+
+**Artefactos**: `scripts/planta.ts`, `RepoTecnico/BaseOperaciones/estructura_datos.md` (entidades,
+relaciones y diagrama Mermaid del alta) y el estado de inyección actualizado.

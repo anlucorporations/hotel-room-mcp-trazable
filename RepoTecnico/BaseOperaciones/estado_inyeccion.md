@@ -60,3 +60,75 @@
    dev) cuando el worker esté en marcha.
 3. **Multisig Gnosis Safe** (B-7) sigue fuera de alcance.
 
+## Tarea en curso · Personal del hotel (2026-10-05)
+
+| Paso | Estado | Notas |
+|---|---|---|
+| 1. Análisis / `estructura_datos.md` Parte II | ✅ hecho | `admin_users` + `mfa_recovery_codes` (capa A) y nombres en turnos/repartos (capa B) |
+| 2. Casos de uso | ✅ reutilizados | CU-42 (Sistemas → Usuarios) en `docs/CASOS-DE-USO.md`; sin documento nuevo |
+| 5. Plan de inyección | ⏳ esperando respuestas | Alcance, método (BD vs API) y plantilla de personal |
+| 6. Script `scripts/personal.ts` | ⏳ pendiente | Se genera tras aprobar el plan |
+
+> Estado real de partida: existen `admin@hotel.es` (owner) y `recepcion@hotel.es` (recepción) del
+> `inject-data.ts`; **housekeeping y mantenimiento no tienen cuenta todavía**. Ninguna cuenta es
+> borrable: la baja es `active = false`.
+
+
+---
+
+## Inyección `@planta` — esquema de habitaciones (2026-10-05)
+
+**Estado: EJECUTADA en producción.** 40 habitaciones creadas con su foto y sus servicios.
+
+### Qué hace el script
+
+`scripts/planta.ts` (**@planta**, exclusivo de este proyecto) crea la planta aprobada por el
+responsable y registra en off-chain la dirección de la foto de cada habitación.
+
+| | Detalle |
+|---|---|
+| Habitaciones | **40** · plantas **1, 2, 3 y 4** · 10 por planta |
+| Reparto por planta | `x01`–`x03` **dobles** · `x04`–`x05` **suites** · `x06`–`x10` **simples** |
+| Precios | simple **0,06 ETH** · doble **0,10 ETH** · suite **0,80 ETH** |
+| Estado inicial | `DRAFT` (publicar es un caso de uso aparte) |
+| Servicios | Los 8 del catálogo. Los que no tienen código (servicio a la habitación, escritorio, jacuzzi, iluminación graduable, vistas a la piscina) van **en la descripción**, como se acordó |
+| Fotos | Una imagen **por tipo** de `docs/imagenes/`, materializada con el nombre canónico de cada habitación y registrada en `room_images` |
+
+### Cómo se ejecuta
+
+```bash
+# Modo seco (imprime el plan; no crea nada)
+pnpm --filter @hotel/shared exec tsx ../../scripts/planta.ts
+
+# Ejecución real (pide confirmación; --yes para no interactivo)
+export ADMIN_USER=… ADMIN_PASSWORD=… ADMIN_TOTP_SECRET=…
+pnpm --filter @hotel/shared exec tsx ../../scripts/planta.ts --apply
+
+# Solo las fotos
+pnpm --filter @hotel/shared exec tsx ../../scripts/planta.ts --images-only --yes
+```
+
+Registro de cada ejecución: `.deploy-logs/planta-<fecha>.log` (ignorado por git).
+
+### Lecciones operativas (importantes para la próxima inyección)
+
+1. **Límite del borde (WAF).** El alta en ráfaga devuelve **HTTP 429** («Edge WAF Rate Limit»). El
+   script ya reintenta con retroceso exponencial y espacia las altas, **pero lo decisivo** fue
+   consultar primero el listado y no enviar altas de habitaciones que ya existen: 37 respuestas `409`
+   consumían la cuota y la petición siguiente recibía el 429.
+2. **Idempotencia.** Volver a ejecutarlo es seguro: omite lo que ya existe (consulta previa) y no
+   duplica fotos.
+3. **Las fotos se sirven desde el contenedor.** La subida por la API escribe el fichero en la
+   instancia que atiende la petición; para que esté garantizado en todas las instancias y sobreviva a
+   un redespliegue, los 40 ficheros se guardan también en `docs/imagenes/` del repositorio (viajan en
+   la imagen de la web).
+
+### Resultado verificado (producción)
+
+| Comprobación | Resultado |
+|---|---|
+| Habitaciones | **40** (101–110, 201–210, 301–310, 401–410) · 12 dobles · 8 suites · 20 simples |
+| Ficha doble (101) | planta 1 · 4 personas · 2 camas · 26 m² · balcón · 0,10 ETH · WIFI/AC/TV/baño privado/balcón/calefacción |
+| Ficha suite (104) | planta 1 · 2 personas · cama king · 42 m² · vista GARDEN · 0,80 ETH · + minibar · salón y terraza |
+| Ficha simple (106) | planta 1 · 2 personas · 18 m² · 0,06 ETH · WIFI/AC/TV/baño privado/calefacción |
+| Fotos | Las 40 con su fila en `room_images` (`is_cover`) y servidas por `/api/rooms/images/<fichero>` |
