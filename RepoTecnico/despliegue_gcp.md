@@ -1554,3 +1554,33 @@ añadió la v23 usa `labelKey: "publishBoard"` y `admin.nav` no tenía esa clave
 
 > El aviso «Tu sesión no tiene el rol necesario para esta sección» que aparece en el menú es un texto
 > **`sr-only`** de accesibilidad (vive en un `<span class="sr-only">` del sidebar), no un error visible.
+
+---
+
+## 50. Release `v30` — despliegue anclado al commit empujado (2026-10-05)
+
+**Contexto.** Las correcciones del ciclo (CSP del RPC y traducción del menú) ya estaban en producción
+en `v28`/`v29`, pero se habían construido desde el árbol de trabajo. Tras el `/push` (`676539e` en los
+tres remotos) se reconstruye para dejar la release **anclada a un SHA**, con el script de verificación
+del backend incluido en el repositorio.
+
+| Paso | Detalle |
+|---|---|
+| `push` | `676539e` a `origin`, `github` y `codecrypto`: catálogo (`c1d23f9`), release v27 (`bf0315a`), CSP (`b0a90d9`), traducción del menú (`83fa320`), registro v28/v29 (`607eb26`) y script de verificación (`676539e`) |
+| Imagen | Cloud Build `6ada189a` · `web:v30` · 5m6s · **SUCCESS** |
+| Canario | `hotel-mcp-web-00047-siw` al 0 %, etiqueta `v30`, verificado antes de mover tráfico |
+| Producción | `00047-siw` al **100 %**; `v29`, `v28` y `v27` se conservan como vuelta atrás |
+
+### Verificación (canario y URL pública)
+
+| Comprobación | Resultado |
+|---|---|
+| `connect-src` incluye el Anvil del despliegue | **sí** (`https://…` y `wss://…`) |
+| Páginas `/`, `/catalogo`, `/habitaciones`, `/reservar`, `/contacto`, `/empresa` | **200** |
+| Foto del catálogo | cargada (`101-Doble-2026-10-05-1.jpg`, `naturalWidth > 0`) |
+| Cartera contra el Anvil + flujo de reserva listo | **sí** (Hab. 101/102, 241,52 €/noche, botón «Retener la noche») |
+| Errores de CSP / de consola | **0 / 0** |
+| Menú del back-office | «Publicar» visible · **0 `MISSING_MESSAGE`** |
+| `/health/ready` | **READY** (postgres, redis, RPC `UP`) |
+| Worker sobre Anvil | `lastBlock 481` = `headBlock 481` · **lag 0** |
+| Imagen del servicio | `…/web:v30` |
