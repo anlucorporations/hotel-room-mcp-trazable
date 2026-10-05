@@ -1,5 +1,11 @@
 # Cuentas del entorno · Anvil local (chain-id 81234)
 
+> ### ⚠️ Este documento describe el Anvil **local** (chain-id 81234, contrato `0x5FbD…`, 2026-02-27)
+> El **despliegue vigente** es otro: Anvil en GCP, **chain-id 31337**, contrato
+> **`0xc66ab83418c20a65c3f8e83b3d11c8c3a6097b6f`**. El mapa **verificado** de direcciones, roles y
+> posesión de noches de esa cadena está en la sección **«Estado verificado (2026-10-05)»** al final:
+> úsalo como referencia. Lo de arriba se conserva como historia del entorno local.
+
 > Generado por `@InyectaDatos` · Paso 3 (consulta con `cast`) · 2026-02-27
 > RPC: `http://localhost:8545` · Anvil arrancado con `--chain-id 81234 --block-time 2`
 > (Anvil no estaba en marcha; se levantó una instancia limpia — ver §4).
@@ -12,7 +18,7 @@ para el proyecto son las **4 primeras** (cuentas internas / hot-wallets):
 | Cuenta | Dirección | Balance | Nonce | Uso en el proyecto |
 |---|---|---|---|---|
 | 0 | `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` | 10.000 ETH | 0 | **Desplegador** (`DEPLOYER_PRIVATE_KEY`) + tesorería destino de `withdrawFunds` |
-| 1 | `0x70997970C51812dc3A010C7d01b50e0d17dc79C8` | 10.000 ETH | 0 | Hot-wallet MINTER (`MINTER_RELAYER_PRIVATE_KEY`); rol tras redespliegue |
+| 1 | `0x70997970C51812dc3A010C7d01b50e0d17dc79C8` | 10.000 ETH | 0 | Hot-wallet MINTER (`MINTER_RELAYER_PRIVATE_KEY`); `MINTER_ROLE` **concedido el 2026-10-05** en el contrato vigente |
 | 2 | `0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC` | 10.000 ETH | 0 | Hot-wallet BURNER (`BURNER_BOT_PRIVATE_KEY`); `BURNER_ROLE` **concedido el 2026-10-05** en el contrato vigente |
 | 3 | `0x90F79bf6EB2c4f870365e785982E1f101e93b906` | 10.000 ETH | 0 | Hot-wallet RECEPTION (`RECEPTION_WALLET_PRIVATE_KEY`); rol tras redespliegue |
 | 4–9 | *(resto del pool determinista)* | 10.000 ETH | 0 | **Huéspedes/compradores simulados** (aprobado, Paso 4) |
@@ -124,3 +130,66 @@ existían (2026-09-28 → 2026-10-04) **ya estaban quemadas**; hoy no hay ningun
 > **Pendiente de gobierno**: el desplegador (cuenta 0) **sigue conservando** `BURNER_ROLE` (y el resto).
 > Lo correcto según el diseño es revocárselo y dejar el rol solo en la hot-wallet dedicada; no se hizo
 > en este ciclo para no tocar otros flujos (mint, pausa, tesorería) a la vez.
+
+---
+
+## Estado verificado en la cadena VIGENTE (2026-10-05)
+
+Consulta directa por RPC contra `https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app`
+(**chain-id 31337**, contrato `0xc66ab83418c20a65c3f8e83b3d11c8c3a6097b6f`).
+
+### Roles por cuenta (on-chain, tras la alineación del 2026-10-05)
+
+| Cuenta | Dirección | Roles | Papel |
+|---|---|---|---|
+| **0** | `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` | `DEFAULT_ADMIN`, `MINTER`, `BURNER`, `TREASURER`, `RECEPTION`, `PAUSER` · **y es `treasury()`** | **Desplegador y cartera OPERADORA del panel** |
+| **1** | `0x70997970C51812dc3A010C7d01b50e0d17dc79C8` | `MINTER` | Hot-wallet de acuñación |
+| **2** | `0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC` | `BURNER` | Hot-wallet de quema (clave en el secreto `hotel-burner-private-key`) |
+| **3** | `0x90F79bf6EB2c4f870365E785982E1f101E93b906` | `RECEPTION` | Hot-wallet de recepción (`markCheckedIn`) |
+| 4–9 | `0x15d34A…`, `0x996550…`, `0x976EA7…`, `0x14dC79…`, `0x23618e…`, `0xa0Ee7A…` | **ninguno** | Huéspedes/compradores simulados |
+
+Cambios de la alineación (firmados por la cuenta 0, que es `DEFAULT_ADMIN`):
+
+| Cambio | Tx | Bloque |
+|---|---|---|
+| `MINTER_ROLE` → cuenta 1 | `0xfc912ccd4d…` | 488 |
+| `RECEPTION_ROLE` → cuenta 3 | `0xb2ee17ed67…` | 489 |
+| `RECEPTION_ROLE` retirado de la cuenta 1 | `0x91de51d96c…` | 490 |
+| `BURNER_ROLE` → cuenta 2 (ciclo anterior) | `0x10a4fcff06…` | 486 |
+
+### ¿Quién firma de verdad? (evidencia on-chain)
+
+El panel de administración firma con la **cartera conectada en el navegador** (`useAdminWrite` →
+`writeContract`); **no hay relayer en la web** (`MINTER_RELAYER_PRIVATE_KEY` solo se usa en los E2E de
+`packages/contracts/scripts/e2e`). Por eso, en este despliegue **todo lo ha firmado la cuenta 0**:
+
+| Operación | Eventos | Firmante |
+|---|---|---|
+| `mint` (MINTER) | 97 | **cuenta 0** |
+| `burnExpired` (BURNER) | 7 | **cuenta 0** |
+| `registerRoom` (DEFAULT_ADMIN) | 50 | **cuenta 0** |
+
+> **Consecuencia práctica:** revocar de la cuenta 0 los roles que el panel usa (`MINTER`, `BURNER`,
+> `RECEPTION`, `PAUSER`, `TREASURER`) **rompería el panel** para quien conecte esa cartera: las
+> operaciones revertirían con `AccessControlUnauthorizedAccount`. Por eso la alineación de roles se
+> hizo **aditiva** (cada hot-wallet con su rol) y **no** se retiró nada de la cuenta 0.
+>
+> Para llegar al **mínimo privilegio estricto** (el desplegador sin roles operativos) hace falta una de
+> estas dos cosas, en este orden:
+> 1. **Que el operador importe en su cartera las claves de las hot-wallets** y conecte la que toca en
+>    cada pantalla (mint → cuenta 1, quemar → cuenta 2, check-in → cuenta 3).
+> 2. **Un relayer en servidor** que firme las operaciones privilegiadas (como ya hacen los E2E con
+>    `MINTER_RELAYER_PRIVATE_KEY`), y entonces sí revocar de la cuenta 0.
+
+### Noches vivas por dueño
+
+| Dueño | Noches | Lectura |
+|---|---|---|
+| Cuenta 0 (tesorería) | **83** | Inventario del hotel sin vender |
+| Cuenta 2 (BURNER) | **5** (10120261027, 10820261103, 11820261110, …) | Actuó de comprador en la inyección |
+| Cuenta 3 (RECEPTION) | **2** (12420261117, 21020261201) | Actuó de comprador en la inyección |
+| Cuentas 4–9 | 0 | Los huéspedes documentados no tienen inventario |
+
+> Las claves privadas de las 10 cuentas son las **deterministas de Anvil** (públicas y conocidas); en
+> el repo viven en `.env` (`DEPLOYER_…`, `MINTER_RELAYER_…`, `BURNER_WALLET_…`, `RECEPTION_WALLET_…`) y
+> solo la del quemador está además en GCP Secret Manager. `GNOSIS_SAFE_ADDRESS` **no** está definido.
