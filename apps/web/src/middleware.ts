@@ -12,6 +12,40 @@ import type { NextRequest } from 'next/server';
 // Memoria efímera en edge para throttling básico pre-aplicación
 const edgeRateLimitMap = new Map<string, { count: number; expiresAt: number }>();
 
+/**
+ * Orígenes de RPC que la CSP debe permitir, **derivados del despliegue** (2026-10-05).
+ *
+ * Defecto corregido: la CSP listaba Alchemy/Infura/WalletConnect/CoinGecko, pero el RPC real de este
+ * despliegue es un **Anvil en Cloud Run** (`NEXT_PUBLIC_RPC_URL`). El navegador rechazaba la conexión
+ * (`Refused to connect … violates the Content Security Policy`) y el frontend se quedaba sin leer la
+ * cadena: el flujo de reserva y todo lo que depende de la wallet fallaban en silencio.
+ *
+ * Se derivan del entorno público (inyectado en build) para no cablear el host de un despliegue
+ * concreto; si la variable falta o no es una URL válida, no se añade nada.
+ */
+export function rpcConnectOrigins(): string[] {
+  const origins = new Set<string>();
+  // `NEXT_PUBLIC_*` se inyecta en build; `RPC_URL` es la variable de runtime del servicio. Se miran
+  // ambas para que la política sea correcta tanto en la imagen como en cualquier entorno servido.
+  for (const raw of [
+    process.env.NEXT_PUBLIC_RPC_URL,
+    process.env.NEXT_PUBLIC_WS_URL,
+    process.env.RPC_URL,
+  ]) {
+    if (!raw) continue;
+    try {
+      const url = new URL(raw);
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') continue;
+      origins.add(`${url.protocol}//${url.host}`);
+      // El mismo host por websocket: Anvil/WalletConnect pueden abrir `ws(s)://`.
+      origins.add(`${url.protocol === 'https:' ? 'wss' : 'ws'}://${url.host}`);
+    } catch {
+      // URL mal formada: se ignora en vez de romper la respuesta.
+    }
+  }
+  return [...origins];
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -78,7 +112,7 @@ export function middleware(request: NextRequest) {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://ipfs.io https://gateway.pinata.cloud https://*.walletconnect.com",
     "font-src 'self' data:",
-    "connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com",
+    `connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com ${rpcConnectOrigins().join(' ')}`.trim(),
     // F6 · D-67: el mapa de contacto es un iframe de OpenStreetMap; se permite SOLO ese origen
     // (el resto de `frame-src` sigue cerrado por `default-src 'self'`).
     "frame-src https://www.openstreetmap.org",
