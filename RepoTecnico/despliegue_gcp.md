@@ -1712,3 +1712,56 @@ este ciclo fue de **configuración** (secreto + variables + tráfico), no de có
 | `/health/ready` | **READY** (postgres, redis, RPC `UP`) |
 | Worker sobre Anvil | `lastBlock 486` = `headBlock 486` · **lag 0** · planificador de quema en modo **diario** |
 | Imagen del servicio | `…/web:v33` |
+
+---
+
+## 54. Release `v34` — la quema deja de ofrecer noches ya quemadas (2026-10-05)
+
+**Reporte del responsable**: «la quema de los nft es fallida con la billetera del owner».
+
+**La billetera no era el problema.** La cuenta del owner (`0xf39F…`) **sí** tiene `BURNER_ROLE`
+(verificado on-chain). El fallo estaba en **qué noches se ofrecían en el lote**.
+
+**Causa raíz.** `_isExpired(tokenId)` en el contrato **solo mira la fecha** del token, no si el token
+existe. Una noche ya quemada con fecha pasada sigue devolviendo `isExpired == true`. El escaneo del
+panel (`useExpiredNights`) restaba las **vendidas** (eventos `Sale`) pero **no las quemadas**
+(`Burn`), así que listaba las 7 noches de 2026-09-28 → 2026-10-04 (ya quemadas) y `burnExpired`
+revertía con `ERC721NonexistentToken` (`0x7e273289`) al intentar quemarlas.
+
+**Reproducción en producción (antes del arreglo, `v33`)**:
+
+| Comprobación | Resultado |
+|---|---|
+| Panel `/admin/caducadas` (con la cartera del owner) | **«7 noches caducadas»** y botón *Quemar* **habilitado** |
+| `isExpired(10120260928)` | `true` (¡aunque el token está quemado!) |
+| `ownerOf(10120260928)` | revierte `0x7e273289` (`ERC721NonexistentToken`) |
+| `simulateContract` de `burnExpired([esas 7])` con la cuenta del owner | **revierte `0x7e273289`** |
+
+**Corrección (`v34`).**
+
+| Capa | Cambio |
+|---|---|
+| `lib/burn-candidates.ts` (nuevo) | Pieza **pura** `selectBurnCandidates` = minteadas − vendidas − quemadas, para poder probarla sin navegador ni RPC |
+| `useExpiredNights` | Consume también los eventos **`Burn(uint256 indexed tokenId)`** y los descuenta antes de confirmar la fecha con `isExpired` |
+| Tests | 5 nuevos, incluido el caso exacto (una quemada con fecha pasada **no** es candidata) |
+
+| Paso | Detalle |
+|---|---|
+| Imagen | Cloud Build `a0364d22` · `web:v34` · 3m18s · **SUCCESS** |
+| Canario | `hotel-mcp-web-00055-reh` al 0 % → verificado antes de mover tráfico |
+| Producción | `00055-reh` al **100 %**; `v33`… como vuelta atrás |
+| Suite | web **697/697** · typecheck y eslint limpios |
+
+### Verificación (Chromium real, cartera del owner)
+
+| | Antes (`v33`) | Después (`v34`) |
+|---|---|---|
+| Recuento del panel de caducadas | **«7 noches caducadas»** | **«Sin noches caducadas.»** |
+| Escaneo parcial | no | no |
+| Errores de consola | 0 | **0** |
+
+> **Cuándo se podrá ver una quema real**: la noche **`10120261005`** está viva, **no vendida** y sin
+> quemar; deja de estar vigente cuando la cadena entre en **2026-10-06** (00:00 UTC ≈ 02:00 Madrid),
+> y a partir de ahí el panel la ofrecerá como candidata legítima y la quema **sí** se firmará. Ojo: el
+> ciclo **del worker** no la verá, porque selecciona desde el índice off-chain (`nfts`, vacío tras el
+> reset §44); la quema de esa noche se hace desde el panel.
