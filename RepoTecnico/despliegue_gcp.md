@@ -1765,3 +1765,35 @@ revertía con `ERC721NonexistentToken` (`0x7e273289`) al intentar quemarlas.
 > y a partir de ahí el panel la ofrecerá como candidata legítima y la quema **sí** se firmará. Ojo: el
 > ciclo **del worker** no la verá, porque selecciona desde el índice off-chain (`nfts`, vacío tras el
 > reset §44); la quema de esa noche se hace desde el panel.
+
+---
+
+## 55. Relayer en servidor — fase 1: quema (2026-10-05)
+
+**Motivo.** La quema la firmaba la **cartera conectada** en el navegador, así que el operador
+necesitaba `BURNER_ROLE` en su cartera. Se monta un relayer con la **cuenta 4 de Anvil**
+(`0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65`), siguiendo el patrón que ya existía para el check-in de
+recepción.
+
+| Pieza | Detalle |
+|---|---|
+| Roles del relayer | `DEFAULT_ADMIN` + `MINTER` + `BURNER` (tx `0x6526ccf9…`/`0xe2f4c1fa…`/`0x62f3a545…`, bloques **492–494**) |
+| Secreto | `hotel-relayer-private-key` (Secret Manager) con `secretAccessor` para `hotel-mcp-run@` y `ci-deployer@` |
+| Web | `RELAYER_WALLET_PRIVATE_KEY` (secreto) + `RELAYER_MIN_BALANCE_NATIVE=1`; revisión `-00036-ddd` |
+| Dominio | `BurnerService.burnTokens(...)`: quema **una lista dada** (no el inventario del índice) reutilizando troceo, simulación por lote y confirmación por recibo |
+| Endpoint | `POST /api/admin/expired/burn` (sesión de administración; `tokenIds` validados, sin duplicados, ≤200) |
+| UI | `useRelayerBurn` (mismo contrato que `useAdminWrite`) y `AdminExpired` migrado |
+| Release | Cloud Build `b2b3f636` · `web:v35` · revisión `hotel-mcp-web-00059-cor` al **100 %** |
+
+### Verificación
+
+| Comprobación | Resultado |
+|---|---|
+| Endpoint **sin sesión** | **401** |
+| Token **no caducado** (`10120261005`) | 200 · `reason: NO_TOKENS` · `skippedTokens: ["10120261005"]` (simula y omite, **no revierte**) |
+| Token **ya quemado** (`10120260928`) | 200 · `NO_TOKENS` · omitido — el caso que antes revertía con la cartera del navegador |
+| `/health/ready` | **READY** |
+
+> **Pendiente de esta fase**: acuñación/registro (`useMintWindow`, `useMintNight`, `RoomsAdmin`) y los
+> tests del endpoint nuevo. **La quema real** (una noche que caduque) se podrá verificar a partir de las
+> **00:00 UTC** con la noche `10120261005`, ya sin roles en la cartera del operador.
