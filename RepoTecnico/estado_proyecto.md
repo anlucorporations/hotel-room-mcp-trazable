@@ -3152,3 +3152,13 @@ con `withCoverUrls` (puro, probado) y una cadena de degradación foto real → i
 eslint limpios. Release **`v27`** (`hotel-mcp-web-00041-xok` al 100 %, `v26` como vuelta atrás):
 verificado en producción que el HTML pasa de **2 placeholders a 0** y sirve
 `/api/rooms/images/101-Doble-2026-10-05-1.jpg`. Detalle en `despliegue_gcp.md` §47.
+
+### Ciclo de verificación (releases v28 y v29) — reserva, frontend y Anvil
+
+La reserva funcionaba por API pero **no en el navegador**: la CSP del middleware no permitía el RPC
+del despliegue (Anvil en Cloud Run), así que el navegador rechazaba la conexión y el flujo de reserva
+—que depende de la wallet— fallaba en silencio. Corregido derivando los orígenes del RPC del entorno
+(`v28`). Verificado con Chromium real: **0 errores de CSP**, 6 páginas 200, cartera conectada al Anvil
+real y retención pública completada (201 + instrucciones de anticipo), además de reserva desde el panel
+del día («1 reservas creadas»). Apareció y se corrigió también una traducción ausente del menú
+(`admin.nav.publishBoard`) con su guardián (`v29`). Detalle en `despliegue_gcp.md` §48–§49.

@@ -1465,3 +1465,92 @@ nuevos. Se corrigieron con la planta aprobada, no relajando la comprobación.
 
 > El catálogo ofrecía **una** noche (hab. 101, 27-dic-2026) leída de la cadena: es el único inventario
 > vivo tras el reset, porque el índice off-chain arrancó vacío con el checkpoint en la cabeza (§44).
+
+---
+
+## 48. Release `v28` — la CSP deja hablar al frontend con el Anvil (2026-10-05)
+
+**Objetivo del ciclo**: corregir el proceso de reserva, verificar el frontend y comprobar que el
+backend trabaja sobre el Anvil desplegado en GCP.
+
+**Cómo se encontró.** Las reservas funcionaban por API (retención pública y alta de recepción
+devolvían **201**), así que el fallo tenía que estar en el navegador. Se verificó con **Chromium real
+(Playwright)** contra producción y apareció el defecto, repetido en todas las páginas:
+
+```
+Connecting to 'https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app/' violates the following
+Content Security Policy directive: "connect-src 'self' https://*.alchemy.com https://*.infura.io …"
+Fetch API cannot load … Refused to connect because it violates the document's Content Security Policy.
+```
+
+**Causa.** El `connect-src` del middleware listaba Alchemy, Infura, WalletConnect y CoinGecko, pero el
+RPC de **este** despliegue es un Anvil en Cloud Run: el navegador rechazaba la conexión, el frontend se
+quedaba sin leer la cadena y todo lo que depende de la wallet (incluida la reserva) fallaba en
+silencio. El backend sí hablaba con Anvil; era el **navegador** el que no podía.
+
+**Corrección.** `rpcConnectOrigins()` deriva los orígenes permitidos de `NEXT_PUBLIC_RPC_URL` /
+`NEXT_PUBLIC_WS_URL` (build) y `RPC_URL` (runtime), añadiendo el mismo host por `ws(s)`. No se cablea
+ningún host; si la variable falta o no es una URL válida, la CSP no se rompe. Antes de tocar la
+política se comprobó el **CORS** del RPC (`access-control-allow-origin: *`).
+
+| Paso | Detalle |
+|---|---|
+| Imagen | Cloud Build `ae18add4` · `web:v28` · 3m9s · **SUCCESS** |
+| Canario | `hotel-mcp-web-00043-ziw` al 0 % → CSP verificada en la cabecera antes de mover tráfico |
+| Producción | `00043-ziw` al **100 %**; `v27` como vuelta atrás |
+
+### Verificación del frontend (Chromium real, producción)
+
+| Comprobación | Resultado |
+|---|---|
+| Errores de CSP | **0** (antes: en todas las páginas) |
+| Páginas `/`, `/catalogo`, `/habitaciones`, `/reservar`, `/contacto`, `/empresa` | **200** |
+| Foto del catálogo | `/api/rooms/images/101-Doble-2026-10-05-1.jpg` cargada (`naturalWidth > 0`) |
+| Cartera contra el Anvil real | conecta (`wallet_requestPermissions`, `eth_requestAccounts`, `eth_chainId`) → cabecera `0x7099…79C8` |
+| Flujo de reserva del huésped | `POST /api/public/reservations` → **201** y la UI muestra «Te hemos reservado la noche… Anticipo 72,45 € · Referencia MDS-BE6F025D» |
+| Reserva desde el back-office (panel del día) | acceso con TOTP + acción «Reservar» → **«1 reservas creadas.»** (reserva `b461a36e`, hab. 101, 20-oct, PENDING) |
+| Errores de consola (excluyendo el sondeo de sesión) | **0** |
+
+Las cuatro reservas de prueba de este ciclo quedaron **CANCELLED** para no dejar datos sueltos.
+
+> **Ruido conocido, no defecto**: en páginas públicas la consola registra `401 /api/auth/session` y
+> `400 /api/auth/refresh` porque el cliente de sesión administrativa sondea sin cookie. Es el contrato
+> actual de `refresh` (400 si falta el token, con test propio); se deja como está y se anota.
+
+---
+
+## 49. Release `v29` — traducción del menú «Publicar» y su guardián (2026-10-05)
+
+**Segundo defecto del ciclo**, encontrado al recorrer el back-office con navegador real: al iniciar
+sesión, la consola pintaba `MISSING_MESSAGE: admin.nav.publishBoard (es)`. El ítem de navegación que
+añadió la v23 usa `labelKey: "publishBoard"` y `admin.nav` no tenía esa clave —existía
+`admin.publishBoard` (título de la página) y nadie la enlazaba—, así que el menú quedaba sin traducir.
+
+**Corrección.**
+- `es`/`en`/`ru`: `admin.nav.publishBoard` = **Publicar** / **Publish** / **Публикация**.
+- **Guardián nuevo** en `i18n-keys.test.ts`: las `labelKey` del menú se resuelven en runtime
+  (`adminNav.ts`), así que el escaneo de llamadas `t("…")` no las veía. Ahora se comprueban aparte
+  contra `admin.nav` en los tres idiomas; se verificó que **falla** al quitar la clave
+  (`expected [ 'publishBoard' ] to deeply equal []`).
+- De paso, el contador `inheritedNamespace` (se incrementaba y nunca se leía → error de lint previo)
+  queda declarado como límite, igual que `dynamicKeys`.
+
+| Paso | Detalle |
+|---|---|
+| Imagen | Cloud Build `2ff29a62` · `web:v29` · 3m14s · **SUCCESS** |
+| Canario | `hotel-mcp-web-00045-cup` al 0 % → verificado antes de mover tráfico |
+| Producción | `00045-cup` al **100 %**; `v28` como vuelta atrás |
+
+### Verificación (Chromium real)
+
+| Comprobación | Antes (`v28`) | Después (`v29`) |
+|---|---|---|
+| `MISSING_MESSAGE` en el back-office | 1 (`admin.nav.publishBoard`) | **0** |
+| Menú lateral | ítem sin traducir | **«Publicar»** visible |
+| Calendario de Publicar tras el acceso | — | **visible** (`calendario-habitaciones`) |
+| Errores de CSP (URL pública) | 0 | **0** |
+| Páginas `/`, `/catalogo`, `/habitaciones`, `/reservar`, `/contacto`, `/empresa` | 200 | **200** |
+| Cartera contra el Anvil + flujo de reserva listo | — | **sí** (`Hab. 101`/`Hab. 102`, 241,51 €/noche) |
+
+> El aviso «Tu sesión no tiene el rol necesario para esta sección» que aparece en el menú es un texto
+> **`sr-only`** de accesibilidad (vive en un `<span class="sr-only">` del sidebar), no un error visible.
