@@ -104,7 +104,7 @@ export function NightCard({
       }`}
     >
       <div className="relative aspect-[4/3] overflow-hidden">
-        <NightImage type={night.type} alt={alt} priority={priority} />
+        <NightImage type={night.type} src={night.coverUrl ?? null} alt={alt} priority={priority} />
         <StatusBadge night={night} t={t} />
       </div>
       <div className="flex flex-1 flex-col p-5">

@@ -81,6 +81,15 @@ export interface RoomDayStateRecord {
   occupied: boolean;
 }
 
+/** Portada de una habitación, para resolver la foto por **número** (catálogo público). */
+export interface RoomCoverImageRecord {
+  roomNumber: number;
+  fileName: string;
+  altTextEs: string | null;
+  altTextEn: string | null;
+  altTextRu: string | null;
+}
+
 /** Espacio de una habitación (catálogo cerrado + superficie). */
 export interface RoomSpaceRecord {
   spaceCode: string;
@@ -893,6 +902,40 @@ export class RoomsRepository {
         WHERE status IN ('OPEN', 'IN_PROGRESS') AND blocks_sale = TRUE`,
     );
     return res.rows.map((row) => row.id as string);
+  }
+  /**
+   * **Portada por número de habitación** (2026-10-05): una sola consulta para el catálogo público,
+   * que conoce la habitación por su **número** (viene de la cadena) y no por su UUID.
+   *
+   * Se elige la marcada como portada y, si no hay, la de menor posición. Se ignoran las archivadas.
+   * Devuelve un mapa `roomNumber → portada`; las habitaciones sin foto no aparecen (el catálogo cae
+   * entonces a su imagen de reserva).
+   */
+  async listCoverImagesByRoomNumbers(
+    roomNumbers: readonly number[],
+  ): Promise<Map<number, RoomCoverImageRecord>> {
+    const covers = new Map<number, RoomCoverImageRecord>();
+    const numbers = [...new Set(roomNumbers)];
+    if (numbers.length === 0) return covers;
+    const res = await this.pool.query(
+      `SELECT DISTINCT ON (r.room_number)
+              r.room_number, i.file_name, i.alt_text_es, i.alt_text_en, i.alt_text_ru
+         FROM rooms r
+         JOIN room_images i ON i.room_id = r.id
+        WHERE r.room_number = ANY($1::int[]) AND r.archived_at IS NULL
+        ORDER BY r.room_number, i.is_cover DESC, i.position ASC`,
+      [numbers],
+    );
+    for (const row of res.rows) {
+      covers.set(row.room_number as number, {
+        roomNumber: row.room_number as number,
+        fileName: row.file_name as string,
+        altTextEs: (row.alt_text_es as string | null) ?? null,
+        altTextEn: (row.alt_text_en as string | null) ?? null,
+        altTextRu: (row.alt_text_ru as string | null) ?? null,
+      });
+    }
+    return covers;
   }
 }
 

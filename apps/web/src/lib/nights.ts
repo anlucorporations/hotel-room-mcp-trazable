@@ -12,6 +12,7 @@ import {
   roomTypeOf,
   toNightType,
   NFTsRepository,
+  RoomsRepository,
   type NightType,
   type SaleType,
 } from "@hotel/shared";
@@ -20,6 +21,7 @@ import { contractAddress, deploymentBlock } from "@/config/chain";
 import { serverPublicClient } from "@/lib/server-client";
 
 const nftsRepo = new NFTsRepository();
+const roomsRepo = new RoomsRepository();
 
 /**
  * Lectura de la tienda, en **dos fuentes separadas** (D-07):
@@ -42,6 +44,14 @@ export interface NightView {
   readonly type: NightType;
   readonly priceWei: string;
   readonly saleType: SaleType;
+  /**
+   * **Foto de la habitación** (2026-10-05), servida por `/api/rooms/images/<fichero>`.
+   *
+   * El catálogo se lee por RPC/base y solo conoce el **número** de habitación, así que la portada se
+   * resuelve aparte contra el maestro (`room_images`). `null` = esa habitación no tiene foto todavía
+   * y la tarjeta usa su imagen de reserva por tipo (nunca se inventa una foto ajena).
+   */
+  readonly coverUrl?: string | null;
 }
 
 const MINT_EVENT = parseAbiItem(
@@ -243,6 +253,38 @@ export function excludeGhosts(
  * Ya NO incorpora los listados de reventa: esos viven en `fetchResaleMarket()` y en su propia
  * vista. Una noche vendida en primaria deja de ofrecerse aquí aunque después se revenda.
  */
+/**
+ * Aplica el mapa de portadas a las noches. **Puro** y exportado para poder probarlo sin base de
+ * datos: la decisión es «si la habitación tiene portada, esa; si no, ninguna» (la tarjeta decide
+ * después su imagen de reserva).
+ */
+export function withCoverUrls(
+  nights: readonly NightView[],
+  covers: ReadonlyMap<number, { readonly fileName: string }>,
+): NightView[] {
+  return nights.map((night) => {
+    const cover = covers.get(night.room);
+    return { ...night, coverUrl: cover ? `/api/rooms/images/${cover.fileName}` : null };
+  });
+}
+
+/**
+ * Resuelve la foto de la habitación de cada noche con **una sola consulta** al maestro.
+ *
+ * Falla en blando: si la lectura de portadas falla, las noches salen sin `coverUrl` y el catálogo
+ * sigue funcionando con su imagen de reserva. Un fallo de fotos no puede tumbar la venta.
+ */
+export async function attachRoomCovers(nights: readonly NightView[]): Promise<NightView[]> {
+  if (nights.length === 0) return [];
+  try {
+    const covers = await roomsRepo.listCoverImagesByRoomNumbers(nights.map((night) => night.room));
+    return withCoverUrls(nights, covers);
+  } catch (error) {
+    console.warn("[nights] no se pudieron resolver las fotos de las habitaciones:", error);
+    return withCoverUrls(nights, new Map());
+  }
+}
+
 export async function fetchCatalog(): Promise<CatalogResult> {
   const { today, end } = windowBounds();
 
@@ -296,7 +338,7 @@ export async function fetchCatalog(): Promise<CatalogResult> {
       // §35 · segunda capa, on-chain: aunque ambas fuentes de BD cuadren, la verdad es del contrato.
       // Se conserva lo que no se pudo leer (un pico de red no debe ocultar inventario sano).
       const nights = await filterSoldOnChain(withoutGhosts);
-      return { nights, hiddenSoldCount: Math.max(0, fromDb.length - nights.length) };
+      return { nights: await attachRoomCovers(nights), hiddenSoldCount: Math.max(0, fromDb.length - nights.length) };
     }
   } catch (dbErr) {
     // Si la BD no está disponible, degradación elegante al RPC on-chain
@@ -333,7 +375,7 @@ export async function fetchCatalog(): Promise<CatalogResult> {
   // En el camino on-chain no hay nada que «ocultar»: `sold` sale de los propios logs, así que no
   // existe desfase entre dos fuentes y avisar de sincronización sería mentira.
   const fallbackNights = [...byToken.values()].sort((a, b) => a.dateYYYYMMDD - b.dateYYYYMMDD);
-  return { nights: fallbackNights, hiddenSoldCount: 0 };
+  return { nights: await attachRoomCovers(fallbackNights), hiddenSoldCount: 0 };
 }
 
 /**
@@ -407,5 +449,5 @@ export async function fetchResaleMarket(): Promise<NightView[]> {
     );
   }
 
-  return [...byToken.values()].sort((a, b) => a.dateYYYYMMDD - b.dateYYYYMMDD);
+  return attachRoomCovers([...byToken.values()].sort((a, b) => a.dateYYYYMMDD - b.dateYYYYMMDD));
 }

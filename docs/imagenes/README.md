@@ -16,15 +16,74 @@ Las de manual se guardan aquí a mano con el prefijo `doc-` y se regeneran con
 
 ## Fotografías de habitación
 
-Material actual: **una portada por tipo**, en la habitación representativa de cada uno (101 simple,
-116 doble, 201 suite). El nombre es el canónico y, al subirlas desde `/admin/habitacion`, el sistema
-lo vuelve a generar con la fecha del día.
+Material actual: **una portada por tipo**, servida en `GET /api/rooms/images/<fichero>`. El nombre es
+canónico (`<nº>-<Simple|Doble|Suite>-<AAAA-MM-DD>-<n>.jpg`) y lo vuelve a generar el sistema al subir
+desde `/admin/habitacion`.
 
-| Fichero | Habitación | Posición |
-|---|---|---|
-| `101-Simple-2026-09-28-1.jpg` | 101 (simple) | Portada (1) |
-| `116-Doble-2026-09-28-1.jpg` | 116 (doble) | Portada (1) |
-| `201-Suite-2026-09-28-1.jpg` | 201 (suite) | Portada (1) |
+### Portadas de origen (históricas)
+
+Una por tipo. `scripts/planta.ts` (**@planta**) las copia para materializar la portada de cada
+habitación de su tipo, así que **no se borran**:
+
+| Fichero | Tipo |
+|---|---|
+| `101-Simple-2026-09-28-1.jpg` | Simple (origen) |
+| `116-Doble-2026-09-28-1.jpg` | Doble (origen) |
+| `201-Suite-2026-09-28-1.jpg` | Suite (origen) |
+
+### Planta vigente (2026-10-05) — 40 habitaciones
+
+Redistribución aprobada por el responsable: plantas **1, 2, 3 y 4**; en cada planta `x01`–`x03`
+**dobles**, `x04`–`x05` **suites** y `x06`–`x10` **simples**. Cada habitación tiene su portada:
+
+**Dobles (12)**
+
+- `101-Doble-2026-10-05-1.jpg`
+- `102-Doble-2026-10-05-1.jpg`
+- `103-Doble-2026-10-05-1.jpg`
+- `201-Doble-2026-10-05-1.jpg`
+- `202-Doble-2026-10-05-1.jpg`
+- `203-Doble-2026-10-05-1.jpg`
+- `301-Doble-2026-10-05-1.jpg`
+- `302-Doble-2026-10-05-1.jpg`
+- `303-Doble-2026-10-05-1.jpg`
+- `401-Doble-2026-10-05-1.jpg`
+- `402-Doble-2026-10-05-1.jpg`
+- `403-Doble-2026-10-05-1.jpg`
+
+**Suites (8)**
+
+- `104-Suite-2026-10-05-1.jpg`
+- `105-Suite-2026-10-05-1.jpg`
+- `204-Suite-2026-10-05-1.jpg`
+- `205-Suite-2026-10-05-1.jpg`
+- `304-Suite-2026-10-05-1.jpg`
+- `305-Suite-2026-10-05-1.jpg`
+- `404-Suite-2026-10-05-1.jpg`
+- `405-Suite-2026-10-05-1.jpg`
+
+**Simples (20)**
+
+- `106-Simple-2026-10-05-1.jpg`
+- `107-Simple-2026-10-05-1.jpg`
+- `108-Simple-2026-10-05-1.jpg`
+- `109-Simple-2026-10-05-1.jpg`
+- `110-Simple-2026-10-05-1.jpg`
+- `206-Simple-2026-10-05-1.jpg`
+- `207-Simple-2026-10-05-1.jpg`
+- `208-Simple-2026-10-05-1.jpg`
+- `209-Simple-2026-10-05-1.jpg`
+- `210-Simple-2026-10-05-1.jpg`
+- `306-Simple-2026-10-05-1.jpg`
+- `307-Simple-2026-10-05-1.jpg`
+- `308-Simple-2026-10-05-1.jpg`
+- `309-Simple-2026-10-05-1.jpg`
+- `310-Simple-2026-10-05-1.jpg`
+- `406-Simple-2026-10-05-1.jpg`
+- `407-Simple-2026-10-05-1.jpg`
+- `408-Simple-2026-10-05-1.jpg`
+- `409-Simple-2026-10-05-1.jpg`
+- `410-Simple-2026-10-05-1.jpg`
 
 ## Ilustraciones para los manuales
 

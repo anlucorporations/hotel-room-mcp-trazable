@@ -468,6 +468,34 @@ describe("listRoomDayStates (2026-10-04, tablero de disponibilidad)", () => {
   });
 });
 
+describe("listCoverImagesByRoomNumbers (2026-10-05, catálogo)", () => {
+  it("devuelve la portada por número de habitación", async () => {
+    mockPool.query.mockResolvedValueOnce({
+      rows: [
+        { room_number: 101, file_name: "101-Doble-2026-10-05-1.jpg", alt_text_es: "Hab 101", alt_text_en: null, alt_text_ru: null },
+        { room_number: 104, file_name: "104-Suite-2026-10-05-1.jpg", alt_text_es: null, alt_text_en: null, alt_text_ru: null },
+      ],
+    });
+    const covers = await repository.listCoverImagesByRoomNumbers([101, 104, 999]);
+    expect(covers.get(101)?.fileName).toBe("101-Doble-2026-10-05-1.jpg");
+    expect(covers.get(101)?.altTextEs).toBe("Hab 101");
+    expect(covers.get(104)?.fileName).toBe("104-Suite-2026-10-05-1.jpg");
+    expect(covers.has(999)).toBe(false);
+    const [sql, values] = mockPool.query.mock.calls[0];
+    // La portada manda sobre la posición, y se ignoran las archivadas.
+    expect(String(sql)).toContain("DISTINCT ON (r.room_number)");
+    expect(String(sql)).toContain("i.is_cover DESC, i.position ASC");
+    expect(String(sql)).toContain("r.archived_at IS NULL");
+    expect(values).toEqual([[101, 104, 999]]);
+  });
+
+  it("no dispara consulta si no hay números", async () => {
+    const covers = await repository.listCoverImagesByRoomNumbers([]);
+    expect(covers.size).toBe(0);
+    expect(mockPool.query).not.toHaveBeenCalled();
+  });
+});
+
 describe("listRoomIdsInMaintenance (2026-10-04)", () => {
   it("une publicación en mantenimiento e incidencias abiertas que bloquean la venta", async () => {
     mockPool.query.mockResolvedValueOnce({ rows: [{ id: "room-1" }, { id: "room-2" }] });

@@ -53,6 +53,29 @@ async function isValidRoomImageName(name: string): Promise<boolean> {
 
 const files = readdirSync(IMAGES_DIR).sort();
 
+/**
+ * Portadas **históricas** que `@planta` reutiliza como origen (una por tipo) y que conservan la
+ * nomenclatura del maestro anterior. No se borran porque el script las copia; quedan excluidas de la
+ * comprobación de tipo, pero no de la de formato.
+ */
+const LEGACY_SOURCES = new Set([
+  "101-Simple-2026-09-28-1.jpg",
+  "116-Doble-2026-09-28-1.jpg",
+  "201-Suite-2026-09-28-1.jpg",
+]);
+
+/**
+ * Tipo que corresponde a un número de habitación en la **planta vigente** (redistribución del
+ * 2026-10-05, decisión del responsable): en cada planta, `x01`–`x03` doble · `x04`–`x05` suite ·
+ * `x06`–`x10` simple, para las plantas 1, 2, 3 y 4.
+ */
+function expectedPlantType(roomNumber: number): "Simple" | "Doble" | "Suite" {
+  const position = roomNumber % 100;
+  if (position >= 1 && position <= 3) return "Doble";
+  if (position >= 4 && position <= 5) return "Suite";
+  return "Simple";
+}
+
 describe("Imágenes · nombres canónicos por uso y posición", () => {
   it("la carpeta tiene piezas de verdad (el guardián no pasa por vacío)", () => {
     expect(files.length).toBeGreaterThan(8);
@@ -74,12 +97,12 @@ describe("Imágenes · nombres canónicos por uso y posición", () => {
     expect(roomPhotos.length).toBeGreaterThan(0);
     for (const file of roomPhotos) {
       expect(await isValidRoomImageName(file), file).toBe(true);
-      // El tipo del nombre debe coincidir con el del maestro (101–115 simple, 116–130 doble,
-      // 201–220 suite): una foto etiquetada como Suite en un 1XX sería un nombre mentiroso.
+      // El tipo del nombre debe coincidir con el de la planta vigente: una foto etiquetada como
+      // Suite en una habitación doble sería un nombre mentiroso (y la ficha enseñaría otra cosa).
+      if (LEGACY_SOURCES.has(file)) continue;
       const [room, type] = file.split("-");
-      const number = Number(room);
-      const expected = number <= 115 ? "Simple" : number <= 130 ? "Doble" : "Suite";
-      expect(type, `${file} debe ser ${expected} según el maestro`).toBe(expected);
+      const expected = expectedPlantType(Number(room));
+      expect(type, `${file} debe ser ${expected} según la planta vigente`).toBe(expected);
     }
   });
 
