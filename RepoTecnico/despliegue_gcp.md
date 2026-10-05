@@ -1584,3 +1584,57 @@ del backend incluido en el repositorio.
 | `/health/ready` | **READY** (postgres, redis, RPC `UP`) |
 | Worker sobre Anvil | `lastBlock 481` = `headBlock 481` · **lag 0** |
 | Imagen del servicio | `…/web:v30` |
+
+---
+
+## 51. Releases `v31` y `v32` — «Mis noches» muestra la foto real de su habitación (2026-10-05)
+
+**Petición**: que la sección **Mis noches** muestre la imagen real de cada habitación reservada.
+
+**Por qué no la mostraba.** `useMyNights` descubre las noches **on-chain** (eventos `Sale` filtrados por
+comprador + `ownerOf` para confirmar propiedad), y la cadena solo conoce el **número** de habitación:
+la tarjeta caía al **placeholder por tipo** (`/images/<tipo>.svg`), el mismo defecto que tenía el
+catálogo antes de la v27.
+
+**Solución (v31).**
+
+| Capa | Cambio |
+|---|---|
+| `GET /api/public/rooms/covers?numbers=101,305` | Resuelve **número → portada** contra el maestro off-chain (`listCoverImagesByRoomNumbers`) en **una** consulta; devuelve solo `{ covers: { "<nº>": { url, alt } } }`. Deduplica, acota a 60 números válidos, es cacheable y **falla en blando** (200 con `covers` vacío) |
+| `useMyNights` | Enriquece cada `OwnedNight` con `coverUrl` (una llamada por conjunto de noches) |
+| `MyNightCard` | Pasa `src` a `NightImage`, que ya degrada foto real → imagen de tipo → aviso |
+| `lib/room-image-url.ts` | La regla de URL en un módulo sin dependencias: la usan el servidor (catálogo) y el cliente (Mis noches) sin arrastrar `fs`/Postgres al bundle |
+
+**v32: defecto de maquetación que destapó la foto.** Al pasar del SVG a la imagen real, la captura
+mostró que la foto **se escapaba de la tarjeta** y ocupaba casi toda la página: `NightImage` usa
+`next/image` con `fill` (posicionamiento absoluto) y `MyNightCard` **no** le daba un padre `relative`
+con tamaño, a diferencia de la tarjeta del catálogo. Se añadió el mismo contenedor
+(`relative aspect-[4/3] overflow-hidden`).
+
+| Paso | Detalle |
+|---|---|
+| Imagen v31 | Cloud Build `af17f203` · 4m8s · SUCCESS → revisión `00049-gax` (100 %) |
+| Imagen v32 | Cloud Build `a658fdfc` · 3m10s · SUCCESS → revisión `00051-yap` al **100 %** (`v31`, `v30`… como vuelta atrás) |
+
+### Verificación (Chromium real, con una cartera que **posee** noches)
+
+Se usó `0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC`, que conserva **5 noches** compradas en el Anvil
+desplegado (sondeo de solo lectura con `scripts/quien-tiene-noches.ts`):
+
+| Noche | Habitación | Imagen servida | Resultado |
+|---|---|---|---|
+| `10120261027` | 101 | `/api/rooms/images/101-Doble-2026-10-05-1.jpg` | **foto real** ✓ |
+| `10820261103` | 108 | `/api/rooms/images/108-Simple-2026-10-05-1.jpg` | **foto real** ✓ |
+| `11820261110` | 118 | `/images/doble.svg` | imagen de tipo (la 118 **no existe** en la planta vigente) ✓ |
+| `20220261124` | 202 | `/api/rooms/images/202-Doble-2026-10-05-1.jpg` | **foto real** ✓ |
+| `10120261227` | 101 | `/api/rooms/images/101-Doble-2026-10-05-1.jpg` | **foto real** ✓ |
+
+- Una sola llamada al endpoint con los números deduplicados (`numbers=101,108,118,202`) → **200**.
+- **0 errores de consola** y las 5 imágenes cargadas (`naturalWidth > 0`).
+- Regla intacta: una habitación sin foto **no** enseña la de otra; cae a su imagen de tipo.
+- Evidencia: `RepoTecnico/mis-noches-v32.png`.
+
+> **Nota de datos (no es un defecto de este cambio)**: la etiqueta de tipo de esas noches sale del
+> `roomTypeOf` del **maestro antiguo** (101/108 como «Simple»), mientras que la foto sale del maestro
+> vigente (101/108 son **dobles** en la planta nueva). Las noches se acuñaron antes de la
+> redistribuciÃ³n, así que tipo y foto pueden discrepar; se resolverá cuando se acuñe inventario nuevo.
