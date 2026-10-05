@@ -19,6 +19,10 @@ packages/contracts/lib
 packages/contracts/out
 packages/contracts/cache
 packages/contracts/broadcast
-docs
+# OJO: `docs` NO se excluye. Las fotos de habitación y de contenido viven en
+# `docs/imagenes` (D-5) y la web las lee del sistema de ficheros en tiempo de petición.
+# Docker no permite volver a incluir una subcarpeta de una carpeta excluida, así que
+# excluir `docs` dejaba TODAS las fotos en 404 en producción (defecto detectado el
+# 2026-10-05 al desplegar la v24 con las fotos de @planta).
 RepoTecnico
 *.log

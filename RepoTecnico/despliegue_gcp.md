@@ -1343,3 +1343,53 @@ el borrado y el ajuste del checkpoint.
 > del script `70-deploy-apps.sh`), y la revisión del worker es del **2026-10-03**, dos días anterior a
 > este reset: la degradación ya existía. Los indicadores que sí dependen del reset (lag de cadena y de
 > agregados) están a **0**.
+
+---
+
+## 45. Release `v25` — las fotos entran en la imagen (2026-10-05)
+
+**Para qué.** La inyección `@planta` dejó 40 habitaciones con su foto registrada en `room_images`, pero
+al desplegar una instancia **nueva** (canario `v24`) **todas** las fotos devolvían **404**, incluidas las
+semilla (`101-Simple-2026-09-28-1.jpg`), que hasta entonces solo funcionaban en la instancia que había
+recibido la subida.
+
+### Defecto de fondo (previo, no causado por la inyección)
+
+`.dockerignore` y `.gcloudignore` **excluían `docs`**, y las fotos de habitación y de contenido viven en
+`docs/imagenes` (D-5): la web las lee del sistema de ficheros en cada petición
+(`roomImagesDir()` → `<cwd>/../../docs/imagenes`). Con `docs` fuera del contexto de build, la carpeta
+**nunca** existió dentro del contenedor.
+
+Consecuencia real: **ninguna foto se servía de forma duradera en producción**; solo respondía la
+instancia que había recibido la subida en caliente (y se perdía al redesplegar o al caer en otra
+instancia). Afectaba por igual a las fotos de habitación y a las de contenido.
+
+**Por qué no bastaba con quitar una línea.** Docker **no permite volver a incluir** una subcarpeta
+(`!docs/imagenes`) si su carpeta padre está excluida, así que la única corrección robusta es **no
+excluir `docs`**. Se documentó en ambos ficheros, con el motivo, para que nadie lo vuelva a excluir
+«para aligerar la imagen». Coste: ~18 MB en la imagen (13 MB son las fotos) y en la subida a Cloud Build.
+
+### Pasos
+
+| Paso | Detalle |
+|---|---|
+| Imagen `v24` | Build `c4802531` (3m29s) — **descartada**: el canario confirmó que las fotos seguían en 404 |
+| Corrección | Se quita `docs` de `.dockerignore` y `.gcloudignore`, con comentario explicativo |
+| Imagen `v25` | Build `5210c1ed` (3m20s) · `web:v25` · **SUCCESS** |
+| Canario | `hotel-mcp-web-00036-zox` al 0 %, etiqueta `v25` |
+| Producción | `00036-zox` al **100 %**; etiqueta `v24` retirada y revisión `00035-qop` **eliminada** |
+
+### Verificación (producción real)
+
+| Comprobación | Resultado |
+|---|---|
+| Canario · fotos **semilla** | `101-Simple`, `116-Doble`, `201-Suite` → **200** |
+| Canario · fotos **nuevas** | **40/40** servidas desde la imagen (0 fallos) |
+| URL pública · fotos semilla y nuevas | **200** con su tamaño real (444 012 / 105 410 / 150 081 B) |
+| URL pública · las 40 de `@planta` | **40 servidas · 0 fallidas** |
+| `/health/ready` · rutas | **READY** (postgres, redis, RPC `UP`) · `/` y `/admin/habitacion/publicar` **200** |
+| Imagen del servicio | `…/web:v25` |
+
+> **Nota para el futuro:** cualquier imagen que deba servirse por HTTP y viva en el repositorio tiene
+> que estar **fuera** de `.dockerignore`/`.gcloudignore`; el límite de 2 MB por foto lo impone la API de
+> subida, no el build.

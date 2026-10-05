@@ -3127,3 +3127,11 @@ su **foto registrada en `room_images`** (`is_cover`) y servida por `/api/rooms/i
 
 **Artefactos**: `scripts/planta.ts`, `RepoTecnico/BaseOperaciones/estructura_datos.md` (entidades,
 relaciones y diagrama Mermaid del alta) y el estado de inyección actualizado.
+
+### Despliegue (release v25) — las fotos, dentro de la imagen
+
+El canario de la `v24` destapó un **defecto previo**: `.dockerignore`/`.gcloudignore` excluían `docs`, y
+las fotos (habitación y contenido) viven en `docs/imagenes` → **todas daban 404** en una instancia nueva,
+incluidas las semilla. Corregido quitando `docs` de ambas listas (Docker no permite re-incluir una
+subcarpeta de una carpeta excluida) y desplegado como **`v25`** (`hotel-mcp-web-00036-zox` al 100 %):
+**40/40 fotos servidas en la URL pública**, más las tres semilla. Detalle en `despliegue_gcp.md` §45.
