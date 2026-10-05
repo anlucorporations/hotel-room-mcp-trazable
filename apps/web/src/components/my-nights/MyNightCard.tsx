@@ -93,7 +93,13 @@ export function MyNightCard({
       data-testid={`my-night-${night.tokenId}`}
       className="flex flex-col overflow-hidden rounded-brand-lg border border-line bg-shell"
     >
-      <NightImage type={night.type} src={night.coverUrl ?? null} alt={alt} />
+      {/* Contenedor con proporción fija: `NightImage` usa `fill` (posicionamiento absoluto), así que
+          sin un padre `relative` con tamaño la foto se escaparía de la tarjeta y ocuparía la página
+          (defecto visto en la captura del 2026-10-05, al pasar del placeholder SVG a la foto real).
+          Es el mismo patrón que la tarjeta del catálogo. */}
+      <div className="relative aspect-[4/3] overflow-hidden">
+        <NightImage type={night.type} src={night.coverUrl ?? null} alt={alt} />
+      </div>
       <div className="flex flex-1 flex-col gap-2 p-4">
         <div className="flex items-center justify-between">
           <h3 className="font-display font-semibold text-ink">{t("room", { room: night.room })}</h3>
