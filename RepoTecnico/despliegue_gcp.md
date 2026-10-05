@@ -1393,3 +1393,34 @@ excluir `docs`**. Se documentó en ambos ficheros, con el motivo, para que nadie
 > **Nota para el futuro:** cualquier imagen que deba servirse por HTTP y viva en el repositorio tiene
 > que estar **fuera** de `.dockerignore`/`.gcloudignore`; el límite de 2 MB por foto lo impone la API de
 > subida, no el build.
+
+---
+
+## 46. Release `v26` — reconstrucción con procedencia limpia (2026-10-05)
+
+**Por qué se reconstruye si la `v25` ya servía.** La `v25` se construyó desde el árbol de trabajo
+cuando la corrección de `.dockerignore`/`.gcloudignore` **todavía no estaba commiteada**: su contenido
+coincidía con el commit, pero la imagen no quedaba **anclada a un SHA**. Tras el `/push` (`0e3f931` en
+los tres remotos) se reconstruye para que la release tenga procedencia exacta.
+
+| Paso | Detalle |
+|---|---|
+| `push` | `0e3f931` a `origin`, `github` y `codecrypto` (rama `Hotel-DSH-GCP`): reset (`c5223f7`), `@planta` (`fb06ab5`) y release `v25` (`0e3f931`) |
+| Imagen | Cloud Build `a7a15e3b` · `web:v26` · 3m29s · **SUCCESS** |
+| Canario | `hotel-mcp-web-00039-wiz` al 0 %, etiqueta `v26`, verificado antes de mover tráfico |
+| Producción | `00039-wiz` al **100 %**; `v25` se conserva como etiqueta de vuelta atrás |
+
+### Verificación (producción real)
+
+| Comprobación | Resultado |
+|---|---|
+| `/health/ready` | **READY** (postgres, redis y RPC `UP`) |
+| Rutas | `/` **200** · `/admin/habitacion` **200** · `/admin/habitacion/publicar` **200** · `/admin/mint` **404** |
+| Fotos (semilla y nuevas) | `101-Simple`, `116-Doble`, `201-Suite`, `410-Simple`, `305-Suite` → **200** con su tamaño |
+| Las 40 fotos de `@planta` | **40 servidas · 0 fallidas** |
+| Datos tras el despliegue | **40 habitaciones** (12 dobles · 8 suites · 20 simples), sin huecos |
+| Imagen del servicio | `…/web:v26` |
+
+> **Temporal ajeno**: `apps/web/shot.tmp.mjs` (script de captura de otra sesión, sin trackear) sigue en
+> el árbol; viaja al contexto de build pero no afecta a la aplicación. No se toca porque no es de este
+> ciclo.

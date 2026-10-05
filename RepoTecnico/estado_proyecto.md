@@ -3135,3 +3135,10 @@ las fotos (habitación y contenido) viven en `docs/imagenes` → **todas daban 4
 incluidas las semilla. Corregido quitando `docs` de ambas listas (Docker no permite re-incluir una
 subcarpeta de una carpeta excluida) y desplegado como **`v25`** (`hotel-mcp-web-00036-zox` al 100 %):
 **40/40 fotos servidas en la URL pública**, más las tres semilla. Detalle en `despliegue_gcp.md` §45.
+
+### Despliegue (release v26) — procedencia limpia
+
+Tras el `/push` (`0e3f931` en los tres remotos), se reconstruyó la web para que la imagen quedara
+anclada a un SHA: **`v26`** (`hotel-mcp-web-00039-wiz` al 100 %), con `v25` conservada como vuelta
+atrás. Verificado en producción: **40/40 fotos servidas**, `/health/ready` READY y las **40
+habitaciones** intactas (12 dobles · 8 suites · 20 simples). Detalle en `despliegue_gcp.md` §46.
