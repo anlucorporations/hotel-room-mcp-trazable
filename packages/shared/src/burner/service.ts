@@ -225,6 +225,75 @@ export class BurnerService {
   }
 
   /** `burnBatchMax()` del contrato: el lote se trocea para no superar el límite on-chain. */
+  /**
+   * Quema **una lista concreta** de noches (vía administrativa/relayer), no el inventario del índice.
+   *
+   * La usa el panel de caducadas: descubre las noches por **eventos on-chain**, así que puede incluir
+   * noches que no están en el índice off-chain (`nfts`). Reutiliza el troceo por `burnBatchMax`, la
+   * simulación por lote (que omite lo no quemable sin tumbar el resto) y la confirmación por recibo.
+   *
+   * No toma el cerrojo del ciclo programado: es una acción puntual del operador, y la unicidad la
+   * garantizan el contrato (un token ya quemado no existe) y `filterBurnable`.
+   */
+  async burnTokens(
+    publicClient: PublicClient,
+    walletClient: WalletClient | null,
+    options: BurnerOptions,
+    tokenIds: readonly bigint[],
+  ): Promise<BurnCycleResult> {
+    const minBalance = options.minBalanceNative ?? 1;
+    const devopsEmail = options.devopsEmail || process.env.DEVOPS_ALERT_EMAIL || "devops@hotel.es";
+
+    if (!walletClient) {
+      return { executed: false, burnedTokensCount: 0, txHashes: [], reason: "ERROR", skippedTokens: tokenIds.map(String) };
+    }
+    if (tokenIds.length === 0) {
+      return { executed: true, burnedTokensCount: 0, txHashes: [], reason: "NO_TOKENS" };
+    }
+
+    // 1. Saldo del firmante: sin gas no se quema, y se avisa.
+    const balanceWei = await publicClient.getBalance({ address: options.operatorAddress });
+    const balanceNative = Number.parseFloat(formatEther(balanceWei));
+    if (balanceNative < minBalance) {
+      const message = `Saldo de la wallet de quema (${options.operatorAddress}) en ${balanceNative} (< ${minBalance}). Quema suspendida.`;
+      console.error(`[Burner] CRÍTICO: ${message}`);
+      await this.notify(devopsEmail, {
+        subject: "ALERTA CRÍTICA: saldo insuficiente en la wallet de quema",
+        message,
+        balanceNative,
+        thresholdNative: minBalance,
+        timestamp: this.now().toISOString(),
+      });
+      return { executed: false, burnedTokensCount: 0, txHashes: [], reason: "INSUFFICIENT_GAS" };
+    }
+
+    // 2. Troceo por el límite del contrato, con simulación previa por lote.
+    const maxBatch = await this.readBurnBatchMax(publicClient, options.nftContractAddress);
+    const txHashes: Hex[] = [];
+    const skipped: string[] = [];
+    let burnedTokensCount = 0;
+
+    for (let index = 0; index < tokenIds.length; index += maxBatch) {
+      const chunk = tokenIds.slice(index, index + maxBatch);
+      const burnable = await this.filterBurnable(publicClient, walletClient, options, chunk, skipped);
+      if (burnable.length === 0) continue;
+      const { hash, burned } = await this.burnAndConfirm(publicClient, walletClient, options, burnable);
+      txHashes.push(hash);
+      burnedTokensCount += burned.length;
+    }
+
+    if (txHashes.length === 0) {
+      return { executed: true, burnedTokensCount: 0, txHashes: [], reason: "NO_TOKENS", skippedTokens: skipped };
+    }
+    return {
+      executed: true,
+      burnedTokensCount,
+      txHashes,
+      reason: "COMPLETED",
+      ...(skipped.length > 0 ? { skippedTokens: skipped } : {}),
+    };
+  }
+
   private async readBurnBatchMax(
     publicClient: PublicClient,
     contractAddress: Address,

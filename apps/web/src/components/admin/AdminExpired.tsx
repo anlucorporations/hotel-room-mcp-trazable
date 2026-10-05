@@ -8,10 +8,9 @@ import { contractAddress } from "@/config/chain";
 import { TxModal } from "@/components/buy/TxModal";
 import { formatNightDate } from "@/lib/format";
 import { AdminCard } from "./AdminPanel";
-import { useAdminWrite } from "./useAdminWrite";
+import { useRelayerBurn } from "./useRelayerBurn";
 import { useExpiredNights } from "./useExpiredNights";
 import { useAdminTxCopy } from "./adminTxCopy";
-import { classifyAdminTxError } from "./adminTxError";
 
 const PRIMARY =
   "min-h-touch rounded-pill bg-azure px-5 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-60";
@@ -54,14 +53,14 @@ export function AdminExpired() {
 
   const [scanEnabled, setScanEnabled] = useState(false);
   const scan = useExpiredNights(scanEnabled);
-  const { send, reset, status, hash, error } = useAdminWrite();
+  // La firma la hace el **relayer** del servidor: el operador no necesita BURNER_ROLE en su cartera.
+  const { send, reset, status, hash, error } = useRelayerBurn();
 
   const [manual, setManual] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
 
   const busy = status === "signing" || status === "pending";
-  const txErrorKind = error ? classifyAdminTxError(error) : null;
   const errorId = "expired-form-error";
   const hasFormError = Boolean(formError);
 
@@ -97,7 +96,8 @@ export function AdminExpired() {
   }
 
   function confirm(): void {
-    send("burnExpired", [batch.map((id) => BigInt(id))]);
+    // El lote viaja al endpoint del relayer, que valida, simula y firma en servidor.
+    void send(batch);
   }
 
   return (
@@ -178,9 +178,9 @@ export function AdminExpired() {
             {formError}
           </p>
         )}
-        {!formError && txErrorKind && (
+        {!formError && error && (
           <p role="alert" className="text-coral-text">
-            {t(`txError.${txErrorKind}`)}
+            {error}
           </p>
         )}
       </form>
