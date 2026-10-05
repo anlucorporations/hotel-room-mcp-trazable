@@ -1683,3 +1683,32 @@ el mismo segundo** — un despliegue que *parecía* correcto mientras seguía si
 > vivo (p. ej., la noche del 2026-10-05 en cuanto la cadena entre en el 2026-10-06) **siempre que esté
 > en el índice off-chain**. Tras el reset el índice arrancó vacío (§44): lo que se acuñe por la app sí
 > aparecerá; el inventario antiguo que solo existe on-chain no lo verá el quemador.
+
+---
+
+## 53. Release `v33` — despliegue anclado al commit empujado (2026-10-05)
+
+**Contexto.** Los cambios de «Mis noches» (foto real + maquetación) ya estaban en producción en
+`v31`/`v32`, construidos desde el árbol de trabajo. Tras el `/push` (`7c7b7ad` en los tres remotos) se
+reconstruye para dejar la release **anclada a un SHA**. El worker **no** se reconstruye: su cambio de
+este ciclo fue de **configuración** (secreto + variables + tráfico), no de código, y ya está vivo.
+
+| Paso | Detalle |
+|---|---|
+| `push` | `7c7b7ad` a `origin`, `github` y `codecrypto`: foto real en Mis noches (`8b22133`), maquetación (`4c78772`), registro v31/v32 (`d41555f`) y quema programada (`7c7b7ad`) |
+| Imagen | Cloud Build `6de16ec5` · `web:v33` · 3m29s · **SUCCESS** |
+| Canario | `hotel-mcp-web-00053-cix` al 0 %, etiqueta `v33`, verificado antes de mover tráfico |
+| Producción | `00053-cix` al **100 %**; `v32`, `v31`… como vuelta atrás |
+
+### Verificación (canario y URL pública)
+
+| Comprobación | Resultado |
+|---|---|
+| Páginas `/`, `/catalogo`, `/habitaciones`, `/mis-noches`, `/reservar`, `/contacto`, `/empresa` | **200** |
+| Catálogo | **12 noches**, todas con la **foto real** de su habitación cargada (`naturalWidth > 0`) |
+| «Mis noches» (cartera con 5 noches) | 4 con foto real (`101-Doble`, `108-Simple`, `202-Doble`) y la 118 con su imagen de tipo; **una sola** llamada a `/api/public/rooms/covers` (200) |
+| Cartera contra el Anvil + flujo de reserva | **sí** (Hab. 101/102, botón «Retener la noche») |
+| Errores de CSP / de consola | **0 / 0** |
+| `/health/ready` | **READY** (postgres, redis, RPC `UP`) |
+| Worker sobre Anvil | `lastBlock 486` = `headBlock 486` · **lag 0** · planificador de quema en modo **diario** |
+| Imagen del servicio | `…/web:v33` |
