@@ -3142,3 +3142,13 @@ Tras el `/push` (`0e3f931` en los tres remotos), se reconstruyó la web para que
 anclada a un SHA: **`v26`** (`hotel-mcp-web-00039-wiz` al 100 %), con `v25` conservada como vuelta
 atrás. Verificado en producción: **40/40 fotos servidas**, `/health/ready` READY y las **40
 habitaciones** intactas (12 dobles · 8 suites · 20 simples). Detalle en `despliegue_gcp.md` §46.
+
+### Despliegue (release v27) — la foto de la habitación en el catálogo
+
+El catálogo pintaba un **placeholder por tipo** (`/images/<tipo>.svg`) en vez de la foto de la
+habitación. Corregido resolviendo la portada por **número** de habitación (`listCoverImagesByRoomNumbers`),
+con `withCoverUrls` (puro, probado) y una cadena de degradación foto real → imagen de tipo → aviso, que
+**nunca** enseña la foto de otra habitación. Suite: web **683/683** · shared **457/457** · typecheck y
+eslint limpios. Release **`v27`** (`hotel-mcp-web-00041-xok` al 100 %, `v26` como vuelta atrás):
+verificado en producción que el HTML pasa de **2 placeholders a 0** y sirve
+`/api/rooms/images/101-Doble-2026-10-05-1.jpg`. Detalle en `despliegue_gcp.md` §47.

@@ -1424,3 +1424,44 @@ los tres remotos) se reconstruye para que la release tenga procedencia exacta.
 > **Temporal ajeno**: `apps/web/shot.tmp.mjs` (script de captura de otra sesión, sin trackear) sigue en
 > el árbol; viaja al contexto de build pero no afecta a la aplicación. No se toca porque no es de este
 > ciclo.
+
+---
+
+## 47. Release `v27` — la tarjeta del catálogo muestra la foto de SU habitación (2026-10-05)
+
+**Defecto corregido.** La tarjeta del catálogo pintaba siempre `/images/<tipo>.svg`, un **placeholder
+genérico por tipo**: el catálogo nunca enseñaba la foto de la habitación en venta. El catálogo se lee
+por RPC/base y solo conoce el **número** de habitación (no su UUID), así que la portada no estaba
+resuelta en ninguna capa.
+
+**Corrección (3 capas + guardianes):**
+
+| Capa | Cambio |
+|---|---|
+| `RoomsRepository` | `listCoverImagesByRoomNumbers`: portada por **número**, en **una** consulta, priorizando `is_cover` y luego la posición, ignorando las archivadas |
+| `lib/nights.ts` | `NightView.coverUrl` + `withCoverUrls` (puro y probado) + `attachRoomCovers`, que enriquece catálogo (BD y RPC) y reventa. **Falla en blando**: sin portada, la tarjeta cae a su imagen de tipo; nunca se enseña la foto de otra habitación |
+| `NightImage` | Cadena de degradación **foto real → imagen de tipo → aviso accesible** |
+| Guardianes | El test de nombres se pone al día con la **planta vigente** (`x01`–`x03` doble · `x04`–`x05` suite · `x06`–`x10` simple) conservando las 3 portadas históricas como origen de `@planta`; el índice `docs/imagenes/README.md` documenta las 40 fotos nuevas |
+
+**Por qué salieron los guardianes.** Los dos fallos de la suite no eran del catálogo: el guardián de
+nombres seguía fijando el **maestro antiguo** (101–115 simple, 116–130 doble, 201–220 suite), que la
+redistribución de `@planta` invalida, y el índice de la carpeta exigía documentar los 40 ficheros
+nuevos. Se corrigieron con la planta aprobada, no relajando la comprobación.
+
+| Paso | Detalle |
+|---|---|
+| Imagen | Cloud Build `6006cd82` · `web:v27` · 3m15s · **SUCCESS** |
+| Canario | `hotel-mcp-web-00041-xok` al 0 %, etiqueta `v27` |
+| Producción | `00041-xok` al **100 %**; `v26` se conserva como vuelta atrás |
+
+### Verificación (producción real) — antes / después
+
+| | Antes (`v26`) | Después (`v27`) |
+|---|---|---|
+| Tarjeta del catálogo (hab. 101) | `2 × images/simple.svg` (placeholder) | `api/rooms/images/101-Doble-2026-10-05-1.jpg` |
+| Placeholders por tipo en el HTML | **2** | **0** |
+| Foto servida | — | **200** · 105 410 B · `image/jpeg` |
+| `/health/ready` | READY | **READY** |
+
+> El catálogo ofrecía **una** noche (hab. 101, 27-dic-2026) leída de la cadena: es el único inventario
+> vivo tras el reset, porque el índice off-chain arrancó vacío con el checkpoint en la cabeza (§44).
