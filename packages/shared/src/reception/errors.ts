@@ -9,7 +9,8 @@ export type ReceptionErrorCode =
   | "CODIGO_INVALIDO"
   | "TOKEN_NO_ENCONTRADO"
   | "ESTANCIA_NO_CHECKED_IN"
-  | "CARGO_INVALIDO";
+  | "CARGO_INVALIDO"
+  | "HABITACION_NO_ENCONTRADA";
 
 export class ReceptionError extends Error {
   constructor(

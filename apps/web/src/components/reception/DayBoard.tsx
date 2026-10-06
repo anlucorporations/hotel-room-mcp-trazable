@@ -11,6 +11,7 @@ const ROOM_STATUS_CLASS: Readonly<Record<RoomBoardStatus, string>> = {
   RESERVADA: "border-azure/40 bg-azure/10 text-azure-deep",
   OCUPADA: "border-warning/50 bg-warning-bg text-coral-text",
   SALIDA: "border-line bg-mist-2 text-ink-soft",
+  PENDIENTE_LIMPIEZA: "border-coral-text/50 bg-coral-text/10 text-coral-text",
   BLOQUEADA: "border-ink-soft/40 bg-ink-soft/10 text-ink-soft",
 };
 
@@ -22,6 +23,7 @@ export function DayBoard({
   date,
   onDateChange,
   onRefresh,
+  onSelectRoom,
   loading,
   error,
   reservations,
@@ -31,6 +33,7 @@ export function DayBoard({
   date: string;
   onDateChange: (date: string) => void;
   onRefresh: () => void;
+  onSelectRoom?: (roomNumber: number) => void;
   loading: boolean;
   error: string | null;
   reservations: readonly Reservation[];
@@ -69,11 +72,12 @@ export function DayBoard({
       )}
 
       {stats && (
-        <dl className="grid grid-cols-2 gap-3 tablet:grid-cols-5" data-testid="reception-stats">
+        <dl className="grid grid-cols-2 gap-3 tablet:grid-cols-3 desktop:grid-cols-6" data-testid="reception-stats">
           <Stat label={t("statsTotal")} value={stats.totalRooms} />
           <Stat label={t("statsReserved")} value={stats.reserved} />
           <Stat label={t("statsOccupied")} value={stats.occupied} />
           <Stat label={t("statsDepartures")} value={stats.departures} />
+          <Stat label={t("statsPendingCleaning")} value={stats.pendingCleaning} />
           <Stat label={t("statsFree")} value={stats.free} />
         </dl>
       )}
@@ -124,10 +128,17 @@ export function DayBoard({
           {rooms.map((room) => (
             <li
               key={room.roomNumber}
-              className={`rounded-brand border px-3 py-2 text-small ${ROOM_STATUS_CLASS[room.status]}`}
+              className={`rounded-brand border px-3 py-2 text-small ${ROOM_STATUS_CLASS[room.status]} ${onSelectRoom ? "cursor-pointer transition hover:shadow-sm" : ""}`}
             >
-              <span className="block font-semibold">{room.roomNumber}</span>
-              <span className="block text-micro">{t(statusKey(room.status) as "roomLibre")}</span>
+              <button
+                type="button"
+                disabled={!onSelectRoom}
+                onClick={() => onSelectRoom?.(room.roomNumber)}
+                className="w-full text-left"
+              >
+                <span className="block font-semibold">{room.roomNumber}</span>
+                <span className="block text-micro">{t(statusKey(room.status) as "roomLibre")}</span>
+              </button>
             </li>
           ))}
         </ul>

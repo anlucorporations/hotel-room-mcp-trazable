@@ -32,7 +32,7 @@ export const PUBLICATION_STATUSES = [
 /** Estado de publicación de la ficha (mismos valores que el `CHECK` de `rooms`). */
 export type RoomPublicationStatus = (typeof PUBLICATION_STATUSES)[number];
 
-export const OPERATIONAL_STATUSES = ["CLEAN", "DIRTY", "OCCUPIED"] as const;
+export const OPERATIONAL_STATUSES = ["CLEAN", "DIRTY", "OCCUPIED", "PENDING_CLEANING"] as const;
 
 /** Estado operativo de la ficha (lo mueven housekeeping y recepción). */
 export type RoomOperationalStatus = (typeof OPERATIONAL_STATUSES)[number];

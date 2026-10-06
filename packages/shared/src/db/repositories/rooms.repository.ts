@@ -24,8 +24,8 @@ export type RoomPublicationStatus =
   | "MAINTENANCE"
   | "OUT_OF_SERVICE";
 
-/** Estado operativo (lo actualizan housekeeping/recepción, D-19). */
-export type RoomOperationalStatus = "CLEAN" | "DIRTY" | "OCCUPIED";
+/** Estado operativo (lo actualizan housekeeping/recepción, D-19; RF-50 añade PENDING_CLEANING). */
+export type RoomOperationalStatus = "CLEAN" | "DIRTY" | "OCCUPIED" | "PENDING_CLEANING";
 
 /** Vista exterior de la habitación (ficha ampliada, 2026-10-02). */
 export type RoomViewKind = "SEA" | "GARDEN" | "INTERIOR";

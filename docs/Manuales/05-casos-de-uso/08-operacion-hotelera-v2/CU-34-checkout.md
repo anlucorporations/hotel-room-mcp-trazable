@@ -45,7 +45,7 @@ El **huésped** solo entrega la habitación y las llaves. No toca el panel.
 10. El contador te dice cuántos cargos se van a cancelar antes de que pulses nada.
 11. Pulsa **Confirmar check-out**.
 12. Espera el recibo verde con la habitación y la fecha.
-13. Vuelve a la pestaña del día y refresca. La habitación aparece como **Salida**.
+13. Vuelve a la pestaña del día y refresca. La habitación aparece como **Pendiente de limpieza**.
 
 El recorrido, de un vistazo:
 
@@ -68,7 +68,7 @@ flowchart LR
 - El recibo distingue si acabas de registrar la salida o si ya estaba hecha.
 - Los cargos marcados aparecen como cancelados, con quién los canceló y cuándo.
 - En el panel del día, la habitación cambia a **Salida** después de refrescar.
-- La habitación pasa a la lista de limpieza como pendiente de limpiar.
+- La habitación queda bloqueada para limpieza y cambio de lencería hasta que recepción la libere.
 - La cuenta de esa estancia queda cerrada y no vuelve a la lista de salidas.
 
 ## 6. Si algo va mal

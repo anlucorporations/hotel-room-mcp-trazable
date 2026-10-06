@@ -324,8 +324,9 @@ export class ReceptionRepository {
         input.tokenId,
       ]);
 
-      // D-19: al hacer el check-out la habitación pasa a DIRTY y entra en el reparto de limpieza.
-      // Se deja traza en `housekeeping_room_logs` con el valor anterior real (F3 · D-48/D-62).
+      // RF-50: al hacer el check-out la habitación pasa a PENDING_CLEANING (indispuesta para
+      // limpieza y cambio de lencería). Solo recepción podrá liberarla a CLEAN más adelante.
+      // Se deja traza en `housekeeping_room_logs` con el valor anterior real.
       const room = await client.query(
         `SELECT id, operational_status FROM rooms
           WHERE room_number = $1 AND archived_at IS NULL FOR UPDATE`,
@@ -334,13 +335,13 @@ export class ReceptionRepository {
       if ((room.rowCount ?? 0) > 0) {
         const fromStatus = room.rows[0].operational_status as string;
         await client.query(
-          `UPDATE rooms SET operational_status = 'DIRTY', updated_at = NOW() WHERE id = $1`,
+          `UPDATE rooms SET operational_status = 'PENDING_CLEANING', updated_at = NOW() WHERE id = $1`,
           [room.rows[0].id],
         );
-        if (fromStatus !== "DIRTY") {
+        if (fromStatus !== "PENDING_CLEANING") {
           await client.query(
             `INSERT INTO housekeeping_room_logs (room_id, from_value, to_value, changed_by)
-             VALUES ($1, $2, 'DIRTY', $3)`,
+             VALUES ($1, $2, 'PENDING_CLEANING', $3)`,
             [room.rows[0].id, fromStatus, input.processedBy],
           );
         }
@@ -352,6 +353,68 @@ export class ReceptionRepository {
       });
       await client.query("COMMIT");
       return { checkout, created: true };
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Mapa de estados operativos de las habitaciones vigentes. Se usa para enriquecer el panel del
+   * día con estados que no dependen de una noche concreta (p. ej. PENDING_CLEANING, RF-50).
+   */
+  async getOperationalStatusByRoom(): Promise<Map<number, string>> {
+    const res = await this.pool.query(
+      `SELECT room_number, operational_status
+         FROM rooms
+        WHERE archived_at IS NULL`,
+    );
+    const map = new Map<number, string>();
+    for (const row of res.rows) {
+      map.set(Number(row.room_number), row.operational_status as string);
+    }
+    return map;
+  }
+
+  /**
+   * Libera una habitación que esté en PENDING_CLEANING, pasándola a CLEAN (RF-50).
+   * Solo recepción ejecuta esta acción. Devuelve el estado anterior.
+   */
+  async releaseRoom(
+    roomNumber: number,
+    processedBy: string,
+  ): Promise<{ previousStatus: string; released: boolean }> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const room = await client.query(
+        `SELECT id, operational_status FROM rooms
+          WHERE room_number = $1 AND archived_at IS NULL FOR UPDATE`,
+        [roomNumber],
+      );
+      if ((room.rowCount ?? 0) === 0) {
+        throw new ReceptionError("HABITACION_NO_ENCONTRADA", "La habitación no existe o está archivada.");
+      }
+
+      const previousStatus = room.rows[0].operational_status as string;
+      if (previousStatus !== "PENDING_CLEANING") {
+        await client.query("COMMIT");
+        return { previousStatus, released: false };
+      }
+
+      await client.query(
+        `UPDATE rooms SET operational_status = 'CLEAN', updated_at = NOW() WHERE id = $1`,
+        [room.rows[0].id],
+      );
+      await client.query(
+        `INSERT INTO housekeeping_room_logs (room_id, from_value, to_value, changed_by)
+         VALUES ($1, 'PENDING_CLEANING', 'CLEAN', $2)`,
+        [room.rows[0].id, processedBy],
+      );
+      await client.query("COMMIT");
+      return { previousStatus, released: true };
     } catch (error) {
       await client.query("ROLLBACK");
       throw error;

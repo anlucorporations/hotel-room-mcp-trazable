@@ -390,7 +390,7 @@ CREATE TABLE IF NOT EXISTS rooms (
     CONSTRAINT rooms_publication_status_check
         CHECK (publication_status IN ('DRAFT', 'PUBLISHED', 'PAUSED', 'MAINTENANCE', 'OUT_OF_SERVICE')),
     CONSTRAINT rooms_operational_status_check
-        CHECK (operational_status IN ('CLEAN', 'DIRTY', 'OCCUPIED')),
+        CHECK (operational_status IN ('CLEAN', 'DIRTY', 'OCCUPIED', 'PENDING_CLEANING')),
     CONSTRAINT rooms_view_kind_check
         CHECK (view_kind IS NULL OR view_kind IN ('SEA', 'GARDEN', 'INTERIOR')),
     CONSTRAINT rooms_decor_style_check
@@ -471,6 +471,11 @@ ALTER TABLE rooms ADD COLUMN IF NOT EXISTS decor_notes_es TEXT NULL;
 ALTER TABLE rooms ADD COLUMN IF NOT EXISTS decor_notes_en TEXT NULL;
 ALTER TABLE rooms ADD COLUMN IF NOT EXISTS decor_notes_ru TEXT NULL;
 
+-- Migración incremental (2026-10-06): nuevo estado operativo post-check-out.
+ALTER TABLE rooms DROP CONSTRAINT IF EXISTS rooms_operational_status_check;
+ALTER TABLE rooms ADD CONSTRAINT rooms_operational_status_check
+    CHECK (operational_status IN ('CLEAN', 'DIRTY', 'OCCUPIED', 'PENDING_CLEANING'));
+
 -- Publicaciones ancladas (D-2, D-18): huella del contenido + nº de habitación + fecha.
 CREATE TABLE IF NOT EXISTS room_publications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -502,6 +507,41 @@ CREATE TABLE IF NOT EXISTS room_status_history (
     reason VARCHAR(200) NULL,
     changed_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+-- Checklist operativo de limpieza y preparación de la habitación (RF-52/RF-55).
+CREATE TABLE IF NOT EXISTS room_cleaning_checklist_items (
+    code VARCHAR(30) PRIMARY KEY,
+    name_es VARCHAR(80) NOT NULL,
+    name_en VARCHAR(80) NOT NULL,
+    name_ru VARCHAR(80) NOT NULL,
+    is_mandatory BOOLEAN NOT NULL DEFAULT TRUE,
+    sort_order INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS room_cleaning_checklists (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    assignment_id UUID NULL REFERENCES housekeeping_assignments(id) ON DELETE SET NULL,
+    item_code VARCHAR(30) NOT NULL REFERENCES room_cleaning_checklist_items(code) ON UPDATE CASCADE,
+    completed BOOLEAN NOT NULL DEFAULT FALSE,
+    completed_by VARCHAR(100) NULL,
+    completed_at TIMESTAMP NULL,
+    notes VARCHAR(200) NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    UNIQUE (room_id, assignment_id, item_code)
+);
+
+CREATE INDEX IF NOT EXISTS idx_room_cleaning_checklists_room
+    ON room_cleaning_checklists(room_id, assignment_id, item_code);
+
+INSERT INTO room_cleaning_checklist_items (code, name_es, name_en, name_ru, is_mandatory, sort_order) VALUES
+    ('CLEANING',         'Limpieza',                   'Cleaning',            'Уборка',              true,  1),
+    ('DEODORIZATION',    'Desodorización',             'Deodorization',       'Дезодорация',         true,  2),
+    ('LINEN_CHANGE',     'Cambio de Lencería',         'Linen change',        'Смена белья',         true,  3),
+    ('CLIMATE',          'Climatización',              'Climate control',     'Климат-контроль',     true,  4),
+    ('SUPPLIES',         'Restitución de Suministros', 'Supplies restock',    'Пополнение расходников', true, 5),
+    ('SPECIAL_REQUESTS', 'Solicitudes Especiales',     'Special requests',    'Особые пожелания',    false, 6)
+ON CONFLICT (code) DO NOTHING;
 
 -- Reseñas (D-27, D-28): anónimas y verificadas por noche consumida on-chain.
 -- NUNCA se publica el número exacto de habitación: solo el tipo. room_id se guarda
@@ -557,10 +597,22 @@ CREATE TABLE IF NOT EXISTS reservations (
     confirmed_at TIMESTAMP NULL,
     cancelled_at TIMESTAMP NULL,
     cancel_reason VARCHAR(200) NULL,
+    adult_count INT NOT NULL DEFAULT 1 CHECK (adult_count >= 0),
+    child_count INT NOT NULL DEFAULT 0 CHECK (child_count >= 0),
+    baby_count INT NOT NULL DEFAULT 0 CHECK (baby_count >= 0),
+    pet_count INT NOT NULL DEFAULT 0 CHECK (pet_count >= 0),
+    accessibility_count INT NOT NULL DEFAULT 0 CHECK (accessibility_count >= 0),
     CONSTRAINT reservations_dates_check CHECK (check_out_date > check_in_date),
     CONSTRAINT reservations_status_check
         CHECK (status IN ('PENDING', 'CONFIRMED', 'CANCELLED', 'NO_SHOW', 'COMPLETED'))
 );
+
+-- Migración incremental (2026-10-06): contadores de ocupación de la reserva.
+ALTER TABLE reservations ADD COLUMN IF NOT EXISTS adult_count INT NOT NULL DEFAULT 1 CHECK (adult_count >= 0);
+ALTER TABLE reservations ADD COLUMN IF NOT EXISTS child_count INT NOT NULL DEFAULT 0 CHECK (child_count >= 0);
+ALTER TABLE reservations ADD COLUMN IF NOT EXISTS baby_count INT NOT NULL DEFAULT 0 CHECK (baby_count >= 0);
+ALTER TABLE reservations ADD COLUMN IF NOT EXISTS pet_count INT NOT NULL DEFAULT 0 CHECK (pet_count >= 0);
+ALTER TABLE reservations ADD COLUMN IF NOT EXISTS accessibility_count INT NOT NULL DEFAULT 0 CHECK (accessibility_count >= 0);
 
 -- Noches retenidas por la reserva. Índice único parcial (active) = sin sobreventa
 -- (D-41). token_id se rellena cuando la noche se acuña al pagar el 100 % (D-39).

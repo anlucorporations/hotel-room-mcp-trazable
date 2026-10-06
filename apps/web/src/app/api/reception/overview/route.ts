@@ -36,10 +36,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // Rellena los códigos de recuperación de filas antiguas (idempotente y acotado).
     await repo.ensureRecoveryCodes();
 
-    const nights = await repo.listNightsByDate(date);
+    const [nights, operationalStatus] = await Promise.all([
+      repo.listNightsByDate(date),
+      repo.getOperationalStatusByRoom(),
+    ]);
     const rooms = buildRoomBoard(
       ALL_ROOMS,
       nights.map((night) => ({ roomNumber: night.roomNumber, status: night.status })),
+      operationalStatus,
     );
     const reservations = nights.filter(
       (night) =>
@@ -57,6 +61,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         reserved: count("RESERVADA"),
         occupied: count("OCUPADA"),
         departures: count("SALIDA"),
+        pendingCleaning: count("PENDIENTE_LIMPIEZA"),
         free: count("LIBRE"),
         blocked: count("BLOQUEADA"),
       },

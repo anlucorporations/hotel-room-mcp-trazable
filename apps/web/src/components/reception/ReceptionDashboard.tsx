@@ -7,6 +7,7 @@ import { CredentialForm } from "@/components/admin/CredentialForm";
 import { CheckInPanel } from "./CheckInPanel";
 import { CheckoutPanel } from "./CheckoutPanel";
 import { DayBoard } from "./DayBoard";
+import { RoomDetailPanel } from "./RoomDetailPanel";
 import { ReportIncidentPanel } from "@/components/maintenance/ReportIncidentPanel";
 import { ActivitiesPanel } from "./ActivitiesPanel";
 import type { DayStats, OverviewResponse, Reservation, RoomCell } from "./types";
@@ -37,6 +38,7 @@ export function ReceptionDashboard() {
   const [overview, setOverview] = useState<OverviewResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<number | null>(null);
 
   const loadOverview = useCallback(
     async (targetDate: string): Promise<void> => {
@@ -124,12 +126,24 @@ export function ReceptionDashboard() {
             date={date}
             onDateChange={setDate}
             onRefresh={refresh}
+            onSelectRoom={setSelectedRoom}
             loading={loading}
             error={error}
             reservations={reservations}
             rooms={rooms}
             stats={stats}
           />
+          {selectedRoom && (
+            <RoomDetailPanel
+              roomNumber={selectedRoom}
+              apiFetch={session.apiFetch}
+              onRelease={() => {
+                setSelectedRoom(null);
+                refresh();
+              }}
+              onClose={() => setSelectedRoom(null)}
+            />
+          )}
           {/* D-52: recepción reporta averías; la habitación se bloquea hasta que el técnico resuelva (D-53). */}
           <ReportIncidentPanel apiFetch={session.apiFetch} />
         </>

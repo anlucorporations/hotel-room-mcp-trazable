@@ -1,7 +1,7 @@
-# Estructura de datos — alta de habitación y personal (2026-10-05)
+# Estructura de datos — alta de una habitación (2026-10-05)
 
-> **Parte I** (§1–§4): alta de una habitación → script [`scripts/planta.ts`](../../scripts/planta.ts).
-> **Parte II** (§5–§7): alta del personal del hotel → script `scripts/personal.ts` (pendiente de aprobación).
+> **Alcance de este documento** (§1–§4): alta de una habitación → script [`scripts/planta.ts`](../../scripts/planta.ts).
+> **Personal que opera el sistema** (§5): documento propio → [`estructura_datos_personal.md`](estructura_datos_personal.md).
 
 > **Skill**: `@inyecta-datos` · **Proyecto**: `hotel-room-mcp-trazable`
 > **Contexto**: la base off-chain se inicializó a cero (§42 de `estado_proyecto.md`); este documento
@@ -100,102 +100,13 @@ redactados en las descripciones (no se amplía el catálogo). «Vista a la pisci
 
 ---
 
-# Parte II · Personal del hotel (operadores del back-office)
+## 5. Personal del hotel (operadores del back-office)
 
-## 5. Proceso: qué se crea al dar de alta a una persona del personal
+El alta del personal que opera el sistema tiene **documento propio**:
+[`estructura_datos_personal.md`](estructura_datos_personal.md). Allí están el diccionario completo de
+`admin_users` y `mfa_recovery_codes`, el catálogo de roles (D-56), las reglas de validación, el
+proceso `provisionUser` y la relación con el personal operativo (capa B, sin FK).
 
-El personal tiene **dos capas** en esta plataforma, y solo la primera es una entidad con tabla:
-
-- **Capa A — acceso al panel (lo que se inyecta):** `admin_users` + `mfa_recovery_codes`. Es la
-  pantalla **Sistemas → Usuarios** y la única fuente de verdad de «quién trabaja aquí y con qué rol».
-- **Capa B — personal operativo referenciado por nombre (texto libre, sin tabla maestra):** el
-  nombre del operador se copia como texto en `housekeeping_shifts.supervisor`,
-  `housekeeping_assignments.assignee`, `maintenance_incidents.assigned_to`/`reported_by`,
-  `additional_charges.created_by`, etc. **No hay catálogo de empleados**: crear la cuenta no crea
-  automáticamente al supervisor de un turno; hay que nombrarlo en el turno.
-
-```mermaid
-flowchart LR
-  A["POST /api/admin/system/users<br/>(username + role, solo owner)"] --> S["AuthService.provisionUser"]
-  S --> H["bcrypt(password)"]
-  S --> T["AES-256-GCM(TOTP secret)"]
-  S --> R["8 códigos de rescate (bcrypt)"]
-  H --> U[("admin_users")]
-  T --> U
-  R --> C[("mfa_recovery_codes")]
-  U --> G["requireRole(role)<br/>abre el panel de su rol"]
-  U --> N["nombre del operador<br/>(Capa B, texto libre)"]
-  N --> SH[("housekeeping_shifts.supervisor")]
-  N --> HA[("housekeeping_assignments.assignee")]
-  N --> MI[("maintenance_incidents.assigned_to")]
-```
-
-Reglas que condicionan la inyección:
-
-1. **Cuatro roles, uno por tipo de trabajo** (D-56, `BACK_OFFICE_ROLE_NAMES`): `DEFAULT_ADMIN_ROLE`
-   (dueño, acceso total), `RECEPTION_ROLE` (recepción, ligado a la wallet de check-in),
-   `HOUSEKEEPING` y `MAINTENANCE` (**sin wallet**: nunca firman en cadena).
-2. **La contraseña y la semilla TOTP se enseñan una sola vez.** No se pueden recuperar de la BD
-   (solo su hash bcrypt y su criptograma AES): o se entregan al crearlas o hay que rotarlas.
-3. **`AES_SECRET_KEY` es obligatoria.** Sin ella el aprovisionamiento falla en cerrado; no hay valor
-   por defecto (CWE-798). El script debe abortar con un mensaje claro si falta.
-4. **`password_hash` es bcrypt (10 rondas, `bcryptjs`)** y los códigos de rescate son 8 cadenas
-   hex de 10 caracteres, también con bcrypt.
-5. **Idempotencia por `username`** (`UNIQUE`): el `upsert` **rota** las credenciales de quien ya
-   existía. Rotar invalida el autenticador de esa persona, así que por defecto solo se crean los que
-   faltan (`--rotate` para forzar la rotación explícita).
-6. **No se pueden borrar cuentas, solo desactivar** (`active = false` revoca sus sesiones). Dar de
-   baja a alguien es un `PATCH`, no un `DELETE`.
-
-## 6. Entidades implicadas
-
-| Tabla | Papel | Campos que escribe el alta |
-|---|---|---|
-| `admin_users` | **Maestro del personal con acceso** | `username` (único, correo), `password_hash` (bcrypt), `totp_secret_enc` (AES-256-GCM), `role`, `active`, `failed_attempts`/`locked_until` (reseteados por el upsert) |
-| `mfa_recovery_codes` | Códigos de rescate de un solo uso | `username` (sin FK, ligado por nombre), `code_hash` (bcrypt), `used` |
-| `admin_sessions` | Sesiones del personal | Solo lectura/revocación: al desactivar se invalidan (`revokeAllUserSessions`) |
-| `housekeeping_shifts` | Turno y **supervisor** (Capa B) | `shift_date`, `label` (`MANANA`/`TARDE`/`NOCHE`), `supervisor` |
-| `housekeeping_assignments` | Reparto por persona (Capa B) | `shift_id`, `room_id`, `assignee`, `status` |
-| `maintenance_incidents` | Incidencia asignada a una persona | `assigned_to`, `reported_by` |
-
-### Relaciones
-
-```mermaid
-erDiagram
-    ADMIN_USERS ||--o{ MFA_RECOVERY_CODES : "tiene (por username)"
-    ADMIN_USERS ||--o{ ADMIN_SESSIONS : "abre (por username)"
-    ADMIN_USERS {
-        uuid id PK
-        varchar username UK "correo de la persona"
-        text password_hash "bcrypt"
-        text totp_secret_enc "AES-256-GCM"
-        varchar role "DEFAULT_ADMIN_ROLE|RECEPTION_ROLE|HOUSEKEEPING|MAINTENANCE"
-        boolean active
-    }
-    MFA_RECOVERY_CODES {
-        uuid id PK
-        varchar username "sin FK"
-        varchar code_hash "bcrypt"
-        boolean used
-    }
-```
-
-```mermaid
-erDiagram
-    ADMIN_USERS ||..o{ HOUSEKEEPING_SHIFTS : "supervisa (solo por nombre)"
-    ADMIN_USERS ||..o{ HOUSEKEEPING_ASSIGNMENTS : "se le reparte (solo por nombre)"
-    ADMIN_USERS ||..o{ MAINTENANCE_INCIDENTS : "atiende (solo por nombre)"
-```
-
-## 7. Roles vigentes (lo que se puede asignar hoy)
-
-| `role` | Etiqueta del panel | Paneles que abre | Wallet asociada |
-|---|---|---|---|
-| `DEFAULT_ADMIN_ROLE` | Dueño / Administración | Todos (admin, recepción, housekeeping, mantenimiento) | cuenta 1 (Anvil) — la usa el back-office, no la BD |
-| `RECEPTION_ROLE` | Recepción | Front Office / check-in y check-out | cuenta 3 (hot-wallet de recepción) |
-| `HOUSEKEEPING` | Housekeeping | Tablero de limpieza, turnos y reparto | **ninguna** (D-56) |
-| `MAINTENANCE` | Mantenimiento | Incidencias y plan preventivo | **ninguna** (D-56) |
-
-**Restricción del alta:** el `username` debe ser un correo (`includes("@")`, ≤ 100 caracteres) y la
-contraseña, si se aporta, **≥ 12 caracteres**. El script puede generar la contraseña
-(18 bytes en base64url) o aceptar una fija para pruebas.
+En resumen: la cuenta vive en **`admin_users`** (bcrypt + TOTP cifrado + rol) con sus 8 códigos de
+rescate en **`mfa_recovery_codes`**, y el nombre de la persona se referencia después como **texto
+libre** en turnos, repartos e incidencias.

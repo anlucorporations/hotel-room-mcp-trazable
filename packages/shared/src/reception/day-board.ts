@@ -16,6 +16,7 @@ export type RoomBoardStatus =
   | "RESERVADA"
   | "OCUPADA"
   | "SALIDA"
+  | "PENDIENTE_LIMPIEZA"
   | "BLOQUEADA";
 
 /** Fila mínima del índice que necesita el derivador. */
@@ -30,7 +31,12 @@ export interface RoomBoardCell {
   readonly status: RoomBoardStatus;
 }
 
-/** Traduce el estado del índice (`nfts`) al estado del panel. Un estado desconocido es LIBRE. */
+/**
+ * Traduce el estado del índice (`nfts`) al estado del panel.
+ * El estado operativo real de la habitación (`rooms.operational_status`) puede sobreescribir
+ * SALIDA por PENDIENTE_LIMPIEZA cuando el checkout dejó la habitación indispuesta (RF-50).
+ * Un estado desconocido es LIBRE.
+ */
 export function roomBoardStatus(status: string): RoomBoardStatus {
   switch (status) {
     case "CONFIRMING":
@@ -41,6 +47,8 @@ export function roomBoardStatus(status: string): RoomBoardStatus {
       return "OCUPADA";
     case "CHECKED_OUT":
       return "SALIDA";
+    case "PENDING_CLEANING":
+      return "PENDIENTE_LIMPIEZA";
     case "BURNED":
       return "BLOQUEADA";
     // AVAILABLE (inventario sin vender) y cualquier valor no esperado: habitación libre.
@@ -53,10 +61,15 @@ export function roomBoardStatus(status: string): RoomBoardStatus {
  * Construye el tablero de las `rooms` indicadas. Una habitación sin noche asociada ese día está
  * LIBRE. Si hubiera más de una fila para la misma habitación (no debería: el token codifica
  * habitación+fecha), gana el estado de mayor severidad operativa.
+ *
+ * El `operationalStatus` por habitación permite reflejar estados que no dependen de la noche del
+ * índice, como `PENDING_CLEANING` tras un check-out (RF-50). Tiene prioridad sobre el estado de la
+ * noche cuando su severidad es mayor.
  */
 export function buildRoomBoard(
   rooms: readonly number[],
   nights: readonly BoardNight[],
+  operationalStatus?: ReadonlyMap<number, string>,
 ): RoomBoardCell[] {
   const byRoom = new Map<number, string>();
   for (const night of nights) {
@@ -64,11 +77,18 @@ export function buildRoomBoard(
     byRoom.set(night.roomNumber, previous === undefined ? night.status : mostSevere(previous, night.status));
   }
 
-  return rooms.map((roomNumber) => ({
-    roomNumber,
-    roomType: roomTypeOf(roomNumber),
-    status: roomBoardStatus(byRoom.get(roomNumber) ?? "AVAILABLE"),
-  }));
+  return rooms.map((roomNumber) => {
+    const nightStatus = byRoom.get(roomNumber) ?? "AVAILABLE";
+    const opStatus = operationalStatus?.get(roomNumber);
+    const status = opStatus
+      ? mostSevere(nightStatus, opStatus)
+      : nightStatus;
+    return {
+      roomNumber,
+      roomType: roomTypeOf(roomNumber),
+      status: roomBoardStatus(status),
+    };
+  });
 }
 
 const SEVERITY: readonly RoomBoardStatus[] = [
@@ -77,6 +97,7 @@ const SEVERITY: readonly RoomBoardStatus[] = [
   "RESERVADA",
   "OCUPADA",
   "SALIDA",
+  "PENDIENTE_LIMPIEZA",
   "BLOQUEADA",
 ];
 

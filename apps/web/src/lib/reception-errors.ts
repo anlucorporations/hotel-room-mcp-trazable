@@ -14,6 +14,7 @@ const HTTP_BY_CODE: Record<ReceptionErrorCode, number> = {
   TOKEN_NO_ENCONTRADO: 404,
   ESTANCIA_NO_CHECKED_IN: 409,
   CARGO_INVALIDO: 400,
+  HABITACION_NO_ENCONTRADA: 404,
 };
 
 export function receptionErrorResponse(scope: string, error: unknown): NextResponse {

@@ -16,7 +16,10 @@ Y al final está la rejilla: las 50 habitaciones del hotel con un color por esta
 
 La pantalla **solo mira**. No cambia nada de la reserva ni firma nada en la red. Para dar entrada o salida usa las otras pestañas.
 
-Los estados que verás son seis: libre, pendiente, reservada, ocupada, salida y bloqueada. Los explicamos en el paso a paso.
+Los estados que verás son siete: libre, pendiente, reservada, ocupada, salida, pendiente de limpieza y bloqueada. Los explicamos en el paso a paso.
+
+Al tocar una habitación se abre una **ficha detalle** con dos zonas: Habitación y Huésped. La información
+cambia según el estado (RF-51..RF-55).
 
 ## 2. Quién puede hacerlo
 

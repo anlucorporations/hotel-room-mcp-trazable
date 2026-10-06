@@ -31,6 +31,11 @@ interface Reservation {
   totalCents: number;
   depositRequiredCents: number;
   depositPaidCents: number;
+  adultCount: number;
+  childCount: number;
+  babyCount: number;
+  petCount: number;
+  accessibilityCount: number;
 }
 
 type Notice = { kind: "ok" | "error"; text: string };
@@ -127,6 +132,11 @@ export function ReservationsAdmin() {
           checkInDate: String(form.get("checkInDate") ?? ""),
           checkOutDate: String(form.get("checkOutDate") ?? ""),
           totalCents: Math.round(Number(form.get("totalCents") ?? 0) * 100),
+          adultCount: Number(form.get("adultCount") ?? 1) || 1,
+          childCount: Number(form.get("childCount") ?? 0) || 0,
+          babyCount: Number(form.get("babyCount") ?? 0) || 0,
+          petCount: Number(form.get("petCount") ?? 0) || 0,
+          accessibilityCount: Number(form.get("accessibilityCount") ?? 0) || 0,
           contact: String(form.get("contactValue") ?? "").trim()
             ? {
                 channel: String(form.get("contactChannel") ?? "EMAIL"),
@@ -243,6 +253,28 @@ export function ReservationsAdmin() {
             {t("resTotal")}
             <input name="totalCents" type="number" min="0" step="0.01" required data-testid="res-total" className={FIELD} />
           </label>
+          <div className="grid grid-cols-5 gap-2 tablet:col-span-3">
+            <label className="flex flex-col gap-1 text-small font-medium text-ink">
+              {t("resAdults")}
+              <input name="adultCount" type="number" min="1" defaultValue={1} data-testid="res-adults" className={FIELD} />
+            </label>
+            <label className="flex flex-col gap-1 text-small font-medium text-ink">
+              {t("resChildren")}
+              <input name="childCount" type="number" min="0" defaultValue={0} data-testid="res-children" className={FIELD} />
+            </label>
+            <label className="flex flex-col gap-1 text-small font-medium text-ink">
+              {t("resBabies")}
+              <input name="babyCount" type="number" min="0" defaultValue={0} data-testid="res-babies" className={FIELD} />
+            </label>
+            <label className="flex flex-col gap-1 text-small font-medium text-ink">
+              {t("resPets")}
+              <input name="petCount" type="number" min="0" defaultValue={0} data-testid="res-pets" className={FIELD} />
+            </label>
+            <label className="flex flex-col gap-1 text-small font-medium text-ink">
+              {t("resAccessibility")}
+              <input name="accessibilityCount" type="number" min="0" defaultValue={0} data-testid="res-accessibility" className={FIELD} />
+            </label>
+          </div>
           <label className="flex flex-col gap-1 text-small font-medium text-ink">
             {t("resContactChannel")}
             <select name="contactChannel" data-testid="res-contact-channel" defaultValue="EMAIL" className={FIELD}>

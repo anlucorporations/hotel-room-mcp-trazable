@@ -178,8 +178,8 @@ describe("ReceptionRepository (incremento v2)", () => {
       expect(created).toBe(true);
       expect(checkout.id).toBe("co1");
       expect(checkout.chargesCancelled).toBe(2);
-      // D-19: la habitación queda sucia y entra en el reparto de limpieza, con traza.
-      expect(statements.some((sql) => sql.includes("UPDATE rooms SET operational_status = 'DIRTY'"))).toBe(true);
+      // RF-50: la habitación queda pendiente de limpieza y cambio de lencería, con traza.
+      expect(statements.some((sql) => sql.includes("UPDATE rooms SET operational_status = 'PENDING_CLEANING'"))).toBe(true);
       expect(statements.some((sql) => sql.includes("INSERT INTO housekeeping_room_logs"))).toBe(true);
     });
 

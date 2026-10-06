@@ -64,9 +64,9 @@
 
 | Paso | Estado | Notas |
 |---|---|---|
-| 1. Análisis / `estructura_datos.md` Parte II | ✅ hecho | `admin_users` + `mfa_recovery_codes` (capa A) y nombres en turnos/repartos (capa B) |
-| 2. Casos de uso | ✅ reutilizados | CU-42 (Sistemas → Usuarios) en `docs/CASOS-DE-USO.md`; sin documento nuevo |
-| 5. Plan de inyección | ⏳ esperando respuestas | Alcance, método (BD vs API) y plantilla de personal |
+| 1. Análisis / `estructura_datos_personal.md` | ✅ hecho | Diccionario de `admin_users` + `mfa_recovery_codes`, roles (D-56), validaciones, `provisionUser` y capa B sin FK |
+| 2. Casos de uso | ✅ reutilizados | CU-42 (Sistemas → Usuarios, `docs/SRS.md:376`); sin documento nuevo |
+| 5. Plan de inyección | ⏳ esperando decisiones | 1) alcance A/B · 2) vía API o BD · 3) plantilla de personas |
 | 6. Script `scripts/personal.ts` | ⏳ pendiente | Se genera tras aprobar el plan |
 
 > Estado real de partida: existen `admin@hotel.es` (owner) y `recepcion@hotel.es` (recepción) del

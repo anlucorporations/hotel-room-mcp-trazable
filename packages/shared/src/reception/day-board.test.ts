@@ -11,10 +11,18 @@ describe("Panel del día de recepción (RF-31/RF-32)", () => {
     expect(roomBoardStatus("SOLD")).toBe("RESERVADA");
     expect(roomBoardStatus("CHECKED_IN")).toBe("OCUPADA");
     expect(roomBoardStatus("CHECKED_OUT")).toBe("SALIDA");
+    expect(roomBoardStatus("PENDING_CLEANING")).toBe("PENDIENTE_LIMPIEZA");
     expect(roomBoardStatus("CONFIRMING")).toBe("PENDIENTE");
     expect(roomBoardStatus("BURNED")).toBe("BLOQUEADA");
     expect(roomBoardStatus("AVAILABLE")).toBe("LIBRE");
     expect(roomBoardStatus("LO_QUE_SEA")).toBe("LIBRE");
+  });
+
+  it("el estado operativo PENDING_CLEANING tiene prioridad sobre CHECKED_OUT", () => {
+    const opStatus = new Map<number, string>([[101, "PENDING_CLEANING"]]);
+    const board = buildRoomBoard(ALL_ROOMS, [{ roomNumber: 101, status: "CHECKED_OUT" }], opStatus);
+    const byRoom = new Map(board.map((cell) => [cell.roomNumber, cell.status]));
+    expect(byRoom.get(101)).toBe("PENDIENTE_LIMPIEZA");
   });
 
   it("devuelve las 50 habitaciones del maestro aunque no haya ninguna noche", () => {

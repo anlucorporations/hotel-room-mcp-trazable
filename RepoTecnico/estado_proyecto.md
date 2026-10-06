@@ -3197,3 +3197,133 @@ test), y la CSP ya permitía los dominios de WalletConnect por si más adelante 
 
 **Verificado**: `tsc --noEmit` y `eslint` limpios. **Pendiente**: build + despliegue (v36) y prueba en
 navegador con dos carteras distintas (la inyectada de prueba y una segunda vía EIP-6963).
+
+---
+
+## 10. Cambio de alcance (2026-10-06): suite de recepción y ciclo de vida de la habitación
+
+Se recibe petición del cliente para modificar la suite de recepción:
+
+1. **Post-check-out**: la habitación debe pasar a estar **indispuesta** para limpieza y cambio de lencería,
+   y solo volver a disponible cuando se libere explícitamente.
+2. **Estado de las habitaciones**: convertir la subsección en un resumen interactivo donde, al seleccionar
+   una habitación, se despliegue una **ficha detalle** con zona Habitación y zona Huésped, mostrando
+   información distinta según el estado (Reservada, Ocupada, Mantenimiento, Libre).
+
+**Documentación afectada**:
+- `RepoTecnico/requerimientos.md` §6: RF-50…RF-55 detallados con las decisiones del cliente.
+- `RepoTecnico/diccionario_datos.md`, `RepoTecnico/diagrama_er.md`, `RepoTecnico/base_datos.sql`:
+  actualizados de forma sincronizada: nuevo estado `PENDING_CLEANING`, catálogo `room_cleaning_checklist_items`,
+  tabla `room_cleaning_checklists` y contadores de ocupación en `reservations`.
+- Fuente de verdad `packages/shared/src/db/migrator.ts`: migraciones incrementales añadidas.
+- Casos de uso `docs/Manuales/05-casos-de-uso/08-operacion-hotelera-v2/`: CU-31 y CU-34 requerirán revisión;
+  se crearán CU-38 (liberar habitación) y CU-39 (ficha detalle de habitación) si procede.
+
+**Decisiones cerradas con el cliente**:
+- Estado post-check-out: `PENDING_CLEANING`; recepción libera manualmente a `CLEAN`.
+- Checklist fijo de 6 ítems; obligatorios excepto `SPECIAL_REQUESTS`.
+- Datos de huéspedes: contadores en `reservations`; wallet = `nfts.current_owner`.
+- Calendario ocupado: rango completo de la reserva con iconos por fecha.
+- Mantenimiento: descripción del incidente abierto.
+
+**Implementación realizada**:
+- `packages/shared/src/db/migrator.ts`, `RepoTecnico/base_datos.sql`: nuevo estado `PENDING_CLEANING`,
+  catálogo `room_cleaning_checklist_items`, tabla `room_cleaning_checklists`, contadores en `reservations`.
+- `packages/shared/src/db/reset-plan.ts`: clasificadas las nuevas tablas en el plan de reset.
+- `packages/shared/src/reception/day-board.ts`: nuevo estado `PENDIENTE_LIMPIEZA` y prioridad del estado
+  operativo sobre el estado de la noche.
+- `packages/shared/src/db/repositories/reception.repository.ts`: checkout deja la habitación en
+  `PENDING_CLEANING`; nuevo método `releaseRoom` y `getOperationalStatusByRoom`.
+- `apps/web/src/app/api/reception/overview/route.ts`: usa el estado operativo para el panel del día.
+- `apps/web/src/app/api/reception/rooms/[roomNumber]/route.ts`: endpoint de ficha detalle con zona
+  habitación (checklist, mantenimiento, calendario) y zona huésped (ocupación + wallet).
+- `apps/web/src/app/api/reception/rooms/[roomNumber]/release/route.ts`: endpoint para liberar habitación.
+- `apps/web/src/components/reception/DayBoard.tsx`, `ReceptionDashboard.tsx`, `RoomDetailPanel.tsx`:
+  rejilla clickeable y ficha detalle.
+- `apps/web/src/components/reception/ReservationsAdmin.tsx`,
+  `apps/web/src/app/api/reception/reservations/route.ts`,
+  `packages/shared/src/db/repositories/reservations.repository.ts`: formulario de reserva incluye
+  adultos, niños, bebés, mascotas y acceso PMR.
+- Traducciones ES/EN/RU para los nuevos textos.
+
+**Verificación**:
+- `pnpm typecheck`: 6/6 OK.
+- `pnpm --filter @hotel/shared test -- reception/day-board.test.ts`: 6/6 OK.
+- `pnpm --filter @hotel/shared test -- db/repositories/reception.repository.test.ts`: 10/10 OK.
+- `pnpm --filter @hotel/shared test -- db/reset-plan.test.ts`: 5/5 OK.
+- `pnpm --filter @hotel/web test -- src/app/api/reception/reception-v2.test.ts`: 13/13 OK.
+
+**Casos de uso actualizados**:
+- `docs/Manuales/05-casos-de-uso/08-operacion-hotelera-v2/CU-31-panel-dia-recepcion.md`: rejilla
+  clickeable, ficha detalle y contador de pendientes de limpieza.
+- `docs/Manuales/05-casos-de-uso/08-operacion-hotelera-v2/CU-34-checkout.md`: post-check-out pasa a
+  **Pendiente de limpieza** en lugar de Salida.
+- `docs/Manuales/05-casos-de-uso/08-operacion-hotelera-v2/CU-38-liberar-habitacion.md`: nuevo CU para
+  liberar habitación.
+- `docs/Manuales/05-casos-de-uso/08-operacion-hotelera-v2/CU-39-ficha-detalle-habitacion.md`: nuevo CU
+  para la ficha detalle por estado.
+
+**Próximo paso**: añadir tests E2E/UI de la ficha detalle y de la liberación; ejecutar el conjunto de
+pruebas de recepción al completo; confirmar con el cliente el comportamiento observado.
+
+---
+
+## 11. Propuesta vNext — Suite de Operaciones: Mantenimiento + Ama de llaves (2026-10-06) · `@asistenteProyecto`
+
+**Solicitud del cliente**: incorporar en una siguiente versión de la plataforma:
+1. Un **Jefe de Mantenimiento** que resuelva solicitudes de mantenimiento de habitaciones, plan de mantenimiento de infraestructura (piscina, bomba de agua, plomería, electricidad, etc.) y mantenimiento rutinario de áreas comunes (recolección de desechos sólidos, jardines, etc.).
+2. Un **Ama de llaves** que coordine las actividades de las mucamas, supervise el estado de limpieza y suministro de habitaciones, revise cada habitación tras la limpieza (check-out o servicio diario) y notifique mantenimiento o cargos a la habitación por daños del huésped.
+3. **Acceso on-chain** para que ambos operadores firmen movimientos en su plataforma, analizando cuáles son obligatoriamente con wallet y cuáles no.
+
+**Estado**: propuesta de Fase 1 (Concepto) generada y aislada en `RepoTecnico/propuesta_vNext/`. **No se modifica código, contratos ni esquema actual.**
+
+### Artefactos generados
+
+| Artefacto | Ubicación | Estado |
+|---|---|---|
+| Requerimientos | `RepoTecnico/propuesta_vNext/requerimientos.md` | ✅ Completo |
+| Diccionario de datos | `RepoTecnico/propuesta_vNext/diccionario_datos.md` | ✅ Sincronizado |
+| Diagrama ER | `RepoTecnico/propuesta_vNext/diagrama_er.md` | ✅ Sincronizado |
+| Script SQL | `RepoTecnico/propuesta_vNext/base_datos.sql` | ✅ Ejecutable e idempotente |
+| Entornos globales | `RepoTecnico/propuesta_vNext/entornos_globales.md` | ✅ Completo |
+
+### Decisiones clave de la propuesta
+
+- Se crea un **contrato auxiliar `HotelOperations.sol`** para los eventos on-chain de mantenimiento, inspecciones y cargos por daños; el contrato `HotelNights.sol` actual **no se modifica**.
+- Los **jefes** (`HEAD_MAINTENANCE`, `HEAD_KEEPER`) conectan wallet y firman; los **subordinados** (técnicos y camareras) usan sesión tradicional sin wallet.
+- **Firma on-chain obligatoria** para:
+  - Bloqueo/desbloqueo de habitación por mantenimiento.
+  - Certificación de inspección post-limpieza.
+  - Cargo por daños a habitación.
+- **Firma on-chain obligatoria** para verificación de tareas preventivas críticas: **Filtro/Bomba de Piscina, Bomba de Agua, Ascensor, Generador Eléctrico**.
+- **Sin firma on-chain** para: apertura de tickets, asignaciones, estados intermedios, configuración y mantenimiento rutinario de áreas comunes.
+
+### Decisiones confirmadas por el cliente (2026-10-06)
+
+| # | Decisión | Implicación |
+|---|---|---|
+| D-C1 | Jefe de Mantenimiento y Ama de llaves son **roles separados** con wallets diferentes | Dos roles on-chain separados y dos wallets |
+| D-C2 | Técnicos/camareras usan **terminales fijos sin wallet** | Autenticación tradicional; solo se asocia tarea a personal |
+| D-C3 | Áreas críticas con firma obligatoria: Filtro/Bomba Piscina, Bomba de Agua, Ascensor, Generador Eléctrico | Semilla de `maintenance_area_types` con `is_critical = TRUE` |
+| D-C4 | Cargos por daños se imputan al **noche/token vendido** | `housekeeping_damage_charges.token_id` → `nfts(token_id)` |
+| D-C5 | Inspección de limpieza se registra **por habitación en general** | `housekeeping_inspections.room_id` como FK principal |
+| D-C6 | El Jefe de Mantenimiento **siempre firma él mismo** | Sin flujo de delegación temporal |
+| D-C7 | Prioridad: **definir bien el alcance** antes de fechas/presupuesto | Propuesta permanece en Fase 1 hasta aprobación |
+
+### Modelo de datos resumido
+
+- Nuevas tablas: `operator_wallets`, `on_chain_signatures`, `maintenance_area_types`, `maintenance_areas`, `maintenance_area_tasks`, `maintenance_area_logs`, `housekeeping_inspections`, `housekeeping_damage_charges`.
+- Tablas extendidas: `admin_users` (nuevos roles), `maintenance_incidents`, `preventive_plans`, `preventive_tasks`, `rooms`, `additional_charges` (vía FK), `nfts` (vía `housekeeping_damage_charges.token_id`).
+- Nuevas tablas adicionales: `terminal_operators` (PIN de terminales fijos).
+
+### Decisiones técnicas resueltas (2026-10-06)
+
+| # | Decisión | Implicación |
+|---|---|---|
+| D-C8 | El Ama de llaves **no bloquea** habitaciones por limpieza | Solo abre ticket al Jefe de Mantenimiento |
+| D-C9 | Tras inspección aprobada, la venta **no se libera automáticamente** | Recepción/Admin activa la publicación manualmente |
+| D-C10 | Técnicos/camareras usan **PIN corto** en terminal fijo | Tabla `terminal_operators` con `pin_hash` (bcrypt) |
+| D-C11 | Cargo por daños es **nota interna** cobrada en el **check-out** | Se suma al folio/estado de cuenta de la estancia |
+| D-C12 | Foto/evidencia es **opcional pero recomendada** | El sistema advierte si falta, pero no bloquea |
+
+**Próximo paso**: la Fase 1 (Concepto) de la vNext está completa. Si apruebas el alcance, pasamos a **Fase 2**: auditoría con `@audita`, casos de uso con criterios Gherkin/EARS, gráficos y documento técnico, manteniendo sincronizados los tres artefactos de datos.

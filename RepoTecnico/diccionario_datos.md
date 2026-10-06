@@ -4,7 +4,7 @@
 > **Fuente de verdad**: `packages/shared/src/db/migrator.ts` (migraciones incrementales, **44 tablas**) · `packages/shared/src/db/schema.sql` se conserva como referencia histórica y su paridad la comprueba un guardián (`packages/shared/src/architecture-guardian.test.ts`)
 > **Artefactos sincronizados**: `RepoTecnico/base_datos.sql` (esquema físico ejecutable) y `RepoTecnico/diagrama_er.md` (modelo entidad-relación); los tres derivan del migrator y se actualizan en el mismo cambio.
 > **Decisiones normativas**: `docs/adr/` · **Especificación**: `docs/SRS.md` §5
-> **Estado**: las **16 tablas** de los apartados §2–§3.7 están **implementadas** y en producción. Las **9 tablas de §3.8–§3.9** (sección Habitación, D-1…D-28), las **17 de §3.10** (bloque 2, D-34…D-55) y las **2 de §3.11** (contenido público, D-73/D-74) están **sincronizadas con el runtime** (`migrator.ts`) y con `base_datos.sql` y `diagrama_er.md`. Total: **44 tablas**. Lo que queda abierto en lo implementado se marca **HUECO ABIERTO** o **DEUDA**.
+> **Estado**: las **16 tablas** de los apartados §2–§3.7 están **implementadas** y en producción. Las **11 tablas de §3.8–§3.9** (sección Habitación + checklist operativo RF-52/RF-55, D-1…D-28), las **17 de §3.10** (bloque 2, D-34…D-55) y las **2 de §3.11** (contenido público, D-73/D-74) están **sincronizadas con el runtime** (`migrator.ts`) y con `base_datos.sql` y `diagrama_er.md`. Total: **46 tablas**. Lo que queda abierto en lo implementado se marca **HUECO ABIERTO** o **DEUDA**.
 
 ---
 
@@ -347,7 +347,7 @@ Incidencias marcadas al verificar la habitación en el check-out (vocabulario ce
 
 Índice: `(checkout_id)`.
 
-### 3.8 Dominio habitaciones (`room_types`, `rooms`, `room_images`, `room_amenities`, `room_amenity_links`, `room_space_types`, `room_spaces`, `room_publications`, `room_status_history`) — **PROPUESTA F1**
+### 3.8 Dominio habitaciones (`room_types`, `rooms`, `room_images`, `room_amenities`, `room_amenity_links`, `room_space_types`, `room_spaces`, `room_publications`, `room_status_history`, `room_cleaning_checklist_items`, `room_cleaning_checklists`) — **PROPUESTA F1 + RF-52/RF-55**
 
 Modelo del ente *Habitación* (Suite Administración → sección 1). Gestionado por el **administrador con
 wallet** (D-1); la ficha vive en PostgreSQL (D-2) y la **BD es la fuente única del maestro** (D-3). Sin PII
@@ -386,7 +386,7 @@ Semilla: `SIMPLE` (500 bps), `DOBLE` (500 bps), `SUITE` (1000 bps).
 | `decor_materials` | `VARCHAR(200)` | sí | — | Materiales destacados |
 | `decor_notes_es` / `decor_notes_en` / `decor_notes_ru` | `TEXT` | sí | — | Notas de decoración para el huésped, por idioma |
 | `publication_status` | `VARCHAR(20)` | no | `'DRAFT'` | `DRAFT` · `PUBLISHED` · `PAUSED` · `MAINTENANCE` · `OUT_OF_SERVICE` (D-19) |
-| `operational_status` | `VARCHAR(12)` | no | `'CLEAN'` | `CLEAN` · `DIRTY` · `OCCUPIED`; lo actualiza housekeeping/recepción (D-19) |
+| `operational_status` | `VARCHAR(12)` | no | `'CLEAN'` | `CLEAN` · `DIRTY` · `OCCUPIED` · `PENDING_CLEANING`; lo actualiza housekeeping/recepción (D-19, RF-50). `PENDING_CLEANING` se asigna automáticamente tras el check-out y solo recepción puede pasar a `CLEAN` |
 | `archived_at` | `TIMESTAMP` | sí | — | `NULL` = vigente; con fecha = archivada, **nunca borrada** (D-8) |
 | `created_at` / `updated_at` | `TIMESTAMP` | no | `NOW()` | — |
 
@@ -445,6 +445,31 @@ semilla reejecutable, igual que los servicios.
 `id` PK, `room_id` FK, `status_kind VARCHAR(12)` (`PUBLICATION` · `OPERATIONAL`), `from_value`/`to_value`,
 `changed_by`, `reason`, `changed_at`. Índice `(room_id, changed_at DESC)`.
 
+#### `room_cleaning_checklist_items` — catálogo de ítems del checklist (RF-52/RF-55)
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `code` | `VARCHAR(30)` | PK | — | `CLEANING` · `DEODORIZATION` · `LINEN_CHANGE` · `CLIMATE` · `SUPPLIES` · `SPECIAL_REQUESTS` |
+| `name_es` / `name_en` / `name_ru` | `VARCHAR(80)` | no | — | Nombre del ítem en los tres idiomas |
+| `is_mandatory` | `BOOLEAN` | no | `TRUE` | Si es obligatorio para liberar la habitación. `SPECIAL_REQUESTS` es `FALSE` |
+| `sort_order` | `INT` | no | `0` | Orden de presentación |
+
+Semilla: los 6 ítems fijos del checklist de limpieza/preparación.
+
+#### `room_cleaning_checklists` — registro del checklist por habitación (RF-52/RF-55)
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `id` | `UUID` | PK | `gen_random_uuid()` | — |
+| `room_id` | `UUID` | no | — | FK a `rooms(id)` `ON DELETE CASCADE` |
+| `assignment_id` | `UUID` | sí | — | FK a `housekeeping_assignments(id)` `ON DELETE SET NULL`; opcional |
+| `item_code` | `VARCHAR(30)` | no | — | FK a `room_cleaning_checklist_items(code)` `ON UPDATE CASCADE` |
+| `completed` | `BOOLEAN` | no | `FALSE` | ¿El ítem está completado? |
+| `completed_by` | `VARCHAR(100)` | sí | — | Usuario que marca el ítem |
+| `completed_at` | `TIMESTAMP` | sí | — | Momento de completado |
+| `notes` | `VARCHAR(200)` | sí | — | Notas libres |
+| `created_at` | `TIMESTAMP` | no | `NOW()` | Alta del registro |
+
+Índice: `(room_id, assignment_id, item_code)`. Unicidad compuesta `(room_id, assignment_id, item_code)`.
+
 ### 3.9 Dominio reseñas (`reviews`) y ajustes (`platform_settings`) — **PROPUESTA F1**
 
 #### `reviews` — reseñas anónimas y verificadas (D-27, D-28)
@@ -494,6 +519,11 @@ purgable** (D-55).
 | `created_at` / `updated_at` | `TIMESTAMP` | no | `NOW()` | — |
 | `confirmed_at` / `cancelled_at` | `TIMESTAMP` | sí | — | Hitos |
 | `cancel_reason` | `VARCHAR(200)` | sí | — | Motivo (D-40) |
+| `adult_count` | `INT` | no | `1` | Adultos; `CHECK >= 0` (RF-52) |
+| `child_count` | `INT` | no | `0` | Niños; `CHECK >= 0` (RF-52) |
+| `baby_count` | `INT` | no | `0` | Bebés; `CHECK >= 0` (RF-52) |
+| `pet_count` | `INT` | no | `0` | Mascotas; `CHECK >= 0` (RF-52) |
+| `accessibility_count` | `INT` | no | `0` | Personas con necesidades de acceso PMR; `CHECK >= 0` (RF-52) |
 
 `reservation_nights`: `id` PK, `reservation_id` FK `CASCADE`, `room_id` FK `RESTRICT`, `night_date DATE`,
 `token_id VARCHAR(66)` FK a `nfts` `SET NULL` (se rellena al pagar el 100 %, D-39), `active BOOLEAN`

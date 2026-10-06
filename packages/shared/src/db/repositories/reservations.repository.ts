@@ -84,6 +84,12 @@ export interface CreateReservationInput {
   contact?: ReservationContactInfo;
   /** Horas de bloqueo antes de liberar el inventario si no se paga (D-37; por defecto 24). */
   holdHours?: number;
+  /** Ocupación de la reserva (RF-52). */
+  adultCount?: number;
+  childCount?: number;
+  babyCount?: number;
+  petCount?: number;
+  accessibilityCount?: number;
 }
 
 export interface ModifyReservationInput {
@@ -276,11 +282,19 @@ export class ReservationsRepository {
       const holdHours = input.holdHours ?? DEFAULT_HOLD_HOURS;
       const depositRequired = input.depositRequiredCents ?? Math.round((input.totalCents * DEFAULT_DEPOSIT_PERCENT) / 100);
 
+      const adultCount = Math.max(0, input.adultCount ?? 1);
+      const childCount = Math.max(0, input.childCount ?? 0);
+      const babyCount = Math.max(0, input.babyCount ?? 0);
+      const petCount = Math.max(0, input.petCount ?? 0);
+      const accessibilityCount = Math.max(0, input.accessibilityCount ?? 0);
+
       const inserted = await client.query(
         `INSERT INTO reservations
             (room_id, check_in_date, check_out_date, channel, status, total_cents,
-             deposit_required_cents, deposit_paid_cents, hold_expires_at, created_by)
-         VALUES ($1, $2, $3, $4, 'PENDING', $5, $6, 0, NOW() + ($7 || ' hours')::INTERVAL, $8)
+             deposit_required_cents, deposit_paid_cents, hold_expires_at, created_by,
+             adult_count, child_count, baby_count, pet_count, accessibility_count)
+         VALUES ($1, $2, $3, $4, 'PENDING', $5, $6, 0, NOW() + ($7 || ' hours')::INTERVAL, $8,
+                 $9, $10, $11, $12, $13)
          RETURNING *`,
         [
           input.roomId,
@@ -291,6 +305,11 @@ export class ReservationsRepository {
           depositRequired,
           String(holdHours),
           input.createdBy,
+          adultCount,
+          childCount,
+          babyCount,
+          petCount,
+          accessibilityCount,
         ],
       );
       const reservationId = inserted.rows[0].id as string;

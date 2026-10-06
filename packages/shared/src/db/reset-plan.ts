@@ -28,6 +28,7 @@ export const PRESERVED_TABLES = [
   "room_types",
   "room_amenities",
   "room_space_types",
+  "room_cleaning_checklist_items",
   "supply_items",
   "preventive_plans",
   "platform_settings",
@@ -64,6 +65,7 @@ export const WIPE_ORDER = [
   "activity_schedules",
   "activities",
   // — housekeeping —
+  "room_cleaning_checklists",
   "housekeeping_room_logs",
   "housekeeping_assignments",
   "housekeeping_shifts",

@@ -26,6 +26,7 @@ export interface DayStats {
   readonly reserved: number;
   readonly occupied: number;
   readonly departures: number;
+  readonly pendingCleaning: number;
   readonly free: number;
   readonly blocked: number;
 }

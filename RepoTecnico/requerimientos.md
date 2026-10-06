@@ -131,4 +131,33 @@ artefacto; y la documentación describe el sistema que se ejecuta.
 
 ---
 
+## 6. Nuevos requerimientos — Suite de recepción (modificación en curso)
+
+> **Origen**: petición del cliente el 2026-10-06 · **Estado**: detalle cerrado, en diseño de datos.
+> **Objetivo**: redefinir el ciclo de vida operativo de la habitación tras el check-out y enriquecer la
+> subsección **Estado de las habitaciones** del puesto de recepción con una ficha detalle por habitación.
+
+| ID | Requisito | Origen | Estado | Verificación / deuda |
+|---|---|---|---|---|
+| RF-50 | Tras el check-out, la habitación pasa automáticamente a estado **PENDIENTE_DE_LIMPIEZA** (limpieza + cambio de lencería). Solo recepción puede cambiarla manualmente a **LIBRE/DISPONIBLE** | CLI | **DIS** | Nuevo valor en `rooms.operational_status`; el checkout debe actualizar a `PENDING_CLEANING` |
+| RF-51 | La subsección «Estado de las habitaciones» de recepción es un **resumen** (rejilla/lista); al seleccionar una habitación se despliega una **ficha detalle** dividida en **Zona Habitación** y **Zona Huésped** | CLI | **DIS** | Nuevo endpoint `GET /api/reception/rooms/:roomNumber` y componente `RoomDetailCard` |
+| RF-52 | En estado **Reservada**: zona Habitación muestra el checklist previo a la llegada (Limpieza, Desodorización, Cambio de Lencería, Climatización, Restitución de Suministros, Solicitudes Especiales); zona Huésped muestra adultos, niños, bebés, mascotas, acceso PMR y la wallet del titular del token (mostrada solo a recepción, no en público) | CLI | **DIS** | Tabla `room_cleaning_checklist_items` + `room_cleaning_checklists`; columnas `adult_count`, `child_count`, `baby_count`, `pet_count`, `accessibility_count` en `reservations` |
+| RF-53 | En estado **Ocupada**: zona Habitación muestra un calendario del rango completo de la reserva (check-in … check-out); cada fecha lleva iconos de Limpieza, Mantenimiento, Cargos y Novedades que indican si se realizó alguna acción de ese tipo en esa fecha | CLI | **DIS** | Agregación de `housekeeping_room_logs`, `maintenance_incident_events`, `additional_charges` e incidencias/novedades |
+| RF-54 | En estado **Mantenimiento**: zona Habitación muestra la descripción del incidente de mantenimiento abierto (`maintenance_incidents.description`) | CLI | **DIS** | Reutilizar `maintenance_incidents` con `status = 'OPEN'` o `'IN_PROGRESS'` |
+| RF-55 | En estado **Libre**: zona Habitación muestra el resumen del último checklist completado (mismos ítems que RF-52) | CLI | **DIS** | Mismo modelo de checklist que RF-52 |
+
+**Decisiones de diseño cerradas con el cliente**:
+- El estado post-check-out es un nuevo estado operativo `PENDING_CLEANING`.
+- Recepción es el único actor que libera la habitación manualmente (pasa a `CLEAN`).
+- El checklist tiene 6 ítems fijos; todos son obligatorios excepto *Solicitudes Especiales*.
+- Los datos de huéspedes (edades, mascotas, acceso) se recogen en el formulario de reserva y pueden
+  editarse desde recepción.
+- La wallet del huésped es la dirección del titular del token (`nfts.current_owner`).
+
+**Impacto en datos**: se añaden el valor `PENDING_CLEANING` a `rooms.operational_status`, el catálogo
+`room_cleaning_checklist_items`, la tabla de registros `room_cleaning_checklists` y columnas de
+ocupación en `reservations`. Los tres artefactos de datos se actualizan en el mismo cambio.
+
+---
+
 *Requerimientos consolidados · origen trazado · volcados a `docs/PRD.md` y `docs/SRS.md` en M9.*

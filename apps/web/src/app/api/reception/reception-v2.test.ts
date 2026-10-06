@@ -14,10 +14,12 @@ const { mockRepo } = vi.hoisted(() => ({
   mockRepo: {
     ensureRecoveryCodes: vi.fn(),
     listNightsByDate: vi.fn(),
+    getOperationalStatusByRoom: vi.fn(),
     findByRecoveryCode: vi.fn(),
     listCharges: vi.fn(),
     createCharge: vi.fn(),
     createCheckout: vi.fn(),
+    releaseRoom: vi.fn(),
   },
 }));
 
@@ -43,6 +45,7 @@ describe("Recepción v2 · API (CU-31..CU-35)", () => {
     resetGuardState();
     mockRepo.ensureRecoveryCodes.mockResolvedValue(0);
     mockRepo.listNightsByDate.mockResolvedValue([]);
+    mockRepo.getOperationalStatusByRoom.mockResolvedValue(new Map());
     mockRepo.listCharges.mockResolvedValue([]);
   });
 

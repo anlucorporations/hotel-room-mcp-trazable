@@ -13,9 +13,9 @@
 > **Cobertura**: **16 tablas base** (nfts, listings, sale_events, admin_sessions, admin_users,
 > mfa_recovery_codes, email_notifications, push_subscriptions, checkin_contingency_logs,
 > additional_charges, stay_checkouts, checkout_incidents, worker_checkpoints,
-> worker_processed_logs, worker_aggregate_counters, worker_sale_history) **+ 9 tablas de la sección
-> Habitación y reseñas** (§6) **+ 2 de contenido público** (`hotel_images`, `hotel_offers`, §6.2) **+ 17
-> del bloque 2** — reservas, actividades, housekeeping y mantenimiento (§7). **Total: 44 tablas**, todas
+> worker_processed_logs, worker_aggregate_counters, worker_sale_history) **+ 11 tablas de la sección
+> Habitación, checklist y reseñas** (§6) **+ 2 de contenido público** (`hotel_images`, `hotel_offers`, §6.2) **+ 17
+> del bloque 2** — reservas, actividades, housekeeping y mantenimiento (§7). **Total: 46 tablas**, todas
 > sincronizadas con `migrator.ts`, `base_datos.sql` y `diccionario_datos.md`.
 >
 > **Convenciones de notación**
@@ -303,8 +303,8 @@ erDiagram
 
 > Modelo del ente *Habitación* (Suite Administración → sección 1.1) y de las **reseñas** de la suite
 > pública. Decisiones D-1…D-28. `nfts` se referencia sin repetir sus atributos (está definida en §2.1).
-> Las 9 tablas están sincronizadas con el runtime (`migrator.ts`), `base_datos.sql` y
-> `diccionario_datos.md`.
+> Las 9 tablas + 2 del checklist operativo (RF-52/RF-55) están sincronizadas con el runtime
+> (`migrator.ts`), `base_datos.sql` y `diccionario_datos.md`.
 
 ```mermaid
 erDiagram
@@ -340,7 +340,7 @@ erDiagram
         TEXT decor_notes_en "Notas de decoración EN"
         TEXT decor_notes_ru "Notas de decoración RU"
         VARCHAR(20) publication_status "DRAFT · PUBLISHED · PAUSED · MAINTENANCE · OUT_OF_SERVICE (D-19)"
-        VARCHAR(12) operational_status "CLEAN · DIRTY · OCCUPIED (D-19)"
+        VARCHAR(12) operational_status "CLEAN · DIRTY · OCCUPIED · PENDING_CLEANING (D-19, RF-50)"
         TIMESTAMP archived_at "NULL = vigente; con fecha = archivada (D-8)"
         TIMESTAMP created_at "Alta"
         TIMESTAMP updated_at "Última modificación"
@@ -414,6 +414,27 @@ erDiagram
         TIMESTAMP changed_at "Momento"
     }
 
+    room_cleaning_checklist_items {
+        VARCHAR(30) code PK "Código del ítem"
+        VARCHAR(80) name_es "Nombre ES"
+        VARCHAR(80) name_en "Nombre EN"
+        VARCHAR(80) name_ru "Nombre RU"
+        BOOLEAN is_mandatory "Obligatorio para liberar"
+        INT sort_order "Orden"
+    }
+
+    room_cleaning_checklists {
+        UUID id PK
+        UUID room_id FK "FK a rooms ON DELETE CASCADE"
+        UUID assignment_id FK "FK a housekeeping_assignments; opcional"
+        VARCHAR(30) item_code FK "FK a room_cleaning_checklist_items"
+        BOOLEAN completed "¿Completado?"
+        VARCHAR(100) completed_by "Quién completa"
+        TIMESTAMP completed_at "Momento"
+        VARCHAR(200) notes "Notas"
+        TIMESTAMP created_at "Alta"
+    }
+
     reviews {
         UUID id PK
         VARCHAR(66) token_id FK "FK a nfts; UNIQUE: una reseña por noche consumida"
@@ -443,6 +464,9 @@ erDiagram
     room_space_types ||--o{ room_spaces : "tipifica"
     rooms ||--o{ room_publications : "se publica con"
     rooms ||--o{ room_status_history : "registra"
+    rooms ||--o{ room_cleaning_checklists : "tiene checklist"
+    room_cleaning_checklist_items ||--o{ room_cleaning_checklists : "se comprueba en"
+    housekeeping_assignments ||--o{ room_cleaning_checklists : "origina"
     room_types ||--o{ reviews : "se reseña como"
     rooms ||--o{ reviews : "referencia interna"
     nfts ||--o| reviews : "origina una"
@@ -530,6 +554,11 @@ erDiagram
         TIMESTAMP confirmed_at "Confirmación"
         TIMESTAMP cancelled_at "Cancelación"
         VARCHAR(200) cancel_reason "Motivo (D-40)"
+        INT adult_count "Adultos (RF-52)"
+        INT child_count "Niños (RF-52)"
+        INT baby_count "Bebés (RF-52)"
+        INT pet_count "Mascotas (RF-52)"
+        INT accessibility_count "Personas con acceso PMR (RF-52)"
     }
 
     reservation_nights {
@@ -748,6 +777,9 @@ erDiagram
 | 10 | `room_amenity_links` | `amenity_code` | `room_amenities(code)` | N:1 | `ON UPDATE CASCADE` |
 | 11 | `room_publications` | `room_id` | `rooms(id)` | N:1 | `CASCADE` |
 | 12 | `room_status_history` | `room_id` | `rooms(id)` | N:1 | `CASCADE` |
+| 12a | `room_cleaning_checklists` | `room_id` | `rooms(id)` | N:1 | `CASCADE` |
+| 12b | `room_cleaning_checklists` | `item_code` | `room_cleaning_checklist_items(code)` | N:1 | `ON UPDATE CASCADE` |
+| 12c | `room_cleaning_checklists` | `assignment_id` | `housekeeping_assignments(id)` | N:0..1 | `SET NULL` |
 | 13 | `reviews` | `token_id` (UNIQUE) | `nfts(token_id)` | 1:0..1 | `CASCADE` |
 | 14 | `reviews` | `room_type` | `room_types(code)` | N:1 | `ON UPDATE CASCADE` |
 | 15 | `reviews` | `room_id` | `rooms(id)` | N:0..1 | `SET NULL` |

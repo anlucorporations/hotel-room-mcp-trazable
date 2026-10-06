@@ -110,6 +110,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         ? body.depositRequiredCents
         : Math.round((totalCents * depositPercent) / 100);
 
+    const toCount = (value: unknown): number | undefined => {
+      if (typeof value !== "number") return undefined;
+      return Number.isInteger(value) && value >= 0 ? value : undefined;
+    };
+
     const reservation = await reservationsRepo.createReservation({
       roomId,
       checkInDate,
@@ -120,6 +125,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       depositRequiredCents,
       contact,
       holdHours,
+      adultCount: toCount(body.adultCount),
+      childCount: toCount(body.childCount),
+      babyCount: toCount(body.babyCount),
+      petCount: toCount(body.petCount),
+      accessibilityCount: toCount(body.accessibilityCount),
     });
     const folio = await reservationsRepo.findFolio(reservation.id);
     return NextResponse.json({ reservation, folio }, { status: 201 });
