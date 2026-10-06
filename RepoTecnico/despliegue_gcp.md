@@ -1836,3 +1836,33 @@ desplegado**, no un fallo de lógica.
 > **Recomendación**: hacer una revisión sistemática de las variables/secretos que cada servicio espera
 > (`RECEPTION_*`, `RELAYER_*`, `BURNER_*`, `MINTER_*`…) contra las que tiene desplegadas; dos de los
 > fallos de este ciclo han sido exactamente eso.
+
+---
+
+## 56. Release `v36` (canario, **NO promocionada**) — cualquier billetera: hallazgos (2026-10-06)
+
+**Qué se entregó** (commit `637ee84`): descubrimiento **EIP-6963**, conector **Coinbase Wallet**,
+**WalletConnect desactivado por defecto** (se activa con `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`),
+ayudante `ensureWalletChain` (switch + alta de la red del Anvil) y optimización de MetaMask
+(reutiliza el conector: un solo aviso; reconexión silenciosa; invalidación al cambiar cuenta/red).
+Verificado en local: typecheck 0 · eslint 0 · **vitest 83 ficheros / 707 pruebas** · `next build` OK.
+
+**Verificación con navegador real (canario `v36`, dos billeteras EIP-6963 simuladas)**:
+
+| Comprobación | Resultado |
+|---|---|
+| Descubrimiento EIP-6963 | **funciona**: wagmi descubre el proveedor y llama `eth_accounts` + `eth_chainId` |
+| Reconexión **silenciosa** | **sí**: solo `eth_accounts` (sin `eth_requestAccounts` ni popup) |
+| Errores de CSP de WalletConnect/RPC | 0 |
+| **Selector de billeteras** | ❌ **no lista opciones** (`[data-testid^="wallet-option-"]` = 0), ni con el menú abierto ni tras «Conectar wallet» |
+| **CSP con Coinbase Wallet SDK** | ❌ **bloquea** `https://cca-lite.coinbase.com/amp` (el SDK llama a sus dominios y `connect-src` no los permite) |
+
+**Decisión: no se promociona.** La producción sigue en **v35**. Los dos bloqueos son concretos:
+
+1. **CSP**: añadir a `connect-src` (y `img-src` si el SDK carga iconos) los dominios del SDK de
+   Coinbase (`https://*.coinbase.com`, `https://cca-lite.coinbase.com`, `https://*.walletlink.org`)
+   y, si se activa WalletConnect, verificar el relay en el mismo punto. Se resuelve en
+   `apps/web/src/middleware.ts` (la función `rpcConnectOrigins` ya marca el patrón a seguir).
+2. **Selector**: hay que confirmar por qué el componente no renderiza los conectores descubiertos
+   (¿filtro por `type`/`id`?, ¿el menú solo los pinta en un estado concreto?). Se reproduce con el
+   script de dos billeteras EIP-6963 usado en esta verificación.
