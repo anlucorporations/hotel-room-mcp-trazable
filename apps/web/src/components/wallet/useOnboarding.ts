@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { activeChain } from "@/config/chain";
 import { classifySwitchChainError, type SwitchChainError } from "./switchChainError";
 import { ensureWalletChain, type Eip1193Provider } from "@/lib/wallet-chain";
+import { pickPreferredConnector } from "@/lib/wallet-connectors";
 
 export type { SwitchChainError };
 
@@ -65,8 +66,13 @@ export function useOnboarding(): OnboardingState {
   const connected = mounted ? isConnected : false;
   const isWrongNetwork = connected && chainId !== activeChain.id;
 
+  // Hay cartera si la inyecta `window.ethereum` **o** si el descubrimiento EIP-6963 encontró alguna:
+  // una cartera que solo se anuncia (sin ocupar `window.ethereum`) también debe contar, o los
+  // botones de compra quedarían deshabilitados con la cartera instalada.
+  const walletAvailable = hasWallet || connectors.length > 0;
+
   return {
-    hasWallet: mounted ? hasWallet : true,
+    hasWallet: mounted ? walletAvailable : true,
     isConnected: connected,
     address: mounted ? address : undefined,
     isWrongNetwork,
@@ -80,10 +86,11 @@ export function useOnboarding(): OnboardingState {
     connect: (connectorId?: string) => {
       // Un solo aviso: se reutiliza el conector ya configurado (no se instancia un `injected()`
       // nuevo por clic, que repetía la petición de permisos) y, con EIP-6963, cualquier billetera
-      // descubierta sirve. Sin `connectorId` se prefiere MetaMask y, si no está, la primera.
+      // descubierta sirve. Sin `connectorId` se prefiere MetaMask (por id/rdns/nombre) y, si no
+      // está, el `injected` de respaldo y, en último término, el primero de la lista.
       const selected = connectorId
         ? connectors.find((candidate) => candidate.id === connectorId)
-        : connectors.find((candidate) => candidate.id === "metaMask") ?? connectors[0];
+        : pickPreferredConnector(connectors);
       if (selected) connect({ connector: selected });
     },
     // Cambio de red con **alta automática**: si la billetera no conoce la cadena (MetaMask devuelve

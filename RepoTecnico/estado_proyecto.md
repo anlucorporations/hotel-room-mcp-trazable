@@ -3489,3 +3489,60 @@ explícitamente; `/health/ready` responde 200 READY.
 | `pnpm --filter @hotel/web build` | OK |
 | `pnpm typecheck` (monorepo) | **6/6 OK** |
 | `pnpm --filter @hotel/web test` | **707/707 OK** (83 archivos) |
+
+---
+
+## 13. Conexión de billetera — no se reconocía MetaMask (2026-10-06) · `@asistenteProyecto`
+
+**Síntoma del cliente**: la aplicación **no reconoce la cartera de MetaMask**.
+
+### Causa raíz (verificada en el código del framework)
+
+`providers.tsx` creaba la configuración de wagmi con **`ssr: true`**. En `@wagmi/core`
+(`createConfig.js`) la lista de conectores se construye así:
+
+```js
+const mipd = typeof window !== 'undefined' && multiInjectedProviderDiscovery ? createMipd() : undefined;
+const connectors = createStore(() => {
+  ...conectores declarados...
+  if (!ssr && mipd) { ...añade los descubiertos por EIP-6963... }   // ← `!ssr`
+});
+```
+
+Con `ssr: true` el descubrimiento **EIP-6963 nunca se ejecuta**: MetaMask no aparece ni por nombre ni
+con su id (`io.metamask`) y solo queda el conector genérico «Injected» (el que ocupa
+`window.ethereum`), que no es «reconocer MetaMask». Además, `useOnboarding.connect()` buscaba
+`id === "metaMask"`, un id que **no existe** cuando la cartera llega por EIP-6963 (su id es el RDNS),
+así que la búsqueda siempre fallaba.
+
+### Correcciones
+
+| Fichero | Cambio |
+|---|---|
+| `apps/web/src/app/providers.tsx` | `ssr: false` (el proyecto no usa la hidratación por cookie de wagmi, así que no hay regresión) |
+| `apps/web/src/lib/wallet-connectors.ts` | `isMetaMaskConnector` / `pickPreferredConnector` (prefiere MetaMask por id, `rdns` o nombre) y `visibleWalletConnectors` (oculta el `injected` genérico duplicado cuando ya hay carteras descubiertas) |
+| `apps/web/src/components/wallet/useOnboarding.ts` | `connect()` usa `pickPreferredConnector`; `hasWallet` cuenta también las carteras descubiertas (antes solo `window.ethereum`, lo que deshabilitaba los botones con carteras solo-EIP-6963) |
+| `apps/web/src/components/wallet/WalletMenu.tsx` | el selector usa `visibleWalletConnectors` |
+
+### Verificación
+
+Se añadió `apps/web/src/lib/wallet-discovery.test.ts`, que **simula el navegador** (un `window` mínimo
+con `addEventListener`/`dispatchEvent`, que es todo lo que usa `mipd`) y anuncia un proveedor EIP-6963
+como MetaMask. Prueba el antes y el después sobre `@wagmi/core` real:
+
+| Configuración | Conectores | Resultado |
+|---|---|---|
+| `ssr: false` (arreglado) | incluye **`io.metamask`** | MetaMask reconocida |
+| `ssr: true` (defecto anterior) | solo `["injected"]` | MetaMask **no** reconocida |
+
+| Comprobación | Resultado |
+|---|---|
+| `pnpm --filter @hotel/web test -- wallet-discovery wallet-connectors` | **11/11 OK** |
+| `pnpm --filter @hotel/web typecheck` | OK |
+| `pnpm --filter @hotel/web build` | OK |
+
+**Nota**: no se pudo hacer la comprobación en navegador real con Playwright — el Chromium instalado
+falla al arrancar por falta de `libnspr4.so` y no hay permisos para instalarlo. La prueba contra
+`@wagmi/core` es determinista y queda como guardián de regresión en CI.
+
+**Pendiente**: desplegar (release v39) para que el arreglo llegue a producción.

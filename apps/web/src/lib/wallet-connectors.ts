@@ -49,3 +49,61 @@ export function buildWalletConnectors(env: WalletEnv = {}): CreateConnectorFn[] 
     });
   });
 }
+
+// ---------------------------------------------------------------------------
+// Selección de conector (lógica pura, probable sin navegador)
+// ---------------------------------------------------------------------------
+
+/** Lo mínimo que necesitamos de un conector de wagmi para elegirlo o listarlo. */
+export interface WalletConnectorLike {
+  readonly id: string;
+  readonly name?: string;
+  readonly rdns?: string | readonly string[];
+}
+
+/** RDNS canónico de MetaMask (EIP-6963). */
+export const METAMASK_RDNS = "io.metamask";
+
+/** Ids de los conectores que **declara** el proyecto (no provienen del descubrimiento EIP-6963). */
+const DECLARED_IDS: readonly string[] = ["injected", "coinbaseWallet", "walletConnect"];
+
+/** ¿El conector es MetaMask? Se mira por id, por `rdns` y, como último recurso, por nombre. */
+export function isMetaMaskConnector(connector: WalletConnectorLike): boolean {
+  if (connector.id === METAMASK_RDNS || connector.id === "metaMask") return true;
+  const rdns = connector.rdns;
+  if (rdns === METAMASK_RDNS) return true;
+  if (Array.isArray(rdns) && rdns.includes(METAMASK_RDNS)) return true;
+  return /metamask/i.test(connector.name ?? "");
+}
+
+/**
+ * Conector que se usa al pulsar «Conectar» sin elegir cartera.
+ *
+ * Antes se buscaba `id === "metaMask"`, un id que **no existe** cuando la cartera llega por EIP-6963
+ * (su id es el RDNS, `io.metamask`), así que la búsqueda siempre fallaba y se acababa conectando el
+ * primer conector de la lista. Ahora se prefiere MetaMask de verdad y, si no está, el `injected` de
+ * respaldo y, en último término, el primero disponible.
+ */
+export function pickPreferredConnector<T extends WalletConnectorLike>(
+  connectors: readonly T[],
+): T | undefined {
+  return (
+    connectors.find(isMetaMaskConnector) ??
+    connectors.find((connector) => connector.id === "injected") ??
+    connectors[0]
+  );
+}
+
+/**
+ * Conectores que se ofrecen en el selector.
+ *
+ * Cuando el descubrimiento EIP-6963 ha encontrado carteras, el `injected()` declarado es un
+ * **duplicado** de la que ocupa `window.ethereum` (suele ser la propia MetaMask) y solo confunde: se
+ * oculta. Si no se descubrió ninguna, se mantiene como único respaldo.
+ */
+export function visibleWalletConnectors<T extends WalletConnectorLike>(
+  connectors: readonly T[],
+): readonly T[] {
+  const hasDiscovered = connectors.some((connector) => !DECLARED_IDS.includes(connector.id));
+  return hasDiscovered ? connectors.filter((connector) => connector.id !== "injected") : connectors;
+}

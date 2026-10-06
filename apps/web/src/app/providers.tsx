@@ -23,7 +23,13 @@ const wagmiConfig = createConfig({
   // El sondeo por defecto (4 s) multiplica las peticiones a la cartera (MetaMask las reenvía al RPC):
   // con 12 s el saldo y la red siguen frescos sin castigar al proveedor.
   pollingInterval: 12_000,
-  ssr: true,
+  // `ssr: false` es **obligatorio** para que MetaMask (y cualquier otra cartera) se reconozca:
+  // `@wagmi/core` crea la lista de conectores con `if (!ssr && mipd)`, de modo que con `ssr: true`
+  // el descubrimiento EIP-6963 **nunca** se ejecuta y la cartera no aparece (solo se ofrecía el
+  // conector genérico «Injected»). Este proyecto no usa la hidratación por cookie de wagmi
+  // (`cookieToInitialState`), así que `ssr: false` no aporta ninguna regresión: `useOnboarding`
+  // ya estabiliza el primer render con su bandera `mounted`.
+  ssr: false,
 });
 
 /** Proveedores de cliente (wagmi + TanStack Query). El catálogo RSC vive fuera de aquí. */
