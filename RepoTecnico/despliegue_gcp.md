@@ -1797,3 +1797,42 @@ recepción.
 > **Pendiente de esta fase**: acuñación/registro (`useMintWindow`, `useMintNight`, `RoomsAdmin`) y los
 > tests del endpoint nuevo. **La quema real** (una noche que caduque) se podrá verificar a partir de las
 > **00:00 UTC** con la noche `10120261005`, ya sin roles en la cartera del operador.
+
+---
+
+## 57. El check-in no podía anclarse: faltaba la wallet de recepción en la web (2026-10-05)
+
+**Reporte del responsable**: al hacer check-in aparecía *«La recepción no tiene configurada la wallet
+on-chain: el check-in no puede anclarse y no se registra»*.
+
+**Causa.** `POST /api/reception/checkin` ancla la noche on-chain con `markCheckedIn`, firmando con la
+hot-wallet de recepción: si `RECEPTION_WALLET_PRIVATE_KEY` no está definida, el servicio se construye
+**sin** `walletClient` y devuelve `ANCLAJE_NO_CONFIGURADO` (el check-in no se registra, por diseño: no
+se marca lo que no se puede anclar). La **web no tenía esa variable** — solo el `.env` local.
+
+Mismo patrón de fallo que la quema programada (§52): **configuración ausente en el servicio
+desplegado**, no un fallo de lógica.
+
+**Corrección.**
+
+| Paso | Detalle |
+|---|---|
+| Secreto | `hotel-reception-private-key` (Secret Manager) con la clave de la **cuenta 3** (`0x90F7…93b906`, la hot-wallet de recepción documentada, que tiene `RECEPTION_ROLE` tras la alineación §«Estado verificado») |
+| IAM | `secretAccessor` para `hotel-mcp-run@` y `ci-deployer@` |
+| Web | `--update-secrets=RECEPTION_WALLET_PRIVATE_KEY=…` + `RECEPTION_MIN_BALANCE_NATIVE=5` (el umbral de aviso por saldo bajo) |
+| Tráfico | `update-traffic --to-latest` para que la revisión nueva **no** se retire (el pin por revisión, §52) |
+
+### Verificación
+
+| Comprobación | Resultado |
+|---|---|
+| Revisión sirviendo | `hotel-mcp-web-00038-swx` al **100 %** |
+| `RECEPTION_WALLET_PRIVATE_KEY` en el servicio | **sí** · `RECEPTION_MIN_BALANCE_NATIVE = 5` |
+| Check-in con sesión de recepción y ticket de prueba | **400 `TICKET_INVALIDO`** («JWS Protected Header is invalid») → ya **pasa** la comprobación de wallet y valida el resguardo (antes se detenía en «wallet no configurada») |
+
+> **Pendiente de verificar**: un check-in **real** (con un resguardo válido de una noche vendida) para
+> confirmar el ancla on-chain extremo a extremo. El error reportado queda resuelto.
+>
+> **Recomendación**: hacer una revisión sistemática de las variables/secretos que cada servicio espera
+> (`RECEPTION_*`, `RELAYER_*`, `BURNER_*`, `MINTER_*`…) contra las que tiene desplegadas; dos de los
+> fallos de este ciclo han sido exactamente eso.
