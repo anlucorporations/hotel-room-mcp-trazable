@@ -3263,8 +3263,18 @@ Se recibe petición del cliente para modificar la suite de recepción:
 - `docs/Manuales/05-casos-de-uso/08-operacion-hotelera-v2/CU-39-ficha-detalle-habitacion.md`: nuevo CU
   para la ficha detalle por estado.
 
+**Despliegue (release v36) — suite de recepción actualizada (2026-10-06)**
+
+- Push a los tres remotos (`origin`, `github`, `codecrypto`) en rama `Hotel-DSH-GCP`: commit
+  `f6fbf3e`.
+- Cloud Build: imagen `europe-west1-docker.pkg.dev/hotel-mcp/hotel-mcp/web:v36` construida con éxito.
+- Cloud Run: revisión `hotel-mcp-web-00063-put` desplegada con etiqueta `v36` y tráfico al **100 %**.
+- Health check de la revisión v36: `200 READY` (postgres, redis y polygonRPC UP).
+- URL de producción: https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app
+- URL directa de v36: https://v36---hotel-mcp-web-d6jlzeq5yq-ew.a.run.app
+
 **Próximo paso**: añadir tests E2E/UI de la ficha detalle y de la liberación; ejecutar el conjunto de
-pruebas de recepción al completo; confirmar con el cliente el comportamiento observado.
+pruebas de recepción al completo; confirmar con el cliente el comportamiento observado en producción.
 
 ---
 
