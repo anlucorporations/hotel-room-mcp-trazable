@@ -3292,6 +3292,12 @@ frontera `notFound` de cada segmento del router. Confirmado: las páginas públi
 `/contacto`) contienen el mismo texto en su payload; las ocurrencias en el marcado renderizado son **0**;
 el estado es **200** y el `<h1>` se sirve correctamente. No se modificó ningún fichero para «corregirlo».
 
+**Redespliegue de la release v36 (2026-10-06)**: sin cambios de código respecto a `f6fbf3e`; se
+redesplegaron las imágenes `v36` ya construidas. Sirviendo al 100 %: web `hotel-mcp-web-00063-put`
+(tag `v36`), worker `hotel-mcp-worker-00014-lq2` y mcp `hotel-mcp-mcp-00005-tnl`. `/health/ready` 200
+READY y `/recepcion` 200. En el mismo push se publicó la documentación de la propuesta vNext
+(commit `e247bf2`).
+
 **Próximo paso**: añadir tests E2E/UI de la ficha detalle y de la liberación; confirmar con el cliente el
 comportamiento observado en producción.
 

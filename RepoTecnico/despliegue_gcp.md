@@ -1963,3 +1963,30 @@ un 404 renderizado:
 
 Es decir: **no hay defecto que corregir**. Se descartó cualquier cambio en `app/recepcion/layout.tsx` u
 otros ficheros para «arreglarlo»; el árbol quedó intacto.
+
+---
+
+## 59. Redespliegue de la release v36 y push de la documentación vNext (2026-10-06)
+
+**Push**: commit `e247bf2` (documentación de la propuesta vNext: decisiones de auditoría resueltas e
+`INFORME_AUDITORIA_VNEXT_V1.md`) publicado en `origin`, `github` y `codecrypto`.
+
+**Redespliegue**: no hubo cambios de código respecto a `f6fbf3e`; se volvieron a desplegar las imágenes
+`v36` ya construidas para dejar el conjunto coherente.
+
+| Servicio | Revisión sirviendo | Tráfico | Nota |
+|---|---|---|---|
+| web | `hotel-mcp-web-00063-put` (tag `v36`) | 100 % | Cloud Run reutilizó la revisión: plantilla idéntica |
+| worker | `hotel-mcp-worker-00014-lq2` | 100 % | Revisión nueva |
+| mcp | `hotel-mcp-mcp-00005-tnl` | 100 % | Cloud Run reutilizó la revisión: plantilla idéntica |
+
+**Verificación post-redespliegue**:
+
+| Comprobación | Resultado |
+|---|---|
+| `/health/ready` web | 200 READY (postgres, redis, polygonRPC UP) |
+| `/recepcion` | HTTP **200** |
+| Tráfico web | `hotel-mcp-web-00063-put` al **100 %** (tag `v36`) |
+
+**Nota**: Cloud Run solo crea revisión nueva cuando cambia la plantilla; al ser idéntica para web y mcp,
+mantuvo las revisiones existentes. El worker sí generó una nueva (`00014-lq2`).
