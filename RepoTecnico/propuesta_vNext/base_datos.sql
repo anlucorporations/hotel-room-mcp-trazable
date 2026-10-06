@@ -61,6 +61,9 @@ COMMENT ON TABLE terminal_operators IS 'Operarios de terminales fijos (técnicos
 -- ============================================================================
 -- 3. Wallets de operadores con roles on-chain
 -- ============================================================================
+-- Relaciona un operador del back-office con su dirección wallet y los roles
+-- on-chain que posee en el contrato HotelOperations. El Owner/Administrador
+-- puede registrarse como wallet de respaldo (OWNER_BACKUP) para emergencias.
 CREATE TABLE IF NOT EXISTS operator_wallets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     username VARCHAR(100) NOT NULL UNIQUE,
@@ -70,12 +73,16 @@ CREATE TABLE IF NOT EXISTS operator_wallets (
     assigned_by VARCHAR(100) NOT NULL,
     assigned_at TIMESTAMP NOT NULL DEFAULT NOW(),
     revoked_at TIMESTAMP NULL,
+    backup_for_role VARCHAR(30) NULL,
     CONSTRAINT operator_wallets_role_check
-        CHECK (role IN ('HEAD_MAINTENANCE', 'HEAD_KEEPER'))
+        CHECK (role IN ('HEAD_MAINTENANCE', 'HEAD_KEEPER', 'OWNER_BACKUP')),
+    CONSTRAINT operator_wallets_backup_check
+        CHECK (role <> 'OWNER_BACKUP' OR backup_for_role IS NOT NULL)
 );
 
 CREATE INDEX IF NOT EXISTS idx_operator_wallets_username ON operator_wallets(username);
 CREATE INDEX IF NOT EXISTS idx_operator_wallets_role_active ON operator_wallets(role, is_active);
+CREATE INDEX IF NOT EXISTS idx_operator_wallets_backup ON operator_wallets(backup_for_role);
 
 -- ============================================================================
 -- 4. Registro unificado de firmas on-chain
@@ -299,6 +306,30 @@ COMMENT ON TABLE maintenance_area_tasks IS 'Tareas rutinarias programadas por á
 COMMENT ON TABLE maintenance_area_logs IS 'Ejecución y verificación de tareas rutinarias de áreas comunes.';
 COMMENT ON TABLE housekeeping_inspections IS 'Inspecciones post-limpieza realizadas por el Ama de llaves.';
 COMMENT ON TABLE housekeeping_damage_charges IS 'Cargos por daños a habitación, vinculados a additional_charges y firmados on-chain.';
+
+-- Notificación al huésped por cargos por daños (D-C14).
+CREATE TABLE IF NOT EXISTS damage_charge_guest_notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    damage_charge_id UUID NOT NULL REFERENCES housekeeping_damage_charges(id) ON DELETE CASCADE,
+    channel VARCHAR(20) NOT NULL,
+    sent_at TIMESTAMP NULL,
+    due_date TIMESTAMP NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    dispute_notes TEXT NULL,
+    disputed_at TIMESTAMP NULL,
+    resolved_by VARCHAR(100) NULL,
+    resolved_at TIMESTAMP NULL,
+    CONSTRAINT damage_charge_notifications_channel_check
+        CHECK (channel IN ('EMAIL', 'TELEGRAM', 'WEB')),
+    CONSTRAINT damage_charge_notifications_status_check
+        CHECK (status IN ('PENDING', 'SENT', 'ACKNOWLEDGED', 'DISPUTED', 'EXPIRED'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_damage_charge_notifications_charge ON damage_charge_guest_notifications(damage_charge_id);
+CREATE INDEX IF NOT EXISTS idx_damage_charge_notifications_status ON damage_charge_guest_notifications(status);
+
+COMMENT ON TABLE damage_charge_guest_notifications IS 'Notificación al huésped por cargos por daños, plazo de reclamación y resolución.';
+
 
 -- ============================================================================
 -- Fin del script vNext

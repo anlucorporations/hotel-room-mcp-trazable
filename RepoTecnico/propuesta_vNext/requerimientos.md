@@ -21,6 +21,12 @@ El alcance se limita a **definir la propuesta** (Fase 1 del proceso de proyecto)
 
 ---
 
+## 1.1 Notificación al huésped por cargos por daños (D-C14)
+
+Cuando el Ama de llaves registra un cargo por daños, el sistema **notifica al huésped** (canal definido por la reserva: email/Telegram/web) con la evidencia (foto + descripción) y el importe propuesto. El huésped dispone de un **plazo configurable** (por defecto 24 h antes del check-out) para **reclamar** a través de Recepción. Si no reclama en el plazo, el cargo se confirma y se cobra en el check-out. La notificación y la respuesta quedan registradas off-chain.
+
+---
+
 ## 2. Stakeholders y actores
 
 | Actor | Descripción | Rol en la plataforma actual | Rol propuesto en vNext |
@@ -31,6 +37,7 @@ El alcance se limita a **definir la propuesta** (Fase 1 del proceso de proyecto)
 | **Camarera / Mucama** | Personal de limpieza a cargo del ama de llaves | No existe como rol distinto | `HOUSEKEEPER` (sin wallet) |
 | Recepción | Reporta incidencias de mantenimiento | `RECEPTION_ROLE` | `RECEPTION_ROLE` (sin cambios) |
 | Administrador | Aprueba configuraciones y custodia de roles | `DEFAULT_ADMIN_ROLE` | `DEFAULT_ADMIN_ROLE` (sin cambios) |
+| **Huésped** | Cliente con estancia activa; afectado por bloqueos y cargos por daños | Cliente final de la web/reserva | Notificado de cargos por daños con plazo para reclamar |
 
 > **Principio de diseño:** los **jefes** son operadores de confianza que **firman con wallet** los movimientos que afectan a disponibilidad, cargos económicos o cumplimiento normativo. Los **técnicos y camareras** son operadores de ejecución que **no necesitan wallet**: usan sesión tradicional (usuario + TOTP) y su trabajo queda validado por el jefe correspondiente.
 
@@ -169,7 +176,7 @@ La firma on-chain busca garantizar:
 | D-C3 | Equipos/áreas críticas con firma on-chain obligatoria: **Filtro/Bomba de Piscina, Bomba de Agua, Ascensor, Generador Eléctrico** | Estos tipos de área tendrán `is_critical = TRUE` y sus tareas preventivas `requires_signature = TRUE` |
 | D-C4 | Los cargos por daños se imputan al **noche/token vendido** | `housekeeping_damage_charges` se vincula directamente con `nfts(token_id)` además de con `additional_charges` |
 | D-C5 | La inspección de limpieza se registra **por habitación en general**, no por noche/estancia | `housekeeping_inspections.room_id` es la FK principal; `token_id` no es obligatorio |
-| D-C6 | El Jefe de Mantenimiento **siempre firma él mismo**; no hay delegación temporal | No se implementa flujo de delegación de roles on-chain off-chain |
+| D-C6 | El Jefe de Mantenimiento **siempre firma él mismo** en operación normal; en emergencia, la **wallet del Owner/Administrador** actúa como respaldo/custodia compartida | `DEFAULT_ADMIN_ROLE`/`owner` tiene capacidad de firma de emergencia para operaciones críticas de mantenimiento |
 | D-C7 | Prioridad absoluta: **definir bien el alcance** antes de comprometer presupuesto/fechas | La propuesta se mantiene en Fase 1 hasta aprobación explícita de alcance |
 
 ## 8. Preguntas técnicas pendientes

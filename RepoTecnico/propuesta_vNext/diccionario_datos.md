@@ -63,20 +63,21 @@ La tabla `admin_users` del sistema actual se extiende con nuevos valores para `r
 
 ### 3.1 `operator_wallets` — wallets asignadas a operadores con roles on-chain
 
-Relaciona un operador del back-office con su dirección wallet y los roles on-chain que posee en el contrato `HotelOperations`.
+Relaciona un operador del back-office con su dirección wallet y los roles on-chain que posee en el contrato `HotelOperations`. El Owner/Administrador (`DEFAULT_ADMIN_ROLE`) puede actuar como wallet de respaldo para operaciones críticas de mantenimiento en emergencias.
 
 | Campo | Tipo | Nulo | Default | Descripción |
 |---|---|---|---|---|
 | `id` | `UUID` | PK | `gen_random_uuid()` | — |
 | `username` | `VARCHAR(100)` | no, único | — | FK lógica a `admin_users.username` |
-| `role` | `VARCHAR(30)` | no | — | `HEAD_MAINTENANCE` · `HEAD_KEEPER` |
+| `role` | `VARCHAR(30)` | no | — | `HEAD_MAINTENANCE` · `HEAD_KEEPER` · `OWNER_BACKUP` |
 | `wallet_address` | `VARCHAR(42)` | no, único | — | Dirección de la wallet |
 | `is_active` | `BOOLEAN` | no | `TRUE` | ¿Wallet vigente? |
 | `assigned_by` | `VARCHAR(100)` | no | — | Administrador que asignó la wallet |
 | `assigned_at` | `TIMESTAMP` | no | `NOW()` | — |
 | `revoked_at` | `TIMESTAMP` | sí | — | Fecha de revocación |
+| `backup_for_role` | `VARCHAR(30)` | sí | — | Si `role = OWNER_BACKUP`, indica para qué rol es respaldo (`HEAD_MAINTENANCE` / `HEAD_KEEPER`) |
 
-Índices: `(username)`, `(wallet_address)`, `(role, is_active)`.
+Índices: `(username)`, `(wallet_address)`, `(role, is_active)`, `(backup_for_role)`.
 
 ---
 
@@ -238,6 +239,26 @@ Vincula un cargo por daños con el registro off-chain y la firma on-chain.
 | `approved_by` | `VARCHAR(100)` | no | — | Ama de llaves que aprueba el cargo |
 | `signature_id` | `UUID` | no | — | FK a `on_chain_signatures(id)` |
 | `created_at` | `TIMESTAMP` | no | `NOW()` | — |
+
+---
+
+
+### 3.10.1 `damage_charge_guest_notifications` — notificación al huésped por cargos por daños (D-C14)
+
+Registra el envío de la notificación al huésped cuando se aprueba un cargo por daños, el plazo para reclamar y la resolución de la reclamación.
+
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `id` | `UUID` | PK | `gen_random_uuid()` | — |
+| `damage_charge_id` | `UUID` | no | — | FK a `housekeeping_damage_charges(id)` |
+| `channel` | `VARCHAR(20)` | no | — | `EMAIL` · `TELEGRAM` · `WEB` |
+| `sent_at` | `TIMESTAMP` | sí | — | Momento del envío |
+| `due_date` | `TIMESTAMP` | no | — | Fecha límite para reclamar |
+| `status` | `VARCHAR(20)` | no | `'PENDING'` | `PENDING` · `SENT` · `ACKNOWLEDGED` · `DISPUTED` · `EXPIRED` |
+| `dispute_notes` | `TEXT` | sí | — | Notas de la reclamación del huésped |
+| `disputed_at` | `TIMESTAMP` | sí | — | — |
+| `resolved_by` | `VARCHAR(100)` | sí | — | Recepción/Admin que resuelve la reclamación |
+| `resolved_at` | `TIMESTAMP` | sí | — | — |
 
 ---
 

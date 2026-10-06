@@ -3336,23 +3336,37 @@ comportamiento observado en producción.
 | D-C3 | Áreas críticas con firma obligatoria: Filtro/Bomba Piscina, Bomba de Agua, Ascensor, Generador Eléctrico | Semilla de `maintenance_area_types` con `is_critical = TRUE` |
 | D-C4 | Cargos por daños se imputan al **noche/token vendido** | `housekeeping_damage_charges.token_id` → `nfts(token_id)` |
 | D-C5 | Inspección de limpieza se registra **por habitación en general** | `housekeeping_inspections.room_id` como FK principal |
-| D-C6 | El Jefe de Mantenimiento **siempre firma él mismo** | Sin flujo de delegación temporal |
-| D-C7 | Prioridad: **definir bien el alcance** antes de fechas/presupuesto | Propuesta permanece en Fase 1 hasta aprobación |
+| D-C6 | El Jefe de Mantenimiento **siempre firma él mismo** en operación normal; en emergencia, la **wallet del Owner/Administrador** actúa como respaldo/custodia compartida | `DEFAULT_ADMIN_ROLE`/`owner` tiene capacidad de firma de emergencia para operaciones críticas de mantenimiento |
 
-### Modelo de datos resumido
+### Decisión de auditoría resuelta (2026-10-06)
 
-- Nuevas tablas: `operator_wallets`, `on_chain_signatures`, `maintenance_area_types`, `maintenance_areas`, `maintenance_area_tasks`, `maintenance_area_logs`, `housekeeping_inspections`, `housekeeping_damage_charges`.
-- Tablas extendidas: `admin_users` (nuevos roles), `maintenance_incidents`, `preventive_plans`, `preventive_tasks`, `rooms`, `additional_charges` (vía FK), `nfts` (vía `housekeeping_damage_charges.token_id`).
-- Nuevas tablas adicionales: `terminal_operators` (PIN de terminales fijos).
+| # | Decisión | Implicación |
+|---|---|---|
+| D-C13 | Wallet de respaldo/custodia compartida = **wallet del Owner/Administrador** | `operator_wallets.role = 'OWNER_BACKUP'` para emergencias de `HEAD_MAINTENANCE` |
 
 ### Decisiones técnicas resueltas (2026-10-06)
 
 | # | Decisión | Implicación |
 |---|---|---|
+| D-C7 | Prioridad: **definir bien el alcance** antes de fechas/presupuesto | Propuesta permanece en Fase 1 hasta aprobación |
 | D-C8 | El Ama de llaves **no bloquea** habitaciones por limpieza | Solo abre ticket al Jefe de Mantenimiento |
 | D-C9 | Tras inspección aprobada, la venta **no se libera automáticamente** | Recepción/Admin activa la publicación manualmente |
 | D-C10 | Técnicos/camareras usan **PIN corto** en terminal fijo | Tabla `terminal_operators` con `pin_hash` (bcrypt) |
 | D-C11 | Cargo por daños es **nota interna** cobrada en el **check-out** | Se suma al folio/estado de cuenta de la estancia |
 | D-C12 | Foto/evidencia es **opcional pero recomendada** | El sistema advierte si falta, pero no bloquea |
+| D-C14 | El huésped es **notificado del cargo por daños** con evidencia e importe; tiene plazo para reclamar antes del check-out | Tabla `damage_charge_guest_notifications`; canal email/Telegram/web; cobro en check-out si no reclama |
 
-**Próximo paso**: la Fase 1 (Concepto) de la vNext está completa. Si apruebas el alcance, pasamos a **Fase 2**: auditoría con `@audita`, casos de uso con criterios Gherkin/EARS, gráficos y documento técnico, manteniendo sincronizados los tres artefactos de datos.
+### Modelo de datos resumido
+
+- Nuevas tablas: `operator_wallets`, `on_chain_signatures`, `maintenance_area_types`, `maintenance_areas`, `maintenance_area_tasks`, `maintenance_area_logs`, `housekeeping_inspections`, `housekeeping_damage_charges`.
+- Tablas extendidas: `admin_users` (nuevos roles), `maintenance_incidents`, `preventive_plans`, `preventive_tasks`, `rooms`, `additional_charges` (vía FK), `nfts` (vía `housekeeping_damage_charges.token_id`).
+- Nuevas tablas adicionales: `terminal_operators` (PIN de terminales fijos), `damage_charge_guest_notifications` (notificación al huésped).
+
+### Estado de auditoría (2026-10-06)
+
+- Informe: `RepoTecnico/propuesta_vNext/INFORME_AUDITORIA_VNEXT_V1.md`
+- Veredicto: **NO LISTA** para Fase 2
+- Hallazgos: 3 CRÍTICOS, 19 ALTOS, 13 MEDIOS, 4 BAJOS
+- Resolviendo bloqueadores CRÍTICOS con el cliente.
+
+**Próximo paso**: terminar de resolver los hallazgos críticos y altos; una vez cerrados, actualizar los artefactos de datos y pasar a Fase 2 (casos de uso + documento técnico).

@@ -34,15 +34,43 @@ erDiagram
         TIMESTAMP updated_at
     }
 
+) y firmas on-chain
+
+```mermaid
+erDiagram
+    admin_users {
+        UUID id PK
+        VARCHAR(100) username UK
+        TEXT password_hash
+        TEXT totp_secret_enc
+        VARCHAR(30) role "DEFAULT_ADMIN_ROLE · RECEPTION_ROLE · HEAD_MAINTENANCE · HEAD_KEEPER · MAINTENANCE_TECH · HOUSEKEEPING"
+        BOOLEAN active
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+
+    terminal_operators {
+        UUID id PK
+        VARCHAR(100) username UK "Identificador en terminal fijo"
+        VARCHAR(100) full_name
+        VARCHAR(30) role "MAINTENANCE_TECH · HOUSEKEEPER"
+        TEXT pin_hash "bcrypt del PIN corto"
+        BOOLEAN active
+        VARCHAR(100) created_by
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+
     operator_wallets {
         UUID id PK
         VARCHAR(100) username UK "FK lógica a admin_users.username"
-        VARCHAR(30) role "HEAD_MAINTENANCE · HEAD_KEEPER"
+        VARCHAR(30) role "HEAD_MAINTENANCE · HEAD_KEEPER · OWNER_BACKUP"
         VARCHAR(42) wallet_address UK
         BOOLEAN is_active
         VARCHAR(100) assigned_by
         TIMESTAMP assigned_at
         TIMESTAMP revoked_at
+        VARCHAR(30) backup_for_role "Si es OWNER_BACKUP"
     }
 
     on_chain_signatures {
@@ -252,8 +280,22 @@ erDiagram
         TIMESTAMP created_at
     }
 
+    damage_charge_guest_notifications {
+        UUID id PK
+        UUID damage_charge_id FK "FK a housekeeping_damage_charges(id)"
+        VARCHAR(20) channel "EMAIL · TELEGRAM · WEB"
+        TIMESTAMP sent_at
+        TIMESTAMP due_date
+        VARCHAR(20) status "PENDING · SENT · ACKNOWLEDGED · DISPUTED · EXPIRED"
+        TEXT dispute_notes
+        TIMESTAMP disputed_at
+        VARCHAR(100) resolved_by
+        TIMESTAMP resolved_at
+    }
+
     housekeeping_assignments ||--o| housekeeping_inspections : "origina"
     rooms ||--o{ housekeeping_inspections : "inspeccionada"
+    housekeeping_damage_charges ||--o{ damage_charge_guest_notifications : "notifica a"
     housekeeping_inspections ||--o| housekeeping_damage_charges : "detecta"
     nfts ||--o| housekeeping_damage_charges : "imputado a"
 ```
