@@ -104,3 +104,47 @@ const SEVERITY: readonly RoomBoardStatus[] = [
 function mostSevere(a: string, b: string): string {
   return SEVERITY.indexOf(roomBoardStatus(b)) > SEVERITY.indexOf(roomBoardStatus(a)) ? b : a;
 }
+
+/** Estado de la ficha detalle de una habitación (RF-51). Decide la Zona Habitación. */
+export type RoomDetailState =
+  | "LIBRE"
+  | "RESERVADA"
+  | "OCUPADA"
+  | "MANTENIMIENTO"
+  | "PENDIENTE_LIMPIEZA";
+
+export interface RoomDetailStateInput {
+  /** ¿Hay una incidencia de mantenimiento abierta en la habitación? (RF-53) */
+  readonly hasOpenMaintenance: boolean;
+  /** `rooms.operational_status` (CLEAN | DIRTY | OCCUPIED | PENDING_CLEANING). */
+  readonly operationalStatus?: string | null;
+  /** `nfts.status` de la noche de HOY de esa habitación, si existe. */
+  readonly nightStatus?: string | null;
+  /** ¿Existe una reserva activa con llegada futura? */
+  readonly hasUpcomingReservation?: boolean;
+}
+
+/**
+ * Deriva el estado de la ficha detalle con una prioridad explícita (RF-51):
+ *
+ *   1. **MANTENIMIENTO** — hay una incidencia abierta.
+ *   2. **OCUPADA**       — la noche de hoy está `CHECKED_IN` o el estado operativo es `OCCUPIED`.
+ *   3. **PENDIENTE_LIMPIEZA** — el check-out la dejó indispuesta (RF-50).
+ *   4. **RESERVADA**     — la noche de hoy está vendida o hay una llegada futura.
+ *   5. **LIBRE**         — en cualquier otro caso.
+ *
+ * Es una función **pura** para que la API y las pruebas compartan el mismo criterio.
+ */
+export function resolveRoomDetailState(input: RoomDetailStateInput): RoomDetailState {
+  const { hasOpenMaintenance, operationalStatus, nightStatus, hasUpcomingReservation } = input;
+
+  if (hasOpenMaintenance) return "MANTENIMIENTO";
+  if (nightStatus === "CHECKED_IN" || operationalStatus === "OCCUPIED") return "OCUPADA";
+  if (operationalStatus === "PENDING_CLEANING" || nightStatus === "CHECKED_OUT") {
+    return "PENDIENTE_LIMPIEZA";
+  }
+  if (nightStatus === "SOLD" || nightStatus === "CONFIRMING" || hasUpcomingReservation) {
+    return "RESERVADA";
+  }
+  return "LIBRE";
+}

@@ -27,20 +27,25 @@ El personal de **recepción** y el **dueño**.
 2. Busca la habitación en la rejilla.
 3. Toca la casilla de la habitación.
 4. Se abre la ficha detalle con dos zonas: **Habitación** y **Huésped**.
-5. Según el estado, verás información distinta:
-   - **Reservada**: checklist previo a la llegada y datos de ocupación del huésped.
-   - **Ocupada**: calendario del rango de estancia con iconos de limpieza, mantenimiento, cargos y novedades.
-   - **Mantenimiento**: descripción del incidente en curso.
-   - **Libre**: resumen del último checklist completado.
-   - **Pendiente de limpieza**: checklist de preparación y botón para liberar.
-6. Cierra la ficha tocando **Cerrar** o seleccionando otra habitación.
+5. La cabecera muestra el número, el tipo y el **estado** de la habitación. Ese estado decide qué
+   enseña la zona Habitación:
+   - **Reservada**: el checklist de preparación previo a la llegada (limpieza, climatización,
+     suministros, solicitudes especiales…).
+   - **Ocupada**: un calendario del rango de la estancia. Cada día lleva cuatro iconos —limpieza,
+     mantenimiento, cargos y novedades— que se ven **siempre**: en color si la acción se hizo y
+     apagados si no.
+   - **Mantenimiento**: la descripción del mantenimiento en curso.
+   - **Libre**: el resumen del estado de la habitación (el mismo checklist).
+   - **Pendiente de limpieza**: el checklist y el botón para liberar la habitación.
+6. La zona Huésped aparece cuando hay estancia en curso o reserva vigente.
+7. Cierra la ficha tocando **Cerrar** o seleccionando otra habitación.
 
 ## 5. Qué ves cuando sale bien
 
 - El resumen de la habitación (número, tipo y estado).
 - La zona Habitación con la información específica del estado.
-- La zona Huésped con adultos, niños, bebés, mascotas, acceso PMR y wallet del titular (solo si hay reserva).
-- En estados pendientes de limpieza, el botón para liberar.
+- La zona Huésped con adultos, niños, bebés, mascotas, acceso PMR y la wallet del titular (recortada).
+- En estado pendiente de limpieza, el botón para liberar.
 
 ## 6. Si algo va mal
 

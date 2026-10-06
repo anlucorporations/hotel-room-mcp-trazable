@@ -3298,6 +3298,25 @@ redesplegaron las imágenes `v36` ya construidas. Sirviendo al 100 %: web `hotel
 READY y `/recepcion` 200. En el mismo push se publicó la documentación de la propuesta vNext
 (commit `e247bf2`).
 
+**Ficha detalle guiada por estado (2026-10-06)**: se revisó la ficha contra la especificación del cliente y
+se corrigieron tres carencias reales:
+
+1. **La API no devolvía `state`** (el contrato lo documentaba). Ahora `GET /api/reception/rooms/:n`
+   calcula y devuelve `state` ∈ `LIBRE | RESERVADA | OCUPADA | MANTENIMIENTO | PENDIENTE_LIMPIEZA`.
+2. **La ocupación se leía de `reservations.status`**, que solo admite `PENDING|CONFIRMED|CANCELLED|
+   NO_SHOW|COMPLETED`; el check-in vive en `nfts.status` (`CHECKED_IN`). Una habitación ocupada podía
+   quedarse sin calendario. Ahora la ocupación se deriva de la **noche de hoy** (`reservation_nights` +
+   `nfts`) y del estado operativo.
+3. **La ficha no era dependiente del estado**: mostraba checklist + calendario + huésped a la vez. Ahora
+   la Zona Habitación se renderiza según `state` (calendario solo en OCUPADA, descripción solo en
+   MANTENIMIENTO, checklist en RESERVADA/LIBRE/PENDIENTE_LIMPIEZA) y los cuatro iconos del calendario se
+   muestran **siempre**, en color si la acción se realizó y apagados si no.
+
+El criterio de estado se extrajo a la función pura `resolveRoomDetailState()` en
+`packages/shared/src/reception/day-board.ts`, con 6 pruebas unitarias (12 en total en el archivo).
+**Sin cambios de esquema**: las tablas y columnas ya existían y se verificaron contra producción, por lo
+que `diccionario_datos.md`, `diagrama_er.md` y `base_datos.sql` no requieren edición.
+
 **Próximo paso**: añadir tests E2E/UI de la ficha detalle y de la liberación; confirmar con el cliente el
 comportamiento observado en producción.
 

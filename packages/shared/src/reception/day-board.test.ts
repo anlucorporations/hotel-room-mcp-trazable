@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ALL_ROOMS, ROOM_COUNT } from "../domain/room-master";
-import { buildRoomBoard, roomBoardStatus } from "./day-board";
+import { buildRoomBoard, resolveRoomDetailState, roomBoardStatus } from "./day-board";
 
 /**
  * CU-31 / RF-32: el panel debe mostrar exactamente las 50 habitaciones del maestro y traducir el
@@ -57,5 +57,65 @@ describe("Panel del día de recepción (RF-31/RF-32)", () => {
       { roomNumber: 101, status: "CHECKED_IN" },
     ]);
     expect(board[0].status).toBe("OCUPADA");
+  });
+});
+
+/**
+ * CU-39 / RF-51..RF-55: la ficha detalle cambia de contenido según el estado de la habitación.
+ */
+describe("Estado de la ficha detalle (RF-51)", () => {
+  it("da prioridad al mantenimiento abierto sobre cualquier otro estado", () => {
+    expect(
+      resolveRoomDetailState({
+        hasOpenMaintenance: true,
+        operationalStatus: "OCCUPIED",
+        nightStatus: "CHECKED_IN",
+      }),
+    ).toBe("MANTENIMIENTO");
+  });
+
+  it("marca OCUPADA cuando la noche de hoy tiene check-in", () => {
+    expect(resolveRoomDetailState({ hasOpenMaintenance: false, nightStatus: "CHECKED_IN" })).toBe(
+      "OCUPADA",
+    );
+  });
+
+  it("marca OCUPADA cuando el estado operativo es OCCUPIED aunque no haya noche", () => {
+    expect(
+      resolveRoomDetailState({ hasOpenMaintenance: false, operationalStatus: "OCCUPIED" }),
+    ).toBe("OCUPADA");
+  });
+
+  it("marca PENDIENTE_LIMPIEZA tras el check-out (RF-50)", () => {
+    expect(
+      resolveRoomDetailState({
+        hasOpenMaintenance: false,
+        operationalStatus: "PENDING_CLEANING",
+        nightStatus: "CHECKED_OUT",
+      }),
+    ).toBe("PENDIENTE_LIMPIEZA");
+    expect(
+      resolveRoomDetailState({ hasOpenMaintenance: false, nightStatus: "CHECKED_OUT" }),
+    ).toBe("PENDIENTE_LIMPIEZA");
+  });
+
+  it("marca RESERVADA cuando la noche de hoy está vendida o hay llegada futura", () => {
+    expect(resolveRoomDetailState({ hasOpenMaintenance: false, nightStatus: "SOLD" })).toBe(
+      "RESERVADA",
+    );
+    expect(
+      resolveRoomDetailState({ hasOpenMaintenance: false, hasUpcomingReservation: true }),
+    ).toBe("RESERVADA");
+  });
+
+  it("marca LIBRE sin mantenimiento, sin ocupación y sin reserva", () => {
+    expect(
+      resolveRoomDetailState({
+        hasOpenMaintenance: false,
+        operationalStatus: "CLEAN",
+        nightStatus: "AVAILABLE",
+        hasUpcomingReservation: false,
+      }),
+    ).toBe("LIBRE");
   });
 });

@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { AdminSession } from "@/components/admin/useAdminSession";
 
+/** Estado de la ficha detalle (RF-51); el servidor lo devuelve explícitamente. */
+type RoomDetailState = "LIBRE" | "RESERVADA" | "OCUPADA" | "MANTENIMIENTO" | "PENDIENTE_LIMPIEZA";
+
 interface RoomDetail {
   room: {
     id: string;
@@ -14,6 +17,7 @@ interface RoomDetail {
     viewKind: string | null;
     hasBalcony: boolean;
   };
+  state: RoomDetailState;
   checklist: Array<{
     code: string;
     nameEs: string;
@@ -50,6 +54,11 @@ interface RoomDetail {
     charges: boolean;
     notes: boolean;
   }> | null;
+}
+
+/** Recorta la wallet para no exponer la dirección completa (RF-52 · confidencialidad). */
+function maskWallet(address: string): string {
+  return address.length > 14 ? `${address.slice(0, 8)}…${address.slice(-4)}` : address;
 }
 
 export function RoomDetailPanel({
@@ -93,9 +102,7 @@ export function RoomDetailPanel({
   const release = async () => {
     setReleasing(true);
     try {
-      const res = await apiFetch(`/api/reception/rooms/${roomNumber}/release`, {
-        method: "POST",
-      });
+      const res = await apiFetch(`/api/reception/rooms/${roomNumber}/release`, { method: "POST" });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.message || t("releaseError"));
       onRelease?.();
@@ -106,9 +113,7 @@ export function RoomDetailPanel({
     }
   };
 
-  if (loading) {
-    return <p className="text-ink-soft">{t("loading")}</p>;
-  }
+  if (loading) return <p className="text-ink-soft">{t("loading")}</p>;
 
   if (error) {
     return (
@@ -120,24 +125,52 @@ export function RoomDetailPanel({
 
   if (!data) return null;
 
-  const { room, checklist, reservation, maintenance, calendar } = data;
-  const canRelease = room.operationalStatus === "PENDING_CLEANING";
+  const { room, state, checklist, reservation, maintenance, calendar } = data;
+  const canRelease = state === "PENDIENTE_LIMPIEZA";
+
+  /** Checklist de preparación (RESERVADA · LIBRE · PENDIENTE_LIMPIEZA). */
+  const checklistBlock = (
+    <>
+      <h4 className="mb-1 text-small font-semibold uppercase tracking-wide text-ink-soft">
+        {t("checklistTitle")}
+      </h4>
+      <ul className="space-y-1">
+        {checklist.map((item) => (
+          <li key={item.code} className="flex items-center justify-between text-small">
+            <span className={item.completed ? "text-ink" : "text-ink-soft"}>
+              {item.nameEs}
+              {!item.isMandatory && (
+                <span className="ml-1 text-micro text-ink-soft">({t("optional")})</span>
+              )}
+            </span>
+            <span className={item.completed ? "text-fern" : "text-ink-soft"}>
+              {item.completed ? "✓" : "—"}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
 
   return (
     <section className="rounded-brand-lg border border-line bg-shell p-5 shadow-card">
-      <div className="mb-4 flex items-start justify-between">
+      <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <h2 className="font-display text-h3 font-semibold">
             {t("roomDetailTitle", { roomNumber: room.roomNumber })}
           </h2>
           <p className="text-small text-ink-soft">
-            {room.roomType} · {t(`roomStatus${room.operationalStatus}` as "roomStatusCLEAN")}
+            {room.roomType} ·{" "}
+            <span data-testid="room-detail-state" className="font-semibold text-ink">
+              {t(`detailState${state}` as "detailStateLIBRE")}
+            </span>
           </p>
         </div>
         <div className="flex gap-2">
           {canRelease && (
             <button
               type="button"
+              data-testid="room-detail-release"
               onClick={release}
               disabled={releasing}
               className="min-h-touch rounded-pill bg-fern px-4 font-semibold text-shell disabled:opacity-60"
@@ -158,63 +191,91 @@ export function RoomDetailPanel({
       </div>
 
       <div className="grid gap-6 tablet:grid-cols-2">
-        {/* Zona Habitación */}
+        {/* ── Zona Habitación (contenido según el estado, RF-51) ── */}
         <div>
           <h3 className="mb-2 font-display text-h4 font-semibold">{t("zoneRoom")}</h3>
 
-          {maintenance && (
-            <div className="mb-4 rounded-brand border border-coral-text/30 bg-coral-text/10 p-3 text-coral-text">
+          {state === "MANTENIMIENTO" && (
+            <div
+              data-testid="room-zone-maintenance"
+              className="rounded-brand border border-coral-text/30 bg-coral-text/10 p-3 text-coral-text"
+            >
               <p className="font-semibold">{t("maintenanceInProgress")}</p>
-              <p className="text-small">{maintenance.description || maintenance.kind}</p>
+              <p className="text-small">{maintenance?.description || maintenance?.kind || "—"}</p>
             </div>
           )}
 
-          <h4 className="mb-1 text-small font-semibold uppercase tracking-wide text-ink-soft">
-            {t("checklistTitle")}
-          </h4>
-          <ul className="mb-4 space-y-1">
-            {checklist.map((item) => (
-              <li key={item.code} className="flex items-center justify-between text-small">
-                <span className={item.completed ? "text-ink" : "text-ink-soft"}>
-                  {item.nameEs}
-                  {!item.isMandatory && (
-                    <span className="ml-1 text-micro text-ink-soft">({t("optional")})</span>
-                  )}
-                </span>
-                <span className={item.completed ? "text-fern" : "text-ink-soft"}>
-                  {item.completed ? "✓" : "—"}
-                </span>
-              </li>
-            ))}
-          </ul>
-
-          {calendar && (
-            <>
+          {state === "OCUPADA" && (
+            <div data-testid="room-zone-calendar">
               <h4 className="mb-2 text-small font-semibold uppercase tracking-wide text-ink-soft">
                 {t("occupationCalendar")}
               </h4>
-              <ul className="grid grid-cols-2 gap-2 tablet:grid-cols-3">
-                {calendar.map((day) => (
-                  <li key={day.date} className="rounded-brand border border-line bg-shell p-2 text-micro">
-                    <span className="block font-semibold">{day.date.slice(5)}</span>
-                    <span className="flex gap-1 text-ink-soft">
-                      {day.cleaning && <span title={t("iconCleaning")}>🧹</span>}
-                      {day.maintenance && <span title={t("iconMaintenance")}>🔧</span>}
-                      {day.charges && <span title={t("iconCharges")}>€</span>}
-                      {day.notes && <span title={t("iconNotes")}>📝</span>}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </>
+              {calendar && calendar.length > 0 ? (
+                <ul className="grid grid-cols-2 gap-2 tablet:grid-cols-3">
+                  {calendar.map((day) => (
+                    <li
+                      key={day.date}
+                      data-testid={`calendar-day-${day.date}`}
+                      className="rounded-brand border border-line bg-shell p-2 text-micro"
+                    >
+                      <span className="block font-semibold">{day.date.slice(5)}</span>
+                      <span className="mt-1 flex gap-1.5">
+                        <span
+                          data-done={day.cleaning}
+                          title={t("iconCleaning")}
+                          className={day.cleaning ? "opacity-100" : "opacity-25"}
+                        >
+                          🧹
+                        </span>
+                        <span
+                          data-done={day.maintenance}
+                          title={t("iconMaintenance")}
+                          className={day.maintenance ? "opacity-100" : "opacity-25"}
+                        >
+                          🔧
+                        </span>
+                        <span
+                          data-done={day.charges}
+                          title={t("iconCharges")}
+                          className={day.charges ? "opacity-100" : "opacity-25"}
+                        >
+                          €
+                        </span>
+                        <span
+                          data-done={day.notes}
+                          title={t("iconNotes")}
+                          className={day.notes ? "opacity-100" : "opacity-25"}
+                        >
+                          📝
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-small text-ink-soft">{t("calendarEmpty")}</p>
+              )}
+            </div>
+          )}
+
+          {(state === "RESERVADA" || state === "LIBRE" || state === "PENDIENTE_LIMPIEZA") && (
+            <div data-testid="room-zone-checklist">
+              {state === "PENDIENTE_LIMPIEZA" && (
+                <p className="mb-2 text-small text-coral-text">{t("pendingCleaningHint")}</p>
+              )}
+              {state === "RESERVADA" && (
+                <p className="mb-2 text-small text-ink-soft">{t("preArrivalHint")}</p>
+              )}
+              {checklistBlock}
+            </div>
           )}
         </div>
 
-        {/* Zona Huésped */}
+        {/* ── Zona Huésped (RF-52) ── */}
         <div>
           <h3 className="mb-2 font-display text-h4 font-semibold">{t("zoneGuest")}</h3>
           {reservation ? (
-            <dl className="space-y-2 text-small">
+            <dl data-testid="room-zone-guest" className="space-y-2 text-small">
               <div className="flex justify-between">
                 <dt className="text-ink-soft">{t("guestDates")}</dt>
                 <dd>
@@ -244,7 +305,9 @@ export function RoomDetailPanel({
               {reservation.currentOwner && (
                 <div className="flex justify-between">
                   <dt className="text-ink-soft">{t("guestWallet")}</dt>
-                  <dd className="font-mono text-micro">{`${reservation.currentOwner.slice(0, 10)}…`}</dd>
+                  <dd data-testid="guest-wallet" className="font-mono text-micro">
+                    {maskWallet(reservation.currentOwner)}
+                  </dd>
                 </div>
               )}
             </dl>

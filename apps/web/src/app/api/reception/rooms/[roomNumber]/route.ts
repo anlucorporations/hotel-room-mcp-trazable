@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { getDbPool } from "@hotel/shared";
+import { getDbPool, resolveRoomDetailState, type RoomDetailState } from "@hotel/shared";
 import { requireRole } from "@/lib/guard";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +9,14 @@ export const dynamic = "force-dynamic";
  * GET /api/reception/rooms/:roomNumber
  *
  * Ficha detalle de una habitación para recepción (RF-51..RF-55).
- * Devuelve dos zonas: habitación y huésped, según el estado operativo.
+ *
+ * Devuelve dos zonas —habitación y huésped— y un `state` explícito que decide su contenido:
+ *
+ *   · `RESERVADA`         → checklist de preparación previo a la llegada + ocupación del huésped.
+ *   · `OCUPADA`           → calendario del rango de la estancia (limpieza/mantenimiento/cargos/novedades).
+ *   · `MANTENIMIENTO`     → descripción del mantenimiento en curso.
+ *   · `LIBRE`             → resumen del estado de la habitación (checklist).
+ *   · `PENDIENTE_LIMPIEZA`→ checklist y botón de liberación (RF-50).
  *
  * 200 `{ room, state, checklist, reservation, maintenance, calendar }`
  * 401/403 sin permiso · 404 no encontrada · 500 error
@@ -49,7 +56,7 @@ export async function GET(
 
     const room = roomRow.rows[0];
 
-    // Último checklist completado por ítem (independientemente de la asignación).
+    // Checklist de preparación (RF-51/RF-55): último registro por ítem, independiente del turno.
     const checklistRows = await pool.query(
       `SELECT ci.code, ci.name_es, ci.name_en, ci.name_ru, ci.is_mandatory,
               cc.completed, cc.completed_by, cc.completed_at, cc.notes
@@ -65,34 +72,7 @@ export async function GET(
       [room.id],
     );
 
-    // Reserva activa de hoy (check_in <= hoy < check_out) o la próxima llegada.
-    const reservationRows = await pool.query(
-      `SELECT r.id, r.check_in_date, r.check_out_date, r.status,
-              r.adult_count, r.child_count, r.baby_count, r.pet_count, r.accessibility_count,
-              rn.token_id
-         FROM reservations r
-         LEFT JOIN reservation_nights rn
-                ON rn.reservation_id = r.id AND rn.night_date = r.check_in_date
-        WHERE r.room_id = $1
-          AND r.status IN ('PENDING', 'CONFIRMED')
-        ORDER BY r.check_in_date ASC
-        LIMIT 1`,
-      [room.id],
-    );
-
-    const reservation = reservationRows.rows[0] ?? null;
-
-    // Wallet del titular del token (RF-52): solo si la reserva ya tiene noche acuñada.
-    let currentOwner: string | null = null;
-    if (reservation?.token_id) {
-      const ownerRow = await pool.query(
-        `SELECT current_owner FROM nfts WHERE token_id = $1`,
-        [reservation.token_id],
-      );
-      currentOwner = (ownerRow.rows[0]?.current_owner as string) ?? null;
-    }
-
-    // Mantenimiento abierto en la habitación.
+    // Mantenimiento abierto: si existe, la habitación está en estado MANTENIMIENTO (RF-53).
     const maintenanceRows = await pool.query(
       `SELECT id, kind, description, priority, status, reported_by, assigned_to, created_at
          FROM maintenance_incidents
@@ -101,62 +81,146 @@ export async function GET(
         LIMIT 1`,
       [room.id],
     );
-
     const maintenance = maintenanceRows.rows[0] ?? null;
 
-    // Calendario de ocupación: rango completo de la reserva con flags por fecha.
-    let calendar: Array<{ date: string; cleaning: boolean; maintenance: boolean; charges: boolean; notes: boolean }> | null = null;
-    if (reservation) {
-      const start = new Date(reservation.check_in_date);
-      const end = new Date(reservation.check_out_date);
+    // Noche de HOY de esta habitación: es la que determina ocupación y huésped (RF-52).
+    // El estado de ocupación vive en `nfts.status` (CHECKED_IN), no en `reservations.status`.
+    const todayNightRows = await pool.query(
+      `SELECT rn.reservation_id, rn.token_id, n.status AS night_status, n.current_owner
+         FROM reservation_nights rn
+         LEFT JOIN nfts n ON n.token_id = rn.token_id
+        WHERE rn.room_id = $1 AND rn.night_date = CURRENT_DATE AND rn.active = TRUE
+        LIMIT 1`,
+      [room.id],
+    );
+    const todayNight = todayNightRows.rows[0] ?? null;
+
+    // Si no hay noche hoy, la próxima reserva activa (llegada futura) define el estado RESERVADA.
+    let upcomingReservationId: string | null = todayNight?.reservation_id ?? null;
+    if (!upcomingReservationId) {
+      const upcoming = await pool.query(
+        `SELECT id FROM reservations
+          WHERE room_id = $1 AND status IN ('PENDING', 'CONFIRMED') AND check_in_date > CURRENT_DATE
+          ORDER BY check_in_date ASC
+          LIMIT 1`,
+        [room.id],
+      );
+      upcomingReservationId = upcoming.rows[0]?.id ?? null;
+    }
+
+    // Estado de la ficha (RF-51). El criterio vive en `@hotel/shared` (función pura y probada).
+    const operationalStatus = String(room.operational_status);
+    const nightStatus = todayNight?.night_status ? String(todayNight.night_status) : null;
+    const state: RoomDetailState = resolveRoomDetailState({
+      hasOpenMaintenance: Boolean(maintenance),
+      operationalStatus,
+      nightStatus,
+      hasUpcomingReservation: Boolean(upcomingReservationId),
+    });
+
+    // La ficha solo muestra huésped cuando hay estancia en curso o reserva vigente.
+    const showReservation = state === "OCUPADA" || state === "RESERVADA";
+
+    let reservation: Record<string, unknown> | null = null;
+    if (showReservation && upcomingReservationId) {
+      const reservationRows = await pool.query(
+        `SELECT id, check_in_date, check_out_date, status,
+                adult_count, child_count, baby_count, pet_count, accessibility_count
+           FROM reservations
+          WHERE id = $1`,
+        [upcomingReservationId],
+      );
+      const row = reservationRows.rows[0];
+      if (row) {
+        // Wallet del titular (RF-52): se sirve **recortada** para preservar la confidencialidad.
+        let currentOwner: string | null = (todayNight?.current_owner as string) ?? null;
+        if (!currentOwner && todayNight?.token_id) {
+          const ownerRow = await pool.query(`SELECT current_owner FROM nfts WHERE token_id = $1`, [
+            todayNight.token_id,
+          ]);
+          currentOwner = (ownerRow.rows[0]?.current_owner as string) ?? null;
+        }
+        reservation = {
+          id: row.id,
+          checkInDate: row.check_in_date,
+          checkOutDate: row.check_out_date,
+          status: row.status,
+          adultCount: row.adult_count,
+          childCount: row.child_count,
+          babyCount: row.baby_count,
+          petCount: row.pet_count,
+          accessibilityCount: row.accessibility_count,
+          tokenId: todayNight?.token_id ?? null,
+          currentOwner,
+        };
+      }
+    }
+
+    // Calendario de la estancia (RF-52, solo OCUPADA): rango completo con marcas por fecha.
+    let calendar: Array<{
+      date: string;
+      cleaning: boolean;
+      maintenance: boolean;
+      charges: boolean;
+      notes: boolean;
+    }> | null = null;
+
+    if (state === "OCUPADA" && reservation) {
+      const start = new Date(String(reservation.checkInDate));
+      const end = new Date(String(reservation.checkOutDate));
       const dates: string[] = [];
       for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
         dates.push(d.toISOString().slice(0, 10));
       }
 
-      const [cleaningRows, maintRows, chargeRows, noteRows] = await Promise.all([
-        pool.query(
-          `SELECT changed_at::date AS date
-             FROM housekeeping_room_logs
-            WHERE room_id = $1 AND changed_at::date = ANY($2::date[])`,
-          [room.id, dates],
-        ),
-        pool.query(
-          `SELECT created_at::date AS date
-             FROM maintenance_incident_events e
-             JOIN maintenance_incidents i ON i.id = e.incident_id
-            WHERE i.room_id = $1 AND e.created_at::date = ANY($2::date[])`,
-          [room.id, dates],
-        ),
-        pool.query(
-          `SELECT n.check_in_date AS date
-             FROM nfts n
-             JOIN additional_charges ac ON ac.token_id = n.token_id
-            WHERE n.room_number = $1 AND n.check_in_date = ANY($2::date[])`,
-          [roomNumber, dates],
-        ),
-        pool.query(
-          `SELECT n.check_in_date AS date
-             FROM nfts n
-             JOIN stay_checkouts sc ON sc.token_id = n.token_id
-             JOIN checkout_incidents ci ON ci.checkout_id = sc.id
-            WHERE n.room_number = $1 AND n.check_in_date = ANY($2::date[])`,
-          [roomNumber, dates],
-        ),
-      ]);
+      if (dates.length > 0) {
+        const [cleaningRows, maintRows, chargeRows, noteRows] = await Promise.all([
+          pool.query(
+            `SELECT DISTINCT changed_at::date AS date
+               FROM housekeeping_room_logs
+              WHERE room_id = $1 AND changed_at::date = ANY($2::date[])`,
+            [room.id, dates],
+          ),
+          pool.query(
+            `SELECT DISTINCT e.created_at::date AS date
+               FROM maintenance_incident_events e
+               JOIN maintenance_incidents i ON i.id = e.incident_id
+              WHERE i.room_id = $1 AND e.created_at::date = ANY($2::date[])`,
+            [room.id, dates],
+          ),
+          pool.query(
+            `SELECT DISTINCT rn.night_date AS date
+               FROM reservation_nights rn
+               JOIN additional_charges ac ON ac.token_id = rn.token_id
+              WHERE rn.room_id = $1 AND rn.night_date = ANY($2::date[])`,
+            [room.id, dates],
+          ),
+          pool.query(
+            `SELECT DISTINCT rn.night_date AS date
+               FROM reservation_nights rn
+               JOIN stay_checkouts sc ON sc.token_id = rn.token_id
+               JOIN checkout_incidents ci ON ci.checkout_id = sc.id
+              WHERE rn.room_id = $1 AND rn.night_date = ANY($2::date[])`,
+            [room.id, dates],
+          ),
+        ]);
 
-      const cleaningSet = new Set(cleaningRows.rows.map((r: { date: unknown }) => String(r.date)));
-      const maintSet = new Set(maintRows.rows.map((r: { date: unknown }) => String(r.date)));
-      const chargeSet = new Set(chargeRows.rows.map((r: { date: unknown }) => String(r.date)));
-      const noteSet = new Set(noteRows.rows.map((r: { date: unknown }) => String(r.date)));
+        const toSet = (rows: Array<{ date: unknown }>): Set<string> =>
+          new Set(rows.map((r) => String(r.date)));
 
-      calendar = dates.map((date) => ({
-        date,
-        cleaning: cleaningSet.has(date),
-        maintenance: maintSet.has(date),
-        charges: chargeSet.has(date),
-        notes: noteSet.has(date),
-      }));
+        const cleaningSet = toSet(cleaningRows.rows);
+        const maintSet = toSet(maintRows.rows);
+        const chargeSet = toSet(chargeRows.rows);
+        const noteSet = toSet(noteRows.rows);
+
+        calendar = dates.map((date) => ({
+          date,
+          cleaning: cleaningSet.has(date),
+          maintenance: maintSet.has(date),
+          charges: chargeSet.has(date),
+          notes: noteSet.has(date),
+        }));
+      }
     }
 
     return NextResponse.json({
@@ -174,6 +238,7 @@ export async function GET(
         viewKind: room.view_kind,
         hasBalcony: room.has_balcony,
       },
+      state,
       checklist: checklistRows.rows.map((row: Record<string, unknown>) => ({
         code: row.code,
         nameEs: row.name_es,
@@ -185,21 +250,7 @@ export async function GET(
         completedAt: row.completed_at,
         notes: row.notes,
       })),
-      reservation: reservation
-        ? {
-            id: reservation.id,
-            checkInDate: reservation.check_in_date,
-            checkOutDate: reservation.check_out_date,
-            status: reservation.status,
-            adultCount: reservation.adult_count,
-            childCount: reservation.child_count,
-            babyCount: reservation.baby_count,
-            petCount: reservation.pet_count,
-            accessibilityCount: reservation.accessibility_count,
-            tokenId: reservation.token_id,
-            currentOwner,
-          }
-        : null,
+      reservation,
       maintenance: maintenance
         ? {
             id: maintenance.id,
