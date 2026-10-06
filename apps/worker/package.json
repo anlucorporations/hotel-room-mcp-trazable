@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "@hotel/config": "workspace:*",
-    "@types/node": "^22.10.2",
+    "@types/node": "^26.6.4",
     "@types/nodemailer": "^6.4.17",
     "@types/pg": "^8.23.1",
     "@vitest/coverage-v8": "^2.1.9",
