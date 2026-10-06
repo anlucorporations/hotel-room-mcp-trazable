@@ -3545,4 +3545,20 @@ como MetaMask. Prueba el antes y el después sobre `@wagmi/core` real:
 falla al arrancar por falta de `libnspr4.so` y no hay permisos para instalarlo. La prueba contra
 `@wagmi/core` es determinista y queda como guardián de regresión en CI.
 
-**Pendiente**: desplegar (release v39) para que el arreglo llegue a producción.
+### Despliegue (release v39, 2026-10-06)
+
+Commit `35c13ef` publicado en los tres remotos. Solo cambió `apps/web`, así que se construyó y desplegó
+únicamente la web (`web:v39`); worker (`hotel-mcp-worker-00016-gsq`) y mcp (`hotel-mcp-mcp-00009-sjx`)
+siguen en v38, que es su versión vigente.
+
+| Comprobación | Resultado |
+|---|---|
+| Imagen `web:v39` (Cloud Build `367b4716`) | ✅ SUCCESS |
+| Canario `v39` (`hotel-mcp-web-00046-9t9`, 0 %) | `/health/ready` 200 READY |
+| Código servido en el canario | contiene `io.metamask` (exclusivo de v39) |
+| Código servido en v38 (antes de mover) | **no** contenía `io.metamask` |
+| Tráfico tras mover | `hotel-mcp-web-00046-9t9` al **100 %** (etiqueta `v39`) |
+| Producción final | bundles con `io.metamask` ✅ · `/health/ready` 200 READY |
+
+Procedimiento: `--no-traffic` → etiqueta de canario → verificación (salud + marcador de código) →
+`update-traffic --to-revisions=…=100` → reetiquetado a `v39`.

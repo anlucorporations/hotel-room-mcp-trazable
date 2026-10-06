@@ -2112,3 +2112,40 @@ revisión anterior, se reemplazó por `v38`.
 | Código servido (bundles de `/recepcion`) | marcadores exclusivos de v38 presentes: `checkin-qr-dialog`, `checkout-charge-dialog`, `activities-book-dialog`, `room-detail-footer` |
 | Mismo control sobre la revisión anterior | los cuatro marcadores ausentes (confirmaba que v37 seguía sirviendo) |
 | Revisión e imagen real de cada servicio | comprobadas con `gcloud run revisions describe` |
+
+---
+
+## 62. Release v39 — conexión de billetera: MetaMask no se reconocía (2026-10-06)
+
+**Defecto**: la aplicación no reconocía MetaMask. **Causa**: `providers.tsx` creaba la configuración de
+wagmi con `ssr: true`, y `@wagmi/core` omite el descubrimiento EIP-6963 en ese caso
+(`if (!ssr && mipd)`); además `connect()` buscaba `id === "metaMask"`, cuando el id real de una cartera
+descubierta es su RDNS (`io.metamask`). Detalle en `estado_proyecto.md` §13.
+
+**Alcance**: solo `apps/web`. Se construyó y desplegó **únicamente la web**; worker y mcp no cambian
+(`apps/worker`, `apps/mcp` y `packages/shared` no se tocaron).
+
+| Componente | Imagen | Estado |
+|---|---|---|
+| web | `europe-west1-docker.pkg.dev/hotel-mcp/hotel-mcp/web:v39` | ✅ SUCCESS (build `367b4716`) |
+| worker | `worker:v38` (sin cambios) | vigente |
+| mcp | `mcp:v38` (sin cambios) | vigente |
+
+**Despliegue**:
+
+| Servicio | Revisión sirviendo | Tráfico | Imagen |
+|---|---|---|---|
+| web | `hotel-mcp-web-00046-9t9` (etiqueta `v39`) | 100 % | `web@sha256:ae1c38ac…` |
+| worker | `hotel-mcp-worker-00016-gsq` | 100 % | `worker@sha256:65cf9076…` |
+| mcp | `hotel-mcp-mcp-00009-sjx` | 100 % | `mcp@sha256:496ae0ef…` |
+
+**Verificación**:
+
+| Comprobación | Resultado |
+|---|---|
+| `/health/ready` canario y producción | 200 READY (postgres, redis, polygonRPC UP) |
+| Marcador de código `io.metamask` en canario v39 | presente |
+| Marcador `io.metamask` en v38 (antes de mover) | ausente |
+| Marcador `io.metamask` en producción tras mover | presente ✅ |
+| Regresión automatizada | `wallet-discovery.test.ts`: con `ssr:false` descubre `io.metamask`; con `ssr:true` no |
+| Suite web | **714/714 OK** |
