@@ -1990,3 +1990,33 @@ otros ficheros para «arreglarlo»; el árbol quedó intacto.
 
 **Nota**: Cloud Run solo crea revisión nueva cuando cambia la plantilla; al ser idéntica para web y mcp,
 mantuvo las revisiones existentes. El worker sí generó una nueva (`00014-lq2`).
+
+### 59.1 Verificación de «última versión» (2026-10-06)
+
+**Código**: `HEAD` (`45b5c80`) no introduce cambios en `apps/`, `packages/`, `infra/` ni `contracts/`
+respecto a `f6fbf3e` (commit con el que se construyó la release `v36`); los commits posteriores son
+**solo documentación**. Por tanto las imágenes desplegadas corresponden al código más reciente.
+
+**Esquema PostgreSQL**: el worker aplica `runMigrations` al arrancar y **aborta si falla**
+(`apps/worker/src/main.ts`); la revisión `hotel-mcp-worker-00014-lq2` (`v36`) está en marcha, luego la
+migración se aplicó. Comprobado además contra la base real con un job temporal de solo lectura
+(imagen `worker:v36`, borrado tras usarlo):
+
+| Comprobación | Resultado |
+|---|---|
+| Tablas de checklist | `room_cleaning_checklist_items`, `room_cleaning_checklists` ✅ |
+| Columnas de ocupación en `reservations` | `adult_count`, `child_count`, `baby_count`, `pet_count`, `accessibility_count` ✅ |
+| Restricción de `rooms.operational_status` | incluye `PENDING_CLEANING` ✅ |
+| Semilla del catálogo de checklist | 6 filas ✅ |
+
+**Componentes**:
+
+| Componente | Versión desplegada | ¿Última? |
+|---|---|---|
+| web | `web:v36` (`hotel-mcp-web-00063-put`, tag `v36`) | Sí |
+| worker | `worker:v36` (`hotel-mcp-worker-00014-lq2`) | Sí |
+| mcp | `mcp:v36` (`hotel-mcp-mcp-00005-tnl`) | Sí |
+| monitor | `monitor:v14` (worker pool `hotel-mcp-monitor`) | Sí — `apps/monitor` sin cambios desde `c0f00b0` (2026-09-25) e imagen del 2026-09-30 |
+
+**Conclusión**: GCP sirve la última versión del proyecto para todos los componentes versionados y el
+esquema de base de datos está al día.
