@@ -74,20 +74,22 @@ export function CredentialForm({ session }: { session: AdminSession }) {
           />
         </label>
 
-        <button type="submit" data-testid="admin-mfa-verify" disabled={isSigningIn} aria-busy={isSigningIn} className={ACTION}>
-          {isSigningIn ? t("signingIn") : t("mfaVerify")}
-        </button>
-        <button
-          type="button"
-          data-testid="admin-mfa-alt"
-          onClick={() => {
-            setUseRecovery((value) => !value);
-            session.resetAuth();
-          }}
-          className="text-small font-medium text-azure-deep underline"
-        >
-          {useRecovery ? t("useTotpInstead") : t("useRecoveryInstead")}
-        </button>
+        <footer className="mt-2 flex w-full flex-wrap items-center gap-3 border-t border-line pt-4">
+          <button type="submit" data-testid="admin-mfa-verify" disabled={isSigningIn} aria-busy={isSigningIn} className={ACTION}>
+            {isSigningIn ? t("signingIn") : t("mfaVerify")}
+          </button>
+          <button
+            type="button"
+            data-testid="admin-mfa-alt"
+            onClick={() => {
+              setUseRecovery((value) => !value);
+              session.resetAuth();
+            }}
+            className="text-small font-medium text-azure-deep underline"
+          >
+            {useRecovery ? t("useTotpInstead") : t("useRecoveryInstead")}
+          </button>
+        </footer>
 
         {recoveryRemaining !== null && (
           <p data-testid="admin-recovery-remaining" className="text-small text-ink-soft">
@@ -143,15 +145,17 @@ export function CredentialForm({ session }: { session: AdminSession }) {
         />
       </label>
 
-      <button
-        type="submit"
-        data-testid="admin-sign-in"
-        disabled={isSigningIn}
-        aria-busy={isSigningIn}
-        className={ACTION}
-      >
-        {isSigningIn ? t("signingIn") : t("signIn")}
-      </button>
+      <footer className="mt-2 flex w-full flex-wrap items-center gap-3 border-t border-line pt-4">
+        <button
+          type="submit"
+          data-testid="admin-sign-in"
+          disabled={isSigningIn}
+          aria-busy={isSigningIn}
+          className={ACTION}
+        >
+          {isSigningIn ? t("signingIn") : t("signIn")}
+        </button>
+      </footer>
 
       <p role="status" aria-live="polite" className="sr-only">
         {isSigningIn ? t("signingIn") : ""}

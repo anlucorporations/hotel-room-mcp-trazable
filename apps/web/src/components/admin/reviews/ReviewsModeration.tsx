@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useAdminSession } from "@/components/admin/useAdminSession";
+import { MODAL_PRIMARY, MODAL_SECONDARY, ModalShell } from "@/components/ui/ModalShell";
 
 interface Review {
   id: string;
@@ -70,6 +71,10 @@ export function ReviewsModeration() {
     );
   }
 
+  /** Ficha flotante de moderación de la reseña elegida. */
+  const [moderating, setModerating] = useState<Review | null>(null);
+  const tCommon = useTranslations("common");
+
   const moderate = async (review: Review, action: "approve" | "reject"): Promise<void> => {
     setError(null);
     setNotice(null);
@@ -83,6 +88,7 @@ export function ReviewsModeration() {
       if (!res.ok) throw new Error((data as { message?: string }).message || t("actionError"));
       setNotice(action === "approve" ? t("approved") : t("rejected"));
       setReasons((current) => ({ ...current, [review.id]: "" }));
+      setModerating(null);
       await load(status);
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : t("actionError"));
@@ -134,36 +140,69 @@ export function ReviewsModeration() {
                 <p className="text-micro text-ink-soft">{t("reasonLabel")}: {review.moderationNotes}</p>
               )}
               {review.status === "PENDING" && (
-                <div className="flex flex-wrap items-end gap-2">
-                  <label className="flex min-w-[14rem] flex-1 flex-col gap-1 text-small">
-                    <span className="font-medium text-ink">{t("reason")}</span>
-                    <input
-                      type="text"
-                      value={reasons[review.id] ?? ""}
-                      onChange={(event) => setReasons((current) => ({ ...current, [review.id]: event.target.value }))}
-                      placeholder={t("reasonPlaceholder")}
-                      className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
-                    />
-                  </label>
+                <div>
                   <button
                     type="button"
-                    onClick={() => void moderate(review, "approve")}
-                    className="min-h-touch rounded-pill bg-fern px-4 text-small font-semibold text-shell"
+                    data-testid={`review-open-${review.id}`}
+                    onClick={() => setModerating(review)}
+                    className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell"
                   >
-                    {t("approve")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void moderate(review, "reject")}
-                    className="min-h-touch rounded-pill border border-line px-4 text-small font-semibold text-ink-soft"
-                  >
-                    {t("reject")}
+                    {t("reason")}
                   </button>
                 </div>
               )}
             </li>
           ))}
         </ul>
+      )}
+
+      {moderating && (
+        <ModalShell
+          testId="review-moderate-dialog"
+          title={t("reason")}
+          subtitle={t("ratingLabel", { rating: moderating.rating })}
+          closeLabel={tCommon("close")}
+          onClose={() => setModerating(null)}
+          footerTestId="review-moderate-footer"
+          footer={
+            <>
+              <button type="button" onClick={() => setModerating(null)} className={MODAL_SECONDARY}>
+                {tCommon("cancel")}
+              </button>
+              <button
+                type="button"
+                data-testid="review-reject"
+                onClick={() => void moderate(moderating, "reject")}
+                className={MODAL_PRIMARY}
+              >
+                {t("reject")}
+              </button>
+              <button
+                type="button"
+                data-testid="review-approve"
+                onClick={() => void moderate(moderating, "approve")}
+                className={MODAL_PRIMARY}
+              >
+                {t("approve")}
+              </button>
+            </>
+          }
+        >
+          <div className="flex flex-col gap-3">
+            {moderating.comment && <p className="text-small text-ink">“{moderating.comment}”</p>}
+            <label className="flex flex-col gap-1 text-small">
+              <span className="font-medium text-ink">{t("reasonLabel")}</span>
+              <input
+                type="text"
+                autoFocus
+                value={reasons[moderating.id] ?? ""}
+                onChange={(event) => setReasons((current) => ({ ...current, [moderating.id]: event.target.value }))}
+                placeholder={t("reasonPlaceholder")}
+                className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
+              />
+            </label>
+          </div>
+        </ModalShell>
       )}
     </div>
   );

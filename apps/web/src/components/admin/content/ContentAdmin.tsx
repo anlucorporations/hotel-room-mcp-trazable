@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useAdminSession } from "@/components/admin/useAdminSession";
+import { MODAL_PRIMARY, MODAL_SECONDARY, ModalShell } from "@/components/ui/ModalShell";
 
 const SECTIONS = ["HERO", "SERVICES", "EXPERIENCE", "ACTIVITIES", "CONTACT", "OTHER"] as const;
 type Section = (typeof SECTIONS)[number];
@@ -81,6 +82,10 @@ export function ContentAdmin() {
     );
   }
 
+  /** Fichas flotantes de alta: imagen de galería y plan informativo. */
+  const [dialog, setDialog] = useState<"image" | "offer" | null>(null);
+  const tCommon = useTranslations("common");
+
   const upload = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
     setError(null);
@@ -96,6 +101,7 @@ export function ContentAdmin() {
       if (!res.ok) throw new Error((body as { message?: string }).message || t("uploadError"));
       setNotice(t("uploaded"));
       setAlts({ es: "", en: "", ru: "" });
+      setDialog(null);
       event.currentTarget.reset();
       await load(section);
     } catch (err) {
@@ -137,6 +143,7 @@ export function ContentAdmin() {
       if (!res.ok) throw new Error((body as { message?: string }).message || t("saveError"));
       setNotice(t("offerCreated", { code: form.code.toUpperCase() }));
       setForm({ code: "", titleEs: "", bodyEs: "", validFrom: "", validTo: "" });
+      setDialog(null);
       await load(section);
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : t("saveError"));
@@ -210,20 +217,16 @@ export function ContentAdmin() {
           </ul>
         )}
 
-        <form onSubmit={upload} className="flex flex-wrap items-end gap-3 rounded-brand-lg border border-line bg-shell p-4">
-          <label className="flex flex-col gap-1 text-small">
-            <span className="font-medium text-ink">{t("file")}</span>
-            <input type="file" name="file" accept="image/jpeg" required className="text-small" />
-          </label>
-          <label className="flex flex-col gap-1 text-small">
-            <span className="font-medium text-ink">{t("altEs")}</span>
-            <input value={alts.es} onChange={(event) => setAlts({ ...alts, es: event.target.value })} className="min-h-touch w-48 rounded-brand-sm border border-line-strong bg-mist px-3" />
-          </label>
-          <button type="submit" className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell">
+        <div>
+          <button
+            type="button"
+            data-testid="content-open-image"
+            onClick={() => setDialog("image")}
+            className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell"
+          >
             {t("upload")}
           </button>
-          <p className="w-full text-micro text-ink-soft">{t("imageHint")}</p>
-        </form>
+        </div>
       </section>
 
       <section aria-labelledby="content-offers" className="flex flex-col gap-3">
@@ -250,7 +253,74 @@ export function ContentAdmin() {
           </ul>
         )}
 
-        <form onSubmit={createOffer} className="flex flex-wrap items-end gap-3 rounded-brand-lg border border-line bg-shell p-4">
+        <div>
+          <button
+            type="button"
+            data-testid="content-open-offer"
+            onClick={() => setDialog("offer")}
+            className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell"
+          >
+            {t("createOffer")}
+          </button>
+        </div>
+      </section>
+
+      {dialog === "image" && (
+        <ModalShell
+          testId="content-image-dialog"
+          title={t("upload")}
+          subtitle={t("galleryTitle")}
+          closeLabel={tCommon("close")}
+          onClose={() => setDialog(null)}
+          footerTestId="content-image-footer"
+          footer={
+            <>
+              <button type="button" onClick={() => setDialog(null)} className={MODAL_SECONDARY}>
+                {tCommon("cancel")}
+              </button>
+              <button type="submit" form="content-image-form" className={MODAL_PRIMARY}>
+                {t("upload")}
+              </button>
+            </>
+          }
+        >
+          <div className="flex flex-wrap items-end gap-3">
+            <form id="content-image-form" onSubmit={upload} className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1 text-small">
+            <span className="font-medium text-ink">{t("file")}</span>
+            <input type="file" name="file" accept="image/jpeg" required className="text-small" />
+          </label>
+          <label className="flex flex-col gap-1 text-small">
+            <span className="font-medium text-ink">{t("altEs")}</span>
+            <input value={alts.es} onChange={(event) => setAlts({ ...alts, es: event.target.value })} className="min-h-touch w-48 rounded-brand-sm border border-line-strong bg-mist px-3" />
+          </label>
+          <p className="w-full text-micro text-ink-soft">{t("imageHint")}</p>
+        </form>
+          </div>
+        </ModalShell>
+      )}
+
+      {dialog === "offer" && (
+        <ModalShell
+          testId="content-offer-dialog"
+          title={t("createOffer")}
+          subtitle={t("offersTitle")}
+          closeLabel={tCommon("close")}
+          onClose={() => setDialog(null)}
+          footerTestId="content-offer-footer"
+          footer={
+            <>
+              <button type="button" onClick={() => setDialog(null)} className={MODAL_SECONDARY}>
+                {tCommon("cancel")}
+              </button>
+              <button type="submit" form="content-offer-form" className={MODAL_PRIMARY}>
+                {t("createOffer")}
+              </button>
+            </>
+          }
+        >
+          <div className="flex flex-wrap items-end gap-3">
+            <form id="content-offer-form" onSubmit={createOffer} className="flex flex-wrap items-end gap-3">
           <label className="flex flex-col gap-1 text-small">
             <span className="font-medium text-ink">{t("offerCode")}</span>
             <input required value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} className="min-h-touch w-32 rounded-brand-sm border border-line-strong bg-mist px-3" />
@@ -267,11 +337,10 @@ export function ContentAdmin() {
             <span className="font-medium text-ink">{t("validTo")}</span>
             <input type="date" value={form.validTo} onChange={(event) => setForm({ ...form, validTo: event.target.value })} className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3" />
           </label>
-          <button type="submit" className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell">
-            {t("createOffer")}
-          </button>
         </form>
-      </section>
+          </div>
+        </ModalShell>
+      )}
     </div>
   );
 }

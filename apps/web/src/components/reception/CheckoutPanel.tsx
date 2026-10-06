@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { CHECKOUT_INCIDENT_KINDS, type CheckoutIncidentKind } from "@hotel/shared/domain";
+import { MODAL_PRIMARY, MODAL_SECONDARY, ModalShell } from "@/components/ui/ModalShell";
 import type { Charge, CheckoutReceipt, Reservation } from "./types";
 
 type ApiFetch = (input: string, init?: RequestInit) => Promise<Response>;
@@ -35,6 +36,9 @@ export function CheckoutPanel({
   onDone: () => void;
 }) {
   const t = useTranslations("reception");
+  const tCommon = useTranslations("common");
+  /** Diálogo flotante abierto: alta de cargo o confirmación de salida. */
+  const [dialog, setDialog] = useState<"charge" | "confirm" | null>(null);
   const inHouse = reservations;
 
   const [tokenId, setTokenId] = useState("");
@@ -96,6 +100,7 @@ export function CheckoutPanel({
       }
       setConcept("");
       setAmountEur("");
+      setDialog(null);
       await loadCharges(tokenId);
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : t("errorGeneric"));
@@ -129,6 +134,7 @@ export function CheckoutPanel({
       if (!res.ok) throw new Error(data.message || t("errorGeneric"));
       setReceipt(data);
       setSelected([]);
+      setDialog(null);
       await loadCharges(tokenId);
       onDone();
     } catch (err) {
@@ -230,24 +236,93 @@ export function CheckoutPanel({
               </ul>
             )}
 
-            <form onSubmit={addCharge} className="mt-4 flex flex-wrap items-end gap-3">
-              <label className="flex flex-1 flex-col gap-1 text-small text-ink">
-                {t("chargeConceptLabel")}
-                <input value={concept} onChange={(event) => setConcept(event.target.value)} data-testid="charge-concept" className={FIELD} />
-              </label>
-              <label className="flex w-32 flex-col gap-1 text-small text-ink">
-                {t("chargeAmountLabel")}
-                <input value={amountEur} onChange={(event) => setAmountEur(event.target.value)} inputMode="decimal" data-testid="charge-amount" className={FIELD} />
-              </label>
-              <button type="submit" disabled={loading} className={ACTION}>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                data-testid="checkout-open-charge"
+                onClick={() => setDialog("charge")}
+                className={ACTION}
+              >
                 {t("chargeAdd")}
               </button>
-            </form>
+              <button
+                type="button"
+                data-testid="checkout-open-confirm"
+                onClick={() => setDialog("confirm")}
+                className="min-h-touch rounded-pill border border-line px-4 font-medium text-ink transition-colors hover:bg-mist-2"
+              >
+                {t("checkoutConfirm")}
+              </button>
+            </div>
           </section>
+        </>
+      )}
 
-          <form onSubmit={confirmCheckout} className="rounded-brand border border-line bg-shell p-5">
-            <h3 className="font-display text-h3 font-semibold">{t("roomConditionLabel")}</h3>
-            <div className="mt-3 flex flex-wrap gap-4 text-small text-ink">
+      {dialog === "charge" && (
+        <ModalShell
+          testId="checkout-charge-dialog"
+          title={t("chargeAdd")}
+          subtitle={t("checkoutChargesTitle")}
+          closeLabel={tCommon("close")}
+          onClose={() => setDialog(null)}
+          footerTestId="checkout-charge-footer"
+          footer={
+            <>
+              <button type="button" onClick={() => setDialog(null)} className={MODAL_SECONDARY}>
+                {tCommon("cancel")}
+              </button>
+              <button
+                type="submit"
+                form="checkout-charge-form"
+                disabled={loading}
+                className={MODAL_PRIMARY}
+              >
+                {loading ? t("processing") : t("chargeAdd")}
+              </button>
+            </>
+          }
+        >
+          <form id="checkout-charge-form" onSubmit={addCharge} className="grid gap-3 tablet:grid-cols-2">
+            <label className="flex flex-col gap-1 text-small text-ink">
+              {t("chargeConceptLabel")}
+              <input value={concept} onChange={(event) => setConcept(event.target.value)} data-testid="charge-concept" className={FIELD} />
+            </label>
+            <label className="flex flex-col gap-1 text-small text-ink">
+              {t("chargeAmountLabel")}
+              <input value={amountEur} onChange={(event) => setAmountEur(event.target.value)} inputMode="decimal" data-testid="charge-amount" className={FIELD} />
+            </label>
+          </form>
+        </ModalShell>
+      )}
+
+      {dialog === "confirm" && (
+        <ModalShell
+          testId="checkout-confirm-dialog"
+          title={t("checkoutConfirm")}
+          subtitle={t("checkoutHint")}
+          closeLabel={tCommon("close")}
+          onClose={() => setDialog(null)}
+          footerTestId="checkout-confirm-footer"
+          footer={
+            <>
+              <button type="button" onClick={() => setDialog(null)} className={MODAL_SECONDARY}>
+                {tCommon("cancel")}
+              </button>
+              <button
+                type="submit"
+                form="checkout-confirm-form"
+                disabled={loading}
+                data-testid="checkout-confirm"
+                className={MODAL_PRIMARY}
+              >
+                {loading ? t("processing") : t("checkoutConfirm")}
+              </button>
+            </>
+          }
+        >
+          <form id="checkout-confirm-form" onSubmit={confirmCheckout} className="flex flex-col gap-4">
+            <h3 className="font-display text-h4 font-semibold">{t("roomConditionLabel")}</h3>
+            <div className="flex flex-wrap gap-4 text-small text-ink">
               <label className="flex items-center gap-2">
                 <input type="radio" name="condition" checked={roomCondition === "OK"} onChange={() => setRoomCondition("OK")} data-testid="condition-ok" />
                 {t("roomConditionOk")}
@@ -259,7 +334,7 @@ export function CheckoutPanel({
             </div>
 
             {roomCondition === "INCIDENCIA" && (
-              <div className="mt-4 grid gap-3 tablet:grid-cols-2">
+              <div className="grid gap-3 tablet:grid-cols-2">
                 <label className="flex flex-col gap-1 text-small text-ink">
                   {t("incidentKindLabel")}
                   <select value={incidentKind} onChange={(event) => setIncidentKind(event.target.value as CheckoutIncidentKind)} data-testid="incident-kind" className={FIELD}>
@@ -275,20 +350,16 @@ export function CheckoutPanel({
               </div>
             )}
 
-            <label className="mt-4 flex flex-col gap-1 text-small text-ink">
+            <label className="flex flex-col gap-1 text-small text-ink">
               {t("notesLabel")}
               <textarea rows={2} value={notes} onChange={(event) => setNotes(event.target.value)} data-testid="checkout-notes" className="w-full rounded-brand border border-line-strong bg-mist-2 p-3 text-small text-ink outline-none focus:border-azure" />
             </label>
 
-            <p className="mt-3 text-small text-ink-soft">
+            <p className="text-small text-ink-soft">
               {t("checkoutCancelSelected", { count: selected.length, pending: pending.length })}
             </p>
-
-            <button type="submit" disabled={loading} data-testid="checkout-confirm" className={`mt-3 ${ACTION}`}>
-              {loading ? t("processing") : t("checkoutConfirm")}
-            </button>
           </form>
-        </>
+        </ModalShell>
       )}
     </div>
   );

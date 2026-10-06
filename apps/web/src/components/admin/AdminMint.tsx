@@ -21,6 +21,7 @@ import { AdminCard } from "./AdminPanel";
 import { useMintNight } from "./useMintNight";
 import { useAdminTxCopy } from "./adminTxCopy";
 import { classifyAdminTxError } from "./adminTxError";
+import { MODAL_PRIMARY, MODAL_SECONDARY, ModalShell } from "@/components/ui/ModalShell";
 
 const FIELD = "min-h-touch rounded-brand border border-line-strong bg-shell px-3 text-ink";
 const SUBMIT =
@@ -86,6 +87,10 @@ export function AdminMint({ initialRoomNumber, initialDate }: AdminMintProps = {
   const errorId = "mint-form-error";
   const hasFormError = Boolean(formError);
 
+  /** Ficha flotante del formulario de publicación de noche. */
+  const [mintOpen, setMintOpen] = useState(false);
+  const tCommon = useTranslations("common");
+
   function handleFormSubmit(event: FormEvent): void {
     event.preventDefault();
     setFormError(null);
@@ -103,6 +108,7 @@ export function AdminMint({ initialRoomNumber, initialDate }: AdminMintProps = {
     // Open MFA prompt before executing
     setMfaCode("");
     setMfaError(null);
+    setMintOpen(false);
     setIsMfaOpen(true);
   }
 
@@ -192,7 +198,47 @@ export function AdminMint({ initialRoomNumber, initialDate }: AdminMintProps = {
 
   return (
     <AdminCard>
-      <form onSubmit={handleFormSubmit} className="flex max-w-md flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="font-display text-h3 font-semibold text-ink">{t("mintTitle")}</h2>
+          <p className="mt-1 text-small text-ink-soft">{t("mintTagline")}</p>
+        </div>
+        <button
+          type="button"
+          data-testid="mint-open"
+          onClick={() => setMintOpen(true)}
+          className={SUBMIT}
+        >
+          {t("mint")}
+        </button>
+      </div>
+
+      {mintOpen && (
+        <ModalShell
+          testId="mint-dialog"
+          title={t("mintTitle")}
+          subtitle={t("mintTagline")}
+          closeLabel={tCommon("close")}
+          onClose={() => setMintOpen(false)}
+          footerTestId="mint-footer"
+          footer={
+            <>
+              <button type="button" onClick={() => setMintOpen(false)} className={MODAL_SECONDARY}>
+                {tCommon("cancel")}
+              </button>
+              <button
+                type="submit"
+                form="mint-form"
+                data-testid="mint-action"
+                disabled={busy || isPaused}
+                className={MODAL_PRIMARY}
+              >
+                {busy ? t("minting") : t("mint")}
+              </button>
+            </>
+          }
+        >
+          <form id="mint-form" onSubmit={handleFormSubmit} className="flex max-w-md flex-col gap-4">
         <label className="flex items-center gap-2 text-small font-medium text-ink cursor-pointer">
           <input
             type="checkbox"
@@ -277,15 +323,6 @@ export function AdminMint({ initialRoomNumber, initialDate }: AdminMintProps = {
           </p>
         )}
 
-        <button
-          type="submit"
-          data-testid="mint-action"
-          id="mint-submit"
-          disabled={busy || isPaused}
-          className={SUBMIT}
-        >
-          {busy ? t("minting") : t("mint")}
-        </button>
 
         {formError && (
           <p id={errorId} data-testid="mint-error" role="alert" className="text-coral-text">
@@ -308,64 +345,67 @@ export function AdminMint({ initialRoomNumber, initialDate }: AdminMintProps = {
           </p>
         )}
       </form>
+        </ModalShell>
+      )}
 
-      {/* Modal de Re-Confirmación TOTP / MFA (US-16) */}
+      {/* Re-confirmación TOTP / MFA (US-16) en ficha flotante con título, cuerpo y pie. */}
       {isMfaOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+        <ModalShell
+          testId="mfa-dialog"
+          title={t("mfaTitle")}
+          subtitle={t("mfaTagline")}
+          closeLabel={tCommon("close")}
+          onClose={() => setIsMfaOpen(false)}
+          panelClassName="max-w-md"
+          footerTestId="mfa-footer"
+          footer={
+            <>
+              <button
+                type="button"
+                data-testid="mfa-cancel-btn"
+                onClick={() => setIsMfaOpen(false)}
+                disabled={isSubmittingMfa}
+                className={MODAL_SECONDARY}
+              >
+                {t("mfaCancel")}
+              </button>
+              <button
+                type="submit"
+                form="mfa-form"
+                data-testid="mfa-submit-btn"
+                disabled={isSubmittingMfa || mfaCode.length !== 6}
+                className={MODAL_PRIMARY}
+              >
+                {isSubmittingMfa ? t("processing") : t("mfaConfirm")}
+              </button>
+            </>
+          }
         >
-          <div className="w-full max-w-sm rounded-brand bg-white p-6 shadow-xl">
-            <h3 className="text-lg font-bold text-ink">{t("mfaTitle")}</h3>
-            <p className="mt-1 text-small text-ink/70">{t("mfaTagline")}</p>
+          <form id="mfa-form" onSubmit={executeMintWithMfa} className="flex flex-col gap-3">
+            <label htmlFor="mfa-token-input" className="flex flex-col gap-1 text-small font-medium text-ink">
+              {t("mfaCode")}
+              <input
+                id="mfa-token-input"
+                data-testid="mfa-token-input"
+                type="text"
+                maxLength={6}
+                pattern="[0-9]{6}"
+                value={mfaCode}
+                onChange={(e) => setMfaCode(e.target.value)}
+                placeholder="123456"
+                autoFocus
+                required
+                className={FIELD}
+              />
+            </label>
 
-            <form onSubmit={executeMintWithMfa} className="mt-4 flex flex-col gap-3">
-              <label htmlFor="mfa-token-input" className="flex flex-col gap-1 text-small font-medium text-ink">
-                {t("mfaCode")}
-                <input
-                  id="mfa-token-input"
-                  data-testid="mfa-token-input"
-                  type="text"
-                  maxLength={6}
-                  pattern="[0-9]{6}"
-                  value={mfaCode}
-                  onChange={(e) => setMfaCode(e.target.value)}
-                  placeholder="123456"
-                  autoFocus
-                  required
-                  className={FIELD}
-                />
-              </label>
-
-              {mfaError && (
-                <p data-testid="mfa-error" role="alert" className="text-small text-coral-text">
-                  {mfaError}
-                </p>
-              )}
-
-              <div className="mt-2 flex justify-end gap-2">
-                <button
-                  type="button"
-                  data-testid="mfa-cancel-btn"
-                  onClick={() => setIsMfaOpen(false)}
-                  disabled={isSubmittingMfa}
-                  className="rounded-pill border border-line px-4 py-2 text-small font-medium text-ink hover:bg-black/5"
-                >
-                  {t("mfaCancel")}
-                </button>
-                <button
-                  type="submit"
-                  data-testid="mfa-submit-btn"
-                  disabled={isSubmittingMfa || mfaCode.length !== 6}
-                  className="rounded-pill bg-azure px-4 py-2 text-small font-semibold text-white hover:bg-azure-deep disabled:opacity-50"
-                >
-                  {isSubmittingMfa ? t("processing") : t("mfaConfirm")}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+            {mfaError && (
+              <p data-testid="mfa-error" role="alert" className="text-small text-coral-text">
+                {mfaError}
+              </p>
+            )}
+          </form>
+        </ModalShell>
       )}
 
       <TxModal phase={status} onClose={reset} hash={hash} copy={txCopy} />

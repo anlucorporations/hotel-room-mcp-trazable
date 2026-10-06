@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useAdminSession } from "@/components/admin/useAdminSession";
 import { CredentialForm } from "@/components/admin/CredentialForm";
 import { AdminCard } from "@/components/admin/AdminPanel";
+import { MODAL_PRIMARY, MODAL_SECONDARY, ModalShell } from "@/components/ui/ModalShell";
 
 /**
  * Motor de reservas del Front Office (F2 · D-34…D-43, D-55, D-57).
@@ -60,6 +61,9 @@ function euros(cents: number): string {
 
 export function ReservationsAdmin() {
   const t = useTranslations("reception");
+  const tCommon = useTranslations("common");
+  /** Ficha flotante de alta de reserva. */
+  const [formOpen, setFormOpen] = useState(false);
   const session = useAdminSession();
 
   const [rooms, setRooms] = useState<readonly RoomOption[]>([]);
@@ -148,6 +152,7 @@ export function ReservationsAdmin() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || t("resCreateError"));
       setNotice({ kind: "ok", text: t("resCreated") });
+      setFormOpen(false);
       (event.target as HTMLFormElement).reset();
       setAvailability(null);
       await load();
@@ -226,8 +231,103 @@ export function ReservationsAdmin() {
       )}
 
       <AdminCard>
-        <h2 className="font-display text-h3 font-semibold text-ink">{t("resFormTitle")}</h2>
-        <form ref={formRef} onSubmit={createReservation} className="mt-4 grid grid-cols-1 gap-4 tablet:grid-cols-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-display text-h3 font-semibold text-ink">{t("resFormTitle")}</h2>
+            <p className="mt-1 text-small text-ink-soft">{t("resListTitle")}</p>
+          </div>
+          <button
+            type="button"
+            data-testid="res-open-create"
+            onClick={() => setFormOpen(true)}
+            className={ACTION}
+          >
+            {t("resCreate")}
+          </button>
+        </div>
+      </AdminCard>
+      <AdminCard>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-display text-h3 font-semibold text-ink">{t("resListTitle")}</h2>
+          <button type="button" onClick={() => void load()} className={GHOST} disabled={loading}>
+            {t("refresh")}
+          </button>
+        </div>
+        {reservations.length === 0 ? (
+          <p className="mt-3 text-ink-soft">{t("resListEmpty")}</p>
+        ) : (
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full text-left text-small">
+              <caption className="sr-only">{t("reservationsCaption")}</caption>
+              <thead>
+                <tr className="text-ink-soft">
+                  <th scope="col" className="px-2 py-2">{t("colRoom")}</th>
+                  <th scope="col" className="px-2 py-2">{t("resDates")}</th>
+                  <th scope="col" className="px-2 py-2">{t("colStatus")}</th>
+                  <th scope="col" className="px-2 py-2">{t("resTotal")}</th>
+                  <th scope="col" className="px-2 py-2">{t("resActions")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reservations.map((reservation) => (
+                  <tr key={reservation.id} data-testid={`res-row-${reservation.id}`} className="border-t border-line">
+                    <td className="px-2 py-2 font-semibold text-ink">{reservation.roomNumber}</td>
+                    <td className="px-2 py-2">
+                      {reservation.checkInDate} → {reservation.checkOutDate}
+                    </td>
+                    <td className="px-2 py-2">{reservation.status}</td>
+                    <td className="px-2 py-2">{euros(reservation.totalCents)} €</td>
+                    <td className="flex flex-wrap gap-2 px-2 py-2">
+                      {reservation.status === "PENDING" && (
+                        <button type="button" onClick={() => void confirmReservation(reservation.id)} className={GHOST}>
+                          {t("resConfirm")}
+                        </button>
+                      )}
+                      {(reservation.status === "PENDING" || reservation.status === "CONFIRMED") && (
+                        <button type="button" onClick={() => void cancelReservation(reservation.id)} className={GHOST}>
+                          {t("resCancel")}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </AdminCard>
+
+      {formOpen && (
+        <ModalShell
+          testId="reservation-create-dialog"
+          title={t("resFormTitle")}
+          subtitle={t("resCheckAvailability")}
+          closeLabel={tCommon("close")}
+          onClose={() => setFormOpen(false)}
+          panelClassName="max-w-4xl"
+          footerTestId="reservation-create-footer"
+          footer={
+            <>
+              <button type="button" onClick={() => void checkAvailability()} className={MODAL_SECONDARY}>
+                {t("resCheckAvailability")}
+              </button>
+              <button type="button" onClick={() => setFormOpen(false)} className={MODAL_SECONDARY}>
+                {tCommon("cancel")}
+              </button>
+              <button
+                type="submit"
+                form="reservation-create-form"
+                data-testid="res-create"
+                disabled={creating}
+                className={MODAL_PRIMARY}
+              >
+                {creating ? t("resCreating") : t("resCreate")}
+              </button>
+            </>
+          }
+        >
+          <div className="flex flex-col gap-4">
+            <form ref={formRef} id="reservation-create-form" onSubmit={createReservation} className="mt-4 grid grid-cols-1 gap-4 tablet:grid-cols-3">
           <label className="flex flex-col gap-1 text-small font-medium text-ink">
             {t("resRoom")}
             <select name="roomId" required data-testid="res-room" className={FIELD} defaultValue="">
@@ -287,72 +387,15 @@ export function ReservationsAdmin() {
             {t("resContactValue")}
             <input name="contactValue" type="text" data-testid="res-contact-value" className={FIELD} />
           </label>
-          <div className="flex flex-wrap gap-2 tablet:col-span-3">
-            <button type="button" onClick={() => void checkAvailability()} className={GHOST}>
-              {t("resCheckAvailability")}
-            </button>
-            <button type="submit" data-testid="res-create" disabled={creating} className={ACTION}>
-              {creating ? t("resCreating") : t("resCreate")}
-            </button>
-          </div>
-          {availability !== null && (
-            <p role="status" className="tablet:col-span-3 text-small font-medium text-ink">
-              {availability ? t("resAvailable") : t("resUnavailable")}
-            </p>
-          )}
         </form>
-      </AdminCard>
-
-      <AdminCard>
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="font-display text-h3 font-semibold text-ink">{t("resListTitle")}</h2>
-          <button type="button" onClick={() => void load()} className={GHOST} disabled={loading}>
-            {t("refresh")}
-          </button>
-        </div>
-        {reservations.length === 0 ? (
-          <p className="mt-3 text-ink-soft">{t("resListEmpty")}</p>
-        ) : (
-          <div className="mt-3 overflow-x-auto">
-            <table className="w-full text-left text-small">
-              <caption className="sr-only">{t("reservationsCaption")}</caption>
-              <thead>
-                <tr className="text-ink-soft">
-                  <th scope="col" className="px-2 py-2">{t("colRoom")}</th>
-                  <th scope="col" className="px-2 py-2">{t("resDates")}</th>
-                  <th scope="col" className="px-2 py-2">{t("colStatus")}</th>
-                  <th scope="col" className="px-2 py-2">{t("resTotal")}</th>
-                  <th scope="col" className="px-2 py-2">{t("resActions")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reservations.map((reservation) => (
-                  <tr key={reservation.id} data-testid={`res-row-${reservation.id}`} className="border-t border-line">
-                    <td className="px-2 py-2 font-semibold text-ink">{reservation.roomNumber}</td>
-                    <td className="px-2 py-2">
-                      {reservation.checkInDate} → {reservation.checkOutDate}
-                    </td>
-                    <td className="px-2 py-2">{reservation.status}</td>
-                    <td className="px-2 py-2">{euros(reservation.totalCents)} €</td>
-                    <td className="flex flex-wrap gap-2 px-2 py-2">
-                      {reservation.status === "PENDING" && (
-                        <button type="button" onClick={() => void confirmReservation(reservation.id)} className={GHOST}>
-                          {t("resConfirm")}
-                        </button>
-                      )}
-                      {(reservation.status === "PENDING" || reservation.status === "CONFIRMED") && (
-                        <button type="button" onClick={() => void cancelReservation(reservation.id)} className={GHOST}>
-                          {t("resCancel")}
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            {availability !== null && (
+              <p role="status" className="text-small font-medium text-ink">
+                {availability ? t("resAvailable") : t("resUnavailable")}
+              </p>
+            )}
           </div>
-        )}
-      </AdminCard>
+        </ModalShell>
+      )}
     </div>
   );
 }

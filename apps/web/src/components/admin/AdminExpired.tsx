@@ -11,6 +11,7 @@ import { AdminCard } from "./AdminPanel";
 import { useRelayerBurn } from "./useRelayerBurn";
 import { useExpiredNights } from "./useExpiredNights";
 import { useAdminTxCopy } from "./adminTxCopy";
+import { MODAL_DANGER, MODAL_SECONDARY, ModalShell } from "@/components/ui/ModalShell";
 
 const PRIMARY =
   "min-h-touch rounded-pill bg-azure px-5 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-60";
@@ -81,6 +82,9 @@ export function AdminExpired() {
   }, [status, scanEnabled, refetchScan]);
 
   const phase = confirming && status === "idle" ? "review" : status;
+  /** Ficha flotante del lote a quemar. */
+  const [burnOpen, setBurnOpen] = useState(false);
+  const tCommon = useTranslations("common");
 
   function closeModal(): void {
     setConfirming(false);
@@ -92,6 +96,7 @@ export function AdminExpired() {
     setFormError(null);
     if (batch.length === 0) return setFormError(t("expiredEmptyBatch"));
     if (batch.length > max) return setFormError(t("expiredTooLarge", { max }));
+    setBurnOpen(false);
     setConfirming(true); // confirmación explícita antes de firmar (UX#21).
   }
 
@@ -150,40 +155,76 @@ export function AdminExpired() {
         </p>
       )}
 
-      <form onSubmit={onBurn} className="mt-5 flex flex-col gap-3">
-        <label
-          htmlFor="expired-manual"
-          className="flex flex-col gap-1 text-small font-medium text-ink"
+      <div className="mt-5">
+        <button
+          type="button"
+          data-testid="expired-open-burn"
+          onClick={() => setBurnOpen(true)}
+          className={DANGER}
         >
-          {t("expiredManual", { max })}
-          <textarea
-            id="expired-manual"
-            data-testid="expired-manual"
-            value={manual}
-            onChange={(e) => setManual(e.target.value)}
-            rows={2}
-            inputMode="numeric"
-            placeholder="10220260615, 10320260616"
-            aria-invalid={hasFormError || undefined}
-            aria-describedby={hasFormError ? errorId : undefined}
-            className={FIELD}
-          />
-        </label>
-        <p className="text-micro text-ink-soft">{t("expiredBatchHint", { count: batch.length, max })}</p>
-        <button type="submit" data-testid="expired-burn" disabled={busy || isPaused} className={DANGER}>
           {t("expiredBurn", { count: batch.length })}
         </button>
-        {formError && (
-          <p id={errorId} data-testid="expired-error" role="alert" className="text-coral-text">
-            {formError}
-          </p>
-        )}
-        {!formError && error && (
-          <p role="alert" className="text-coral-text">
-            {error}
-          </p>
-        )}
-      </form>
+      </div>
+
+      {burnOpen && (
+        <ModalShell
+          testId="expired-burn-dialog"
+          title={t("expiredTitle")}
+          subtitle={t("expiredTagline")}
+          closeLabel={tCommon("close")}
+          onClose={() => setBurnOpen(false)}
+          footerTestId="expired-burn-footer"
+          footer={
+            <>
+              <button type="button" onClick={() => setBurnOpen(false)} className={MODAL_SECONDARY}>
+                {tCommon("cancel")}
+              </button>
+              <button
+                type="submit"
+                form="expired-burn-form"
+                data-testid="expired-burn"
+                disabled={busy || isPaused}
+                className={MODAL_DANGER}
+              >
+                {t("expiredBurn", { count: batch.length })}
+              </button>
+            </>
+          }
+        >
+          <form id="expired-burn-form" onSubmit={onBurn} className="flex flex-col gap-3">
+            <label
+              htmlFor="expired-manual"
+              className="flex flex-col gap-1 text-small font-medium text-ink"
+            >
+              {t("expiredManual", { max })}
+              <textarea
+                id="expired-manual"
+                data-testid="expired-manual"
+                value={manual}
+                onChange={(e) => setManual(e.target.value)}
+                rows={4}
+                inputMode="numeric"
+                placeholder="10220260615, 10320260616"
+                aria-invalid={hasFormError || undefined}
+                aria-describedby={hasFormError ? errorId : undefined}
+                className={FIELD}
+              />
+            </label>
+            <p className="text-micro text-ink-soft">{t("expiredBatchHint", { count: batch.length, max })}</p>
+            {formError && (
+              <p id={errorId} data-testid="expired-error" role="alert" className="text-coral-text">
+                {formError}
+              </p>
+            )}
+            {!formError && error && (
+              <p role="alert" className="text-coral-text">
+                {error}
+              </p>
+            )}
+          </form>
+        </ModalShell>
+      )}
+
 
       <TxModal
         phase={phase}

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useAdminSession } from "@/components/admin/useAdminSession";
 import { CredentialForm } from "@/components/admin/CredentialForm";
 import { ReportIncidentPanel } from "@/components/maintenance/ReportIncidentPanel";
+import { MODAL_PRIMARY, MODAL_SECONDARY, ModalShell } from "@/components/ui/ModalShell";
 
 /** Fecha local del puesto (no UTC), formato ISO `YYYY-MM-DD`. */
 function todayIso(): string {
@@ -69,6 +70,9 @@ export function HousekeepingBoard() {
   const [assignees, setAssignees] = useState("Marta, Lucía");
   const [shiftLabel, setShiftLabel] = useState<ShiftLabel>("MANANA");
   const [busy, setBusy] = useState(false);
+  /** Ficha flotante abierta: alta de turno o reparto automático. */
+  const [dialog, setDialog] = useState<"shift" | "assign" | null>(null);
+  const tCommon = useTranslations("common");
   const [error, setError] = useState<string | null>(null);
   const [live, setLive] = useState(false);
   const [manualNames, setManualNames] = useState<Record<string, string>>({});
@@ -205,74 +209,23 @@ export function HousekeepingBoard() {
         </div>
       )}
 
-      <section className="flex flex-col gap-3 rounded-brand-lg border border-line bg-shell p-4">
-        <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-small">
-            <span className="font-medium text-ink">{t("date")}</span>
-            <input
-              type="date"
-              value={date}
-              onChange={(event) => setDate(event.target.value)}
-              data-testid="housekeeping-date"
-              className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-small">
-            <span className="font-medium text-ink">{t("shift")}</span>
-            <select
-              value={shiftLabel}
-              onChange={(event) => setShiftLabel(event.target.value as ShiftLabel)}
-              data-testid="housekeeping-shift-label"
-              className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
-            >
-              <option value="MANANA">{t("shiftManana")}</option>
-              <option value="TARDE">{t("shiftTarde")}</option>
-              <option value="NOCHE">{t("shiftNoche")}</option>
-            </select>
-          </label>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() =>
-              void mutate("/api/housekeeping/shifts", {
-                method: "POST",
-                headers: { "content-type": "application/json" },
-                body: JSON.stringify({ date, label: shiftLabel, supervisor: sessionUsername }),
-              })
-            }
-            className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell disabled:opacity-50"
-          >
-            {t("createShift")}
-          </button>
-        </div>
-
-        <div className="flex flex-wrap items-end gap-3">
-          <label className="flex min-w-[16rem] flex-1 flex-col gap-1 text-small">
-            <span className="font-medium text-ink">{t("assignees")}</span>
-            <input
-              type="text"
-              value={assignees}
-              onChange={(event) => setAssignees(event.target.value)}
-              data-testid="housekeeping-assignees"
-              className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
-            />
-          </label>
-          <button
-            type="button"
-            disabled={busy || !selectedShift || people.length === 0}
-            onClick={() =>
-              selectedShift &&
-              void mutate("/api/housekeeping/assignments", {
-                method: "POST",
-                headers: { "content-type": "application/json" },
-                body: JSON.stringify({ shiftId: selectedShift.id, assignees: people }),
-              })
-            }
-            className="min-h-touch rounded-pill bg-azure-deep px-4 text-small font-semibold text-shell disabled:opacity-50"
-          >
-            {t("autoAssign")}
-          </button>
-        </div>
+      <section className="flex flex-wrap items-center gap-2 rounded-brand-lg border border-line bg-shell p-4">
+        <button
+          type="button"
+          data-testid="housekeeping-open-shift"
+          onClick={() => setDialog("shift")}
+          className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell"
+        >
+          {t("createShift")}
+        </button>
+        <button
+          type="button"
+          data-testid="housekeeping-open-assign"
+          onClick={() => setDialog("assign")}
+          className="min-h-touch rounded-pill bg-azure-deep px-4 text-small font-semibold text-shell disabled:opacity-50"
+        >
+          {t("autoAssign")}
+        </button>
         {!selectedShift && <p className="text-micro text-ink-soft">{t("createShiftFirst")}</p>}
       </section>
 
@@ -383,6 +336,113 @@ export function HousekeepingBoard() {
 
       {/* D-52: limpieza también reporta averías desde su propio tablero. */}
       <ReportIncidentPanel apiFetch={session.apiFetch} />
+
+      {dialog === "shift" && (
+        <ModalShell
+          testId="housekeeping-shift-dialog"
+          title={t("createShift")}
+          subtitle={t("boardTitle")}
+          closeLabel={tCommon("close")}
+          onClose={() => setDialog(null)}
+          footerTestId="housekeeping-shift-footer"
+          footer={
+            <>
+              <button type="button" onClick={() => setDialog(null)} className={MODAL_SECONDARY}>
+                {tCommon("cancel")}
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                data-testid="housekeeping-create-shift"
+                onClick={() =>
+                  void mutate("/api/housekeeping/shifts", {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ date, label: shiftLabel, supervisor: sessionUsername }),
+                  }).then(() => setDialog(null))
+                }
+                className={MODAL_PRIMARY}
+              >
+                {busy ? tCommon("processing") : t("createShift")}
+              </button>
+            </>
+          }
+        >
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="flex flex-col gap-1 text-small">
+              <span className="font-medium text-ink">{t("date")}</span>
+              <input
+                type="date"
+                value={date}
+                onChange={(event) => setDate(event.target.value)}
+                data-testid="housekeeping-date"
+                className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-small">
+              <span className="font-medium text-ink">{t("shift")}</span>
+              <select
+                value={shiftLabel}
+                onChange={(event) => setShiftLabel(event.target.value as ShiftLabel)}
+                data-testid="housekeeping-shift-label"
+                className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
+              >
+                <option value="MANANA">{t("shiftManana")}</option>
+                <option value="TARDE">{t("shiftTarde")}</option>
+                <option value="NOCHE">{t("shiftNoche")}</option>
+              </select>
+            </label>
+          </div>
+        </ModalShell>
+      )}
+
+      {dialog === "assign" && (
+        <ModalShell
+          testId="housekeeping-assign-dialog"
+          title={t("autoAssign")}
+          subtitle={t("boardTitle")}
+          closeLabel={tCommon("close")}
+          onClose={() => setDialog(null)}
+          footerTestId="housekeeping-assign-footer"
+          footer={
+            <>
+              <button type="button" onClick={() => setDialog(null)} className={MODAL_SECONDARY}>
+                {tCommon("cancel")}
+              </button>
+              <button
+                type="button"
+                disabled={busy || !selectedShift || people.length === 0}
+                data-testid="housekeeping-auto-assign"
+                onClick={() =>
+                  selectedShift &&
+                  void mutate("/api/housekeeping/assignments", {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ shiftId: selectedShift.id, assignees: people }),
+                  }).then(() => setDialog(null))
+                }
+                className={MODAL_PRIMARY}
+              >
+                {busy ? tCommon("processing") : t("autoAssign")}
+              </button>
+            </>
+          }
+        >
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="flex min-w-[16rem] flex-1 flex-col gap-1 text-small">
+              <span className="font-medium text-ink">{t("assignees")}</span>
+              <input
+                type="text"
+                value={assignees}
+                onChange={(event) => setAssignees(event.target.value)}
+                data-testid="housekeeping-assignees"
+                className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
+              />
+            </label>
+          </div>
+        </ModalShell>
+      )}
+
     </div>
   );
 }

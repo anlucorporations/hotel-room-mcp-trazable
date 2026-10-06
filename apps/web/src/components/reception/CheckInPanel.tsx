@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useReadContract } from "wagmi";
 import { hotelNightsAbi } from "@hotel/shared/abi";
 import { contractAddress, txExplorerUrl } from "@/config/chain";
+import { MODAL_PRIMARY, MODAL_SECONDARY, ModalShell } from "@/components/ui/ModalShell";
 import type { Reservation } from "./types";
 
 type ApiFetch = (input: string, init?: RequestInit) => Promise<Response>;
@@ -36,10 +37,13 @@ export function CheckInPanel({
   onDone: () => void;
 }) {
   const t = useTranslations("reception");
+  const tCommon = useTranslations("common");
   const [ticketJws, setTicketJws] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CheckInSuccess | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** Diálogo flotante abierto: los formularios de check-in viven en fichas flotantes. */
+  const [dialog, setDialog] = useState<"qr" | "recovery" | null>(null);
 
   // Código de recuperación
   const [code, setCode] = useState("");
@@ -69,6 +73,7 @@ export function CheckInPanel({
       if (!res.ok) throw new Error(data.message || t("errorGeneric"));
       setResult(data);
       setTicketJws("");
+      setDialog(null);
       onDone();
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : t("errorGeneric"));
@@ -118,6 +123,7 @@ export function CheckInPanel({
       setResult(data);
       setReservation(null);
       setCode("");
+      setDialog(null);
       onDone();
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : t("errorGeneric"));
@@ -161,67 +167,130 @@ export function CheckInPanel({
         </p>
       )}
 
-      <section className="rounded-brand border border-line bg-shell p-5">
-        <h3 className="font-display text-h3 font-semibold">{t("checkinQrTitle")}</h3>
-        <p className="mt-1 text-small text-ink-soft">{t("checkinQrHint")}</p>
-        <form onSubmit={submitQr} className="mt-4 flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-small text-ink">
-            {t("checkinQrLabel")}
-            <textarea
-              rows={3}
-              required
-              value={ticketJws}
-              onChange={(event) => setTicketJws(event.target.value)}
-              data-testid="checkin-jws"
-              className="w-full rounded-brand border border-line-strong bg-mist-2 p-3 font-mono text-small text-ink outline-none focus:border-azure"
-            />
-          </label>
-          <button type="submit" disabled={loading || !ticketJws.trim() || isPaused} className={ACTION}>
-            {loading ? t("processing") : t("checkinQrSubmit")}
+      {/* Punto de entrada: cada formulario de check-in es una ficha flotante. */}
+      <section className="flex flex-col gap-4 rounded-brand-lg border border-line bg-shell p-5 shadow-card">
+        <div>
+          <h3 className="font-display text-h3 font-semibold">{t("checkinQrTitle")}</h3>
+          <p className="mt-1 text-small text-ink-soft">{t("checkinQrHint")}</p>
+        </div>
+        <div>
+          <h3 className="font-display text-h3 font-semibold">{t("checkinRecoveryTitle")}</h3>
+          <p className="mt-1 text-small text-ink-soft">{t("checkinRecoveryHint")}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" data-testid="checkin-open-qr" onClick={() => setDialog("qr")} className={ACTION}>
+            {t("checkinQrTitle")}
           </button>
-        </form>
+          <button
+            type="button"
+            data-testid="checkin-open-recovery"
+            onClick={() => setDialog("recovery")}
+            className="min-h-touch rounded-pill border border-line px-4 font-medium text-ink transition-colors hover:bg-mist-2"
+          >
+            {t("checkinRecoveryTitle")}
+          </button>
+        </div>
       </section>
 
-      <section className="rounded-brand border border-line bg-shell p-5">
-        <h3 className="font-display text-h3 font-semibold">{t("checkinRecoveryTitle")}</h3>
-        <p className="mt-1 text-small text-ink-soft">{t("checkinRecoveryHint")}</p>
-        <form onSubmit={lookupReservation} className="mt-4 flex flex-wrap items-end gap-3">
-          <label className="flex flex-1 flex-col gap-1 text-small text-ink">
-            {t("checkinRecoveryLabel")}
-            <input
-              value={code}
-              onChange={(event) => setCode(event.target.value)}
-              placeholder="MDS-XXXXXXXX"
-              data-testid="recovery-code-input"
-              className={`${FIELD} font-mono`}
-            />
-          </label>
-          <button type="submit" disabled={loading || !code.trim()} className={ACTION}>
-            {loading ? t("processing") : t("checkinRecoverySubmit")}
-          </button>
-        </form>
+      {dialog === "qr" && (
+        <ModalShell
+          testId="checkin-qr-dialog"
+          title={t("checkinQrTitle")}
+          subtitle={t("checkinQrHint")}
+          closeLabel={tCommon("close")}
+          onClose={() => setDialog(null)}
+          footerTestId="checkin-qr-footer"
+          footer={
+            <>
+              <button type="button" onClick={() => setDialog(null)} className={MODAL_SECONDARY}>
+                {tCommon("cancel")}
+              </button>
+              <button
+                type="submit"
+                form="checkin-qr-form"
+                disabled={loading || !ticketJws.trim() || isPaused}
+                className={MODAL_PRIMARY}
+              >
+                {loading ? t("processing") : t("checkinQrSubmit")}
+              </button>
+            </>
+          }
+        >
+          <form id="checkin-qr-form" onSubmit={submitQr} className="flex flex-col gap-3">
+            <label className="flex flex-col gap-1 text-small text-ink">
+              {t("checkinQrLabel")}
+              <textarea
+                rows={5}
+                required
+                value={ticketJws}
+                onChange={(event) => setTicketJws(event.target.value)}
+                data-testid="checkin-jws"
+                className="w-full rounded-brand border border-line-strong bg-mist-2 p-3 font-mono text-small text-ink outline-none focus:border-azure"
+              />
+            </label>
+          </form>
+        </ModalShell>
+      )}
 
-        {reservation && (
-          <div data-testid="recovery-result" className="mt-4 rounded-brand border border-line bg-mist-2 p-4">
-            <p className="font-semibold">{t("checkinRecoveryFound")}</p>
-            <dl className="mt-2 grid grid-cols-2 gap-2 text-small">
-              <div><dt className="text-ink-soft">{t("colRoom")}</dt><dd className="font-semibold">{reservation.roomNumber}</dd></div>
-              <div><dt className="text-ink-soft">{t("colType")}</dt><dd>{reservation.roomType}</dd></div>
-              <div><dt className="text-ink-soft">{t("checkInDateLabel")}</dt><dd>{reservation.checkInDate}</dd></div>
-              <div><dt className="text-ink-soft">{t("colStatus")}</dt><dd>{reservation.status}</dd></div>
-            </dl>
-            <button
-              type="button"
-              onClick={() => void confirmRecovery()}
-              disabled={loading || isPaused || reservation.status !== "SOLD"}
-              data-testid="recovery-confirm"
-              className={`mt-3 ${ACTION}`}
-            >
-              {t("checkinRecoveryConfirm")}
-            </button>
-          </div>
-        )}
-      </section>
+      {dialog === "recovery" && (
+        <ModalShell
+          testId="checkin-recovery-dialog"
+          title={t("checkinRecoveryTitle")}
+          subtitle={t("checkinRecoveryHint")}
+          closeLabel={tCommon("close")}
+          onClose={() => setDialog(null)}
+          footerTestId="checkin-recovery-footer"
+          footer={
+            <>
+              <button type="button" onClick={() => setDialog(null)} className={MODAL_SECONDARY}>
+                {tCommon("close")}
+              </button>
+              <button
+                type="submit"
+                form="checkin-recovery-form"
+                disabled={loading || !code.trim()}
+                className={MODAL_PRIMARY}
+              >
+                {loading ? t("processing") : t("checkinRecoverySubmit")}
+              </button>
+            </>
+          }
+        >
+          <form id="checkin-recovery-form" onSubmit={lookupReservation} className="flex flex-col gap-3">
+            <label className="flex flex-col gap-1 text-small text-ink">
+              {t("checkinRecoveryLabel")}
+              <input
+                value={code}
+                onChange={(event) => setCode(event.target.value)}
+                placeholder="MDS-XXXXXXXX"
+                data-testid="recovery-code-input"
+                className={`${FIELD} font-mono`}
+              />
+            </label>
+          </form>
+
+          {reservation && (
+            <div data-testid="recovery-result" className="mt-4 rounded-brand border border-line bg-mist-2 p-4">
+              <p className="font-semibold">{t("checkinRecoveryFound")}</p>
+              <dl className="mt-2 grid grid-cols-2 gap-2 text-small">
+                <div><dt className="text-ink-soft">{t("colRoom")}</dt><dd className="font-semibold">{reservation.roomNumber}</dd></div>
+                <div><dt className="text-ink-soft">{t("colType")}</dt><dd>{reservation.roomType}</dd></div>
+                <div><dt className="text-ink-soft">{t("checkInDateLabel")}</dt><dd>{reservation.checkInDate}</dd></div>
+                <div><dt className="text-ink-soft">{t("colStatus")}</dt><dd>{reservation.status}</dd></div>
+              </dl>
+              <button
+                type="button"
+                onClick={() => void confirmRecovery()}
+                disabled={loading || isPaused || reservation.status !== "SOLD"}
+                data-testid="recovery-confirm"
+                className={`mt-3 ${ACTION}`}
+              >
+                {t("checkinRecoveryConfirm")}
+              </button>
+            </div>
+          )}
+        </ModalShell>
+      )}
     </div>
   );
 }

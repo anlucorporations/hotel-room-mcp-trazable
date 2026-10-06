@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { useAdminContext } from "@/components/admin/AdminLayout";
 import { AdminCard } from "@/components/admin/AdminPanel";
+import { MODAL_PRIMARY, MODAL_SECONDARY, ModalShell } from "@/components/ui/ModalShell";
 
 /**
  * Ajustes de plataforma (D-11/D-37/D-42): ventana de acuñado, anticipo y plazo de reserva y hora
@@ -37,6 +38,9 @@ export function SettingsAdmin() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  /** Ficha flotante del formulario de ajustes. */
+  const [open, setOpen] = useState(false);
+  const tCommon = useTranslations("common");
   const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
 
   const load = useCallback(async (): Promise<void> => {
@@ -74,6 +78,7 @@ export function SettingsAdmin() {
       if (!res.ok) throw new Error(payload.message || t("saveError"));
       setSettings(payload.settings ?? null);
       setNotice({ kind: "ok", text: t("saved") });
+      setOpen(false);
     } catch (error: unknown) {
       setNotice({ kind: "error", text: error instanceof Error ? error.message : t("saveError") });
     } finally {
@@ -101,28 +106,62 @@ export function SettingsAdmin() {
         </p>
       )}
       <p className="mt-1 text-small text-ink-soft">{t("hint")}</p>
-      <form onSubmit={save} className="mt-4 grid grid-cols-1 gap-4 tablet:grid-cols-2">
-        {FIELDS.map(({ key, min, max, labelKey }) => (
-          <label key={key} className="flex flex-col gap-1 text-small font-medium text-ink">
-            {t(labelKey)}
-            <input
-              name={key}
-              type="number"
-              min={min}
-              max={max}
-              required
-              defaultValue={settings?.[key] ?? ""}
-              data-testid={`setting-${key}`}
-              className={FIELD}
-            />
-          </label>
-        ))}
-        <div className="tablet:col-span-2">
-          <button type="submit" data-testid="settings-save" disabled={saving} className={ACTION}>
-            {saving ? t("saving") : t("save")}
-          </button>
-        </div>
-      </form>
+      <div className="mt-4">
+        <button
+          type="button"
+          data-testid="settings-open"
+          onClick={() => setOpen(true)}
+          className={ACTION}
+        >
+          {t("save")}
+        </button>
+      </div>
+
+      {open && (
+        <ModalShell
+          testId="settings-dialog"
+          title={t("save")}
+          subtitle={t("hint")}
+          closeLabel={tCommon("close")}
+          onClose={() => setOpen(false)}
+          footerTestId="settings-footer"
+          footer={
+            <>
+              <button type="button" onClick={() => setOpen(false)} className={MODAL_SECONDARY}>
+                {tCommon("cancel")}
+              </button>
+              <button
+                type="submit"
+                form="settings-form"
+                data-testid="settings-save"
+                disabled={saving}
+                className={MODAL_PRIMARY}
+              >
+                {saving ? t("saving") : t("save")}
+              </button>
+            </>
+          }
+        >
+          <form id="settings-form" onSubmit={save} className="grid grid-cols-1 gap-4 tablet:grid-cols-2">
+            {FIELDS.map(({ key, min, max, labelKey }) => (
+              <label key={key} className="flex flex-col gap-1 text-small font-medium text-ink">
+                {t(labelKey)}
+                <input
+                  name={key}
+                  type="number"
+                  min={min}
+                  max={max}
+                  required
+                  defaultValue={settings?.[key] ?? ""}
+                  data-testid={`setting-${key}`}
+                  className={FIELD}
+                />
+              </label>
+            ))}
+          </form>
+        </ModalShell>
+      )}
+
     </AdminCard>
   );
 }

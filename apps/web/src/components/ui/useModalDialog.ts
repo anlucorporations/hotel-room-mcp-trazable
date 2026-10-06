@@ -3,8 +3,8 @@
 import { useEffect, useId, useRef, type RefObject } from "react";
 
 /**
- * Comportamiento accesible **compartido** por los diálogos flotantes de la sección Habitación
- * (2026-10-02): el formulario de alta/edición y la ficha de detalle.
+ * Comportamiento accesible **compartido** por todos los diálogos flotantes de las suites de personal
+ * (Admin, Recepción, Mantenimiento y Ama de llaves).
  *
  * Qué garantiza (WCAG 2.1 · 2.1.2, 2.4.3, 4.1.2; el mismo patrón que `TxModal`):
  *   · `role="dialog"` + `aria-modal` + `aria-labelledby` con un id estable (`titleId`).
@@ -16,8 +16,7 @@ import { useEffect, useId, useRef, type RefObject } from "react";
  *   · El fondo no hace scroll mientras hay un diálogo abierto.
  *
  * Por qué un hook y no copiar el bloque en cada modal: la trampa de foco es la parte fácil de
- * olvidar (y de duplicar mal); con dos diálogos nuevos en la misma sección, una sola implementación
- * revisada vale para los dos. El diálogo se **monta y se desmonta** (el padre lo renderiza
+ * olvidar (y de duplicar mal). El diálogo se **monta y se desmonta** (el padre lo renderiza
  * condicionalmente), así que los efectos se suscriben una vez al montar.
  */
 
@@ -60,8 +59,7 @@ export function useModalDialog({
   useEffect(() => {
     const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const panel = panelRef.current;
-    const first =
-      initialFocus?.current ?? panel?.querySelector<HTMLElement>(FOCUSABLE) ?? null;
+    const first = initialFocus?.current ?? panel?.querySelector<HTMLElement>(FOCUSABLE) ?? null;
     first?.focus();
 
     const onKeyDown = (event: KeyboardEvent): void => {

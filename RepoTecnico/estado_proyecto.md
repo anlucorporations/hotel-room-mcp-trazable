@@ -3407,3 +3407,77 @@ comportamiento observado en producción.
 - Resolviendo bloqueadores CRÍTICOS con el cliente.
 
 **Próximo paso**: terminar de resolver los hallazgos críticos y altos; una vez cerrados, actualizar los artefactos de datos y pasar a Fase 2 (casos de uso + documento técnico).
+
+---
+
+## 12. UI — formularios y fichas flotantes en las suites de personal (2026-10-06) · `@asistenteProyecto`
+
+**Solicitud del cliente**: en las suites de **Admin, Mantenimiento, Recepción y Ama de llaves**, todos
+los formularios y fichas deben ser **flotantes**, con estructura de **título**, **cuerpo** y **pie** con
+los botones según el caso.
+
+### Infraestructura compartida
+
+Se promovió el diálogo que solo usaba la sección Habitación a un componente común:
+
+| Artefacto | Ruta | Qué aporta |
+|---|---|---|
+| `ModalShell` | `apps/web/src/components/ui/ModalShell.tsx` | Estructura fija **título · cuerpo · pie**; velo, cierre, ancho configurable y scroll interno |
+| `useModalDialog` | `apps/web/src/components/ui/useModalDialog.ts` | Foco al abrir, trampa de foco, `Escape`, devolución del foco al disparador y bloqueo del scroll de fondo |
+| `MODAL_PRIMARY` / `MODAL_SECONDARY` / `MODAL_DANGER` | `apps/web/src/components/ui/ModalShell.tsx` | Estilos de los botones del pie, para que todas las fichas se vean igual |
+| Namespace `common` | `apps/web/messages/{es,en,ru}.json` | Etiquetas compartidas del pie: cancelar, cerrar, guardar, confirmar, crear… |
+
+`admin/rooms/ModalShell.tsx` y `admin/rooms/useModalDialog.ts` se retiraron; los tres consumidores de
+Habitación apuntan ya al componente compartido.
+
+### Formularios y fichas convertidos
+
+| Suite | Componente | Ficha flotante |
+|---|---|---|
+| Recepción | `RoomDetailPanel` | **Ficha detalle** de la habitación (dos zonas) |
+| Recepción | `CheckInPanel` | Check-in por **QR/JWS** y por **código de recuperación** |
+| Recepción | `CheckoutPanel` | **Alta de cargo** y **confirmación de salida** |
+| Recepción | `ReservationsAdmin` | **Alta de reserva** |
+| Recepción | `ActivitiesPanel` | **Inscripción** en actividad |
+| Mantenimiento | `ReportIncidentPanel` | **Reporte de avería** |
+| Ama de llaves | `HousekeepingBoard` | **Crear turno** y **reparto automático** |
+| Admin | `AdminSecurity` | **Cambio de contraseña** |
+| Admin | `AdminExpired` | **Quema de caducadas** |
+| Admin | `system/SettingsAdmin` | **Ajustes de plataforma** |
+| Admin | `system/SystemUsers` | **Alta/rotación de credenciales** |
+| Admin | `maintenance/PreventiveAdmin` | **Nuevo plan preventivo** |
+| Admin | `activities/ActivitiesAdmin` | **Nueva actividad** y **nuevo horario** |
+| Admin | `content/ContentAdmin` | **Subir imagen** y **nuevo plan informativo** |
+| Admin | `AdminRoles` | **Conceder/revocar rol** e **iniciar transferencia** de ownership |
+| Admin | `AdminMint` | **Publicar noche** y **re-confirmación TOTP/MFA** |
+| Admin | `housekeeping/SuppliesAdmin` | **Reposición** de un artículo |
+| Admin | `reviews/ReviewsModeration` | **Moderación** de una reseña (aprobar/rechazar) |
+| Admin | `rooms/*` | Alta/edición, **ficha de detalle** y publicación: botones ya en el **pie** |
+
+Patrón: el panel muestra un resumen y un botón; la ficha flotante contiene el formulario en el **cuerpo**
+y los botones en el **pie** (el botón de envío usa `form="<id>"` para no duplicar el formulario).
+
+### Otros formularios
+
+- **Puerta de acceso** (`CredentialForm`): el título lo aporta el contenedor y el formulario se
+  reestructuró en **cuerpo** (campos) y **pie** (botones de entrar y de cambio a código de rescate),
+  separados por una línea. No usa el velo de `ModalShell` porque es la pantalla de acceso, no una ficha
+  sobre contenido.
+- **Transacciones** (`TxModal`, compartido por Admin): ya era un diálogo flotante con título, cuerpo y
+  bloque de acciones.
+- Los **filtros** de listado (fecha en `DayBoard`/`MaintenanceBoard`, estado en `IncidentsAdmin`,
+  selección de habitaciones en `RoomsBoardAdmin`) no son formularios de alta/edición y se dejan como
+  controles en línea.
+
+### Pendiente
+
+- Revisión visual en navegador de las fichas convertidas.
+
+### Verificación
+
+| Comprobación | Resultado |
+|---|---|
+| `pnpm --filter @hotel/web typecheck` | OK |
+| `pnpm --filter @hotel/web build` | OK |
+| `pnpm typecheck` (monorepo) | **6/6 OK** |
+| `pnpm --filter @hotel/web test` | **707/707 OK** (83 archivos) |

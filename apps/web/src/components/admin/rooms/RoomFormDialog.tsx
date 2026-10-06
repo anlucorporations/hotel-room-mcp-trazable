@@ -21,7 +21,7 @@ import {
   type AdminRoomImage,
   type AdminRoomOptions,
 } from "./room-dto";
-import { ModalShell } from "./ModalShell";
+import { ModalShell } from "@/components/ui/ModalShell";
 
 /**
  * **Formulario flotante de habitación** (2026-10-02): alta y edición de la ficha completa.
@@ -410,6 +410,29 @@ export function RoomFormDialog({ apiFetch, room, detail, options, onClose, onSav
       testId="room-form-dialog"
       initialFocus={firstFieldRef}
       panelClassName="max-w-3xl"
+      footerTestId="room-form-footer"
+      footer={
+        <>
+          <button type="button" onClick={onClose} disabled={busy} className={GHOST}>
+            {t("cancel")}
+          </button>
+          <button
+            type="submit"
+            form="room-form"
+            disabled={busy}
+            data-testid={editing ? "room-edit-save" : "room-new-submit"}
+            className={ACTION}
+          >
+            {saving
+              ? editing
+                ? t("saving")
+                : t("creating")
+              : editing
+                ? t("save")
+                : t("create")}
+          </button>
+        </>
+      }
     >
       {error && (
         <p
@@ -431,7 +454,7 @@ export function RoomFormDialog({ apiFetch, room, detail, options, onClose, onSav
         </p>
       )}
 
-      <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-5">
+      <form id="room-form" onSubmit={handleSubmit} className="flex flex-col gap-5">
         {/* ── Físicas ─────────────────────────────────────────────────────────────────── */}
         <fieldset className="flex flex-col gap-4 rounded-brand border border-line p-4">
           <legend className="px-1 text-overline font-semibold uppercase text-ink-soft">
@@ -800,25 +823,6 @@ export function RoomFormDialog({ apiFetch, room, detail, options, onClose, onSav
           </ul>
         </fieldset>
 
-        <div className="flex flex-wrap justify-end gap-2">
-          <button type="button" onClick={onClose} disabled={busy} className={GHOST}>
-            {t("cancel")}
-          </button>
-          <button
-            type="submit"
-            disabled={busy}
-            data-testid={editing ? "room-edit-save" : "room-new-submit"}
-            className={ACTION}
-          >
-            {saving
-              ? editing
-                ? t("saving")
-                : t("creating")
-              : editing
-                ? t("save")
-                : t("create")}
-          </button>
-        </div>
       </form>
     </ModalShell>
   );

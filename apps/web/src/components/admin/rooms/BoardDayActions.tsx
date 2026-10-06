@@ -6,7 +6,7 @@ import { useAdminContext } from "@/components/admin/AdminLayout";
 import { AdminMint } from "@/components/admin/AdminMint";
 import { MaintenanceIcon } from "@/components/rooms/roomIcons";
 import { addDays, type BoardDayAction } from "@/lib/room-board-calendar";
-import { ModalShell } from "./ModalShell";
+import { ModalShell } from "@/components/ui/ModalShell";
 import type { BoardNotice, DayRoom } from "./board-dto";
 
 /**
@@ -385,8 +385,25 @@ export function BoardDayActions({
           onClose={() => setMfaOpen(false)}
           testId="board-publish-dialog"
           initialFocus={totpRef}
+          footerTestId="board-publish-footer"
+          footer={
+            <>
+              <button type="button" onClick={() => setMfaOpen(false)} disabled={busy} className={GHOST}>
+                {t("cancel")}
+              </button>
+              <button
+                type="submit"
+                form="board-publish-form"
+                data-testid="board-publish-confirm"
+                disabled={busy || mfaCode.trim().length !== 6}
+                className={ACTION}
+              >
+                {busy ? ta("boardWorking") : t("mfaConfirm")}
+              </button>
+            </>
+          }
         >
-          <form onSubmit={submitPublish} className="mt-4 flex flex-col gap-3">
+          <form id="board-publish-form" onSubmit={submitPublish} className="flex flex-col gap-3">
             <label className="flex flex-col gap-1 text-small font-medium text-ink">
               {t("mfaCode")}
               <input
@@ -402,14 +419,6 @@ export function BoardDayActions({
                 className={FIELD}
               />
             </label>
-            <div className="flex justify-end gap-2">
-              <button type="button" onClick={() => setMfaOpen(false)} disabled={busy} className={GHOST}>
-                {t("cancel")}
-              </button>
-              <button type="submit" data-testid="board-publish-confirm" disabled={busy || mfaCode.trim().length !== 6} className={ACTION}>
-                {busy ? ta("boardWorking") : t("mfaConfirm")}
-              </button>
-            </div>
           </form>
         </ModalShell>
       )}

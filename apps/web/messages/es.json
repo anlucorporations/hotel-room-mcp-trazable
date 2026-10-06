@@ -1764,5 +1764,20 @@
       "title": "Registro de viajeros",
       "body": "El registro de viajeros (RD 933/2021) se sigue haciendo en el mostrador. Esta web no pide ni guarda DNI, nombre ni teléfono para comprar una noche."
     }
+  },
+  "common": {
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "confirm": "Confirmar",
+    "create": "Crear",
+    "creating": "Creando…",
+    "edit": "Editar",
+    "new": "Nuevo",
+    "apply": "Aplicar",
+    "back": "Volver",
+    "remove": "Quitar",
+    "processing": "Procesando…"
   }
 }

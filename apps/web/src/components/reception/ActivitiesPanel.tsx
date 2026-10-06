@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { MODAL_PRIMARY, MODAL_SECONDARY, ModalShell } from "@/components/ui/ModalShell";
 
 interface Schedule {
   id: string;
@@ -55,6 +56,9 @@ export function ActivitiesPanel({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const tCommon = useTranslations("common");
+  /** Ficha flotante de inscripción en la actividad seleccionada. */
+  const [bookOpen, setBookOpen] = useState(false);
 
   const loadSchedules = useCallback(
     async (targetDate: string): Promise<void> => {
@@ -131,6 +135,7 @@ export function ActivitiesPanel({
       if (!res.ok) throw new Error((data as { message?: string }).message || t("bookError"));
       const status = (data as { booking?: Booking }).booking?.status;
       setNotice(status === "WAITLIST" ? t("bookedWaitlist") : t("booked"));
+      setBookOpen(false);
       await loadSchedules(date);
       await loadBookings(selected);
     } catch (err) {
@@ -216,7 +221,69 @@ export function ActivitiesPanel({
             {t("occupancyDetail", { booked: current.bookedSeats, capacity: current.capacity, waitlist: current.waitlistSeats })}
           </p>
 
-          <form onSubmit={book} className="flex flex-wrap items-end gap-3 rounded-brand-lg border border-line bg-shell p-4">
+          <div>
+            <button
+              type="button"
+              data-testid="activities-open-book"
+              onClick={() => setBookOpen(true)}
+              className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell"
+            >
+              {t("book")}
+            </button>
+          </div>
+
+          {bookings.length > 0 && (
+            <ul className="flex flex-col gap-2">
+              {bookings.map((booking) => (
+                <li key={booking.id} className="flex flex-wrap items-center gap-2 rounded-brand-lg border border-line bg-mist-2 px-4 py-2 text-small">
+                  <span className="text-ink">{t("room")} {reservations.find((r) => r.id === booking.reservationId)?.roomNumber ?? "—"}</span>
+                  <span className="text-micro text-ink-soft">{booking.seats} {t("seats")}</span>
+                  <span className="rounded-pill bg-shell px-2 py-0.5 text-micro font-semibold text-ink-soft">
+                    {t(booking.status === "WAITLIST" ? "statusWaitlist" : "statusBooked")}
+                  </span>
+                  {booking.status !== "CANCELLED" && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void cancel(booking)}
+                      className="ml-auto min-h-touch rounded-pill border border-line px-3 text-small font-semibold text-ink-soft disabled:opacity-40"
+                    >
+                      {t("cancelBooking")}
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+
+      {bookOpen && current && (
+        <ModalShell
+          testId="activities-book-dialog"
+          title={t("book")}
+          subtitle={t("occupancyDetail", { booked: current.bookedSeats, capacity: current.capacity, waitlist: current.waitlistSeats })}
+          closeLabel={tCommon("close")}
+          onClose={() => setBookOpen(false)}
+          footerTestId="activities-book-footer"
+          footer={
+            <>
+              <button type="button" onClick={() => setBookOpen(false)} className={MODAL_SECONDARY}>
+                {tCommon("cancel")}
+              </button>
+              <button
+                type="submit"
+                form="activities-book-form"
+                disabled={busy || !form.reservationId}
+                className={MODAL_PRIMARY}
+              >
+                {busy ? tCommon("processing") : t("book")}
+              </button>
+            </>
+          }
+        >
+          <div className="flex flex-col gap-3">
+            <form id="activities-book-form" onSubmit={book} className="flex flex-wrap items-end gap-3">
             <label className="flex min-w-[14rem] flex-col gap-1 text-small">
               <span className="font-medium text-ink">{t("guest")}</span>
               <select
@@ -251,39 +318,9 @@ export function ActivitiesPanel({
               />
               <span className="text-ink">{t("allowWaitlist")}</span>
             </label>
-            <button
-              type="submit"
-              disabled={busy || !form.reservationId}
-              className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell disabled:opacity-50"
-            >
-              {t("book")}
-            </button>
           </form>
-
-          {bookings.length > 0 && (
-            <ul className="flex flex-col gap-2">
-              {bookings.map((booking) => (
-                <li key={booking.id} className="flex flex-wrap items-center gap-2 rounded-brand-lg border border-line bg-mist-2 px-4 py-2 text-small">
-                  <span className="text-ink">{t("room")} {reservations.find((r) => r.id === booking.reservationId)?.roomNumber ?? "—"}</span>
-                  <span className="text-micro text-ink-soft">{booking.seats} {t("seats")}</span>
-                  <span className="rounded-pill bg-shell px-2 py-0.5 text-micro font-semibold text-ink-soft">
-                    {t(booking.status === "WAITLIST" ? "statusWaitlist" : "statusBooked")}
-                  </span>
-                  {booking.status !== "CANCELLED" && (
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void cancel(booking)}
-                      className="ml-auto min-h-touch rounded-pill border border-line px-3 text-small font-semibold text-ink-soft disabled:opacity-40"
-                    >
-                      {t("cancelBooking")}
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
+          </div>
+        </ModalShell>
       )}
     </section>
   );

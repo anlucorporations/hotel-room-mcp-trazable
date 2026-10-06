@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useAdminSession } from "@/components/admin/useAdminSession";
+import { MODAL_PRIMARY, MODAL_SECONDARY, ModalShell } from "@/components/ui/ModalShell";
 
 interface Activity {
   id: string;
@@ -81,6 +82,10 @@ export function ActivitiesAdmin() {
     );
   }
 
+  /** Fichas flotantes de alta: actividad y horario. */
+  const [dialog, setDialog] = useState<"activity" | "schedule" | null>(null);
+  const tCommon = useTranslations("common");
+
   const createActivity = async (event: React.FormEvent): Promise<void> => {
     event.preventDefault();
     setError(null);
@@ -95,6 +100,7 @@ export function ActivitiesAdmin() {
       if (!res.ok) throw new Error((data as { message?: string }).message || t("saveError"));
       setNotice(t("activityCreated", { code: form.code.toUpperCase() }));
       setForm({ code: "", nameEs: "", priceCents: 0 });
+      setDialog(null);
       await load();
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : t("saveError"));
@@ -120,6 +126,7 @@ export function ActivitiesAdmin() {
       if (!res.ok) throw new Error((data as { message?: string }).message || t("saveError"));
       setNotice(t("scheduleCreated"));
       setScheduleForm((current) => ({ ...current, startsAt: "" }));
+      setDialog(null);
       await load();
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : t("saveError"));
@@ -193,23 +200,16 @@ export function ActivitiesAdmin() {
           </table>
         )}
 
-        <form onSubmit={createActivity} className="flex flex-wrap items-end gap-3 rounded-brand-lg border border-line bg-shell p-4">
-          <label className="flex flex-col gap-1 text-small">
-            <span className="font-medium text-ink">{t("code")}</span>
-            <input required value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} className="min-h-touch w-32 rounded-brand-sm border border-line-strong bg-mist px-3" />
-          </label>
-          <label className="flex flex-col gap-1 text-small">
-            <span className="font-medium text-ink">{t("name")}</span>
-            <input required value={form.nameEs} onChange={(event) => setForm({ ...form, nameEs: event.target.value })} className="min-h-touch w-48 rounded-brand-sm border border-line-strong bg-mist px-3" />
-          </label>
-          <label className="flex flex-col gap-1 text-small">
-            <span className="font-medium text-ink">{t("priceCents")}</span>
-            <input type="number" min={0} value={form.priceCents} onChange={(event) => setForm({ ...form, priceCents: Number(event.target.value) })} className="min-h-touch w-28 rounded-brand-sm border border-line-strong bg-mist px-3" />
-          </label>
-          <button type="submit" className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell">
+        <div>
+          <button
+            type="button"
+            data-testid="activities-admin-open-activity"
+            onClick={() => setDialog("activity")}
+            className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell"
+          >
             {t("createActivity")}
           </button>
-        </form>
+        </div>
       </section>
 
       <section aria-labelledby="schedules-title" className="flex flex-col gap-3">
@@ -252,7 +252,77 @@ export function ActivitiesAdmin() {
           </table>
         )}
 
-        <form onSubmit={createSchedule} className="flex flex-wrap items-end gap-3 rounded-brand-lg border border-line bg-shell p-4">
+        <div>
+          <button
+            type="button"
+            data-testid="activities-admin-open-schedule"
+            onClick={() => setDialog("schedule")}
+            className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell"
+          >
+            {t("createSchedule")}
+          </button>
+        </div>
+      </section>
+
+      {dialog === "activity" && (
+        <ModalShell
+          testId="activity-create-dialog"
+          title={t("createActivity")}
+          subtitle={t("catalogTitle")}
+          closeLabel={tCommon("close")}
+          onClose={() => setDialog(null)}
+          footerTestId="activity-create-footer"
+          footer={
+            <>
+              <button type="button" onClick={() => setDialog(null)} className={MODAL_SECONDARY}>
+                {tCommon("cancel")}
+              </button>
+              <button type="submit" form="activity-create-form" className={MODAL_PRIMARY}>
+                {t("createActivity")}
+              </button>
+            </>
+          }
+        >
+          <div className="flex flex-wrap items-end gap-3">
+            <form id="activity-create-form" onSubmit={createActivity} className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1 text-small">
+            <span className="font-medium text-ink">{t("code")}</span>
+            <input required value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} className="min-h-touch w-32 rounded-brand-sm border border-line-strong bg-mist px-3" />
+          </label>
+          <label className="flex flex-col gap-1 text-small">
+            <span className="font-medium text-ink">{t("name")}</span>
+            <input required value={form.nameEs} onChange={(event) => setForm({ ...form, nameEs: event.target.value })} className="min-h-touch w-48 rounded-brand-sm border border-line-strong bg-mist px-3" />
+          </label>
+          <label className="flex flex-col gap-1 text-small">
+            <span className="font-medium text-ink">{t("priceCents")}</span>
+            <input type="number" min={0} value={form.priceCents} onChange={(event) => setForm({ ...form, priceCents: Number(event.target.value) })} className="min-h-touch w-28 rounded-brand-sm border border-line-strong bg-mist px-3" />
+          </label>
+        </form>
+          </div>
+        </ModalShell>
+      )}
+
+      {dialog === "schedule" && (
+        <ModalShell
+          testId="schedule-create-dialog"
+          title={t("createSchedule")}
+          subtitle={t("schedulesTitle")}
+          closeLabel={tCommon("close")}
+          onClose={() => setDialog(null)}
+          footerTestId="schedule-create-footer"
+          footer={
+            <>
+              <button type="button" onClick={() => setDialog(null)} className={MODAL_SECONDARY}>
+                {tCommon("cancel")}
+              </button>
+              <button type="submit" form="schedule-create-form" className={MODAL_PRIMARY}>
+                {t("createSchedule")}
+              </button>
+            </>
+          }
+        >
+          <div className="flex flex-wrap items-end gap-3">
+            <form id="schedule-create-form" onSubmit={createSchedule} className="flex flex-wrap items-end gap-3">
           <label className="flex flex-col gap-1 text-small">
             <span className="font-medium text-ink">{t("activity")}</span>
             <select value={scheduleForm.activityId} onChange={(event) => setScheduleForm({ ...scheduleForm, activityId: event.target.value })} className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3">
@@ -269,11 +339,10 @@ export function ActivitiesAdmin() {
             <span className="font-medium text-ink">{t("capacity")}</span>
             <input type="number" min={1} required value={scheduleForm.capacity} onChange={(event) => setScheduleForm({ ...scheduleForm, capacity: Number(event.target.value) })} className="min-h-touch w-24 rounded-brand-sm border border-line-strong bg-mist px-3" />
           </label>
-          <button type="submit" className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell">
-            {t("createSchedule")}
-          </button>
         </form>
-      </section>
+          </div>
+        </ModalShell>
+      )}
     </div>
   );
 }

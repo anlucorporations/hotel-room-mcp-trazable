@@ -4,17 +4,34 @@ import type { ReactNode, RefObject } from "react";
 import { useModalDialog } from "./useModalDialog";
 
 /**
- * **Cáscara de diálogo flotante** de la sección Habitación (2026-10-02).
+ * **Diálogo flotante** compartido por las suites de personal (Admin, Recepción, Mantenimiento y
+ * Ama de llaves).
  *
- * Un solo sitio para el velo, el panel, el título referenciado por `aria-labelledby` y el botón de
- * cierre con nombre accesible; el comportamiento (foco al abrir, trampa de foco, `Escape`, devolución
- * del foco al disparador) lo pone `useModalDialog`, que es el mismo patrón accesible del TOTP de
- * publicación. Los tres diálogos de la sección —alta/edición, ficha de detalle y confirmación
- * TOTP— comparten esta cáscara para no reimplementar (peor) la accesibilidad tres veces.
+ * Estructura fija en tres partes, para que todos los formularios y fichas se vean y se comporten
+ * igual (2026-10-06):
+ *
+ *   · **Título** (`<header>`): título, subtítulo opcional, acciones de cabecera y el botón de cierre.
+ *   · **Cuerpo** (`<div>`): el contenido, con scroll propio si no cabe.
+ *   · **Pie** (`<footer>`, opcional): los botones de la operación (Cancelar / Guardar / Confirmar…).
+ *
+ * El comportamiento accesible (foco al abrir, trampa de foco, `Escape`, devolución del foco al
+ * disparador) lo aporta `useModalDialog`.
  */
 
 const CLOSE =
   "min-h-touch min-w-touch flex-none rounded-brand text-h4 leading-none text-ink-soft transition-colors hover:bg-mist-2";
+
+/** Botón principal del pie (acción que confirma la operación). */
+export const MODAL_PRIMARY =
+  "min-h-touch rounded-pill bg-azure px-5 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-60";
+
+/** Botón secundario del pie (cancelar, cerrar, volver). */
+export const MODAL_SECONDARY =
+  "min-h-touch rounded-pill border border-line px-4 font-medium text-ink transition-colors hover:bg-mist-2 disabled:opacity-60";
+
+/** Botón destructivo del pie (quemar, revocar, archivar). */
+export const MODAL_DANGER =
+  "min-h-touch rounded-pill bg-coral-text px-5 font-semibold text-shell transition-colors hover:opacity-90 disabled:opacity-60";
 
 export interface ModalShellProps {
   /** Título del diálogo; se pinta en el `<h2>` que referencia `aria-labelledby`. */
@@ -35,6 +52,12 @@ export interface ModalShellProps {
   initialFocus?: RefObject<HTMLElement>;
   /** Utilidad de ancho del panel (`max-w-2xl` por defecto). */
   panelClassName?: string;
+  /**
+   * Botones del pie. Se suele pasar un `<ModalFooter>`; si se omite, no se pinta el pie.
+   */
+  footer?: ReactNode;
+  /** `data-testid` del pie (opcional). */
+  footerTestId?: string;
   children: ReactNode;
 }
 
@@ -48,6 +71,8 @@ export function ModalShell({
   actions,
   initialFocus,
   panelClassName = "max-w-2xl",
+  footer,
+  footerTestId,
   children,
 }: ModalShellProps) {
   const { panelRef, titleId } = useModalDialog({ onClose, enabled, initialFocus });
@@ -66,9 +91,10 @@ export function ModalShell({
         aria-modal="true"
         aria-labelledby={titleId}
         data-testid={testId}
-        className={`my-8 w-full ${panelClassName} rounded-brand-lg bg-shell p-6 text-ink shadow-modal`}
+        className={`my-8 flex max-h-[calc(100vh-4rem)] w-full ${panelClassName} flex-col rounded-brand-lg bg-shell text-ink shadow-modal`}
       >
-        <div className="flex items-start justify-between gap-3">
+        {/* Título */}
+        <header className="flex items-start justify-between gap-3 border-b border-line p-6 pb-4">
           <div className="min-w-0">
             <h2 id={titleId} className="font-display text-h3 font-semibold text-ink">
               {title}
@@ -78,9 +104,24 @@ export function ModalShell({
           <button type="button" onClick={onClose} aria-label={closeLabel} className={CLOSE}>
             ×
           </button>
-        </div>
-        {actions !== undefined && <div className="mt-4 flex flex-wrap gap-2">{actions}</div>}
-        {children}
+        </header>
+
+        {actions !== undefined && (
+          <div className="flex flex-wrap gap-2 border-b border-line px-6 py-3">{actions}</div>
+        )}
+
+        {/* Cuerpo */}
+        <div className="min-h-0 flex-1 overflow-y-auto p-6">{children}</div>
+
+        {/* Pie */}
+        {footer !== undefined && (
+          <footer
+            data-testid={footerTestId}
+            className="flex flex-wrap items-center justify-end gap-2 border-t border-line p-6 pt-4"
+          >
+            {footer}
+          </footer>
+        )}
       </div>
     </div>
   );

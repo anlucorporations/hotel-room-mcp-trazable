@@ -1764,5 +1764,20 @@
       "title": "Travellers' register",
       "body": "The travellers' register (Spanish RD 933/2021) is still completed at the front desk. This website does not ask for or store ID, name or phone number to buy a night."
     }
+  },
+  "common": {
+    "cancel": "Cancel",
+    "close": "Close",
+    "save": "Save",
+    "saving": "Saving…",
+    "confirm": "Confirm",
+    "create": "Create",
+    "creating": "Creating…",
+    "edit": "Edit",
+    "new": "New",
+    "apply": "Apply",
+    "back": "Back",
+    "remove": "Remove",
+    "processing": "Processing…"
   }
 }

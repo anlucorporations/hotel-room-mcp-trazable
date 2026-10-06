@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { BackOfficeRoleName } from "@hotel/shared/domain";
 import { useAdminContext } from "@/components/admin/AdminLayout";
+import { MODAL_PRIMARY, MODAL_SECONDARY, ModalShell } from "@/components/ui/ModalShell";
 
 /** Clave i18n del `system` namespace para la etiqueta de cada rol de operador (D-56). */
 const ROLE_LABEL_KEY: Record<
@@ -83,6 +84,10 @@ export function SystemUsers() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /** Ficha flotante del alta/rotación de credenciales. */
+  const [createOpen, setCreateOpen] = useState(false);
+  const tCommon = useTranslations("common");
+
   async function submit(event: React.FormEvent): Promise<void> {
     event.preventDefault();
     setError(null);
@@ -97,6 +102,7 @@ export function SystemUsers() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || t("createError"));
       setProvisioned(data);
+      setCreateOpen(false);
       setUsername("");
       setPassword("");
       await load();
@@ -211,11 +217,48 @@ export function SystemUsers() {
         )}
       </section>
 
-      <form onSubmit={submit} className="rounded-brand border border-line bg-shell p-5">
-        <h2 className="font-display text-h3 font-semibold">{t("createTitle")}</h2>
-        <p className="mt-1 text-small text-ink-soft">{t("createHint")}</p>
+      <section className="rounded-brand border border-line bg-shell p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-display text-h3 font-semibold">{t("createTitle")}</h2>
+            <p className="mt-1 text-small text-ink-soft">{t("createHint")}</p>
+          </div>
+          <button
+            type="button"
+            data-testid="system-user-open"
+            onClick={() => setCreateOpen(true)}
+            className={ACTION}
+          >
+            {t("createSubmit")}
+          </button>
+        </div>
+      </section>
 
-        <div className="mt-4 grid gap-3 tablet:grid-cols-3">
+      {createOpen && (
+        <ModalShell
+          testId="system-user-dialog"
+          title={t("createTitle")}
+          subtitle={t("createHint")}
+          closeLabel={tCommon("close")}
+          onClose={() => setCreateOpen(false)}
+          footerTestId="system-user-footer"
+          footer={
+            <>
+              <button type="button" onClick={() => setCreateOpen(false)} className={MODAL_SECONDARY}>
+                {tCommon("cancel")}
+              </button>
+              <button
+                type="submit"
+                form="system-user-form"
+                data-testid="system-user-submit"
+                className={MODAL_PRIMARY}
+              >
+                {t("createSubmit")}
+              </button>
+            </>
+          }
+        >
+          <form id="system-user-form" onSubmit={submit} className="grid gap-3 tablet:grid-cols-3">
           <label className="flex flex-col gap-1 text-small text-ink">
             {t("usernameLabel")}
             <input
@@ -248,12 +291,9 @@ export function SystemUsers() {
               placeholder={t("passwordHint")}
             />
           </label>
-        </div>
-
-        <button type="submit" data-testid="system-user-submit" className={`mt-4 ${ACTION}`}>
-          {t("createSubmit")}
-        </button>
       </form>
+        </ModalShell>
+      )}
 
       {provisioned && (
         <section data-testid="system-user-credentials" role="status" className="rounded-brand border border-success/40 bg-success-bg p-5">

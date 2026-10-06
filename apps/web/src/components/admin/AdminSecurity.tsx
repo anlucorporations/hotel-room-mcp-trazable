@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { AdminCard } from "@/components/admin/AdminPanel";
 import { useAdminContext } from "@/components/admin/AdminLayout";
+import { MODAL_PRIMARY, MODAL_SECONDARY, ModalShell } from "@/components/ui/ModalShell";
 
 const FIELD =
   "min-h-touch w-full rounded-brand border border-line-strong bg-shell px-3 text-ink outline-none focus:border-azure";
@@ -35,6 +36,9 @@ export function AdminSecurity() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  /** Ficha flotante del cambio de contraseña. */
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const tCommon = useTranslations("common");
 
   async function rotateMfa(): Promise<void> {
     setBusy(true);
@@ -72,6 +76,7 @@ export function AdminSecurity() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || t("passwordError"));
       setMessage(t("passwordChanged"));
+      setPasswordOpen(false);
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -133,29 +138,61 @@ export function AdminSecurity() {
         )}
       </AdminCard>
 
-      <form onSubmit={changePassword} className="rounded-brand border border-line bg-shell p-5">
+      <AdminCard>
         <h2 className="font-display text-h3 font-semibold">{t("securityPasswordTitle")}</h2>
         <p className="mt-1 text-small text-ink-soft">{t("securityPasswordHint")}</p>
-
-        <div className="mt-4 grid gap-3 tablet:grid-cols-3">
-          <label className="flex flex-col gap-1 text-small text-ink">
-            {t("currentPasswordLabel")}
-            <input type="password" required autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} data-testid="current-password" className={FIELD} />
-          </label>
-          <label className="flex flex-col gap-1 text-small text-ink">
-            {t("newPasswordLabel")}
-            <input type="password" required autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} data-testid="new-password" className={FIELD} />
-          </label>
-          <label className="flex flex-col gap-1 text-small text-ink">
-            {t("confirmPasswordLabel")}
-            <input type="password" required autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} data-testid="confirm-password" className={FIELD} />
-          </label>
-        </div>
-
-        <button type="submit" disabled={busy} data-testid="change-password" className={`mt-4 ${ACTION}`}>
-          {busy ? t("processing") : t("passwordSubmit")}
+        <button
+          type="button"
+          data-testid="open-change-password"
+          onClick={() => setPasswordOpen(true)}
+          className={`mt-3 ${ACTION}`}
+        >
+          {t("passwordSubmit")}
         </button>
-      </form>
+      </AdminCard>
+
+      {passwordOpen && (
+        <ModalShell
+          testId="change-password-dialog"
+          title={t("securityPasswordTitle")}
+          subtitle={t("securityPasswordHint")}
+          closeLabel={tCommon("close")}
+          onClose={() => setPasswordOpen(false)}
+          footerTestId="change-password-footer"
+          footer={
+            <>
+              <button type="button" onClick={() => setPasswordOpen(false)} className={MODAL_SECONDARY}>
+                {tCommon("cancel")}
+              </button>
+              <button
+                type="submit"
+                form="change-password-form"
+                disabled={busy}
+                data-testid="change-password"
+                className={MODAL_PRIMARY}
+              >
+                {busy ? t("processing") : t("passwordSubmit")}
+              </button>
+            </>
+          }
+        >
+          <form id="change-password-form" onSubmit={changePassword} className="grid gap-3 tablet:grid-cols-3">
+            <label className="flex flex-col gap-1 text-small text-ink">
+              {t("currentPasswordLabel")}
+              <input type="password" required autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} data-testid="current-password" className={FIELD} />
+            </label>
+            <label className="flex flex-col gap-1 text-small text-ink">
+              {t("newPasswordLabel")}
+              <input type="password" required autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} data-testid="new-password" className={FIELD} />
+            </label>
+            <label className="flex flex-col gap-1 text-small text-ink">
+              {t("confirmPasswordLabel")}
+              <input type="password" required autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} data-testid="confirm-password" className={FIELD} />
+            </label>
+          </form>
+        </ModalShell>
+      )}
+
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useAdminSession } from "@/components/admin/useAdminSession";
 import { PREVENTIVE_PERIODICITIES } from "@hotel/shared/domain";
+import { MODAL_PRIMARY, MODAL_SECONDARY, ModalShell } from "@/components/ui/ModalShell";
 
 interface Plan {
   id: string;
@@ -83,6 +84,10 @@ export function PreventiveAdmin() {
     );
   }
 
+  /** Ficha flotante del alta de plan preventivo. */
+  const [planOpen, setPlanOpen] = useState(false);
+  const tCommon = useTranslations("common");
+
   const createPlan = async (event: React.FormEvent): Promise<void> => {
     event.preventDefault();
     setError(null);
@@ -96,6 +101,7 @@ export function PreventiveAdmin() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error((data as { message?: string }).message || t("planError"));
       setNotice(t("planCreated", { code: form.code.toUpperCase() }));
+      setPlanOpen(false);
       setForm({ code: "", name: "", equipment: "", periodicity: "MONTHLY", firstDueDate: todayIso() });
       await load();
     } catch (err) {
@@ -190,11 +196,41 @@ export function PreventiveAdmin() {
         )}
       </section>
 
-      <section aria-labelledby="new-plan-title" className="rounded-brand-lg border border-line bg-shell p-4">
-        <h2 id="new-plan-title" className="font-display text-h3 font-semibold text-ink">
-          {t("newPlanTitle")}
-        </h2>
-        <form onSubmit={createPlan} className="mt-3 flex flex-wrap items-end gap-3">
+      <section className="rounded-brand-lg border border-line bg-shell p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display text-h3 font-semibold text-ink">{t("newPlanTitle")}</h2>
+          <button
+            type="button"
+            data-testid="preventive-open-plan"
+            onClick={() => setPlanOpen(true)}
+            className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell"
+          >
+            {t("createPlan")}
+          </button>
+        </div>
+      </section>
+
+      {planOpen && (
+        <ModalShell
+          testId="preventive-plan-dialog"
+          title={t("newPlanTitle")}
+          subtitle={t("preventiveTagline")}
+          closeLabel={tCommon("close")}
+          onClose={() => setPlanOpen(false)}
+          footerTestId="preventive-plan-footer"
+          footer={
+            <>
+              <button type="button" onClick={() => setPlanOpen(false)} className={MODAL_SECONDARY}>
+                {tCommon("cancel")}
+              </button>
+              <button type="submit" form="preventive-plan-form" className={MODAL_PRIMARY}>
+                {t("createPlan")}
+              </button>
+            </>
+          }
+        >
+          <div className="flex flex-wrap items-end gap-3">
+            <form id="preventive-plan-form" onSubmit={createPlan} className="flex flex-wrap items-end gap-3">
           <label className="flex flex-col gap-1 text-small">
             <span className="font-medium text-ink">{t("planCode")}</span>
             <input
@@ -247,11 +283,10 @@ export function PreventiveAdmin() {
               className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
             />
           </label>
-          <button type="submit" className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell">
-            {t("createPlan")}
-          </button>
         </form>
-      </section>
+          </div>
+        </ModalShell>
+      )}
     </div>
   );
 }

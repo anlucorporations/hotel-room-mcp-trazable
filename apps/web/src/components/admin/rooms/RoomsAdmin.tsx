@@ -19,7 +19,7 @@ import { contractAddress } from "@/config/chain";
 import { useAdminContext } from "@/components/admin/AdminLayout";
 import { AdminCard } from "@/components/admin/AdminPanel";
 import { RoomDetailCard } from "@/components/rooms/RoomDetailCard";
-import { ModalShell } from "./ModalShell";
+import { ModalShell } from "@/components/ui/ModalShell";
 import { RoomFormDialog, type RoomFormOutcome } from "./RoomFormDialog";
 import {
   catalogEntryName,
@@ -1096,6 +1096,12 @@ export function RoomsAdmin() {
               </>
             ) : undefined
           }
+          footerTestId="room-detail-footer"
+          footer={
+            <button type="button" onClick={closeDetail} className={GHOST}>
+              {ta("roomDetailClose")}
+            </button>
+          }
         >
           {detailLoading || !detail || !room ? (
             <p role="status" className="mt-5 text-ink-soft">
@@ -1153,13 +1159,30 @@ export function RoomsAdmin() {
           }}
           testId="room-publish-dialog"
           initialFocus={totpRef}
+          footerTestId="room-publish-footer"
+          footer={
+            <>
+              <button type="button" onClick={() => setMfaOpen(false)} disabled={publishing} className={GHOST}>
+                {t("cancel")}
+              </button>
+              <button
+                type="submit"
+                form="room-publish-form"
+                data-testid="room-publish-confirm"
+                disabled={publishing || mfaCode.trim().length !== 6}
+                className={ACTION}
+              >
+                {publishing ? t("publishing") : t("mfaConfirm")}
+              </button>
+            </>
+          }
         >
           {pendingPublish && pendingPublish.ids.length > 1 && (
-            <p className="mt-3 text-small text-ink-soft" role="status">
+            <p className="text-small text-ink-soft" role="status">
               {ta("roomBulkCount", { count: pendingPublish.ids.length })}
             </p>
           )}
-          <form onSubmit={handlePublish} className="mt-4 flex flex-col gap-3">
+          <form id="room-publish-form" onSubmit={handlePublish} className="flex flex-col gap-3">
             <label className="flex flex-col gap-1 text-small font-medium text-ink">
               {t("mfaCode")}
               <input
@@ -1175,19 +1198,6 @@ export function RoomsAdmin() {
                 className={FIELD}
               />
             </label>
-            <div className="flex justify-end gap-2">
-              <button type="button" onClick={() => setMfaOpen(false)} disabled={publishing} className={GHOST}>
-                {t("cancel")}
-              </button>
-              <button
-                type="submit"
-                data-testid="room-publish-confirm"
-                disabled={publishing || mfaCode.trim().length !== 6}
-                className={ACTION}
-              >
-                {publishing ? t("publishing") : t("mfaConfirm")}
-              </button>
-            </div>
           </form>
         </ModalShell>
       )}

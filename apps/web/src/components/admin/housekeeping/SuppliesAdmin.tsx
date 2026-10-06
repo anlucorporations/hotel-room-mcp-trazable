@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useAdminSession } from "@/components/admin/useAdminSession";
+import { MODAL_PRIMARY, MODAL_SECONDARY, ModalShell } from "@/components/ui/ModalShell";
 
 interface SupplyItem {
   id: string;
@@ -68,6 +69,10 @@ export function SuppliesAdmin() {
     );
   }
 
+  /** Ficha flotante de reposición del artículo elegido. */
+  const [restockItem, setRestockItem] = useState<SupplyItem | null>(null);
+  const tCommon = useTranslations("common");
+
   const restock = async (item: SupplyItem): Promise<void> => {
     const quantity = Number(quantities[item.id] ?? "");
     if (!Number.isFinite(quantity) || quantity <= 0) return;
@@ -83,6 +88,7 @@ export function SuppliesAdmin() {
       if (!res.ok) throw new Error((data as { message?: string }).message || t("restockError"));
       setQuantities((current) => ({ ...current, [item.id]: "" }));
       setNotice(t("restockDone", { code: item.code }));
+      setRestockItem(null);
       await load();
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : t("restockError"));
@@ -142,29 +148,60 @@ export function SuppliesAdmin() {
                   <td className="py-2 text-ink">{item.stockQty} {item.unit}</td>
                   <td className="py-2 text-ink-soft">{item.thresholdQty}</td>
                   <td className="py-2">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min={1}
-                        aria-label={t("restockFor", { item: item.nameEs })}
-                        value={quantities[item.id] ?? ""}
-                        onChange={(event) => setQuantities((current) => ({ ...current, [item.id]: event.target.value }))}
-                        className="min-h-touch w-20 rounded-brand-sm border border-line-strong bg-mist px-2"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => void restock(item)}
-                        className="min-h-touch rounded-pill bg-azure px-3 text-small font-semibold text-shell"
-                      >
-                        {t("restockAction")}
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      data-testid={`supply-open-restock-${item.code}`}
+                      onClick={() => setRestockItem(item)}
+                      className="min-h-touch rounded-pill bg-azure px-3 text-small font-semibold text-shell"
+                    >
+                      {t("restockAction")}
+                    </button>
                   </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
+      )}
+
+      {restockItem && (
+        <ModalShell
+          testId="supply-restock-dialog"
+          title={t("restockAction")}
+          subtitle={t("restockFor", { item: restockItem.nameEs })}
+          closeLabel={tCommon("close")}
+          onClose={() => setRestockItem(null)}
+          panelClassName="max-w-md"
+          footerTestId="supply-restock-footer"
+          footer={
+            <>
+              <button type="button" onClick={() => setRestockItem(null)} className={MODAL_SECONDARY}>
+                {tCommon("cancel")}
+              </button>
+              <button
+                type="button"
+                data-testid="supply-restock-confirm"
+                onClick={() => void restock(restockItem)}
+                className={MODAL_PRIMARY}
+              >
+                {t("restockAction")}
+              </button>
+            </>
+          }
+        >
+          <label className="flex flex-col gap-1 text-small text-ink">
+            {t("restock")}
+            <input
+              type="number"
+              min={1}
+              autoFocus
+              aria-label={t("restockFor", { item: restockItem.nameEs })}
+              value={quantities[restockItem.id] ?? ""}
+              onChange={(event) => setQuantities((current) => ({ ...current, [restockItem.id]: event.target.value }))}
+              className="min-h-touch w-32 rounded-brand-sm border border-line-strong bg-mist px-3"
+            />
+          </label>
+        </ModalShell>
       )}
     </div>
   );

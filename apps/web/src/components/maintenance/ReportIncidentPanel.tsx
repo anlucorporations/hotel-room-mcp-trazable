@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { MAINTENANCE_KINDS, MAINTENANCE_PRIORITIES } from "@hotel/shared/domain";
+import { MODAL_PRIMARY, MODAL_SECONDARY, ModalShell } from "@/components/ui/ModalShell";
 
 interface RoomOption {
   id: string;
@@ -32,6 +33,9 @@ export function ReportIncidentPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  const tCommon = useTranslations("common");
+  /** Ficha flotante del formulario de avería. */
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -65,6 +69,7 @@ export function ReportIncidentPanel({
       if (!res.ok) throw new Error((data as { message?: string }).message || t("reportError"));
       setDescription("");
       setDone(t("reportDone", { room: rooms.find((room) => room.id === roomId)?.roomNumber ?? "" }));
+      setOpen(false);
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : t("reportError"));
     } finally {
@@ -78,7 +83,53 @@ export function ReportIncidentPanel({
         {t("reportTitle")}
       </h2>
       <p className="mt-1 text-small text-ink-soft">{t("reportHint")}</p>
-      <form onSubmit={submit} className="mt-3 flex flex-wrap items-end gap-3">
+      <div className="mt-3">
+        <button
+          type="button"
+          data-testid="report-open"
+          onClick={() => setOpen(true)}
+          className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell"
+        >
+          {t("reportSubmit")}
+        </button>
+      </div>
+      {done && (
+        <p role="status" className="mt-2 text-small text-success">
+          {done}
+        </p>
+      )}
+      {error && (
+        <p role="alert" className="mt-2 text-small text-coral-text">
+          {error}
+        </p>
+      )}
+
+      {open && (
+        <ModalShell
+          testId="report-incident-dialog"
+          title={t("reportTitle")}
+          subtitle={t("reportHint")}
+          closeLabel={tCommon("close")}
+          onClose={() => setOpen(false)}
+          footerTestId="report-incident-footer"
+          footer={
+            <>
+              <button type="button" onClick={() => setOpen(false)} className={MODAL_SECONDARY}>
+                {tCommon("cancel")}
+              </button>
+              <button
+                type="submit"
+                form="report-incident-form"
+                disabled={busy || !roomId}
+                className={MODAL_PRIMARY}
+              >
+                {busy ? tCommon("processing") : t("reportSubmit")}
+              </button>
+            </>
+          }
+        >
+          <div className="flex flex-col gap-3">
+            <form id="report-incident-form" onSubmit={submit} className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1 text-small">
           <span className="font-medium text-ink">{t("reportRoom")}</span>
           <select
@@ -132,23 +183,9 @@ export function ReportIncidentPanel({
             className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
           />
         </label>
-        <button
-          type="submit"
-          disabled={busy || !roomId}
-          className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell disabled:opacity-50"
-        >
-          {t("reportSubmit")}
-        </button>
       </form>
-      {done && (
-        <p role="status" className="mt-2 text-small text-success">
-          {done}
-        </p>
-      )}
-      {error && (
-        <p role="alert" className="mt-2 text-small text-coral-text">
-          {error}
-        </p>
+          </div>
+        </ModalShell>
       )}
     </section>
   );

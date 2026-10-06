@@ -12,6 +12,7 @@ import { AdminCard } from "./AdminPanel";
 import { useAdminWrite } from "./useAdminWrite";
 import { useAdminTxCopy } from "./adminTxCopy";
 import { classifyAdminTxError } from "./adminTxError";
+import { MODAL_DANGER, MODAL_PRIMARY, MODAL_SECONDARY, ModalShell } from "@/components/ui/ModalShell";
 
 const PRIMARY =
   "min-h-touch rounded-pill bg-azure px-5 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-60";
@@ -85,12 +86,17 @@ export function AdminRoles() {
     reset();
   }
 
+  /** Fichas flotantes: concesión/revocación de rol y transferencia de ownership. */
+  const [dialog, setDialog] = useState<"roles" | "owner" | null>(null);
+  const tCommon = useTranslations("common");
+
   // Conceder no es destructivo: se firma directo. Revocar sí → confirmación (UX#21).
   function onGrant(event: FormEvent): void {
     event.preventDefault();
     setRoleError(null);
     if (!isAddress(roleAccount)) return setRoleError(t("rolesInvalidAddress"));
     reset();
+    setDialog(null);
     send("grantRole", [ROLES[roleName], roleAccount as Address]);
   }
 
@@ -98,6 +104,7 @@ export function AdminRoles() {
     event.preventDefault();
     setRoleError(null);
     if (!isAddress(roleAccount)) return setRoleError(t("rolesInvalidAddress"));
+    setDialog(null);
     setPending({ kind: "revoke", role: roleName, account: roleAccount as Address });
   }
 
@@ -105,6 +112,7 @@ export function AdminRoles() {
     event.preventDefault();
     setOwnerError(null);
     if (!isAddress(newOwner)) return setOwnerError(t("rolesInvalidAddress"));
+    setDialog(null);
     setPending({ kind: "transfer", account: newOwner as Address });
   }
 
@@ -134,66 +142,14 @@ export function AdminRoles() {
 
       <AdminCard>
         <h2 className="font-display text-h3 font-semibold text-ink">{t("rolesGrantTitle")}</h2>
-        <form className="mt-4 flex flex-col gap-3">
-          <label htmlFor="roles-role" className="flex flex-col gap-1 text-small font-medium text-ink">
-            {t("rolesRole")}
-            <select
-              id="roles-role"
-              data-testid="roles-role"
-              value={roleName}
-              onChange={(e) => setRoleName(e.target.value as RoleName)}
-              className={`${FIELD} appearance-none`}
-            >
-              {ALL_ROLE_NAMES.map((r) => (
-                <option key={r} value={r}>
-                  {ROLE_LABEL[r]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label
-            htmlFor="roles-account"
-            className="flex flex-col gap-1 text-small font-medium text-ink"
-          >
-            {t("rolesAccount")}
-            <input
-              id="roles-account"
-              data-testid="roles-account"
-              type="text"
-              value={roleAccount}
-              onChange={(e) => setRoleAccount(e.target.value)}
-              placeholder="0x…"
-              aria-invalid={Boolean(roleError) || undefined}
-              aria-describedby={roleError ? roleErrorId : undefined}
-              className={`${FIELD} font-mono`}
-            />
-          </label>
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="submit"
-              data-testid="roles-grant"
-              disabled={busy}
-              onClick={onGrant}
-              className={PRIMARY}
-            >
-              {t("rolesGrant")}
-            </button>
-            <button
-              type="submit"
-              data-testid="roles-revoke"
-              disabled={busy}
-              onClick={onRevoke}
-              className={DANGER}
-            >
-              {t("rolesRevoke")}
-            </button>
-          </div>
-          {roleError && (
-            <p id={roleErrorId} data-testid="roles-error" role="alert" className="text-coral-text">
-              {roleError}
-            </p>
-          )}
-        </form>
+        <button
+          type="button"
+          data-testid="roles-open"
+          onClick={() => setDialog("roles")}
+          className={`mt-4 ${PRIMARY}`}
+        >
+          {t("rolesGrantTitle")}
+        </button>
       </AdminCard>
 
       {/* Handover REAL del control: grant DEFAULT_ADMIN + renounce del antiguo (UX#25). */}
@@ -220,52 +176,14 @@ export function AdminRoles() {
           </div>
         </dl>
 
-        <form onSubmit={onTransfer} className="mt-4 flex flex-col gap-3">
-          <label
-            htmlFor="roles-new-owner"
-            className="flex flex-col gap-1 text-small font-medium text-ink"
-          >
-            {t("rolesNewOwner")}
-            <input
-              id="roles-new-owner"
-              data-testid="roles-new-owner"
-              type="text"
-              value={newOwner}
-              onChange={(e) => setNewOwner(e.target.value)}
-              placeholder="0x…"
-              aria-invalid={Boolean(ownerError) || undefined}
-              aria-describedby={ownerError ? ownerErrorId : undefined}
-              className={`${FIELD} font-mono`}
-            />
-          </label>
-          <div className="flex flex-wrap gap-3">
-            <button type="submit" data-testid="roles-transfer" disabled={busy} className={PRIMARY}>
-              {t("rolesTransfer")}
-            </button>
-            <button
-              type="button"
-              data-testid="roles-accept"
-              disabled={busy}
-              onClick={() => {
-                reset();
-                send("acceptOwnership", []);
-              }}
-              className={PRIMARY}
-            >
-              {t("rolesAccept")}
-            </button>
-          </div>
-          {ownerError && (
-            <p
-              id={ownerErrorId}
-              data-testid="roles-owner-error"
-              role="alert"
-              className="text-coral-text"
-            >
-              {ownerError}
-            </p>
-          )}
-        </form>
+        <button
+          type="button"
+          data-testid="roles-open-owner"
+          onClick={() => setDialog("owner")}
+          className={`mt-4 ${PRIMARY}`}
+        >
+          {t("rolesHandoverTitle")}
+        </button>
       </AdminCard>
 
       {txErrorKind && (
@@ -304,6 +222,134 @@ export function AdminRoles() {
           </>
         }
       />
+
+      {dialog === "roles" && (
+        <ModalShell
+          testId="roles-dialog"
+          title={t("rolesGrantTitle")}
+          subtitle={t("rolesTagline")}
+          closeLabel={tCommon("close")}
+          onClose={() => setDialog(null)}
+          footerTestId="roles-footer"
+          footer={
+            <>
+              <button type="button" onClick={() => setDialog(null)} className={MODAL_SECONDARY}>
+                {tCommon("cancel")}
+              </button>
+              <button type="submit" form="roles-form" data-testid="roles-revoke" onClick={onRevoke} disabled={busy} className={MODAL_DANGER}>
+                {t("rolesRevoke")}
+              </button>
+              <button type="submit" form="roles-form" data-testid="roles-grant" onClick={onGrant} disabled={busy} className={MODAL_PRIMARY}>
+                {t("rolesGrant")}
+              </button>
+            </>
+          }
+        >
+          <form id="roles-form" className="flex flex-col gap-3">
+          <label htmlFor="roles-role" className="flex flex-col gap-1 text-small font-medium text-ink">
+            {t("rolesRole")}
+            <select
+              id="roles-role"
+              data-testid="roles-role"
+              value={roleName}
+              onChange={(e) => setRoleName(e.target.value as RoleName)}
+              className={`${FIELD} appearance-none`}
+            >
+              {ALL_ROLE_NAMES.map((r) => (
+                <option key={r} value={r}>
+                  {ROLE_LABEL[r]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label
+            htmlFor="roles-account"
+            className="flex flex-col gap-1 text-small font-medium text-ink"
+          >
+            {t("rolesAccount")}
+            <input
+              id="roles-account"
+              data-testid="roles-account"
+              type="text"
+              value={roleAccount}
+              onChange={(e) => setRoleAccount(e.target.value)}
+              placeholder="0x…"
+              aria-invalid={Boolean(roleError) || undefined}
+              aria-describedby={roleError ? roleErrorId : undefined}
+              className={`${FIELD} font-mono`}
+            />
+          </label>
+          {roleError && (
+            <p id={roleErrorId} data-testid="roles-error" role="alert" className="text-coral-text">
+              {roleError}
+            </p>
+          )}
+        </form>
+        </ModalShell>
+      )}
+
+      {dialog === "owner" && (
+        <ModalShell
+          testId="roles-owner-dialog"
+          title={t("rolesHandoverTitle")}
+          subtitle={t("rolesAdminNote")}
+          closeLabel={tCommon("close")}
+          onClose={() => setDialog(null)}
+          footerTestId="roles-owner-footer"
+          footer={
+            <>
+              <button type="button" onClick={() => setDialog(null)} className={MODAL_SECONDARY}>
+                {tCommon("cancel")}
+              </button>
+              <button
+                type="button"
+                data-testid="roles-accept"
+                disabled={busy}
+                onClick={() => {
+                  reset();
+                  send("acceptOwnership", []);
+                }}
+                className={MODAL_SECONDARY}
+              >
+                {t("rolesAccept")}
+              </button>
+              <button type="submit" form="roles-owner-form" data-testid="roles-transfer" disabled={busy} className={MODAL_PRIMARY}>
+                {t("rolesTransfer")}
+              </button>
+            </>
+          }
+        >
+          <form id="roles-owner-form" onSubmit={onTransfer} className="flex flex-col gap-3">
+          <label
+            htmlFor="roles-new-owner"
+            className="flex flex-col gap-1 text-small font-medium text-ink"
+          >
+            {t("rolesNewOwner")}
+            <input
+              id="roles-new-owner"
+              data-testid="roles-new-owner"
+              type="text"
+              value={newOwner}
+              onChange={(e) => setNewOwner(e.target.value)}
+              placeholder="0x…"
+              aria-invalid={Boolean(ownerError) || undefined}
+              aria-describedby={ownerError ? ownerErrorId : undefined}
+              className={`${FIELD} font-mono`}
+            />
+          </label>
+          {ownerError && (
+            <p
+              id={ownerErrorId}
+              data-testid="roles-owner-error"
+              role="alert"
+              className="text-coral-text"
+            >
+              {ownerError}
+            </p>
+          )}
+        </form>
+        </ModalShell>
+      )}
     </div>
   );
 }
