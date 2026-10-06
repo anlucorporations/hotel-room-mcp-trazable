@@ -1944,8 +1944,22 @@ mensaje, la comprobación a repetir es exactamente esta tabla (y comprobar que l
 |---|---|
 | `/health/ready` web | 200 READY (postgres, redis, polygonRPC UP) |
 | Home `/` | 200 OK |
-| `/recepcion` | 200 OK, con anomalía: bloque `404 This page could not be found.` incrustado al final del HTML |
+| `/recepcion` | 200 OK, HTML renderizado correcto (ver nota sobre el «404») |
 | `/api/reception/overview` | 401 UNAUTHORIZED (protección correcta) |
 | CSP | Incluye Anvil en `connect-src` ✅ |
 
-**Acción pendiente**: investigar el 404 incrustado en `/recepcion` (posible `not-found.tsx` o ruta paralela no resuelta en el build).
+**Nota — el «404 incrustado» es un falso positivo (verificado 2026-10-06).** Una primera verificación
+reportó que `/recepcion` incrustaba `404 This page could not be found.` al final del HTML. Comprobado a
+fondo, ese texto aparece **solo dentro de las etiquetas `<script>`** del *flight payload* RSC, donde
+Next.js serializa la definición por defecto de la frontera `notFound` de cada segmento del router. No es
+un 404 renderizado:
+
+| Comprobación | Resultado |
+|---|---|
+| `/`, `/catalogo`, `/contacto` (públicas, sin gate) | también contienen el texto en su payload RSC |
+| Ocurrencias en el marcado renderizado (sin `<script>`) | **0** |
+| Estado HTTP | **200** |
+| `<h1>` visible | «Puesto de recepción» / «Back-office…» según sesión |
+
+Es decir: **no hay defecto que corregir**. Se descartó cualquier cambio en `app/recepcion/layout.tsx` u
+otros ficheros para «arreglarlo»; el árbol quedó intacto.

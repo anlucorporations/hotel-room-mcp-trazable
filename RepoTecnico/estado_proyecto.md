@@ -3285,12 +3285,15 @@ Se recibe petición del cliente para modificar la suite de recepción:
   - Worker: https://hotel-mcp-worker-d6jlzeq5yq-ew.a.run.app
   - MCP: https://hotel-mcp-mcp-d6jlzeq5yq-ew.a.run.app
 
-**Hallazgo en producción**: `/recepcion` carga correctamente, pero el stream HTML incrusta un bloque
-`404 This page could not be found.` al final. No afecta health ni la API; requiere revisión del build de
-Next.js o de una ruta/paralela no resuelta.
+**Verificación del «404 incrustado» en `/recepcion` (2026-10-06)**: **falso positivo, sin defecto**. El
+texto `404 This page could not be found.` que reportó la verificación aparece **solo dentro de las
+etiquetas `<script>`** del *flight payload* RSC, donde Next.js serializa la definición por defecto de la
+frontera `notFound` de cada segmento del router. Confirmado: las páginas públicas (`/`, `/catalogo`,
+`/contacto`) contienen el mismo texto en su payload; las ocurrencias en el marcado renderizado son **0**;
+el estado es **200** y el `<h1>` se sirve correctamente. No se modificó ningún fichero para «corregirlo».
 
-**Próximo paso**: investigar y corregir el 404 incrustado en `/recepcion`; añadir tests E2E/UI de la ficha
-detalle y de la liberación; confirmar con el cliente el comportamiento observado en producción.
+**Próximo paso**: añadir tests E2E/UI de la ficha detalle y de la liberación; confirmar con el cliente el
+comportamiento observado en producción.
 
 ---
 
