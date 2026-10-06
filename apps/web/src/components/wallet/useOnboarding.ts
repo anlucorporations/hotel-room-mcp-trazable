@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAccount, useChainId, useConnect, useDisconnect, useSwitchChain } from "wagmi";
-import { injected } from "wagmi/connectors";
+import { useAccount, useChainId, useConnect, useConnectors, useDisconnect, useSwitchChain } from "wagmi";
 import { activeChain } from "@/config/chain";
 import { classifySwitchChainError, type SwitchChainError } from "./switchChainError";
 
@@ -29,6 +28,7 @@ export function useOnboarding(): OnboardingState {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const { connect, isPending } = useConnect();
+  const connectors = useConnectors();
   const { disconnect } = useDisconnect();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
 
@@ -59,7 +59,14 @@ export function useOnboarding(): OnboardingState {
     canPurchase: connected && !isWrongNetwork,
     switchError,
     isSwitchingNetwork: mounted ? isSwitching : false,
-    connect: () => connect({ connector: injected() }),
+    // Se usa el conector **ya configurado** (no un `injected()` nuevo por clic): con EIP-6963 la
+    // lista incluye todas las carteras instaladas, así que sirve cualquiera; y reutilizar el conector
+    // evita pedir permisos repetidos a MetaMask en cada intento.
+    connect: () => {
+      const preferred =
+        connectors.find((candidate) => candidate.id === "metaMask") ?? connectors[0];
+      if (preferred) connect({ connector: preferred });
+    },
     // Capturamos el error de cambio de red (4902 incl.) para guiar al usuario sin romper.
     switchToAppChain: () => {
       setSwitchError(null);

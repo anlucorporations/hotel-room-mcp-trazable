@@ -3173,3 +3173,27 @@ producción: **ciclo ejecutado** a las 19:42:44 (`reason: NO_TOKENS`, sin caduca
 **diario** restaurado. De paso se descubrió que el tráfico del worker estaba **fijado por nombre de
 revisión**, así que las revisiones nuevas se retiraban al instante: corregido a `latestRevision`.
 Detalle en `despliegue_gcp.md` §52 y `BaseOperaciones/cuentas_anvil.md`.
+
+### Cartera: cualquier billetera + optimización de MetaMask (2026-10-05)
+
+**Petición**: que el proyecto funcione con **cualquier** cartera y optimizar los procesos de MetaMask.
+
+**Antes**: `providers.tsx` registraba un único `injected()` y `useOnboarding.connect()` creaba un
+`injected()` **nuevo en cada clic** — sólo funcionaba la cartera que ocupara `window.ethereum`, se
+ignoraban las demás instaladas y MetaMask volvía a pedir permisos en cada intento.
+
+**Cambios**:
+| Cambio | Efecto |
+|---|---|
+| `multiInjectedProviderDiscovery: true` (EIP-6963) | wagmi descubre **todas** las carteras inyectadas (MetaMask, Rabby, Coinbase, Brave…) y cada una es un conector con su nombre e icono: sirve cualquiera |
+| `injected({ shimDisconnect: true })` | si el usuario desconecta desde la extensión, la web no se queda en «conectada» (sesión fantasma) |
+| `connect()` usa el conector **ya configurado** (prefiere MetaMask, si no el primero disponible) | no se re-instancia el conector por clic y se evitan peticiones de permiso repetidas |
+| `http(rpcUrl, { batch: true, retryCount: 2 })` | agrupa las lecturas del mismo tick (multicall) y tolera un fallo puntual del RPC |
+| `pollingInterval: 12_000` (antes 4 s por defecto) | menos sondeos de saldo/red a la cartera (MetaMask los reenvía al RPC) sin perder frescura |
+
+**Ya cubierto** (no se tocó): el alta de la red en la cartera cuando no la conoce (`switchChain` de
+wagmi dispara `wallet_addEthereumChain`; el error 4902 se clasifica en `switchChainError.ts` con su
+test), y la CSP ya permitía los dominios de WalletConnect por si más adelante se añade ese conector.
+
+**Verificado**: `tsc --noEmit` y `eslint` limpios. **Pendiente**: build + despliegue (v36) y prueba en
+navegador con dos carteras distintas (la inyectada de prueba y una segunda vía EIP-6963).

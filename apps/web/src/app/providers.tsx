@@ -8,8 +8,20 @@ import { activeChain, rpcUrl } from "@/config/chain";
 
 const wagmiConfig = createConfig({
   chains: [activeChain],
-  connectors: [injected()],
-  transports: { [activeChain.id]: http(rpcUrl) },
+  // **Cualquier cartera**, no solo la que ocupe `window.ethereum`:
+  //   · `multiInjectedProviderDiscovery` (EIP-6963) hace que wagmi descubra TODAS las carteras
+  //     inyectadas instaladas (MetaMask, Rabby, Coinbase, Brave…) y cada una aparezca como conector
+  //     propio, con su nombre e icono.
+  //   · `shimDisconnect` mantiene coherente el estado cuando el usuario desconecta desde la propia
+  //     extensión (sin él queda la sesión «fantasma»: la web dice «conectada» y la cartera no).
+  connectors: [injected({ shimDisconnect: true })],
+  multiInjectedProviderDiscovery: true,
+  // Menos carga para la cartera y el RPC: `batch` agrupa las lecturas del mismo tick (multicall) y
+  // `retryCount` evita que un fallo puntual se traduzca en un error visible al huésped.
+  transports: { [activeChain.id]: http(rpcUrl, { batch: true, retryCount: 2 }) },
+  // El sondeo por defecto (4 s) multiplica las peticiones a la cartera (MetaMask las reenvía al RPC):
+  // con 12 s el saldo y la red siguen frescos sin castigar al proveedor.
+  pollingInterval: 12_000,
   ssr: true,
 });
 
