@@ -3317,6 +3317,18 @@ El criterio de estado se extrajo a la función pura `resolveRoomDetailState()` e
 **Sin cambios de esquema**: las tablas y columnas ya existían y se verificaron contra producción, por lo
 que `diccionario_datos.md`, `diagrama_er.md` y `base_datos.sql` no requieren edición.
 
+**Release v37 y hallazgo del pin de tráfico (2026-10-06)**: desplegada la ficha detalle por estado
+(commit `c8b4792`). Al verificar se descubrió que **web y mcp servían revisiones antiguas**: el tráfico
+estaba pinnado por revisión (patrón de §56 de `despliegue_gcp.md`), así que las revisiones nuevas quedaban
+al 0 % aunque `gcloud run deploy` informara de «serving 100 percent». La verificación previa de la v36
+(health + esquema) fue **insuficiente** porque el health lo servía una revisión antigua sana y el esquema
+lo aplica el worker, que sí se desplegó bien.
+
+Tras mover el tráfico explícitamente, sirven al 100 %: web `hotel-mcp-web-00044-dnw` (tag `v37`),
+worker `hotel-mcp-worker-00015-64w` y mcp `hotel-mcp-mcp-00008-kps`. La comprobación concluyente ahora
+incluye inspeccionar los *bundles* servidos: los cuatro marcadores exclusivos de v37
+(`room-detail-state`, `preArrivalHint`, `calendarEmpty`, `pendingCleaningHint`) pasan de 0 a 1.
+
 **Próximo paso**: añadir tests E2E/UI de la ficha detalle y de la liberación; confirmar con el cliente el
 comportamiento observado en producción.
 

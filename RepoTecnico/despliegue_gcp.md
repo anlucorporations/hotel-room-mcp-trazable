@@ -2020,3 +2020,56 @@ migración se aplicó. Comprobado además contra la base real con un job tempora
 
 **Conclusión**: GCP sirve la última versión del proyecto para todos los componentes versionados y el
 esquema de base de datos está al día.
+
+---
+
+## 60. Release v37 — ficha detalle por estado, y hallazgo del pin de tráfico (2026-10-06)
+
+**Cambios funcionales** (commit `c8b4792`): la ficha detalle de habitación pasa a ser **dependiente del
+estado** (`LIBRE · RESERVADA · OCUPADA · MANTENIMIENTO · PENDIENTE_LIMPIEZA`). Se corrigieron tres
+carencias reales: la API ya devuelve `state`; la ocupación se deriva de `nfts.status = CHECKED_IN` (noche
+de hoy) y no de `reservations.status`, que no admite ese valor; y los cuatro iconos del calendario se
+muestran siempre (color = hecho, apagado = no hecho). Sin cambios de esquema.
+
+**Hallazgo crítico — el tráfico estaba pinneado a revisiones antiguas.** Al verificar la release se
+descubrió que **web y mcp no servían las imágenes recién desplegadas**, pese a que `gcloud run deploy`
+informaba de «serving 100 percent of traffic»:
+
+| Servicio | Revisión que servía | Imagen real | ¿Era la nueva? |
+|---|---|---|---|
+| web | `hotel-mcp-web-00063-put` (etiqueta `v36`) | build del **00:49**, anterior a todo el trabajo | **NO** |
+| mcp | `hotel-mcp-mcp-00005-tnl` | build anterior | **NO** |
+| worker | `hotel-mcp-worker-00015-64w` | `worker:v37` | Sí |
+
+Las revisiones nuevas se creaban correctamente (`00044-dnw`, `00008-kps`) pero quedaban al **0 %**: el
+servicio conserva la configuración de tráfico **pinnada por revisión** cuando no se usa `--to-latest`, el
+mismo patrón ya documentado en §56. El worker escapó porque su plantilla siempre cambió.
+
+**Consecuencia**: la verificación de la release `v36` (health 200 + esquema migrado) fue **insuficiente**:
+el health lo servía una revisión antigua igualmente sana, y el esquema lo aplica el **worker** (que sí se
+desplegó). La web llevaba desde el 00:49 sin los cambios de recepción.
+
+**Corrección aplicada**: mover el tráfico **explícitamente** a la revisión nueva de cada servicio.
+
+| Servicio | Revisión final (100 %) | Imagen |
+|---|---|---|
+| web | `hotel-mcp-web-00044-dnw` (etiqueta `v37`) | `web@sha256:626d565e…` |
+| worker | `hotel-mcp-worker-00015-64w` | `worker@sha256:2db9a178…` |
+| mcp | `hotel-mcp-mcp-00008-kps` | `mcp@sha256:7ce0517f…` |
+
+**Verificación (nueva y concluyente)**: además del health, se comprueba que el **código servido** es el
+nuevo, inspeccionando los *bundles* estáticos de la revisión:
+
+| Marcador exclusivo de v37 | Antes (`00063-put`) | Después (`00044-dnw`) |
+|---|---|---|
+| `room-detail-state` | 0 | **1** |
+| `preArrivalHint` | 0 | **1** |
+| `calendarEmpty` | 0 | **1** |
+| `pendingCleaningHint` | 0 | **1** |
+
+`/health/ready` → 200 READY (postgres, redis, polygonRPC UP).
+
+**Lección operativa**: tras cada `gcloud run deploy`, comprobar **la imagen de la revisión que sirve**
+(`gcloud run revisions describe <rev> --format=value(spec.containers[0].image)`) o que el bundle servido
+contiene un marcador del cambio. El mensaje «serving 100 percent of traffic» de `gcloud` **no** garantiza
+que la revisión nueva sea la que atiende.
