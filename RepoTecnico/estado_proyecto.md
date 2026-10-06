@@ -3469,6 +3469,14 @@ y los botones en el **pie** (el botón de envío usa `form="<id>"` para no dupli
   selección de habitaciones en `RoomsBoardAdmin`) no son formularios de alta/edición y se dejan como
   controles en línea.
 
+### Despliegue (release v38, 2026-10-06)
+
+Commit `aeee4f2` publicado en los tres remotos. Imágenes `web:v38`, `worker:v38` y `mcp:v38` construidas
+y desplegadas; sirviendo al 100 %: web `hotel-mcp-web-00045-t8m` (etiqueta `v38`), worker
+`hotel-mcp-worker-00016-gsq` y mcp `hotel-mcp-mcp-00009-sjx`. Se desplegó con `--no-traffic`, se verificó
+el canario `v38` (salud + marcadores de código en los bundles) y **después** se movió el tráfico
+explícitamente; `/health/ready` responde 200 READY.
+
 ### Pendiente
 
 - Revisión visual en navegador de las fichas convertidas.

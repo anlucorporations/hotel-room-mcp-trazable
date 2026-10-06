@@ -2073,3 +2073,42 @@ nuevo, inspeccionando los *bundles* estáticos de la revisión:
 (`gcloud run revisions describe <rev> --format=value(spec.containers[0].image)`) o que el bundle servido
 contiene un marcador del cambio. El mensaje «serving 100 percent of traffic» de `gcloud` **no** garantiza
 que la revisión nueva sea la que atiende.
+
+---
+
+## 61. Release v38 — formularios y fichas flotantes en las suites de personal (2026-10-06)
+
+**Cambios funcionales** (commit `aeee4f2`): todas las fichas y formularios de las suites de **Admin,
+Recepción, Mantenimiento y Ama de llaves** pasan a ser **diálogos flotantes** con estructura de
+**título · cuerpo · pie**. Se añade el componente compartido `components/ui/ModalShell.tsx` (con
+`useModalDialog`) y se convierten **29 fichas**. Sin cambios de esquema.
+
+**Builds (Cloud Build)**:
+
+| Componente | Imagen | Estado |
+|---|---|---|
+| web | `europe-west1-docker.pkg.dev/hotel-mcp/hotel-mcp/web:v38` | ✅ SUCCESS |
+| worker | `europe-west1-docker.pkg.dev/hotel-mcp/hotel-mcp/worker:v38` | ✅ SUCCESS |
+| mcp | `europe-west1-docker.pkg.dev/hotel-mcp/hotel-mcp/mcp:v38` | ✅ SUCCESS |
+
+**Despliegue y tráfico** (esta vez el tráfico se movió **explícitamente**, aplicando la lección del §60):
+
+| Servicio | Revisión sirviendo | Tráfico | Imagen |
+|---|---|---|---|
+| web | `hotel-mcp-web-00045-t8m` (etiqueta `v38`) | 100 % | `web@sha256:154c134c…` |
+| worker | `hotel-mcp-worker-00016-gsq` | 100 % | `worker@sha256:65cf9076…` |
+| mcp | `hotel-mcp-mcp-00009-sjx` | 100 % | `mcp@sha256:496ae0ef…` |
+
+Procedimiento: `--no-traffic` al desplegar → etiqueta de canario `v38` → verificación de salud y de
+código servido → `update-traffic --to-revisions=…=100`. La etiqueta `v37`, que quedaba apuntando a la
+revisión anterior, se reemplazó por `v38`.
+
+**Verificación post-despliegue**:
+
+| Comprobación | Resultado |
+|---|---|
+| `/health/ready` web | 200 READY (postgres, redis, polygonRPC UP) |
+| Canario `v38` | 200 READY antes de mover tráfico |
+| Código servido (bundles de `/recepcion`) | marcadores exclusivos de v38 presentes: `checkin-qr-dialog`, `checkout-charge-dialog`, `activities-book-dialog`, `room-detail-footer` |
+| Mismo control sobre la revisión anterior | los cuatro marcadores ausentes (confirmaba que v37 seguía sirviendo) |
+| Revisión e imagen real de cada servicio | comprobadas con `gcloud run revisions describe` |
