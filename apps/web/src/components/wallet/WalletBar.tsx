@@ -40,7 +40,7 @@ export function WalletBar() {
     return (
       <button
         type="button"
-        onClick={connect}
+        onClick={() => connect()}
         disabled={isConnecting}
         className={`${TOUCH} rounded-pill bg-azure px-5 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-60`}
       >

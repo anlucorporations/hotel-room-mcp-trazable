@@ -3,18 +3,19 @@
 import { useState, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider, createConfig, http } from "wagmi";
-import { injected } from "wagmi/connectors";
 import { activeChain, rpcUrl } from "@/config/chain";
+import { buildWalletConnectors } from "@/lib/wallet-connectors";
 
 const wagmiConfig = createConfig({
   chains: [activeChain],
   // **Cualquier cartera**, no solo la que ocupe `window.ethereum`:
   //   · `multiInjectedProviderDiscovery` (EIP-6963) hace que wagmi descubra TODAS las carteras
-  //     inyectadas instaladas (MetaMask, Rabby, Coinbase, Brave…) y cada una aparezca como conector
-  //     propio, con su nombre e icono.
-  //   · `shimDisconnect` mantiene coherente el estado cuando el usuario desconecta desde la propia
-  //     extensión (sin él queda la sesión «fantasma»: la web dice «conectada» y la cartera no).
-  connectors: [injected({ shimDisconnect: true })],
+  //     inyectadas instaladas (MetaMask, Rabby, Coinbase, Brave, Zerion…) y cada una aparezca como
+  //     conector propio, con el nombre y el icono que anuncia; el `injected()` del plan queda como
+  //     **respaldo** para navegadores sin anuncio EIP-6963.
+  //   · El plan añade **Coinbase Wallet** siempre y **WalletConnect** solo si existe
+  //     `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` (ver `lib/wallet-connectors.ts`).
+  connectors: buildWalletConnectors({ walletConnectProjectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID }),
   multiInjectedProviderDiscovery: true,
   // Menos carga para la cartera y el RPC: `batch` agrupa las lecturas del mismo tick (multicall) y
   // `retryCount` evita que un fallo puntual se traduzca en un error visible al huésped.

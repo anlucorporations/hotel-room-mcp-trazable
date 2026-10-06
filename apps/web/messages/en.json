@@ -240,6 +240,7 @@
     "pageTagline": "Every night available over the next 90 days, with its room type and price. Booking direct, with no middlemen."
   },
   "wallet": {
+    "chooseWallet": "Choose your wallet",
     "noWallet": "No Web3 wallet detected.",
     "installMetamask": "Install MetaMask",
     "connect": "Connect wallet",

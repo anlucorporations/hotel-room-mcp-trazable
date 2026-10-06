@@ -213,7 +213,7 @@ export function PurchaseHandoff({ purchase }: { purchase: PreparedPurchase }) {
       )}
 
       {!isConnected ? (
-        <button type="button" onClick={connect} className={PRIMARY_BTN}>
+        <button type="button" onClick={() => connect()} className={PRIMARY_BTN}>
           {t("handoff.connect")}
         </button>
       ) : isWrongNetwork ? (

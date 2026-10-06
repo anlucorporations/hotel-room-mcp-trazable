@@ -4,9 +4,11 @@ import { Fragment, useEffect, useId, useLayoutEffect, useRef, useState, type CSS
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useConnectors } from "wagmi";
 import type { BackOfficeRoleName } from "@hotel/shared/domain";
 import type { AdminSession } from "@/components/admin/useAdminSession";
 import { walletMenuItems, type WalletMenuAction } from "@/lib/wallet-menu-items";
+import { WalletChooser } from "./WalletChooser";
 import { useOnboarding } from "./useOnboarding";
 import { FaucetButton } from "./FaucetButton";
 
@@ -82,6 +84,8 @@ export function WalletMenu({ session, variant = "header" }: WalletMenuProps) {
   const t = useTranslations("walletMenu");
   const router = useRouter();
   const onboarding = useOnboarding();
+  // Billeteras disponibles para elegir (EIP-6963 + Coinbase + WalletConnect si está configurado).
+  const connectors = useConnectors();
   const [open, setOpen] = useState(false);
   const [panelStyle, setPanelStyle] = useState<CSSProperties | undefined>(undefined);
   const panelId = useId();
@@ -242,7 +246,16 @@ export function WalletMenu({ session, variant = "header" }: WalletMenuProps) {
               {hasSession ? t("sessionTitle") : t("walletTitle")}
             </p>
 
-            {items.map((item) => {
+            {!isConnected && connectors.length > 0 && (
+            <WalletChooser
+              connectors={connectors}
+              onPick={(connectorId) => {
+                close();
+                onboarding.connect(connectorId);
+              }}
+            />
+          )}
+          {items.map((item) => {
               const label = t(item.action as "security");
               const entry = item.href ? (
                 <Link

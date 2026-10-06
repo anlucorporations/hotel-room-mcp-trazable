@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAccount, useChainId, useConnect, useConnectors, useDisconnect, useSwitchChain } from "wagmi";
+import { useQueryClient } from "@tanstack/react-query";
 import { activeChain } from "@/config/chain";
 import { classifySwitchChainError, type SwitchChainError } from "./switchChainError";
+import { ensureWalletChain, type Eip1193Provider } from "@/lib/wallet-chain";
 
 export type { SwitchChainError };
 
@@ -17,7 +19,8 @@ export interface OnboardingState {
   /** Estado del último intento de cambio de red (RF-04); `null` si no hubo fallo. */
   readonly switchError: SwitchChainError | null;
   readonly isSwitchingNetwork: boolean;
-  connect: () => void;
+  /** Conecta con una billetera concreta (EIP-6963); sin argumento, la preferida. */
+  connect: (connectorId?: string) => void;
   switchToAppChain: () => void;
   /** Desconecta la wallet del sitio (acción del menú de cabecera, RF-40.2). */
   disconnect: () => void;
@@ -25,12 +28,13 @@ export interface OnboardingState {
 
 /** Estado de onboarding web3 (CU-17, docs/SRS.md §9, RF-04): wallet, conexión, red correcta y cambio de red. */
 export function useOnboarding(): OnboardingState {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, connector } = useAccount();
   const chainId = useChainId();
   const { connect, isPending } = useConnect();
   const connectors = useConnectors();
   const { disconnect } = useDisconnect();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
+  const queryClient = useQueryClient();
 
   const [hasWallet, setHasWallet] = useState(true);
   const [switchError, setSwitchError] = useState<SwitchChainError | null>(null);
@@ -39,6 +43,17 @@ export function useOnboarding(): OnboardingState {
   // esto, una wallet ya conectada (MetaMask) hace que el primer render cliente difiera del HTML
   // del servidor → React descarta y re-renderiza el árbol (destellos), y se repite en cada
   // `router.refresh()` de la compra. Tras montar, exponemos el estado real (CU-17, RNF-19/20).
+  // **Limpieza de estado entre carteras**: si cambia la cuenta o la red, se invalidan las consultas
+  // (saldo, noches, catálogo…) para no mezclar datos de dos billeteras en la misma sesión.
+  const identityRef = useRef<string>("");
+  useEffect(() => {
+    const identity = `${address ?? ""}:${chainId ?? ""}`;
+    if (identityRef.current && identityRef.current !== identity) {
+      void queryClient.invalidateQueries();
+    }
+    identityRef.current = identity;
+  }, [address, chainId, queryClient]);
+
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
@@ -62,18 +77,37 @@ export function useOnboarding(): OnboardingState {
     // Se usa el conector **ya configurado** (no un `injected()` nuevo por clic): con EIP-6963 la
     // lista incluye todas las carteras instaladas, así que sirve cualquiera; y reutilizar el conector
     // evita pedir permisos repetidos a MetaMask en cada intento.
-    connect: () => {
-      const preferred =
-        connectors.find((candidate) => candidate.id === "metaMask") ?? connectors[0];
-      if (preferred) connect({ connector: preferred });
+    connect: (connectorId?: string) => {
+      // Un solo aviso: se reutiliza el conector ya configurado (no se instancia un `injected()`
+      // nuevo por clic, que repetía la petición de permisos) y, con EIP-6963, cualquier billetera
+      // descubierta sirve. Sin `connectorId` se prefiere MetaMask y, si no está, la primera.
+      const selected = connectorId
+        ? connectors.find((candidate) => candidate.id === connectorId)
+        : connectors.find((candidate) => candidate.id === "metaMask") ?? connectors[0];
+      if (selected) connect({ connector: selected });
     },
-    // Capturamos el error de cambio de red (4902 incl.) para guiar al usuario sin romper.
+    // Cambio de red con **alta automática**: si la billetera no conoce la cadena (MetaMask devuelve
+    // 4902, porque 31337 no está en su catálogo), `ensureWalletChain` la añade con los parámetros de
+    // `activeChain` y reintenta el cambio; el usuario ve un solo diálogo por red nueva.
     switchToAppChain: () => {
       setSwitchError(null);
-      switchChain(
-        { chainId: activeChain.id },
-        { onError: (error) => setSwitchError(classifySwitchChainError(error)) },
-      );
+      void (async () => {
+        try {
+          const provider = (await connector?.getProvider()) as unknown as Eip1193Provider | undefined;
+          if (!provider) {
+            switchChain(
+              { chainId: activeChain.id },
+              { onError: (error) => setSwitchError(classifySwitchChainError(error)) },
+            );
+            return;
+          }
+          const result = await ensureWalletChain(provider, activeChain);
+          if (result === "rejected") setSwitchError("rejected");
+          else if (result === "failed") setSwitchError("failed");
+        } catch {
+          setSwitchError("failed");
+        }
+      })();
     },
     disconnect: () => disconnect(),
   };

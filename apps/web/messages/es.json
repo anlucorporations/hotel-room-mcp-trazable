@@ -240,6 +240,7 @@
     "pageTagline": "Todas las noches disponibles en los próximos 90 días, con su tipo de habitación y su precio. La compra es directa, sin intermediarios."
   },
   "wallet": {
+    "chooseWallet": "Elige tu billetera",
     "noWallet": "No detectamos una wallet web3.",
     "installMetamask": "Instala MetaMask",
     "connect": "Conectar wallet",
