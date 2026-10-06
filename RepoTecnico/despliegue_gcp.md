@@ -1866,3 +1866,46 @@ Verificado en local: typecheck 0 · eslint 0 · **vitest 83 ficheros / 707 prueb
 2. **Selector**: hay que confirmar por qué el componente no renderiza los conectores descubiertos
    (¿filtro por `type`/`id`?, ¿el menú solo los pinta en un estado concreto?). Se reproduce con el
    script de dos billeteras EIP-6963 usado en esta verificación.
+
+---
+
+## 57. Check-in: «la recepción no tiene configurada la wallet on-chain» (2026-10-06)
+
+**Síntoma** (reportado por el responsable): al hacer check-in, el sistema responde
+*«La recepción no tiene configurada la wallet on-chain: el check-in no puede anclarse y no se
+registra»*.
+
+**Diagnóstico (por logs, no por suposición).** El mensaje sale del guardián
+`ReceptionService.anchorCheckInOnChain` (`packages/shared/src/reception/service.ts:524`), que exige
+`walletClient` + `publicClient` + `nftContractAddress`. La búsqueda en Cloud Logging lo sitúa en:
+
+```
+2026-10-05T23:28:52Z · hotel-mcp-web-00036-ddd · ANCLAJE_NO_CONFIGURADO
+```
+
+Y la revisión de ese momento **no** tenía el secreto de recepción:
+
+| Revisión | `RECEPTION_WALLET_PRIVATE_KEY` | Estado |
+|---|---|---|
+| `hotel-mcp-web-00036-ddd` (23:20, la del error) | **NO** | retirada |
+| `hotel-mcp-web-00038-swx` (**la que sirve al 100 %**) | **SÍ** (`hotel-reception-private-key:latest`) | activa |
+
+**Causa de fondo**: el binding se añadió al *template* del servicio, pero por el **pin de tráfico por
+revisión** (ver §56) la revisión que seguía sirviendo era una anterior **sin** la variable: la
+actualización de configuración quedó en una revisión retirada y el hueco fue invisible hasta que
+alguien usó el check-in. Es el mismo patrón que ya mordió en el worker y en el propio web.
+
+**Estado actual (verificado)**:
+
+| Comprobación | Resultado |
+|---|---|
+| Revisión que sirve | `hotel-mcp-web-00038-swx` al **100 %** (mismo digest que `web:v35`) |
+| Secreto montado | `RECEPTION_WALLET_PRIVATE_KEY` ← `hotel-reception-private-key:latest` |
+| Formato del valor | `0x` + 64 hex ✓ (no vacío, sin espacios) |
+| Dirección derivada de la clave | `0x90F79bf6EB2c4f870365E785982E1f101E93b906` (**cuenta 3**) |
+| `RECEPTION_ROLE` de esa cuenta | **`true`** (concedido el 2026-10-05, tx `0xb2ee17ed67…`, bloque 489) |
+| Gas | 10 000 ETH (umbral configurado: 5) |
+
+**Acción**: reintentar el check-in; el anclaje ya tiene wallet, rol y saldo. Si volviera a aparecer el
+mensaje, la comprobación a repetir es exactamente esta tabla (y comprobar que la revisión **que sirve**
+—no el template— lleva el secreto).
