@@ -1909,3 +1909,43 @@ alguien usó el check-in. Es el mismo patrón que ya mordió en el worker y en e
 **Acción**: reintentar el check-in; el anclaje ya tiene wallet, rol y saldo. Si volviera a aparecer el
 mensaje, la comprobación a repetir es exactamente esta tabla (y comprobar que la revisión **que sirve**
 —no el template— lleva el secreto).
+
+
+---
+
+## 58. Release v36 — suite de recepción: PENDING_CLEANING y ficha detalle (2026-10-06)
+
+**Cambios funcionales**:
+- Estado operativo `PENDING_CLEANING` tras check-out; solo recepción puede liberar la habitación.
+- Ficha detalle de habitación con zonas Habitación y Huésped.
+- Checklist de limpieza/preparación y contadores de ocupación en la reserva.
+- Formulario de reserva actualizado con adultos, niños, bebés, mascotas y acceso PMR.
+- Casos de uso CU-31/CU-34 actualizados; CU-38 y CU-39 nuevos.
+
+**Builds (Cloud Build)**:
+
+| Componente | Imagen | Estado |
+|---|---|---|
+| web | `europe-west1-docker.pkg.dev/hotel-mcp/hotel-mcp/web:v36` | ✅ SUCCESS |
+| worker | `europe-west1-docker.pkg.dev/hotel-mcp/hotel-mcp/worker:v36` | ✅ SUCCESS |
+| mcp | `europe-west1-docker.pkg.dev/hotel-mcp/hotel-mcp/mcp:v36` | ✅ SUCCESS |
+
+**Revisiones en Cloud Run**:
+
+| Servicio | Revisión | Tráfico | URL |
+|---|---|---|---|
+| web | `hotel-mcp-web-00063-put` | 100 % | https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app |
+| worker | `hotel-mcp-worker-00013-qvg` | 100 % | https://hotel-mcp-worker-d6jlzeq5yq-ew.a.run.app |
+| mcp | `hotel-mcp-mcp-00005-tnl` | 100 % | https://hotel-mcp-mcp-d6jlzeq5yq-ew.a.run.app |
+
+**Verificación post-deploy**:
+
+| Endpoint | Resultado |
+|---|---|
+| `/health/ready` web | 200 READY (postgres, redis, polygonRPC UP) |
+| Home `/` | 200 OK |
+| `/recepcion` | 200 OK, con anomalía: bloque `404 This page could not be found.` incrustado al final del HTML |
+| `/api/reception/overview` | 401 UNAUTHORIZED (protección correcta) |
+| CSP | Incluye Anvil en `connect-src` ✅ |
+
+**Acción pendiente**: investigar el 404 incrustado en `/recepcion` (posible `not-found.tsx` o ruta paralela no resuelta en el build).
