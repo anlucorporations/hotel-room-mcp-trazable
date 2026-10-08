@@ -13,6 +13,9 @@
 
   Reglas de redacción: frases cortas, sin tecnicismos, y un dato por línea. Si un dato cambia con la
   temporada, indícalo expresamente (por ejemplo, «en verano, hasta las 15:00»).
+
+  Las preguntas concretas que hay que trasladar al hotel están en
+  `RepoTecnico/solicitud-contenidos-cliente.md`, listas para enviar.
 -->
 
 ## 1. Dónde estamos y cómo llegar

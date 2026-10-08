@@ -4183,8 +4183,11 @@ caliente, con `min-instances=0` en web y MCP. RNF-25 habla de instancias calient
 en caliente; se documenta el efecto (que es justo lo que el requisito pedía) y se mantiene el coste
 mínimo en el piloto.
 
-**Pendiente del cliente**: el contenido del hotel en `docs/manual-huesped.md` (7 marcas
-`PENDIENTE DEL CLIENTE`). El asistente ya responde, pero sobre lo que hay indexado.
+**Pendiente del cliente**: el contenido del hotel en `docs/manual-huesped.md` (plantilla con 8
+apartados) y los 7 puntos marcados en `docs/Manuales/06-huesped/**`. Las preguntas concretas, listas
+para enviar al hotel, están en **`RepoTecnico/solicitud-contenidos-cliente.md`**. El asistente ya
+responde, pero sobre lo que hay indexado: comprobado en producción, **no inventa** y remite a
+recepción cuando le falta un dato.
 
 ### 14.14 Decisiones A3, C1 y C2 (2026-10-08) — cerradas
 
