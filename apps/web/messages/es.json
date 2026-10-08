@@ -168,7 +168,16 @@
     "downloadPdfAria": "Descargar este manual en PDF",
     "backToIndex": "Todos los manuales",
     "spanishOnly": "Los manuales están escritos en español.",
-    "testNetworkNote": "El sistema funciona hoy en una red de pruebas privada: sirve para demostrar y validar el sistema, no para vender al público."
+    "testNetworkNote": "El sistema funciona hoy en una red de pruebas privada: sirve para demostrar y validar el sistema, no para vender al público.",
+    "huespedTitle": "Manual del huésped",
+    "huespedTagline": "Todo lo que puedes pedir durante tu estancia, caso por caso: desde preparar la cartera hasta dejar una reseña.",
+    "huespedPendingNote": "Algunos datos del hotel (dirección, horarios, servicios y normas) están pendientes de confirmar; aparecen marcados como «Pendiente de confirmar con el hotel».",
+    "huespedMapAlt": "Mapa de los 17 casos del huésped agrupados por momento: antes de llegar, conseguir tu noche, si te sobra, durante la estancia, después y cuando algo va mal",
+    "huespedDownloadAll": "Descargar el manual completo",
+    "huespedBackToIndex": "Manual del huésped",
+    "huespedSourceNote": "Fuente de este manual:",
+    "huespedCaseCount": "{count, plural, =0 {Sin casos} one {# caso} other {# casos}}",
+    "huespedOpen": "Ver el manual del huésped"
   },
   "howItWorks": {
     "title": "Cómo funciona",

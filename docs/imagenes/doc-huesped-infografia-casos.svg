@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 730" width="1000" height="730" role="img" aria-labelledby="inf-titulo inf-desc">
+  <title id="inf-titulo">Infografía de los 17 casos del huésped agrupados por momento: antes de llegar, conseguir tu noche, si te sobra la noche, durante la estancia, después y cuando algo va mal</title>
+  <desc id="inf-desc">Seis tarjetas agrupadas por momento. Antes de llegar reúne los casos 01 y 02; conseguir tu noche, los casos 03 a 07; si te sobra la noche, los casos 08 y 09; durante la estancia, los casos 10 a 12; después, los casos 13 a 16; y cuando algo va mal, el caso 17. Abajo se resume el recorrido completo del huésped.</desc>
+
+  <rect width="1000" height="730" fill="#F4F9FC"/>
+  <rect x="0" y="0" width="1000" height="90" fill="#0A4F75"/>
+  <text x="40" y="36" font-family="system-ui, Arial, sans-serif" font-size="14" font-weight="700" fill="#C3D4E0" letter-spacing="1.5">MANUAL DEL HUÉSPED · MAPA COMPLETO · 17 CASOS</text>
+  <text x="40" y="70" font-family="system-ui, Arial, sans-serif" font-size="26" font-weight="700" fill="#FFFFFF">Todo lo que puedes hacer, por momento</text>
+
+  <!-- ============ FILA 1 ============ -->
+
+  <!-- antes de llegar -->
+  <rect x="30" y="110" width="300" height="260" rx="16" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <rect x="30" y="110" width="300" height="10" rx="5" fill="#0F6C9C"/>
+  <text x="50" y="164" font-family="system-ui, Arial, sans-serif" font-size="18" font-weight="700" fill="#101F2C">Antes de llegar</text>
+  <text x="310" y="164" text-anchor="end" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">2 casos</text>
+  <line x1="50" y1="180" x2="310" y2="180" stroke="#DBE7EF" stroke-width="2"/>
+  <rect x="50" y="242" width="34" height="22" rx="11" fill="#E6F0F6" stroke="#DBE7EF"/>
+  <text x="67" y="258" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="14" font-weight="700" fill="#0F6C9C">01</text>
+  <text x="94" y="258" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#101F2C">Qué es una noche tokenizada</text>
+  <rect x="50" y="274" width="34" height="22" rx="11" fill="#E6F0F6" stroke="#DBE7EF"/>
+  <text x="67" y="290" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="14" font-weight="700" fill="#0F6C9C">02</text>
+  <text x="94" y="290" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#101F2C">Preparar tu cartera</text>
+
+  <text x="340" y="248" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="20" font-weight="700" fill="#0F6C9C">&#8594;</text>
+
+  <!-- conseguir tu noche -->
+  <rect x="350" y="110" width="300" height="260" rx="16" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <rect x="350" y="110" width="300" height="10" rx="5" fill="#1F7A4D"/>
+  <text x="370" y="164" font-family="system-ui, Arial, sans-serif" font-size="18" font-weight="700" fill="#101F2C">Conseguir tu noche</text>
+  <text x="630" y="164" text-anchor="end" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">5 casos</text>
+  <line x1="370" y1="180" x2="630" y2="180" stroke="#DBE7EF" stroke-width="2"/>
+  <rect x="370" y="194" width="34" height="22" rx="11" fill="#E6F0F6" stroke="#DBE7EF"/>
+  <text x="387" y="210" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="14" font-weight="700" fill="#0F6C9C">03</text>
+  <text x="414" y="210" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#101F2C">Ver noches disponibles</text>
+  <rect x="370" y="226" width="34" height="22" rx="11" fill="#E6F0F6" stroke="#DBE7EF"/>
+  <text x="387" y="242" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="14" font-weight="700" fill="#0F6C9C">04</text>
+  <text x="414" y="242" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#101F2C">Comprar una noche al hotel</text>
+  <rect x="370" y="258" width="34" height="22" rx="11" fill="#E6F0F6" stroke="#DBE7EF"/>
+  <text x="387" y="274" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="14" font-weight="700" fill="#0F6C9C">05</text>
+  <text x="414" y="274" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#101F2C">Comprar en reventa</text>
+  <rect x="370" y="290" width="34" height="22" rx="11" fill="#E6F0F6" stroke="#DBE7EF"/>
+  <text x="387" y="306" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="14" font-weight="700" fill="#0F6C9C">06</text>
+  <text x="414" y="306" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#101F2C">Ver tus noches y su estado</text>
+  <rect x="370" y="322" width="34" height="22" rx="11" fill="#E6F0F6" stroke="#DBE7EF"/>
+  <text x="387" y="338" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="14" font-weight="700" fill="#0F6C9C">07</text>
+  <text x="414" y="338" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#101F2C">Pedir una noche al asistente</text>
+
+  <text x="660" y="248" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="20" font-weight="700" fill="#0F6C9C">&#8594;</text>
+
+  <!-- si te sobra la noche -->
+  <rect x="670" y="110" width="300" height="260" rx="16" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <rect x="670" y="110" width="300" height="10" rx="5" fill="#B98324"/>
+  <text x="690" y="164" font-family="system-ui, Arial, sans-serif" font-size="18" font-weight="700" fill="#101F2C">Si te sobra la noche</text>
+  <text x="950" y="164" text-anchor="end" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">2 casos</text>
+  <line x1="690" y1="180" x2="950" y2="180" stroke="#DBE7EF" stroke-width="2"/>
+  <rect x="690" y="242" width="34" height="22" rx="11" fill="#E6F0F6" stroke="#DBE7EF"/>
+  <text x="707" y="258" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="14" font-weight="700" fill="#0F6C9C">08</text>
+  <text x="734" y="258" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#101F2C">Poner la noche en reventa</text>
+  <rect x="690" y="274" width="34" height="22" rx="11" fill="#E6F0F6" stroke="#DBE7EF"/>
+  <text x="707" y="290" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="14" font-weight="700" fill="#0F6C9C">09</text>
+  <text x="734" y="290" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#101F2C">Avisos de tu reventa</text>
+
+  <!-- ============ FILA 2 ============ -->
+
+  <!-- durante la estancia -->
+  <rect x="30" y="396" width="300" height="260" rx="16" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <rect x="30" y="396" width="300" height="10" rx="5" fill="#0A4F75"/>
+  <text x="50" y="450" font-family="system-ui, Arial, sans-serif" font-size="18" font-weight="700" fill="#101F2C">Durante la estancia</text>
+  <text x="310" y="450" text-anchor="end" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">3 casos</text>
+  <line x1="50" y1="466" x2="310" y2="466" stroke="#DBE7EF" stroke-width="2"/>
+  <rect x="50" y="512" width="34" height="22" rx="11" fill="#E6F0F6" stroke="#DBE7EF"/>
+  <text x="67" y="528" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="14" font-weight="700" fill="#0F6C9C">10</text>
+  <text x="94" y="528" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#101F2C">Entrar con tu resguardo QR</text>
+  <rect x="50" y="544" width="34" height="22" rx="11" fill="#E6F0F6" stroke="#DBE7EF"/>
+  <text x="67" y="560" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="14" font-weight="700" fill="#0F6C9C">11</text>
+  <text x="94" y="560" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#101F2C">Extras y cargos de la estancia</text>
+  <rect x="50" y="576" width="34" height="22" rx="11" fill="#E6F0F6" stroke="#DBE7EF"/>
+  <text x="67" y="592" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="14" font-weight="700" fill="#0F6C9C">12</text>
+  <text x="94" y="592" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#101F2C">Salir y cerrar la cuenta</text>
+
+  <text x="340" y="534" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="20" font-weight="700" fill="#0F6C9C">&#8594;</text>
+
+  <!-- después -->
+  <rect x="350" y="396" width="300" height="260" rx="16" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <rect x="350" y="396" width="300" height="10" rx="5" fill="#0F6380"/>
+  <text x="370" y="450" font-family="system-ui, Arial, sans-serif" font-size="18" font-weight="700" fill="#101F2C">Después</text>
+  <text x="630" y="450" text-anchor="end" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">4 casos</text>
+  <line x1="370" y1="466" x2="630" y2="466" stroke="#DBE7EF" stroke-width="2"/>
+  <rect x="370" y="496" width="34" height="22" rx="11" fill="#E6F0F6" stroke="#DBE7EF"/>
+  <text x="387" y="512" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="14" font-weight="700" fill="#0F6C9C">13</text>
+  <text x="414" y="512" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#101F2C">Dejar una reseña</text>
+  <rect x="370" y="528" width="34" height="22" rx="11" fill="#E6F0F6" stroke="#DBE7EF"/>
+  <text x="387" y="544" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="14" font-weight="700" fill="#0F6C9C">14</text>
+  <text x="414" y="544" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#101F2C">Consultar el histórico de ventas</text>
+  <rect x="370" y="560" width="34" height="22" rx="11" fill="#E6F0F6" stroke="#DBE7EF"/>
+  <text x="387" y="576" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="14" font-weight="700" fill="#0F6C9C">15</text>
+  <text x="414" y="576" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#101F2C">Tu menú de cartera</text>
+  <rect x="370" y="592" width="34" height="22" rx="11" fill="#E6F0F6" stroke="#DBE7EF"/>
+  <text x="387" y="608" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="14" font-weight="700" fill="#0F6C9C">16</text>
+  <text x="414" y="608" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#101F2C">Conseguir dinero de prueba</text>
+
+  <text x="660" y="534" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="20" font-weight="700" fill="#0F6C9C">&#8594;</text>
+
+  <!-- cuando algo va mal -->
+  <rect x="670" y="396" width="300" height="260" rx="16" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <rect x="670" y="396" width="300" height="10" rx="5" fill="#C4522C"/>
+  <text x="690" y="450" font-family="system-ui, Arial, sans-serif" font-size="18" font-weight="700" fill="#101F2C">Cuando algo va mal</text>
+  <text x="950" y="450" text-anchor="end" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">1 caso</text>
+  <line x1="690" y1="466" x2="950" y2="466" stroke="#DBE7EF" stroke-width="2"/>
+  <rect x="690" y="544" width="34" height="22" rx="11" fill="#FAE5E3" stroke="#DBE7EF"/>
+  <text x="707" y="560" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="14" font-weight="700" fill="#B3261E">17</text>
+  <text x="734" y="560" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#101F2C">Si algo no funciona</text>
+  <text x="690" y="610" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">Reúne los fallos más comunes:</text>
+  <text x="690" y="630" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">cartera, red, compra, resguardo QR</text>
+  <text x="690" y="650" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">y páginas que no cargan.</text>
+
+  <text x="500" y="700" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">El recorrido: preparo mi cartera &#8594; compro o revendo &#8594; llego y enseño mi resguardo &#8594; estancia: extras &#8594; salgo y cierro la cuenta</text>
+</svg>

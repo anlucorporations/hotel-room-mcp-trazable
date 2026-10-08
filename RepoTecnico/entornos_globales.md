@@ -105,7 +105,10 @@ Estado respecto a `.env.example`: **OK** = presente · **FALTA** = la exige el c
 | `ALERT_EMAIL` | monitor | sí | **FALTA** | Destinatario de las alertas (`DEVOPS_ALERT_EMAIL` existe para otro uso) |
 | `OWNER_EMAIL` | despliegue/semillas | no | OK | Correo de Carlos |
 | `VAPID_PUBLIC_KEY` / `_PRIVATE_KEY` / `_SUBJECT` | shared/push | sí (con D-03) | OK / vacías | **La clave pública de ejemplo contiene un espacio y es inválida** |
-| `ANTHROPIC_API_KEY` / `ANTHROPIC_MODEL` | web (asistente) | sí (si se mantiene el asistente) | **FALTA** | Dependencia externa de pago no presupuestada |
+| `ASSISTANT_PROVIDER` | web (asistente) | no | NUEVA (v3) | Conmutador del LLM: `vertex` (por defecto) o `anthropic`. Ver §3.7 |
+| `VERTEX_MODEL` / `VERTEX_LOCATION` | web (asistente) | no | NUEVA (v3) | Por defecto `gemini-2.5-flash-lite` y `europe-west1` |
+| `VERTEX_MAX_OUTPUT_TOKENS` | web (asistente) | no | NUEVA (v3) | Tope de salida (por defecto 512); palanca de coste RNF-24 |
+| `ANTHROPIC_API_KEY` / `ANTHROPIC_MODEL` | web (asistente) | solo si `ASSISTANT_PROVIDER=anthropic` | **FALTA** | Respaldo conmutable (~82 USD/mes). Ya **no** es necesaria con Vertex |
 | `MCP_BASE_URL` / `MCP_SHARED_SECRET` | web ↔ mcp | sí (asistente) | **FALTA** | Pasarela MCP local |
 | `COINGECKO_API_KEY`, `BINANCE_FALLBACK_API_URL` | shared/rates | no | OK | Fallback hoy con valor fijo |
 | `APPLE_PASS_*`, `APPLE_TEAM_IDENTIFIER`, `GOOGLE_WALLET_ISSUER_ID`, `GOOGLE_APPLICATION_CREDENTIALS_JSON` | web/passes | sí (con D-11) | vacías | Pases Apple/Google reales |
@@ -122,6 +125,22 @@ Estado respecto a `.env.example`: **OK** = presente · **FALTA** = la exige el c
 | `LOG_LEVEL` | todos | no | OK |
 
 > **Conclusión**: copiar `.env.example` tal cual **no arranca el sistema** (el `fail-fast` de zod rechaza la configuración). La corrección de la plantilla es tarea del hito **M0**.
+
+### 3.7 Asistente IA — conmutador de proveedor (v3, hito H1)
+
+El asistente elige el LLM por variable de entorno; el resto del código solo ve el puerto `LlmClient`
+(`apps/web/src/lib/assistant/llm.ts`). La composición vive en `apps/web/src/lib/assistant/llm-provider.ts`.
+
+| Proveedor | Variables | Autenticación | Coste estimado | Residencia del dato |
+|---|---|---|---|---|
+| **`vertex`** (por defecto) | `VERTEX_MODEL`, `VERTEX_LOCATION`, `VERTEX_MAX_OUTPUT_TOKENS` | Cuenta de servicio `hotel-mcp-run@` (**sin secretos nuevos**; ADC) | ≈ 2,6 USD/mes | **UE** (`europe-west1`) |
+| `anthropic` | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` | Clave de API en Secret Manager | ≈ 82 USD/mes | US |
+
+- El proyecto de Vertex se toma de `GOOGLE_VERTEX_PROJECT`, o de `GOOGLE_CLOUD_PROJECT` /
+  `GCLOUD_PROJECT` (estas dos las inyecta Cloud Run automáticamente). **Si no hay proyecto, la ruta
+  falla en cerrado (503)** y la UI ofrece la navegación manual, en lugar de devolver un 500.
+- El import del SDK de Vertex es dinámico: con `ASSISTANT_PROVIDER=anthropic` no se carga
+  `google-auth-library` ni el Vercel AI SDK (menos peso en el arranque en frío).
 
 ---
 

@@ -119,6 +119,26 @@ acciones y títulos, **coral** (`coral #C4522C`) para avisos, **helecho** (`fern
 | 8 | `doc-esquema-quemado-12h.svg` | SVG | 1400×600 | `manual-cliente.md` §1 | Un reloj marcando las **12:00** en el centro. A la izquierda, tres tarjetas de noche con la etiqueta **«no vendida»** y una flecha hacia el centro. A la derecha, esas tarjetas con un sello **«retirada»** y el texto **«Sin intervención humana»**. Abajo, un cartel destacado: **«Una noche ya vendida a un cliente NUNCA se retira»**. |
 | 9 | `doc-acceso-doble-factor.svg` | SVG | 1200×700 | `manual-cliente.md` §2 y `manual-recepcion.md` §1 | Tres cajas en fila con un candado cada una: **1. Usuario y contraseña**, **2. Código de 6 dígitos del móvil**, **3. Cartera conectada**. Debajo, una nota con el texto **«El código de 6 dígitos es solo para el personal del hotel»**. |
 
+## Ilustraciones de los manuales del huésped
+
+Generadas para los 17 casos de `docs/Manuales/06-huesped/`. Cada manual lleva su marcador
+`<!-- GENERAR_IMAGEN: … -->` con el bloque Mermaid del que sale la imagen, y la referencia
+`![…](imagenes/…)` que la inserta.
+
+| # | Fichero | Formato | Medidas | Dónde se usa | Qué debe mostrar |
+|---|---|---|---|---|---|
+| 10 | `doc-huesped-estados-de-una-noche.svg` | SVG | 800×620 | `docs/Manuales/06-huesped/01-que-es-una-noche.md` | Diagrama de estados de una noche: el hotel publica → **Disponible**; la compras → **Tuya**; la pones a la venta → **En reventa**; la retiras → vuelve a **Tuya**; si pasa la fecha → **Expirada**; y de expirada el hotel la **Retira**. |
+| 11 | `doc-huesped-flujo-compra.svg` | SVG | 800×560 | `04-comprar-una-noche.md` | Cuatro pasos encadenados: **Eliges la noche → Revisas el precio → Firmas en tu cartera → La noche es tuya**. |
+| 12 | `doc-huesped-flujo-asistente.svg` | SVG | 800×700 | `07-pedir-al-asistente.md` | Cinco pasos: **Pides una noche al asistente → Comprueba disponibilidad y precio → Te prepara la reserva → Revisas y firmas → Aparece en Mis noches**. |
+| 13 | `doc-huesped-flujo-reventa.svg` | SVG | 800×400 | `08-poner-tu-noche-en-reventa.md` | Tres pasos en horizontal: **Pones tu noche en reventa → Otro cliente la compra → Recibes el aviso**. |
+| 14 | `doc-huesped-flujo-checkin.svg` | SVG | 800×700 | `10-entrar-con-tu-qr.md` | Cinco pasos: **Abres Mis noches → Pides tu resguardo QR → Firmas en tu cartera → Lo enseñas en recepción → Recepción registra tu entrada**. |
+| 15 | `doc-huesped-flujo-checkout.svg` | SVG | 800×700 | `12-salir-y-cerrar-la-cuenta.md` | Cinco pasos: **Recoges tus cosas → Entregas habitación y llaves → Recepción revisa cómo quedó → Cancela los cargos que no se cobran → Cuenta cerrada y habitación pendiente de limpieza**. |
+| 16 | `doc-huesped-infografia-casos.svg` | SVG | 1000×730 | `17-si-algo-no-funciona.md` y el índice `docs/Manuales/06-huesped/README.md` | Infografía con los **17 casos agrupados por momento**: Antes de llegar (01–02) · Conseguir tu noche (03–07) · Si te sobra la noche (08–09) · Durante la estancia (10–12) · Después (13–16) · Cuando algo va mal (17). |
+
+> Estas siete piezas **no** se rasterizan a PNG: en este entorno el navegador de Playwright no
+> arranca por falta de `libnspr4`/`libnss3`, y el guardián solo exige SVG para las ilustraciones de
+> manual.
+
 ## Bloques Mermaid listos para pegar
 
 Los dos diagramas siguientes se pueden pegar tal cual en cualquier visor de Mermaid (por ejemplo

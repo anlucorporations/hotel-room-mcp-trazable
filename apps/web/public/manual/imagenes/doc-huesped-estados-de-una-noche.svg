@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 700" width="800" height="700" role="img" aria-labelledby="est-titulo est-desc">
+  <title id="est-titulo">Estados por los que pasa una noche: disponible, tuya, en reventa, expirada y retirada</title>
+  <desc id="est-desc">Diagrama de estados. El hotel publica la noche y queda disponible; si la compras pasa a ser tuya; si la pones a la venta queda en reventa y, si la retiras, vuelve a ser tuya. Una noche disponible que pasa la fecha sin venderse queda expirada, y una noche tuya que pasa la fecha también queda expirada. De expirada, el hotel la retira.</desc>
+  <defs>
+    <marker id="est-azul" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#0F6C9C"/>
+    </marker>
+    <marker id="est-coral" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#C4522C"/>
+    </marker>
+    <marker id="est-gris" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#6B8296"/>
+    </marker>
+  </defs>
+
+  <rect width="800" height="700" fill="#F4F9FC"/>
+  <rect x="0" y="0" width="800" height="90" fill="#0A4F75"/>
+  <text x="40" y="36" font-family="system-ui, Arial, sans-serif" font-size="14" font-weight="700" fill="#C3D4E0" letter-spacing="1.5">MANUAL DEL HUÉSPED · 01 · QUÉ ES UNA NOCHE</text>
+  <text x="40" y="70" font-family="system-ui, Arial, sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">Los estados por los que pasa una noche</text>
+
+  <!-- estado inicial -->
+  <circle cx="180" cy="112" r="9" fill="#0E2A3F"/>
+  <line x1="180" y1="124" x2="180" y2="143" stroke="#6B8296" stroke-width="3" marker-end="url(#est-gris)"/>
+  <text x="198" y="118" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">el hotel la publica</text>
+
+  <!-- disponible -->
+  <rect x="90" y="148" width="180" height="64" rx="14" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <rect x="106" y="160" width="148" height="6" rx="3" fill="#1F7A4D"/>
+  <text x="180" y="196" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="18" font-weight="700" fill="#101F2C">Disponible</text>
+
+  <!-- tuya -->
+  <rect x="530" y="148" width="180" height="64" rx="14" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <rect x="546" y="160" width="148" height="6" rx="3" fill="#0F6C9C"/>
+  <text x="620" y="196" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="18" font-weight="700" fill="#101F2C">Tuya</text>
+
+  <!-- en reventa -->
+  <rect x="530" y="348" width="180" height="64" rx="14" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <rect x="546" y="360" width="148" height="6" rx="3" fill="#B98324"/>
+  <text x="620" y="396" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="18" font-weight="700" fill="#101F2C">En reventa</text>
+
+  <!-- expirada -->
+  <rect x="90" y="438" width="180" height="64" rx="14" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <rect x="106" y="450" width="148" height="6" rx="3" fill="#C4522C"/>
+  <text x="180" y="486" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="18" font-weight="700" fill="#101F2C">Expirada</text>
+
+  <!-- retirada -->
+  <rect x="90" y="560" width="180" height="64" rx="14" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <rect x="106" y="572" width="148" height="6" rx="3" fill="#6B8296"/>
+  <text x="180" y="608" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="18" font-weight="700" fill="#101F2C">Retirada</text>
+
+  <!-- transiciones -->
+  <line x1="270" y1="180" x2="526" y2="180" stroke="#0F6C9C" stroke-width="3" marker-end="url(#est-azul)"/>
+  <text x="399" y="168" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">la compras</text>
+
+  <line x1="620" y1="212" x2="620" y2="344" stroke="#0F6C9C" stroke-width="3" marker-end="url(#est-azul)"/>
+  <text x="608" y="288" text-anchor="end" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">la pones a la venta</text>
+
+  <line x1="680" y1="344" x2="680" y2="214" stroke="#0F6C9C" stroke-width="3" marker-end="url(#est-azul)"/>
+  <text x="692" y="288" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">la retiras</text>
+
+  <line x1="180" y1="212" x2="180" y2="434" stroke="#C4522C" stroke-width="3" marker-end="url(#est-coral)"/>
+  <text x="198" y="306" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">pasa la fecha sin venderse</text>
+
+  <line x1="560" y1="212" x2="252" y2="434" stroke="#C4522C" stroke-width="3" marker-end="url(#est-coral)"/>
+  <text x="420" y="334" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">pasa la fecha</text>
+
+  <line x1="180" y1="502" x2="180" y2="556" stroke="#6B8296" stroke-width="3" marker-end="url(#est-gris)"/>
+  <text x="198" y="536" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">el hotel la retira</text>
+
+  <text x="40" y="664" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">Una noche solo puede estar en un estado a la vez.</text>
+</svg>

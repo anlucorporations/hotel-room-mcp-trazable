@@ -2,26 +2,24 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { PublicShell } from "@/components/layout/PublicShell";
-import { MANUALS } from "@/lib/help/manuals.generated";
+import { HUESPED_MANUALS, HUESPED_PRINTABLE } from "@/lib/help/huesped.generated";
 import { groupTopics } from "@/lib/help/group-topics";
-import styles from "../manual.module.css";
+import styles from "../../manual.module.css";
 
 /**
- * Manual navegable por temas → secciones → sub-secciones (M9, D-14/D-17).
+ * Un caso del manual del huésped, navegable por secciones (rol INTEGRADOR, 2026-10-07).
  *
- * El cuerpo de cada sección llega ya convertido a HTML desde `docs/manual-*.md` por
- * `apps/web/scripts/build-manuals.mjs`; aquí solo se aporta la estructura (encabezados, índice
- * lateral y descarga del PDF), de modo que el manual del repositorio sigue siendo la fuente
- * única y no hay texto duplicado a mano. El agrupado temas/sub-secciones es compartido con el
- * manual del huésped (`lib/help/group-topics.ts`).
+ * El cuerpo llega ya convertido a HTML y escapado por `apps/web/scripts/build-huesped-manuals.mjs`
+ * desde `docs/Manuales/06-huesped/<NN>-<caso>.md`; aquí solo se aporta la estructura (encabezados,
+ * índice lateral, ilustración y descarga de la versión imprimible completa).
  */
 export function generateStaticParams() {
-  return MANUALS.map((manual) => ({ slug: manual.slug }));
+  return HUESPED_MANUALS.map((manual) => ({ slug: manual.slug }));
 }
 
-export default async function ManualPage({ params }: { params: { slug: string } }) {
+export default async function HuespedManualPage({ params }: { params: { slug: string } }) {
   const t = await getTranslations("help");
-  const manual = MANUALS.find((candidate) => candidate.slug === params.slug);
+  const manual = HUESPED_MANUALS.find((candidate) => candidate.slug === params.slug);
   if (!manual) notFound();
 
   const topics = groupTopics(manual.sections);
@@ -29,41 +27,24 @@ export default async function ManualPage({ params }: { params: { slug: string } 
   return (
     <PublicShell>
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-5 py-10">
-        <nav aria-label={t("manualsLabel")} className="text-small">
+        <nav aria-label={t("huespedTitle")} className="text-small">
           <Link
-            href="/ayuda"
+            href="/ayuda/huesped"
             className="font-medium text-ink-soft underline transition-colors hover:text-ink"
           >
-            ← {t("backToIndex")}
+            ← {t("huespedBackToIndex")}
           </Link>
         </nav>
 
         <header className="flex flex-col gap-4 border-b border-line pb-6 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="font-display text-h2 font-semibold tracking-tight">{manual.title}</h1>
-          </div>
+          <h1 className="font-display text-h2 font-semibold tracking-tight">{manual.title}</h1>
           <a
-            href={manual.pdf}
+            href={HUESPED_PRINTABLE}
             download
             aria-label={t("downloadPdfAria")}
             className="inline-flex flex-none items-center justify-center gap-2 rounded-brand border border-line bg-shell px-4 py-2 text-small font-semibold text-ink shadow-sm transition hover:bg-mist-2 focus:outline-none focus:ring-2 focus:ring-azure"
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            {t("downloadPdf")}
+            {t("huespedDownloadAll")}
           </a>
         </header>
 
@@ -111,6 +92,10 @@ export default async function ManualPage({ params }: { params: { slug: string } 
                 ))}
               </section>
             ))}
+
+            <p className="mt-10 border-t border-line pt-4 text-small text-ink-soft">
+              {t("huespedSourceNote")} <code>{manual.source}</code>
+            </p>
           </article>
         </div>
       </div>

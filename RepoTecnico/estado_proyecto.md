@@ -3392,21 +3392,141 @@ comportamiento observado en producción.
 | D-C11 | Cargo por daños es **nota interna** cobrada en el **check-out** | Se suma al folio/estado de cuenta de la estancia |
 | D-C12 | Foto/evidencia es **opcional pero recomendada** | El sistema advierte si falta, pero no bloquea |
 | D-C14 | El huésped es **notificado del cargo por daños** con evidencia e importe; tiene plazo para reclamar antes del check-out | Tabla `damage_charge_guest_notifications`; canal email/Telegram/web; cobro en check-out si no reclama |
+| D-C15 | La **inspección mantiene firma on-chain** aunque no libere venta; la liberación manual por Recepción/Admin puede firmarse o no según política interna | `housekeeping_inspections.signature_id` obligatoria; liberación con firma opcional configurable |
+| D-C16 | Firmas **EIP-712 off-chain** verificadas criptográficamente en BD y comprobadas contra snapshot de roles | `on_chain_signatures`: `nonce`, `domain_hash`, `recovered_signer`, `verified_at`, `role_snapshot`; estado `SIGNED` exige firma válida |
+| D-C17 | Política de PIN completa | 4-6 dígitos, bcrypt, bloqueo tras 5 fallos, rotación 90 días, PIN de un solo uso inicial, timeout de sesión 5 min |
+| D-C18 | Política de resiliencia de anclaje | Backoff exponencial, máx. 8 reintentos, TTL 24 h, estado `PENDING_ANCHOR`, bloqueo de nueva acción sobre la entidad pendiente |
+| D-C19 | Política de privacidad/GDPR de la notificación | Datos mínimos, fotos cifradas con retención 90 días, base contractual, canal preferido, derecho de acceso/supresión |
+| D-C20 | Áreas críticas desglosadas en tipos específicos | `POOL_FILTER`, `WATER_PUMP`, `ELEVATOR`, `ELECTRIC_GENERATOR` con `is_critical = TRUE` |
+| D-C21 | Auditoría completa de acciones off-chain | Tabla `operator_audit_log` (actor, rol, entidad, acción, valores, terminal, timestamp) |
+| D-C22 | Gobernanza de feature flags | Solo Owner con TOTP + auditoría; desactivar flags obligatorios exige firma on-chain del cambio |
+| D-C23 | Alcance on-chain confirmado | Firma **obligatoria** en bloqueo/desbloqueo de habitación y cargos por daños; **opcional** en inspección; se crea `HotelOperations.sol` sin tocar `HotelNights.sol` |
+| D-C24 | Soporte = Administrador (Owner) | Lectura de cola de anclajes y terminales; recuperación de PIN; escalado de firmas fallidas y caída de RPC |
+| D-C25 | Backup/recuperación | RPO 1 h, RTO 4 h, dump diario + WAL/PITR, evidencias replicadas, retención 30 d + 12 m |
+| D-C26 | Rendimiento medible | Tablero p95 < 500 ms; listados p95 < 800 ms (pág. 50); firma p95 < 5 s; 20 usuarios / 50 habitaciones / 90 días |
+| D-C27 | Cargo por daños **sin firma on-chain** | Solo auditoría off-chain; firma obligatoria on-chain limitada a bloqueo/desbloqueo de habitación (ajusta D-C23) |
+| D-C28 | Accesibilidad: solo usabilidad móvil | Sin estándar formal WCAG; buenas prácticas básicas (riesgo aceptado) |
+| D-C29 | Usabilidad de terminales | ≤ 30 s/tarea, ≤ 3 toques, idioma del operario, botones amplios, confirmación visual+sonora |
+| D-C30 | Terminales sin modo offline | Bloqueo optimista, degradación graceful ante caída de Redis/PostgreSQL |
+| D-C31 | Cumplimiento y auditoría | Retención 5 años, append-only con hash encadenado, exportación de evidencias |
+| D-C32 | Criterios observables de firma | Icono ⛓, etiqueta, `data-testid`, botón disabled sin wallet, modal de previsualización |
+| D-C33 | Alerta de suministros | Umbral configurable (20 % por defecto), notificación al Ama de llaves, recordatorio diario, cierre automático al reponer |
+| D-C34 | Firmas por tipo (sin "recomendada") | Resolver incidencia: no; preventivo crítico: obligatorio; preventivo no crítico: no; flags solo dev/test |
+| D-C35 | Permisos del técnico de mantenimiento | Solo sus incidencias/tareas y áreas; sin importes, huéspedes, cargos, config ni firma |
+| D-C36 | El técnico puede reportar incidencias | Vocabulario `RECEPTION`, `HEAD_KEEPER`, `HOUSEKEEPER`, `HEAD_MAINTENANCE`, `MAINTENANCE_TECH` con CHECK en SQL |
+| D-C37 | Permisos de Recepción | Reporta incidencias, publica/despublica venta y resuelve reclamaciones; sin firma on-chain |
+| D-C38 | Validación de subordinados | SLA 24 h, estado `PENDING_VERIFICATION_EXPIRED`, escalado al Administrador |
+| D-C39 | Contrato inmutable con evento genérico | `OperationalAction(actionType, entityId, payloadHash, signer, timestamp)`; sin proxy ni redeploy al añadir tipos |
+| D-C40 | Ruta `/ama-de-llaves` con redirección desde `/housekeeping` | No rompe enlaces existentes; la UI la llama "Ama de llaves" |
+| D-C41 | Informes/notificaciones = propuesta del equipo | `RF-M-11`, `RF-M-12`, `RF-K-10` quedan en prioridad baja para Fase 2 |
+| D-C42 | Autenticación de jefes | Contraseña + TOTP; wallet desacoplada solo para firmar EIP-712 |
 
 ### Modelo de datos resumido
 
 - Nuevas tablas: `operator_wallets`, `on_chain_signatures`, `maintenance_area_types`, `maintenance_areas`, `maintenance_area_tasks`, `maintenance_area_logs`, `housekeeping_inspections`, `housekeeping_damage_charges`.
 - Tablas extendidas: `admin_users` (nuevos roles), `maintenance_incidents`, `preventive_plans`, `preventive_tasks`, `rooms`, `additional_charges` (vía FK), `nfts` (vía `housekeeping_damage_charges.token_id`).
-- Nuevas tablas adicionales: `terminal_operators` (PIN de terminales fijos), `damage_charge_guest_notifications` (notificación al huésped).
+- Nuevas tablas adicionales: `terminal_operators` (PIN de terminales fijos), `damage_charge_guest_notifications` (notificación al huésped), `operator_audit_log` (auditoría off-chain).
 
 ### Estado de auditoría (2026-10-06)
 
-- Informe: `RepoTecnico/propuesta_vNext/INFORME_AUDITORIA_VNEXT_V1.md`
-- Veredicto: **NO LISTA** para Fase 2
+- Informe: `RepoTecnico/propuesta_vNext/INFORME_AUDITORIA_VNEXT_V1.md` (con **Anexo A — Estado de resolución**)
+- Veredicto inicial: **NO LISTA** para Fase 2
 - Hallazgos: 3 CRÍTICOS, 19 ALTOS, 13 MEDIOS, 4 BAJOS
-- Resolviendo bloqueadores CRÍTICOS con el cliente.
+- **Resueltos: 39/39 hallazgos** (3 CRÍTICOS, 19 ALTOS, 13 MEDIOS, 4 BAJOS) mediante las decisiones D-C13…D-C42.
+- **Veredicto final: APTA para Fase 2** (pendiente de validación del cliente).
 
-**Próximo paso**: terminar de resolver los hallazgos críticos y altos; una vez cerrados, actualizar los artefactos de datos y pasar a Fase 2 (casos de uso + documento técnico).
+### Decisiones de auditoría resueltas (2026-10-06)
+
+| # | Decisión | Implicación |
+|---|---|---|
+| D-C13 | Wallet de respaldo = wallet del Owner/Administrador | `operator_wallets.role = 'OWNER_BACKUP'` (H-13) |
+| D-C14 | Notificación al huésped con evidencia, importe y plazo de reclamación | `damage_charge_guest_notifications` (H-36) |
+| D-C15 | La inspección no libera venta | Firma certifica revisión (H-06) |
+| D-C16 | Firma EIP-712 off-chain verificada criptográficamente + snapshot de roles | Campos de verificación en `on_chain_signatures` (H-10) |
+| D-C17 | Política de PIN completa | 4-6 dígitos, bcrypt, 5 fallos, 90 días, 1 uso, 5 min (H-01) |
+| D-C18 | Resiliencia de anclaje | Backoff, 8 reintentos, TTL 24 h, `PENDING_ANCHOR` (H-07) |
+| D-C19 | Privacidad/GDPR | Datos mínimos, fotos cifradas, retención 90 d (H-15) |
+| D-C20 | Áreas críticas desglosadas | `POOL_FILTER`, `WATER_PUMP`, `ELEVATOR`, `ELECTRIC_GENERATOR` (H-02) |
+| D-C21 | Auditoría off-chain completa | `operator_audit_log` (H-12/H-14) |
+| D-C22 | Gobernanza de feature flags | Solo Owner + TOTP; desactivar obligatorios exige firma (H-11) |
+| D-C23 | Alcance on-chain | Bloqueo/cargos obligatorios; inspección opcional; `HotelOperations.sol` (H-31/H-32) |
+| D-C24 | Soporte = Administrador | Cola/terminales y escalado (H-37) |
+| D-C25 | Backup/recuperación | RPO 1 h, RTO 4 h, PITR (H-18) |
+| D-C26 | Rendimiento medible | p95 y escenario de carga (H-23) |
+
+**Próximo paso**: con los 39 hallazgos resueltos, validar el alcance con el cliente y pasar a **Fase 2** (casos de uso Gherkin/EARS + trazabilidad, gráficos y documento técnico).
+
+---
+
+### Fase 2 — Casos de uso, gráficos y documento técnico (2026-10-06)
+
+**Artefactos generados:**
+
+| Artefacto | Ruta | Contenido |
+|---|---|---|
+| Casos de uso | `RepoTecnico/propuesta_vNext/casos_uso.md` | 45 CU-V, 204 escenarios Gherkin, postcondiciones, trazabilidad |
+| Gráficos | `RepoTecnico/propuesta_vNext/casos_uso/` | Diagramas UML, 8 secuencias, 6 máquinas de estados |
+| Documento técnico | `RepoTecnico/propuesta_vNext/documento_tecnico.md` | Rev. 1.1.0 · 11 secciones + anexos |
+
+**Auditorías ejecutadas:**
+
+| Auditoría | Hallazgos | Estado |
+|---|---|---|
+| Casos de uso | 20 (2 CRIT, 3 ALTA, 12 MEDIA, 3 BAJA) | ✅ 20/20 corregidos |
+| Documento técnico | 18 (2 CRIT, 5 ALTA, 10 MEDIA, 1 BAJA) | ✅ 18/18 corregidos |
+
+**Decisión de vocabulario (Opción A):** el SQL es la fuente de verdad. Estados canónicos aplicados a SQL, diccionario, diagrama ER, casos de uso y requerimientos.
+
+**Arquitectura adoptada tras la auditoría técnica:**
+- Firma **meta-transacción/relayer EIP-712**: el contrato verifica la firma y emite `signer = recovered_signer` (nunca `msg.sender`); la hot wallet del worker **no** tiene roles.
+- Acción `CONFIG` (solo `DEFAULT_ADMIN_ROLE`) y respaldo `OWNER_BACKUP` con `backup_for_role` on-chain.
+- `entityId = keccak256(actionType ‖ uuid16)`; `deadline` + `consumed_at` + índice único `(signer_address, nonce)`.
+- Cola de anclaje = **outbox transaccional PostgreSQL**; **sin reconciliador de reorgs** (ADR-18, coherente con ADR-10/QBFT).
+- Riesgos nuevos: R-13 (SPOF worker), R-14 (custodia de claves), R-15 (GDPR supresión vs retención).
+
+**Gráficos regenerados (rev. 1.1.0):** 17 bloques Mermaid validados con `mermaid.parse` (17/17 OK); vocabulario canónico aplicado; corregida la modelización de reorgs en CU-V-43 (coherente con ADR-10/ADR-18).
+
+**Coherencia final verificada:**
+- Vocabulario canónico en SQL, diccionario, diagrama ER, casos de uso, gráficos, requerimientos y documento técnico.
+- Recuentos: **12 tablas nuevas** + **5 tablas extendidas** (44 → 56 tablas).
+- Fences Mermaid balanceados en todos los archivos.
+- SQL: 12 `CREATE TABLE` + 26 `ALTER TABLE`, idempotente (necesita verificación con `psql`, no disponible en el entorno).
+
+**Estado de la Fase 2: CERRADA.** Artefactos listos para validación del cliente antes de pasar a Fase 3 (desarrollo).
+
+---
+
+### Fase 3 — Plan de desarrollo vertical (2026-10-06)
+
+**Decisión del cliente:** *solo el plan* — no se modifica código, contratos ni base de datos del sistema.
+
+**Artefacto:** `RepoTecnico/propuesta_vNext/plan_desarrollo.md` (759 líneas)
+
+- **10 ciclos verticales F1–F10**, cada uno con entregable demostrable, tareas con rutas reales del monorepo, RF/RNF + CU-V, migración, pruebas/gates, riesgos y dependencias.
+- **Esfuerzo total: 77 días-persona** (~15–16 semanas secuencial, ~13 con solapes).
+- **Primer ciclo:** F1 — Fundaciones (esquema vNext + auditoría append-only), 4 días.
+- **Ruta crítica:** F1 → F2 → F3 → F4 → F6 → F7 → F10.
+- Criterios globales A1–A14 y decisiones pendientes D1–D12.
+- **D7/T1.2 resueltos:** se reordenó `base_datos.sql` para crear `operator_audit_log` antes de `housekeeping_damage_charges` (dependencia FK).
+
+**Decisiones D1–D12 resueltas (2026-10-06):**
+
+| # | Resolución |
+|---|---|
+| D1 | Canal de notificación al huésped = **email** (web de respaldo); plazo 24 h antes del check-out |
+| D2 | `INSPECTION_REQUIRES_SIGNATURE = false` |
+| D3 | **Retirar** roles heredados `HOUSEKEEPING`/`MAINTENANCE`; re-crear usuarios |
+| D4 | Wallet **autocustodiada** por el jefe; el sistema nunca ve la clave |
+| D5 | **Safe multisig 2-de-3** como `DEFAULT_ADMIN_ROLE` |
+| D6 | Tope de cargo = **3× tarifa de la noche**; por encima aprueba el Administrador |
+| D7 | ✅ Orden FK corregido en `base_datos.sql` |
+| D8 | Sincronización manual validada por el **guardián** ampliado a `base_datos.sql` |
+| D9 | **Redirecciones** `/admin/mantenimiento` → `/mantenimiento` y `/admin/housekeeping` → `/ama-de-llaves` |
+| D10 | Aceptación **solo en Anvil**; Besu en fase posterior |
+| D11 | Validación SQL en CI con `psql` (PostgreSQL **16**) |
+| D12 | B-4/B-5/B-6 desacoplados; **MetaMask**; sin PMS; sin SIWE |
+
+**Estado:** plan y decisiones cerrados. La implementación **no está autorizada** en esta entrega (el cliente pidió solo la propuesta).
 
 ---
 
@@ -3562,3 +3682,307 @@ siguen en v38, que es su versión vigente.
 
 Procedimiento: `--no-traffic` → etiqueta de canario → verificación (salud + marcador de código) →
 `update-traffic --to-revisions=…=100` → reetiquetado a `v39`.
+
+---
+
+## 14. Propuesta v3 — Asistente IA de bajo coste (2026-10-07) · `@asistenteProyecto`
+
+**Estado: 🟡 propuesta pendiente de conformidad — no se ha modificado ninguna línea de código.**
+
+Análisis de `RepoTecnico/propuesta_asiatente_hotel.md` y propuesta del incremento **v3**: asistente
+conversacional con coste mínimo, reutilizando el asistente ya construido (`apps/web/src/lib/assistant/`,
+17 módulos + tests) y las 4 herramientas MCP existentes.
+
+| Decisión | Contenido |
+|---|---|
+| LLM | **Vertex AI · Gemini 2.5 Flash-Lite** (endpoint regional `europe-west1`) con **Vercel AI SDK** detrás del puerto `LlmClient`; **sin secretos nuevos** (IAM con la SA `hotel-mcp-run@`). Decisión **revisada** tras la verificación de §14.1 |
+| RAG | **Sin `pgvector`**: índice BM25 generado en build desde `build-manuals.mjs` (35 documentos) y consultado en memoria del MCP |
+| MCP | **4 → 5 herramientas** (`searchHotelManuals`, `camelCase`); se descartan `snake_case` y las 2 herramientas restantes |
+| BD | **Sin cambios** → los 3 artefactos de datos siguen sincronizados |
+| Infra | **0 recursos nuevos** en GCP |
+| Coste incremental | **≈ 2,6 USD/mes** (frente a 32–60 USD/mes de la propuesta original y ~82 USD/mes con Sonnet) |
+| Plazo | 3–5 días (H1 adaptador Vercel AI SDK + Vertex/Gemini · H2 índice+tool · H3 prompt ES + citas + saneador de PII · H4 presupuestos · H5 despliegue canario) |
+
+**Decisiones confirmadas por el usuario (2026-10-07):** A1 = **Vercel AI SDK + Vertex AI Gemini 2.5
+Flash-Lite** (revisado tras §14.1) · A2 = `min-instances=0` con *keep-warm* solo durante la demo ·
+B2 = audiencia cliente final / huésped · B3 = solo español en la primera iteración (EN/RU pasan a v3.1) ·
+C3 = RAG como **5ª herramienta del MCP** · D1 = **Vertex AI regional `europe-west1`** (revisado) ·
+D2 = **sanitizar la entrada**, que se convierte en el nuevo **RNF-27**, ahora como defensa en profundidad.
+
+**Pendiente (no bloqueante):** A3 (presupuesto máximo mensual), B1 (fuente de conocimiento: 35 documentos
+o añadir `RepoTecnico/Manuales/**`), C1 (activar H0 con Anthropic mientras se desarrolla la v3) y
+C2 (ventana y volumen de la prueba). Se requiere **conformidad explícita** para pasar a la Fase 3.
+
+### 14.1 Verificación del modelo LLM contra la infraestructura desplegada (2026-10-07)
+
+Comprobado el despliegue real y las fuentes oficiales de Google Cloud. **Conclusión: la elección de
+Qwen 2.5 14B en un proveedor externo no era la más adecuada para esta infraestructura. El usuario aprobó
+el cambio a Vertex AI · Gemini 2.5 Flash-Lite en `europe-west1` (2026-10-07).**
+
+| Hallazgo verificado | Consecuencia |
+|---|---|
+| El despliegue usa `--vpc-egress=private-ranges-only` → el tráfico a APIs públicas **no pasa por Cloud NAT** | El coste de red no discrimina entre opciones |
+| **Vertex AI se autentica con la SA ya desplegada** `hotel-mcp-run@` | Gemini Flash-Lite usa **0 recursos GCP nuevos**; el proveedor externo exige **1 secreto** |
+| **Qwen 2.5 14B no está en el catálogo gestionado de Vertex** (solo la familia Qwen3) | Qwen 2.5 14B obligaría a GPU residente (400–700 USD/mes) |
+| **Qwen en Vertex usa el endpoint *global*** (`locations/global`), no `europe-west1` | Tampoco resuelve la residencia del dato en la UE |
+| `europe-west1` **sí** figura entre las regiones soportadas de Cloud Run GPU | Autoalojar Qwen añadiría el servicio con GPU que se quiere evitar |
+
+**Veredicto:** la opción que menos recursos GCP consume es **Vertex AI · Gemini 2.5 Flash-Lite con
+endpoint regional `europe-west1`** (cero recursos nuevos, dato en la UE, latencia en región, ~2,6 USD/mes).
+El proveedor externo ahorra ~1 USD/mes a cambio de un secreto, exportar conversaciones de huéspedes fuera
+de la UE y latencia transatlántica. **La decisión del Vercel AI SDK se mantiene**, y **A1 quedó confirmado
+como Vertex AI · Gemini 2.5 Flash-Lite** en el §12 del documento.
+
+Detalle y fuentes: `RepoTecnico/propuesta_v3_asistente_ia.md` §5.4.
+
+Nuevos requisitos propuestos: RF-56…RF-60 (→ CU-47, CU-08), RNF-22…RNF-27 (→ CU-48), RT-13…RT-15.
+Documento completo: `RepoTecnico/propuesta_v3_asistente_ia.md`.
+
+### 14.2 Fase 3 · Hito H1 — adaptador Vercel AI SDK + Vertex AI (2026-10-07) · COMPLETADO
+
+**Objetivo del hito**: que el asistente responda con Vertex AI · Gemini 2.5 Flash-Lite, sin tocar el
+orquestador ni sus guardrails, y con conmutador por variable de entorno.
+
+| Artefacto | Cambio |
+|---|---|
+| `apps/web/src/lib/assistant/vercel-ai-client.ts` | **Nuevo**. Adaptador del puerto `LlmClient` sobre `generateText` + `tools` del Vercel AI SDK. Las herramientas se declaran **sin `execute`**: es el orquestador existente quien las ejecuta y valida la tx |
+| `apps/web/src/lib/assistant/llm-provider.ts` | **Nuevo**. Fábrica/conmutador: `vertex` (por defecto) \| `anthropic` \| error. Import dinámico del SDK de Vertex |
+| `apps/web/src/app/api/assistant/route.ts` | Compone el LLM vía `createLlmClient(process.env)` **antes** de parsear el cuerpo; el 503 se emite si falta configuración |
+| `apps/web/package.json` | `+ ai@7.0.130`, `+ @ai-sdk/google-vertex@5.0.104` |
+| `.env.example`, `RepoTecnico/entornos_globales.md` | Documentadas `ASSISTANT_PROVIDER`, `VERTEX_MODEL`, `VERTEX_LOCATION`, `VERTEX_MAX_OUTPUT_TOKENS` (§3.7 nueva) |
+
+**Decisiones de implementación**
+- El adaptador **normaliza la entrada de las herramientas**: la especificación V4 del SDK admite el
+  argumento como objeto (`LanguageModelV4ToolCallPart.input: unknown`) o como string JSON
+  (`LanguageModelV4ToolCall.input: string`). Sin normalizar, un `JSON.stringify` podría llegar a
+  `callTool` en lugar del objeto que el MCP espera.
+- El proveedor de Vertex **exige proyecto explícito** (`AI_LoadSettingError`). La fábrica lo resuelve
+  desde `GOOGLE_VERTEX_PROJECT` / `GOOGLE_CLOUD_PROJECT` / `GCLOUD_PROJECT` (estas dos las inyecta
+  Cloud Run) y, si no lo encuentra, **falla en cerrado (503)** en vez de propagar un 500.
+
+**Verificación**
+
+| Comprobación | Resultado |
+|---|---|
+| `pnpm --filter @hotel/web typecheck` | ✅ limpio |
+| `pnpm --filter @hotel/web test` (suite completa) | ✅ **737/737** en 87 ficheros |
+| Suite del asistente | ✅ **56 tests** (33 previos intactos + 23 nuevos) |
+| Lint de los ficheros tocados | ✅ 0 errores y 0 avisos |
+| Tests nuevos | `vercel-ai-client.test.ts` (11), `llm-provider.test.ts` (8), `app/api/assistant/route.test.ts` (4) |
+| Criterio H1 | ✅ la ruta responde 503/400 según configuración y **sin llamar al modelo**; el orquestador no se modificó |
+
+**Pendiente para H5 (despliegue), no para H1**: habilitar `aiplatform.googleapis.com`,
+`roles/aiplatform.user` a `hotel-mcp-run@` y las variables en `70-deploy-apps.sh`. El bloque de lint
+con 17 errores preexistentes (`PreventiveAdmin.tsx`, `ReviewsModeration.tsx`, …) es **anterior** a este
+hito y no pertenece a estos ficheros.
+
+### 14.3 Decisiones pendientes y siguiente hito (2026-10-07)
+
+**H2 (índice de conocimiento + `searchHotelManuals`) NO iniciado**: el usuario revisa antes el hito H1.
+
+| Punto | Estado |
+|---|---|
+| **B1 — fuente del índice** | ✅ **Decidido**: los 35 documentos de `build-manuals.mjs` **+ `RepoTecnico/Manuales/**`** |
+| **A3 — presupuesto máximo mensual** | ⏳ Pendiente (lo necesita H4 para fijar el tope del contador de tokens) |
+| **C1 — activar Anthropic mientras tanto** | ⏳ Pendiente (ya no es indispensable: basta `ASSISTANT_PROVIDER=anthropic` + clave) |
+| **C2 — ventana y volumen de la prueba** | ⏳ Pendiente (lo necesita H4/H5) |
+
+> ⚠️ **Consecuencia de B1 a resolver en el diseño de H2.** El árbol `RepoTecnico/Manuales/**` es
+> documentación **técnica y operativa interna**, mientras que la audiencia confirmada del asistente
+> (B2) es el **cliente final / huésped**. Indexar ambos sin distinción haría que el asistente pudiera
+> citar procedimientos internos ante un huésped. H2 debe por tanto **etiquetar cada fragmento con su
+> audiencia y filtrar en la consulta**, y decidir si el asistente expone alguna vez contenido de
+> audiencia `interno`/`recepción`.
+
+### 14.4 Fase 3 · Hito H2 — índice de conocimiento + `searchHotelManuals` (2026-10-07) · COMPLETADO
+
+**Objetivo del hito**: que el asistente pueda responder sobre los manuales del hotel con una 5ª
+herramienta MCP, sin base de datos y sin coste por token de embeddings.
+
+| Artefacto | Cambio |
+|---|---|
+| `apps/mcp/scripts/build-knowledge-index.mjs` | **Nuevo** generador dedicado del índice (52 fragmentos de 3 manuales) |
+| `apps/mcp/src/knowledge/index.generated.ts` | **Nuevo** artefacto generado (55 KB), con audiencia por fragmento |
+| `apps/mcp/src/knowledge/search.ts` | **Nuevo** motor BM25 en memoria: normalización ES, escalera de audiencias, memoización por audiencia |
+| `apps/mcp/src/tools/schemas.ts` | **Nueva** `searchHotelManualsShape` (`query`, `audience`, `limit`) |
+| `apps/mcp/src/tools/tools.ts` | **Nueva** `searchHotelManuals()` (local, no depende de `ChainReader`) |
+| `apps/mcp/src/server.ts` | Registra la herramienta → **4 read-only + `buildPurchaseTx` = 5** |
+| `apps/mcp/package.json`, `main.ts`, `http-server.test.ts` | Script `knowledge` y recuento de herramientas actualizado |
+
+**Verificación**
+
+| Comprobación | Resultado |
+|---|---|
+| `pnpm --filter @hotel/mcp test` | ✅ **61/61** (20 nuevos de motor+índice, 3 del envoltorio) |
+| `pnpm --filter @hotel/mcp typecheck` / `lint` / `build` | ✅ limpios · bundle **80 KB** |
+| `pnpm --filter @hotel/web test` (suite completa) | ✅ **737/737** |
+| Recuperación real | ✅ «cómo compro una noche» → manual del comprador; «qué significa cada mensaje» (audiencia recepción) → manual de recepción |
+| Confinamiento | ✅ con la audiencia por defecto, ninguna consulta devuelve documentación interna |
+
+**Hallazgos (dos de seguridad, uno preexistente)**
+
+1. **D-04 vs. contenido interno.** Al indexar `RepoTecnico/Manuales/**` dentro de `apps/mcp/`, el
+   fichero generado arrastraba una **semilla TOTP de ejemplo** y hacía fallar el guardián de secretos
+   (`secrets-guardian.test.ts`), que escanea `apps/` y `packages/`. Conclusión: la documentación
+   técnica no puede materializarse dentro de una aplicación.
+2. **Exfiltración por parámetro.** El MCP se despliega con `--allow-unauthenticated` y `audience` la
+   elige quien llama: indexar contenido interno habría permitido a cualquiera extraer runbooks y
+   procedimientos. Se acota el índice a los **3 manuales dirigidos a personas** (nuevo riesgo R12 en
+   la propuesta) y un test impide reintroducirlo.
+3. **La tubería de manuales estaba rota en HEAD.** `apps/web/scripts/build-manuals.mjs` falla con
+   `casos de uso sin orden declarado en CU_ORDER: cu-38-liberar-habitacion, cu-39-ficha-detalle-habitacion`.
+   Al procesarlos se destapan además dos defectos de contenido en esos dos CU (CU-39 repite el
+   `blockquote` del lead; CU-38 no referencia ninguna imagen). **No se ha tocado**: es trabajo ajeno a
+   H2 y se resuelve en su propio cambio. Por eso el índice se genera con un script dedicado y no
+   extendiendo esa tubería.
+
+**Pendiente para H3**: prompt con citación (`manual §sección`) y saneador de PII. **Pendiente de
+contenido del cliente**: los manuales dirigidos a personas no cubren **servicios, normas ni ubicación**
+del hotel, así que RF-56 queda cubierto solo para lo que existe (flujo de compra y operativa de
+recepción) hasta que el hotel aporte ese contenido.
+
+### 14.5 Manual del huésped — plantilla pendiente de contenido del cliente (2026-10-07)
+
+Decisión del usuario (revisión de B1): **añadir un manual del huésped con el contenido del cliente**
+para completar RF-56 (servicios, normas y ubicación), que hoy no está cubierto por ningún documento.
+
+| Punto | Estado |
+|---|---|
+| Plantilla creada | `docs/manual-huesped.md` — 8 secciones con la lista exacta de datos a rellenar |
+| Indexación | Registrada en `apps/mcp/scripts/build-knowledge-index.mjs` con audiencia `cliente` |
+| Comportamiento mientras esté vacío | El generador **avisa y no indexa nada** del manual: el asistente no puede responder con una plantilla |
+| Contenido | ⏳ **Pendiente del hotel** (dirección, horarios, servicios, normas, urgencias, reventa y FAQ) |
+
+> **No se ha inventado ningún dato del hotel.** El asistente respondería como cierto cualquier
+> contenido que se indexe, así que la dirección, los horarios y los precios deben venir del cliente.
+> Los apartados son comentarios `<!-- PENDIENTE ... -->` que no se indexan.
+
+**Pendiente al rellenarlo**: (1) ejecutar `corepack pnpm --filter @hotel/mcp run knowledge`;
+(2) decidir si el manual entra también en la web (`apps/web/scripts/build-manuals.mjs`), lo que hoy
+exige arreglar antes esa tubería (ver §14.4, hallazgo 3) y añadir al menos una imagen, porque el
+guardián de manuales lo requiere.
+
+### 14.6 Equipo de manuales — Manuales del huésped, todos sus casos (2026-10-07) · COMPLETADO
+
+Encargo: «genera los manuales del huésped con todos los casos que el huésped puede solicitar».
+**17 casos**, todos derivados del sistema real (ninguno inventado).
+
+| Artefacto | Contenido |
+|---|---|
+| `RepoTecnico/Manuales/06-huesped/*.md` | **17 manuales técnicos** (1 935 líneas) con las secciones `Qué hace el sistema · Recorrido real · Piezas de código implicadas · Datos y estados · Casos límite · Referencias` |
+| `docs/Manuales/06-huesped/*.md` | **17 manuales literales** (1 193 líneas con el índice) para el huésped, con «Empezar en 5 minutos», «Paso a paso», «Si algo no funciona» y «Preguntas rápidas» |
+| `docs/Manuales/06-huesped/README.md` | Índice del árbol por momento: Antes de llegar · Conseguir tu noche · Si te sobra la noche · Durante la estancia · Después · Cuando algo va mal |
+| `docs/imagenes/doc-huesped-*.svg` | **7 ilustraciones** (56 KB): estados de una noche, flujos de compra, asistente, reventa, check-in y checkout, e infografía de los 17 casos |
+| `docs/pdf/huesped/manual-huesped.html` + `README.md` | Versión imprimible A4 autocontenida (136 KB, portada + índice + 17 capítulos) y guía de exportación a PDF |
+| `apps/mcp/scripts/build-knowledge-index.mjs` | El generador del índice incorpora los 17 casos como audiencia `cliente` |
+
+**Los 17 casos**: 01 qué es una noche · 02 preparar la cartera · 03 ver noches disponibles · 04 comprar
+una noche · 05 comprar en reventa · 06 mis noches · 07 pedir al asistente · 08 poner la noche en
+reventa · 09 avisos de reventa · 10 entrar con el QR · 11 extras durante la estancia · 12 salir y
+cerrar la cuenta · 13 dejar una reseña · 14 histórico de ventas · 15 menú de cartera · 16 dinero de
+prueba · 17 si algo no funciona.
+
+**Verificación**
+
+| Comprobación | Resultado |
+|---|---|
+| Referencias `ruta:línea` de los manuales técnicos | ✅ **832 únicas, 0 inválidas** (fichero existe y línea dentro de rango) |
+| Datos del hotel inventados | ✅ **ninguno**: 7 marcas `PENDIENTE DEL CLIENTE` (reparto de tipos por habitación, hora de entrada, hora de salida, llaves y cobro, catálogo de extras y precios, horario de recepción) |
+| Fuga de jerga técnica a los manuales literales | ✅ ninguna (sin rutas de código ni nombres de función) |
+| Paleta e índices de imagen | ✅ solo HEX del preset y los 7 ficheros con prefijo `doc-` en la raíz de `docs/imagenes/` |
+| Índice de conocimiento | ✅ **188 fragmentos de 21 manuales** (cliente 153 · recepción 17 · propietario 18) |
+| Tests | ✅ `@hotel/mcp` **63/63** · `@hotel/web` **737/737** |
+
+**Incidencias resueltas durante el encargo**
+
+1. **La fase literaria del workflow se cayó en silencio** (6 ítems sin escribir fichero). Se detuvo el
+   workflow conservando los 15 manuales técnicos ya escritos y se reejecutó esa fase con subagentes
+   propios, que sí completaron los 17.
+2. **El guardián de imágenes prohíbe subcarpetas** en `docs/imagenes/` y exige el prefijo `doc-`:
+   las 7 ilustraciones se generaron planas y con el nombre canónico (el encargo inicial apuntaba a
+   `docs/imagenes/huesped/`, que habría roto `images-naming.test.ts`).
+3. **Falso positivo de la propia comprobación de credenciales**: marcaba «no crea una cuenta con
+   contraseña: tu cartera es tu identidad». Los patrones se recalibraron para detectar credenciales
+   reales (PEM, clave privada de 32 bytes, `sk-…`, `AIza…`, JWT, semilla TOTP base32) sin bloquear prosa.
+
+**Pendiente**: (a) el contenido del hotel en `docs/manual-huesped.md` (RF-56); (b) incorporar los
+manuales del huésped a la web (`/ayuda`), que hoy exige arreglar antes la tubería de manuales (§14.4,
+hallazgo 3); (c) el PDF no se puede generar en esta máquina (faltan `libnspr4`/`libnss3`) — queda el
+HTML imprimible y la guía de exportación en `docs/pdf/huesped/README.md` (carpeta **ignorada por git**,
+como el resto de `docs/pdf/`).
+
+### 14.7 Manual del huésped en la plataforma — rol INTEGRADOR (2026-10-07) · COMPLETADO
+
+Cierra el equipo de manuales: el manual del huésped ya es **navegable dentro de la web**, con sus
+ilustraciones y su versión imprimible descargable.
+
+| Artefacto | Contenido |
+|---|---|
+| `apps/web/scripts/build-huesped-manuals.mjs` | Generador dedicado: convierte los 17 `.md` en HTML **escapado**, publica las ilustraciones y la versión imprimible, y falla si una imagen referenciada no existe |
+| `apps/web/src/lib/help/huesped.generated.ts` | Artefacto generado: 17 casos, 73 secciones, unión tipada de momentos |
+| `apps/web/src/lib/help/group-topics.ts` | Agrupador temas/sub-secciones **compartido** con la ayuda existente (se eliminó la copia local de `ayuda/[slug]`) |
+| `apps/web/src/app/ayuda/huesped/page.tsx` | Índice por momento del viaje, con la infografía de los 17 casos y descarga del manual completo |
+| `apps/web/src/app/ayuda/huesped/[slug]/page.tsx` | Un caso por página, con índice lateral, ilustración, fuente y descarga |
+| `apps/web/src/app/ayuda/page.tsx` | Nuevo bloque de acceso al manual del huésped (no se tocó nada de lo existente) |
+| `apps/web/messages/{es,en,ru}.json` | 9 claves nuevas de interfaz (incluida la pluralización), **paridad verificada** |
+| `apps/web/src/lib/help/huesped-sync.test.ts` | Guardián: 10 tests |
+| `apps/web/public/manual/` | `manual-huesped.html` + 7 ilustraciones publicadas (versionadas, como el resto) |
+
+**Decisión de diseño**: **no** se extendió `apps/web/scripts/build-manuals.mjs`. Esa tubería sigue
+rota en HEAD (CU-38 sin ilustración, CU-39 con dos citas en el preámbulo) e impone una política de
+formato (una cita y al menos una imagen por manual) que estas guías cortas no siguen. Un generador
+propio evita tocar documentos y código ajenos a este encargo y mantiene el invariante con su guardián.
+
+**Verificación**
+
+| Comprobación | Resultado |
+|---|---|
+| `pnpm --filter @hotel/web test` | ✅ **747/747** en 88 ficheros (10 nuevos) |
+| Guardián del manual del huésped | ✅ 10/10 (cobertura, títulos, secciones, imágenes, escapado, una sola cita) |
+| `typecheck` · lint de los ficheros nuevos | ✅ limpios |
+| `next build` | ✅ `/ayuda/huesped` y **17 rutas** pre-renderizadas de `/ayuda/huesped/[slug]` |
+
+**Incidencia encontrada y corregida**: el generador calculaba el cuerpo sin el `H1` pero iteraba sobre
+las líneas completas, así que el título se colaba como primer párrafo de la cita inicial. Lo detectó
+el propio guardián («el lead tiene más de una cita»); corregido y verificado: 17/17 con una sola cita.
+
+**Nota de entorno**: en esta máquina (1 GB de RAM) `next build` necesita
+`NODE_OPTIONS=--max-old-space-size=4096`; con el heap por defecto termina en OOM. No es un problema del
+código, pero conviene saberlo para reproducir la verificación.
+
+### 14.8 Fase 3 · H2.1 — ajustes de recuperación y guardián del índice (2026-10-07) · COMPLETADO
+
+Cierre de la deuda que dejó abierta el hito H2.
+
+| Cambio | Detalle |
+|---|---|
+| **BM25F con peso por campo** | `search.ts`: título del documento ×3, título de sección ×2, cuerpo ×1, con longitud ponderada. Un término del título es mejor señal que el mismo término perdido en el cuerpo |
+| **Deduplicación por sección** | Una sección larga se parte en `…~1`, `…~2`; antes **dos trozos de la misma sección ocupaban dos de los tres huecos** y desplazaban a otros manuales. Ahora se conserva el mejor fragmento de cada sección |
+| **Plurales irregulares en «-ces»** | `veces→vez`, `luces→luz`, `lápices→lapiz`, `peces→pez`. Se probó añadir «jes» a las terminaciones y **rompía «mensajes»** (`→ mensaj`): retirado y con guarda de regresión |
+| **Guardián de sincronía del índice** | `apps/mcp/src/knowledge/index-sync.test.ts` (5 tests): toda fuente citada existe, toda fuente indexable está indexada, títulos y secciones coinciden con el markdown, y el índice no contiene documentación interna. Era el **único artefacto generado sin guardián** |
+| **Documentación al día** | 6 documentos decían «4 herramientas»: `01-monorepo.md`, `docs/DISENO-TECNICO.md` (fila nueva en la tabla), `docs/PRD.md`, `docs/SRS.md` (×2), `01-arquitectura/README.md` y `CU-08-asistente-ia.md` (×3, incluidas las líneas citadas de `server.ts`, corregidas a 46/56/66/92/75) |
+| **Script raíz** | `pnpm knowledge` regenera el índice (antes solo existía el del subpaquete) |
+
+**Verificación**
+
+| Comprobación | Resultado |
+|---|---|
+| `pnpm --filter @hotel/mcp test` | ✅ **72/72** (67 previos + 5 del guardián) |
+| `pnpm --filter @hotel/web test` | ✅ **747/747** |
+| `typecheck` · `lint` · `build` del MCP | ✅ limpios · bundle 221 KB |
+| Índice | 188 fragmentos de 20 documentos · 189 KB · construcción 34,9 ms · consulta 0,24 ms |
+
+**Corrección de un dato que di mal**: en el informe de revisión de H2 dije que el bundle del MCP era de
+**80 KB**. Era un valor obsoleto: correspondía al índice de 52 fragmentos (solo los 3 manuales), antes
+de incorporar los 17 casos del huésped. El valor real es **221 KB** (el índice aporta 189 KB).
+
+**Precisión sobre un hallazgo que retiro.** En el informe de revisión afirmé un «sesgo hacia las
+secciones de FAQ» y puse como prueba que «puedo revender mi noche» devolvía el caso 01 como primer
+resultado. Al leer el contenido, la FAQ del caso 01 contiene literalmente
+«**¿Puedo revenderla?** Sí, mientras no la hayas usado en recepción»: el primer resultado era
+**correcto**. La observación era superficial. Lo que sí queda es una limitación medida: no hay
+lematización verbal («compro» ≠ «compra»), de modo que el manual exacto puede quedar por detrás de una
+FAQ que contenga la forma conjugada; el manual correcto **sigue entrando en el top-3**, que es el
+criterio de aceptación del hito. Se probará con consultas reales en H3/H4.
+
+**Pendiente de H2 que sigue abierto**: los renglones del prompt (es H3) y el despliegue (es H5).

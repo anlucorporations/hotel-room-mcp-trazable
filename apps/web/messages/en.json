@@ -168,7 +168,16 @@
     "downloadPdfAria": "Download this manual as a PDF",
     "backToIndex": "All manuals",
     "spanishOnly": "The manuals are written in Spanish.",
-    "testNetworkNote": "The system currently runs on a private test network: it is meant to demonstrate and validate the system, not to sell to the public."
+    "testNetworkNote": "The system currently runs on a private test network: it is meant to demonstrate and validate the system, not to sell to the public.",
+    "huespedTitle": "Guest manual",
+    "huespedTagline": "Everything you can ask for during your stay, case by case: from setting up your wallet to leaving a review.",
+    "huespedPendingNote": "Some hotel details (address, times, services and house rules) are still to be confirmed; they are marked as “Pending confirmation from the hotel”.",
+    "huespedMapAlt": "Map of the 17 guest cases grouped by moment: before arriving, getting your night, if you have a spare one, during the stay, afterwards, and when something goes wrong",
+    "huespedDownloadAll": "Download the full manual",
+    "huespedBackToIndex": "Guest manual",
+    "huespedSourceNote": "Source of this manual:",
+    "huespedCaseCount": "{count, plural, =0 {No cases} one {# case} other {# cases}}",
+    "huespedOpen": "Open the guest manual"
   },
   "howItWorks": {
     "title": "How it works",

@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" width="800" height="400" role="img" aria-labelledby="rev-titulo rev-desc">
+  <title id="rev-titulo">Flujo de la reventa: pones tu noche en reventa, otro cliente la compra y recibes el aviso</title>
+  <desc id="rev-desc">Tres pasos encadenados de izquierda a derecha. Pones tu noche en reventa fijando el precio y firmando, otro cliente la compra y la noche cambia de dueño, y recibes el aviso con el importe en tu saldo pendiente de cobro.</desc>
+  <defs>
+    <marker id="rev-azul" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#0F6C9C"/>
+    </marker>
+  </defs>
+
+  <rect width="800" height="400" fill="#F4F9FC"/>
+  <rect x="0" y="0" width="800" height="90" fill="#0A4F75"/>
+  <text x="40" y="36" font-family="system-ui, Arial, sans-serif" font-size="14" font-weight="700" fill="#C3D4E0" letter-spacing="1.5">MANUAL DEL HUÉSPED · 08 · PONER TU NOCHE EN REVENTA</text>
+  <text x="40" y="70" font-family="system-ui, Arial, sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">Poner tu noche en reventa</text>
+
+  <!-- paso 1 -->
+  <rect x="30" y="150" width="220" height="170" rx="16" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <rect x="30" y="150" width="220" height="10" rx="5" fill="#B98324"/>
+  <circle cx="140" cy="212" r="22" fill="#0A4F75"/>
+  <text x="140" y="219" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="20" font-weight="700" fill="#FFFFFF">1</text>
+  <text x="140" y="266" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="16" font-weight="700" fill="#101F2C">Pones tu noche</text>
+  <text x="140" y="288" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="16" font-weight="700" fill="#101F2C">en reventa</text>
+  <text x="140" y="312" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">Fijas el precio y firmas</text>
+
+  <line x1="252" y1="235" x2="287" y2="235" stroke="#0F6C9C" stroke-width="3" marker-end="url(#rev-azul)"/>
+
+  <!-- paso 2 -->
+  <rect x="290" y="150" width="220" height="170" rx="16" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <rect x="290" y="150" width="220" height="10" rx="5" fill="#B98324"/>
+  <circle cx="400" cy="212" r="22" fill="#0A4F75"/>
+  <text x="400" y="219" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="20" font-weight="700" fill="#FFFFFF">2</text>
+  <text x="400" y="266" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="16" font-weight="700" fill="#101F2C">Otro cliente</text>
+  <text x="400" y="288" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="16" font-weight="700" fill="#101F2C">la compra</text>
+  <text x="400" y="312" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">La noche cambia de dueño</text>
+
+  <line x1="512" y1="235" x2="547" y2="235" stroke="#0F6C9C" stroke-width="3" marker-end="url(#rev-azul)"/>
+
+  <!-- paso 3 · resultado -->
+  <rect x="550" y="150" width="220" height="170" rx="16" fill="#E2F2E9" stroke="#1F7A4D" stroke-width="2"/>
+  <rect x="550" y="150" width="220" height="10" rx="5" fill="#1F7A4D"/>
+  <circle cx="660" cy="212" r="22" fill="#1F7A4D"/>
+  <text x="660" y="219" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="20" font-weight="700" fill="#FFFFFF">3</text>
+  <text x="660" y="277" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="16" font-weight="700" fill="#101F2C">Recibes el aviso</text>
+  <text x="660" y="312" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">Saldo pendiente de cobro</text>
+
+  <text x="400" y="368" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">Puedes cambiar el precio o retirar la noche mientras siga a la venta.</text>
+</svg>

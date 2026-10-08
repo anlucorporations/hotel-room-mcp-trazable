@@ -160,4 +160,55 @@ ocupación en `reservations`. Los tres artefactos de datos se actualizan en el m
 
 ---
 
+## 7. Nuevos requerimientos — Asistente IA v3 (Hito H1, 2026-10-07)
+
+Origen: `RepoTecnico/propuesta_v3_asistente_ia.md` (aprobada el 2026-10-07). Continúa la numeración
+vigente (máximo anterior: RF-55, RNF-21, RT-12).
+
+### 7.1 Funcionales
+
+| ID | Descripción | Prioridad | Estado |
+|---|---|---|---|
+| **RF-56** | El asistente responde sobre protocolos, servicios, normas y ubicación del hotel usando la herramienta MCP `searchHotelManuals`. | Alta | **Casi completo**: los **17 casos** están escritos, indexados en el asistente y publicados en `/ayuda/huesped` (con ilustraciones y versión imprimible). Falta solo el contenido del hotel (servicios, normas y ubicación) en `docs/manual-huesped.md`, a la espera del cliente |
+| **RF-57** | El asistente mantiene el flujo conversacional de reserva sobre las herramientas MCP existentes, sin cambios de contrato. | Alta | Cubierto por RF-12 |
+| **RF-58** | El asistente responde en español y formula en español la búsqueda contra el índice. (EN/RU pasan a v3.1.) | Alta | Pendiente (H3) |
+| **RF-59** | Cuando la respuesta provenga del índice, el asistente cita `manual §sección`; si no hay coincidencia, lo declara y no inventa. | Media | Pendiente (H3) |
+| **RF-60** | El MCP expone `searchHotelManuals` con esquema estricto y operación *read-only*, sin acceso a BD. | Media | **✅ Cumplido en H2** (5ª herramienta, índice en memoria) |
+
+### 7.2 No funcionales
+
+| ID | Descripción | Criterio de aceptación | Estado |
+|---|---|---|---|
+| **RNF-22** | Coste incremental del asistente ≤ 5 USD/mes con 1 000 conversaciones/mes. | Facturación de GCP + contador de tokens | Pendiente (H4) |
+| **RNF-23** | Cero recursos nuevos de infraestructura (sin GPU, sin base vectorial, sin Cloud SQL adicional). | Inventario de recursos GCP antes/después | Pendiente (H5) |
+| **RNF-24** | Presupuesto de tokens por petición: entrada ≤ 6 000 y salida ≤ 512. | Test unitario del presupuesto + telemetría | **Parcial: tope de salida 512 aplicado en H1** |
+| **RNF-25** | Latencia p95 ≤ 2,5 s con instancias calientes; se documenta el efecto del *cold start*. | Medición en Cloud Run | Pendiente (H4) |
+| **RNF-26** | Sin PII en logs ni en el índice de conocimiento; los prompts no se registran. | Auditoría de logs | **Parcial (H2/H2.1)**: el índice excluye documentación interna, el generador rechaza credenciales y un guardián impide reintroducirlas |
+| **RNF-27** | Sanitización de PII antes de enviar la conversación al LLM (defensa en profundidad). | Test unitario del saneador | Pendiente (H3) |
+
+### 7.3 Técnicos
+
+| ID | Descripción | Estado |
+|---|---|---|
+| **RT-13** | Índice de conocimiento generado en build por `apps/mcp/scripts/build-knowledge-index.mjs`; sin ETL en runtime y sin acceso a BD. | **✅ Cumplido en H2/H2.1** (corpus dirigido a personas, guardián de sincronía y `pnpm knowledge` para regenerar; ver R12) |
+| **RT-14** | Adaptador `LlmClient` sobre **Vercel AI SDK** contra **Vertex AI · Gemini 2.5 Flash-Lite** en `europe-west1`, conmutable por `ASSISTANT_PROVIDER`. | **✅ Cumplido en H1** |
+| **RT-15** | Descartado `pgvector`/HNSW; plan B = embeddings precalculados en build con coseno en memoria. | Documentado |
+
+### 7.4 Trazabilidad
+
+`RF-56…RF-60` → **CU-47** (nuevo, «Consultar información del hotel») y ampliación de **CU-08**
+(RF-12, `docs/SRS.md §9`). `RNF-22…RNF-27` → **CU-48** (nuevo, «Operar el asistente con presupuesto
+controlado»).
+
+> **Modelo de datos**: la v3 **no modifica** `base_datos.sql`, `diccionario_datos.md` ni
+> `diagrama_er.md`. Los tres artefactos siguen sincronizados sin cambios.
+
+> **Corpus del índice (H2)**: solo los tres manuales dirigidos a personas
+> (`docs/manual-comprador.md` → `cliente`, `docs/manual-recepcion.md` → `recepcion`,
+> `docs/manual-cliente.md` → `propietario`). La documentación interna **no se indexa**: contiene
+> credenciales de ejemplo (prohibidas dentro de `apps/` por el guardián D-04) y el MCP se despliega
+> con `--allow-unauthenticated`, de modo que la audiencia la elige quien llama.
+
+---
+
 *Requerimientos consolidados · origen trazado · volcados a `docs/PRD.md` y `docs/SRS.md` en M9.*

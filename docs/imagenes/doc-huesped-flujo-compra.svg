@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 740" width="800" height="740" role="img" aria-labelledby="cmp-titulo cmp-desc">
+  <title id="cmp-titulo">Flujo de la compra de una noche: eliges la noche, revisas el precio, firmas en tu cartera y la noche es tuya</title>
+  <desc id="cmp-desc">Cuatro pasos encadenados de arriba abajo. Primero eliges la noche en el catálogo, después revisas el precio en la ventana de revisión, luego firmas en tu cartera y por último la noche pasa a ser tuya y aparece en Mis noches.</desc>
+  <defs>
+    <marker id="cmp-azul" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#0F6C9C"/>
+    </marker>
+  </defs>
+
+  <rect width="800" height="740" fill="#F4F9FC"/>
+  <rect x="0" y="0" width="800" height="90" fill="#0A4F75"/>
+  <text x="40" y="36" font-family="system-ui, Arial, sans-serif" font-size="14" font-weight="700" fill="#C3D4E0" letter-spacing="1.5">MANUAL DEL HUÉSPED · 04 · COMPRAR UNA NOCHE</text>
+  <text x="40" y="70" font-family="system-ui, Arial, sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">Comprar una noche, paso a paso</text>
+
+  <!-- paso 1 -->
+  <rect x="170" y="130" width="460" height="96" rx="16" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <rect x="170" y="150" width="6" height="56" rx="3" fill="#0F6C9C"/>
+  <circle cx="225" cy="178" r="24" fill="#0A4F75"/>
+  <text x="225" y="186" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="20" font-weight="700" fill="#FFFFFF">1</text>
+  <text x="270" y="172" font-family="system-ui, Arial, sans-serif" font-size="18" font-weight="700" fill="#101F2C">Eliges la noche</text>
+  <text x="270" y="200" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">En el catálogo, con filtros si te hacen falta</text>
+
+  <line x1="400" y1="228" x2="400" y2="266" stroke="#0F6C9C" stroke-width="3" marker-end="url(#cmp-azul)"/>
+
+  <!-- paso 2 -->
+  <rect x="170" y="270" width="460" height="96" rx="16" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <rect x="170" y="290" width="6" height="56" rx="3" fill="#0F6C9C"/>
+  <circle cx="225" cy="318" r="24" fill="#0A4F75"/>
+  <text x="225" y="326" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="20" font-weight="700" fill="#FFFFFF">2</text>
+  <text x="270" y="312" font-family="system-ui, Arial, sans-serif" font-size="18" font-weight="700" fill="#101F2C">Revisas el precio</text>
+  <text x="270" y="340" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">Compruebas habitación, noche e importe</text>
+
+  <line x1="400" y1="368" x2="400" y2="406" stroke="#0F6C9C" stroke-width="3" marker-end="url(#cmp-azul)"/>
+
+  <!-- paso 3 -->
+  <rect x="170" y="410" width="460" height="96" rx="16" fill="#FFFFFF" stroke="#DBE7EF" stroke-width="2"/>
+  <rect x="170" y="430" width="6" height="56" rx="3" fill="#0F6C9C"/>
+  <circle cx="225" cy="458" r="24" fill="#0A4F75"/>
+  <text x="225" y="466" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="20" font-weight="700" fill="#FFFFFF">3</text>
+  <text x="270" y="452" font-family="system-ui, Arial, sans-serif" font-size="18" font-weight="700" fill="#101F2C">Firmas en tu cartera</text>
+  <text x="270" y="480" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">La web no firma nada sin verificar</text>
+
+  <line x1="400" y1="508" x2="400" y2="546" stroke="#0F6C9C" stroke-width="3" marker-end="url(#cmp-azul)"/>
+
+  <!-- paso 4 · resultado -->
+  <rect x="170" y="550" width="460" height="96" rx="16" fill="#E2F2E9" stroke="#1F7A4D" stroke-width="2"/>
+  <rect x="170" y="570" width="6" height="56" rx="3" fill="#1F7A4D"/>
+  <circle cx="225" cy="598" r="24" fill="#1F7A4D"/>
+  <text x="225" y="606" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="20" font-weight="700" fill="#FFFFFF">4</text>
+  <text x="270" y="592" font-family="system-ui, Arial, sans-serif" font-size="18" font-weight="700" fill="#101F2C">La noche es tuya</text>
+  <text x="270" y="620" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">Aparece en Mis noches con la etiqueta Tuya</text>
+
+  <text x="400" y="692" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="14" fill="#41566A">«No se cobrará nada hasta que firmes.»</text>
+</svg>

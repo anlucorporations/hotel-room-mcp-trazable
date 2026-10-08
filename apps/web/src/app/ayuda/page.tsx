@@ -93,6 +93,21 @@ export default async function AyudaPage() {
 
         <section className="flex flex-col gap-5">
           <div>
+            <h2 className="font-display text-h3 font-semibold tracking-tight">
+              {t("huespedTitle")}
+            </h2>
+            <p className="mt-1 text-small text-ink-soft">{t("huespedTagline")}</p>
+          </div>
+          <Link
+            href="/ayuda/huesped"
+            className="inline-flex w-fit items-center justify-center gap-2 rounded-brand border border-line bg-shell px-5 py-3 text-body font-semibold text-ink shadow-sm transition hover:bg-mist-2 focus:outline-none focus:ring-2 focus:ring-azure"
+          >
+            {t("huespedOpen")}
+          </Link>
+        </section>
+
+        <section className="flex flex-col gap-5">
+          <div>
             <h2 className="font-display text-h3 font-semibold tracking-tight">{t("generalTitle")}</h2>
             <p className="mt-1 text-small text-ink-soft">{t("generalTagline")}</p>
           </div>
