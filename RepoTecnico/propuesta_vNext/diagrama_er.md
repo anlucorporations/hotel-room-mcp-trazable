@@ -28,33 +28,10 @@ erDiagram
         VARCHAR(100) full_name
         VARCHAR(30) role "MAINTENANCE_TECH · HOUSEKEEPER"
         TEXT pin_hash "bcrypt del PIN corto"
-        BOOLEAN active
-        VARCHAR(100) created_by
-        TIMESTAMP created_at
-        TIMESTAMP updated_at
-    }
-
-) y firmas on-chain
-
-```mermaid
-erDiagram
-    admin_users {
-        UUID id PK
-        VARCHAR(100) username UK
-        TEXT password_hash
-        TEXT totp_secret_enc
-        VARCHAR(30) role "DEFAULT_ADMIN_ROLE · RECEPTION_ROLE · HEAD_MAINTENANCE · HEAD_KEEPER · MAINTENANCE_TECH · HOUSEKEEPING"
-        BOOLEAN active
-        TIMESTAMP created_at
-        TIMESTAMP updated_at
-    }
-
-    terminal_operators {
-        UUID id PK
-        VARCHAR(100) username UK "Identificador en terminal fijo"
-        VARCHAR(100) full_name
-        VARCHAR(30) role "MAINTENANCE_TECH · HOUSEKEEPER"
-        TEXT pin_hash "bcrypt del PIN corto"
+        TIMESTAMP pin_changed_at "Rotación cada 90 días"
+        BOOLEAN must_change_pin "PIN de un solo uso inicial"
+        INT failed_attempts "Bloqueo a los 5 fallos"
+        TIMESTAMP locked_until "Bloqueo temporal"
         BOOLEAN active
         VARCHAR(100) created_by
         TIMESTAMP created_at
@@ -63,7 +40,8 @@ erDiagram
 
     operator_wallets {
         UUID id PK
-        VARCHAR(100) username UK "FK lógica a admin_users.username"
+        UUID admin_user_id FK "FK a admin_users(id)"
+        VARCHAR(100) username UK"
         VARCHAR(30) role "HEAD_MAINTENANCE · HEAD_KEEPER · OWNER_BACKUP"
         VARCHAR(42) wallet_address UK
         BOOLEAN is_active
@@ -75,7 +53,7 @@ erDiagram
 
     on_chain_signatures {
         UUID id PK
-        VARCHAR(40) entity_type "ROOM_BLOCK · ROOM_UNBLOCK · INSPECTION · DAMAGE_CHARGE · PREVENTIVE_TASK"
+        VARCHAR(40) entity_type "ROOM_BLOCK · ROOM_UNBLOCK · INSPECTION · DAMAGE_CHARGE · PREVENTIVE_TASK · AREA_LOG · CONFIG"
         UUID entity_id
         VARCHAR(60) event_name
         VARCHAR(66) content_hash
@@ -84,8 +62,33 @@ erDiagram
         VARCHAR(66) tx_hash
         VARCHAR(20) status "PENDING · SIGNED · MINED · FAILED · REVOKED"
         TEXT error_message
+        VARCHAR(66) nonce "Nonce EIP-712"
+        VARCHAR(66) domain_hash "Hash del dominio EIP-712"
+        VARCHAR(42) recovered_signer "Dirección recuperada de la firma"
+        TIMESTAMP verified_at "Momento de verificación criptográfica"
+        VARCHAR(30) role_snapshot "Rol del firmante en el momento de firmar"
+        INT retry_count "Reintentos de anclaje (máx. 8)"
+        TIMESTAMP next_attempt_at "Backoff exponencial"
+        TIMESTAMP expires_at "TTL en cola (24 h)"
+        TIMESTAMP deadline "Caducidad de la firma"
+        TIMESTAMP consumed_at "Consumo del nonce"
         TIMESTAMP created_at
         TIMESTAMP mined_at
+    }
+
+    operator_audit_log {
+        UUID id PK
+        VARCHAR(100) actor_username
+        VARCHAR(30) actor_role
+        VARCHAR(40) entity_type
+        UUID entity_id
+        VARCHAR(40) action "CREATE · UPDATE · DELETE · ASSIGN · RESOLVE · LOGIN"
+        JSONB old_value
+        JSONB new_value
+        VARCHAR(100) terminal_id
+        VARCHAR(66) prev_hash "Hash del registro anterior"
+        VARCHAR(66) integrity_hash "keccak256 del registro + prev_hash"
+        TIMESTAMP created_at
     }
 
     admin_users ||--o| operator_wallets : "posee"
@@ -104,7 +107,7 @@ erDiagram
 ```mermaid
 erDiagram
     maintenance_area_types {
-        VARCHAR(40) code PK "POOL · GARDEN · WATER_PUMP · PLUMBING · ELECTRICITY · HVAC · WASTE · ELEVATOR"
+        VARCHAR(40) code PK "POOL_FILTER · WATER_PUMP · ELEVATOR · ELECTRIC_GENERATOR (críticos) · GARDEN · PLUMBING · ELECTRICITY · HVAC · WASTE · COMMON_BATHROOM"
         VARCHAR(80) name_es
         VARCHAR(80) name_en
         VARCHAR(80) name_ru
@@ -291,6 +294,15 @@ erDiagram
         TIMESTAMP disputed_at
         VARCHAR(100) resolved_by
         TIMESTAMP resolved_at
+    }
+
+    supply_alerts {
+        UUID id PK
+        UUID supply_item_id FK "FK a supply_items(id)"
+        VARCHAR(12) status "OPEN · CLOSED"
+        TIMESTAMP opened_at
+        TIMESTAMP last_reminded_at
+        TIMESTAMP closed_at
     }
 
     housekeeping_assignments ||--o| housekeeping_inspections : "origina"
