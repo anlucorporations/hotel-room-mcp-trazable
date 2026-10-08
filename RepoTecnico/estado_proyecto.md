@@ -3986,3 +3986,17 @@ FAQ que contenga la forma conjugada; el manual correcto **sigue entrando en el t
 criterio de aceptación del hito. Se probará con consultas reales en H3/H4.
 
 **Pendiente de H2 que sigue abierto**: los renglones del prompt (es H3) y el despliegue (es H5).
+
+### 14.9 Regla de `push` de esta línea de trabajo (2026-10-07)
+
+**Instrucción del responsable**: en esta línea de trabajo (v3: asistente IA y manuales del huésped) el
+`push` va **solo a la rama `Hotel-DSH-GCP-v3`**. `main` y `Hotel-DSH-GCP` no se mueven.
+
+| Rama | Estado |
+|---|---|
+| `Hotel-DSH-GCP-v3` | **Rama de trabajo y único destino de `push`**. Publicada en `origin` (`6fc47a6`) |
+| `Hotel-DSH-GCP` | Congelada en `42255fd` (no recibe los commits de la v3) |
+| `main` | Intacta en `42255fd` |
+
+Queda registrado también en `RepoTecnico/entornos_globales.md` §1, que es donde el equipo consulta la
+política de repositorios y ramas.

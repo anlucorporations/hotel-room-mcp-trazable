@@ -7,7 +7,10 @@
 
 ## 1. Repositorios y rama
 
-> **Regla vigente (2026-09-25)**: solo se sube el proyecto a los **repositorios de `anlucorporations`**
+> **Regla vigente (2026-10-07)**: en la línea de trabajo de la **v3** (asistente IA y manuales del
+> huésped) el `push` va **solo a la rama `Hotel-DSH-GCP-v3`**. `main` y `Hotel-DSH-GCP` no se mueven.
+>
+> **Regla anterior (2026-09-25)**: solo se sube el proyecto a los **repositorios de `anlucorporations`**
 > y **a la rama `Hotel-DSH-GCP`**. Cualquier otro remoto o rama queda excluido para `push`.
 
 | Remoto | URL | Uso |
@@ -16,8 +19,10 @@
 | `github` | `git@github.com:anlucorporations/hotel-room-mcp-trazable.git` | GitHub de `anlucorporations` |
 | `codecrypto` | `git@gitlab.codecrypto.academy:anlucorporations/hotel-room-mcp-trazable.git` | GitLab de Codecrypto |
 
-- **Rama de `push`**: `Hotel-DSH-GCP` (la misma en los tres remotos). `main` se conserva como rama local de trabajo.
-- **Regla del proceso**: no se hace `push` sin orden explícita del responsable (comando `/push`). El `push` autorizado va **solo** a los tres remotos de `anlucorporations` y **solo** a `Hotel-DSH-GCP`.
+- **Rama de `push`**: `Hotel-DSH-GCP-v3` para la línea de la v3 (desde el 2026-10-07); `Hotel-DSH-GCP`
+  queda congelada en `42255fd` y `main` se conserva como rama local de trabajo. El primer `push` de
+  esta línea se hizo a `origin`; replicarlo en `github` y `codecrypto` queda a decisión del responsable.
+- **Regla del proceso**: no se hace `push` sin orden explícita del responsable (comando `/push`). El `push` autorizado va **solo** a los remotos de `anlucorporations` y **solo** a la rama vigente indicada arriba.
 - Todos los remotos usan **SSH**; no hay credenciales embebidas en `.git/config` (verificado: 0 coincidencias de token).
 
 > ⚠️ **Deuda heredada (B-0)**: existió un token de GitLab en claro en el remoto `gitlab-public`, que ya no existe. No queda ninguna URL con credenciales embebidas en este checkout; la **rotación del token histórico** sigue siendo tarea del responsable.
