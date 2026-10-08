@@ -11,6 +11,7 @@
   "scripts": {
     "build": "turbo run build",
     "build:manuals": "pnpm --filter @hotel/web run manuals",
+    "knowledge": "pnpm --filter @hotel/mcp run knowledge",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",

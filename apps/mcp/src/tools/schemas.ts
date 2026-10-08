@@ -33,12 +33,29 @@ export const buildPurchaseTxShape = {
   tokenId,
 } as const;
 
+/** Audiencias del índice de conocimiento (H2); la escalera de visibilidad vive en `knowledge/search`. */
+const knowledgeAudience = z.enum(["cliente", "recepcion", "propietario", "interno"]);
+
+export const searchHotelManualsShape = {
+  /** Pregunta o concepto a buscar, en lenguaje natural. */
+  query: z.string().min(2).max(300),
+  /**
+   * Audiencia del consumidor. Por defecto `cliente` (la más restrictiva): el asistente del huésped
+   * nunca recibe procedimientos internos, de recepción ni del propietario.
+   */
+  audience: knowledgeAudience.optional(),
+  /** Número de fragmentos a devolver (por defecto 3, máximo 5). */
+  limit: z.number().int().positive().max(5).optional(),
+} as const;
+
 export const listAvailableNightsInput = z.object(listAvailableNightsShape);
 export const checkAvailabilityInput = z.object(checkAvailabilityShape);
 export const getOwnedNightsInput = z.object(getOwnedNightsShape);
 export const buildPurchaseTxInput = z.object(buildPurchaseTxShape);
+export const searchHotelManualsInput = z.object(searchHotelManualsShape);
 
 export type ListAvailableNightsInput = z.infer<typeof listAvailableNightsInput>;
 export type CheckAvailabilityInput = z.infer<typeof checkAvailabilityInput>;
 export type GetOwnedNightsInput = z.infer<typeof getOwnedNightsInput>;
 export type BuildPurchaseTxInput = z.infer<typeof buildPurchaseTxInput>;
+export type SearchHotelManualsInput = z.infer<typeof searchHotelManualsInput>;

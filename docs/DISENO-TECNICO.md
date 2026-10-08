@@ -150,8 +150,10 @@ ADR-01..04 formalizan decisiones de `REQUISITOS.md`; ADR-05+ son de esta fase.
 | `listAvailableNights` | `{ window?, type? }` | `[{tokenId, room, date, type, price, saleType}]` |
 | `checkAvailability` | `{ room, date }` | `{exists, available, tokenId?, price?}` |
 | `getOwnedNights` | `{ wallet }` | `[{tokenId, room, date, type}]` |
+| `searchHotelManuals` | `{ query, audience?, limit? }` | `[{id, doc, docTitle, section, source, score, excerpt}]` |
 | `buildPurchaseTx` | `{ tokenId }` | `{to, data, value, chainId}` |
 
+- `searchHotelManuals` (v3) es **local**: busca por BM25 en un índice de los manuales generado en el build, así que no toca la cadena ni la base de datos. Filtra por audiencia (`cliente` por defecto) para que el asistente del huésped no reciba contenido de recepción ni del propietario.
 - El filtro `{type}` de `listAvailableNights` da soporte a «alternativas del mismo tipo» (CU-08 08a) → reconcilia el set de herramientas.
 - **Orquestación (ADR-11):** LLM en API route server-side → MCP (HTTP) → handoff a wagmi con **verificación cliente + validación server-side**; confirmación UI con tx decodificada; manejo de `assistant-unavailable` (08e).
 

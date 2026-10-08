@@ -8,6 +8,7 @@ import {
   checkAvailability,
   getOwnedNights,
   listAvailableNights,
+  searchHotelManuals,
   type ToolConfig,
 } from "./tools";
 
@@ -249,5 +250,30 @@ describe("buildPurchaseTx (TC-MCP-003/004)", () => {
     await expect(buildPurchaseTx(reader, CONFIG, { tokenId: "no-numerico" })).rejects.toMatchObject({
       code: "INVALID_INPUT",
     });
+  });
+});
+
+describe("searchHotelManuals (TC-MCP-009, H2)", () => {
+  it("devuelve fragmentos con su fuente y su sección para poder citarla", () => {
+    const hits = searchHotelManuals({ query: "cómo compro una noche" });
+
+    expect(hits.length).toBeGreaterThan(0);
+    for (const hit of hits) {
+      expect(hit.doc).toBeTruthy();
+      expect(hit.section).toBeTruthy();
+      expect(hit.source).toMatch(/\.md$/);
+      expect(hit.excerpt.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("por defecto solo devuelve contenido visible para el huésped", () => {
+    // Consulta que solo está cubierta por el manual de recepción: con la audiencia por defecto no
+    // puede aparecer.
+    const hits = searchHotelManuals({ query: "pantalla de recepción y sus mensajes" });
+    expect(hits.every((hit) => hit.doc !== "recepcion")).toBe(true);
+  });
+
+  it("respeta el límite pedido", () => {
+    expect(searchHotelManuals({ query: "noche", limit: 1 }).length).toBeLessThanOrEqual(1);
   });
 });

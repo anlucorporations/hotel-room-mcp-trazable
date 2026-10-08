@@ -24,7 +24,7 @@
   - Orquestación: `apps/web/src/lib/assistant/orchestrator.ts:40`.
   - Prompt: `apps/web/src/lib/assistant/prompt.ts:7` y `:33`.
   - Handoff a firma: `apps/web/src/components/assistant/PurchaseHandoff.tsx:39`.
-  - MCP: `apps/mcp/src/server.ts:38` (4 herramientas) y `apps/mcp/src/tools/tools.ts:69`.
+  - MCP: `apps/mcp/src/server.ts:38` (5 herramientas) y `apps/mcp/src/tools/tools.ts:69`.
   - Validación server-side: `apps/web/src/lib/assistant/chain-pricing.ts:42` y `validate-tx.ts:56`.
 
 ## 2. Recorrido técnico
@@ -70,8 +70,9 @@
 
 ### 2.2 Validaciones
 
-- **Herramientas sin firma.** El MCP registra exactamente cuatro herramientas, tres de lectura y
-  `buildPurchaseTx` (`server.ts:42`, `:52`, `:62` y `:71`); no hay ninguna de firma ni de custodia
+- **Herramientas sin firma.** El MCP registra exactamente cinco herramientas: cuatro de lectura
+  (tres contra la cadena y `searchHotelManuals`, que busca en los manuales) y `buildPurchaseTx`
+  (`server.ts:46`, `:56`, `:66`, `:92` y `:75`); no hay ninguna de firma ni de custodia
   (`server.ts:34`–`:36`).
 - **Precio on-chain.** `buildPurchaseTx` no se fía del llamante: relee el estado y usa siempre el
   precio de `priceOf`/`listingOf` (`tools.ts:176`–`:199`).
@@ -165,7 +166,7 @@
   `:133` `checkAvailability` (DISPONIBLE, LISTADA, expirada, inexistente con alternativa, fecha
   inválida); `:181` `getOwnedNights`; `:199` `buildPurchaseTx` (primaria verificable, reventa,
   rechazos, `INVALID_INPUT`).
-- `apps/mcp/src/http-server.test.ts:122` — el transporte MCP expone las 4 herramientas y ejecuta
+- `apps/mcp/src/http-server.test.ts:122` — el transporte MCP expone las 5 herramientas y ejecuta
   `checkAvailability`.
 - `apps/web/src/lib/assistant/orchestrator.test.ts:46` — fuera de dominio → 0 tool-calls; `:60`
   prompt injection; `:77` encadena `checkAvailability` → `buildPurchaseTx`; `:98` descarta la compra

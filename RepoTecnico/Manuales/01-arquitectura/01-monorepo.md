@@ -57,7 +57,7 @@
 
 | Fichero | Función |
 |---|---|
-| `mcp/src/server.ts` | Registra las **4** herramientas: `listAvailableNights`, `checkAvailability`, `getOwnedNights`, `buildPurchaseTx` |
+| `mcp/src/server.ts` | Registra las **5** herramientas: cuatro de lectura (`listAvailableNights`, `checkAvailability`, `getOwnedNights` y `searchHotelManuals`, que busca en los manuales del hotel sin tocar la cadena) y `buildPurchaseTx`, que solo prepara la transacción |
 | `mcp/src/tools/**` | Núcleo de las herramientas, esquemas zod y errores de dominio |
 | `mcp/src/chain/viem-chain-reader.ts` | Adaptador viem; pagina `getLogs` y usa `ownerOf` como oráculo |
 | `mcp/src/http-server.ts`, `health.ts` | Transporte HTTP y salud del MCP |

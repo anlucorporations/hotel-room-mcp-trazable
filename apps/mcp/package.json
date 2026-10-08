@@ -13,7 +13,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "clean": "rm -rf dist .turbo coverage *.tsbuildinfo"
+    "clean": "rm -rf dist .turbo coverage *.tsbuildinfo",
+    "knowledge": "node scripts/build-knowledge-index.mjs"
   },
   "dependencies": {
     "@hotel/shared": "workspace:*",

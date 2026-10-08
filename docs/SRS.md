@@ -79,7 +79,7 @@ paleta real, y verificación reproducible con artefactos.
             │ PostgreSQL (pool) · Redis (cola, locks) │
 ┌───────────▼───────────┐   ┌──────────────────┐   ┌──┴─────────────────────────┐
 │ PostgreSQL 18         │   │ Redis ≥ 5 (7.x)  │   │ apps/mcp (read-only)       │
-│ 13 tablas             │   │ cola·locks·block │   │ 4 herramientas + prepare   │
+│ 13 tablas             │   │ cola·locks·block │   │ 5 herramientas + prepare   │
 └───────────────────────┘   └──────────────────┘   └────────────────────────────┘
                             apps/monitor: /health + viveza de cadena + gas (SMTP propio)
 ```
@@ -212,7 +212,7 @@ correspondiente; sin sesión → **401**, con rol ajeno → **403** (ADR-04).
 | Servicio | Puerto | Rutas |
 |---|---|---|
 | Worker | 8787 | `GET /health` (con `lag`, `aggregateLag`, `emailDegraded`), `GET /aggregates`, `GET /history` |
-| MCP | 8788 | 4 herramientas **read-only** + preparación de la compra (`buildPurchaseTx`); nunca firma |
+| MCP | 8788 | 5 herramientas: tres de lectura de la cadena, `searchHotelManuals` (búsqueda local en los manuales) y `buildPurchaseTx`; nunca firma |
 
 > **Deuda declarada**: el HTTP del worker no exige autenticación y tiene CORS abierto; en un despliegue
 > público debe cerrarse (o ponerse detrás de la capa de red/WAF de D-11).

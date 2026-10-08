@@ -11,6 +11,7 @@ import {
   type SaleType,
 } from "@hotel/shared";
 import type { ChainReader, NightSignals } from "../chain/chain-reader";
+import { searchKnowledge, type KnowledgeHit } from "../knowledge/search";
 import { ToolError } from "./errors";
 import type { AvailabilityResult, NightDescriptor, OwnedNightDescriptor, PurchaseTxData } from "./types";
 import type {
@@ -18,6 +19,7 @@ import type {
   CheckAvailabilityInput,
   GetOwnedNightsInput,
   ListAvailableNightsInput,
+  SearchHotelManualsInput,
 } from "./schemas";
 
 /** Datos del contrato que necesita `buildPurchaseTx` para componer la tx (no firma). */
@@ -204,4 +206,17 @@ export async function buildPurchaseTx(
     contractAddress: config.contractAddress,
     chainId: config.chainId,
   });
+}
+
+/**
+ * TC-MCP-009 (hito H2 de la v3): recupera los fragmentos del conocimiento del hotel relevantes para
+ * una consulta y devuelve, con cada uno, la sección y el fichero de los que procede (RF-59: es lo
+ * que el asistente cita como fuente).
+ *
+ * Es una operación **puramente local**: el índice se genera en el build y vive en memoria, así que
+ * no toca la cadena ni la base de datos y no depende de {@link ChainReader}. Por eso no puede
+ * degradarse por un RPC lento y no añade latencia de red.
+ */
+export function searchHotelManuals(input: SearchHotelManualsInput): KnowledgeHit[] {
+  return searchKnowledge(input.query, { audience: input.audience, limit: input.limit });
 }

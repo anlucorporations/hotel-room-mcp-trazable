@@ -73,7 +73,7 @@ async function main(): Promise<void> {
 
   logger.info(
     { port: config.MCP_PORT, contract: config.CONTRACT_ADDRESS, chainId: config.CHAIN_ID, deploymentBlock },
-    "mcp activo · /health + /mcp (4 herramientas: read-only + buildPurchaseTx)",
+    "mcp activo · /health + /mcp (5 herramientas: 4 read-only + buildPurchaseTx)",
   );
 }
 

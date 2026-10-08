@@ -81,7 +81,7 @@ Detalle de entornos, puertos y variables: [`RepoTecnico/entornos_globales.md`](.
 | **Hot-wallet de recepción** | Sistema | Cuenta con `RECEPTION_ROLE` que firma `markCheckedIn` (singleton con cola de nonces). |
 | **Bot de quema** | Sistema | Hot-wallet dedicada con `BURNER_ROLE`; quema desatendida a las 12:00 de la zona del hotel. |
 | **Listener / worker** | Sistema | Escucha eventos on-chain, consolida el índice y los agregados, consume la cola de correo y vigila la cadena. |
-| **MCP / asistente** | Sistema | Cuatro herramientas **read-only** contra `HotelNights` y preparación de la compra. **Nunca firma ni custodia claves.** |
+| **MCP / asistente** | Sistema | Cinco herramientas: tres de lectura contra `HotelNights`, una de búsqueda en los manuales del hotel y la preparación de la compra. **Nunca firma ni custodia claves.** |
 | **Monitor** | Sistema | Vigila los `/health`, la viveza de la cadena y el saldo de gas, y avisa por su propio canal SMTP. |
 | **Custodios multisig** | Gobernanza | Comité 2-of-3 (Gnosis Safe) para la gobernanza y los fondos. **Pendiente de que el cliente designe firmantes.** |
 

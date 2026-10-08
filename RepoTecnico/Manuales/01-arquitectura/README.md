@@ -27,7 +27,7 @@
         │ PostgreSQL (pool) · Redis (cola, locks, blocklist)│ RPC
 ┌───────▼──────────┐  ┌────────────────┐  ┌─────────────────┴───────────────┐
 │ PostgreSQL 18    │  │ Redis ≥ 5 (7.x)│  │ apps/mcp — read-only     :8788  │
-│ 5432 · 13 tablas │  │ 6379           │  │ 4 herramientas + buildPurchaseTx│
+│ 5432 · 13 tablas │  │ 6379           │  │ 5 herramientas + buildPurchaseTx│
 └──────────────────┘  └────────────────┘  └─────────────────────────────────┘
                     apps/monitor — /health + viveza de cadena + gas (SMTP propio)
 ```
@@ -36,7 +36,7 @@
 |---|---|---|
 | `apps/web` | Interfaz pública y back-office, rutas de API, lectura de cadena desde el navegador | No indexa eventos ni quema |
 | `apps/worker` | Escucha eventos, consolida el índice y los agregados, consume la cola de correo, ejecuta la quema programada | No firma transacciones de usuario |
-| `apps/mcp` | Cuatro herramientas **read-only** y preparación de la compra sin firma | **Nunca firma ni custodia claves** (ADR-11) |
+| `apps/mcp` | Cuatro herramientas de lectura (tres de cadena y `searchHotelManuals`) y preparación de la compra sin firma | **Nunca firma ni custodia claves** (ADR-11) |
 | `apps/monitor` | Sondea `/health`, vigila viveza de cadena y saldo de gas | No toca la base de negocio |
 | `packages/contracts` | Contrato canónico y script de despliegue | No guarda estado off-chain |
 | PostgreSQL | Única persistencia: índice, operadores, cola de correo, agregados (ADR-03) | No decide verdad: la cadena decide |

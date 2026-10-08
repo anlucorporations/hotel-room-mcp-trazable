@@ -119,7 +119,7 @@ describe("MCP HTTP server (transporte Streamable + /health)", () => {
     }
   });
 
-  it("expone las 4 herramientas y ejecuta checkAvailability por el transporte MCP", async () => {
+  it("expone las 5 herramientas y ejecuta checkAvailability por el transporte MCP", async () => {
     const client = new Client({ name: "test", version: "1.0.0" });
     await client.connect(new StreamableHTTPClientTransport(new URL(`http://127.0.0.1:${port}/mcp`)));
     try {
@@ -129,6 +129,7 @@ describe("MCP HTTP server (transporte Streamable + /health)", () => {
         "checkAvailability",
         "getOwnedNights",
         "listAvailableNights",
+        "searchHotelManuals",
       ]);
       const result = await client.callTool({
         name: "checkAvailability",

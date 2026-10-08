@@ -7,12 +7,14 @@ import {
   checkAvailabilityShape,
   getOwnedNightsShape,
   listAvailableNightsShape,
+  searchHotelManualsShape,
 } from "./tools/schemas";
 import {
   buildPurchaseTx,
   checkAvailability,
   getOwnedNights,
   listAvailableNights,
+  searchHotelManuals,
   type ToolConfig,
 } from "./tools/tools";
 
@@ -31,9 +33,11 @@ const fail = (message: string): CallToolResult => ({
 });
 
 /**
- * Crea el MCP server del contrato (RF-12, CU-08, docs/SRS.md §9): 3 herramientas read-only + `buildPurchaseTx`
- * (sin firma). Las herramientas delegan en el núcleo (`tools/`), que depende del puerto
- * {@link ChainReader}. El MCP **nunca firma ni custodia claves** (§8, ADR-11).
+ * Crea el MCP server del contrato (RF-12, CU-08, docs/SRS.md §9): **4 herramientas read-only**
+ * (`listAvailableNights`, `checkAvailability`, `getOwnedNights`, `searchHotelManuals`) + `buildPurchaseTx`
+ * (sin firma). Las herramientas de cadena delegan en el núcleo (`tools/`), que depende del puerto
+ * {@link ChainReader}; `searchHotelManuals` es local (índice en memoria) y no toca la cadena.
+ * El MCP **nunca firma ni custodia claves** (§8, ADR-11).
  */
 export function createMcpServer(deps: McpServerDeps): McpServer {
   const server = new McpServer({ name: "hotel-nights-mcp", version: "1.0.0" });
@@ -83,6 +87,16 @@ export function createMcpServer(deps: McpServerDeps): McpServer {
         throw error;
       }
     },
+  );
+
+  server.registerTool(
+    "searchHotelManuals",
+    {
+      description:
+        "Busca en los manuales y protocolos oficiales del hotel (servicios, normas, ubicación, procedimientos) y devuelve los fragmentos más relevantes con su sección y fichero de origen, para poder citarlos. Solo devuelve contenido visible para la audiencia indicada (por defecto, la del huésped).",
+      inputSchema: searchHotelManualsShape,
+    },
+    async (input) => ok(searchHotelManuals(input)),
   );
 
   return server;
