@@ -7,6 +7,7 @@
 #   bash infra/gcp/f8-build-images.sh                 # dry-run
 #   bash infra/gcp/f8-build-images.sh --execute       # construye de verdad
 #   GCP_IMAGE_TAG=f8 bash infra/gcp/f8-build-images.sh
+#   bash infra/gcp/f8-build-images.sh --only=web,mcp --tag=v40 --execute
 #
 # Se ejecuta DESPUÉS del despliegue del contrato y de `pnpm sync`, para que el
 # registro (dirección, bloque y faucet) ya sea el nuevo.
@@ -19,11 +20,15 @@ REPO_ROOT="$(cd "$HERE/../.." && pwd)"
 
 EXECUTE=0
 TAG="${GCP_IMAGE_TAG:-f8}"
+# Qué componentes construir. Permite reconstruir solo lo que cambió (H5: web y mcp), en lugar de
+# gastar cuatro builds de Cloud Build en una release que solo toca dos aplicaciones.
+ONLY="${GCP_BUILD_ONLY:-web,worker,mcp,monitor}"
 for arg in "$@"; do
   case "$arg" in
     --execute) EXECUTE=1 ;;
     --dry-run) EXECUTE=0 ;;
     --tag=*) TAG="${arg#--tag=}" ;;
+    --only=*) ONLY="${arg#--only=}" ;;
     -h|--help)
       sed -n '2,14p' "$0"
       exit 0
@@ -66,10 +71,13 @@ build() {
 }
 
 cd "$REPO_ROOT"
-build web    ",${WEB_SUBS}"
-build worker ""
-build mcp    ""
-build monitor ""
+should() { [[ ",${ONLY}," == *",$1,"* ]]; }
+echo "==> Componentes: ${ONLY}"
+
+if should web; then build web ",${WEB_SUBS}"; fi
+if should worker; then build worker ""; fi
+if should mcp; then build mcp ""; fi
+if should monitor; then build monitor ""; fi
 
 if [[ "$EXECUTE" != "1" ]]; then
   echo

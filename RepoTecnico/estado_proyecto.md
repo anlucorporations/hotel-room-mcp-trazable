@@ -4156,3 +4156,32 @@ export PATH="/home/dsh/google-cloud-sdk/bin:$PATH"     # el snap de gcloud está
 corepack pnpm --filter @hotel/web exec tsx scripts/measure-assistant.ts --runs=20
 ```
 Los informes quedan en `RepoTecnico/evidencias/h4-medicion-real.json` (y `…-mock.json`).
+
+### 14.13 Fase 3 · Hito H5 — el asistente está EN PRODUCCIÓN (2026-10-08) · COMPLETADO
+
+Release **v40** desplegada con canario. Registro completo en `despliegue_gcp.md` §63.
+
+| Qué | Estado |
+|---|---|
+| `aiplatform.googleapis.com` | ✅ habilitada (gratuita, reversible) |
+| `roles/aiplatform.user` a `hotel-mcp-run@` | ✅ concedido y verificado |
+| Variables del asistente en la web | ✅ en `70-deploy-apps.sh` (incluida `GOOGLE_CLOUD_PROJECT`, sin la cual el asistente falla **en cerrado**) |
+| Imágenes | `web:v40` y `mcp:v40` construidas con Cloud Build (el MCP **hay que reconstruirlo**: el índice va dentro) |
+| Canario | MCP verificado (5 herramientas) → tráfico; web verificada (asistente responde) → tráfico |
+| Tráfico | 100 % en `hotel-mcp-web-00078-dec` y `hotel-mcp-mcp-00013-daq`, **comprobado explícitamente** |
+
+**El asistente responde**: preguntas reales devuelven respuestas citadas («…*Manual del comprador §6*…»)
+usando la herramienta (`domainToolCalls: 1`), y la pregunta de la cartera que en H4 se rechazaba ahora
+se contesta con pasos.
+
+**Verificación en producción**: 5 peticiones seguidas a 1,30-1,78 s; telemetría `assistant_request` con
+tokens y coste en Cloud Logging; y una petición con nombre, correo y móvil dejó **0 coincidencias de
+PII** en los logs (solo las categorías enmascaradas).
+
+**Hallazgo — el cold start se paga en la primera pregunta**: 7,0 s y 9,7 s en frío frente a ~1 s en
+caliente, con `min-instances=0` en web y MCP. RNF-25 habla de instancias calientes, así que se cumple
+en caliente; se documenta el efecto (que es justo lo que el requisito pedía) y se mantiene el coste
+mínimo en el piloto.
+
+**Pendiente del cliente**: el contenido del hotel en `docs/manual-huesped.md` (7 marcas
+`PENDIENTE DEL CLIENTE`). El asistente ya responde, pero sobre lo que hay indexado.

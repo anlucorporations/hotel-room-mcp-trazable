@@ -2149,3 +2149,64 @@ descubierta es su RDNS (`io.metamask`). Detalle en `estado_proyecto.md` §13.
 | Marcador `io.metamask` en producción tras mover | presente ✅ |
 | Regresión automatizada | `wallet-discovery.test.ts`: con `ssr:false` descubre `io.metamask`; con `ssr:true` no |
 | Suite web | **714/714 OK** |
+
+## 63. Release v40 — asistente IA de la v3 en producción (2026-10-08)
+
+Primera release que pone el **asistente conversacional** (v3) al servicio del huésped. Hitos H1-H4 del
+plan de la v3; el despliegue es el H5.
+
+**Alcance**: `apps/web` (asistente) y `apps/mcp` (quinta herramienta `searchHotelManuals`). El worker no
+cambia, pero **sí se reconstruyó el MCP**: el índice de conocimiento va compilado en la imagen, así que
+sin reconstruirlo el servicio seguiría con cuatro herramientas.
+
+| Componente | Imagen | Build |
+|---|---|---|
+| web | `…/hotel-mcp/web:v40` (`sha256:b064176d…`) | ✅ SUCCESS `93fdc5a2` (3 m 39 s) |
+| mcp | `…/hotel-mcp/mcp:v40` (`sha256:36eecc02…`) | ✅ SUCCESS `3f980abe` (2 m 19 s) |
+| worker | `worker:v38` (sin cambios) | vigente |
+
+**Cambios de infraestructura**
+
+| Cambio | Detalle |
+|---|---|
+| API habilitada | `aiplatform.googleapis.com` (gratuita y reversible; sin recursos creados) |
+| IAM | `roles/aiplatform.user` a `hotel-mcp-run@hotel-mcp.iam.gserviceaccount.com`. El asistente se autentica con la identidad del servicio: **no usa ningún secreto** |
+| Variables nuevas en la web | `ASSISTANT_PROVIDER`, `GOOGLE_CLOUD_PROJECT` (obligatoria: sin ella el asistente falla **en cerrado** con 503), `VERTEX_MODEL`, `VERTEX_LOCATION`, `VERTEX_MAX_OUTPUT_TOKENS`, `VERTEX_THINKING_BUDGET=0`, `ASSISTANT_MAX_INPUT_TOKENS`, `ASSISTANT_MAX_TURNS`, `ASSISTANT_MONTHLY_BUDGET_USD`, `ASSISTANT_BUDGET_MODE` |
+| Scripts | `70-deploy-apps.sh`: opciones `--only=` y `--canary`; `f8-build-images.sh`: opción `--only=` (la release solo necesitaba dos de las cuatro imágenes) |
+
+**Despliegue (canario, verificando antes de mover el tráfico)**
+
+| Servicio | Revisión sirviendo | Tráfico | Revisión anterior (rollback) |
+|---|---|---|---|
+| mcp | `hotel-mcp-mcp-00013-daq` (etiqueta `canary`) | 100 % | `hotel-mcp-mcp-00009-sjx` |
+| web | `hotel-mcp-web-00078-dec` (etiqueta `v39` en la anterior) | 100 % | `hotel-mcp-web-00046-9t9` (etiqueta `v39`) |
+| worker | `hotel-mcp-worker-00016-gsq` | 100 % | — |
+
+Orden: canario del MCP (0 %) → verificar 5 herramientas → mover tráfico del MCP → canario de la web
+(0 %) → verificar el asistente → mover tráfico de la web. El **tráfico se comprobó explícitamente**
+en ambos servicios: el incidente de la release v37 fue precisamente tráfico pinneado a revisiones
+antiguas.
+
+**Verificación**
+
+| Comprobación | Resultado |
+|---|---|
+| `tools/list` del MCP canario | **5 herramientas**, incluida `searchHotelManuals` ✅ |
+| `tools/list` del MCP en su URL estable, tras mover | 5 herramientas ✅ |
+| Asistente en el canario web | 200 con respuesta citada: «…*Manual del comprador §6. Revender una noche…*», `domainToolCalls: 1` ✅ |
+| Procedimiento del hotel (defecto de H4) | «¿Cómo conecto mi cartera y me pongo en la red?» → responde con pasos ✅ (antes: «No puedo ayudarte con eso») |
+| 5 peticiones seguidas a producción | 200 · 1,30 / 1,63 / 1,66 / 1,69 / 1,78 s |
+| Telemetría en Cloud Logging | `event=assistant_request` con modelo, tokens, `costUsd` y latencia ✅ |
+| **PII en los logs** | Petición con nombre, correo y móvil → **0 coincidencias** en los logs; la línea registra solo las categorías (`correo;telefono;nombre`) ✅ |
+| `cachedInputTokens` | 0 en todas las muestras: Vertex **no** sirve caché de contexto para estas peticiones |
+
+**Hallazgo: el *cold start* se paga en la primera pregunta.** Con `min-instances=0` en la web y en el
+MCP, la primera petición tras un rato de inactividad midió **7,0 s y 9,7 s** (arranque de contenedores +
+llamada al modelo), y las siguientes **~1 s** (973 y 1 140 ms internos). RNF-25 exige p95 ≤ 2,5 s **con
+instancias calientes**, así que se cumple en caliente, pero la primera pregunta de la mañana es lenta.
+Alternativas, por coste: dejar `min-instances=1` (~coste fijo), un *warm-up* periódico, o asumirlo y
+documentarlo (lo elegido para el piloto, que es lo que RNF-25 pide documentar).
+
+**Rollback**: `gcloud run services update-traffic <servicio> --to-revisions=<revisión anterior>=100`.
+Las revisiones v39 (web) y v38 (mcp) siguen desplegadas y arrancadas en frío, así que la vuelta atrás
+es inmediata.
