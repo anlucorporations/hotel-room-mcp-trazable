@@ -4209,3 +4209,24 @@ API `billingbudgets.googleapis.com` no está habilitada y no se ha tocado la cue
 
 **B1 sigue abierta** (confirmar el corpus acotado, ya implementado y en producción, o abrir más
 adelante una superficie interna autenticada aparte).
+
+### 14.15 Bloque 1 resuelto: el manual del huésped ya dice lo que el sistema sabe (release v41, 2026-10-08)
+
+«Resolver el bloque 1» tenía un límite que no se ha cruzado: **no se han inventado datos del hotel**.
+Se ha resuelto todo lo que depende del sistema y se ha reducido el resto a lo que solo puede decidir el
+hotel.
+
+| Qué se hizo | Detalle |
+|---|---|
+| Manual rellenado | `docs/manual-huesped.md`: apartados 2-8 escritos con hechos **verificados** (manuales de los 17 casos y código). El 1 (dirección) sigue pendiente y **no se indexa** |
+| Comisión verificada | El royalty de reventa (**5 % simples y dobles, 10 % suites**) está fijado en el contrato (`ROYALTY_BPS_STANDARD = 500`) y es **inmutable**: no lo pone el hotel |
+| Índice | 188 → **196 fragmentos**; el apartado sin datos no entra (verificado: 0 coincidencias de dirección) |
+| Publicación | **Release v41** (`mcp:v41`, revisión `00015-mag`) con canario y verificación previa al cambio de tráfico |
+| Solicitud al cliente | Adelgazada: solo quedan dirección, horas, servicios, normas y a quién avisar. Los procedimientos de QR, salida y reventa ya no se piden |
+
+**Comprobado en producción**: «¿qué se queda el hotel de una reventa?» → «5 % en simples y dobles, 10 % en
+suites»; «¿tengo que firmar algo al salir?» → «no, la salida no requiere firma ni cartera». Y a «¿cuál es
+la dirección exacta?» **sigue diciendo que no la sabe**, que es exactamente lo que debe hacer.
+
+**Observación de calidad**: al preguntar por la duración del resguardo, el asistente mencionó el uso único
+pero **omitió los 7 días**; y una cita apuntó a otra sección. Es resumen del modelo, no contenido erróneo.

@@ -2214,3 +2214,46 @@ sin cambios; solo variables de entorno). Verificado que el asistente sigue respo
 **Rollback**: `gcloud run services update-traffic <servicio> --to-revisions=<revisión anterior>=100`.
 Las revisiones v39 (web) y v38 (mcp) siguen desplegadas y arrancadas en frío, así que la vuelta atrás
 es inmediata.
+
+## 64. Release v41 — manual del huésped relleno con lo que el sistema sabe (2026-10-08)
+
+El manual del huésped era una plantilla: el asistente no podía responder sobre el propio hotel. Se han
+redactado los apartados que **dependen del sistema** a partir del funcionamiento real (manuales de los 17
+casos y código), y se han dejado **solo** los que decide el hotel.
+
+| Apartado | Estado |
+|---|---|
+| 2. Entrada y salida | Escrito (entrada digital, sin firma al salir, el sistema no fija horas) |
+| 3. Tu noche y el código QR | Escrito (resguardo de 7 días y un solo uso, firma de 2 minutos, sin lector de cámara: recepción pega el texto) |
+| 4. Servicios | Escrito lo del sistema (extras y cuenta); el catálogo y los precios siguen pendientes |
+| 5. Normas | Escrito lo del sistema (la habitación queda pendiente de limpieza) |
+| 6. Si algo va mal | Escrito lo del sistema + 112; a quién avisar y el horario, pendientes |
+| 7. Reventa | Escrito y **verificado en el contrato**: precio lo pone el huésped, comisión **5 % / 10 % fija e inmutable** |
+| 8. Preguntas frecuentes | Escritas las del sistema |
+| 1. Dónde estamos | **Pendiente**: es dato del hotel y **no se ha indexado** (verificado) |
+
+**Alcance**: solo `apps/mcp` (el contenido vive en el índice de conocimiento, que va dentro de la imagen).
+
+| Componente | Imagen | Build |
+|---|---|---|
+| mcp | `…/hotel-mcp/mcp:v41` | ✅ SUCCESS `2daf7359` (2 m 43 s) |
+| web | `web:v40` (sin cambios) | vigente |
+| worker | `worker:v38` (sin cambios) | vigente |
+
+**Despliegue**: canario `hotel-mcp-mcp-00015-mag` (0 %) → verificado que anuncia las 5 herramientas →
+tráfico movido. Revisión anterior para rollback: `hotel-mcp-mcp-00013-daq`.
+
+**Índice**: 188 → **196 fragmentos** (cliente 161 · recepción 17 · propietario 18). El apartado 1 **no** se
+indexó (solo tiene comentarios), así que el asistente sigue sin poder inventar una dirección.
+
+**Verificación en producción**
+
+| Pregunta | Antes | Ahora |
+|---|---|---|
+| «¿Qué se queda el hotel de una reventa?» | «Pregunta en recepción» | «Un 5 % en habitaciones simples y dobles, y un 10 % en suites» ✅ |
+| «¿Tengo que firmar algo al salir?» | Sin respuesta | «No… la salida no requiere firma ni cartera. El cobro se hace en el mostrador» ✅ |
+| «¿Cuál es la dirección exacta?» | No la sabe | **Sigue sin saberla** (correcto: no se ha inventado) ✅ |
+
+**Observación de calidad (no bloqueante)**: al preguntar por la duración del resguardo, el asistente
+respondió que es de un solo uso pero **omitió los 7 días**; y una cita apuntó a una sección distinta de la
+fuente usada. Son matices de resumen del modelo, no errores de contenido.
