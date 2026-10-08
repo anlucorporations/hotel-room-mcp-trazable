@@ -4230,3 +4230,49 @@ la dirección exacta?» **sigue diciendo que no la sabe**, que es exactamente lo
 
 **Observación de calidad**: al preguntar por la duración del resguardo, el asistente mencionó el uso único
 pero **omitió los 7 días**; y una cita apuntó a otra sección. Es resumen del modelo, no contenido erróneo.
+
+### 14.16 Defecto grave encontrado y corregido: el asistente podía negar la comisión de reventa (release MCP v42, 2026-10-08)
+
+Buscando mejorar la precisión del resumen apareció un defecto **de contenido**, no de estilo: a la
+pregunta «¿qué se queda el hotel de una reventa?» el asistente respondía a veces **sin la cifra** y, en
+alguna ocasión, **lo contrario de lo documentado** («el hotel no se queda ninguna comisión»), cuando el
+contrato cobra un 5 %/10 % inmutable. Es el peor tipo de fallo posible en un asistente de atención al
+cliente, así que se investigó hasta la causa.
+
+**Primer intento, fallido y revertido.** Añadí dos reglas al prompt (no omitir cifras; no afirmar que
+algo no existe) y bajé la temperatura a 0. Medido con el modelo real y el MCP real, **empeoró**: 0/6
+frente a 4/6 de la configuración existente. La regla que enumeraba «una comisión» como ejemplo parecía
+**imantar** al modelo hacia la negación. Se revirtieron ambos cambios: **el prompt y la temperatura de
+producción quedan intactos** (los ficheros de la web no tienen ningún cambio). Lección registrada:
+*en este asistente, añadir reglas al prompt ha empeorado la fidelidad en las dos ocasiones medidas.*
+
+**Causa raíz (la de verdad).**
+1. **Brecha de vocabulario.** El huésped —y el propio modelo al reformular— pregunta por la
+   «**comisión**»; el corpus decía «**porcentaje**» y «lo que se queda el hotel». La palabra «comisión»
+   aparecía **0 veces** en el corpus indexado, así que BM25 devolvía fragmentos **sin la cifra**.
+2. **Ventana de extracto.** El asistente solo ve **600 caracteres** por fragmento; en el apartado de
+   reventa la cifra quedaba más allá del corte, así que era **invisible** aunque estuviera indexada.
+
+**Corrección aplicada (solo MCP: el contenido y la búsqueda viven ahí).**
+- El apartado **§7 abre con la comisión** (5 % simples y dobles, 10 % suites), de modo que entra en los
+  primeros 600 caracteres.
+- **Expansión de sinónimos** en `search.ts` (`comisión → porcentaje`, y unas pocas más), lista cerrada y
+  revisable que solo amplía la consulta; no toca los pesos del índice.
+- Dos **tests de regresión** que fallan si la cifra vuelve a quedar fuera del alcance.
+
+**Verificación**
+
+| Comprobación | Resultado |
+|---|---|
+| Recuperación con las consultas reales del modelo | «comisión reventa hotel» → el fragmento con la cifra pasa al **primer** puesto |
+| A/B con el modelo real y el MCP corregido | **6/6** respuestas con la cifra (antes 4/6 y con negaciones) |
+| Producción | «El hotel se queda una comisión del 5 % en habitaciones simples y dobles, y del 10 % en suites. Esta comisión está fijada en el contrato. *Manual del huésped §7. Reventa de tu noche*» ✅ |
+| Suite del MCP | **74/74** (72 + 2 de regresión) · typecheck y lint limpios |
+
+**Nota metodológica**: las primeras medidas daban resultados erráticos porque el **limitador de
+peticiones** devolvía 429 y mi script contaba esas respuestas como fallos. Las cifras de arriba están
+tomadas espaciando las peticiones y comprobando el código HTTP.
+
+**Limpieza**: las revisiones de la web con el prompt experimental (que empeoraba el asistente) se
+**borraron** y se retiró su etiqueta; producción sigue sirviendo la revisión buena (`hotel-mcp-web-00048-lz8`,
+imagen `web:v40`). El MCP pasa a `mcp:v42` (revisión `00017-wow`).

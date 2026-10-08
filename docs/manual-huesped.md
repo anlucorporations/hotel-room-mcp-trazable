@@ -97,7 +97,9 @@ Cuando sales, la habitación queda **pendiente de limpieza** hasta que recepció
 
 ## 7. Reventa de tu noche
 
-Puedes vender tu noche a otra persona desde **Mis noches**:
+Puedes vender tu noche a otra persona desde **Mis noches**. El hotel se queda una **comisión del 5 %**
+en habitaciones simples y dobles, y del **10 %** en suites; está fijada en el contrato y **nadie puede
+cambiarla**, ni el hotel. Esto es lo que puedes hacer:
 
 - **El precio lo pones tú**: escribes la cifra en **Precio de reventa (ETH)** y firmas. Si el campo está
   vacío o en cero, el sistema no deja publicarla.
@@ -106,8 +108,9 @@ Puedes vender tu noche a otra persona desde **Mis noches**:
 - Solo se puede revender una noche que **ya se compró**: el inventario del hotel no entra por aquí.
 - No puedes revender una noche que **ya has usado** en recepción.
 
-**Lo que se queda el hotel** es un porcentaje fijo del precio: **5 %** en habitaciones simples y dobles, y
-**10 %** en suites. Ese porcentaje está fijado en el contrato y **nadie puede cambiarlo**, ni el hotel.
+**La comisión que se queda el hotel** (lo que se queda de la reventa) es un porcentaje fijo del precio:
+**5 %** en habitaciones simples y dobles, y **10 %** en suites. Ese porcentaje está fijado en el
+contrato y **nadie puede cambiarlo**, ni el hotel.
 
 **Tu dinero** queda en **Saldo pendiente** y lo cobras con el botón **Cobrar** cuando quieras.
 
@@ -121,7 +124,8 @@ Puedes vender tu noche a otra persona desde **Mis noches**:
   otra vez y no habrás perdido nada.
 - **¿Tengo que firmar algo para salir?** No: la salida no pide firma ni cartera.
 - **¿Me cobra el sistema al salir?** No; solo apunta y cancela cargos. El cobro se hace en el mostrador.
-- **¿Qué se queda el hotel de una reventa?** Un 5 % en simples y dobles, y un 10 % en suites.
+- **¿Qué comisión se queda el hotel en una reventa?** Un 5 % en habitaciones simples y dobles, y un
+  10 % en suites. Está fijada en el contrato y no se puede cambiar.
 - **¿Cuándo cobro el dinero de una noche que he vendido?** Queda en **Saldo pendiente** y lo cobras
   cuando quieras.
 - **¿Puedo revender una noche que no compré?** No: solo se revende una noche que ya tuvo una venta.

@@ -33,6 +33,28 @@ export const VISIBLE_AUDIENCES: Readonly<Record<KnowledgeAudience, readonly Know
 /** Audiencia por defecto: la más restrictiva, para que un descuido no filtre contenido interno. */
 export const DEFAULT_AUDIENCE: KnowledgeAudience = "cliente";
 export const DEFAULT_LIMIT = 3;
+
+/**
+ * Sinónimos del vocabulario del hotel, aplicados a la consulta.
+ *
+ * Motivo medido (H5): el huésped —y el propio modelo al reformular— pregunta por la «**comisión**»,
+ * pero el corpus dice «**porcentaje**» y «lo que se queda el hotel». Sin coincidencia léxica, la
+ * búsqueda devolvía fragmentos sin la cifra y el asistente respondía sin el dato (o lo negaba). Con la
+ * expansión, el fragmento con el 5 %/10 % pasa al primer puesto.
+ *
+ * Es una lista cerrada y revisable: añadir un sinónimo solo amplía la consulta, nunca cambia los
+ * pesos del índice.
+ */
+const SYNONYMS: Readonly<Record<string, readonly string[]>> = {
+  comision: ["porcentaje"],
+  comisiones: ["porcentaje"],
+  royalty: ["porcentaje"],
+  porcentaje: ["comision"],
+  cancelacion: ["anular", "devolucion"],
+  anular: ["cancelacion"],
+  factura: ["cuenta", "cargo"],
+  resguardo: ["qr", "token"],
+};
 /** Tope de resultados: cada uno viaja al LLM en cada llamada (palanca de coste, RNF-24). */
 export const MAX_LIMIT = 5;
 /** Recorte del extracto devuelto: contexto suficiente para responder y citar (RF-59). */
@@ -216,6 +238,20 @@ function score(index: Bm25Index, indexed: IndexedChunk, queryTerms: readonly str
   return score_;
 }
 
+/**
+ * Amplía los términos de la consulta con sus sinónimos. No duplica términos y mantiene el orden
+ * original, de modo que la puntuación sigue siendo determinista.
+ */
+export function expandSynonyms(terms: readonly string[]): string[] {
+  const expanded = [...terms];
+  for (const term of terms) {
+    for (const synonym of SYNONYMS[term] ?? []) {
+      if (!expanded.includes(synonym)) expanded.push(synonym);
+    }
+  }
+  return expanded;
+}
+
 /** Recorta a `max` caracteres sin partir la última palabra. */
 export function excerpt(text: string, max: number = MAX_EXCERPT_CHARS): string {
   if (text.length <= max) return text;
@@ -233,7 +269,7 @@ export function excerpt(text: string, max: number = MAX_EXCERPT_CHARS): string {
 export function searchKnowledge(query: string, options: SearchKnowledgeOptions = {}): KnowledgeHit[] {
   const audience = options.audience ?? DEFAULT_AUDIENCE;
   const limit = Math.min(Math.max(options.limit ?? DEFAULT_LIMIT, 1), MAX_LIMIT);
-  const queryTerms = tokenize(query);
+  const queryTerms = expandSynonyms(tokenize(query));
   if (queryTerms.length === 0) return [];
 
   const index = getIndex(audience);

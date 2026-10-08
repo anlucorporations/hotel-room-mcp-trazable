@@ -2257,3 +2257,32 @@ indexó (solo tiene comentarios), así que el asistente sigue sin poder inventar
 **Observación de calidad (no bloqueante)**: al preguntar por la duración del resguardo, el asistente
 respondió que es de un solo uso pero **omitió los 7 días**; y una cita apuntó a una sección distinta de la
 fuente usada. Son matices de resumen del modelo, no errores de contenido.
+
+## 65. Release MCP v42 — la comisión de reventa ya no se pierde (2026-10-08)
+
+**Defecto**: a «¿qué se queda el hotel de una reventa?» el asistente respondía a veces sin la cifra y, en
+alguna ocasión, negaba que existiera comisión (el contrato cobra un 5 %/10 % inmutable). Detalle en
+`estado_proyecto.md` §14.16.
+
+**Causa**: la palabra «comisión» no existía en el corpus (decía «porcentaje»), así que la búsqueda
+devolvía fragmentos sin la cifra; y en el apartado de reventa la cifra quedaba **más allá de los 600
+caracteres** de extracto que ve el modelo.
+
+**Alcance**: solo `apps/mcp` (contenido del índice y búsqueda).
+
+| Componente | Imagen | Build |
+|---|---|---|
+| mcp | `…/hotel-mcp/mcp:v42` | ✅ SUCCESS `f8ba27da` (2 m 11 s) |
+| web | `web:v40` (sin cambios; el prompt experimental se revirtió antes de desplegarse) | vigente |
+
+**Despliegue**: canario `hotel-mcp-mcp-00017-wow` → A/B con el modelo real contra el canario
+(**6/6** respuestas con la cifra, frente a 4/6) → tráfico movido. Rollback: `hotel-mcp-mcp-00015-mag`.
+
+**Verificación en producción**
+
+| Pregunta | Resultado |
+|---|---|
+| «¿Qué comisión se queda el hotel si revendo mi noche?» | «…un 5 % en habitaciones simples y dobles, y un 10 % en suites. Esta comisión está fijada en el contrato. *Manual del huésped §7*» ✅ |
+
+**Limpieza de revisiones**: se borraron `hotel-mcp-web-00081-sih` y `hotel-mcp-web-00082-pid`, del prompt
+experimental que empeoraba las respuestas, y se retiró su etiqueta `canary`.

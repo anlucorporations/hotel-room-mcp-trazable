@@ -4,6 +4,7 @@ import {
   DEFAULT_LIMIT,
   MAX_LIMIT,
   excerpt,
+  expandSynonyms,
   isKnowledgeAudience,
   normalizeTerm,
   searchKnowledge,
@@ -220,5 +221,32 @@ describe("searchKnowledge — contrato de la herramienta", () => {
     const hits = searchKnowledge("comprar noche", { limit: 5 });
     const scores = hits.map((hit) => hit.score);
     expect([...scores].sort((a, b) => b - a)).toEqual(scores);
+  });
+});
+
+describe("vocabulario del huésped ≠ vocabulario del corpus (defecto medido en H5)", () => {
+  it("encuentra la comisión de reventa aunque el corpus diga «porcentaje»", () => {
+    // El modelo reformulaba a «comisión por reventa de noches»; la palabra «comisión» no existía en
+    // el corpus, así que la búsqueda devolvía fragmentos SIN la cifra y el asistente respondía sin el
+    // dato (o lo negaba). La expansión de sinónimos lo arregla.
+    for (const query of [
+      "¿qué comisión se queda el hotel en una reventa?",
+      "comisión por reventa de noches",
+      "comisión reventa hotel",
+    ]) {
+      const hits = searchKnowledge(query, { limit: 3 });
+      const conCifra = hits.filter((hit) => /5 *%|10 *%/.test(hit.excerpt));
+      expect(conCifra.length, `sin la cifra para: ${query}`).toBeGreaterThan(0);
+    }
+  });
+
+  it("la expansión añade sinónimos sin duplicar ni perder los términos originales", () => {
+    expect(expandSynonyms(["comision"])).toEqual(["comision", "porcentaje"]);
+    expect(expandSynonyms(["reventa"])).toEqual(["reventa"]);
+    // Un término con varios sinónimos no se duplica.
+    expect(expandSynonyms(["porcentaje", "comision"])).toEqual([
+      "porcentaje",
+      "comision",
+    ]);
   });
 });
