@@ -840,3 +840,53 @@ Antes de iniciar Casos de Uso / Diseño detallado, se deben cumplir como mínimo
 La propuesta vNext es técnicamente ambiciosa y coherente con la dirección estratégica del proyecto, pero presenta **deudas arquitectónicas y de seguridad significativas** que deben cerrarse antes de avanzar a Fase 2. Los tres bloqueadores CRÍTICOS (no repudio de firmas, punto único de fallo de wallets y ausencia del huésped como stakeholder) son incompatibles con un sistema de producción que gestiona cargos económicos y estados de habitación on-chain.
 
 Se recomienda una iteración de refinamiento de **2-4 semanas** (dependiendo de la disponibilidad del cliente para validar decisiones) antes de aprobar el paso a Casos de Uso.
+
+---
+
+## Anexo A — Estado de resolución (2026-10-06)
+
+Decisiones tomadas con el cliente que resuelven los hallazgos. Ver `RepoTecnico/estado_proyecto.md` §11 para el detalle.
+
+| Hallazgo | Severidad | Estado | Resolución |
+|---|---|---|---|
+| H-10 | CRÍTICA | ✅ Resuelto | Firma **EIP-712 off-chain verificada criptográficamente** en BD + comprobación contra snapshot de roles (D-C16). Se añaden `nonce`, `domain_hash`, `recovered_signer`, `verified_at`, `role_snapshot`. |
+| H-13 | CRÍTICA | ✅ Resuelto | Wallet de respaldo = **wallet del Owner/Administrador** (`OWNER_BACKUP`) para emergencias de mantenimiento (D-C13). |
+| H-36 | CRÍTICA | ✅ Resuelto | **Huésped** como actor; **notificación con evidencia e importe y plazo de reclamación** antes del check-out (D-C14); tabla `damage_charge_guest_notifications`. |
+| H-01 | ALTA | ✅ Resuelto | **Política de PIN completa**: 4-6 dígitos, bcrypt, bloqueo tras 5 fallos, rotación 90 días, PIN de un solo uso, timeout 5 min (D-C17, RNF-M-09). |
+| H-02 | ALTA | ✅ Resuelto | Áreas críticas desglosadas: `POOL_FILTER`, `WATER_PUMP`, `ELEVATOR`, `ELECTRIC_GENERATOR` con `is_critical = TRUE` (D-C20). |
+| H-03 | ALTA | ✅ Resuelto | Trigger `assert_damage_charge_signature` exige firma `SIGNED`/`MINED`; cargo centralizado en `housekeeping_damage_charges`. |
+| H-05 | ALTA | ✅ Resuelto | Añadido `AREA_LOG` al enum `entity_type`. |
+| H-06 | ALTA | ✅ Resuelto | La inspección **no libera venta**; la firma certifica la revisión (D-C15) y pasa a **opcional** por D-C23. |
+| H-07 | ALTA | ✅ Resuelto | Backoff exponencial, máx. 8 reintentos, TTL 24 h, estado `PENDING_ANCHOR` (D-C18, RNF-M-03). |
+| H-08 | ALTA | ✅ Resuelto | RNF-M-14: cambio en BD solo con firma `SIGNED`; compensación y reconciliación de reorgs. |
+| H-09 | ALTA | ✅ Resuelto | Campo `nonce` en `on_chain_signatures` + serialización por wallet en la cola. |
+| H-11 | ALTA | ✅ Resuelto | Gobernanza de flags: solo Owner con TOTP; desactivar flags obligatorios exige firma on-chain del cambio (D-C22, RNF-M-11). |
+| H-12 | ALTA | ✅ Resuelto | Por D-C23 la firma de inspección es opcional; `signature_id` nullable es coherente. |
+| H-14 | ALTA | ✅ Resuelto | RNF-M-15: revocación on-chain antes de `revoked_at`; FK a `admin_users.id`; histórico. |
+| H-15 | ALTA | ✅ Resuelto | RNF-M-10 + comentario SQL: fotos cifradas, EXIF eliminado, URL firmada, retención 90 días (D-C19). |
+| H-16 | ALTA | ✅ Resuelto | RNF-M-16: `created_by` validado contra rol activo. |
+| H-17 | ALTA | ✅ Resuelto | RNF-M-13: observabilidad, métricas de cola, gas y alertas. |
+| H-18 | ALTA | ✅ Resuelto | RNF-M-12: RPO 1 h, RTO 4 h, PITR, retención 30 d + 12 m (D-C25). |
+| H-23 | ALTA | ✅ Resuelto | RNF-M-05: p95 medibles y escenario de carga (D-C26). |
+| H-31 | ALTA | ✅ Resuelto | Alcance on-chain confirmado: obligatorio en bloqueo/desbloqueo y cargos; opcional en inspección (D-C23). |
+| H-32 | ALTA | ✅ Resuelto | Se confirma la creación de `HotelOperations.sol` sin tocar `HotelNights.sol` (D-C23). |
+| H-37 | ALTA | ✅ Resuelto | Soporte = Administrador (Owner) con lectura de cola/terminales y escalado (D-C24). |
+| H-04 | MEDIA | ✅ Resuelto | Cargo por daños **sin firma on-chain**; solo auditoría off-chain (D-C27, ajusta D-C23). |
+| H-19 | MEDIA | ✅ Resuelto | Accesibilidad: solo usabilidad móvil, sin WCAG formal (D-C28, riesgo aceptado). |
+| H-20 | MEDIA | ✅ Resuelto | Usabilidad de terminal: ≤ 30 s/tarea, ≤ 3 toques, idioma del operario (D-C29, RNF-M-17). |
+| H-21 | MEDIA | ✅ Resuelto | Sin modo offline; bloqueo optimista y degradación graceful (D-C30, RNF-M-18). |
+| H-22 | MEDIA | ✅ Resuelto | Cumplimiento: retención 5 años, append-only con hash encadenado, exportación (D-C31, RNF-M-19). |
+| H-24 | MEDIA | ✅ Resuelto | Criterios observables: icono ⛓, etiqueta, `data-testid`, botón disabled, modal preview (D-C32). |
+| H-25 | MEDIA | ✅ Resuelto | Umbral de suministros configurable, notificación y cierre automático (D-C33). |
+| H-26 | MEDIA | ✅ Resuelto | Firmas por tipo sin "recomendada"; flags solo dev/test (D-C34). |
+| H-27 | MEDIA | ✅ Resuelto | Matriz de permisos del técnico (D-C35, RNF-M-20). |
+| H-29 | MEDIA | ✅ Resuelto | Referencia `D-C8` corregida a `D-C10` en el diccionario. |
+| H-30 | MEDIA | ✅ Resuelto | `reported_by_role` con `CHECK`; el técnico puede reportar (D-C36). |
+| H-38 | MEDIA | ✅ Resuelto | Permisos de Recepción explicitados (D-C37). |
+| H-39 | MEDIA | ✅ Resuelto | SLA de validación 24 h con escalado (D-C38, RNF-M-21). |
+| H-28 | BAJA | ✅ Resuelto | Contrato inmutable con evento genérico `OperationalAction` (D-C39). |
+| H-33 | BAJA | ✅ Resuelto | Ruta `/ama-de-llaves` con redirección desde `/housekeeping` (D-C40). |
+| H-34 | BAJA | ✅ Resuelto | Informes/notificaciones marcados como "propuesta del equipo", prioridad baja (D-C41). |
+| H-35 | BAJA | ✅ Resuelto | Autenticación de jefes: contraseña + TOTP + wallet desacoplada (D-C42). |
+
+**Veredicto actualizado (2026-10-06):** los **39 hallazgos (3 CRÍTICOS, 19 ALTOS, 13 MEDIA y 4 BAJOS) están resueltos** mediante las decisiones D-C13…D-C42. La propuesta vNext queda **APTA para pasar a Fase 2** (casos de uso + documento técnico), pendiente de validación del cliente.

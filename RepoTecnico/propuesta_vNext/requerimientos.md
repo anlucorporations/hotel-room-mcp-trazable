@@ -35,9 +35,10 @@ Cuando el Ama de llaves registra un cargo por daños, el sistema **notifica al h
 | **Técnico de mantenimiento** | Personal a cargo del jefe que ejecuta reparaciones | No existe como rol distinto | `MAINTENANCE_TECH` (sin wallet) |
 | **Ama de llaves** | Supervisora de housekeeping, inspecciones y suministros | `HOUSEKEEPING` (genérico, sin wallet) | `HEAD_KEEPER` con wallet on-chain |
 | **Camarera / Mucama** | Personal de limpieza a cargo del ama de llaves | No existe como rol distinto | `HOUSEKEEPER` (sin wallet) |
-| Recepción | Reporta incidencias de mantenimiento | `RECEPTION_ROLE` | `RECEPTION_ROLE` (sin cambios) |
+| Recepción | Reporta incidencias; activa la venta tras inspección/mantenimiento | `RECEPTION_ROLE` | Reporta incidencias, publica/despublica venta, resuelve reclamaciones; sin firma on-chain (D-C37) |
 | Administrador | Aprueba configuraciones y custodia de roles | `DEFAULT_ADMIN_ROLE` | `DEFAULT_ADMIN_ROLE` (sin cambios) |
 | **Huésped** | Cliente con estancia activa; afectado por bloqueos y cargos por daños | Cliente final de la web/reserva | Notificado de cargos por daños con plazo para reclamar |
+| **Soporte (Administrador)** | Gestiona la cola de anclajes, terminales y recuperación de PIN | `DEFAULT_ADMIN_ROLE` | Lectura de `on_chain_signatures` y terminales; escalado de fallos (D-C24) |
 
 > **Principio de diseño:** los **jefes** son operadores de confianza que **firman con wallet** los movimientos que afectan a disponibilidad, cargos económicos o cumplimiento normativo. Los **técnicos y camareras** son operadores de ejecución que **no necesitan wallet**: usan sesión tradicional (usuario + TOTP) y su trabajo queda validado por el jefe correspondiente.
 
@@ -52,42 +53,42 @@ Cuando el Ama de llaves registra un cargo por daños, el sistema **notifica al h
 | RF-M-01 | Recibir y clasificar incidencias reportadas por recepción o por el Ama de llaves | Alta | No |
 | RF-M-02 | Asignar incidencias a técnicos de mantenimiento | Alta | No |
 | RF-M-03 | **Bloquear una habitación para venta** cuando una incidencia la inhabilita | Alta | **Sí (obligatoria)** |
-| RF-M-04 | Resolver y cerrar incidencias de habitaciones, registrando diagnóstico, acciones y repuestos | Alta | Sí recomendada (opcional configurable) |
+| RF-M-04 | Resolver y cerrar incidencias de habitaciones, registrando diagnóstico, acciones y repuestos | Alta | No (auditoría off-chain) |
 | RF-M-05 | **Desbloquear una habitación** tras verificar que la incidencia está resuelta | Alta | **Sí (obligatoria)** |
 | RF-M-06 | Gestionar planes de mantenimiento preventivo de infraestructura: piscina, bomba de agua, plomería, electricidad, climatización, etc. | Alta | No (configuración), Sí para verificación de tarea ejecutada |
 | RF-M-07 | Programar tareas preventivas con periodicidad (diaria, semanal, mensual, trimestral, anual) | Alta | No |
-| RF-M-08 | Registrar el cumplimiento de tareas preventivas, incluyendo quien ejecuta, fecha, evidencia (foto/nota) y observaciones | Alta | Sí recomendada |
+| RF-M-08 | Registrar el cumplimiento de tareas preventivas, incluyendo quien ejecuta, fecha, evidencia (foto/nota) y observaciones | Alta | Sí solo si el área es crítica (D-C34) |
 | RF-M-09 | Gestionar mantenimiento rutinario de áreas comunes: recolección de desechos sólidos, jardines, limpieza de filtros, zonas recreativas | Media | No |
 | RF-M-10 | Registrar consumo de materiales y repuestos vinculado a incidencias o tareas | Media | No |
-| RF-M-11 | Generar informes de mantenimiento por habitación, área, técnico y periodo | Media | No |
-| RF-M-12 | Notificar al Ama de llaves cuando una habitación vuelva a estar lista para limpieza/inspección | Media | No |
+| RF-M-11 | Generar informes de mantenimiento por habitación, área, técnico y periodo | Baja (propuesta del equipo, D-C41) | No |
+| RF-M-12 | Notificar al Ama de llaves cuando una habitación vuelva a estar lista para limpieza/inspección | Baja (propuesta del equipo, D-C41) | No |
 
 ### 3.2 Suite de Ama de llaves
 
 | ID | Requisito | Prioridad | Firma on-chain |
 |---|---|---|---|
 | RF-K-01 | Crear turnos de housekeeping (mañana, tarde, noche) y asignar habitaciones a las camareras | Alta | No |
-| RF-K-02 | Ver en tiempo real el estado operativo de cada habitación: `LIMPIA`, `SUCIA`, `EN_LIMPIEZA`, `OCUPADA`, `BLOQUEADA_MANTENIMIENTO`, `EN_INSPECCION` | Alta | No |
+| RF-K-02 | Ver en tiempo real el estado operativo de cada habitación (`rooms.operational_status`: `CLEAN`, `DIRTY`, `OCCUPIED`, `PENDING_CLEANING`, `IN_INSPECTION`) y su estado de publicación (`rooms.publication_status`: `DRAFT`, `PUBLISHED`, `PAUSED`, `MAINTENANCE`, `OUT_OF_SERVICE`) | Alta | No |
 | RF-K-03 | Recibir notificación automática de habitaciones que requieren limpieza (check-out, mantenimiento resuelto, uso diario) | Alta | No |
 | RF-K-04 | Supervisar el trabajo de las camareras (2 camareras a cargo) | Alta | No |
-| RF-K-05 | **Inspeccionar cada habitación** tras la limpieza (check-out o servicio diario) y certificarla como lista | Alta | **Sí (obligatoria)** |
+| RF-K-05 | **Inspeccionar cada habitación** tras la limpieza (check-out o servicio diario) y certificarla como revisada; la firma on-chain es **opcional** (D-C23) y no libera la venta (D-C15) | Alta | Opcional (configurable) |
 | RF-K-06 | Rechazar una limpieza y devolverla a la camarera con observaciones | Alta | No |
 | RF-K-07 | Reportar incidencias de mantenimiento desde housekeeping (averías, roturas, fallos) | Alta | No (reporte), Sí si implica cargo por daños |
-| RF-K-08 | **Registrar cargos a la habitación por daños causados por el huésped**, con foto, descripción e importe | Alta | **Sí (obligatoria)** |
-| RF-K-09 | Gestionar consumibles y suministros por habitación, con alerta de umbral crítico | Media | No |
-| RF-K-10 | Generar informes de productividad de camareras e inspecciones | Media | No |
+| RF-K-08 | **Registrar cargos a la habitación por daños causados por el huésped**, con foto, descripción e importe | Alta | No (auditoría off-chain, D-C27) |
+| RF-K-09 | Gestionar consumibles y suministros por habitación; alerta cuando `stock_qty < threshold_qty` (umbral configurable por el Ama de llaves, por defecto 20 % del estándar), notificada a ella y visible al Administrador, con recordatorio diario hasta reponer y cierre automático al superar el umbral | Media | No |
+| RF-K-10 | Generar informes de productividad de camareras e inspecciones | Baja (propuesta del equipo, D-C41) | No |
 
 ### 3.3 Firma on-chain y trazabilidad
 
 | ID | Requisito | Obligatoriedad |
 |---|---|---|
-| RF-S-01 | Los jefes (`HEAD_MAINTENANCE`, `HEAD_KEEPER`) deben conectar una wallet y autenticarse con SIWE/EIP-4361 igual que los administradores | Obligatoria |
+| RF-S-01 | Los jefes (`HEAD_MAINTENANCE`, `HEAD_KEEPER`) inician sesión con **contraseña + TOTP** (igual que el back-office) y **conectan su wallet solo para firmar** mensajes EIP-712 cuando la acción lo requiere (D-C42) | Obligatoria |
 | RF-S-02 | Todo bloqueo/desbloqueo de habitación por mantenimiento debe quedar registrado on-chain con dirección del firmante, timestamp y motivo | Obligatoria |
-| RF-S-03 | Toda certificación de inspección de limpieza debe quedar registrada on-chain con dirección del Ama de llaves, habitación y resultado | Obligatoria |
-| RF-S-04 | Todo cargo por daños a habitación debe quedar registrado on-chain, vinculado al token/noche o folio correspondiente | Obligatoria |
-| RF-S-05 | La verificación de tareas preventivas de infraestructura crítica (piscina, bomba, electricidad) debe poder firmarse on-chain | Recomendada |
+| RF-S-03 | La certificación de inspección de limpieza **puede** registrarse on-chain con dirección del Ama de llaves, habitación y resultado | Opcional (D-C23) |
+| RF-S-04 | Todo cargo por daños a habitación queda registrado en `operator_audit_log` y vinculado al token/noche o folio; **no requiere firma on-chain** (D-C27) | Off-chain auditada |
+| RF-S-05 | La verificación de tareas preventivas de **áreas críticas** (piscina, bomba de agua, ascensor, generador eléctrico) exige firma on-chain obligatoria; las de áreas no críticas no | Obligatoria (críticas) |
 | RF-S-06 | Las acciones de técnicos y camareras (sin wallet) se registran off-chain y pueden ser validadas/confirmadas por el jefe correspondiente | Obligatoria |
-| RF-S-07 | El sistema debe mostrar claramente qué acción requiere firma de wallet y cuál no, antes de ejecutarla | Obligatoria |
+| RF-S-07 | El sistema marca toda acción que requiere firma con **icono de cadena ⛓ + etiqueta "Requiere firma" + `data-testid="requires-signature"`**; el botón queda `disabled` hasta conectar la wallet y, antes de firmar, muestra un **modal de previsualización** con acción, entidad y datos | Obligatoria |
 | RF-S-08 | Los movimientos off-chain de configuración y asignación deben llevar auditoría interna (quién, cuándo, qué cambió) | Obligatoria |
 
 ---
@@ -98,12 +99,25 @@ Cuando el Ama de llaves registra un cargo por daños, el sistema **notifica al h
 |---|---|---|
 | RNF-M-01 | Seguridad de roles | Separación de privilegios: un técnico no puede firmar por el jefe; el ama de llaves no puede desbloquear mantenimiento |
 | RNF-M-02 | UX de firma | Flujo guiado: preview de la tx decodificada, confirmación explícita, estados de éxito/error |
-| RNF-M-03 | Resiliencia | Si la cadena no responde, las acciones críticas off-chain quedan en cola de anclaje pendiente y se reintentan |
-| RNF-M-04 | Accesibilidad | Las suites deben ser usables desde móvil (camareras/técnicos trabajan en campo) |
-| RNF-M-05 | Rendimiento | Tableros con actualización en tiempo real vía SSE/WebSocket; listados < 1 s |
+| RNF-M-03 | Resiliencia | Si la cadena no responde: backoff exponencial (30 s → 1 → 2 → 5 → 10 min), máx. 8 reintentos, TTL 24 h. Al agotar, la acción queda `PENDING_ANCHOR` visible y no se revierte el estado off-chain; se bloquea el cierre definitivo hasta anclar y se impide nueva acción sobre la misma entidad |
+| RNF-M-04 | Accesibilidad | Las suites deben ser **usables desde móvil** (camareras/técnicos trabajan en campo). **No se exige un nivel formal WCAG 2.1** (decisión D-C28, riesgo aceptado); sí se aplican buenas prácticas básicas: contraste legible, botones táctiles amplios y mensajes claros |
+| RNF-M-05 | Rendimiento | Estado de habitaciones en tablero: `p95 < 500 ms` (≥ 20 usuarios concurrentes); listados operativos: `p95 < 800 ms` con página máx. 50; firma registrada: `p95 < 5 s` hasta `SIGNED` (sin minado). Escenario: 20 usuarios, 50 habitaciones, ventana 90 días |
 | RNF-M-06 | Trazabilidad | Toda acción de jefe o subordinado queda en logs de auditoría off-chain; las firmas on-chain son verificables públicamente |
 | RNF-M-07 | Sin PII on-chain | Nunca se escriben datos personales en la cadena: solo hashes, identificadores de habitación y estados |
-| RNF-M-08 | Extensibilidad | El contrato de operaciones debe permitir añadir nuevos tipos de eventos sin redeploy masivo |
+| RNF-M-08 | Extensibilidad | `HotelOperations.sol` es **inmutable** y emite un **evento genérico `OperationalAction(actionType, entityId, payloadHash, signer, timestamp)`**; añadir nuevos tipos de acción no requiere redeploy, solo un nuevo `actionType` en el dominio |
+| RNF-M-09 | Política de PIN | PIN de 4-6 dígitos, hash bcrypt, bloqueo tras 5 intentos fallidos (solo Jefe/Admin rehabilita), rotación obligatoria cada 90 días, PIN de un solo uso en el primer acceso y cierre de sesión por inactividad a los 5 min |
+| RNF-M-10 | Privacidad/GDPR | Notificación al huésped con datos mínimos (reserva, descripción, importe, enlace); fotos cifradas y eliminadas 90 días tras el check-out; base legal contractual; canal según preferencia del huésped; derecho de acceso/supresión tras resolver la reclamación |
+| RNF-M-11 | Gobernanza de flags | Solo el Administrador (Owner) cambia los flags, con TOTP y registro en `operator_audit_log`; desactivar un flag obligatorio (bloqueo o cargos) exige firma on-chain del propio cambio de configuración |
+| RNF-M-12 | Backup y recuperación | RPO 1 h (BD operativa), RTO 4 h; dump diario + WAL/PITR; evidencias replicadas; retención 30 días diarios + 12 meses mensuales; los trabajos `PENDING_ANCHOR` se reintentan tras restaurar |
+| RNF-M-13 | Observabilidad | IDs de correlación en cada firma; logs estructurados por acción; métricas de cola de anclajes (tamaño, retraso, fallos); saldo de gas por wallet; alertas si una firma queda `PENDING` > 10 min o si `retry_count` supera 5 |
+| RNF-M-14 | Compensación ante fallo de anclaje | Cambio de estado crítico en BD solo con firma `SIGNED`; si el anclaje falla tras cambiar BD, la entidad queda `PENDING_ANCHOR`, se bloquea nueva acción y el worker reconcilia; el worker detecta reorgs comparando `tx_hash` confirmado |
+| RNF-M-15 | Ciclo de vida de wallets | Revocar el rol on-chain en `HotelOperations` **antes** de marcar `revoked_at`; FK de `operator_wallets` a `admin_users.id` (no por username); histórico de wallets por usuario; generación segura de claves documentada |
+| RNF-M-16 | Integridad de altas de operarios | `terminal_operators.created_by` debe corresponder a un usuario activo con rol `HEAD_MAINTENANCE`, `HEAD_KEEPER` o `DEFAULT_ADMIN_ROLE` (validado en aplicación y auditoría) |
+| RNF-M-17 | Usabilidad de terminales | Registro de tarea/cambio de estado en ≤ 30 s; ≤ 3 toques desde login; mensajes en el idioma del operario (ES/EN/RU) sin jerga técnica; error siempre con acción sugerida; botones amplios y confirmación visual + sonora |
+| RNF-M-18 | Fiabilidad de terminales | **Sin modo offline**: el terminal exige conexión y avisa si se pierde. Concurrencia con bloqueo optimista (`updated_at`) y aviso de conflicto. Si Redis cae, se opera sin caché; si PostgreSQL cae, se bloquea la escritura con mensaje claro y se mantiene lectura cacheada |
+| RNF-M-19 | Cumplimiento y auditoría | Retención 5 años de `operator_audit_log` y `on_chain_signatures`; auditoría **append-only** con hash de integridad encadenado (`prev_hash` + `integrity_hash`); exportación de expediente de evidencias (PDF/CSV firmado); registro de viajeros no aplica en la vNext |
+| RNF-M-20 | Permisos del técnico | Ve solo sus incidencias/tareas asignadas y sus áreas; registra avance, cierra tarea (pendiente de validación) y adjunta evidencia; **no** ve importes, huéspedes, cargos, configuración ni firma on-chain |
+| RNF-M-21 | Validación de subordinados | El jefe valida tareas en ≤ 24 h; al vencer pasan a `PENDING_VERIFICATION_EXPIRED` y escalan al Administrador; el panel del jefe muestra tiempo restante y el Administrador ve las vencidas. Una tarea vencida no bloquea la habitación pero no cuenta como completada hasta validarse |
 
 ---
 
@@ -130,17 +144,17 @@ La firma on-chain busca garantizar:
 | Verificar tarea preventiva crítica | Jefe de Mantenimiento | Recomendada | Evidencia de cumplimiento (piscina, electricidad) |
 | Registrar mantenimiento de áreas comunes | Técnico / Jefe | No | Operación rutinaria sin impacto directo en inventario |
 | Crear turnos y asignaciones | Ama de llaves | No | Gestión interna |
-| Cambiar estado a `EN_LIMPIEZA` | Camarera | No | Estado intermedio |
-| **Certificar inspección post-limpieza** | Ama de llaves | **Sí** | La habitación pasa a disponible para huésped/check-in |
+| Iniciar limpieza (asignación `IN_PROGRESS`) | Camarera | No | Estado intermedio |
+| **Certificar inspección post-limpieza** | Ama de llaves | Opcional (D-C23) | No libera venta por sí sola; la firma certifica la revisión si el hotel la activa |
 | Reportar avería desde housekeeping | Ama de llaves / Camarera | No | Apertura de ticket para el jefe |
-| **Cargo por daños a habitación** | Ama de llaves | **Sí** | Cargo económico al huésped; requiere trazabilidad |
+| **Cargo por daños a habitación** | Ama de llaves | No (D-C27) | Notificación al huésped con plazo de reclamación (D-C14) y auditoría off-chain; el cobro se realiza en el check-out |
 | Registrar consumo de suministros | Camarera | No | Inventario off-chain |
 
 ### 5.3 Resumen de la regla de oro
 
 > **Se firma on-chain cuando la acción:**  
 > 1. Cambia la disponibilidad comercial de una habitación (bloqueo/desbloqueo).  
-> 2. Certifica un resultado que habilita el siguiente proceso crítico (inspección → disponible).  
+> 2. Certifica un resultado que habilita un proceso crítico (solo aplica si el hotel activa la firma de inspección; D-C23 la deja opcional).  
 > 3. Genera un cargo económico o una responsabilidad legal (daños).  
 > 4. Es una verificación de cumplimiento de infraestructura crítica (preventivo).  
 >
@@ -184,7 +198,7 @@ La firma on-chain busca garantizar:
 1. ✅ **Resuelta (2026-10-06)**: El Ama de llaves **no bloquea** habitaciones por limpieza profunda; **abre un ticket** al Jefe de Mantenimiento, quien es el único que bloquea/desbloquea.
 2. ✅ **Resuelta (2026-10-06)**: Tras una inspección aprobada, la habitación queda marcada como limpia, pero **la venta de noches futuras no se libera automáticamente**; debe activarla **Recepción o Administración** manualmente.
 3. ✅ **Resuelta (2026-10-06)**: Técnicos y camareras se autentican en el terminal fijo con **PIN corto**. Se añade la tabla `terminal_operators` para gestionar usuarios de terminal y sus PIN hash (bcrypt).
-4. ✅ **Resuelta (2026-10-06)**: El cargo por daños **no se comunica antes** al huésped; queda como **nota interna** y se cobra **en el check-out** (se suma al folio/estado de cuenta de la estancia).
+4. ✅ **Resuelta (2026-10-06; revisada para alinear con D-C14)**: El cargo por daños **se comunica al huésped** con la evidencia y un **plazo de reclamación** (D-C14, §1.1); si no reclama en plazo, se cobra **en el check-out** (se suma al folio/estado de cuenta de la estancia).
 5. ✅ **Resuelta (2026-10-06)**: La foto/evidencia es **opcional pero recomendada**; el sistema no bloquea la acción por falta de imagen, pero mostrará avisos de "evidencia no adjunta" en movimientos firmados.
 
 ---

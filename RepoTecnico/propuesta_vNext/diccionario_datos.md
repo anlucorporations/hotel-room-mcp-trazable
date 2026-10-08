@@ -25,7 +25,7 @@ Se mantienen las del proyecto actual:
 
 ## 1.5 `terminal_operators` — usuarios de terminales fijos (PIN)
 
-Técnicos y camareras no usan wallet ni el login completo del back-office. Se identifican en el terminal fijo con un **PIN corto** (D-C8). La tabla se vincula lógicamente con los registros de tareas y asignaciones por `username`.
+Técnicos y camareras no usan wallet ni el login completo del back-office. Se identifican en el terminal fijo con un **PIN corto** (D-C10). La tabla se vincula lógicamente con los registros de tareas y asignaciones por `username`.
 
 | Campo | Tipo | Nulo | Default | Descripción |
 |---|---|---|---|---|
@@ -34,6 +34,10 @@ Técnicos y camareras no usan wallet ni el login completo del back-office. Se id
 | `full_name` | `VARCHAR(100)` | no | — | Nombre completo del operario |
 | `role` | `VARCHAR(30)` | no | — | `MAINTENANCE_TECH` · `HOUSEKEEPER` |
 | `pin_hash` | `TEXT` | no | — | Hash bcrypt del PIN |
+| `pin_changed_at` | `TIMESTAMP` | sí | — | Última rotación del PIN (obligatoria cada 90 días) |
+| `must_change_pin` | `BOOLEAN` | no | `TRUE` | PIN de un solo uso en el primer acceso |
+| `failed_attempts` | `INT` | no | `0` | Intentos fallidos consecutivos |
+| `locked_until` | `TIMESTAMP` | sí | — | Bloqueo tras 5 intentos fallidos |
 | `active` | `BOOLEAN` | no | `TRUE` | Alta/baja |
 | `created_by` | `VARCHAR(100)` | no | — | Jefe/admin que da de alta |
 | `created_at` / `updated_at` | `TIMESTAMP` | no | `NOW()` | — |
@@ -68,7 +72,8 @@ Relaciona un operador del back-office con su dirección wallet y los roles on-ch
 | Campo | Tipo | Nulo | Default | Descripción |
 |---|---|---|---|---|
 | `id` | `UUID` | PK | `gen_random_uuid()` | — |
-| `username` | `VARCHAR(100)` | no, único | — | FK lógica a `admin_users.username` |
+| `admin_user_id` | `UUID` | sí | — | FK a `admin_users(id)` (RNF-M-15; sustituye la FK lógica por username) |
+| `username` | `VARCHAR(100)` | no, único | — | Nombre del operador (redundante para lectura) |
 | `role` | `VARCHAR(30)` | no | — | `HEAD_MAINTENANCE` · `HEAD_KEEPER` · `OWNER_BACKUP` |
 | `wallet_address` | `VARCHAR(42)` | no, único | — | Dirección de la wallet |
 | `is_active` | `BOOLEAN` | no | `TRUE` | ¿Wallet vigente? |
@@ -88,7 +93,7 @@ Registro unificado de todas las firmas on-chain generadas por los jefes, tanto l
 | Campo | Tipo | Nulo | Default | Descripción |
 |---|---|---|---|---|
 | `id` | `UUID` | PK | `gen_random_uuid()` | — |
-| `entity_type` | `VARCHAR(40)` | no | — | Tipo de entidad firmada: `ROOM_BLOCK`, `ROOM_UNBLOCK`, `INSPECTION`, `DAMAGE_CHARGE`, `PREVENTIVE_TASK` |
+| `entity_type` | `VARCHAR(40)` | no | — | Tipo de entidad firmada: `ROOM_BLOCK`, `ROOM_UNBLOCK`, `INSPECTION`, `DAMAGE_CHARGE`, `PREVENTIVE_TASK`, `AREA_LOG`, `CONFIG` |
 | `entity_id` | `UUID` | no | — | Id de la entidad concreta |
 | `event_name` | `VARCHAR(60)` | no | — | Nombre del evento en `HotelOperations` |
 | `content_hash` | `VARCHAR(66)` | no | — | `keccak256` de los datos firmados |
@@ -97,6 +102,16 @@ Registro unificado de todas las firmas on-chain generadas por los jefes, tanto l
 | `tx_hash` | `VARCHAR(66)` | sí | — | Hash de la tx on-chain una vez minada |
 | `status` | `VARCHAR(20)` | no | `'PENDING'` | `PENDING` · `SIGNED` · `MINED` · `FAILED` · `REVOKED` |
 | `error_message` | `TEXT` | sí | — | Mensaje de error si falló |
+| `nonce` | `VARCHAR(66)` | sí | — | Nonce EIP-712 para evitar replay |
+| `domain_hash` | `VARCHAR(66)` | sí | — | Hash del dominio EIP-712 |
+| `recovered_signer` | `VARCHAR(42)` | sí | — | Dirección recuperada de la firma (debe coincidir con `signer_address`) |
+| `verified_at` | `TIMESTAMP` | sí | — | Momento de la verificación criptográfica |
+| `role_snapshot` | `VARCHAR(30)` | sí | — | Rol del firmante en el momento de la firma (verificado contra `operator_wallets`) |
+| `retry_count` | `INT` | no | `0` | Reintentos de anclaje (máx. 8) |
+| `next_attempt_at` | `TIMESTAMP` | sí | — | Próximo intento (backoff exponencial) |
+| `expires_at` | `TIMESTAMP` | sí | — | TTL en cola (24 h desde `created_at`) |
+| `deadline` | `TIMESTAMP` | sí | — | Caducidad de la firma (anti-replay, DT-AUD-04) |
+| `consumed_at` | `TIMESTAMP` | sí | — | Momento de consumo del nonce (único por firmante) |
 | `created_at` | `TIMESTAMP` | no | `NOW()` | — |
 | `mined_at` | `TIMESTAMP` | sí | — | — |
 
@@ -108,12 +123,12 @@ Registro unificado de todas las firmas on-chain generadas por los jefes, tanto l
 
 | Campo | Tipo | Nulo | Default | Descripción |
 |---|---|---|---|---|
-| `code` | `VARCHAR(40)` | PK | — | `POOL`, `GARDEN`, `WATER_PUMP`, `PLUMBING`, `ELECTRICITY`, `HVAC`, `WASTE`, `COMMON_BATHROOM`, `ELEVATOR`, etc. |
+| `code` | `VARCHAR(40)` | PK | — | `POOL_FILTER`, `GARDEN`, `WATER_PUMP`, `PLUMBING`, `ELECTRICITY`, `HVAC`, `WASTE`, `ELEVATOR`, `ELECTRIC_GENERATOR`, `COMMON_BATHROOM`, etc. |
 | `name_es` / `name_en` / `name_ru` | `VARCHAR(80)` | no | — | Nombres trilingües |
 | `is_critical` | `BOOLEAN` | no | `FALSE` | ¿Requiere firma on-chain su verificación? |
 | `sort_order` | `INT` | no | `0` | — |
 
-Semilla propuesta: `POOL`, `GARDEN`, `WATER_PUMP`, `PLUMBING`, `ELECTRICITY`, `HVAC`, `WASTE`, `ELEVATOR`, `COMMON_BATHROOM`.
+Semilla propuesta: `POOL_FILTER`, `GARDEN`, `WATER_PUMP`, `PLUMBING`, `ELECTRICITY`, `HVAC`, `WASTE`, `ELEVATOR`, `ELECTRIC_GENERATOR`, `COMMON_BATHROOM`. Los críticos (`is_critical = TRUE`) son `POOL_FILTER`, `WATER_PUMP`, `ELEVATOR` y `ELECTRIC_GENERATOR`.
 
 ---
 
@@ -176,7 +191,7 @@ La tabla actual (`RepoTecnico/diccionario_datos.md` §3.10) se amplía:
 | `status` | `VARCHAR(12)` | no | — | `OPEN` · `IN_PROGRESS` · `RESOLVED` · `CANCELLED` |
 | `blocks_sale` | `BOOLEAN` | no | `TRUE` | Si `TRUE`, la habitación no se vende |
 | `reported_by` | `VARCHAR(100)` | no | — | Usuario que reporta |
-| `reported_by_role` | `VARCHAR(30)` | no | — | `RECEPTION`, `HEAD_KEEPER`, `HOUSEKEEPER`, `HEAD_MAINTENANCE` |
+| `reported_by_role` | `VARCHAR(30)` | no | — | `RECEPTION`, `HEAD_KEEPER`, `HOUSEKEEPER`, `HEAD_MAINTENANCE`, `MAINTENANCE_TECH` |
 | `assigned_to` | `VARCHAR(100)` | sí | — | Técnico asignado |
 | `resolved_by` | `VARCHAR(100)` | sí | — | — |
 | `resolved_at` | `TIMESTAMP` | sí | — | — |
@@ -198,6 +213,7 @@ Se añaden campos para firma y verificación:
 
 | Campo adicional | Tipo | Nulo | Default | Descripción |
 |---|---|---|---|---|
+| `validation_status` | `VARCHAR(30)` | sí | — | `PENDING_VERIFICATION` · `VALIDATED` · `PENDING_VERIFICATION_EXPIRED` (SLA 24 h, RNF-M-21) |
 | `verified_by` | `VARCHAR(100)` | sí | — | Jefe de Mantenimiento que verifica |
 | `verified_at` | `TIMESTAMP` | sí | — | — |
 | `requires_signature` | `BOOLEAN` | no | `FALSE` | ¿Requiere firma on-chain? |
@@ -224,7 +240,7 @@ Se añaden campos para firma y verificación:
 
 ### 3.10 `housekeeping_damage_charges` — cargos por daños
 
-Vincula un cargo por daños con el registro off-chain y la firma on-chain.
+Vincula un cargo por daños con el registro off-chain, su traza de auditoría y (opcionalmente) una firma on-chain. Por D-C27 el cargo se audita off-chain y no exige firma.
 
 | Campo | Tipo | Nulo | Default | Descripción |
 |---|---|---|---|---|
@@ -237,7 +253,8 @@ Vincula un cargo por daños con el registro off-chain y la firma on-chain.
 | `damage_description` | `TEXT` | no | — | — |
 | `evidence_path` | `TEXT` | sí | — | Foto del daño |
 | `approved_by` | `VARCHAR(100)` | no | — | Ama de llaves que aprueba el cargo |
-| `signature_id` | `UUID` | no | — | FK a `on_chain_signatures(id)` |
+| `signature_id` | `UUID` | sí | — | FK opcional a `on_chain_signatures(id)`; el cargo se audita off-chain (D-C27) |
+| `audit_log_id` | `UUID` | sí | — | FK lógica a `operator_audit_log(id)` con la traza del cargo |
 | `created_at` | `TIMESTAMP` | no | `NOW()` | — |
 
 ---
@@ -254,7 +271,7 @@ Registra el envío de la notificación al huésped cuando se aprueba un cargo po
 | `channel` | `VARCHAR(20)` | no | — | `EMAIL` · `TELEGRAM` · `WEB` |
 | `sent_at` | `TIMESTAMP` | sí | — | Momento del envío |
 | `due_date` | `TIMESTAMP` | no | — | Fecha límite para reclamar |
-| `status` | `VARCHAR(20)` | no | `'PENDING'` | `PENDING` · `SENT` · `ACKNOWLEDGED` · `DISPUTED` · `EXPIRED` |
+| `status` | `VARCHAR(20)` | no | `'PENDING'` | `PENDING` · `SENT` · `ACKNOWLEDGED` · `DISPUTED` · `EXPIRED` · `RESOLVED_ACCEPTED` · `RESOLVED_REJECTED` |
 | `dispute_notes` | `TEXT` | sí | — | Notas de la reclamación del huésped |
 | `disputed_at` | `TIMESTAMP` | sí | — | — |
 | `resolved_by` | `VARCHAR(100)` | sí | — | Recepción/Admin que resuelve la reclamación |
@@ -275,6 +292,67 @@ Se añaden campos operativos a la tabla `rooms` existente:
 
 ---
 
+
+### 3.12 `operator_audit_log` — auditoría de acciones off-chain (D-C21)
+
+Registra toda acción off-chain relevante de los operadores (jefes, técnicos, camareras, recepción) para trazabilidad, investigación de incidentes y detección de abuso. No sustituye a `on_chain_signatures` (que cubre movimientos críticos firmados).
+
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `id` | `UUID` | PK | `gen_random_uuid()` | — |
+| `actor_username` | `VARCHAR(100)` | no | — | Usuario que ejecuta la acción |
+| `actor_role` | `VARCHAR(30)` | no | — | Rol en el momento de la acción |
+| `entity_type` | `VARCHAR(40)` | no | — | Entidad afectada (ticket, asignación, plan, operario…) |
+| `entity_id` | `UUID` | sí | — | Id de la entidad afectada |
+| `action` | `VARCHAR(40)` | no | — | `CREATE` · `UPDATE` · `DELETE` · `ASSIGN` · `RESOLVE` · `LOGIN` … |
+| `old_value` | `JSONB` | sí | — | Estado anterior (resumen) |
+| `new_value` | `JSONB` | sí | — | Estado nuevo (resumen) |
+| `terminal_id` | `VARCHAR(100)` | sí | — | Terminal/IP de origen |
+| `prev_hash` | `VARCHAR(66)` | sí | — | Hash del registro anterior (cadena de integridad) |
+| `integrity_hash` | `VARCHAR(66)` | no | — | `keccak256` del registro + `prev_hash` |
+| `created_at` | `TIMESTAMP` | no | `NOW()` | — |
+
+Índices: `(actor_username, created_at)`, `(entity_type, entity_id)`, `(action, created_at)`.
+
+---
+
+
+### 3.13 `supply_alerts` — alertas de suministros (D-C33 · CU-V-25)
+
+Estado abierto/cerrado de la alerta por stock bajo y control del recordatorio diario.
+
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `id` | `UUID` | PK | `gen_random_uuid()` | — |
+| `supply_item_id` | `UUID` | no | — | FK a `supply_items(id)` |
+| `status` | `VARCHAR(12)` | no | `'OPEN'` | `OPEN` · `CLOSED` |
+| `opened_at` | `TIMESTAMP` | no | `NOW()` | — |
+| `last_reminded_at` | `TIMESTAMP` | sí | — | Último recordatorio diario |
+| `closed_at` | `TIMESTAMP` | sí | — | Cierre automático al reponer |
+
+Índices: `(supply_item_id, status)`.
+
+---
+
+
+## 3.14 Vocabulario canónico de estados (decisión A, 2026-10-06)
+
+El SQL es la fuente de verdad; los casos de uso y el documento técnico usan **exactamente** estos valores.
+
+| Entidad | Columna | Valores válidos | Nota |
+|---|---|---|---|
+| `rooms` | `publication_status` | `DRAFT`, `PUBLISHED`, `PAUSED`, `MAINTENANCE`, `OUT_OF_SERVICE` | **No existe `AVAILABLE`**; el publicable es `PUBLISHED` |
+| `rooms` | `operational_status` | `CLEAN`, `DIRTY`, `OCCUPIED`, `PENDING_CLEANING`, `IN_INSPECTION` | `PENDING_CLEANING` tras check-out; `IN_INSPECTION` durante la inspección |
+| `maintenance_incidents` | `status` | `OPEN`, `IN_PROGRESS`, `RESOLVED`, `CANCELLED` | — |
+| `housekeeping_assignments` | `status` | `PENDING`, `IN_PROGRESS`, `DONE` | Una inspección rechazada devuelve a `PENDING`; **no existe `REJECTED`** |
+| `preventive_tasks` | `status` | `PENDING`, `DONE`, `SKIPPED` | — |
+| `preventive_tasks` | `validation_status` | `PENDING_VERIFICATION`, `VALIDATED`, `PENDING_VERIFICATION_EXPIRED` | SLA 24 h (RNF-M-21) |
+| `housekeeping_inspections` | `result` | `APPROVED`, `REJECTED` | — |
+| `on_chain_signatures` | `status` | `PENDING`, `SIGNED`, `MINED`, `FAILED`, `REVOKED` | `PENDING_ANCHOR` es estado **de entidad**, no de la firma |
+| `damage_charge_guest_notifications` | `status` | `PENDING`, `SENT`, `ACKNOWLEDGED`, `DISPUTED`, `EXPIRED`, `RESOLVED_ACCEPTED`, `RESOLVED_REJECTED` | `ACKNOWLEDGED` = huésped conforme sin reclamación; la resolución usa `RESOLVED_ACCEPTED`/`RESOLVED_REJECTED` |
+
+---
+
 ## 4. Contrato `HotelOperations.sol` (resumen)
 
 Aunque el diccionario de datos es off-chain, se lista el estado/events propuesto para coherencia con `base_datos.sql` y `diagrama_er.md`.
@@ -285,6 +363,9 @@ Aunque el diccionario de datos es off-chain, se lista el estado/events propuesto
 - `HEAD_KEEPER_ROLE`
 
 ### Eventos
+
+> Contrato **inmutable** con evento genérico `OperationalAction(actionType, entityId, payloadHash, signer, timestamp)` (D-C39): añadir tipos de acción no exige redeploy.
+
 
 | Evento | Parámetros | Descripción |
 |---|---|---|
