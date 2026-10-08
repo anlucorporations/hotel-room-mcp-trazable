@@ -2207,6 +2207,10 @@ instancias calientes**, así que se cumple en caliente, pero la primera pregunta
 Alternativas, por coste: dejar `min-instances=1` (~coste fijo), un *warm-up* periódico, o asumirlo y
 documentarlo (lo elegido para el piloto, que es lo que RNF-25 pide documentar).
 
+**Ajuste posterior (mismo día, decisión A3)**: la web pasó a `ASSISTANT_BUDGET_MODE=hard` con el
+techo de 5 USD/mes → revisión **`hotel-mcp-web-00048-lz8`** sirviendo el 100 % (imagen `web:v40`
+sin cambios; solo variables de entorno). Verificado que el asistente sigue respondiendo con citas.
+
 **Rollback**: `gcloud run services update-traffic <servicio> --to-revisions=<revisión anterior>=100`.
 Las revisiones v39 (web) y v38 (mcp) siguen desplegadas y arrancadas en frío, así que la vuelta atrás
 es inmediata.

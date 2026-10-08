@@ -4185,3 +4185,24 @@ mínimo en el piloto.
 
 **Pendiente del cliente**: el contenido del hotel en `docs/manual-huesped.md` (7 marcas
 `PENDIENTE DEL CLIENTE`). El asistente ya responde, pero sobre lo que hay indexado.
+
+### 14.14 Decisiones A3, C1 y C2 (2026-10-08) — cerradas
+
+| Decisión | Resolución | Motivo |
+|---|---|---|
+| **A3** · presupuesto máximo | **5 USD/mes en modo `hard`** (`ASSISTANT_BUDGET_MODE=hard`) | Es el techo de RNF-22. Con el coste medido (0,248 USD/1.000 conversaciones) son **~20.000 conversaciones/mes**: solo puede saltar por abuso o fallo descontrolado, y entonces es mejor parar (503, con la alternativa manual ya prevista) que gastar en silencio |
+| **C1** · activar H0 con Anthropic | **No aplica** | El asistente ya está en producción con Vertex desde la v40. El puente con Anthropic (~82 USD/mes) habría costado ~330 veces más por el mismo servicio |
+| **C2** · ventana y volumen de la prueba | **30 días desde la v40** (2026-10-08 → 2026-11-07, prorrogable) · **1.000 conversaciones/mes** de referencia | Da un coste esperado de **0,25 USD/mes** dentro del techo de 5. La validación **funcional** sigue bloqueada por el contenido del cliente |
+
+**Aplicado en producción**: revisión `hotel-mcp-web-00048-lz8` (imagen `web:v40`) sirviendo el 100 %
+del tráfico con `ASSISTANT_BUDGET_MODE=hard` y `ASSISTANT_MONTHLY_BUDGET_USD=5`; verificado que el
+asistente sigue respondiendo con citas después del cambio. El script `70-deploy-apps.sh` ya lleva el
+modo duro, así que la próxima release lo conserva.
+
+**Límite conocido de A3**: el contador de gasto vive en memoria de cada instancia (hasta 3) y se pierde
+al reciclar el contenedor, así que es una red de seguridad, no contabilidad. La fuente de verdad es la
+facturación de GCP, y lo recomendado es un **presupuesto con alerta** en la cuenta de facturación: la
+API `billingbudgets.googleapis.com` no está habilitada y no se ha tocado la cuenta de facturación.
+
+**B1 sigue abierta** (confirmar el corpus acotado, ya implementado y en producción, o abrir más
+adelante una superficie interna autenticada aparte).

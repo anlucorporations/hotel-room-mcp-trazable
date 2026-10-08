@@ -433,7 +433,8 @@ respuesta del asistente, pases Apple/Google, Sentry y rotaciones de secretos pen
 ### Bloque A — Modelo y dinero
 - **A1.** ✅ **Confirmado (revisado el 2026-10-07):** Vercel AI SDK + **Vertex AI · Gemini 2.5 Flash-Lite en `europe-west1`**, tras la verificación de §5.4.
 - **A2.** ✅ **Confirmado:** `min-instances=0` + *keep-warm* solo durante la demo.
-- **A3.** ⏳ ¿Qué **presupuesto máximo mensual** autorizas? (fija el tope del contador de tokens)
+- **A3.** ✅ **Decidido (2026-10-08): 5 USD/mes en modo `hard`.** El techo es el propio de RNF-22. Con el coste **medido** (0,248 USD por 1.000 conversaciones) equivale a **~20.000 conversaciones al mes**, así que solo puede saltar por abuso o por un fallo descontrolado; y en ese caso es preferible que el asistente **pare** (503 `ASSISTANT_BUDGET_EXCEEDED`, con la alternativa manual ya prevista en CU-08 08e) a que gaste en silencio. Subirlo es una variable de entorno y una revisión, **sin reconstruir la imagen**.
+  *Límite conocido*: el contador vive en memoria de cada instancia (hasta 3), así que es una red de seguridad, no contabilidad; el número que manda es la facturación de GCP. **Recomendado**: crear un presupuesto con alerta en la cuenta de facturación (la API `billingbudgets` no está habilitada; no se ha tocado la cuenta de facturación).
 
 ### Bloque B — Conocimiento y producto
 - **B1.** ⚠️ **Respondido y revisado.** Elegiste «los 35 documentos + `RepoTecnico/Manuales/**`»; la implementación de H2 demostró que **no es viable ni seguro** y se acotó a los **3 manuales dirigidos a personas**. Evidencia medida: (a) al materializar los manuales técnicos dentro de `apps/mcp/`, el índice arrastraba una **semilla TOTP de ejemplo** y hacía fallar el guardián de secretos D-04 —que escanea `apps/` y `packages/`—; (b) el MCP se despliega con `--allow-unauthenticated`, de modo que `audience: "interno"` permitiría a cualquiera extraer documentación interna. Índice resultante: 52 fragmentos (cliente 17 · recepción 17 · propietario 18) y bundle del MCP de **80 KB** frente a 1,15 MB con el corpus completo. **¿Confirmas el corpus acotado, o quieres una superficie interna aparte (autenticada) más adelante?**
@@ -441,8 +442,8 @@ respuesta del asistente, pases Apple/Google, Sentry y rotaciones de secretos pen
 - **B3.** ✅ **Confirmado:** solo **ES** en la primera iteración (EN/RU pasan a v3.1).
 
 ### Bloque C — Alcance y entrega
-- **C1.** ⏳ ¿Activamos **H0** (asistente vivo con Anthropic, ~82 USD/mes) mientras desarrollo la v3, o esperamos a H1?
-- **C2.** ⏳ ¿**Ventana** de la prueba con el cliente y **volumen** de conversaciones esperado?
+- **C1.** ✅ **Cerrada (2026-10-08): no aplica.** H0 era un puente para tener el asistente vivo con Anthropic (~82 USD/mes). El asistente ya está **en producción con Vertex** desde la release v40, con un coste medido de **0,25 USD/1.000 conversaciones**: el puente habría costado ~330 veces más por el mismo servicio.
+- **C2.** ✅ **Decidido (2026-10-08)**: ventana de **30 días desde la release v40** (2026-10-08 → 2026-11-07, prorrogable) y **1.000 conversaciones/mes** como volumen de referencia (el supuesto de RNF-22) → coste esperado **0,25 USD/mes**, con **5 USD/mes** de techo autorizado (~20.000 conversaciones). Nota: la **validación funcional** con el cliente queda bloqueada hasta que llegue el contenido del hotel (`docs/manual-huesped.md`, 7 marcas pendientes); la ventana técnica ya está corriendo.
 - **C3.** ✅ **Confirmado:** el RAG vive en el **MCP**, como 5ª herramienta (coherente con ADR-11).
 
 ### Bloque D — Hospedaje y cumplimiento
@@ -452,8 +453,9 @@ respuesta del asistente, pases Apple/Google, Sentry y rotaciones de secretos pen
 ---
 
 **Siguiente paso:** el diseño está cerrado y **verificado contra la infraestructura desplegada** (LLM,
-hospedaje, RAG, audiencia, idioma y sanitización de PII). Solo restan **A3** (presupuesto máximo), **B1**
-(fuente de conocimiento), **C1** (activar o no H0 con Anthropic) y **C2** (ventana y volumen de la prueba).
+hospedaje, RAG, audiencia, idioma y sanitización de PII). **A3, C1 y C2 quedaron decididas el
+2026-10-08** (arriba). Solo resta **B1**: confirmar el corpus acotado —ya implementado y en producción—
+o abrir más adelante una superficie interna autenticada aparte.
 Con tu **conformidad explícita** paso a la Fase 3: actualizo `requerimientos.md` y `entornos_globales.md`,
 y desarrollo los hitos H1→H5 en orden, mostrando el resultado de cada uno antes de continuar. **Hasta
 entonces no se modifica ningún archivo de código.**

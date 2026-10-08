@@ -64,7 +64,11 @@ SMTP_ENV="SMTP_HOST=smtp.invalid,SMTP_PORT=587,SMTP_USER=hotel@example.com,SMTP_
 #   GOOGLE_CLOUD_PROJECT es obligatorio: sin proyecto el asistente falla EN CERRADO (503).
 #   VERTEX_THINKING_BUDGET=0 desactiva el razonamiento de Gemini 2.5: medido en H4, era la causa
 #   dominante de latencia (p95 2,86 s -> 2,28 s) y de respuestas truncadas.
-ASSISTANT_ENV="ASSISTANT_PROVIDER=vertex,GOOGLE_CLOUD_PROJECT=${GCP_PROJECT_ID},VERTEX_MODEL=gemini-2.5-flash-lite,VERTEX_LOCATION=${GCP_REGION},VERTEX_MAX_OUTPUT_TOKENS=512,VERTEX_THINKING_BUDGET=0,ASSISTANT_MAX_INPUT_TOKENS=6000,ASSISTANT_MAX_TURNS=12,ASSISTANT_MONTHLY_BUDGET_USD=5,ASSISTANT_BUDGET_MODE=soft"
+#   ASSISTANT_BUDGET_MODE=hard (decisión A3): con el coste medido (0,25 USD/1.000 conversaciones) el
+#   techo de 5 USD equivale a ~20.000 conversaciones al mes, así que solo puede saltar por abuso o por
+#   un fallo descontrolado, y en ese caso es preferible que el asistente pare (503) a que gaste en
+#   silencio. Subirlo es una variable de entorno y una revisión, sin reconstruir la imagen.
+ASSISTANT_ENV="ASSISTANT_PROVIDER=vertex,GOOGLE_CLOUD_PROJECT=${GCP_PROJECT_ID},VERTEX_MODEL=gemini-2.5-flash-lite,VERTEX_LOCATION=${GCP_REGION},VERTEX_MAX_OUTPUT_TOKENS=512,VERTEX_THINKING_BUDGET=0,ASSISTANT_MAX_INPUT_TOKENS=6000,ASSISTANT_MAX_TURNS=12,ASSISTANT_MONTHLY_BUDGET_USD=5,ASSISTANT_BUDGET_MODE=hard"
 
 # Web Push (RF-37): la pública es pública (el navegador la necesita para suscribirse);
 # la privada vive SOLO en Secret Manager. Sin ella el push falla en cerrado (no se envía).
