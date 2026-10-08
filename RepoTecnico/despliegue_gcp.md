@@ -2315,3 +2315,40 @@ deduplicación *por documento (máx. 2)* en lugar de por sección. Índice: **19
 La contradicción grave (afirmar que el cobro de la reventa es automático) desapareció. Queda una
 contradicción de menor daño (decir que el resguardo no tiene duración definida) y tres debilidades
 recurrentes. Suite del MCP: **75/75**.
+
+## 67. Release v45 — artefactos alineados con el commit publicado (2026-10-08)
+
+**Motivo**: las imágenes que estaban sirviendo (`web:v40`, `mcp:v44`) se construyeron desde **árboles de
+trabajo**, no desde un commit, así que en producción corría algo que **no correspondía a ninguna revisión
+del repositorio**. Esta release reconstruye ambos servicios desde el commit publicado `757ee69` para que
+«lo que está en producción» sea una revisión trazable.
+
+**Sin cambio funcional, y verificado**: el diff de código de producción entre el árbol de `web:v40` y
+`757ee69` son **solo pruebas** (que no se empaquetan), y el MCP no había cambiado desde `v44`. Se
+despliega igualmente para cerrar el hueco de trazabilidad.
+
+| Componente | Imagen | Build |
+|---|---|---|
+| web | `…/hotel-mcp/web:v45` | ✅ SUCCESS `23cb31d8` |
+| mcp | `…/hotel-mcp/mcp:v45` | ✅ SUCCESS `49bc51af` |
+| worker | `worker:v38` (sin cambios) | vigente |
+
+| Servicio | Revisión sirviendo | Tráfico | Rollback |
+|---|---|---|---|
+| mcp | `hotel-mcp-mcp-00023-cal` | 100 % | `00021-tis` (v44) |
+| web | `hotel-mcp-web-00085-wor` | 100 % | `00048-lz8` (v40) |
+
+**Verificación**
+
+| Comprobación | Resultado |
+|---|---|
+| `tools/list` del canario del MCP | 5 herramientas ✅ |
+| Asistente en el canario web | 200 con la comisión correcta (5 %/10 %) ✅ |
+| Producción: comisión de reventa | «un 5 % en habitaciones simples y dobles, y un 10 % en suites… fijada en el contrato» ✅ |
+| Producción: salida sin firma | «No… la salida no requiere firma ni cartera. El cobro se hace en el mostrador» ✅ |
+| Producción: dato que no tenemos | «No encuentro información sobre la dirección exacta… preguntar en recepción» ✅ (**no inventa**) |
+| Telemetría | `assistant_request` con modelo, ~2 600 tokens de entrada, coste ≈0,0003 USD y latencia 806-1 028 ms ✅ |
+
+**Nota**: en la prueba del canario, la pregunta por la **duración del resguardo** volvió a responder «no
+tiene una duración fija» en vez de los 7 días. Es la **contradicción conocida** que dejó medida el arnés de
+fidelidad (`estado_proyecto.md` §14.17-14.18), no un defecto nuevo de esta release.

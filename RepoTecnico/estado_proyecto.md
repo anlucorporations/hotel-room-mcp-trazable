@@ -4396,3 +4396,21 @@ rutas de API de otros flujos (por ejemplo `admin/rooms/[id]`, 25 ramas; `admin/c
 base de datos y cadena dobladas) que hoy no existe, y hacerlo sobre funcionalidad de otra línea de trabajo.
 El margen actual es **0,07 puntos**: cualquier rama nueva sin prueba vuelve a poner el gate en rojo, así que
 el siguiente paso natural es ese andamiaje, no más parches.
+
+### 14.20 Release v45: los artefactos desplegados ya corresponden a un commit (2026-10-08)
+
+Las imágenes en producción (`web:v40`, `mcp:v44`) se habían construido desde **árboles de trabajo**, no
+desde un commit: en producción corría código que no correspondía a ninguna revisión publicada. Se
+reconstruyeron ambos servicios desde `757ee69` y se desplegaron por canario.
+
+**No hay cambio funcional** (verificado con `git diff`: entre el árbol de `v40` y `757ee69` solo cambian
+pruebas, que no se empaquetan; el MCP no había cambiado). El valor de la release es de **trazabilidad**.
+
+| Servicio | Revisión | Imagen | Rollback |
+|---|---|---|---|
+| web | `hotel-mcp-web-00085-wor` | `web:v45` | `00048-lz8` (v40) |
+| mcp | `hotel-mcp-mcp-00023-cal` | `mcp:v45` | `00021-tis` (v44) |
+
+Verificado en producción: la comisión de reventa, la salida sin firma y —importante— que a la pregunta
+por la dirección **sigue respondiendo que no la tiene** en lugar de inventarla. Telemetría viva con ~2 600
+tokens de entrada y ~1 s de latencia en caliente.
