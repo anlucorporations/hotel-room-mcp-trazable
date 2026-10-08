@@ -19,9 +19,9 @@
 | `github` | `git@github.com:anlucorporations/hotel-room-mcp-trazable.git` | GitHub de `anlucorporations` |
 | `codecrypto` | `git@gitlab.codecrypto.academy:anlucorporations/hotel-room-mcp-trazable.git` | GitLab de Codecrypto |
 
-- **Rama de `push`**: `Hotel-DSH-GCP-v3` para la línea de la v3 (desde el 2026-10-07); `Hotel-DSH-GCP`
-  queda congelada en `42255fd` y `main` se conserva como rama local de trabajo. El primer `push` de
-  esta línea se hizo a `origin`; replicarlo en `github` y `codecrypto` queda a decisión del responsable.
+- **Rama de `push`**: **`Hotel-DSH-GCP-v3`** para la línea de la v3 (desde el 2026-10-07), replicada
+  en los tres remotos. En esta línea **no se empuja ninguna otra rama**: `Hotel-DSH-GCP` (`5cc8c22`,
+  trabajo de la Suite de Operaciones) y `main` (`42255fd`) no se tocan desde aquí.
 - **Regla del proceso**: no se hace `push` sin orden explícita del responsable (comando `/push`). El `push` autorizado va **solo** a los remotos de `anlucorporations` y **solo** a la rama vigente indicada arriba.
 - Todos los remotos usan **SSH**; no hay credenciales embebidas en `.git/config` (verificado: 0 coincidencias de token).
 
