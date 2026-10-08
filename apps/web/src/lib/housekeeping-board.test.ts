@@ -63,3 +63,11 @@ describe("utilidades del tablero de Housekeeping (F3 · D-30, D-48)", () => {
     expect(boardSignature(withLow)).not.toBe(boardSignature(board()));
   });
 });
+
+describe("parseShiftLabel — entradas que no son texto", () => {
+  it("devuelve null si la etiqueta no es una cadena", () => {
+    for (const valor of [42, null, undefined, { turno: "MANANA" }]) {
+      expect(parseShiftLabel(valor), String(valor)).toBeNull();
+    }
+  });
+});

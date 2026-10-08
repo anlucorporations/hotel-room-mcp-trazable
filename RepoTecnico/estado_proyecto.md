@@ -4355,3 +4355,44 @@ porque marcaba como incompletas respuestas correctas («no tendrás que firmar»
 noches que ya se han comprado», «caduca en pocos minutos»). Cada ronda se contrastó con la lectura manual
 de las 26 respuestas hasta que el veredicto automático coincidió con el humano. Las cifras de arriba son
 las publicables.
+
+### 14.19 Gate de cobertura de la web: de rojo a verde (2026-10-08)
+
+La CI ejecuta un job `coverage` con umbrales por paquete. El de la web **fallaba**: ramas **69,49 %**
+frente al 73 % del trinquete, así que la rama no habría pasado la CI.
+
+**Diagnóstico.** El trinquete está bien puesto: se calibró con ramas **74,05 %** (`vitest.config.ts`), de
+modo que la caída es real, no un error de configuración. La causa estructural: **ningún handler de API
+estaba probado** —el único `route.test.ts` de toda la aplicación es el del asistente, escrito en esta
+línea— y no existe andamiaje para probarlos. Las ramas que faltaban estaban en `src/app/api/**`, en
+validaciones defensivas de librerías y en alguna utilidad del sistema de diseño.
+
+**Trabajo hecho: 75 pruebas nuevas** en 14 ficheros (4 nuevos y 10 ampliados), todas cubriendo **ramas
+reales**, no relleno:
+
+| Área | Ficheros |
+|---|---|
+| Asistente (esta línea) | `route-guards.test.ts` (nuevo: IP, wallet inválida, cuerpo ilegible, límite, presupuesto duro, caída del modelo), `llm-provider-caida.test.ts` (nuevo), `rate-limit`, `vercel-ai-client`, `llm-provider` |
+| Librerías compartidas | `rooms` (validación de alta y edición), `room-calendar`, `booking`, `wallet-chain`, `wallet-connectors`, `onchain-ownership`, `room-images`, `housekeeping-board` |
+| Varios | `reception-errors.test.ts` (nuevo), `a11y/color-usage.test.ts` (nuevo) |
+
+**Resultado**
+
+| Métrica | Antes | Ahora | Umbral |
+|---|---|---|---|
+| **Ramas** | 69,49 % | **73,07 %** | 73 |
+| Sentencias | 34,66 % | 34,86 % | 23 |
+| Funciones | 61,27 % | 61,79 % | 52 |
+| Líneas | 34,66 % | 34,86 % | 23 |
+| Pruebas de la web | 834 | **909** | — |
+
+`pnpm --filter @hotel/web run test:coverage` termina con **código 0**: el gate pasa. Lo verifiqué con el
+código de salida, no solo con la tabla.
+
+**Lo que sigue sin cubrirse, y por qué.** Quedan ramas **inalcanzables** por diseño (guardas redundantes
+como la de `validate-tx.ts`, cuyo `isPurchasable` ya garantiza que el estado tenga tipo de venta) y las
+rutas de API de otros flujos (por ejemplo `admin/rooms/[id]`, 25 ramas; `admin/content/offers/[id]`, 21;
+`reception/reservations`, 20). Cerrarlas exige **crear el andamiaje de pruebas de handlers** (autenticación,
+base de datos y cadena dobladas) que hoy no existe, y hacerlo sobre funcionalidad de otra línea de trabajo.
+El margen actual es **0,07 puntos**: cualquier rama nueva sin prueba vuelve a poner el gate en rojo, así que
+el siguiente paso natural es ese andamiaje, no más parches.

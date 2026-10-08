@@ -80,3 +80,14 @@ describe("elección de la cartera (MetaMask por RDNS)", () => {
     expect(list.map((c) => c.id)).toEqual(["injected", "coinbaseWallet"]);
   });
 });
+
+describe("detección de MetaMask por otras señales", () => {
+  it("reconoce la cartera por su `rdns` aunque el id no lo delate", () => {
+    expect(isMetaMaskConnector({ id: "injected", name: "Cartera", rdns: METAMASK_RDNS })).toBe(true);
+  });
+
+  it("como último recurso mira el nombre", () => {
+    expect(isMetaMaskConnector({ id: "injected", name: "MetaMask" })).toBe(true);
+    expect(isMetaMaskConnector({ id: "injected", name: "Otra" })).toBe(false);
+  });
+});

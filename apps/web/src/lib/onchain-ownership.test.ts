@@ -50,3 +50,31 @@ describe("readOnChainOwnership (M7: la cadena es la autoridad de la titularidad)
     expect(ownerOf).not.toHaveBeenCalled();
   });
 });
+
+describe("clasificación de fallos al leer la titularidad", () => {
+  it("un tokenId que no es número se considera inexistente", async () => {
+    await expect(readOnChainOwnership("no-es-un-numero")).resolves.toEqual({ status: "missing" });
+  });
+
+  it("un revert directo del contrato (sin envoltorio) también es «no existe»", async () => {
+    const directo: OwnershipReader = {
+      ownerOf: () => Promise.reject(Object.assign(new Error("revert"), { name: "ContractFunctionRevertedError" })),
+    };
+
+    await expect(readOnChainOwnership("1", directo)).resolves.toEqual({ status: "missing" });
+  });
+
+  it("un fallo de red es «no disponible», no «no existe»", async () => {
+    const red: OwnershipReader = { ownerOf: () => Promise.reject(new Error("timeout")) };
+    const resultado = await readOnChainOwnership("1", red);
+
+    expect(resultado.status).toBe("unavailable");
+  });
+
+  it("resuelve el motivo aunque lo lanzado no sea un Error", async () => {
+    const raro: OwnershipReader = { ownerOf: () => Promise.reject("caída sin Error") };
+    const resultado = await readOnChainOwnership("1", raro);
+
+    expect(resultado).toMatchObject({ status: "unavailable", reason: "caída sin Error" });
+  });
+});

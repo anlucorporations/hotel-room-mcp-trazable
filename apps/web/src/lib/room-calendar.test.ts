@@ -160,3 +160,25 @@ describe("room-calendar · navegación y mes de una fecha", () => {
     expect(monthOfIsoDate("no-es-una-fecha")).toBeNull();
   });
 });
+
+describe("ramas defensivas del calendario", () => {
+  it("una fecha ilegible no tiene día ISO", () => {
+    expect(isoDayOf("esto-no-es-una-fecha")).toBe("");
+  });
+
+  it("un día ilegible nunca está publicado ni reservado", () => {
+    expect(isPublishedDay("", [])).toBe(false);
+    expect(isReservedDay("", [])).toBe(false);
+  });
+
+  it("un mes fuera de rango no se puede interpretar", () => {
+    expect(monthOfIsoDate("2026-13-01")).toBeNull();
+    expect(monthOfIsoDate("no-es-fecha")).toBeNull();
+  });
+});
+
+describe("isoDayOf — fecha interpretable sin guiones", () => {
+  it("acepta una fecha que `Date` sabe leer aunque no venga en ISO con guiones", () => {
+    expect(isoDayOf("2026/07/01")).toBe("2026-07-01");
+  });
+});

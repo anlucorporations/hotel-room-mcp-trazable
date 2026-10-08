@@ -76,3 +76,24 @@ describe("room-images (F1 · D-5, D-12, D-20)", () => {
     expect(isJpegWithinLimit(tooBig)).toBe(false);
   });
 });
+
+describe("buildRoomImageFileName — entradas imposibles", () => {
+  it("rechaza un tipo de habitación sin etiqueta de imagen", () => {
+    expect(() => buildRoomImageFileName(101, "trastero", new Date("2026-07-01T00:00:00Z"), 1)).toThrow(
+      /sin etiqueta/i,
+    );
+  });
+
+  it("rechaza un índice fuera de 1..5", () => {
+    for (const indice of [0, 6, 1.5]) {
+      expect(() => buildRoomImageFileName(101, "simple", new Date("2026-07-01T00:00:00Z"), indice)).toThrow(
+        /Índice de imagen/i,
+      );
+    }
+  });
+
+  it("roomTypeLabel distingue un tipo válido de uno desconocido", () => {
+    expect(roomTypeLabel("simple")).not.toBeNull();
+    expect(roomTypeLabel("trastero")).toBeNull();
+  });
+});

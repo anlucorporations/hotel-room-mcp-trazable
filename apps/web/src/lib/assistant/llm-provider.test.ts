@@ -85,3 +85,41 @@ describe("createLlmClient", () => {
     expect(result.provider).toBe("vertex");
   });
 });
+
+describe("ramas de borde del proveedor", () => {
+  it("usa el modelo de Anthropic indicado por entorno", async () => {
+    const resultado = await createLlmClient({
+      ASSISTANT_PROVIDER: "anthropic",
+      ANTHROPIC_API_KEY: "sk-de-prueba",
+      ANTHROPIC_MODEL: "claude-de-prueba",
+    } as never);
+
+    expect(resultado.ok).toBe(true);
+    if (resultado.ok) expect(resultado.model).toBe("claude-de-prueba");
+  });
+
+  it("tolera valores numéricos malformados del entorno (usa los por defecto)", async () => {
+    const resultado = await createLlmClient({
+      GOOGLE_CLOUD_PROJECT: "hotel-mcp",
+      VERTEX_MAX_OUTPUT_TOKENS: "no-es-un-numero",
+      VERTEX_THINKING_BUDGET: "tampoco",
+    } as never);
+
+    // Lo que importa: la composición no se rompe por una variable mal escrita.
+    expect(resultado.ok).toBe(true);
+  });
+});
+
+describe("valores numéricos límite del entorno", () => {
+  it("un tope de salida de 0 se ignora (el adaptador aplica su valor por defecto)", async () => {
+    const resultado = await createLlmClient({ GOOGLE_CLOUD_PROJECT: "hotel-mcp", VERTEX_MAX_OUTPUT_TOKENS: "0" } as never);
+
+    expect(resultado.ok).toBe(true);
+  });
+
+  it("un presupuesto de razonamiento negativo se ignora", async () => {
+    const resultado = await createLlmClient({ GOOGLE_CLOUD_PROJECT: "hotel-mcp", VERTEX_THINKING_BUDGET: "-1" } as never);
+
+    expect(resultado.ok).toBe(true);
+  });
+});

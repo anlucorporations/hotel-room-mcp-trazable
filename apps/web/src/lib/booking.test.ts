@@ -118,3 +118,16 @@ describe("búsqueda transportada en la URL", () => {
     expect(parseBookingQuery(`?guests=${MAX_GUESTS + 1}`).guests).toBeUndefined();
   });
 });
+
+describe("ramas defensivas de la reserva", () => {
+  it("una fecha mal formada da cero noches", () => {
+    expect(nightsCount("30-12-2026", "2026-12-31")).toBe(0);
+  });
+
+  it("acepta los parámetros ya parseados, no solo la cadena de consulta", () => {
+    const params = parseBookingQuery(new URLSearchParams("from=2026-07-01&to=2026-07-03&guests=2"));
+
+    expect(params.checkInDate).toBe("2026-07-01");
+    expect(params.checkOutDate).toBe("2026-07-03");
+  });
+});

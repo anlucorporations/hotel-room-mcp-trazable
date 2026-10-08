@@ -67,3 +67,74 @@ describe("añadir / cambiar la red de la billetera", () => {
     expect(await ensureWalletChain(provider, activeChain)).toBe("failed");
   });
 });
+
+describe("ramas defensivas de la cadena", () => {
+  it("no añade explorador cuando la cadena no lo declara", () => {
+    const sinExplorador = { ...activeChain, blockExplorers: undefined } as typeof activeChain;
+    expect(chainParamsFor(sinExplorador).blockExplorerUrls).toBeUndefined();
+  });
+
+  it("incluye el explorador cuando la cadena lo declara", () => {
+    const conExplorador = {
+      ...activeChain,
+      blockExplorers: { default: { name: "explorer", url: "https://explorer.example" } },
+    } as typeof activeChain;
+    expect(chainParamsFor(conExplorador).blockExplorerUrls).toEqual(["https://explorer.example"]);
+  });
+
+  it("si la billetera no responde a `eth_chainId`, sigue adelante y cambia de red", async () => {
+    const provider = fakeProvider({
+      eth_chainId: () => {
+        throw new Error("no soportado");
+      },
+      wallet_switchEthereumChain: () => undefined,
+    });
+
+    await expect(ensureWalletChain(provider, activeChain)).resolves.toBe("switched");
+  });
+
+  it("trata un código de error que no es número como «no es rechazo del usuario»", async () => {
+    // `errorCode` exige un número: con una cadena, la billetera no lo reconoce como rechazo y se
+    // intenta añadir la red. El primer cambio falla; tras añadirla, el segundo funciona.
+    let intentos = 0;
+    const provider = fakeProvider({
+      eth_chainId: () => "0x1",
+      wallet_switchEthereumChain: () => {
+        intentos += 1;
+        if (intentos === 1) throw { code: "4902" };
+        return undefined;
+      },
+      wallet_addEthereumChain: () => undefined,
+    });
+
+    await expect(ensureWalletChain(provider, activeChain)).resolves.toBe("added");
+  });
+
+  it("devuelve 'rejected' si el usuario rechaza añadir la red", async () => {
+    const provider = fakeProvider({
+      eth_chainId: () => "0x1",
+      wallet_switchEthereumChain: () => {
+        throw { code: 4902 };
+      },
+      wallet_addEthereumChain: () => {
+        throw { code: 4001 };
+      },
+    });
+
+    await expect(ensureWalletChain(provider, activeChain)).resolves.toBe("rejected");
+  });
+
+  it("devuelve 'failed' si la billetera no acepta ni añadir la red", async () => {
+    const provider = fakeProvider({
+      eth_chainId: () => "0x1",
+      wallet_switchEthereumChain: () => {
+        throw { code: 4902 };
+      },
+      wallet_addEthereumChain: () => {
+        throw new Error("sin permisos");
+      },
+    });
+
+    await expect(ensureWalletChain(provider, activeChain)).resolves.toBe("failed");
+  });
+});

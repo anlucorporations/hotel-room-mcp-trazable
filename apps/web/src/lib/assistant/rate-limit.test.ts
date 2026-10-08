@@ -88,3 +88,23 @@ describe("InMemoryRateLimiter (MAJOR#8)", () => {
     expect(DEFAULT_RATE_LIMIT.maxCharsPerMinute).toBeGreaterThan(0);
   });
 });
+
+describe("ramas de borde del limitador", () => {
+  it("ignora un recuento de caracteres no finito o negativo", () => {
+    // `safeChars` cae a 0: una entrada absurda no debe consumir presupuesto de caracteres.
+    const rl = new InMemoryRateLimiter({ ...DEFAULT_RATE_LIMIT, maxCharsPerMinute: 100 });
+    expect(rl.check("ip", Number.NaN, 0).allowed).toBe(true);
+    expect(rl.check("ip-2", -50, 0).allowed).toBe(true);
+    expect(rl.check("ip-3", 0, 0).allowed).toBe(true);
+  });
+
+  it("deniega por presupuesto de caracteres en la PRIMERA petición del minuto", () => {
+    // Sin peticiones previas en el minuto, el `retryAfter` se calcula desde «ahora» (`?? now`).
+    const rl = new InMemoryRateLimiter({ ...DEFAULT_RATE_LIMIT, maxCharsPerMinute: 10 });
+    const decision = rl.check("ip", 999, 0);
+
+    expect(decision.allowed).toBe(false);
+    expect(decision.reason).toBe("budget");
+    expect(decision.retryAfterSeconds).toBeGreaterThan(0);
+  });
+});

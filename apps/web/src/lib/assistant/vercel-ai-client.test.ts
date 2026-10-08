@@ -427,3 +427,59 @@ describe("presupuesto de razonamiento (palanca medida en H4)", () => {
     expect(visto[0]).toEqual({ vertex: { thinkingConfig: { thinkingBudget: 512 } } });
   });
 });
+
+describe("bordes del adaptador (ramas defensivas)", () => {
+  it("si el proveedor no informa del consumo, todo queda a cero", async () => {
+    // El SDK sí exige el objeto `usage`, pero sus totales pueden venir sin definir: es la rama
+    // `?? 0` del adaptador, que evita propagar `undefined` a la telemetría.
+    const model = mockModel({
+      doGenerate: {
+        content: [{ type: "text", text: "Hola." }],
+        finishReason: { unified: "stop", raw: "stop" },
+        usage: {
+          inputTokens: { total: undefined, noCache: undefined, cacheRead: undefined, cacheWrite: undefined },
+          outputTokens: { total: undefined, text: undefined, reasoning: undefined },
+        },
+        warnings: [],
+      },
+    });
+
+    const response = await new VercelAiLlmClient({ model }).createMessage({
+      system: SYSTEM,
+      turns: [{ role: "user", text: "hola" }],
+      tools: [TOOL],
+    });
+
+    expect(response.usage).toEqual({ inputTokens: 0, outputTokens: 0, cachedInputTokens: 0 });
+  });
+
+  it("un turno de asistente sin texto no añade una parte vacía", () => {
+    const mensajes = toModelMessages([
+      { role: "assistant", text: "", toolUses: [{ id: "c1", name: "checkAvailability", input: {} }] },
+    ]);
+
+    const contenido = mensajes[0] as { content: { type: string }[] };
+    expect(contenido.content.some((parte) => parte.type === "text")).toBe(false);
+    expect(contenido.content.some((parte) => parte.type === "tool-call")).toBe(true);
+  });
+
+  it("un resultado de herramienta sin llamada previa usa el nombre de reserva", () => {
+    const mensajes = toModelMessages([
+      {
+        role: "user",
+        text: "",
+        toolResults: [{ toolUseId: "desconocido", content: JSON.stringify({ ok: true }) }],
+      },
+    ]);
+
+    const contenido = mensajes[0] as { content: { type: string; toolName?: string }[] };
+    expect(contenido.content[0]?.toolName).toBe("unknown");
+  });
+
+  it("un turno de usuario sin texto se envía como cadena vacía", () => {
+    const mensajes = toModelMessages([{ role: "user", text: undefined as never }]);
+
+    const contenido = mensajes[0] as { content: string };
+    expect(contenido.content).toBe("");
+  });
+});

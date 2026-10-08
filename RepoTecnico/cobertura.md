@@ -9,6 +9,27 @@
 
 ---
 
+## 0. Medición posterior (2026-10-08)
+
+> **Actualización**: el gate de la web **vuelve a pasar**. Aquí abajo queda la medición de 2026-09-23, que
+> es la que describe la deuda original.
+
+| Métrica (web) | 2026-09-23 | **2026-10-08** | Umbral |
+|---|---|---|---|
+| Ramas | 74,05 % (calibración del trinquete) | **73,07 %** | 73 |
+| Sentencias | 24,95 % | 34,86 % | 23 |
+| Funciones | 53,84 % | 61,79 % | 52 |
+| Líneas | 24,95 % | 34,86 % | 23 |
+| Pruebas | — | **909** | — |
+
+El gate estaba en rojo por **ramas** (69,49 %) porque **ningún handler de API tenía pruebas** y las
+validaciones defensivas de las librerías estaban sin cubrir. Se añadieron **75 pruebas** (14 ficheros)
+centradas en ramas reales; detalle en `estado_proyecto.md` §14.19. Quedan sin cubrir las ramas
+inalcanzables por diseño y las rutas de API de otros flujos, que necesitan el andamiaje de pruebas de
+handlers (autenticación, base de datos y cadena dobladas) que el proyecto todavía no tiene.
+
+---
+
 ## 1. Resumen ejecutivo
 
 | Pregunta | Respuesta honesta |
