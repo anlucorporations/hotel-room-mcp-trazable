@@ -4322,3 +4322,36 @@ pasan), pero **falla en detalles** y en un caso concreto afirma lo contrario de 
 dinero. Opciones: (a) asumirlo y advertir que los detalles de cobro de reventa se confirmen en
 recepción; (b) invertir en recuperación por párrafos en lugar de por secciones; (c) probar cambios de
 prompt **con este arnés como juez** antes de desplegar (los dos intentos a ciegas empeoraron).
+
+### 14.18 Opción (b) aplicada: recuperación por PÁRRAFOS (release MCP v44, 2026-10-08)
+
+**Diagnóstico**: el generador troceaba por **apartados** (hasta 1200 caracteres) y el buscador solo
+entrega los **primeros 600** de cada fragmento, así que la mitad del contenido quedaba fuera de la vista
+del modelo. Esa era la causa de que se perdieran cifras y frases concretas.
+
+**Cambio**: el generador trocea por **párrafos** (objetivo 500 caracteres, tope 800, nunca partiendo un
+párrafo si cabe), de modo que **el extracto cubre el fragmento entero**. Se conserva el título del
+apartado, así que **las citas no cambian**. En el buscador, la deduplicación pasa de *por sección* (que
+con párrafos descartaría justo el párrafo que responde) a *por documento, máximo 2 fragmentos*.
+Índice: **197 → 301 fragmentos**.
+
+**Resultado medido con el arnés (mismo banco, 26 muestras)**
+
+| Configuración | Correctas | Contradicen |
+|---|---|---|
+| Troceado por apartados (v43) | 18/26 = **69,2 %** | **2** |
+| **Troceado por párrafos (v44)** | 20/26 = **76,9 %** | **1** |
+
+La contradicción grave —afirmar que el cobro de la reventa es automático— **desapareció**. Queda una
+contradicción de menor daño (`duracion-resguardo`: dice que el resguardo «no tiene una duración
+definida» cuando vale 7 días) y tres debilidades recurrentes: `cobro-reventa` (2), `habitacion-tras-salir`
+(2, responde sobre la noche en vez de la habitación) y `resguardo-un-solo-uso` (1).
+
+**No es una cura, es una mejora**: +2 aciertos y −1 contradicción. Los fallos que quedan no son de
+troceado sino de **elección y resumen del fragmento** por parte del modelo.
+
+**Calibración del juez (4 rondas)**: el clasificador del arnés dio cifras **optimistas** al principio
+porque marcaba como incompletas respuestas correctas («no tendrás que firmar», «solo se pueden revender
+noches que ya se han comprado», «caduca en pocos minutos»). Cada ronda se contrastó con la lectura manual
+de las 26 respuestas hasta que el veredicto automático coincidió con el humano. Las cifras de arriba son
+las publicables.

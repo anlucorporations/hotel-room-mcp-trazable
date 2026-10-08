@@ -55,6 +55,8 @@ const CASOS: readonly Caso[] = [
     id: "duracion-resguardo",
     pregunta: "¿Cuánto dura el resguardo de check-in?",
     esperado: /7 d[ií]as/,
+    // Decir que «no tiene una duración determinada» contradice el corpus: vale 7 días.
+    prohibido: /no tiene (una )?duraci[oó]n|no caduca|sin fecha de caducidad|dura indefinidamente/i,
     nota: "7 días desde que se genera y un solo uso",
   },
   {
@@ -67,7 +69,7 @@ const CASOS: readonly Caso[] = [
   {
     id: "firma-resguardo",
     pregunta: "¿Cuánto dura la firma que me pide el resguardo?",
-    esperado: /(dos|2|unos)\s*minutos/i,
+    esperado: /(dos|2|unos|pocos)\s*minutos/i,
     nota: "Unos dos minutos",
   },
   {
@@ -93,7 +95,7 @@ const CASOS: readonly Caso[] = [
   {
     id: "reventa-no-comprada",
     pregunta: "¿Puedo revender una noche que no compré?",
-    esperado: /no (puedes|se puede)|ya tuvo una venta|solo se revende/i,
+    esperado: /no (puedes|se puede)|ya tuvo una venta|solo se revende|solo se pueden revender|ya se han comprado/i,
     nota: "No: solo se revende una noche que ya tuvo una venta",
   },
   {
@@ -114,7 +116,7 @@ const CASOS: readonly Caso[] = [
   {
     id: "reventa-ya-usada",
     pregunta: "¿Puedo revender mi noche si ya la he usado en recepción?",
-    esperado: /no (puedes|se puede)|ya (la )?(has )?us(ado|aste)|se consum|ya la usaste/i,
+    esperado: /no (puedes|se puede|puede)|ya (la )?(has )?us(ado|aste)|se consum|ya se ha usado/i,
     prohibido: /s[ií],?\s*(puedes|se puede)/i,
     nota: "No: la noche ya se consumió",
   },

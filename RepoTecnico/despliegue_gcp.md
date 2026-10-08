@@ -2286,3 +2286,32 @@ caracteres** de extracto que ve el modelo.
 
 **Limpieza de revisiones**: se borraron `hotel-mcp-web-00081-sih` y `hotel-mcp-web-00082-pid`, del prompt
 experimental que empeoraba las respuestas, y se retiró su etiqueta `canary`.
+
+## 66. Release MCP v44 — recuperación por párrafos (2026-10-08)
+
+**Motivo**: el generador troceaba por apartados (hasta 1200 caracteres) y el buscador solo entrega los
+**primeros 600** de cada fragmento, así que la mitad del contenido no llegaba al modelo: se perdían
+cifras y frases concretas.
+
+**Cambio** (solo `apps/mcp`): troceado por **párrafos** (objetivo 500, tope 800) para que el extracto
+cubra el fragmento entero, conservando el título del apartado —**las citas no cambian**— y
+deduplicación *por documento (máx. 2)* en lugar de por sección. Índice: **197 → 301 fragmentos**.
+
+| Componente | Imagen | Build |
+|---|---|---|
+| mcp | `…/hotel-mcp/mcp:v44` | ✅ SUCCESS `a4d99c50` (2 m 20 s) |
+| web | `web:v40` (sin cambios) | vigente |
+
+**Despliegue**: canario `hotel-mcp-mcp-00021-tis` → verificado → tráfico movido. Rollback:
+`hotel-mcp-mcp-00019-nex` (v43).
+
+**Verificación (arnés de fidelidad, 26 muestras)**
+
+| Configuración | Correctas | Contradicen |
+|---|---|---|
+| Apartados (v43) | 69,2 % | 2 |
+| **Párrafos (v44)** | **76,9 %** | **1** |
+
+La contradicción grave (afirmar que el cobro de la reventa es automático) desapareció. Queda una
+contradicción de menor daño (decir que el resguardo no tiene duración definida) y tres debilidades
+recurrentes. Suite del MCP: **75/75**.

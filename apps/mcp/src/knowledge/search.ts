@@ -57,6 +57,8 @@ const SYNONYMS: Readonly<Record<string, readonly string[]>> = {
 };
 /** Tope de resultados: cada uno viaja al LLM en cada llamada (palanca de coste, RNF-24). */
 export const MAX_LIMIT = 5;
+/** Fragmentos que puede aportar un mismo documento en una misma búsqueda (diversidad de fuentes). */
+const MAX_PER_DOCUMENT = 2;
 /** Recorte del extracto devuelto: contexto suficiente para responder y citar (RF-59). */
 export const MAX_EXCERPT_CHARS = 600;
 
@@ -288,17 +290,17 @@ export function searchKnowledge(query: string, options: SearchKnowledgeOptions =
     });
   }
 
-  // Una sección larga se parte en varios fragmentos (`…~1`, `…~2`): sin deduplicar, dos trozos de la
-  // MISMA sección ocupan dos de los tres huecos y desplazan a otros manuales. Se conserva el mejor
-  // fragmento de cada sección y se comparan secciones entre sí.
-  const bestBySection = new Map<string, KnowledgeHit>();
-  for (const hit of scored) {
-    const key = hit.id.split("~")[0] as string;
-    const current = bestBySection.get(key);
-    if (!current || hit.score > current.score) bestBySection.set(key, hit);
+  // El índice trocea por PÁRRAFOS (H5), así que un mismo apartado aporta varios fragmentos con
+  // contenido **distinto**: deduplicar por sección —como se hacía cuando el troceado era por secciones
+  // enteras— descartaría el párrafo que responde. Se limita en cambio cuántos fragmentos puede aportar
+  // un mismo documento, para que ninguno acapare los huecos y sigan entrando otras fuentes.
+  const ranked = [];
+  const perDoc = new Map<string, number>();
+  for (const hit of scored.sort((a, b) => (b.score === a.score ? a.id.localeCompare(b.id) : b.score - a.score))) {
+    const used = perDoc.get(hit.doc) ?? 0;
+    if (used >= MAX_PER_DOCUMENT) continue;
+    perDoc.set(hit.doc, used + 1);
+    ranked.push(hit);
   }
-
-  const ranked = [...bestBySection.values()];
-  ranked.sort((a, b) => (b.score === a.score ? a.id.localeCompare(b.id) : b.score - a.score));
   return ranked.slice(0, limit);
 }

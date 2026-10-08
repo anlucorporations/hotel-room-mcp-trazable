@@ -73,7 +73,15 @@ function listGuestCases() {
 }
 
 /** Longitud máxima de un fragmento antes de partirlo por frases (caracteres). */
-const CHUNK_MAX_CHARS = 1200;
+/**
+ * Troceado por PÁRRAFOS (H5). El buscador devuelve solo los primeros 600 caracteres de cada fragmento
+ * (`MAX_EXCERPT_CHARS`), así que un fragmento de 1200 escondía la mitad de su contenido al modelo: la
+ * cifra de la comisión o la frase del cobro quedaban fuera de su vista. Con fragmentos de ~500
+ * caracteres, el extracto cubre el fragmento **entero**.
+ */
+const CHUNK_TARGET_CHARS = 500;
+/** Tope duro: un párrafo mayor que esto se parte por frases. */
+const CHUNK_MAX_CHARS = 800;
 
 /**
  * Patrones que NUNCA deben acabar en el índice del servicio.
@@ -133,7 +141,7 @@ function parseManual(markdown, file) {
 
   const flush = () => {
     const text = textFromMarkdown(current.lines.join("\n"));
-    if (text) sections.push({ id: current.id, title: current.title, text });
+    if (text) sections.push({ id: current.id, title: current.title, lines: current.lines, text });
   };
 
   for (const line of body) {
@@ -160,6 +168,49 @@ function parseManual(markdown, file) {
   // Un manual puede estar aún SIN CONTENIDO (sus secciones solo llevan comentarios de plantilla):
   // no es un error, pero tampoco se indexa nada vacío.
   return { title, sections };
+}
+
+/** Bloques de un apartado: los separa una línea en blanco (un párrafo o una lista). */
+function paragraphBlocks(lines) {
+  const blocks = [];
+  let current = [];
+  for (const line of lines) {
+    if (line.trim() === "") {
+      if (current.length > 0) blocks.push(current);
+      current = [];
+      continue;
+    }
+    current.push(line);
+  }
+  if (current.length > 0) blocks.push(current);
+  return blocks;
+}
+
+/**
+ * Trocea un apartado en fragmentos por párrafos, empaquetando los consecutivos hasta el objetivo.
+ *
+ * Se conserva el `id` de la sección (con sufijo `~n`) y su título, que es lo que el asistente cita:
+ * trocear más fino **no** cambia las citas, solo hace que el modelo vea el fragmento completo.
+ */
+function chunkSection(section) {
+  const blocks = paragraphBlocks(section.lines)
+    .map((block) => textFromMarkdown(block.join("\n")))
+    .filter((text) => text.length > 0);
+
+  const chunks = [];
+  let current = "";
+  for (const block of blocks) {
+    for (const piece of splitText(block, CHUNK_MAX_CHARS)) {
+      if (current && current.length + piece.length + 1 > CHUNK_TARGET_CHARS) {
+        chunks.push(current);
+        current = "";
+      }
+      current = current ? `${current} ${piece}` : piece;
+    }
+  }
+  if (current) chunks.push(current);
+  // Un apartado sin líneas en blanco (o vacío tras limpiar) cae al troceado por frases.
+  return chunks.length > 0 ? chunks : splitText(section.text, CHUNK_MAX_CHARS);
 }
 
 /** Parte un texto largo por frases para no diluir la recuperación en fragmentos enormes. */
@@ -210,7 +261,7 @@ function buildChunks() {
     }
 
     for (const section of sections) {
-      const parts = splitText(section.text);
+      const parts = chunkSection(section);
       parts.forEach((part, index) => {
         chunks.push({
           id: parts.length > 1 ? `${source.slug}#${section.id}~${index + 1}` : `${source.slug}#${section.id}`,
