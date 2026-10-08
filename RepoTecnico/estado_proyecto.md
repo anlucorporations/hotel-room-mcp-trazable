@@ -4082,3 +4082,77 @@ nosotros (prompt más corto, 2 rondas en vez de 4, ventana de 12 turnos). Los to
 
 **Pendiente de H4 que depende de H5**: ejecutar el arnés sin `--mock` y anotar el p95 real, el consumo
 facturado y si hay aciertos de caché.
+
+### 14.12 Fase 3 · Hito H4 — medición REAL contra Vertex AI (2026-10-08)
+
+Se ejecutó el arnés **sin `--mock`**, contra `gemini-2.5-flash-lite` en `europe-west1`, con 20
+conversaciones representativas por ronda (8 rondas). Además de las cifras, la medición sirvió para
+**encontrar y corregir tres defectos reales** que ningún test detectaba.
+
+**Preparación necesaria (paso 1 de H5, ya hecho)**
+
+| Acción | Estado |
+|---|---|
+| `aiplatform.googleapis.com` habilitado en `hotel-mcp` | ✅ (gratuito y reversible; sin recursos creados) |
+| Credencial para medir | Token **efímero** de `gcloud` inyectado como cabecera **solo en el arnés**. No se crearon claves de servicio, no se escribió ningún secreto en disco y **no se concedió ningún permiso de Vertex a esta instancia** |
+
+**Resultado final (20 conversaciones, razonamiento desactivado)**
+
+| Métrica | Valor | Requisito |
+|---|---|---|
+| p50 | **1 246 ms** | — |
+| **p95** | **2 278 ms** | ✅ RNF-25 (≤2 500 ms) |
+| máx | 2 786 ms | — |
+| Tokens de entrada | 40 657 (≈2 033/conversación) | ✅ RNF-24 (≤6 000/petición) |
+| Tokens de salida | 2 244 (≈112/conversación) | ✅ RNF-24 (≤512) |
+| Coste | **0,248 USD / 1 000 conversaciones** | ✅ RNF-22 (≤5 USD/mes, margen ≈20×) |
+| Respuestas inservibles | **0/20** | — |
+| Conversaciones que usaron herramienta | **20/20** | RF-56 |
+
+**Serie completa de medidas (para dejar constancia de la varianza)**
+
+| Ronda | p50 | p95 | máx | USD/1 000 | inservibles |
+|---|---|---|---|---|---|
+| 1 (con razonamiento) | 1 154 | 2 553 | 7 943 | 0,185 | — |
+| 2 (con razonamiento) | 1 058 | 2 013 | 2 723 | 0,191 | 6/20 |
+| 3 (con razonamiento) | 1 333 | 2 310 | 7 404 | 0,194 | 8/20 |
+| 4 (con razonamiento) | 1 155 | 2 005 | 2 709 | 0,207 | 8/20 |
+| 5 (+ reintento) | 1 266 | 2 316 | 2 752 | 0,238 | 1/20 |
+| 6 (+ mensaje de reserva) | 1 203 | 2 649 | 13 498 | 0,233 | 0/20 |
+| 7 (+ guarda de pseudollamada) | 1 569 | 2 857 | 3 067 | 0,268 | 0/20 |
+| **8 (+ razonamiento desactivado)** | **1 246** | **2 278** | **2 786** | **0,248** | **0/20** |
+
+Con 20 muestras, el p95 es el **segundo peor valor**: una sola llamada lenta del proveedor (7,4-13,5 s)
+decide si se cumple el requisito. Por eso RNF-25 se considera **cumplido pero frágil**, y hay que
+remedirlo en H5 con más volumen y desde Cloud Run.
+
+**Defectos encontrados por la medición y corregidos**
+
+1. **40 % de respuestas vacías.** Gemini 2.5 Flash-Lite devuelve a veces un candidato sin texto (gasta
+   unos tokens de razonamiento y no escribe respuesta). `maxRetries` del SDK no lo cubre: no es un
+   error de protocolo. → **Reintento acotado** en el adaptador (el consumo de ambos intentos se suma,
+   porque el proveedor los factura) + **mensaje de reserva** en el orquestador para que el huésped
+   nunca reciba una burbuja vacía. Resultado: 8/20 → **0/20**.
+2. **El guardrail de dominio rechazaba procedimientos del hotel.** «¿Cómo conecto mi cartera y me pongo
+   en la red correcta?» —el caso 02 del manual— se respondía con «No puedo ayudarte con eso». El
+   modelo lo clasificaba como tema ajeno. → El prompt ahora enumera los procedimientos del hotel
+   (cartera y red, resguardo QR, extras) y avisa de que **no** se rechacen. Resultado: conversaciones
+   sin herramienta 6/20 → 1/20.
+3. **Pseudollamada escrita como texto.** En una ocasión el modelo escribió
+   `tool_code / print(default_api.searchHotelManuals())` como texto: el huésped habría visto
+   pseudocódigo. → Se detecta y se reintenta, y si persiste se sustituye por el mensaje de reserva.
+
+**La palanca de latencia (hallazgo principal).** El **razonamiento** de Gemini 2.5 estaba activo por
+defecto y era la causa dominante de la latencia y de la truncación: con él, una misma pregunta tardaba
+1 638 ms y a veces **agotaba el tope de 512 tokens antes de escribir la respuesta**; con
+`thinkingBudget: 0`, 914 ms y sin truncar. Se expone como `VERTEX_THINKING_BUDGET` (por defecto `0`) y
+al desactivarlo el p95 pasó de 2 857 ms a **2 278 ms** y las conversaciones que usan la herramienta
+subieron a 20/20.
+
+**Cómo repetir la medición**
+
+```bash
+export PATH="/home/dsh/google-cloud-sdk/bin:$PATH"     # el snap de gcloud está roto en esta máquina
+corepack pnpm --filter @hotel/web exec tsx scripts/measure-assistant.ts --runs=20
+```
+Los informes quedan en `RepoTecnico/evidencias/h4-medicion-real.json` (y `…-mock.json`).

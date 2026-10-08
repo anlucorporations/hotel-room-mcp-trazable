@@ -31,6 +31,7 @@ export interface LlmProviderEnv {
   readonly VERTEX_MODEL?: string;
   readonly VERTEX_LOCATION?: string;
   readonly VERTEX_MAX_OUTPUT_TOKENS?: string;
+  readonly VERTEX_THINKING_BUDGET?: string;
   readonly GOOGLE_VERTEX_PROJECT?: string;
   readonly GOOGLE_CLOUD_PROJECT?: string;
   readonly GCLOUD_PROJECT?: string;
@@ -93,6 +94,9 @@ async function vertexClient(env: LlmProviderEnv): Promise<LlmClientResult> {
       client: new VercelAiLlmClient({
         model: vertex(model),
         maxOutputTokens: parsePositiveInt(env.VERTEX_MAX_OUTPUT_TOKENS),
+        // 0 por defecto: medido en H4, el razonamiento de Gemini 2.5 multiplica la latencia y puede
+        // agotar el tope de salida antes de escribir la respuesta.
+        thinkingBudget: parseNonNegativeInt(env.VERTEX_THINKING_BUDGET) ?? 0,
       }),
       model,
       location,
@@ -109,4 +113,11 @@ function parsePositiveInt(raw: string | undefined): number | undefined {
   if (!raw) return undefined;
   const value = Number.parseInt(raw, 10);
   return Number.isFinite(value) && value > 0 ? value : undefined;
+}
+
+/** Entero no negativo o `undefined`. El `0` es un valor válido (razonamiento desactivado). */
+function parseNonNegativeInt(raw: string | undefined): number | undefined {
+  if (!raw) return undefined;
+  const value = Number.parseInt(raw, 10);
+  return Number.isFinite(value) && value >= 0 ? value : undefined;
 }

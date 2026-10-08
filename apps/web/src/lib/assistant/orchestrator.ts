@@ -3,6 +3,7 @@ import type { LlmClient } from "./llm";
 import type { ToolGateway } from "./tools-gateway";
 import type { PreparedTxCheck } from "./validate-tx";
 import { addUsage, EMPTY_USAGE } from "./metrics";
+import { isUnusableText } from "./vercel-ai-client";
 import { DEFAULT_MAX_INPUT_TOKENS, DEFAULT_MAX_TURNS, applyInputBudget } from "./token-budget";
 import type {
   AssistantResult,
@@ -34,6 +35,13 @@ const BUILD_PURCHASE_TOOL = "buildPurchaseTx";
 const DEFAULT_MAX_ROUNDS = 2;
 
 /**
+ * Mensaje de reserva cuando el proveedor no devuelve texto ni siquiera tras el reintento del
+ * adaptador (medido en H4: ~5 % de las respuestas). El usuario nunca debe recibir una burbuja vacía.
+ */
+const EMPTY_REPLY_FALLBACK =
+  "No he podido completar la respuesta. ¿Puedes reformular la pregunta?";
+
+/**
  * Orquesta la conversación del asistente (CU-08, docs/SRS.md §9): ofrece al LLM las herramientas del MCP,
  * ejecuta las que pida y le devuelve los resultados, hasta que responde sin más herramientas.
  *
@@ -43,6 +51,11 @@ const DEFAULT_MAX_ROUNDS = 2;
  * de ofrecerse; la garantía frente a «noche equivocada» NO es el tokenId (que afirma el LLM) sino
  * el precio on-chain + el contrato + la revisión del usuario en el handoff (MINOR#20/#25).
  */
+/** Garantiza que el usuario recibe algo legible: ni vacío ni una pseudollamada en texto. */
+function replyOrFallback(text: string): string {
+  return isUnusableText(text) ? EMPTY_REPLY_FALLBACK : text;
+}
+
 export async function runAssistant(
   deps: AssistantDeps,
   messages: readonly ChatMessage[],
@@ -78,7 +91,7 @@ export async function runAssistant(
     usage = addUsage(usage, res.usage ?? EMPTY_USAGE);
     if (res.toolUses.length === 0) {
       return {
-        reply: res.text,
+        reply: replyOrFallback(res.text),
         domainToolCalls,
         preparedPurchase,
         llmCalls,
@@ -105,7 +118,7 @@ export async function runAssistant(
   llmCalls += 1;
   usage = addUsage(usage, closing.usage ?? EMPTY_USAGE);
   return {
-    reply: closing.text,
+    reply: replyOrFallback(closing.text),
     domainToolCalls,
     preparedPurchase,
     llmCalls,

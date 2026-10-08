@@ -196,3 +196,52 @@ describe("runAssistant — presupuesto y consumo (H4)", () => {
     expect(llm.requests[2]!.tools).toEqual([]);
   });
 });
+
+describe("respuesta vacía del modelo (defecto medido en H4)", () => {
+  it("nunca devuelve una respuesta vacía al usuario", async () => {
+    const llm = new FakeLlm([{ text: "   ", toolUses: [] }]);
+    const result = await runAssistant(
+      { llm, gateway: new FakeGateway(), validatePreparedTx: okValidator, system: SYSTEM_PROMPT },
+      [{ role: "user", text: "hola" }],
+    );
+
+    expect(result.reply.trim().length).toBeGreaterThan(0);
+    expect(result.reply).toMatch(/reformular/i);
+  });
+
+  it("también cubre el cierre forzado tras agotar las rondas", async () => {
+    const toolCall = { text: "", toolUses: [{ id: "c", name: "checkAvailability", input: {} }] };
+    const llm = new FakeLlm([toolCall, toolCall, { text: "", toolUses: [] }]);
+    const result = await runAssistant(
+      { llm, gateway: new FakeGateway(), validatePreparedTx: okValidator, system: SYSTEM_PROMPT },
+      [{ role: "user", text: "hola" }],
+    );
+
+    expect(result.reply.trim().length).toBeGreaterThan(0);
+  });
+
+  it("sustituye una pseudollamada en texto por el mensaje de reserva", async () => {
+    // Medido en H4: el modelo escribió «tool_code / print(default_api...)» como texto. Mostrar eso
+    // al huésped es peor que pedirle que reformule.
+    const llm = new FakeLlm([
+      { text: "tool_code\nprint(default_api.searchHotelManuals())", toolUses: [] },
+    ]);
+    const result = await runAssistant(
+      { llm, gateway: new FakeGateway(), validatePreparedTx: okValidator, system: SYSTEM_PROMPT },
+      [{ role: "user", text: "¿puedo dejar una reseña?" }],
+    );
+
+    expect(result.reply).not.toContain("default_api");
+    expect(result.reply).toMatch(/reformular/i);
+  });
+
+  it("no altera una respuesta que sí trae texto", async () => {
+    const llm = new FakeLlm([{ text: "La 102 está libre.", toolUses: [] }]);
+    const result = await runAssistant(
+      { llm, gateway: new FakeGateway(), validatePreparedTx: okValidator, system: SYSTEM_PROMPT },
+      [{ role: "user", text: "hola" }],
+    );
+
+    expect(result.reply).toBe("La 102 está libre.");
+  });
+});

@@ -1,0 +1,188 @@
+{
+  "generadoEn": "2026-10-08T02:16:39.436Z",
+  "modo": "mock",
+  "modelo": "mock-determinista",
+  "modeloDeReferenciaParaElCoste": "gemini-2.5-flash-lite",
+  "aviso": "Modo mock: la latencia es la de nuestro código (sin modelo). Los tokens y el coste estimado corresponden a ese volumen de tokens con la tarifa del modelo de referencia.",
+  "conversaciones": 20,
+  "latencia": {
+    "p50Ms": 0,
+    "p95Ms": 0.2,
+    "maxMs": 0.6
+  },
+  "tokens": {
+    "entrada": 43884,
+    "salida": 2600
+  },
+  "coste": {
+    "usdTotal": 0.005428,
+    "usdPorConversacion": 0.000271,
+    "usdPor1000Conversaciones": 0.2714
+  },
+  "media": {
+    "llmCalls": 2,
+    "toolCalls": 1
+  },
+  "muestras": [
+    {
+      "latencyMs": 0.6,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 2198,
+      "outputTokens": 130,
+      "costUsd": 0.000272
+    },
+    {
+      "latencyMs": 0.1,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 2190,
+      "outputTokens": 130,
+      "costUsd": 0.000271
+    },
+    {
+      "latencyMs": 0.1,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 2190,
+      "outputTokens": 130,
+      "costUsd": 0.000271
+    },
+    {
+      "latencyMs": 0,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 2194,
+      "outputTokens": 130,
+      "costUsd": 0.000271
+    },
+    {
+      "latencyMs": 0.1,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 2188,
+      "outputTokens": 130,
+      "costUsd": 0.000271
+    },
+    {
+      "latencyMs": 0,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 2198,
+      "outputTokens": 130,
+      "costUsd": 0.000272
+    },
+    {
+      "latencyMs": 0.2,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 2190,
+      "outputTokens": 130,
+      "costUsd": 0.000271
+    },
+    {
+      "latencyMs": 0.1,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 2202,
+      "outputTokens": 130,
+      "costUsd": 0.000272
+    },
+    {
+      "latencyMs": 0,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 2198,
+      "outputTokens": 130,
+      "costUsd": 0.000272
+    },
+    {
+      "latencyMs": 0,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 2194,
+      "outputTokens": 130,
+      "costUsd": 0.000271
+    },
+    {
+      "latencyMs": 0.1,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 2198,
+      "outputTokens": 130,
+      "costUsd": 0.000272
+    },
+    {
+      "latencyMs": 0,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 2190,
+      "outputTokens": 130,
+      "costUsd": 0.000271
+    },
+    {
+      "latencyMs": 0,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 2190,
+      "outputTokens": 130,
+      "costUsd": 0.000271
+    },
+    {
+      "latencyMs": 0,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 2194,
+      "outputTokens": 130,
+      "costUsd": 0.000271
+    },
+    {
+      "latencyMs": 0,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 2188,
+      "outputTokens": 130,
+      "costUsd": 0.000271
+    },
+    {
+      "latencyMs": 0,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 2198,
+      "outputTokens": 130,
+      "costUsd": 0.000272
+    },
+    {
+      "latencyMs": 0,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 2190,
+      "outputTokens": 130,
+      "costUsd": 0.000271
+    },
+    {
+      "latencyMs": 0,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 2202,
+      "outputTokens": 130,
+      "costUsd": 0.000272
+    },
+    {
+      "latencyMs": 0,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 2198,
+      "outputTokens": 130,
+      "costUsd": 0.000272
+    },
+    {
+      "latencyMs": 0,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 2194,
+      "outputTokens": 130,
+      "costUsd": 0.000271
+    }
+  ]
+}

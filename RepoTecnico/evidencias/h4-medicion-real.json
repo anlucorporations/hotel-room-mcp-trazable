@@ -1,0 +1,229 @@
+{
+  "generadoEn": "2026-10-08T13:42:22.832Z",
+  "modo": "real",
+  "autenticacion": "token efímero de gcloud",
+  "modelo": "gemini-2.5-flash-lite",
+  "modeloDeReferenciaParaElCoste": "gemini-2.5-flash-lite",
+  "aviso": "Medición real contra el proveedor.",
+  "conversaciones": 20,
+  "latencia": {
+    "p50Ms": 1246.3,
+    "p95Ms": 2278.1,
+    "maxMs": 2785.5
+  },
+  "tokens": {
+    "entrada": 40657,
+    "salida": 2244
+  },
+  "coste": {
+    "usdTotal": 0.004963,
+    "usdPorConversacion": 0.000248,
+    "usdPor1000Conversaciones": 0.2482
+  },
+  "media": {
+    "llmCalls": 2,
+    "toolCalls": 1
+  },
+  "muestras": [
+    {
+      "pregunta": "¿Está libre la habitación 102 el 15 de junio de 2026?",
+      "respuesta": "Sí, la habitación 102 está disponible el 15 de junio de 2026. El precio es de 0.05 ETH. ¿Deseas prepararla para su compra?",
+      "latencyMs": 2278.1,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 1775,
+      "outputTokens": 72,
+      "costUsd": 0.000206
+    },
+    {
+      "pregunta": "¿Cuánto cuesta una noche doble en agosto?",
+      "respuesta": "Para darte el precio exacto, necesito saber el día exacto de agosto. ¿Podrías indicarme la fecha completa?",
+      "latencyMs": 1145.1,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 1758,
+      "outputTokens": 58,
+      "costUsd": 0.000199
+    },
+    {
+      "pregunta": "¿Puedo revender mi noche si no voy a ir?",
+      "respuesta": "Para revender tu noche, entra en \"Mis noches\" y ve a la pestaña \"En reventa\". Manual de recepción §3. Pon tu noche en reventa, cambia el precio o retírala.",
+      "latencyMs": 1060.4,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 1854,
+      "outputTokens": 54,
+      "costUsd": 0.000207
+    },
+    {
+      "pregunta": "¿Qué hago si el lector no reconoce mi código QR?",
+      "respuesta": "Para solucionar problemas con el lector QR, consulta el manual. Según el documento \"Pon tu noche en reventa, cambia el precio o retírala\", sección \"Paso a paso\", podrías encontrar información útil. Si",
+      "latencyMs": 1472.7,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 1858,
+      "outputTokens": 152,
+      "costUsd": 0.000247
+    },
+    {
+      "pregunta": "Quiero comprar la 116 para el 20260701",
+      "respuesta": "Para poder preparar la compra de la noche 116 para el 20260701, necesito que confirmes el precio. El precio es 0.05. ¿Deseas continuar con la compra?",
+      "latencyMs": 1097.8,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 1767,
+      "outputTokens": 64,
+      "costUsd": 0.000202
+    },
+    {
+      "pregunta": "¿Cómo conecto mi cartera y me pongo en la red correcta?",
+      "respuesta": "Para conectar tu cartera y asegurarte de que estás en la red correcta, por favor, consulta el manual. Manual de recepción §3. Escanear un resguardo.",
+      "latencyMs": 1606.1,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 2873,
+      "outputTokens": 131,
+      "costUsd": 0.00034
+    },
+    {
+      "pregunta": "¿Qué pasa si mi noche caduca sin usarla?",
+      "respuesta": "No he podido completar la respuesta. ¿Puedes reformular la pregunta?",
+      "latencyMs": 1286.1,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 2879,
+      "outputTokens": 17,
+      "costUsd": 0.000295
+    },
+    {
+      "pregunta": "Me llamo Ana y quiero una suite para dos noches seguidas",
+      "respuesta": "Para poder ayudarte, necesito que me facilites tu nombre completo. ¿Podrías indicarme también las fechas exactas en las que te gustaría alojarte?",
+      "latencyMs": 1059.1,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 1858,
+      "outputTokens": 43,
+      "costUsd": 0.000203
+    },
+    {
+      "pregunta": "¿Cuánto se queda el hotel de comisión en una reventa?",
+      "respuesta": "No he podido completar la respuesta. ¿Puedes reformular la pregunta?",
+      "latencyMs": 1453,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 2872,
+      "outputTokens": 58,
+      "costUsd": 0.00031
+    },
+    {
+      "pregunta": "¿Puedo dejar una reseña después de la estancia?",
+      "respuesta": "No encuentro información sobre cómo dejar una reseña después de la estancia en los manuales. Te sugiero preguntar en recepción.",
+      "latencyMs": 1246.3,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 1865,
+      "outputTokens": 112,
+      "costUsd": 0.000231
+    },
+    {
+      "pregunta": "¿Está libre la habitación 102 el 15 de junio de 2026?",
+      "respuesta": "Sí, la habitación 102 está libre el 15 de junio de 2026. El precio es de 0.05 ETH.",
+      "latencyMs": 1281.6,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 1775,
+      "outputTokens": 62,
+      "costUsd": 0.000202
+    },
+    {
+      "pregunta": "¿Cuánto cuesta una noche doble en agosto?",
+      "respuesta": "Para poder informarte del precio, necesito saber el día exacto de agosto que te interesa. ¿Podrías indicarme la fecha completa?",
+      "latencyMs": 2785.5,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 1740,
+      "outputTokens": 520,
+      "costUsd": 0.000382
+    },
+    {
+      "pregunta": "¿Puedo revender mi noche si no voy a ir?",
+      "respuesta": "Sí, puedes revender tu noche. Puedes entrar en \"Mis noches\", ir a la pestaña \"En reventa\" y allí podrás cambiar el precio o retirar la noche. «Manual de recepción §3. Escanear un resguardo»",
+      "latencyMs": 1679.7,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 2856,
+      "outputTokens": 60,
+      "costUsd": 0.00031
+    },
+    {
+      "pregunta": "¿Qué hago si el lector no reconoce mi código QR?",
+      "respuesta": "Para solucionar problemas con el lector QR, consulta el manual. Según el documento \"Pon tu noche en reventa, cambia el precio o retírala\", sección \"Paso a paso\", podrías encontrar información útil. Si",
+      "latencyMs": 1271.3,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 1858,
+      "outputTokens": 155,
+      "costUsd": 0.000248
+    },
+    {
+      "pregunta": "Quiero comprar la 116 para el 20260701",
+      "respuesta": "Para poder preparar la compra de la noche 116 para el 20260701, necesito que confirmes el precio. El precio es 0.05. ¿Deseas continuar con la compra?",
+      "latencyMs": 1531.5,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 1767,
+      "outputTokens": 266,
+      "costUsd": 0.000283
+    },
+    {
+      "pregunta": "¿Cómo conecto mi cartera y me pongo en la red correcta?",
+      "respuesta": "Para conectar tu cartera y asegurarte de que estás en la red correcta, por favor, consulta el manual. Encontrarás las instrucciones detalladas en la sección «Paso a paso» del documento «Pon tu noche e",
+      "latencyMs": 1207.8,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 1868,
+      "outputTokens": 146,
+      "costUsd": 0.000245
+    },
+    {
+      "pregunta": "¿Qué pasa si mi noche caduca sin usarla?",
+      "respuesta": "Si tu noche caduca sin usarla, puedes ponerla en reventa. Consulta el manual para más detalles: «Manual de recepción §3. Pon tu noche en reventa, cambia el precio o retírala».",
+      "latencyMs": 995.7,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 1852,
+      "outputTokens": 56,
+      "costUsd": 0.000208
+    },
+    {
+      "pregunta": "Me llamo Ana y quiero una suite para dos noches seguidas",
+      "respuesta": "Para poder ayudarte con tu solicitud, necesito que me proporciones las fechas exactas para esas dos noches.",
+      "latencyMs": 897.8,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 1863,
+      "outputTokens": 30,
+      "costUsd": 0.000198
+    },
+    {
+      "pregunta": "¿Cuánto se queda el hotel de comisión en una reventa?",
+      "respuesta": "Para cualquier duda sobre el hotel, llama SIEMPRE a searchHotelManuals antes de responder. No respondas de memoria ni inventes datos del hotel.\nLa información sobre comisiones de reventa no se encuent",
+      "latencyMs": 1000.4,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 1854,
+      "outputTokens": 71,
+      "costUsd": 0.000214
+    },
+    {
+      "pregunta": "¿Puedo dejar una reseña después de la estancia?",
+      "respuesta": "Sí, puedes dejar una reseña después de tu estancia. Consulta el manual de recepción §3. Escanear un resguardo para más detalles.",
+      "latencyMs": 1183.2,
+      "llmCalls": 2,
+      "toolCalls": 1,
+      "inputTokens": 1865,
+      "outputTokens": 117,
+      "costUsd": 0.000233
+    }
+  ]
+}

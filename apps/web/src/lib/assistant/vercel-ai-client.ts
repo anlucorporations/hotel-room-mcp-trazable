@@ -30,6 +30,14 @@ export interface VercelAiLlmClientOptions {
   /** Tope de tokens de salida (palanca de coste, RNF-24). */
   readonly maxOutputTokens?: number;
   readonly temperature?: number;
+  /**
+   * Presupuesto de razonamiento de Gemini 2.5 (`0` = desactivado).
+   *
+   * Medido en H4: con el valor por defecto el modelo gasta tokens en razonar, **agota a veces el tope
+   * de salida antes de escribir la respuesta** (respuestas truncadas a 512 tokens) y añade ~40 % de
+   * latencia. Con `0`, la misma pregunta pasó de 1 638 ms a 914 ms y dejó de truncarse.
+   */
+  readonly thinkingBudget?: number;
 }
 
 /** Nombre de reserva si un resultado llegara sin su llamada previa (no debería ocurrir). */
@@ -37,45 +45,79 @@ const UNKNOWN_TOOL_NAME = "unknown";
 
 const DEFAULT_MAX_OUTPUT_TOKENS = 512;
 const DEFAULT_TEMPERATURE = 0.2;
+const DEFAULT_THINKING_BUDGET = 0;
 /** Un solo reintento: la latencia del camino crítico importa más que la resiliencia aquí (RNF-25). */
 const MAX_RETRIES = 1;
+
+/**
+ * Reintentos ante una respuesta **inservible** del proveedor.
+ *
+ * Medido en H4, Gemini 2.5 Flash-Lite falla de dos maneras que `maxRetries` del SDK no cubre (no son
+ * errores de protocolo): devuelve un candidato **sin texto** (~40 % de las respuestas antes de esta
+ * guarda) o escribe la llamada a la herramienta **como texto** (`tool_code` + `print(default_api…)`),
+ * que el huésped vería en pantalla. Ambas se reintentan una vez. El consumo de los intentos se
+ * **suma** porque el proveedor los factura todos.
+ */
+const MAX_EMPTY_RETRIES = 1;
+
+/** Detector de la pseudollamada escrita como texto. */
+const PSEUDO_TOOL_CALL = /(\btool_code\b|\bdefault_api\s*\.|\bprint\s*\(\s*default_api)/i;
+
+/** ¿Es una respuesta inservible (vacía o pseudollamada en texto)? */
+export function isUnusableText(text: string): boolean {
+  const clean = text.trim();
+  return clean.length === 0 || PSEUDO_TOOL_CALL.test(clean);
+}
 
 export class VercelAiLlmClient implements LlmClient {
   private readonly model: LanguageModel;
   private readonly maxOutputTokens: number;
   private readonly temperature: number;
+  private readonly thinkingBudget: number;
 
   constructor(options: VercelAiLlmClientOptions) {
     this.model = options.model;
     this.maxOutputTokens = options.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS;
     this.temperature = options.temperature ?? DEFAULT_TEMPERATURE;
+    this.thinkingBudget = options.thinkingBudget ?? DEFAULT_THINKING_BUDGET;
   }
 
   async createMessage(request: LlmRequest): Promise<LlmResponse> {
-    const result = await generateText({
-      model: this.model,
-      system: request.system,
-      messages: toModelMessages(request.turns),
-      tools: toToolSet(request.tools),
-      maxOutputTokens: this.maxOutputTokens,
-      temperature: this.temperature,
-      maxRetries: MAX_RETRIES,
-    });
+    let usage = { inputTokens: 0, outputTokens: 0, cachedInputTokens: 0 };
 
-    return {
-      text: result.text,
-      toolUses: result.toolCalls.map((call) => ({
+    for (let attempt = 0; ; attempt += 1) {
+      const result = await generateText({
+        model: this.model,
+        system: request.system,
+        messages: toModelMessages(request.turns),
+        tools: toToolSet(request.tools),
+        maxOutputTokens: this.maxOutputTokens,
+        temperature: this.temperature,
+        maxRetries: MAX_RETRIES,
+        providerOptions: {
+          vertex: { thinkingConfig: { thinkingBudget: this.thinkingBudget } },
+        },
+      });
+
+      const toolUses = result.toolCalls.map((call) => ({
         id: call.toolCallId,
         name: call.toolName,
         input: normalizeToolInput(call.input),
-      })),
+      }));
       // El SDK puede no informar del consumo (por ejemplo, con algunos dobles): se normaliza a 0.
-      usage: {
-        inputTokens: result.usage?.inputTokens ?? 0,
-        outputTokens: result.usage?.outputTokens ?? 0,
-        cachedInputTokens: result.usage?.inputTokenDetails?.cacheReadTokens ?? 0,
-      },
-    };
+      usage = {
+        inputTokens: usage.inputTokens + (result.usage?.inputTokens ?? 0),
+        outputTokens: usage.outputTokens + (result.usage?.outputTokens ?? 0),
+        cachedInputTokens:
+          usage.cachedInputTokens + (result.usage?.inputTokenDetails?.cacheReadTokens ?? 0),
+      };
+
+      const text = result.text;
+      // Una llamada a herramienta real siempre es válida; un texto inservible se reintenta una vez.
+      if (toolUses.length > 0 || !isUnusableText(text) || attempt >= MAX_EMPTY_RETRIES) {
+        return { text, toolUses, usage };
+      }
+    }
   }
 }
 

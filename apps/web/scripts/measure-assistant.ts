@@ -19,10 +19,13 @@
  * de nuestro código (orquestación, presupuesto, saneado y serialización) y sirve para validar el
  * arnés y para tener una línea base con la que comparar cuando haya credenciales.
  */
+import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createVertex } from "@ai-sdk/google-vertex";
 import { createLlmClient } from "../src/lib/assistant/llm-provider";
+import { VercelAiLlmClient } from "../src/lib/assistant/vercel-ai-client";
 import { estimateCostUsd } from "../src/lib/assistant/pricing";
 import { runAssistant } from "../src/lib/assistant/orchestrator";
 import { estimateTokens } from "../src/lib/assistant/token-budget";
@@ -37,6 +40,9 @@ const REPO_ROOT = join(HERE, "..", "..", "..");
 const EVIDENCIAS = join(REPO_ROOT, "RepoTecnico", "evidencias");
 
 const MOCK = process.argv.includes("--mock");
+const PROJECT = process.env.GOOGLE_VERTEX_PROJECT ?? process.env.GOOGLE_CLOUD_PROJECT ?? "hotel-mcp";
+const LOCATION = process.env.VERTEX_LOCATION ?? "europe-west1";
+const MODEL = process.env.VERTEX_MODEL ?? "gemini-2.5-flash-lite";
 const RUNS = Number(process.argv.find((arg) => /^--runs=\d+$/.test(arg))?.slice(7) ?? 20);
 
 /** Conversaciones representativas: dudas de hotel, disponibilidad, compra, reventa y estancia. */
@@ -126,6 +132,10 @@ function mockClient(): LlmClient {
 }
 
 interface Sample {
+  /** Pregunta medida: hace auditable el informe (permite ver qué casos no usaron herramienta). */
+  readonly pregunta: string;
+  /** Respuesta del asistente (recortada): permite auditar si inventó o pidió aclaración. */
+  readonly respuesta: string;
   readonly latencyMs: number;
   readonly llmCalls: number;
   readonly toolCalls: number;
@@ -142,8 +152,9 @@ function percentile(values: readonly number[], p: number): number {
 }
 
 async function main(): Promise<void> {
-  const client: LlmClient = MOCK ? mockClient() : await resolveRealClient();
-  const model = MOCK ? "mock-determinista" : process.env.VERTEX_MODEL ?? "gemini-2.5-flash-lite";
+  const resolved = MOCK ? { client: mockClient(), via: "mock" } : await resolveRealClient();
+  const client = resolved.client;
+  const model = MOCK ? "mock-determinista" : MODEL;
   // En modo mock el modelo no factura, pero el VOLUMEN de tokens sí es el real de nuestro código:
   // se estima el coste con la tarifa del modelo de referencia para poder comparar con RNF-22.
   const priceModel = process.env.VERTEX_MODEL ?? "gemini-2.5-flash-lite";
@@ -168,6 +179,8 @@ async function main(): Promise<void> {
     );
     const latencyMs = performance.now() - startedAt;
     samples.push({
+      pregunta: question,
+      respuesta: result.reply.slice(0, 200),
       latencyMs: Number(latencyMs.toFixed(1)),
       llmCalls: result.llmCalls,
       toolCalls: result.domainToolCalls,
@@ -184,6 +197,7 @@ async function main(): Promise<void> {
   const report = {
     generadoEn: new Date().toISOString(),
     modo: MOCK ? "mock" : "real",
+    autenticacion: resolved.via,
     modelo: model,
     modeloDeReferenciaParaElCoste: priceModel,
     aviso: MOCK
@@ -222,16 +236,67 @@ async function main(): Promise<void> {
   }
 }
 
-/** Compone el cliente real o explica por qué no se puede medir todavía. */
-async function resolveRealClient(): Promise<LlmClient> {
+/** Ruta de `gcloud` disponible en esta máquina (el snap está roto; hay un SDK en el HOME). */
+function gcloudBin(): string | null {
+  for (const candidate of [
+    process.env.GCLOUD_BIN,
+    "gcloud",
+    "/home/dsh/google-cloud-sdk/bin/gcloud",
+  ]) {
+    if (!candidate) continue;
+    try {
+      execFileSync(candidate, ["--version"], { stdio: "ignore" });
+      return candidate;
+    } catch {
+      /* se prueba el siguiente */
+    }
+  }
+  return null;
+}
+
+/** Token efímero (1 h) de la sesión de `gcloud`, solo para esta medición. */
+function gcloudToken(): string | null {
+  const bin = gcloudBin();
+  if (!bin) return null;
+  try {
+    return execFileSync(bin, ["auth", "print-access-token"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Compone el cliente real.
+ *
+ * 1. **Vía de producción**: `createLlmClient` (Vertex con la identidad de la carga de trabajo: ADC o
+ *    WIF). Es la que se usará en Cloud Run.
+ * 2. **Vía de medición local**: si no hay credencial de carga de trabajo, se inyecta un **token
+ *    efímero de `gcloud`** como cabecera del proveedor. Así se mide el modelo real ejecutando el
+ *    adaptador y el orquestador **de producción**, sin escribir credenciales en disco, sin crear
+ *    claves de servicio y sin conceder permisos de Vertex a esta instancia.
+ */
+async function resolveRealClient(): Promise<{ client: LlmClient; via: string }> {
   const result = await createLlmClient(process.env);
-  if (!result.ok) {
+  if (result.ok) return { client: result.client, via: "identidad de carga de trabajo (ADC/WIF)" };
+
+  const token = process.env.VERTEX_ACCESS_TOKEN ?? gcloudToken();
+  if (!token) {
     throw new Error(
       `no se puede medir con el modelo real: ${result.reason}. ` +
-        "Habilita aiplatform.googleapis.com y las credenciales (hito H5), o usa --mock.",
+        "Habilita aiplatform.googleapis.com y define VERTEX_ACCESS_TOKEN (o usa --mock).",
     );
   }
-  return result.client;
+
+  const model = createVertex({
+    project: PROJECT,
+    location: LOCATION,
+    headers: { Authorization: `Bearer ${token}` },
+  })(MODEL);
+
+  return { client: new VercelAiLlmClient({ model }), via: "token efímero de gcloud" };
 }
 
 main().catch((error: unknown) => {

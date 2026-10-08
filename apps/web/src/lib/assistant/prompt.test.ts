@@ -23,6 +23,13 @@ describe("SYSTEM_PROMPT — alcance del dominio", () => {
     expect(SYSTEM_PROMPT).toMatch(/no respondas de memoria/i);
   });
 
+  it("no deja fuera los procedimientos propios del hotel (cartera, red, QR, extras)", () => {
+    // Defecto detectado en la medición de H4: el modelo clasificaba «conectar la cartera» como tema
+    // ajeno y respondía «no puedo ayudarte con eso», siendo el caso 02 del manual del huésped.
+    expect(SYSTEM_PROMPT).toMatch(/cartera y red/i);
+    expect(SYSTEM_PROMPT).toMatch(/SÍ son procedimientos del hotel/i);
+  });
+
   it("mantiene el rechazo de lo que no tiene que ver con el hotel", () => {
     expect(SYSTEM_PROMPT).toMatch(/no tiene relación con el hotel/i);
     expect(SYSTEM_PROMPT).toMatch(/recházala/i);
