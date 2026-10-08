@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { activeChain, contractAddress } from "@/config/chain";
 import { serverPublicClient } from "@/lib/server-client";
-import { AnthropicLlmClient } from "@/lib/assistant/anthropic-client";
+import { createLlmClient } from "@/lib/assistant/llm-provider";
 import { McpToolGateway } from "@/lib/assistant/mcp-gateway";
 import { createTxValidator } from "@/lib/assistant/chain-pricing";
 import { runAssistant } from "@/lib/assistant/orchestrator";
@@ -13,7 +13,6 @@ import type { ChatMessage } from "@/lib/assistant/types";
 export const dynamic = "force-dynamic";
 
 const DEFAULT_MCP_URL = "http://127.0.0.1:8788/mcp";
-const DEFAULT_MODEL = "claude-sonnet-4-6";
 const MAX_MESSAGES = 40;
 /** Tope total de caracteres de la conversación enviada al LLM por petición (presupuesto duro). */
 const MAX_TOTAL_CHARS = 24_000;
@@ -89,14 +88,16 @@ const unavailable = (reason: string): NextResponse => {
 };
 
 /**
- * Orquestación del asistente IA server-side (RF-12, CU-08, docs/SRS.md §9). El LLM (Anthropic) conversa con el
- * MCP por HTTP; el secreto `ANTHROPIC_API_KEY` solo vive aquí. Toda compra preparada se valida
- * server-side antes de devolverse. Cualquier fallo (sin clave, MCP/RPC caídos) → 503 para que
- * la UI muestre `assistant-unavailable` y ofrezca la navegación manual (08e).
+ * Orquestación del asistente IA server-side (RF-12, CU-08, docs/SRS.md §9). El LLM conversa con el
+ * MCP por HTTP a través del puerto `LlmClient`; qué proveedor se usa lo decide `createLlmClient`
+ * (v3: Vertex AI Gemini en `europe-west1`, sin secretos nuevos). Toda compra preparada se valida
+ * server-side antes de devolverse. Cualquier fallo (configuración ausente, MCP/RPC caídos) → 503
+ * para que la UI muestre `assistant-unavailable` y ofrezca la navegación manual (08e).
  */
 export async function POST(request: Request): Promise<NextResponse> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return unavailable("falta ANTHROPIC_API_KEY");
+  // Composición del LLM primero: si falta configuración se responde 503 sin gastar tokens.
+  const llm = await createLlmClient(process.env);
+  if (!llm.ok) return unavailable(llm.reason);
 
   let body: AssistantBody;
   try {
@@ -125,13 +126,12 @@ export async function POST(request: Request): Promise<NextResponse> {
     sharedSecret: process.env.MCP_SHARED_SECRET,
   });
   try {
-    const llm = new AnthropicLlmClient({ apiKey, model: process.env.ANTHROPIC_MODEL ?? DEFAULT_MODEL });
     const validatePreparedTx = createTxValidator(serverPublicClient(), {
       contractAddress,
       chainId: activeChain.id,
     });
     const system = buildSystemPrompt(new Date(), wallet);
-    const result = await runAssistant({ llm, gateway, validatePreparedTx, system }, messages);
+    const result = await runAssistant({ llm: llm.client, gateway, validatePreparedTx, system }, messages);
     // Red de seguridad anti-fuga del system prompt (UX#30): redacta una reproducción literal.
     return NextResponse.json({ ...result, reply: redactPromptLeak(result.reply, REDACTED_REPLY) });
   } catch (error) {

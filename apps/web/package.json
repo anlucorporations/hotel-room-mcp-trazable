@@ -14,15 +14,18 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "manuals": "node scripts/build-manuals.mjs",
-    "clean": "rm -rf .next out .turbo coverage *.tsbuildinfo"
+    "clean": "rm -rf .next out .turbo coverage *.tsbuildinfo",
+    "huesped": "node scripts/build-huesped-manuals.mjs"
   },
   "dependencies": {
+    "@ai-sdk/google-vertex": "^5.0.104",
     "@anthropic-ai/sdk": "^0.100.1",
     "@coinbase/wallet-sdk": "^4.4.0",
     "@hotel/shared": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@tanstack/react-query": "^5.62.7",
     "@walletconnect/ethereum-provider": "^2.25.0",
+    "ai": "^7.0.130",
     "next": "^14.2.20",
     "next-intl": "^3.26.3",
     "qrcode": "^1.5.4",
