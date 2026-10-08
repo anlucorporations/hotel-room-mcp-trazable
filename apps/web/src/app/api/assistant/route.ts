@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { activeChain, contractAddress } from "@/config/chain";
 import { serverPublicClient } from "@/lib/server-client";
 import { createLlmClient } from "@/lib/assistant/llm-provider";
+import { MonthlyBudget, budgetConfig, estimateCostUsd, metricsLogLine } from "@/lib/assistant/metrics";
 import { sanitizeConversation } from "@/lib/assistant/pii-sanitizer";
 import { McpToolGateway } from "@/lib/assistant/mcp-gateway";
 import { createTxValidator } from "@/lib/assistant/chain-pricing";
@@ -15,8 +16,12 @@ export const dynamic = "force-dynamic";
 
 const DEFAULT_MCP_URL = "http://127.0.0.1:8788/mcp";
 const MAX_MESSAGES = 40;
-/** Tope total de caracteres de la conversación enviada al LLM por petición (presupuesto duro). */
-const MAX_TOTAL_CHARS = 24_000;
+/**
+ * Tope de caracteres de la conversación entrante. Es un **prefiltro barato**: el presupuesto que de
+ * verdad manda es el de tokens (RNF-24), que se aplica dentro del orquestador porque necesita conocer
+ * los esquemas de las herramientas.
+ */
+const MAX_TOTAL_CHARS = 12_000;
 /** Respuesta neutra cuando el filtro anti-fuga redacta la salida (UX#30). */
 const REDACTED_REPLY =
   "Solo puedo ayudarte con disponibilidad, precios y la compra de noches del hotel.";
@@ -27,6 +32,14 @@ const REDACTED_REPLY =
  * a un almacén compartido (Redis/Upstash) tras la misma interfaz {@link RateLimiter}.
  */
 const rateLimiter: RateLimiter = new InMemoryRateLimiter();
+
+/**
+ * Presupuesto mensual estimado (RNF-22). En memoria del proceso y de instancia única: avisa del gasto,
+ * no lo contabiliza (la fuente de verdad es la facturación de GCP). En modo `soft` solo registra; en
+ * `hard` corta con 503 cuando ya se ha superado el techo.
+ */
+const budgetSettings = budgetConfig(process.env);
+const monthlyBudget = new MonthlyBudget(budgetSettings.budgetUsd, budgetSettings.mode);
 
 /** Extrae la IP del cliente de las cabeceras del proxy (`x-forwarded-for` primero, luego `x-real-ip`). */
 function clientIp(request: Request): string {
@@ -82,6 +95,12 @@ function conversationChars(messages: readonly ChatMessage[]): number {
   return messages.reduce((sum, m) => sum + m.text.length, 0);
 }
 
+/** Entero positivo del entorno, o `undefined` para dejar el valor por defecto. */
+function positiveInt(raw: string | undefined): number | undefined {
+  const value = Number.parseInt(raw ?? "", 10);
+  return Number.isFinite(value) && value > 0 ? value : undefined;
+}
+
 const unavailable = (reason: string): NextResponse => {
   // No se filtra el detalle al cliente; se registra en el servidor (08e → la UI ofrece manual).
   console.error("[assistant] no disponible:", reason);
@@ -131,6 +150,12 @@ export async function POST(request: Request): Promise<NextResponse> {
       contractAddress,
       chainId: activeChain.id,
     });
+    // En modo duro, si el mes ya está agotado no se llega a llamar al modelo.
+    if (budgetSettings.mode === "hard" && monthlyBudget.spent() >= budgetSettings.budgetUsd) {
+      console.error("[assistant] presupuesto mensual agotado:", monthlyBudget.spent());
+      return NextResponse.json({ error: "ASSISTANT_BUDGET_EXCEEDED" }, { status: 503 });
+    }
+
     const system = buildSystemPrompt(new Date(), wallet);
     // RNF-27: el modelo es el único destinatario externo de texto libre del huésped, así que la PII
     // se enmascara justo aquí, en el punto de salida, y sobre TODO el historial (el proveedor recibe
@@ -139,12 +164,50 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (sanitized.redactions.length > 0) {
       console.warn("[assistant] PII enmascarada:", sanitized.redactions.join(", "));
     }
+    const startedAt = performance.now();
     const result = await runAssistant(
-      { llm: llm.client, gateway, validatePreparedTx, system },
+      {
+        llm: llm.client,
+        gateway,
+        validatePreparedTx,
+        system,
+        maxInputTokens: positiveInt(process.env.ASSISTANT_MAX_INPUT_TOKENS),
+        maxTurns: positiveInt(process.env.ASSISTANT_MAX_TURNS),
+      },
       sanitized.messages,
     );
+    const latencyMs = Math.round(performance.now() - startedAt);
+
+    // Telemetría (RNF-22/RNF-24/RNF-25): una línea por petición, sin PII ni contenido. Se usa `warn`
+    // porque el lint del proyecto solo permite `warn`/`error`; es una línea informativa.
+    const costUsd = estimateCostUsd(llm.model, result.usage, process.env);
+    const decision = monthlyBudget.record(costUsd);
+    console.warn(
+      metricsLogLine({
+        provider: llm.provider,
+        model: llm.model,
+        latencyMs,
+        llmCalls: result.llmCalls,
+        toolCalls: result.domainToolCalls,
+        usage: result.usage,
+        costUsd,
+        redactions: sanitized.redactions,
+        droppedTurns: result.droppedTurns,
+      }),
+    );
+    if (decision.exceeded) {
+      console.warn(
+        `[assistant] presupuesto mensual superado: ${decision.spentUsd} de ${decision.budgetUsd} USD`,
+      );
+    }
+
     // Red de seguridad anti-fuga del system prompt (UX#30): redacta una reproducción literal.
-    return NextResponse.json({ ...result, reply: redactPromptLeak(result.reply, REDACTED_REPLY) });
+    // La respuesta conserva el contrato de siempre: la telemetría no sale al cliente.
+    return NextResponse.json({
+      reply: redactPromptLeak(result.reply, REDACTED_REPLY),
+      domainToolCalls: result.domainToolCalls,
+      preparedPurchase: result.preparedPurchase,
+    });
   } catch (error) {
     return unavailable(error instanceof Error ? error.message : "error desconocido");
   } finally {

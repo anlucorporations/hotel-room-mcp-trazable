@@ -2,9 +2,12 @@ import type { PurchaseTxData } from "@hotel/shared/domain";
 import type { LlmClient } from "./llm";
 import type { ToolGateway } from "./tools-gateway";
 import type { PreparedTxCheck } from "./validate-tx";
+import { addUsage, EMPTY_USAGE } from "./metrics";
+import { DEFAULT_MAX_INPUT_TOKENS, DEFAULT_MAX_TURNS, applyInputBudget } from "./token-budget";
 import type {
   AssistantResult,
   ChatMessage,
+  LlmUsage,
   PreparedPurchase,
   ToolResult,
   ToolUse,
@@ -20,12 +23,15 @@ export interface AssistantDeps {
   readonly validatePreparedTx: ValidatePreparedTx;
   /** Prompt de sistema ya compuesto (con contexto temporal); ver `buildSystemPrompt`. */
   readonly system: string;
-  /** Tope de rondas de herramientas (anti-bucle). */
+  /** Tope de rondas de herramientas (anti-bucle y palanca de coste: cada ronda se factura). */
   readonly maxToolRounds?: number;
+  /** Presupuesto de entrada (RNF-24). Se aplica DESPUÉS de conocer los esquemas de herramientas. */
+  readonly maxInputTokens?: number;
+  readonly maxTurns?: number;
 }
 
 const BUILD_PURCHASE_TOOL = "buildPurchaseTx";
-const DEFAULT_MAX_ROUNDS = 4;
+const DEFAULT_MAX_ROUNDS = 2;
 
 /**
  * Orquesta la conversación del asistente (CU-08, docs/SRS.md §9): ofrece al LLM las herramientas del MCP,
@@ -42,7 +48,18 @@ export async function runAssistant(
   messages: readonly ChatMessage[],
 ): Promise<AssistantResult> {
   const tools = await deps.gateway.listTools();
-  const turns: Turn[] = messages.map((m) =>
+
+  // El presupuesto se aplica aquí, y no en la ruta, porque los esquemas de las herramientas (que
+  // viajan en CADA llamada) solo se conocen después de descubrirlas en el MCP.
+  const budget = applyInputBudget({
+    system: deps.system,
+    toolSchemas: JSON.stringify(tools),
+    messages,
+    maxInputTokens: deps.maxInputTokens ?? DEFAULT_MAX_INPUT_TOKENS,
+    maxTurns: deps.maxTurns ?? DEFAULT_MAX_TURNS,
+  });
+
+  const turns: Turn[] = budget.messages.map((m) =>
     m.role === "assistant"
       ? { role: "assistant", text: m.text, toolUses: [] }
       : { role: "user", text: m.text },
@@ -51,11 +68,23 @@ export async function runAssistant(
 
   let domainToolCalls = 0;
   let preparedPurchase: PreparedPurchase | null = null;
+  // Consumo agregado de la petición (RNF-24): cada ronda de herramientas es una llamada facturable.
+  let usage: LlmUsage = EMPTY_USAGE;
+  let llmCalls = 0;
 
   for (let round = 0; round < maxRounds; round++) {
     const res = await deps.llm.createMessage({ system: deps.system, turns, tools });
+    llmCalls += 1;
+    usage = addUsage(usage, res.usage ?? EMPTY_USAGE);
     if (res.toolUses.length === 0) {
-      return { reply: res.text, domainToolCalls, preparedPurchase };
+      return {
+        reply: res.text,
+        domainToolCalls,
+        preparedPurchase,
+        llmCalls,
+        usage,
+        droppedTurns: budget.droppedTurns,
+      };
     }
 
     turns.push({ role: "assistant", text: res.text, toolUses: res.toolUses });
@@ -73,7 +102,16 @@ export async function runAssistant(
 
   // Excedió el tope de rondas: cierre forzado sin más herramientas.
   const closing = await deps.llm.createMessage({ system: deps.system, turns, tools: [] });
-  return { reply: closing.text, domainToolCalls, preparedPurchase };
+  llmCalls += 1;
+  usage = addUsage(usage, closing.usage ?? EMPTY_USAGE);
+  return {
+    reply: closing.text,
+    domainToolCalls,
+    preparedPurchase,
+    llmCalls,
+    usage,
+    droppedTurns: budget.droppedTurns,
+  };
 }
 
 async function dispatchTool(

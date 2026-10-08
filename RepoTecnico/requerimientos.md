@@ -179,10 +179,10 @@ vigente (máximo anterior: RF-55, RNF-21, RT-12).
 
 | ID | Descripción | Criterio de aceptación | Estado |
 |---|---|---|---|
-| **RNF-22** | Coste incremental del asistente ≤ 5 USD/mes con 1 000 conversaciones/mes. | Facturación de GCP + contador de tokens | Pendiente (H4) |
+| **RNF-22** | Coste incremental del asistente ≤ 5 USD/mes con 1 000 conversaciones/mes. | Facturación de GCP + contador de tokens | **Estimado en H4**: 0,27 USD/1 000 conversaciones (≈18× de margen). La cifra facturada se confirma en H5 |
 | **RNF-23** | Cero recursos nuevos de infraestructura (sin GPU, sin base vectorial, sin Cloud SQL adicional). | Inventario de recursos GCP antes/después | Pendiente (H5) |
-| **RNF-24** | Presupuesto de tokens por petición: entrada ≤ 6 000 y salida ≤ 512. | Test unitario del presupuesto + telemetría | **Parcial**: tope de salida 512 (H1) y brevedad explícita en el prompt (H3); la telemetría es de H4 |
-| **RNF-25** | Latencia p95 ≤ 2,5 s con instancias calientes; se documenta el efecto del *cold start*. | Medición en Cloud Run | Pendiente (H4) |
+| **RNF-24** | Presupuesto de tokens por petición: entrada ≤ 6 000 y salida ≤ 512. | Test unitario del presupuesto + telemetría | **✅ Cumplido en H4**: presupuesto de entrada con ventana deslizante, tope de salida 512, tope de 2 rondas de herramientas y telemetría por petición |
+| **RNF-25** | Latencia p95 ≤ 2,5 s con instancias calientes; se documenta el efecto del *cold start*. | Medición en Cloud Run | **Instrumentado en H4** (latencia por petición en la telemetría y arnés de medición). El p95 real se mide en H5 |
 | **RNF-26** | Sin PII en logs ni en el índice de conocimiento; los prompts no se registran. | Auditoría de logs | **Parcial (H2/H2.1)**: el índice excluye documentación interna, el generador rechaza credenciales y un guardián impide reintroducirlas |
 | **RNF-27** | Sanitización de PII antes de enviar la conversación al LLM (defensa en profundidad): correo, teléfono, DNI/NIE, IBAN y nombres presentados. | Test unitario del saneador + prueba de integración en el endpoint | **✅ Cumplido en H3** |
 

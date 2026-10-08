@@ -48,9 +48,21 @@ export interface LlmRequest {
   readonly tools: readonly ToolDescriptor[];
 }
 
+/**
+ * Consumo de tokens de una llamada al modelo. Opcional en el puerto para no romper los dobles de
+ * test (el arnés de replay de ADR-23 no siempre informa de consumo).
+ */
+export interface LlmUsage {
+  readonly inputTokens: number;
+  readonly outputTokens: number;
+  /** Tokens de entrada servidos desde la caché del proveedor (0 si no aplica). */
+  readonly cachedInputTokens: number;
+}
+
 export interface LlmResponse {
   readonly text: string;
   readonly toolUses: readonly ToolUse[];
+  readonly usage?: LlmUsage;
 }
 
 /** Mensaje de la conversación tal como llega de la UI. */
@@ -71,4 +83,10 @@ export interface AssistantResult {
   readonly domainToolCalls: number;
   /** Compra preparada y verificada, o `null` si no procede / no validó. */
   readonly preparedPurchase: PreparedPurchase | null;
+  /** Nº de llamadas al modelo (rondas de herramientas más el cierre). */
+  readonly llmCalls: number;
+  /** Consumo de tokens sumado de todas las llamadas de la petición (RNF-24). */
+  readonly usage: LlmUsage;
+  /** Turnos descartados por el presupuesto de entrada (RNF-24). */
+  readonly droppedTurns: number;
 }

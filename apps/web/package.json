@@ -15,7 +15,8 @@
     "test:e2e": "playwright test",
     "manuals": "node scripts/build-manuals.mjs",
     "clean": "rm -rf .next out .turbo coverage *.tsbuildinfo",
-    "huesped": "node scripts/build-huesped-manuals.mjs"
+    "huesped": "node scripts/build-huesped-manuals.mjs",
+    "measure:assistant": "tsx scripts/measure-assistant.ts"
   },
   "dependencies": {
     "@ai-sdk/google-vertex": "^5.0.104",

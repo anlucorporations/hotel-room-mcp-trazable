@@ -69,6 +69,12 @@ export class VercelAiLlmClient implements LlmClient {
         name: call.toolName,
         input: normalizeToolInput(call.input),
       })),
+      // El SDK puede no informar del consumo (por ejemplo, con algunos dobles): se normaliza a 0.
+      usage: {
+        inputTokens: result.usage?.inputTokens ?? 0,
+        outputTokens: result.usage?.outputTokens ?? 0,
+        cachedInputTokens: result.usage?.inputTokenDetails?.cacheReadTokens ?? 0,
+      },
     };
   }
 }

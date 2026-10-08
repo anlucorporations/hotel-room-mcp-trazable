@@ -195,3 +195,47 @@ describe("normalizeToolInput", () => {
     expect(normalizeToolInput('"texto"')).toEqual({});
   });
 });
+
+describe("consumo de tokens (H4)", () => {
+  it("traslada el consumo del SDK, incluidos los tokens servidos desde caché", async () => {
+    const model = mockModel({
+      doGenerate: {
+        content: [{ type: "text", text: "Hola." }],
+        finishReason: { unified: "stop", raw: "stop" },
+        usage: {
+          inputTokens: { total: 1_234, noCache: 234, cacheRead: 1_000, cacheWrite: 0 },
+          outputTokens: { total: 56, text: 56, reasoning: 0 },
+        },
+        warnings: [],
+      },
+    });
+
+    const response = await new VercelAiLlmClient({ model }).createMessage({
+      system: SYSTEM,
+      turns: [{ role: "user", text: "hola" }],
+      tools: [TOOL],
+    });
+
+    expect(response.usage).toEqual({ inputTokens: 1_234, outputTokens: 56, cachedInputTokens: 1_000 });
+  });
+
+  it("si el modelo no informa del consumo, devuelve ceros en lugar de undefined", async () => {
+    const model = mockModel({
+      doGenerate: {
+        content: [{ type: "text", text: "Hola." }],
+        finishReason: { unified: "stop", raw: "stop" },
+        usage: USAGE,
+        warnings: [],
+      },
+    });
+
+    const response = await new VercelAiLlmClient({ model }).createMessage({
+      system: SYSTEM,
+      turns: [{ role: "user", text: "hola" }],
+      tools: [TOOL],
+    });
+
+    expect(response.usage?.inputTokens).toBe(10);
+    expect(response.usage?.cachedInputTokens).toBe(0);
+  });
+});

@@ -45,7 +45,15 @@ export class AnthropicLlmClient implements LlmClient {
         toolUses.push({ id: block.id, name: block.name, input: block.input as Record<string, unknown> });
       }
     }
-    return { text, toolUses };
+    return {
+      text,
+      toolUses,
+      usage: {
+        inputTokens: response.usage?.input_tokens ?? 0,
+        outputTokens: response.usage?.output_tokens ?? 0,
+        cachedInputTokens: response.usage?.cache_read_input_tokens ?? 0,
+      },
+    };
   }
 }
 

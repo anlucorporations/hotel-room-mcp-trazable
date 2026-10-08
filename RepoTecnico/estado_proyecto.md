@@ -4042,3 +4042,43 @@ dueño» siguen sin enmascararse. Lo detectaron los propios tests.
 
 **Pendiente de H3 que no es suyo**: el modelo sigue sin desplegar (H5) y el prompt no se ha probado
 contra el modelo real con conversaciones reales (H4, con la medición de coste y latencia).
+
+### 14.11 Fase 3 · Hito H4 — presupuestos, telemetría y medición (2026-10-08) · COMPLETADO (medición real pendiente de H5)
+
+**Objetivo**: que el coste y la latencia del asistente sean **medibles y estén acotados**, no estimados.
+
+| Artefacto | Cambio |
+|---|---|
+| `apps/web/src/lib/assistant/token-budget.ts` | **Nuevo** (RNF-24): estimador de tokens conservador (3,5 car./token) y presupuesto de entrada con **ventana deslizante** de turnos. Nunca recorta un mensaje a medias |
+| `apps/web/src/lib/assistant/metrics.ts` | **Nuevo**: consumo agregado, línea de telemetría JSON sin PII y **presupuesto mensual** en memoria con modos `soft`/`hard` |
+| `apps/web/src/lib/assistant/pricing.ts` | **Nuevo** (RNF-22): tarifas por modelo, sobrescribibles por entorno. Un modelo desconocido usa la tarifa **más cara** para sobreestimar |
+| `types.ts` · `orchestrator.ts` · adaptadores | El puerto `LlmClient` informa del consumo; el orquestador lo agrega por petición y expone `llmCalls`, `usage` y `droppedTurns`. El **tope de rondas de herramientas baja de 4 a 2** (cada ronda se factura) |
+| `route.ts` | Aplica el presupuesto, corta en modo `hard` si el mes está agotado, y registra **una línea por petición** (modelo, tokens, coste, latencia, enmascarados). La respuesta al cliente **no cambia de contrato** |
+| `apps/web/scripts/measure-assistant.ts` | **Nuevo** arnés de medición: N conversaciones, p50/p95, tokens y coste, con informe JSON en `RepoTecnico/evidencias/`. Modo `--mock` sin red y modo real |
+
+**Medición (modo `--mock`, 20 conversaciones)**
+
+| Métrica | Valor |
+|---|---|
+| Tokens de entrada | 43 884 (≈ **2 194 por conversación**, derivados del payload real: prompt, esquemas y turnos) |
+| Tokens de salida | 2 600 (≈ 130 por conversación) |
+| Coste estimado con `gemini-2.5-flash-lite` | **0,27 USD por 1 000 conversaciones** |
+| Margen frente a RNF-22 (≤5 USD/mes) | **≈18×** |
+| Latencia p95 del **código** | 0,2 ms (sin modelo: el mock no tiene red) |
+| Llamadas al modelo por conversación | 2 (una con herramienta y otra de cierre) |
+
+**Lo que esta medición NO es.** El modo `--mock` no mide el modelo: no hay credenciales de GCP ni
+`aiplatform.googleapis.com` habilitado (eso es H5). Mide el **volumen de tokens que construye nuestro
+código** y extrapola con la tarifa real, que es la parte que podemos controlar y donde están las
+palancas (prompt, esquemas, ventana de turnos, rondas). El p95 real y el consumo facturado se miden
+ejecutando el arnés sin `--mock` tras H5.
+
+**Caché de contexto: no implementada, y por qué.** El proveedor `@ai-sdk/google-vertex` **no expone**
+la caché de contexto explícita de Vertex (`cachedContent` no aparece en su API), así que no se puede
+configurar desde el código. Sí se aprovecha lo que no requiere configuración: el prompt de sistema es
+estable (prefijo cacheable de forma implícita) y se han aplicado las palancas que sí dependen de
+nosotros (prompt más corto, 2 rondas en vez de 4, ventana de 12 turnos). Los tokens de caché se
+**registran** (`cachedInputTokens`) para poder comprobar en H5 si Vertex los sirve.
+
+**Pendiente de H4 que depende de H5**: ejecutar el arnés sin `--mock` y anotar el p95 real, el consumo
+facturado y si hay aciertos de caché.
