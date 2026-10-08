@@ -169,10 +169,10 @@ vigente (máximo anterior: RF-55, RNF-21, RT-12).
 
 | ID | Descripción | Prioridad | Estado |
 |---|---|---|---|
-| **RF-56** | El asistente responde sobre protocolos, servicios, normas y ubicación del hotel usando la herramienta MCP `searchHotelManuals`. | Alta | **Casi completo**: los **17 casos** están escritos, indexados en el asistente y publicados en `/ayuda/huesped` (con ilustraciones y versión imprimible). Falta solo el contenido del hotel (servicios, normas y ubicación) en `docs/manual-huesped.md`, a la espera del cliente |
+| **RF-56** | El asistente responde sobre protocolos, servicios, normas y ubicación del hotel usando la herramienta MCP `searchHotelManuals`. | Alta | **✅ Cumplido en H3** para todo lo indexado: el prompt obliga a consultar la herramienta y prohíbe responder de memoria. Sigue pendiente el **contenido del hotel** en `docs/manual-huesped.md` |
 | **RF-57** | El asistente mantiene el flujo conversacional de reserva sobre las herramientas MCP existentes, sin cambios de contrato. | Alta | Cubierto por RF-12 |
-| **RF-58** | El asistente responde en español y formula en español la búsqueda contra el índice. (EN/RU pasan a v3.1.) | Alta | Pendiente (H3) |
-| **RF-59** | Cuando la respuesta provenga del índice, el asistente cita `manual §sección`; si no hay coincidencia, lo declara y no inventa. | Media | Pendiente (H3) |
+| **RF-58** | El asistente responde en español y formula en español la búsqueda contra el índice. (EN/RU pasan a v3.1.) | Alta | **✅ Cumplido en H3**: entiende otros idiomas, contesta en español y busca en español (`prompt.test.ts`) |
+| **RF-59** | Cuando la respuesta provenga del índice, el asistente cita `manual §sección`; si no hay coincidencia, lo declara y no inventa. | Media | **✅ Cumplido en H3**: formato de cita, restricción a las secciones devueltas por la herramienta y prohibición de inventar |
 | **RF-60** | El MCP expone `searchHotelManuals` con esquema estricto y operación *read-only*, sin acceso a BD. | Media | **✅ Cumplido en H2** (5ª herramienta, índice en memoria) |
 
 ### 7.2 No funcionales
@@ -181,10 +181,10 @@ vigente (máximo anterior: RF-55, RNF-21, RT-12).
 |---|---|---|---|
 | **RNF-22** | Coste incremental del asistente ≤ 5 USD/mes con 1 000 conversaciones/mes. | Facturación de GCP + contador de tokens | Pendiente (H4) |
 | **RNF-23** | Cero recursos nuevos de infraestructura (sin GPU, sin base vectorial, sin Cloud SQL adicional). | Inventario de recursos GCP antes/después | Pendiente (H5) |
-| **RNF-24** | Presupuesto de tokens por petición: entrada ≤ 6 000 y salida ≤ 512. | Test unitario del presupuesto + telemetría | **Parcial: tope de salida 512 aplicado en H1** |
+| **RNF-24** | Presupuesto de tokens por petición: entrada ≤ 6 000 y salida ≤ 512. | Test unitario del presupuesto + telemetría | **Parcial**: tope de salida 512 (H1) y brevedad explícita en el prompt (H3); la telemetría es de H4 |
 | **RNF-25** | Latencia p95 ≤ 2,5 s con instancias calientes; se documenta el efecto del *cold start*. | Medición en Cloud Run | Pendiente (H4) |
 | **RNF-26** | Sin PII en logs ni en el índice de conocimiento; los prompts no se registran. | Auditoría de logs | **Parcial (H2/H2.1)**: el índice excluye documentación interna, el generador rechaza credenciales y un guardián impide reintroducirlas |
-| **RNF-27** | Sanitización de PII antes de enviar la conversación al LLM (defensa en profundidad). | Test unitario del saneador | Pendiente (H3) |
+| **RNF-27** | Sanitización de PII antes de enviar la conversación al LLM (defensa en profundidad): correo, teléfono, DNI/NIE, IBAN y nombres presentados. | Test unitario del saneador + prueba de integración en el endpoint | **✅ Cumplido en H3** |
 
 ### 7.3 Técnicos
 

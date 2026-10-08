@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { activeChain, contractAddress } from "@/config/chain";
 import { serverPublicClient } from "@/lib/server-client";
 import { createLlmClient } from "@/lib/assistant/llm-provider";
+import { sanitizeConversation } from "@/lib/assistant/pii-sanitizer";
 import { McpToolGateway } from "@/lib/assistant/mcp-gateway";
 import { createTxValidator } from "@/lib/assistant/chain-pricing";
 import { runAssistant } from "@/lib/assistant/orchestrator";
@@ -131,7 +132,17 @@ export async function POST(request: Request): Promise<NextResponse> {
       chainId: activeChain.id,
     });
     const system = buildSystemPrompt(new Date(), wallet);
-    const result = await runAssistant({ llm: llm.client, gateway, validatePreparedTx, system }, messages);
+    // RNF-27: el modelo es el único destinatario externo de texto libre del huésped, así que la PII
+    // se enmascara justo aquí, en el punto de salida, y sobre TODO el historial (el proveedor recibe
+    // la conversación completa en cada petición). Se registran solo las categorías, nunca el dato.
+    const sanitized = sanitizeConversation(messages);
+    if (sanitized.redactions.length > 0) {
+      console.warn("[assistant] PII enmascarada:", sanitized.redactions.join(", "));
+    }
+    const result = await runAssistant(
+      { llm: llm.client, gateway, validatePreparedTx, system },
+      sanitized.messages,
+    );
     // Red de seguridad anti-fuga del system prompt (UX#30): redacta una reproducción literal.
     return NextResponse.json({ ...result, reply: redactPromptLeak(result.reply, REDACTED_REPLY) });
   } catch (error) {

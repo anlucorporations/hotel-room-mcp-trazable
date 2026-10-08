@@ -4000,3 +4000,45 @@ criterio de aceptación del hito. Se probará con consultas reales en H3/H4.
 
 Queda registrado también en `RepoTecnico/entornos_globales.md` §1, que es donde el equipo consulta la
 política de repositorios y ramas.
+
+### 14.10 Fase 3 · Hito H3 — prompt con citación y saneador de PII (2026-10-08) · COMPLETADO
+
+**Objetivo del hito**: que el asistente **use** el conocimiento indexado en H2 con citas verificables y
+que ninguna PII del huésped salga hacia el proveedor del modelo.
+
+| Artefacto | Cambio |
+|---|---|
+| `apps/web/src/lib/assistant/prompt.ts` | Prompt v3: dominio ampliado a las dudas del hotel (RF-56), uso **obligatorio** de `searchHotelManuals` y prohibición de responder de memoria, formato de citación (RF-59), español y búsqueda en español (RF-58) y brevedad explícita (RNF-24) |
+| `apps/web/src/lib/assistant/pii-sanitizer.ts` | **Nuevo** saneador (RNF-27): enmascara correo, teléfono, DNI/NIE, IBAN y presentaciones explícitas de nombre, sobre **todo el historial** |
+| `apps/web/src/app/api/assistant/route.ts` | Aplica el saneador en el punto de salida y registra **solo las categorías**, nunca el dato |
+| `apps/web/src/lib/assistant/prompt.test.ts` | **Nuevo**: 17 tests que guardan las reglas del prompt (ningún test las cubría: el orquestador usa un doble) |
+| `apps/web/src/lib/assistant/pii-sanitizer.test.ts` | **Nuevo**: 15 tests |
+| `apps/web/src/app/api/assistant/route-sanitizer.test.ts` | **Nuevo**: 3 tests de integración que inspeccionan lo que el modelo habría recibido |
+
+**Decisiones de diseño**
+
+- **El saneador no toca lo que el asistente necesita**: fechas `AAAAMMDD`, `tokenId`, direcciones de
+  wallet, importes, números de habitación ni códigos de resguardo. Un falso positivo habría roto el
+  flujo de compra, que es peor que el riesgo que evita. Hay tests explícitos para cada uno.
+- **Límite declarado**: no es un detector semántico. Un nombre suelto en mitad de una frase no se
+  detecta; solo las presentaciones explícitas («me llamo…», «soy…», «mi nombre es…»). Reduce el riesgo,
+  no lo elimina.
+- **Se sanea todo el historial**, no solo el último mensaje: el proveedor recibe la conversación
+  completa en cada petición, así que un dato del primer turno volvería a salir en el quinto.
+
+**Verificación**
+
+| Comprobación | Resultado |
+|---|---|
+| `pnpm --filter @hotel/web test` | ✅ **782/782** en 91 ficheros (35 tests nuevos) |
+| `typecheck` · lint de los ficheros de H3 | ✅ limpios |
+| RF-59 (citación) | ✅ `prompt.test.ts` exige citar `Manual §sección` y solo de lo devuelto por la herramienta |
+| RNF-27 (PII) | ✅ la prueba de integración confirma que `ana@example.com`, `611 222 333` y `Ana López` **no** llegan al modelo, y que `20260615` sí |
+
+**Incidencia encontrada y corregida**: la primera versión de la regla de nombres no detectaba «Soy Ana»
+ni «Me llamo Carlos» (el disparador estaba en minúscula). Se reescribió con un *lookbehind* que admite
+la mayúscula inicial y exige que el nombre empiece en mayúscula, de modo que «Soy de Alicante» y «soy el
+dueño» siguen sin enmascararse. Lo detectaron los propios tests.
+
+**Pendiente de H3 que no es suyo**: el modelo sigue sin desplegar (H5) y el prompt no se ha probado
+contra el modelo real con conversaciones reales (H4, con la medición de coste y latencia).
