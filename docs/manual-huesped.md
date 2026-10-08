@@ -112,7 +112,9 @@ cambiarla**, ni el hotel. Esto es lo que puedes hacer:
 **5 %** en habitaciones simples y dobles, y **10 %** en suites. Ese porcentaje está fijado en el
 contrato y **nadie puede cambiarlo**, ni el hotel.
 
-**Tu dinero** queda en **Saldo pendiente** y lo cobras con el botón **Cobrar** cuando quieras.
+**Tu dinero NO se cobra solo al vender**: queda en **Saldo pendiente** y lo cobras tú cuando quieras
+pulsando el botón **Cobrar**. Si te preguntas cuándo cobras una noche vendida, la respuesta es «cuando
+tú quieras», no en el momento de la venta.
 
 **Aviso importante**: hoy todo ocurre en la **red de pruebas del hotel**. No es una venta al público real.
 

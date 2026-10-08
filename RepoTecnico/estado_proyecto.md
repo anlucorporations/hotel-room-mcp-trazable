@@ -4276,3 +4276,49 @@ tomadas espaciando las peticiones y comprobando el código HTTP.
 **Limpieza**: las revisiones de la web con el prompt experimental (que empeoraba el asistente) se
 **borraron** y se retiró su etiqueta; producción sigue sirviendo la revisión buena (`hotel-mcp-web-00048-lz8`,
 imagen `web:v40`). El MCP pasa a `mcp:v42` (revisión `00017-wow`).
+
+### 14.17 Medición de fidelidad del asistente (2026-10-08) — 69 % correctas, 8 % contradicen
+
+Se construyó un **arnés de fidelidad** (`pnpm --filter @hotel/web run measure:fidelity`) con un banco de
+**13 casos** tomados del corpus real (no de suposiciones), que clasifica cada respuesta en **correcta**,
+**incompleta** o **contradice** lo documentado, y que **respeta el limitador** del endpoint (espacia las
+peticiones y reintenta los 429 en lugar de contarlos como fallos).
+
+**Resultado (26 muestras válidas: 13 casos × 2 rondas, contra producción)**
+
+| Métrica | Valor |
+|---|---|
+| Correctas | **18 / 26 = 69,2 %** |
+| Incompletas (no dicen el dato, sin contradecirlo) | 6 |
+| **Contradicen lo documentado** | **2 / 26 ≈ 8 %** |
+| Errores de red (429 mal contados antes) | 0 |
+| Honestidad con datos que no tenemos | **4 / 4** (no inventó dirección ni horario de desayuno) |
+
+**Los tres puntos débiles, todos reproducidos en las dos rondas**
+
+| Caso | Qué pasa | Gravedad |
+|---|---|---|
+| `cobro-reventa` | Afirma que «el cobro se procesa automáticamente» o «se cobra al momento», cuando el corpus dice que el dinero queda en **Saldo pendiente** y lo cobra el dueño cuando quiere | **Alta: es una afirmación falsa sobre dinero** |
+| `duracion-resguardo` | Responde «solo se puede canjear una vez» y **omite los 7 días** | Media |
+| `habitacion-tras-salir` | Responde sobre la caducidad de la noche en vez de que la habitación queda **pendiente de limpieza** | Baja |
+
+También apareció una vez el mensaje de reserva («No he podido completar la respuesta…»): la guarda
+funciona, pero es una pregunta sencilla que no debería fallar.
+
+**Dos intentos de corrección que NO mejoraron la cifra** (registrados para no repetirlos):
+1. Llevar la comisión al principio del apartado de reventa y expandir sinónimos → arregló la comisión
+   (0 contradicciones de comisión en las 26 muestras) pero **no** el cobro.
+2. Aclarar en el corpus que el dinero **no** se cobra solo al vender → la cifra siguió igual (69-73 %).
+   Conclusión: los tres casos débiles **no** son un problema de vocabulario ni de ventana de extracto,
+   sino de qué fragmento elige el modelo y cómo lo resume.
+
+**Corrección de método (importante para futuras medidas)**: la primera cifra (73 %) era **optimista
+porque el clasificador estaba mal** — daba por incompletas respuestas correctas («no tendrás que firmar»,
+«solo se puede usar una vez»). Se recalibró tres veces hasta que los veredictos coincidieron con la
+lectura manual. La cifra publicable es esta: **69 % correctas, 8 % contradicen**.
+
+**Lectura para el piloto**: el asistente **no inventa datos del hotel** (los dos casos de honestidad
+pasan), pero **falla en detalles** y en un caso concreto afirma lo contrario de lo documentado sobre
+dinero. Opciones: (a) asumirlo y advertir que los detalles de cobro de reventa se confirmen en
+recepción; (b) invertir en recuperación por párrafos en lugar de por secciones; (c) probar cambios de
+prompt **con este arnés como juez** antes de desplegar (los dos intentos a ciegas empeoraron).

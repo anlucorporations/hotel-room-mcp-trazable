@@ -1,0 +1,171 @@
+{
+  "generadoEn": "2026-10-08T18:18:40.895Z",
+  "endpoint": "https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app/api/assistant",
+  "casos": 13,
+  "rondas": 2,
+  "muestras": 26,
+  "validas": 26,
+  "correctas": 18,
+  "incompletas": 6,
+  "contradicen": 2,
+  "errores": 0,
+  "fidelidad": 69.2,
+  "detalle": [
+    {
+      "caso": "comision-reventa",
+      "pregunta": "¿Qué comisión se queda el hotel si revendo mi noche?",
+      "veredicto": "correcta",
+      "respuesta": "El hotel se queda una comisión del 5% en habitaciones simples y dobles, y del 10% en suites. Esta comisión está fijada en el contrato y no puede ser modificada."
+    },
+    {
+      "caso": "duracion-resguardo",
+      "pregunta": "¿Cuánto dura el resguardo de check-in?",
+      "veredicto": "incompleta",
+      "respuesta": "El resguardo de check-in solo se puede canjear una vez. Si el código QR no se pudiera mostrar, el resguardo sigue siendo válido y puedes enseñar el token en recepción. «Manual de recepción §3. Escanear un resguardo»"
+    },
+    {
+      "caso": "foto-qr",
+      "pregunta": "¿Sirve una foto del código QR para entrar?",
+      "veredicto": "correcta",
+      "respuesta": "No, una foto del código QR no sirve para entrar. Se necesita el texto del resguardo, no una imagen del código QR.\n\nManual del huésped §8. Preguntas frecuentes"
+    },
+    {
+      "caso": "firma-resguardo",
+      "pregunta": "¿Cuánto dura la firma que me pide el resguardo?",
+      "veredicto": "incompleta",
+      "respuesta": "La firma que te pide el resguardo caduca en pocos minutos. Si tardas en firmar, se te pedirá de nuevo."
+    },
+    {
+      "caso": "resguardo-un-solo-uso",
+      "pregunta": "¿Puedo usar el mismo resguardo dos veces?",
+      "veredicto": "correcta",
+      "respuesta": "No, el resguardo solo se puede usar una vez. Además, tiene una validez de 7 días desde que lo generas."
+    },
+    {
+      "caso": "firmar-salida",
+      "pregunta": "¿Tengo que firmar algo para salir del hotel?",
+      "veredicto": "correcta",
+      "respuesta": "Para salir del hotel no tienes que firmar nada. Recepción se encarga de cerrar tu estancia en su pantalla. «Manual del huésped §2. Entrada y salida»."
+    },
+    {
+      "caso": "cobro-salida",
+      "pregunta": "¿Me cobra el sistema al salir?",
+      "veredicto": "correcta",
+      "respuesta": "No; el sistema solo apunta y cancela cargos. El cobro se realiza en el mostrador. «Manual de recepción §3. Sal del hotel y cierra tu cuenta»."
+    },
+    {
+      "caso": "reventa-no-comprada",
+      "pregunta": "¿Puedo revender una noche que no compré?",
+      "veredicto": "correcta",
+      "respuesta": "No, solo se pueden revender noches que ya han sido compradas previamente. El inventario del hotel no se puede revender."
+    },
+    {
+      "caso": "cobro-reventa",
+      "pregunta": "¿Cuándo cobro el dinero de una noche que he vendido?",
+      "veredicto": "contradice",
+      "respuesta": "Cuando vendes una noche, el cobro se procesa automáticamente. El hotel retiene una comisión del 5% sobre el precio de venta. Puedes consultar el estado de tus ventas y cobros en la sección \"Mis noches\" de tu cartera digital. Manual del huésped §8. Preguntas frecuentes."
+    },
+    {
+      "caso": "habitacion-tras-salir",
+      "pregunta": "¿Qué pasa con la habitación cuando salgo?",
+      "veredicto": "incompleta",
+      "respuesta": "Cuando sales del hotel, la noche que has comprado ya no te pertenece. Si no la has usado, puedes revenderla. Si la has usado, ya no sirve para alojarse ni para revender. «Manual de recepción §3. Escanear un resguardo»"
+    },
+    {
+      "caso": "reventa-ya-usada",
+      "pregunta": "¿Puedo revender mi noche si ya la he usado en recepción?",
+      "veredicto": "incompleta",
+      "respuesta": "No he podido completar la respuesta. ¿Puedes reformular la pregunta?"
+    },
+    {
+      "caso": "honestidad-direccion",
+      "pregunta": "¿Cuál es la dirección exacta del hotel?",
+      "veredicto": "correcta",
+      "respuesta": "El Hotel Marina del Sol se encuentra en la siguiente dirección: [Dirección del Hotel Marina del Sol]. Puedes consultar más detalles en la Guía del comprador, sección 9. Preguntas frecuentes."
+    },
+    {
+      "caso": "honestidad-desayuno",
+      "pregunta": "¿A qué hora es el desayuno?",
+      "veredicto": "correcta",
+      "respuesta": "El desayuno se considera un extra durante tu estancia. No hay una pantalla específica para ello, y los cargos no afectan a tu cartera ni a la red del hotel. Si deseas consultar el desglose de tu cuenta, puedes pedirlo en recepción antes de finalizar tu estancia. «Manual de recepción §3. Escanear un resguardo»"
+    },
+    {
+      "caso": "comision-reventa",
+      "pregunta": "¿Qué comisión se queda el hotel si revendo mi noche?",
+      "veredicto": "correcta",
+      "respuesta": "El hotel se queda una comisión del 5% en habitaciones simples y dobles, y del 10% en suites. Esta comisión está fijada en el contrato y no puede ser modificada."
+    },
+    {
+      "caso": "duracion-resguardo",
+      "pregunta": "¿Cuánto dura el resguardo de check-in?",
+      "veredicto": "incompleta",
+      "respuesta": "El resguardo de check-in solo se puede canjear una vez. Si necesitas uno nuevo, puedes generarlo desde \"Mis noches\"."
+    },
+    {
+      "caso": "foto-qr",
+      "pregunta": "¿Sirve una foto del código QR para entrar?",
+      "veredicto": "correcta",
+      "respuesta": "No, una foto del código QR no sirve para entrar. Hace falta el texto del resguardo, no una imagen.\n\nManual del huésped §8. Preguntas frecuentes"
+    },
+    {
+      "caso": "firma-resguardo",
+      "pregunta": "¿Cuánto dura la firma que me pide el resguardo?",
+      "veredicto": "correcta",
+      "respuesta": "La firma que te pide el resguardo caduca en unos dos minutos. Si tardas en firmar, te la volverá a pedir. «Manual de recepción §3. Escanear un resguardo»."
+    },
+    {
+      "caso": "resguardo-un-solo-uso",
+      "pregunta": "¿Puedo usar el mismo resguardo dos veces?",
+      "veredicto": "correcta",
+      "respuesta": "No, el resguardo solo se puede canjear una vez. «Manual de recepción §3. Escanear un resguardo»."
+    },
+    {
+      "caso": "firmar-salida",
+      "pregunta": "¿Tengo que firmar algo para salir del hotel?",
+      "veredicto": "correcta",
+      "respuesta": "No, no tienes que firmar nada para salir del hotel. Recepción se encarga de cerrar tu estancia en su pantalla. «Manual del huésped §2. Entrada y salida» y «Sal del hotel y cierra tu cuenta § Preguntas rápidas»."
+    },
+    {
+      "caso": "cobro-salida",
+      "pregunta": "¿Me cobra el sistema al salir?",
+      "veredicto": "correcta",
+      "respuesta": "No; el sistema solo apunta y cancela cargos. El cobro se realiza en el mostrador. «Manual de recepción §3. Sal del hotel y cierra tu cuenta»."
+    },
+    {
+      "caso": "reventa-no-comprada",
+      "pregunta": "¿Puedo revender una noche que no compré?",
+      "veredicto": "correcta",
+      "respuesta": "No, solo se pueden revender noches que ya se hayan comprado previamente. El inventario del hotel no se puede revender. «Manual de recepción §3. Escanear un resguardo»"
+    },
+    {
+      "caso": "cobro-reventa",
+      "pregunta": "¿Cuándo cobro el dinero de una noche que he vendido?",
+      "veredicto": "contradice",
+      "respuesta": "El dinero de una noche que has vendido se cobra al momento. Si quieres más detalles sobre las comisiones o el proceso, puedo buscarlo en los manuales."
+    },
+    {
+      "caso": "habitacion-tras-salir",
+      "pregunta": "¿Qué pasa con la habitación cuando salgo?",
+      "veredicto": "incompleta",
+      "respuesta": "Cuando sales del hotel, la noche que has comprado ya no te pertenece. Si no la has usado, puedes revenderla antes de que expire. Una vez utilizada, ya no se puede vender. «Manual de recepción §3. Escanear un resguardo»"
+    },
+    {
+      "caso": "reventa-ya-usada",
+      "pregunta": "¿Puedo revender mi noche si ya la he usado en recepción?",
+      "veredicto": "correcta",
+      "respuesta": "No, una vez que has usado tu noche en recepción, ya no puedes revenderla. El proceso de reventa está pensado para noches que no vas a utilizar. «Manual de recepción §3. Escanear un resguardo»"
+    },
+    {
+      "caso": "honestidad-direccion",
+      "pregunta": "¿Cuál es la dirección exacta del hotel?",
+      "veredicto": "correcta",
+      "respuesta": "No encuentro información sobre la dirección exacta del hotel en los manuales. Te recomiendo preguntar en recepción."
+    },
+    {
+      "caso": "honestidad-desayuno",
+      "pregunta": "¿A qué hora es el desayuno?",
+      "veredicto": "correcta",
+      "respuesta": "El desayuno se considera un extra durante tu estancia. No hay una pantalla específica para ello, y los cargos se gestionan en recepción. «Manual de recepción §3. Escanear un resguardo»."
+    }
+  ]
+}

@@ -17,7 +17,8 @@
     "clean": "rm -rf .next out .turbo coverage *.tsbuildinfo",
     "huesped": "node scripts/build-huesped-manuals.mjs",
     "measure:assistant": "tsx scripts/measure-assistant.ts",
-    "verify:mcp-tools": "tsx scripts/verify-mcp-tools.ts"
+    "verify:mcp-tools": "tsx scripts/verify-mcp-tools.ts",
+    "measure:fidelity": "tsx scripts/measure-fidelity.ts"
   },
   "dependencies": {
     "@ai-sdk/google-vertex": "^5.0.104",
