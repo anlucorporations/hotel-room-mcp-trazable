@@ -70,12 +70,21 @@ beforeEach(() => {
 });
 
 describe("POST /api/assistant — bordes de la petición", () => {
-  it("toma la IP de `x-real-ip` cuando no hay `x-forwarded-for`", async () => {
-    const POST = await cargarPost();
-    const response = await POST(peticion(mensaje("hola"), { "content-type": "application/json", "x-real-ip": "10.0.0.9" }));
+  // La PRIMERA prueba del fichero paga la importación completa de la ruta (`vi.resetModules()` +
+  // `import("./route")`: viem, wagmi, el grafo entero) dentro del presupuesto de 5 s del runner.
+  // Medido el 2026-10-09: ~5,2 s solo por esa carga (y lo mismo en un árbol limpio en HEAD), así
+  // que el 5 s por defecto la hacía fallar por tiempo, no por comportamiento. El tope explícito
+  // no relaja la aserción: la petición sigue teniendo que responder 200.
+  it(
+    "toma la IP de `x-real-ip` cuando no hay `x-forwarded-for`",
+    async () => {
+      const POST = await cargarPost();
+      const response = await POST(peticion(mensaje("hola"), { "content-type": "application/json", "x-real-ip": "10.0.0.9" }));
 
-    expect(response.status).toBe(200);
-  });
+      expect(response.status).toBe(200);
+    },
+    30_000,
+  );
 
   it("sin ninguna cabecera de IP sigue respondiendo (IP desconocida)", async () => {
     const POST = await cargarPost();

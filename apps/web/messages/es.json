@@ -239,6 +239,8 @@
     "emptyNoListingsHint": "Vuelve pronto: estamos preparando nuevas noches frente al Mediterráneo.",
     "syncingNotice": "Hemos retirado {count} noche que ya está vendida. Estamos sincronizando el calendario: puede aparecer disponibilidad nueva en unos minutos.",
     "clearFilters": "Quitar filtros",
+    "assistantNotice": "Resultados de tu consulta al asistente: {filters}.",
+    "assistantNoticeDates": "del {from} al {to}",
     "degraded": "No se pudo cargar el catálogo. Revisa tu conexión e inténtalo de nuevo.",
     "retry": "Reintentar",
     "loadMore": "Cargar más noches",
@@ -877,6 +879,9 @@
   },
   "assistant": {
     "title": "Asistente IA",
+    "launcherOpen": "Abrir el asistente",
+    "panelTitle": "Asistente IA",
+    "panelClose": "Cerrar el asistente",
     "tagline": "Pregunta por disponibilidad y prepara tu reserva; tú firmas en tu wallet.",
     "intro": "Hola, soy el asistente del Hotel Marina del Sol. Puedo ayudarte a consultar disponibilidad y preparar la reserva de una noche.",
     "logLabel": "Conversación con el asistente",

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { WalletMenu } from "@/components/wallet/WalletMenu";
+import { AssistantHeaderTrigger } from "@/components/assistant/AssistantDock";
 import { useAdminSession } from "@/components/admin/useAdminSession";
 import { isActiveRoute } from "./navigation";
 
@@ -166,6 +167,9 @@ export function SiteHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
+          {/* Asistente IA en móvil (incremento v4): avatar en la cabecera que abre la conversación.
+              En escritorio lo sustituye el icono flotante del `AssistantDock`. */}
+          <AssistantHeaderTrigger />
           <WalletMenu session={session} />
           <MobileNav pathname={pathname} />
         </div>

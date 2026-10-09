@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildPurchaseTxData } from "@hotel/shared/domain";
 import { runAssistant, type ValidatePreparedTx } from "./orchestrator";
+import { derivePageAction } from "./page-action";
 import { SYSTEM_PROMPT } from "./prompt";
 import type { LlmClient } from "./llm";
 import type { ToolGateway } from "./tools-gateway";
@@ -31,12 +32,17 @@ class FakeLlm implements LlmClient {
 
 class FakeGateway implements ToolGateway {
   readonly calls: Array<{ name: string; args: Record<string, unknown> }> = [];
-  constructor(private readonly results: Record<string, unknown> = {}) {}
+  constructor(
+    private readonly results: Record<string, unknown> = {},
+    /** Herramientas que el doble hace fallar (para probar que un fallo no mueve la pantalla). */
+    private readonly failing: readonly string[] = [],
+  ) {}
   listTools(): Promise<ToolDescriptor[]> {
     return Promise.resolve(TOOLS);
   }
   callTool(name: string, args: Record<string, unknown>): Promise<unknown> {
     this.calls.push({ name, args });
+    if (this.failing.includes(name)) return Promise.reject(new Error("MCP no disponible"));
     return Promise.resolve(this.results[name] ?? {});
   }
 }
@@ -74,8 +80,51 @@ describe("runAssistant — guardrails deterministas", () => {
   });
 });
 
-describe("runAssistant — flujo de compra (CU-08)", () => {
-  it("encadena checkAvailability → buildPurchaseTx y devuelve la compra validada", async () => {
+describe("runAssistant — acción de página (incremento v4)", () => {
+  it("registra para la página solo las herramientas que respondieron BIEN", async () => {
+    const llm = new FakeLlm([
+      {
+        text: "Busco las sencillas.",
+        toolUses: [{ id: "t1", name: "listAvailableNights", input: { type: "simple" } }],
+      },
+      {
+        text: "Compruebo una noche concreta.",
+        toolUses: [{ id: "t2", name: "checkAvailability", input: { room: 3, date: 20260622 } }],
+      },
+      { text: "Estas son las que hay.", toolUses: [] },
+    ]);
+    // `checkAvailability` falla: el catálogo no debe acabar filtrado por una consulta sin respuesta.
+    const gateway = new FakeGateway({ listAvailableNights: [] }, ["checkAvailability"]);
+
+    const result = await runAssistant(
+      { llm, gateway, validatePreparedTx: okValidator, system: SYSTEM_PROMPT },
+      [{ role: "user", text: "¿qué habitaciones sencillas hay?" }],
+    );
+
+    expect(result.toolCalls).toEqual([
+      { name: "listAvailableNights", input: { type: "simple" } },
+    ]);
+    expect(derivePageAction(result.toolCalls)?.href).toBe("/catalogo?tipo=simple");
+  });
+
+  it("un turno que no consulta el catálogo no deja acción de página", async () => {
+    const llm = new FakeLlm([
+      { text: "Busco en los manuales.", toolUses: [{ id: "t1", name: "searchHotelManuals", input: { query: "spa" } }] },
+      { text: "El spa abre de 10 a 20.", toolUses: [] },
+    ]);
+    const gateway = new FakeGateway({ searchHotelManuals: [{ section: "Spa" }] });
+
+    const result = await runAssistant(
+      { llm, gateway, validatePreparedTx: okValidator, system: SYSTEM_PROMPT },
+      [{ role: "user", text: "¿cuándo abre el spa?" }],
+    );
+
+    expect(result.toolCalls).toEqual([{ name: "searchHotelManuals", input: { query: "spa" } }]);
+    expect(derivePageAction(result.toolCalls)).toBeNull();
+  });
+});
+
+describe("runAssistant — flujo de compra (CU-08)", () => {  it("encadena checkAvailability → buildPurchaseTx y devuelve la compra validada", async () => {
     const llm = new FakeLlm([
       { text: "Compruebo disponibilidad.", toolUses: [{ id: "t1", name: "checkAvailability", input: { room: 102, date: 20260615 } }] },
       { text: "Preparo la compra.", toolUses: [{ id: "t2", name: "buildPurchaseTx", input: { tokenId: TOKEN } }] },

@@ -10,24 +10,26 @@
 
 ---
 
-## 1. Las tres familias (y por qué no se mezclan)
+## 1. Las cuatro familias (y por qué no se mezclan)
 
 | Familia | Patrón canónico | Quién la sirve | Ejemplo |
 |---|---|---|---|
 | **Habitación** | `<nº>-<Simple\|Doble\|Suite>-<AAAA-MM-DD>-<1..5>.jpg` | `GET /api/rooms/images/<fichero>` | `101-Simple-2026-09-28-1.jpg` |
 | **Contenido público** (galería, hero, planes…) | `hotel-<hero\|services\|experience\|activities\|contact\|other>-<AAAA-MM-DD>-<1..20>.jpg` | `GET /api/content/images/<fichero>` | `hotel-hero-2026-09-28-1.jpg` |
 | **Documentación** (ilustraciones de los manuales) | `doc-<pantalla>-<elemento>.svg` (o `.png` para la portada) | `GET /manual/imagenes/<fichero>` | `doc-pantalla-recepcion.svg` |
+| **Avatares de marca** (asistente IA) | `avatar_hotel_<ancho>x<alto>.webp` | Estático: `apps/web/public/images/<fichero>` | `avatar_hotel_40x40.webp` |
 
 **Reglas de la casa**
 
 1. Solo **`.jpg`** para las dos familias que sube el negocio (D-20: JPG y ≤ 2 MB). El `.svg`/`.png`
-   queda reservado a las ilustraciones de manuales, que no se suben desde el back-office.
+   queda reservado a las ilustraciones de manuales, que no se suben desde el back-office, y el
+   `.webp` a los avatares de marca (incremento v4), que tampoco se suben.
 2. La **fecha del nombre** es la de subida y la asigna el sistema; el **índice** es la **posición**:
    `1` es la **portada** de la habitación o de la sección.
 3. El nombre es la única puerta: sin barra, sin `..`, sin espacios ni acentos (los validadores
    rechazan cualquier otra cosa).
 4. El prefijo dice la **familia**; el resto, **dónde se ve** (`<seccion>` para contenido,
-   `<nº>` para habitación, `<pantalla>` para manual).
+   `<nº>` para habitación, `<pantalla>` para manual, `<ancho>x<alto>` para avatar).
 
 ---
 
@@ -64,7 +66,18 @@ representativa de cada tipo** (la posición `1`):
 > el fichero **en la carpeta** para que el inventario sea coherente, y es el que la aplicación
 > generará al subirlo.
 
-### 2.3 Nada más en la carpeta
+### 2.3 Avatares de marca del asistente (incremento v4)
+
+| Fichero | Medidas | Uso y posición en la plataforma |
+|---|---|---|
+| `avatar_hotel_40x40.webp` | 40×40 | Cabecera **móvil** del asistente (abre la conversación) y encabezado del panel. |
+| `avatar_hotel_80x80.webp` | 80×80 | **Lanzador flotante** del asistente en escritorio (inferior derecha). |
+
+Se copian a `apps/web/public/images/` con el mismo nombre; la interfaz los declara decorativos
+(`alt=""` + `aria-hidden`) y el nombre accesible lo aporta el botón. Verificado por
+`apps/web/src/lib/images-naming.test.ts` (familia y tamaños).
+
+### 2.4 Nada más en la carpeta
 
 - `README.md` — índice de las ilustraciones (se mantiene, con los nombres nuevos).
 - **No hay ningún `.jpeg`** ni subcarpetas: `docs/image rooms/` está **vacía** y el código no la lee.

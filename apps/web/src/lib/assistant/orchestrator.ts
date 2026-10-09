@@ -14,6 +14,7 @@ import type {
   ToolUse,
   Turn,
 } from "./types";
+import type { AssistantToolCall } from "./page-action";
 
 /** Validación server-side independiente de la tx (ADR-11); inyectada para poder testearla. */
 export type ValidatePreparedTx = (tokenId: string, tx: PurchaseTxData) => Promise<PreparedTxCheck>;
@@ -81,6 +82,10 @@ export async function runAssistant(
 
   let domainToolCalls = 0;
   let preparedPurchase: PreparedPurchase | null = null;
+  // Herramientas que respondieron con éxito (incremento v4): base determinista de la acción de
+  // página. Se registra la ENTRADA real, no la prosa del modelo, así que el filtro del catálogo no
+  // se puede manipular desde el prompt.
+  const toolCalls: AssistantToolCall[] = [];
   // Consumo agregado de la petición (RNF-24): cada ronda de herramientas es una llamada facturable.
   let usage: LlmUsage = EMPTY_USAGE;
   let llmCalls = 0;
@@ -97,6 +102,7 @@ export async function runAssistant(
         llmCalls,
         usage,
         droppedTurns: budget.droppedTurns,
+        toolCalls,
       };
     }
 
@@ -106,6 +112,11 @@ export async function runAssistant(
       domainToolCalls++;
       const outcome = await dispatchTool(deps, toolUse);
       results.push(outcome.result);
+      // Solo las herramientas que respondieron bien pueden mover la pantalla (una consulta fallida
+      // no debe llevar al catálogo con un filtro que nadie ha podido resolver).
+      if (!outcome.result.isError) {
+        toolCalls.push({ name: toolUse.name, input: toolUse.input });
+      }
       if (toolUse.name === BUILD_PURCHASE_TOOL) {
         preparedPurchase = outcome.preparedPurchase ?? null; // null si no validó.
       }
@@ -124,6 +135,7 @@ export async function runAssistant(
     llmCalls,
     usage,
     droppedTurns: budget.droppedTurns,
+    toolCalls,
   };
 }
 

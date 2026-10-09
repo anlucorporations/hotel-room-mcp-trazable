@@ -4414,3 +4414,123 @@ pruebas, que no se empaquetan; el MCP no había cambiado). El valor de la releas
 Verificado en producción: la comisión de reventa, la salida sin firma y —importante— que a la pregunta
 por la dirección **sigue respondiendo que no la tiene** en lugar de inventarla. Telemetría viva con ~2 600
 tokens de entrada y ~1 s de latencia en caliente.
+
+## 15. Incremento v4 — Asistente IA en toda la plataforma (2026-10-09) · `@asistenteProyecto`
+
+**Petición del responsable**: (1) el asistente disponible en toda la plataforma, como icono flotante
+abajo a la derecha en PC y en la cabecera en móvil, que despliega la conversación «al estilo de caja de
+herramientas»; (2) usar los avatares `avatar_hotel_40x40.webp` / `avatar_hotel_80x80.webp` de
+`docs/imagenes/` según el caso; (3) que el asistente **interactúe con la plataforma**: una consulta como
+«todas las habitaciones sencillas» debe ejecutarse y **verse en la página**.
+
+**Entrevista de arranque (3 decisiones, cerradas)**
+
+| ID | Decisión | Valor |
+|---|---|---|
+| D-82 | Cómo se muestran los resultados | **Navegación automática al catálogo filtrado** (`/catalogo?tipo=…`), no tarjetas dentro del panel. |
+| D-83 | Alcance de «toda la plataforma» | **Web pública + suite de recepción** (comparten `PublicShell`); el back-office de administración queda fuera. |
+| D-84 | Página `/asistente` | **Se mantiene** como página completa; el widget es un acceso **adicional**. |
+
+Documentación del incremento: [`RepoTecnico/incremento_v4/`](./incremento_v4) (requerimientos con
+RF-61…RF-63 y RNF-47…RNF-52, casos de uso CU-51…CU-54 con Gherkin/EARS y trazabilidad, y plan vertical
+C1–C4). **Sin cambios en el modelo de datos**: `diccionario_datos.md`, `diagrama_er.md` y
+`base_datos.sql` no se tocan (RNF-51), y el contrato `HotelNights` y la frontera MCP (read-only +
+`buildPurchaseTx` sin firma) quedan intactos.
+
+### 15.1 Lo construido
+
+| Pieza | Fichero | Qué resuelve |
+|---|---|---|
+| Contrato estado↔URL del catálogo | `apps/web/src/lib/catalog-search.ts` | `parseCatalogSearch` / `buildCatalogHref` / `gridFiltersFromSearch`, con saneamiento del filtro. |
+| Consulta → navegación | `apps/web/src/lib/assistant/page-action.ts` | `derivePageAction`: la **entrada real** de las herramientas de catálogo que respondieron bien decide a qué página y con qué filtro se va. |
+| Registro de herramientas | `orchestrator.ts` + `types.ts` | `AssistantResult.toolCalls` solo con las que respondieron **con éxito** (una consulta fallida no mueve al usuario). |
+| Contrato HTTP | `app/api/assistant/route.ts` | `pageAction` **aditivo** (`null` cuando el turno no consulta catálogo). |
+| Catálogo con filtro | `app/catalogo/page.tsx` + `CatalogClient.tsx` | La parrilla nace filtrada del URL, se remonta con `key` al cambiar la búsqueda y muestra el aviso `catalog-assistant-notice` con «Quitar filtros». |
+| Widget global | `components/assistant/AssistantDock.tsx` | Lanzador flotante (≥768 px), panel `role="dialog"`, disparador de cabecera (<768 px), cierre con `Escape`/navegación y foco devuelto al disparador. |
+| Memoria de la conversación | `components/assistant/history.ts` | `sessionStorage` por pestaña (20 mensajes, 4 000 caracteres), tolerante a contenido corrupto y a almacenamiento bloqueado. |
+| Montaje | `layout/PublicShell.tsx` + `layout/SiteHeader.tsx` | El asistente entra en la plantilla compartida (públicas + recepción), no página por página; en `/asistente` no se duplica. |
+| Avatares | `apps/web/public/images/avatar_hotel_{40x40,80x80}.webp` | 80×80 en el lanzador de escritorio; 40×40 en la cabecera móvil y en el encabezado del panel. Declarados decorativos (`alt=""`). |
+| i18n | `messages/{es,en,ru}.json` | `launcherOpen`, `panelTitle`, `panelClose`, `catalog.assistantNotice`, `catalog.assistantNoticeDates`. |
+
+### 15.2 Guardián de imágenes: los avatares son la cuarta familia
+
+`docs/imagenes/` mezclaba tres familias con patrón propio y el guardián `images-naming.test.ts` exigía
+que **todo** fichero perteneciera a una de ellas. Los dos avatares (`.webp`) no encajaban en ninguna, así
+que la suite ya estaba en rojo **antes** de este incremento (verificado: el fallo se reproduce en un
+árbol limpio en `HEAD`). Se declara la familia con su patrón `avatar_hotel_<ancho>x<alto>.webp`, se añade
+una prueba que fija los dos tamaños y se documenta en `docs/imagenes/README.md` y
+`RepoTecnico/catalogo_imagenes.md` (§1 y §2.3).
+
+### 15.3 Verificación
+
+| Comprobación | Resultado |
+|---|---|
+| `pnpm --filter @hotel/web run typecheck` | Sin errores. |
+| `pnpm --filter @hotel/web run test:coverage` | **102 ficheros · 946 pruebas en verde**, código de salida **0**. Ramas **74,11 %** (umbral 73), funciones 62,54 % (52), sentencias y líneas 35,03 % (23). |
+| `next build` de producción | Correcto (con `NODE_OPTIONS=--max-old-space-size=1536`; ver 15.4). |
+| `eslint` en los ficheros tocados | Sin errores ni avisos. |
+| E2E `e2e/asistente-global.spec.ts` + `e2e/asistente.spec.ts`, proyectos `chromium` y `mobile` | **12/12 en verde** (25,7 s): disparador de cada viewport, panel + `Escape`, consulta→catálogo filtrado con la conversación conservada, catálogo que aplica el filtro de la URL, y los dos casos preexistentes del asistente. |
+| A11y (`e2e/a11y.spec.ts`) en `/`, `/catalogo`, `/recepcion`, `/asistente`, `/ayuda`, ambos viewports | **10/10 en verde**: 0 violaciones `critical`/`serious` con el icono flotante montado. |
+
+**Pruebas nuevas**: `catalog-search.test.ts` (14), `page-action.test.ts` (11), `history.test.ts` (9),
+dos casos en `orchestrator.test.ts` (registro solo de éxitos y turno de manuales sin navegación), el
+contrato exacto en `route-metrics.test.ts`, la familia de avatares en `images-naming.test.ts` y
+`e2e/asistente-global.spec.ts` (4 escenarios × 2 viewports).
+
+**Evidencia visual** en `RepoTecnico/evidencias/incremento-v4-asistente-global/`: lanzador flotante y
+panel en escritorio, avatar de cabecera y panel en móvil, y el catálogo filtrado por el asistente con
+su aviso.
+
+### 15.4 Defectos encontrados al verificar (y corregidos)
+
+Tres cosas que solo aparecen al ejecutar de verdad, no al compilar:
+
+1. **El compositor del panel no se podía pulsar en móvil.** El historial y el compositor compartían un
+   único contenedor con scroll, así que el botón de envío quedaba bajo el historial (reproducido con el
+   viewport de Pixel 5). El panel pasa a ser una **columna flex de altura fija**: el encabezado y el
+   compositor no se mueven y **solo el historial** hace scroll.
+2. **El autoscroll arrastraba la página entera.** `scrollIntoView` asciende por todos los ancestros;
+   dentro del panel `position: fixed` eso desplazaba la página de fondo y, en la emulación móvil, sacaba
+   el compositor del área visible. Ahora se mueve el `scrollTop` **del propio historial**.
+3. **La conversación se perdía al navegar.** El widget cerraba el panel en el mismo ciclo en que llegaba
+   la respuesta, así que el componente se desmontaba **antes** de que corriera el efecto de guardado y el
+   hilo se quedaba vacío en la página de destino. La persistencia pasa a ser explícita en cada transición
+   (`persist`), sin depender del orden de los efectos de React.
+
+### 15.5 Hallazgos de infraestructura del entorno (no del incremento)
+
+1. **Prueba con presupuesto de tiempo justo.** `route-guards.test.ts` → «toma la IP de `x-real-ip`» paga
+   la importación completa de la ruta (`vi.resetModules()` + `import("./route")`) y tardaba **~5,2 s**,
+   justo por encima del tope de 5 s del runner: fallaba por **tiempo, no por comportamiento**. Se
+   reprodujo en un árbol limpio en `HEAD` (misma cifra), así que es **preexistente**; se le da un tope
+   explícito de 30 s con el motivo escrito en el propio test, sin relajar la aserción.
+2. **El build no cabe con el heap por defecto.** `next build` murió por **heap agotado** (~1 GB) con la
+   máquina a 1,9 GB de RAM; la CI define `NODE_OPTIONS=--max-old-space-size=4096`
+   (`.gitlab-ci.yml:114`) sobre un runner mayor. Con **1 536 MB** el build termina correctamente aquí.
+3. **El navegador de Playwright no arrancaba** por falta de `libnspr4`/`libnss3` en el sistema. Hay
+   librerías ya extraídas en el host, así que la suite corre con
+   `LD_LIBRARY_PATH=/home/dsh/.local/chromium-deps/usr/lib/x86_64-linux-gnu`. **Sin esa variable fallan
+   las 12 pruebas**, incluidas las preexistentes: es del entorno, no del código.
+4. **El idioma de la suite dependía del runner.** El locale se resuelve por cookie `NEXT_LOCALE` y, si no
+   hay, por `Accept-Language`; el navegador de Playwright anuncia `en-US`, así que las aserciones sobre
+   el copy en español fallaban según la máquina. Se fija `locale: "es-ES"` en `playwright.config.ts`:
+   la suite comprueba así el idioma **por defecto** del producto de forma determinista.
+5. **El hit-test del clic en móvil y el viewport visual.** Al enfocar el compositor, Chrome desplaza el
+   `visualViewport` (`offsetTop ≠ 0`) y Playwright resuelve el destino del clic en coordenadas del
+   viewport visual, atribuyéndolo al historial. El E2E envía con **Enter** —camino documentado del
+   compositor (UX#16)— y verifica aparte que el botón está visible y habilitado. El navegador real ya
+   desplaza el campo enfocado a la vista; anclar el panel al `visualViewport` (teclado en pantalla) queda
+   como mejora de un ciclo propio.
+
+### 15.6 Lo que queda fuera (declarado)
+
+- **Back-office** (D-83): las suites `admin/**` conservan su plantilla, así que el asistente no aparece
+  allí. Añadirlo sería montar el mismo dock en `AdminShell` (una línea) más la decisión de si el
+  asistente debe exponer conocimiento interno a un operador.
+- **Tarjetas de resultado dentro del panel** (D-82): descartado a propósito; el catálogo ya pinta la
+  noche con foto, precio y compra, y duplicarlo en el panel sería una segunda fuente de verdad.
+- **Persistencia entre pestañas**: la conversación se guarda por pestaña (`sessionStorage`). Compartirla
+  entre pestañas o entre sesiones exigiría decidir retención y privacidad (RNF-03), y no se ha pedido.
+- **Panel anclado al teclado en móvil**: ver 15.5.5 (mejora de un ciclo propio).
+- **Despliegue**: este incremento **no se ha desplegado** en GCP ni se ha hecho commit/push (no se ha
+  ordenado). Las imágenes en producción siguen en `web:v45` / `mcp:v45`.

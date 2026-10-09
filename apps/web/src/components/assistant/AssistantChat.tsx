@@ -1,30 +1,63 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useOnboarding } from "@/components/wallet/useOnboarding";
+import type { AssistantPageAction } from "@/lib/assistant/page-action";
 import { useAssistant } from "./useAssistant";
 import { PurchaseHandoff } from "./PurchaseHandoff";
 
 /** Altura máxima (px) del `<textarea>` autoexpandible antes de mostrar scroll interno (UX#16). */
 const TEXTAREA_MAX_PX = 160;
 
+export interface AssistantChatProps {
+  /**
+   * `page` = la conversación ocupa la página completa (`/asistente`); `panel` = vive dentro del
+   * panel flotante del widget (incremento v4), con el log más bajo para no tapar la pantalla.
+   */
+  readonly variant?: "page" | "panel";
+  /** Navegación a ejecutar cuando la consulta tiene resultado en la página (catálogo filtrado). */
+  readonly onPageAction?: (action: AssistantPageAction) => void;
+}
+
 /** Panel de chat del asistente IA (CU-08, docs/SRS.md §9): conversación + handoff a firma + estado 08e. */
-export function AssistantChat() {
+export function AssistantChat({ variant = "page", onPageAction }: AssistantChatProps = {}) {
   const t = useTranslations("assistant");
+  const router = useRouter();
   const { address } = useOnboarding();
+  // Sin manejador propio (la página `/asistente`), el resultado se enseña igual navegando a la
+  // página que lo contiene: el comportamiento del asistente no depende de dónde esté montado.
+  const navigate = useCallback(
+    (action: AssistantPageAction) => {
+      if (onPageAction) {
+        onPageAction(action);
+        return;
+      }
+      router.push(action.href);
+    },
+    [onPageAction, router],
+  );
   const { messages, status, unavailable, canRetry, preparedPurchase, send, retry } = useAssistant(
     address,
     t("errorReply"),
+    navigate,
   );
   const [input, setInput] = useState("");
-  const logEndRef = useRef<HTMLDivElement>(null);
+  const logRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Autoscroll al último mensaje cuando cambia el log o el estado (MINOR#28).
+  //
+  // Se mueve el `scrollTop` **del propio historial**, no con `scrollIntoView`: aquél asciende por
+  // todos los ancestros y arrastraba el scroll de la PÁGINA entera. En el widget (panel `position:
+  // fixed`, sobre todo en móvil) eso desplazaba la página de fondo y, en la emulación móvil, dejaba
+  // el compositor fuera del área visible: el botón de envío no se podía pulsar (reproducido con el
+  // viewport de Pixel 5). El historial es el único que debe desplazarse.
   useEffect(() => {
-    logEndRef.current?.scrollIntoView({ block: "end" });
+    const log = logRef.current;
+    if (log) log.scrollTop = log.scrollHeight;
   }, [messages.length, status]);
 
   // Textarea autoexpandible (UX#16): crece con el contenido hasta un tope, luego hace scroll.
@@ -71,12 +104,19 @@ export function AssistantChat() {
   ];
 
   return (
-    <section className="flex flex-col gap-4">
+    // En el panel (variante `panel`) la conversación ocupa la altura disponible del panel y **solo
+    // el historial** hace scroll: el compositor queda anclado abajo. Con un único contenedor con
+    // scroll, el botón de envío podía quedar tapado por el historial en móvil (reproducido con el
+    // viewport de Pixel 5: el clic nunca llegaba al botón).
+    <section className={`flex flex-col gap-4 ${variant === "panel" ? "min-h-0 flex-1" : ""}`}>
       <div
+        ref={logRef}
         role="log"
         aria-live="polite"
         aria-label={t("logLabel")}
-        className="flex max-h-[28rem] min-h-[12rem] flex-col gap-2 overflow-y-auto overscroll-contain rounded-brand border border-line bg-shell p-4"
+        className={`flex flex-col gap-2 overflow-y-auto overscroll-contain rounded-brand border border-line bg-shell p-4 ${
+          variant === "panel" ? "min-h-0 flex-1" : "min-h-[12rem] max-h-[28rem]"
+        }`}
       >
         {messages.length === 0 && (
           <>
@@ -119,8 +159,6 @@ export function AssistantChat() {
             {t("sending")}
           </p>
         )}
-        {/* Ancla del autoscroll: siempre al final del log. */}
-        <div ref={logEndRef} aria-hidden="true" />
       </div>
 
       {unavailable && (

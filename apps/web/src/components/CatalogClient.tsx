@@ -12,32 +12,21 @@ import {
 import { NightCard } from "@/components/NightCard";
 import { ContractPausedBanner } from "@/components/ContractPausedBanner";
 import { formatMonthLabel, monthKeyOf } from "@/lib/format";
+import {
+  EMPTY_GRID_FILTERS,
+  gridFiltersFromSearch,
+  type CatalogGridFilters,
+  type CatalogSearch,
+} from "@/lib/catalog-search";
 import type { NightView } from "@/lib/nights";
 
 const PAGE_SIZE = 12;
 // Tarjetas con imagen de carga ansiosa (LCP, UX#10): la primera fila de escritorio.
 const PRIORITY_CARDS = 3;
 
-interface Filters {
-  readonly type: NightType | "all";
-  readonly month: number | null;
-  /** Umbral de precio máximo en wei; `null` = cualquier precio (RF-14, MINOR#19). */
-  readonly maxPriceWei: bigint | null;
-  /** Rango de fechas `AAAA-MM-DD` (input nativo); vacío = sin acotar (RF-14). */
-  readonly dateFrom: string;
-  readonly dateTo: string;
-  /** Búsqueda por número de habitación (RF-14). */
-  readonly search: string;
-}
+type Filters = CatalogGridFilters;
 
-const NO_FILTERS: Filters = {
-  type: "all",
-  month: null,
-  maxPriceWei: null,
-  dateFrom: "",
-  dateTo: "",
-  search: "",
-};
+const NO_FILTERS: Filters = EMPTY_GRID_FILTERS;
 
 const hasActiveFilters = (f: Filters): boolean =>
   f.type !== "all" ||
@@ -69,14 +58,24 @@ function EmptyIcon() {
 export function CatalogClient({
   nights,
   paused,
+  initialSearch = null,
 }: {
   nights: readonly NightView[];
   /** `true`/`false` = estado leído on-chain; `null` = no se pudo comprobar (M7). */
   paused: boolean | null;
+  /**
+   * Filtro que llega en la URL (incremento v4): es el que deja el asistente cuando responde a una
+   * consulta de disponibilidad, para que el resultado se vea en la página desde el primer render.
+   */
+  initialSearch?: CatalogSearch | null;
 }) {
   const t = useTranslations("catalog");
   const format = useFormatter();
-  const [filters, setFilters] = useState<Filters>(NO_FILTERS);
+  // El estado se siembra con el filtro de la URL; la página remonta este componente (clave por
+  // búsqueda) cuando la búsqueda cambia, así que no hacen falta efectos de sincronización.
+  const [filters, setFilters] = useState<Filters>(() =>
+    initialSearch === null ? NO_FILTERS : gridFiltersFromSearch(initialSearch),
+  );
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [added, setAdded] = useState(0);
   const firstNewRef = useRef<HTMLLIElement | null>(null);

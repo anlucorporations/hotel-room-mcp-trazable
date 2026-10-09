@@ -239,6 +239,8 @@
     "emptyNoListingsHint": "Check back soon: we are preparing new rooms by the sea.",
     "syncingNotice": "We removed {count} night that is already sold. The calendar is syncing: new availability may appear within minutes.",
     "clearFilters": "Clear filters",
+    "assistantNotice": "Results of your query to the assistant: {filters}.",
+    "assistantNoticeDates": "from {from} to {to}",
     "degraded": "Could not load the catalog. Check your connection and try again.",
     "retry": "Retry",
     "loadMore": "Load more nights",
@@ -877,6 +879,9 @@
   },
   "assistant": {
     "title": "AI Assistant",
+    "launcherOpen": "Open the assistant",
+    "panelTitle": "AI Assistant",
+    "panelClose": "Close the assistant",
     "tagline": "Ask about availability and prepare your booking; you sign with your wallet.",
     "intro": "Hello! I am the Hotel Marina del Sol concierge assistant. I can help check dates and prepare room bookings.",
     "logLabel": "Conversation with assistant",

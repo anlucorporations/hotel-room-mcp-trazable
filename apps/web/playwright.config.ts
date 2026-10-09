@@ -16,6 +16,12 @@ export default defineConfig({
   use: {
     baseURL,
     trace: "on-first-retry",
+    // **Idioma fijo de la suite**: el contrato de idioma del producto es cookie `NEXT_LOCALE` y, si
+    // no hay, `Accept-Language` (ver `src/i18n/request.ts`). El navegador de Playwright anuncia
+    // `en-US` por defecto, así que las aserciones sobre el copy en español («Asistente»,
+    // «Resultados de tu consulta…») fallaban según el idioma del runner, no por el código. Fijarlo
+    // aquí hace la suite determinista y comprueba el idioma **por defecto** del producto.
+    locale: "es-ES",
   },
   webServer: {
     command: `pnpm start --port ${PORT}`,

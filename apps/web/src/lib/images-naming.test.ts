@@ -45,6 +45,15 @@ const MANUALS = [
 
 const CONTENT_IMAGE = /^hotel-(hero|services|experience|activities|contact|other)-\d{4}-\d{2}-\d{2}-\d{1,2}\.jpg$/;
 const DOC_ASSET = /^doc-[a-z0-9]+(-[a-z0-9]+)*\.(svg|png)$/;
+/**
+ * **Avatares de marca** del asistente (incremento v4): `avatar_hotel_<ancho>x<alto>.webp`.
+ *
+ * Son una **cuarta familia**: no los sube el negocio (no son JPG de habitación ni de contenido) y no
+ * son ilustraciones de manual. El tamaño va en el nombre a propósito, porque el asistente elige el
+ * fichero según dónde se pinte: 40×40 en la cabecera móvil y el encabezado del panel, 80×80 en el
+ * lanzador flotante de escritorio.
+ */
+const AVATAR = /^avatar_hotel_\d{2,3}x\d{2,3}\.webp$/;
 /** Validador REAL del producto para las fotos de habitación (una sola fuente de verdad). */
 async function isValidRoomImageName(name: string): Promise<boolean> {
   const roomImages = await import("./room-images");
@@ -81,15 +90,24 @@ describe("Imágenes · nombres canónicos por uso y posición", () => {
     expect(files.length).toBeGreaterThan(8);
   });
 
-  it("cada fichero pertenece a una familia del catálogo (habitación, contenido o manual)", async () => {
+  it("cada fichero pertenece a una familia del catálogo (habitación, contenido, manual o avatar)", async () => {
     const unknown: string[] = [];
     for (const file of files) {
       if (file === "README.md") continue;
       const ok =
-        CONTENT_IMAGE.test(file) || DOC_ASSET.test(file) || (await isValidRoomImageName(file));
+        CONTENT_IMAGE.test(file) ||
+        DOC_ASSET.test(file) ||
+        AVATAR.test(file) ||
+        (await isValidRoomImageName(file));
       if (!ok) unknown.push(file);
     }
     expect(unknown).toEqual([]);
+  });
+
+  it("los avatares del asistente declaran su tamaño en el nombre (40 y 80 px)", () => {
+    const avatars = files.filter((file) => file.endsWith(".webp"));
+    expect(avatars).toEqual(["avatar_hotel_40x40.webp", "avatar_hotel_80x80.webp"]);
+    for (const file of avatars) expect(file, file).toMatch(AVATAR);
   });
 
   it("las fotos de habitación se llaman como exige el producto, con el tipo del maestro", async () => {

@@ -1,6 +1,6 @@
 # Índice de imágenes de la plataforma
 
-Esta carpeta reúne **tres familias** de imágenes, y el nombre de cada una dice a cuál pertenece y
+Esta carpeta reúne **cuatro familias** de imágenes, y el nombre de cada una dice a cuál pertenece y
 dónde se ve (catálogo completo, con el mapa de las 50 habitaciones:
 [`RepoTecnico/catalogo_imagenes.md`](../../RepoTecnico/catalogo_imagenes.md)):
 
@@ -9,10 +9,26 @@ dónde se ve (catálogo completo, con el mapa de las 50 habitaciones:
 | **Habitación** | `<nº>-<Simple\|Doble\|Suite>-<AAAA-MM-DD>-<1..5>.jpg` | `GET /api/rooms/images/<fichero>` |
 | **Contenido público** (hero, galería, planes) | `hotel-<hero\|services\|experience\|activities\|contact\|other>-<AAAA-MM-DD>-<1..20>.jpg` | `GET /api/content/images/<fichero>` |
 | **Ilustraciones de manual** | `doc-<pantalla>-<elemento>.svg` (o `.png` en la portada) | `GET /manual/imagenes/<fichero>` |
+| **Avatares de marca** (asistente IA) | `avatar_hotel_<ancho>x<alto>.webp` | `apps/web/public/images/<fichero>` (estático) |
 
 Las dos primeras se **suben desde el back-office** (el sistema construye el nombre) y son **JPG ≤ 2 MB**.
 Las de manual se guardan aquí a mano con el prefijo `doc-` y se regeneran con
 `pnpm --filter @hotel/web run manuals`.
+Los avatares son piezas de **marca**: se guardan aquí y se **copian** a `apps/web/public/images/`
+para que la web los sirva; el tamaño va en el nombre porque el asistente elige el fichero según dónde
+se pinte (RF-62 del incremento v4).
+
+## Avatares de marca (asistente IA)
+
+| Fichero | Medidas | Dónde se usa |
+|---|---|---|
+| `avatar_hotel_40x40.webp` | 40×40 px | Avatar de la **cabecera en móvil** (abre la conversación) y encabezado del panel del asistente. |
+| `avatar_hotel_80x80.webp` | 80×80 px | **Lanzador flotante** del asistente en escritorio (esquina inferior derecha). |
+
+Ambos son **decorativos** en la interfaz (`alt=""` + `aria-hidden`): el nombre accesible lo aporta el
+botón que los envuelve. Se copian a `apps/web/public/images/` con el mismo nombre, y el guardián
+`apps/web/src/lib/images-naming.test.ts` comprueba que la familia y los dos tamaños existen.
+
 
 ## Fotografías de habitación
 

@@ -1,4 +1,5 @@
 import type { PurchaseTxData } from "@hotel/shared/domain";
+import type { AssistantToolCall } from "./page-action";
 
 /**
  * Tipos neutrales del asistente (RF-12, CU-08, docs/SRS.md §9). No dependen del proveedor LLM ni del MCP:
@@ -89,4 +90,9 @@ export interface AssistantResult {
   readonly usage: LlmUsage;
   /** Turnos descartados por el presupuesto de entrada (RNF-24). */
   readonly droppedTurns: number;
+  /**
+   * Herramientas de dominio que respondieron **con éxito**, en orden de ejecución. Es la materia
+   * prima de la acción de página (`derivePageAction`): una herramienta que falló no mueve al usuario.
+   */
+  readonly toolCalls: readonly AssistantToolCall[];
 }
