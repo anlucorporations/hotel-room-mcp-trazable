@@ -2352,3 +2352,62 @@ despliega igualmente para cerrar el hueco de trazabilidad.
 **Nota**: en la prueba del canario, la pregunta por la **duración del resguardo** volvió a responder «no
 tiene una duración fija» en vez de los 7 días. Es la **contradicción conocida** que dejó medida el arnés de
 fidelidad (`estado_proyecto.md` §14.17-14.18), no un defecto nuevo de esta release.
+
+---
+
+## 68. Release v46 — asistente IA global (incremento v4) en producción (2026-10-09)
+
+**Qué se desplegó.** El incremento **v4** (`98ef78d`): el asistente deja de vivir solo en `/asistente` y
+pasa a estar en toda la plataforma (icono flotante en escritorio, avatar en la cabecera en móvil), con los
+avatares de marca y con las consultas **materializadas en la página** (el catálogo acepta el filtro por
+URL). Solo cambia **`apps/web`**: `mcp` (v45), `worker` (v38) y `monitor` se quedan como estaban.
+
+**Cómo se construyó (lección de §67 aplicada).** La imagen se construyó desde un **árbol de trabajo limpio
+en el commit publicado** (`git worktree add /tmp/hotel-v46 98ef78d`), no desde el árbol de desarrollo: en
+el árbol principal había cambios **ajenos** sin commitear (`packages/shared/src/db/migrator.ts`,
+`RepoTecnico/base_datos.sql`) que **no debían viajar** a producción. El único fichero que se copia al
+árbol limpio es el registro de despliegues (`packages/shared/deployments/*.json`), que está **gitignored
+a propósito** (`.gcloudignore` lo conserva porque la imagen lo necesita).
+
+| Componente | Imagen | Build | Duración |
+|---|---|---|---|
+| web | `…/hotel-mcp/web:v46` | ✅ SUCCESS `1b25cd1c` | 3m46s |
+| mcp | `mcp:v45` (sin cambios) | vigente | — |
+| worker | `worker:v38` (sin cambios) | vigente | — |
+
+**Despliegue por canario** (procedimiento de §26, que sigue vigente porque el tráfico de `web` ya estaba
+fijado por nombre):
+
+```bash
+gcloud run deploy hotel-mcp-web --image=…/web:v46 --region=europe-west1 --no-traffic --tag=v46
+# verificación del canario en https://v46---hotel-mcp-web-d6jlzeq5yq-ew.a.run.app
+gcloud run services update-traffic hotel-mcp-web --to-revisions=hotel-mcp-web-00087-vup=100 \
+  --update-tags=canary=hotel-mcp-web-00087-vup
+```
+
+| Servicio | Revisión sirviendo | Tráfico | Rollback |
+|---|---|---|---|
+| web | `hotel-mcp-web-00087-vup` (`web:v46`) | 100 % | `hotel-mcp-web-00085-wor` (v45) |
+| mcp | `hotel-mcp-mcp-00023-cal` (`mcp:v45`) | 100 % | `00021-tis` (v44) |
+| worker | `hotel-mcp-worker-00010-jut` (`worker:v38`) | 100 % | sin cambios |
+
+**Verificación**
+
+| Comprobación | Resultado |
+|---|---|
+| Canario: rutas `/`, `/catalogo`, `/catalogo?tipo=simple`, `/asistente`, `/recepcion`, `/health/ready` | **200** en todas; `READY` en salud ✅ |
+| Canario: widget en el HTML | `assistant-launcher` (escritorio) + `assistant-header-trigger` (móvil) + `avatar_hotel_80x80.webp` ✅ |
+| Canario: aviso del filtro | `/catalogo?tipo=simple` sirve `catalog-assistant-notice` («Resultados de tu consulta al asistente») ✅ |
+| Canario: `/asistente` sin duplicar el acceso | 0 apariciones del lanzador ✅ |
+| **Consulta real al asistente en el canario** | «¿qué habitaciones sencillas hay disponibles?» → `domainToolCalls: 1`, lista de noches reales y `pageAction = {"kind":"catalog","href":"/catalogo?tipo=simple",…}` ✅ (**la consulta se ve en la página**) |
+| Tras promover: revisión que sirve e imagen | `00087-vup` · `web:v46` (comprobado en el `describe`, no solo en el `deploy`) ✅ |
+| Producción: regresión de rutas | `/`, `/catalogo`, `/catalogo?tipo=simple`, `/reservar`, `/reventa`, `/mis-noches`, `/asistente`, `/ayuda`, `/historico`, `/recepcion`, `/health/ready` → **200** ✅ |
+| Producción: widget servido | `assistant-launcher` + los dos avatares presentes en el HTML de `/` ✅ |
+| Otros servicios | `mcp:v45` y `worker:v38` intactos ✅ |
+
+**Rollback.** `gcloud run services update-traffic hotel-mcp-web --region=europe-west1
+--to-revisions=hotel-mcp-web-00085-wor=100` (revisión `v45`, viva y con estado `True`). El tag `canary`
+se movió a la revisión nueva; el tag `v39` de la revisión `00046-9t9` (sin tráfico) no se toca.
+
+**Nota de alcance.** El back-office (`admin/**`) conserva su plantilla y **no** monta el asistente: es la
+decisión D-83 del incremento (públicas + recepción), no un olvido.

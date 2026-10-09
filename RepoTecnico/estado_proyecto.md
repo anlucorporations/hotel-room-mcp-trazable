@@ -4532,5 +4532,30 @@ Tres cosas que solo aparecen al ejecutar de verdad, no al compilar:
 - **Persistencia entre pestañas**: la conversación se guarda por pestaña (`sessionStorage`). Compartirla
   entre pestañas o entre sesiones exigiría decidir retención y privacidad (RNF-03), y no se ha pedido.
 - **Panel anclado al teclado en móvil**: ver 15.5.5 (mejora de un ciclo propio).
-- **Despliegue**: este incremento **no se ha desplegado** en GCP ni se ha hecho commit/push (no se ha
-  ordenado). Las imágenes en producción siguen en `web:v45` / `mcp:v45`.
+
+### 15.7 Publicación y despliegue (2026-10-09)
+
+**Commit y push.** El incremento se publicó como **`98ef78d`** (`feat(asistente): asistente IA global con
+los resultados en la pagina (incremento v4)`) y se empujó a los **tres remotos**:
+`origin` (`gitlab.com`), `github` (`github.com`) y `codecrypto` (`gitlab.codecrypto.academy`), todos de
+`757ee69`…`98ef78d` en la rama `Hotel-DSH-GCP-v3`. Los cambios **ajenos** que ya estaban en el árbol
+(`packages/shared/src/db/migrator.ts` —orden de creación de `room_cleaning_checklists`—, su espejo en
+`RepoTecnico/base_datos.sql` y varios scripts sueltos) se dejaron **sin commitear** y **sin desplegar**:
+no son de esta línea de trabajo y no se han verificado aquí.
+
+**Despliegue en GCP (release v46).** La imagen se construyó desde un **árbol limpio en el commit**
+(`git worktree`), precisamente para que esas modificaciones ajenas no viajaran a producción. Solo se
+reconstruyó la web; `mcp:v45` y `worker:v38` no cambiaban.
+
+| Servicio | Revisión sirviendo | Imagen | Rollback |
+|---|---|---|---|
+| web | `hotel-mcp-web-00087-vup` | `web:v46` (build `1b25cd1c`, 3m46s) | `hotel-mcp-web-00085-wor` (v45) |
+| mcp | `hotel-mcp-mcp-00023-cal` | `mcp:v45` (sin cambios) | `00021-tis` (v44) |
+| worker | `hotel-mcp-worker-00010-jut` | `worker:v38` (sin cambios) | — |
+
+**Verificado en el canario y en producción**: las 11 rutas de regresión y `/health/ready` responden
+**200**; el HTML de `/` sirve el lanzador flotante y los dos avatares; `/catalogo?tipo=simple` sirve el
+aviso del asistente; `/asistente` sigue sin duplicar el acceso; y una **consulta real** al asistente
+(«¿qué habitaciones sencillas hay disponibles?») ejecutó `listAvailableNights` y devolvió
+`pageAction = {"kind":"catalog","href":"/catalogo?tipo=simple"}` — el resultado se ve en la página, que
+es el objetivo del incremento. Detalle completo en `despliegue_gcp.md` §68.
