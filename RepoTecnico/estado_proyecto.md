@@ -4559,3 +4559,49 @@ aviso del asistente; `/asistente` sigue sin duplicar el acceso; y una **consulta
 («¿qué habitaciones sencillas hay disponibles?») ejecutó `listAvailableNights` y devolvió
 `pageAction = {"kind":"catalog","href":"/catalogo?tipo=simple"}` — el resultado se ve en la página, que
 es el objetivo del incremento. Detalle completo en `despliegue_gcp.md` §68.
+
+### 15.8 Verificación de la reserva preparada y de la firma con la billetera (2026-10-10)
+
+**Petición del responsable**: verificar que el asistente **prepara la reserva** y que ésta **se envía a
+firmar con la billetera**. Se verificó sobre el despliegue real con una **billetera inyectada que firma
+y difunde de verdad** (cuenta 4 del pool determinista, huésped simulado). Detalle en
+`despliegue_gcp.md` §70; evidencia visual en
+`RepoTecnico/evidencias/verificacion-reserva-asistente-2026-10-10/`.
+
+**Dos defectos reales encontrados y corregidos**
+
+1. **No preparaba la reserva (3 de cada 4 veces) y lo negaba.** Medido con el flujo natural de dos
+   turnos y llamadas espaciadas: **1/4** preparadas; en los fallos el modelo hacía **una** llamada en
+   vez de dos (`checkAvailability` → `buildPurchaseTx`) y respondía «el tokenId no es válido». Causa:
+   la regla del prompt ordenaba llamar a `buildPurchaseTx` «directamente» al confirmar, y el resultado
+   de herramientas de turnos anteriores **no viaja** en la conversación, así que el modelo inventaba el
+   `tokenId`. El MCP y el validador server-side se comprobaron aparte contra la cadena real: correctos
+   (`{ok:true}`). **Corrección `9caadb3`**: el prompt exige obtener el `tokenId` con
+   `checkAvailability` y no llamar a `buildPurchaseTx` si no viene de una herramienta del mismo turno,
+   con guardia nuevo en `prompt.test.ts`. Resultado: **4/4** en el canario y **2/2** en producción.
+2. **La compra preparada se perdía al navegar.** El flujo correcto usa dos herramientas y
+   `checkAvailability` es de catálogo, así que generaba `pageAction`: el widget navegaba a `/catalogo` y
+   cerraba el panel **en el mismo turno** en que llegaba la compra preparada, de modo que el usuario no
+   veía el panel de firma. **Corrección `084fab8`**: `pageActionForTurn` devuelve `null` si el turno
+   dejó una compra preparada (el handoff manda; la navegación se mantiene para los turnos que solo
+   consultan).
+
+**Lo verificado (evidencia)**
+
+| Comprobación | Resultado |
+|---|---|
+| Preparación de la reserva (API, flujo natural) | v46: 1/4 · canario v47bis: **4/4** · producción v48: **2/2**, con `tool=2` y `tokenId`/precio reales |
+| Prioridad del handoff | `pageAction: null` en el turno de compra; `/catalogo?…` se mantiene en el turno de consulta |
+| Handoff en el navegador (v48) | Panel abierto con habitación/noche/token/contrato/importe, firmante `0x15d3…6A65` y «Firmar reserva» habilitado tras verificar el precio on-chain |
+| Envío a la billetera | Al pulsar «Firmar reserva» la billetera recibe `eth_sendTransaction` (`to` = contrato, `value` = 0,05 ETH); cancelada, el panel avisa y **nada se difunde** |
+| **Compra real firmada y difundida** | Noche `10120261010` comprada por `0x15d3…6A65`: tx `0x05387364…bd25f249`, recibo **success** (bloque 503), `ownerOf` = comprador, `soldOnce = true`, UI «¡Noche reservada!» y la noche fuera del catálogo |
+
+**Trabajo concurrente detectado (importante para la traza).** Durante esta verificación, otra línea de
+trabajo publicó en el mismo repositorio los commits `a2c7696` y `97576da` (§69: «la compra no puede
+fallar en silencio», revisión `00089-sor`). Mi build de `web:v47` **reutilizó el tag `v47`**, así que esa
+imagen se conserva por *digest* y se ha **re-etiquetado como `web:v47-compra`** para no perder la traza.
+La producción actual (`web:v48`, revisión `00093-zaj`, commit `084fab8`) **incluye los dos trabajos**, y
+se comprobó que la copia de §69 (D4/D5) y el widget del incremento v4 se sirven en el mismo HTML.
+
+**Consumo de inventario.** La noche `10120261010` (habitación 101, 2026-10-10) queda vendida al huésped
+simulado en la cadena de pruebas: es la única noche consumida por la verificación.

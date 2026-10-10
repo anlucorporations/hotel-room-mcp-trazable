@@ -2472,3 +2472,99 @@ estado «no verificable», guarda de firma) está cubierto por **pruebas hermét
 (105 ficheros / 969 tests) y por la reproducción on-chain del informe
 (`apps/web/scripts/verify-reserva-fallida.mts`); no se repitió una compra real en producción
 para esta release.
+
+---
+
+## 70. Releases v47bis y v48 — el asistente prepara la reserva y la entrega a la billetera (2026-10-10)
+
+**Qué se pidió.** Verificar que el asistente **prepara** la reserva y que ésta **se envía a firmar
+con la billetera**. La verificación se hizo contra el despliegue real (Anvil de GCP, chainId 31337,
+contrato `0xc66ab8…`) con una **billetera inyectada que firma y difunde de verdad**, usando la cuenta
+4 del pool determinista (huésped simulado documentado en `BaseOperaciones/cuentas_anvil.md`,
+`0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65`).
+
+### Hallazgo 1 · El asistente no preparaba la reserva (3 de cada 4 veces) y lo negaba en silencio
+
+Con **v46**, el flujo natural de dos turnos (consultar disponibilidad → confirmar y preparar) medido
+con 4 intentos espaciados (el limitador devuelve 429 si no se espacian) dio **1 de 4** preparadas. En
+los tres fallos el modelo hizo **UNA** llamada de herramienta en vez de dos y respondió «el `tokenId`
+que me has proporcionado no es válido».
+
+**Causa.** La secuencia correcta es `checkAvailability` (que devuelve el `tokenId`) → `buildPurchaseTx`.
+La regla del prompt decía «Una vez que el usuario lo confirme, llama a **buildPurchaseTx directamente**,
+sin volver a pedir confirmación», y el resultado de herramientas de turnos anteriores **no viaja** en
+la conversación (el cliente solo envía texto), así que el modelo se saltaba la consulta y **calculaba**
+el tokenId por su cuenta, a menudo mal. El MCP y el validador server-side estaban bien: comprobados
+con el mismo `tokenId` contra la cadena real (`{ok:true}`) y con una sonda directa al MCP desplegado
+(`priceOf` 0,05 ETH, `soldOnce` false, `tx` correcta).
+
+**Corrección** (`9caadb3`): la regla pasa a exigir obtener el `tokenId` con `checkAvailability` y
+llamar después a `buildPurchaseTx` con ESE `tokenId`, sin calcularlo ni inventarlo, y prohíbe llamar a
+`buildPurchaseTx` si el `tokenId` no viene de una herramienta del **mismo turno**. Guardia nuevo en
+`prompt.test.ts`.
+
+### Hallazgo 2 · La compra preparada se perdía: el widget navegaba y cerraba el panel
+
+Medido con la corrección del prompt desplegada (v47): turno 1 → el asistente consulta el catálogo y el
+widget **navega** a `/catalogo?…&buscar=101` y cierra el panel (es la función del incremento v4). En el
+turno 2 el flujo bueno usa **dos** herramientas y `checkAvailability` es de catálogo, así que volvía a
+producir acción de página: el servidor preparaba la reserva y el **panel de firma no llegaba a verse**
+(comprobado en navegador: URL de catálogo, panel cerrado, `purchase-handoff` ausente). El defecto estaba
+latente antes porque el modelo se saltaba `checkAvailability`; al arreglar el prompt quedó al descubierto.
+
+**Corrección** (`084fab8`): `pageActionForTurn` — si el turno dejó una compra preparada, la acción de
+página es `null`. El panel de firma es el siguiente paso del usuario; el catálogo puede esperar. La
+navegación se mantiene para los turnos que solo consultan.
+
+### Releases
+
+| Componente | Imagen | Build | Nota |
+|---|---|---|---|
+| web | `web:v47` | `b279d284` (3m41s) | Desde `9caadb3`. **Reutilizó el tag `v47`**: la imagen de §69 (build `4cc57502`, revisión `00089-sor`) se conserva por *digest* y se ha re-etiquetado como **`web:v47-compra`** para no perder la traza |
+| web | `web:v48` | `b009382d` (3m46s) | Desde `084fab8` (incluye `a2c7696` de §69 + las dos correcciones de esta línea) |
+| mcp / worker / monitor | `mcp:v45` · `worker:v38` | vigentes | sin cambios |
+
+Ambas imágenes se construyeron desde un **árbol de trabajo limpio en el commit** (`git worktree`), con
+el registro de despliegues copiado (gitignored), igual que en §68-§69.
+
+| Servicio | Revisión sirviendo | Imagen | Tráfico | Rollback |
+|---|---|---|---|---|
+| web | `hotel-mcp-web-00093-zaj` | `web:v48` | **100 %** | `hotel-mcp-web-00091-nev` (v47bis) |
+| web (histórico) | `00091-nev` (0 %) · `00089-sor` (0 %) · `00087-vup` (0 %) | v47bis · v47 · v46 | 0 % | — |
+| mcp | `hotel-mcp-mcp-00023-cal` | `mcp:v45` | 100 % | `00021-tis` (v44) |
+| worker | `hotel-mcp-worker-00010-jut` | `worker:v38` | 100 % | sin cambios |
+
+### Verificación
+
+| Comprobación | Resultado |
+|---|---|
+| Sonda directa al MCP desplegado (`listAvailableNights`, `checkAvailability`, `buildPurchaseTx`) | Lista noches, confirma `10120261010` disponible a 0,05 ETH y devuelve `buy(tokenId)` con `to`/`value`/`chainId` correctos ✅ |
+| Validador server-side contra la cadena real (mismo código que producción) | `{ok:true, reasons:[]}` con la tx que devuelve el MCP ✅ |
+| **Flujo natural de compra, v46 (antes)** | **1/4** preparadas; los 3 fallos con una sola herramienta y texto «tokenId no válido» ❌ |
+| **Canario v47bis (prompt corregido)** | **4/4** preparadas, todas con `tool=2` (checkAvailability → buildPurchaseTx), tokenId/precio correctos y texto acorde ✅ |
+| **Producción v48, flujo natural** | **2/2** preparadas con `tool=2`, `tokenId` real y **`pageAction: null`** en el turno de compra (prioridad del handoff) ✅ |
+| Navegación de la consulta (incremento v4) sigue viva | Turno de disponibilidad → `pageAction = /catalogo?desde=…&hasta=…&buscar=101` ✅ |
+| **Compra REAL firmada y difundida** (navegador, v46) | Noche `10120261010` comprada por `0x15d3…6A65`: `eth_sendTransaction` recibida por la billetera, firma y difusión `0x05387364…bd25f249`, recibo **success** (bloque 503, 112 878 gas), `ownerOf` = comprador y `soldOnce = true`; la UI mostró «¡Noche reservada!» con su recibo ✅ |
+| El catálogo refleja la venta | La noche comprada desaparece de `/catalogo` (12 tarjetas antes, sin `10120261010` después) ✅ |
+| **Handoff verificado en navegador sobre v48** (canario) | Panel **permanece abierto**, «Reserva preparada — revisa y firma» con habitación/noche/token/contrato/0,05 ETH, «Firmarás con la wallet conectada 0x15d3…6A65» y «Firmar reserva» **habilitado** tras la verificación on-chain ✅ |
+| Petición de firma en v48 | Al pulsar «Firmar reserva», la billetera recibe `eth_sendTransaction` (`to` = contrato, `value` = `0xb1a2bc2ec50000`); al **cancelar** el panel muestra el error y **nada se difunde** (`ownerOf`/`soldOnce` sin cambios) ✅ |
+| Ambos trabajos conviven en producción | Copy de §69 (D4/D5) y widget del incremento v4 servidos en el mismo HTML ✅ |
+| Regresión de rutas | `/`, `/catalogo`, `/asistente`, `/recepcion`, `/health/ready` → **200** ✅ |
+
+**Evidencia visual** en `RepoTecnico/evidencias/verificacion-reserva-asistente-2026-10-10/`:
+`v48-2-handoff.png` (panel de firma sobre el catálogo), `v48-3-cancelada.png`, `verif-2-verificado.png`
+y `verif-3-exito.png` (compra confirmada con recibo).
+
+**Inventario consumido por la verificación.** La noche **`10120261010`** (habitación 101, 2026-10-10,
+0,05 ETH) queda **vendida** al huésped simulado `0x15d3…6A65` en la cadena de pruebas. Es la única
+noche consumida: las comprobaciones posteriores se hicieron cancelando la firma.
+
+**Riesgo residual (no bloqueante).** El modelo (`gemini-2.5-flash-lite`, `thinking_budget: 0`) sigue
+teniendo varianza de narración: en una muestra dijo «No puedo consultar la disponibilidad…» tras una
+consulta que sí devolvió datos, y en §69 quedó medida la varianza equivalente en manuales. La
+**preparación** ya es fiable en las muestras tomadas (4/4 + 2/2), pero conviene medirla con el arnés de
+fidelidad antes de subir el modelo de exigencia.
+
+**Rollback.** `gcloud run services update-traffic hotel-mcp-web --region=europe-west1
+--to-revisions=hotel-mcp-web-00087-vup=100` (v46, la última con el prompt anterior) o
+`--to-revisions=hotel-mcp-web-00089-sor=100` (§69 sin las correcciones de esta línea).
