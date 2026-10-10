@@ -4728,3 +4728,31 @@ regresión y `/health/ready` responden **200**; producción sirve las señales n
 al asistente** («¿qué habitaciones sencillas hay disponibles?») devolvió
 `pageAction = {"kind":"catalog","href":"/catalogo?tipo=simple"}`, que es el punto 3 verificado en vivo.
 `mcp` y `worker` quedan intactos. Detalle en `despliegue_gcp.md` §72.
+
+## 18. Quema de caducadas: quick wins críticos de la auditoría V6 (2026-10-10) · `@equipoAuditoria`
+
+Tras la auditoría (`RepoTecnico/INFORME_OPTIMIZACION_V6.md`, veredicto **NO APTO**), se implementaron
+los tres hallazgos que cambiaban el veredicto y se desplegaron como release **v51** (`357ff39`).
+
+| Hallazgo | Qué se hizo |
+|---|---|
+| **H-01** (CRÍTICA) · integridad del índice | Nuevo `isRevertError` (viem `BaseError.walk` + `ContractFunctionRevertedError`, con respaldo por nombre): en `canSimulate` y en `isGoneOnChain`, **un revert es un veredicto de negocio y un error de transporte se propaga**. Antes, un `eth_call` degradado descartaba todas las candidatas y la reconciliación las marcaba `BURNED` en la base sin quema on-chain, sin alerta y sin vuelta atrás. Ahora la reconciliación no escribe si no puede confirmar; si falla a mitad, avisa y devuelve `ERROR` conservando y avisando lo ya quemado. |
+| **H-05** (ALTA) · fallo total silencioso | Nuevo `reason: SKIPPED_ALL` cuando había candidatas **vivas** sin quemar: alerta a DevOps, `executed: false` y **cerrojo diario liberado** (antes: `COMPLETED` con 0 quemadas, sin aviso y con el día bloqueado, así que nadie reintentaba). Si todos los descartes se reconciliaron como ya quemados por otro operador, se mantiene `COMPLETED`: es convergencia benigna. |
+| **H-04** (ALTA) · señal de vida | El planificador publica `lastRun()` (día, motivo, quemadas, hashes) y `/health` expone `burn: { scheduler: enabled\|disabled, lastRun }`, evaluado en cada informe. Arrancar sin clave encola un `DEVOPS_ALERT` (el fallo real que ocurrió en producción se detectó a mano). Si el worker arranca **después** de la hora de quema, hace una **pasada de recuperación** (el cerrojo evita duplicar). |
+| **H-19** (BAJA) · aviso perdido | `readChainClock` acepta `onDegraded` y el planificador lo registra: el docstring prometía el aviso y el código no lo hacía. |
+
+**Verificación**: typecheck y eslint limpios; 19 pruebas del servicio de quema (6 nuevas: `isRevertError`
+con revert real de viem, simulación con error de red, `ownerOf` con error de red **sin marcar nada**, y
+`SKIPPED_ALL`), 13 del planificador (lastRun, recuperación al arrancar, sin pasada extra dentro de hora,
+aviso del reloj y `SKIPPED_ALL` liberando cerrojo), 6 de salud y **138/138** en la suite del worker.
+Desplegado y comprobado en vivo: el `/health` del worker publica
+`"burn":{"scheduler":"disabled","lastRun":null}` (detalle en `despliegue_gcp.md` §73).
+
+**Lo que sigue pendiente** (no entra en el veredicto de «integridad + señal de vida»):
+**H-02** (el firmante acumula `MINTER + BURNER` y la cuenta 0 conserva `BURNER_ROLE` con clave
+publicada) y **H-03/QW-4** (variables de quema fuera de `.env.example`, del manual y de
+`70-deploy-apps.sh`). **La quema sigue DESACTIVADA en producción**: activarla es una decisión de
+configuración, y la auditoría recomienda hacerlo tras cerrar H-02/H-03.
+
+**Deuda ajena detectada al verificar**: `packages/shared/src/documentation-guardian.test.ts` ya fallaba
+en `HEAD` (cita `CU-38`/`CU-39` de un commit ajeno sin catalogar en el SRS). No se ha tocado.

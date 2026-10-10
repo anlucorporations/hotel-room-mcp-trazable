@@ -2679,3 +2679,76 @@ build local y billetera EIP-1193 inyectada, y con las pruebas de la suite
 
 **Rollback.** `gcloud run services update-traffic hotel-mcp-web --region=europe-west1
 --to-revisions=hotel-mcp-web-00095-qes=100` (v49, la anterior).
+
+---
+
+## 73. Release v51 — quema de caducadas: integridad, aviso y señal de vida (2026-10-10)
+
+**Qué se desplegó.** El commit `357ff39`, con los **quick wins críticos** de la auditoría V6 del
+proceso de quema (`RepoTecnico/INFORME_OPTIMIZACION_V6.md`): **H-01** (un error de transporte del RPC
+dejaba de ser un veredicto de negocio: ya no marca `BURNED` inventario vivo), **H-05** (un ciclo con
+todas las candidatas descartadas ya no se declara `COMPLETED` en silencio: `SKIPPED_ALL` + alerta +
+cerrojo liberado) y **H-04** (señal de vida en `/health`, aviso si falta la clave y pasada de
+recuperación al arrancar), más **H-19** (el reloj de cadena degradado avisa). Solo **shared + worker**:
+la web se reconstruye por consistencia de la release, sin cambios funcionales.
+
+**Alcance del worker.** Entre la imagen vigente (`worker:v38`, commit `aeee4f2`) y este commit **no hay
+ni un commit** que toque `apps/worker`/`packages/shared` (`git log aeee4f2..357ff39 -- apps/worker
+packages/shared` → vacío), así que el nuevo worker lleva **v38 + estos arreglos** y nada más.
+
+| Componente | Imagen | Build | Duración |
+|---|---|---|---|
+| web | `…/hotel-mcp/web:v51` | ✅ SUCCESS `7beac3b1` | 2m17s |
+| worker | `…/hotel-mcp/worker:v51` | ✅ SUCCESS `7beac3b1` | 2m17s |
+| mcp | `mcp:v45` (sin cambios) | vigente | — |
+
+**Despliegue.** Web por canario (procedimiento de §26/§68) y worker directo (servicio de fondo; el
+cerrojo diario impide que dos revisiones quemen a la vez durante el relevo):
+
+```bash
+gcloud run deploy hotel-mcp-web --image=…/web:v51 --region=europe-west1 --no-traffic --tag=v51
+gcloud run services update-traffic hotel-mcp-web --to-revisions=hotel-mcp-web-00099-ban=100 \
+  --update-tags=canary=hotel-mcp-web-00099-ban
+gcloud run deploy hotel-mcp-worker --image=…/worker:v51 --region=europe-west1   # sin --set-env-vars
+```
+
+El despliegue del worker se hace **solo con `--image`** a propósito: `--set-env-vars/--set-secrets`
+reemplazan el conjunto completo y, como el script documentado no incluye las variables de quema, ese
+camino apagaría la configuración en silencio (H-03).
+
+| Servicio | Revisión sirviendo | Imagen | Tráfico | Rollback |
+|---|---|---|---|---|
+| web | `hotel-mcp-web-00099-ban` | `web:v51` | **100 %** | `hotel-mcp-web-00097-qex` (v50) |
+| worker | `hotel-mcp-worker-00017-mrf` | `worker:v51` | 100 % | `hotel-mcp-worker-00010-jut` (v38) |
+| mcp | `hotel-mcp-mcp-00023-cal` | `mcp:v45` | 100 % | sin cambios |
+
+**Verificación**
+
+| Comprobación | Resultado |
+|---|---|
+| Typecheck y eslint | Limpios (shared sin errores; worker limpio) ✅ |
+| Pruebas | Servicio de quema **19/19**, planificador **13/13**, salud del worker **6/6**, suite del worker **138/138**; web **1006/1006** con ramas **75,01 %** (umbral 73) ✅ |
+| Canario web: `/`, `/catalogo`, `/asistente`, `/health/ready` | **200** y salud `READY` (postgres, redis, RPC `UP`) ✅ |
+| Tras promover: regresión de rutas | Las 11 rutas y `/health/ready` → **200**; producción sirve `web:v51` ✅ |
+| **Worker `/health` publica la señal nueva** | `"burn":{"scheduler":"disabled","lastRun":null}` en la revisión `00017-mrf` ✅ |
+| Alcance | `mcp:v45` intacto ✅ |
+
+**Consecuencia operativa (importante).** La señal de vida confirma en vivo lo que la auditoría
+encontró: **la quema sigue DESACTIVADA en producción** (`scheduler: disabled`), porque el worker no
+tiene `BURNER_WALLET_PRIVATE_KEY` ni la web `RELAYER_*`, aunque los secretos
+(`hotel-burner-private-key`, `hotel-relayer-private-key`) ya existen. **Activar la quema es una
+decisión de configuración pendiente** (QW-4) y, según el informe, debería hacerse después de cerrar
+los hallazgos que quedan (H-02 custodia de roles, H-03 provisión de variables). Esta release **no la
+activa**.
+
+**Nota sobre el estado global del worker.** `/health` responde **503 con `emailDegraded: true`** porque
+la revisión usa `SMTP_HOST=smtp.invalid` (entorno de pruebas): es un estado **preexistente y ajeno a
+esta release**, no un efecto de la quema. La señal de quema se publica igualmente dentro de `details`.
+
+**Deuda preexistente detectada (no de este cambio).** `packages/shared/src/documentation-guardian.test.ts`
+falla en `HEAD` antes de este commit: `day-board.test.ts` (commit ajeno `c8b4792`) cita `CU-38`/`CU-39`
+y el SRS no los cataloga. Queda registrado, no se ha tocado.
+
+**Rollback.** `gcloud run services update-traffic hotel-mcp-web --region=europe-west1
+--to-revisions=hotel-mcp-web-00097-qex=100` (web) y
+`gcloud run deploy hotel-mcp-worker --image=…/worker:v38 --region=europe-west1` (worker).
