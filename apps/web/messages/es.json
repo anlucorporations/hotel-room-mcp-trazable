@@ -304,24 +304,38 @@
     "copyHash": "Copiar",
     "copied": "¡Copiado!",
     "viewMyNights": "Ver en Mis noches",
-    "pendingClosable": "Puedes cerrar: la reserva continúa y aparecerá en «Mis noches».",
+    "pendingClosable": "Puedes cerrar: la transacción sigue en la red. Si se confirma, la noche aparecerá en «Mis noches»; si falla, no se te cobrará nada.",
     "insufficientBalance": "Saldo insuficiente para reservar esta noche.",
     "insufficientBalanceDetail": "Te faltan {missing} {symbol} (tienes {have}, necesitas {need}).",
     "status": {
       "signing": "Confirma en tu wallet",
       "pending": "Reservando tu noche…",
       "confirmed": "¡Noche reservada!",
-      "reverted": "No se completó la reserva"
+      "reverted": "No se completó la reserva",
+      "unverifiable": "No pudimos comprobar la reserva"
     },
     "statusHint": {
       "signing": "Revisa y firma la transacción en MetaMask.",
       "pending": "Esperando confirmación en la red…",
       "confirmed": "La noche ya es tuya. Aparecerá en «Mis noches».",
-      "reverted": "No se realizó ningún cargo. Puedes intentarlo de nuevo."
+      "reverted": "No se realizó ningún cargo. Puedes intentarlo de nuevo.",
+      "unverifiable": "La transacción se envió, pero no pudimos leer su resultado en la red. Si la compra se completó, la noche aparecerá en «Mis noches»."
     },
     "txError": {
       "rejected": "Has cancelado la firma. Puedes intentarlo de nuevo cuando quieras.",
       "failed": "No se pudo completar la reserva. Revisa que estés en la red correcta y vuelve a intentarlo."
+    },
+    "recheckReceipt": "Comprobar de nuevo",
+    "buyError": {
+      "NightNotAvailable": "Esta noche ya está vendida o no está disponible. Elige otra noche del catálogo.",
+      "NightExpired": "Esa noche ya ha pasado y no se puede comprar.",
+      "IncorrectPayment": "El importe no coincide con el precio de la noche. Vuelve a abrir la reserva.",
+      "EnforcedPause": "Las compras están en pausa ahora mismo. Inténtalo más tarde.",
+      "EthTransferFailed": "No se pudo completar el pago al hotel. Inténtalo de nuevo.",
+      "rejected": "Has cancelado la firma. Puedes intentarlo de nuevo cuando quieras.",
+      "failed": "No se pudo completar la reserva. Revisa que estés en la red correcta y vuelve a intentarlo.",
+      "receiptUnreadable": "No pudimos leer el recibo de la transacción en la red.",
+      "replaced": "La red confirmó una transacción distinta a esta compra, así que la noche no se reservó. Inténtalo de nuevo."
     },
     "nightAlreadySold": "Esta noche ya está vendida. Elige otra noche del catálogo.",
     "pickAnotherNight": "Elegir otra noche"
@@ -918,7 +932,7 @@
       "successTitle": "¡Noche reservada!",
       "successBody": "Tu reserva se ha confirmado. Ya puedes verla en tus noches.",
       "viewMyNights": "Ver en Mis noches",
-      "pendingClosable": "Puedes cerrar: la reserva continúa y aparecerá en «Mis noches».",
+      "pendingClosable": "Puedes cerrar: la transacción sigue en la red. Si se confirma, la noche aparecerá en «Mis noches»; si falla, no se te cobrará nada.",
       "retry": "Intentar de nuevo",
       "txError": {
         "rejected": "Has cancelado la firma. Puedes intentarlo de nuevo.",

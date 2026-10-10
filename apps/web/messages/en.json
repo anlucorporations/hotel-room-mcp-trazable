@@ -304,24 +304,38 @@
     "copyHash": "Copy",
     "copied": "Copied!",
     "viewMyNights": "Go to My Nights",
-    "pendingClosable": "You can close this modal: the booking is mining and will appear in My Nights.",
+    "pendingClosable": "You can close this modal: the transaction is still on the network. If it is confirmed, the night will appear in My Nights; if it fails, you will not be charged.",
     "insufficientBalance": "Insufficient balance for this booking.",
     "insufficientBalanceDetail": "You need {missing} more {symbol} (have {have}, need {need}).",
     "status": {
       "signing": "Confirm in your wallet",
       "pending": "Booking your night…",
       "confirmed": "Night booked successfully!",
-      "reverted": "Booking failed"
+      "reverted": "Booking failed",
+      "unverifiable": "We could not confirm the booking"
     },
     "statusHint": {
       "signing": "Review and sign the transaction in MetaMask.",
       "pending": "Waiting for network confirmation…",
       "confirmed": "The night is now yours. It will appear in My Nights.",
-      "reverted": "No funds were charged. You can try again."
+      "reverted": "No funds were charged. You can try again.",
+      "unverifiable": "The transaction was sent, but we could not read its result on the network. If the purchase went through, the night will appear in My Nights."
     },
     "txError": {
       "rejected": "Signature was cancelled.",
       "failed": "Transaction failed. Please check network and try again."
+    },
+    "recheckReceipt": "Check again",
+    "buyError": {
+      "NightNotAvailable": "This night is already sold or unavailable. Pick another night from the catalogue.",
+      "NightExpired": "That night has already passed and cannot be bought.",
+      "IncorrectPayment": "The amount does not match the price of the night. Please reopen the booking.",
+      "EnforcedPause": "Purchases are paused right now. Please try again later.",
+      "EthTransferFailed": "The payment to the hotel could not be completed. Please try again.",
+      "rejected": "Signature was cancelled.",
+      "failed": "Transaction failed. Please check network and try again.",
+      "receiptUnreadable": "We could not read the transaction receipt on the network.",
+      "replaced": "The network confirmed a different transaction, so the night was not booked. Please try again."
     },
     "nightAlreadySold": "This night is already sold. Pick another night from the catalogue.",
     "pickAnotherNight": "Pick another night"
@@ -918,7 +932,7 @@
       "successTitle": "Night booked!",
       "successBody": "Your booking is confirmed. View it in My Nights.",
       "viewMyNights": "View My Nights",
-      "pendingClosable": "You can close this window; the booking is mining.",
+      "pendingClosable": "You can close this window: the transaction is still on the network. If it is confirmed, the night will appear in My Nights; if it fails, you will not be charged.",
       "retry": "Try again",
       "txError": {
         "rejected": "Signature cancelled.",

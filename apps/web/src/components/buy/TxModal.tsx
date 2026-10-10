@@ -67,6 +67,8 @@ const TESTID: Partial<Record<TxPhase, string>> = {
   pending: "tx-pending",
   confirmed: "tx-confirmed",
   reverted: "tx-reverted",
+  // D5: no se pudo leer el recibo. Estado propio (ni éxito ni fallo) con su propio testid.
+  unverifiable: "tx-unverifiable",
 };
 
 const FOCUSABLE =
@@ -224,10 +226,17 @@ export function TxModal({
         </p>
 
         {/* Aviso ASERTIVO separado solo para el fallo de la tx (MAJOR#7). Respeta el copy por
-            contexto (MAJOR#9): en back-office el mensaje es genérico, no «no se completó la reserva». */}
+            contexto (MAJOR#9): en back-office el mensaje es genérico, no «no se completó la reserva».
+            D5: `unverifiable` («no se pudo leer el recibo») también avisa, pero con su propio texto
+            —no se puede afirmar que falló—. */}
         {phase === "reverted" && (
           <p role="alert" className="mt-2 text-small text-coral-text">
             {copy?.statusHint?.reverted ?? t("statusHint.reverted")}
+          </p>
+        )}
+        {phase === "unverifiable" && (
+          <p role="alert" className="mt-2 text-small text-coral-text">
+            {copy?.statusHint?.unverifiable ?? t("statusHint.unverifiable")}
           </p>
         )}
 
@@ -251,7 +260,7 @@ export function TxModal({
               <p className="mt-2 text-small text-ink-soft">{pendingNote}</p>
             )}
 
-            {phase === "reverted" && errorActions && (
+            {(phase === "reverted" || phase === "unverifiable") && errorActions && (
               <div className="mt-5 flex flex-col gap-2">{errorActions}</div>
             )}
 

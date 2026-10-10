@@ -1,0 +1,51 @@
+{
+  "what": "verificación de «tx fallida pero la noche aparece en Mis noches»",
+  "chainId": 81234,
+  "rpc": "http://127.0.0.1:8545",
+  "room": "999",
+  "dateYYYYMMDD": "20261220",
+  "priceWei": "100000000000000000",
+  "contract": "0x0b306bf915c4d645ff596e518faf3f9669b97016",
+  "tokens": {
+    "T1": "99920261220",
+    "T2": "99920261221"
+  },
+  "failedBuy": {
+    "hash": "0x28b1bb1c8100ba636f858dcf08e8558ea242b1a44e8b05b76afc02b72a47af9b",
+    "onChainReceiptStatus": "reverted",
+    "wagmiThrew": true,
+    "wagmiMessage": "Execution reverted with reason: custom error 0x0d35e921: 000000000000000000000000000000000000000000000000016345785d8a0000000000000000000000000000000000000000000000000000016345785d89ffff.\n\nRaw Call Arguments:\n  from:                  0x15d34aaf54267db7d7c367839aaf71a00a2c6a65\n  to:                    0x0b306bf915c4d645ff596e518faf3f9669b97016\n  value:                 0.099999999999999999 ETH\n  data:                  0xd96a094a0000000000000000000000000000000000000000000000000000001743b63064\n  gas:                   300000\n  maxFeePerGas:          1.103026516 gwei\n  maxPriorityFeePerGas:  1 gwei\n  nonce:                 0\n\nDetails: execution reverted: custom error 0x0d35e921: 000000000000000000000000000000000000000000000000016345785d8a0000000000000000000000000000000000000000000000000000016345785d89ffff\nVersion: viem@2.52.0",
+    "deriveTxStatus": "reverted",
+    "ownerOf": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "ownerIsTreasury": true,
+    "appearsInMyNights": {
+      "candidateFromSale": false,
+      "ownerIsWallet": false,
+      "appears": false
+    }
+  },
+  "confirmedBuy": {
+    "hash": "0x124f49de1d602de549c28f6405e397d2a95115153de5d2a928af03a8747757e4",
+    "onChainReceiptStatus": "success",
+    "deriveTxStatus": "confirmed",
+    "saleEventEmitted": true,
+    "saleBuyer": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+    "ownerOf": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+    "ownerIsBuyer": true,
+    "appearsInMyNights": {
+      "candidateFromSale": true,
+      "ownerIsWallet": true,
+      "appears": true
+    }
+  },
+  "secondBuyAfterSold": {
+    "hash": "0xeb357981e9cf932eb5e1e54320ed93a2db5aa5121cb1c46a22fd9cb48f1a34e9",
+    "onChainReceiptStatus": "reverted",
+    "deriveTxStatus": "reverted",
+    "appearsInMyNights": {
+      "candidateFromSale": false,
+      "ownerIsWallet": false,
+      "appears": false
+    }
+  }
+}

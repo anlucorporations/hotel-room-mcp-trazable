@@ -10,11 +10,11 @@ import { buildPurchaseTxData, type SaleType } from "@hotel/shared/domain";
 import { activeChain, contractAddress, faucetAddress } from "@/config/chain";
 import { useOnboarding } from "@/components/wallet/useOnboarding";
 import { FaucetButton } from "@/components/wallet/FaucetButton";
-import { classifyTxError } from "@/components/tx/txError";
 import { TxModal, type TxPhase } from "./TxModal";
 import { PurchaseReviewDetails } from "./PurchaseReviewDetails";
 import { usePurchaseReview } from "./usePurchaseReview";
 import { useBuyNight } from "./useBuyNight";
+import { canSignPurchase } from "./canSignPurchase";
 
 const PRIMARY_BTN =
   "min-h-touch w-full rounded-brand bg-azure px-4 py-2 font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-60";
@@ -40,7 +40,7 @@ export function BuyButton({
   const router = useRouter();
   const { hasWallet, isConnected, isWrongNetwork, address, connect, switchToAppChain } =
     useOnboarding();
-  const { send, reset, status, hash, error } = useBuyNight();
+  const { send, reset, status, hash, failureKey, retryReceipt } = useBuyNight();
   const [reviewing, setReviewing] = useState(false);
   // Tras confirmar hay que refrescar el catálogo (RSC), pero NO durante el `confirmed` (eso
   // destruye el disparador antes de devolverle el foco, MAJOR#6). Se difiere a `onClose`.
@@ -72,8 +72,9 @@ export function BuyButton({
 
   // Fase del modal: el estado on-chain manda; si no hay tx en curso, mostramos «Revisar».
   const phase: TxPhase = status === "idle" ? (reviewing ? "review" : "idle") : status;
-  // Rechazo de firma → status vuelve a idle (sin hash); revert → status reverted (punto 4).
-  const txErrorKind = error ? classifyTxError(error) : null;
+  // Rechazo de firma → status vuelve a idle (sin hash): el motivo se explica en «Revisar».
+  // En revert/unverifiable el motivo lo pinta `errorActions` (D1/D5).
+  const reviewErrorKey = status === "idle" ? failureKey : null;
   // En curso (firma/minado): bloquea el CTA y anti-doble-envío (§3/§5.3).
   const busy = status === "signing" || status === "pending";
 
@@ -100,8 +101,9 @@ export function BuyButton({
     setReviewing(true);
   }
 
-  // Falla cerrado (MINOR#21): no se firma si la wallet no está lista ni si no está verificada.
-  const canSign = walletReady && review.verified;
+  // Falla cerrado (MINOR#21 + D3): no se firma sin wallet lista, sin re-verificación on-chain ni
+  // con una operación ya en curso (anti-doble-envío).
+  const canSign = canSignPurchase({ walletReady, verified: review.verified, status });
 
   function onSign(): void {
     if (!canSign) return;
@@ -235,9 +237,9 @@ export function BuyButton({
               </p>
             )}
             {/* Rechazo/fallo de firma: el usuario vuelve a «Revisar» y puede reintentar (punto 4). */}
-            {txErrorKind && (
+            {reviewErrorKey && (
               <p data-testid="buy-tx-error" role="alert" className="mt-3 text-small text-coral-text">
-                {t(`txError.${txErrorKind}`)}
+                {t(reviewErrorKey)}
               </p>
             )}
 
@@ -269,14 +271,37 @@ export function BuyButton({
         }
         errorActions={
           <>
-            {txErrorKind && (
-              <p data-testid="buy-tx-error" role="alert" className="text-small text-coral-text">
-                {t(`txError.${txErrorKind}`)}
+            {/* D1: el motivo REAL del fallo (error del recibo), no el genérico de la firma. */}
+            {failureKey && (
+              <p data-testid="buy-failure-reason" role="alert" className="text-small text-coral-text">
+                {t(failureKey)}
               </p>
             )}
-            <button type="button" data-testid="tx-retry" onClick={onRetry} className={PRIMARY_BTN}>
-              {t("retry")}
-            </button>
+            {/* D5: si NO se pudo leer el recibo no se reintenta la FIRMA (podría duplicar una
+                compra ya minada): se relee el recibo y se ofrece «Mis noches» para comprobarlo. */}
+            {status === "unverifiable" ? (
+              <>
+                <button
+                  type="button"
+                  data-testid="receipt-recheck"
+                  onClick={retryReceipt}
+                  className={PRIMARY_BTN}
+                >
+                  {t("recheckReceipt")}
+                </button>
+                <Link
+                  href="/mis-noches"
+                  data-testid="receipt-my-nights"
+                  className={`${GHOST_BTN} text-center`}
+                >
+                  {t("viewMyNights")}
+                </Link>
+              </>
+            ) : (
+              <button type="button" data-testid="tx-retry" onClick={onRetry} className={PRIMARY_BTN}>
+                {t("retry")}
+              </button>
+            )}
           </>
         }
       />

@@ -1,17 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { formatEther } from "viem";
-import { useBalance, useSendTransaction, useWaitForTransactionReceipt } from "wagmi";
+import { useBalance } from "wagmi";
 import { TYPE_LABEL } from "@/lib/format";
-import { deriveTxStatus } from "@/components/tx/txStatus";
-import { classifyTxError } from "@/components/tx/txError";
 import { TxModal } from "@/components/buy/TxModal";
+import { useBuyNight } from "@/components/buy/useBuyNight";
+import { canSignPurchase } from "@/components/buy/canSignPurchase";
 import { usePurchaseReview } from "@/components/buy/usePurchaseReview";
-import { verifiedTxRequest } from "@/components/buy/verifiedTxRequest";
-import { contractAddress } from "@/config/chain";
 import { useOnboarding } from "@/components/wallet/useOnboarding";
 import type { PreparedPurchase } from "@/lib/assistant/types";
 
@@ -38,6 +35,9 @@ function shortAddress(address: string): string {
  */
 export function PurchaseHandoff({ purchase }: { purchase: PreparedPurchase }) {
   const t = useTranslations("assistant");
+  // El motivo del fallo y el estado «no se pudo comprobar» reutilizan el copy del namespace `buy`
+  // (una sola redacción para el catálogo y el asistente: misma verdad, mismo texto).
+  const tBuy = useTranslations("buy");
   const { isConnected, isWrongNetwork, address, connect, switchToAppChain } = useOnboarding();
   const tx = purchase.tx;
 
@@ -45,19 +45,11 @@ export function PurchaseHandoff({ purchase }: { purchase: PreparedPurchase }) {
   const displayTokenId = review.tokenId ?? BigInt(purchase.tokenId);
   const typeLabel = review.type ? TYPE_LABEL[review.type] : null;
 
-  const { sendTransaction, data: hash, isPending, error: sendError, reset } = useSendTransaction();
-  const receipt = useWaitForTransactionReceipt({ hash });
-  const status = deriveTxStatus({
-    isPending,
-    hash,
-    isConfirming: receipt.isLoading,
-    isConfirmed: receipt.isSuccess,
-    isReverted: receipt.isError,
-  });
-  const txErrorKind = useMemo(
-    () => (sendError && status === "idle" ? classifyTxError(sendError) : null),
-    [sendError, status],
-  );
+  // Mismo punto único de firma y de clasificación que el catálogo (D-07, D1/D2/D5): el handoff del
+  // asistente ya NO duplica `useSendTransaction` + `waitForTransactionReceipt` + `deriveTxStatus`.
+  const { send, reset, status, hash, failureKey, retryReceipt } = useBuyNight();
+  // Rechazo de firma antes de difundir: se explica en el propio panel.
+  const reviewErrorKey = status === "idle" ? failureKey : null;
 
   const walletReady = isConnected && !isWrongNetwork;
 
@@ -67,18 +59,15 @@ export function PurchaseHandoff({ purchase }: { purchase: PreparedPurchase }) {
   const insufficientBalance = walletReady && balance !== undefined && balance.value < price;
   const shortfall = balance !== undefined ? price - balance.value : 0n;
 
+  // Guarda compartida con el catálogo (D3) + la pre-comprobación de saldo propia del handoff.
   const canSign =
-    walletReady &&
-    review.verified &&
-    !insufficientBalance &&
-    status !== "signing" &&
-    status !== "pending";
+    canSignPurchase({ walletReady, verified: review.verified, status }) && !insufficientBalance;
 
   function sign(): void {
     if (!canSign) return;
-    // Mismo punto único que el catálogo (D-07): se envía el objeto verificado, byte a byte,
-    // contra el contrato canónico (el calldata por sí solo no distingue la generación legacy).
-    sendTransaction(verifiedTxRequest(tx, contractAddress));
+    // Mismo punto único que el catálogo (D-07): `useBuyNight` revalida el destino canónico y
+    // clasifica el recibo (D1/D2/D5) — el asistente no mantiene una copia de esa lógica.
+    send(tx);
   }
 
   // Al confirmar se COLAPSA el panel de firma (UX#18): solo éxito + CTA, sin botón de firmar.
@@ -99,6 +88,37 @@ export function PurchaseHandoff({ purchase }: { purchase: PreparedPurchase }) {
           {t("handoff.viewMyNights")}
         </Link>
         <TxModal phase={status} onClose={reset} hash={hash} />
+      </div>
+    );
+  }
+
+  // D5: la tx pudo difundirse pero NO se pudo leer el recibo. Se COLAPSA la firma (volver a
+  // firmar podría duplicar una compra ya minada): se relee el recibo y se invita a «Mis noches».
+  if (status === "unverifiable") {
+    return (
+      <div
+        data-testid="handoff-unverifiable"
+        role="alert"
+        className="flex flex-col gap-2 rounded-brand border border-line bg-mist-2 p-4"
+      >
+        <h3 className="font-display font-semibold text-ink">{tBuy("status.unverifiable")}</h3>
+        <p className="text-small text-ink">{tBuy("buyError.receiptUnreadable")}</p>
+        <p className="text-small text-ink-soft">{tBuy("statusHint.unverifiable")}</p>
+        <button
+          type="button"
+          data-testid="handoff-recheck"
+          onClick={retryReceipt}
+          className={`${PRIMARY_BTN} self-start`}
+        >
+          {tBuy("recheckReceipt")}
+        </button>
+        <Link
+          href="/mis-noches"
+          data-testid="handoff-check-my-nights"
+          className={`${PRIMARY_BTN} self-start text-center`}
+        >
+          {tBuy("viewMyNights")}
+        </Link>
       </div>
     );
   }
@@ -206,9 +226,10 @@ export function PurchaseHandoff({ purchase }: { purchase: PreparedPurchase }) {
         </p>
       )}
 
-      {txErrorKind && (
+      {/* D1: motivo real del fallo (rechazo de firma, noche ya vendida, importe incorrecto…). */}
+      {reviewErrorKey && (
         <p data-testid="handoff-tx-error" role="alert" className="text-small text-coral-text">
-          {t(`handoff.txError.${txErrorKind}`)}
+          {tBuy(reviewErrorKey)}
         </p>
       )}
 
@@ -247,9 +268,9 @@ export function PurchaseHandoff({ purchase }: { purchase: PreparedPurchase }) {
         }
         errorActions={
           <>
-            {txErrorKind && (
+            {failureKey && (
               <p data-testid="handoff-modal-tx-error" role="alert" className="text-small text-coral-text">
-                {t(`handoff.txError.${txErrorKind}`)}
+                {tBuy(failureKey)}
               </p>
             )}
             <button type="button" data-testid="handoff-retry" onClick={reset} className={PRIMARY_BTN}>
