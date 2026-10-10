@@ -4902,3 +4902,11 @@ ciclo F1 en verde (`audit` 12, `operations` 15, `migrator` 5, `reset-plan` 5, `a
 **Pendiente de F1**: T1.5 (vocabulario de roles), T1.6 (`operations-state.ts` con los enums canónicos
 frente al SQL), T1.9–T1.11 (extender `maintenance`/`housekeeping` con áreas, inspecciones y alertas;
 repositorio de `terminal_operators`), T1.12 (variables nuevas) y el **gate de PostgreSQL real (D11/A4)**.
+
+**F1 desplegado (release v52, commit `017d268`).** El esquema vNext **ya está aplicado en producción**:
+lo aplica el worker al arrancar (`main.ts:70`) y quedó verificado (revisión sirviendo, `lastBlock 533`,
+sin `MIGRATION_FAILED`, `postgres: UP`). Antes de desplegar se comprobó que las tres CHECK redefinidas son
+seguras sobre datos vivos (dos columnas son nuevas ⇒ `NULL`; `operational_status` es superconjunto) y que
+el bloque va en transacción implícita (atómico). Detalle en `despliegue_gcp.md` §74. Los repositorios
+nuevos (auditoría y operaciones) viajan en la imagen pero **todavía no los consume ninguna ruta**: son la
+base de F2/F4/F6.

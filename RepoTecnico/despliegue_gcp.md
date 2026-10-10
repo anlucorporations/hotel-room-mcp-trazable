@@ -2752,3 +2752,69 @@ y el SRS no los cataloga. Queda registrado, no se ha tocado.
 **Rollback.** `gcloud run services update-traffic hotel-mcp-web --region=europe-west1
 --to-revisions=hotel-mcp-web-00097-qex=100` (web) y
 `gcloud run deploy hotel-mcp-worker --image=…/worker:v38 --region=europe-west1` (worker).
+
+---
+
+## 74. Release v52 — F1 de vNext (esquema + auditoría + operaciones firmadas) y H-03/QW-4 (2026-10-10)
+
+**Qué se desplegó.** El commit `017d268`, con tres bloques:
+
+1. **F1 · Fundaciones de vNext**: 12 tablas nuevas, 19 columnas y 3 CHECK sobre 4 tablas existentes,
+   semilla de 10 áreas comunes (4 críticas) y trigger append-only, portados al esquema que aplica
+   `runMigrations` **y** al script raíz (texto idéntico, verificado por prueba); plan de reset y
+   guiardián de paridad ampliados; repositorios nuevos de **auditoría con hash encadenado** y de
+   **operaciones firmadas** (`operator_wallets` + `on_chain_signatures`, con nonce anti-replay).
+2. **H-03/QW-4**: la configuración de quema queda provisionada (`.env.example`, manual y script de
+   despliegue) y el script **avisa** cuando despliega con la quema apagada en vez de hacerlo en silencio.
+3. **Documentación vNext**: análisis de arranque y revisión del DDL contra el plan (con rectificación de
+   una lectura errónea mía, ya corregida en el propio análisis).
+
+**Esto SÍ cambia el esquema de producción.** El worker aplica `runMigrations(pool)` **al arrancar**
+(`apps/worker/src/main.ts:70`) y, si fallara, **no arranca** (registra `MIGRATION_FAILED`, cierra el pool
+y lanza). Verificación previa a desplegar, porque el bloque redefine tres CHECK sobre tablas con datos:
+
+| CHECK redefinida | Comprobación sobre datos vivos | Veredicto |
+|---|---|---|
+| `rooms_operational_status_check` | El conjunto nuevo (`CLEAN`, `DIRTY`, `OCCUPIED`, `PENDING_CLEANING`, `IN_INSPECTION`) es **superconjunto** del vigente (4 valores) | seguro ✅ |
+| `preventive_tasks_validation_status_check` | `validation_status` es **columna nueva** (no existía en `HEAD`) ⇒ las filas vivas quedan `NULL`, y el CHECK admite `NULL` | seguro ✅ |
+| `maintenance_incidents_reported_by_role_check` | `reported_by_role` es **columna nueva**; el `DROP CONSTRAINT IF EXISTS` es un no-op | seguro ✅ |
+
+Además, las tres son un único `pool.query(INITIAL_SCHEMA_SQL)` con varias sentencias, que PostgreSQL
+ejecuta en **transacción implícita**: o entra todo, o no entra nada. **Orden de despliegue**: primero el
+worker (es quien migra), y solo después web y mcp.
+
+| Componente | Imagen | Build | Duración |
+|---|---|---|---|
+| web | `…/hotel-mcp/web:v52` | ✅ SUCCESS `91ed3c0a` | 2m21s |
+| worker | `…/hotel-mcp/worker:v52` | ✅ SUCCESS `91ed3c0a` | 2m21s |
+| mcp | `…/hotel-mcp/mcp:v52` | ✅ SUCCESS `91ed3c0a` | 2m21s |
+
+Se reconstruye también el **mcp** (a diferencia de las releases v49-v51) porque `@hotel/shared` cambió y
+los tres servicios lo consumen.
+
+| Servicio | Revisión sirviendo | Imagen | Tráfico | Rollback |
+|---|---|---|---|---|
+| web | `hotel-mcp-web-00101-xik` | `web:v52` | **100 %** | `hotel-mcp-web-00099-ban` (v51) |
+| worker | `hotel-mcp-worker-00018-n64` | `worker:v52` | 100 % | `hotel-mcp-worker-00017-mrf` (v51) |
+| mcp | `hotel-mcp-mcp-00016-v9t` | `mcp:v52` | 100 % | `hotel-mcp-mcp-00023-cal` (v45) |
+
+**Verificación**
+
+| Comprobación | Resultado |
+|---|---|
+| Typecheck, eslint y pruebas antes de construir | Limpios; **53 pruebas del ciclo F1** + 177 de repositorios; suite de `shared` 508/509 (el fallo es el guardián de documentación ajeno) ✅ |
+| **Migración aplicada en producción** | El worker `00018-n64` está **sirviendo** (si `runMigrations` fallara no arrancaría), procesa la cadena (`lastBlock 533`) y **no hay `MIGRATION_FAILED`** en sus logs ✅ |
+| Canario web: `/`, `/catalogo`, `/catalogo?tipo=simple`, `/asistente`, `/health/ready` | **200** y `postgres: UP` contra el esquema migrado ✅ |
+| Tras promover: regresión de rutas | Las 12 rutas y `/health/ready` → **200** ✅ |
+| Señales de releases anteriores conservadas | Lanzador del asistente, «Nueva conversación» y «Sin planta» presentes ✅ |
+| Worker `/health` | `burn: {scheduler: "disabled", lastRun: null}` (H-04) y `lastBlock 533` ✅ |
+| MCP `/health` | `200` con `block 533` ✅ |
+| **Asistente end-to-end** (llamada real) | `domainToolCalls: 1` y `pageAction = /catalogo?tipo=simple` ✅ |
+
+**Rollback.** Las imágenes se revierten por revisión (`update-traffic` para web; `run deploy --image` para
+worker y mcp). **El esquema NO se revierte**: las 12 tablas y las columnas son aditivas y las revisiones
+antiguas las ignoran; **no se debe ejecutar `resetDatabase()`** contra producción.
+
+**La quema sigue DESACTIVADA** (`burn.scheduler: disabled`): la release no la activa; lo que cambia es
+que ahora el script de despliegue lo **avisa** y la activación es explícita (`ENABLE_BURN_SCHEDULER=1` /
+`ENABLE_RELAYER_BURN=1`).
