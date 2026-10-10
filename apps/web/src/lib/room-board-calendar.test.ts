@@ -3,8 +3,10 @@ import {
   addDays,
   aggregateBoardDays,
   enumerateDates,
+  groupRoomsByFloor,
   isDayRoomEligible,
   rangeForView,
+  roomTypeLabelKey,
   startOfMonth,
   startOfQuarter,
   startOfWeek,
@@ -152,5 +154,48 @@ describe("isDayRoomEligible (panel del día)", () => {
 
   it("SERVICE: cualquier habitación", () => {
     expect(isDayRoomEligible({ ...base, occupied: true, maintenance: true }, "SERVICE")).toBe(true);
+  });
+});
+
+describe("roomTypeLabelKey — el tipo de habitación del panel del día", () => {
+  // El operador elige la habitación por número **y tipo** (2026-10-10): el mapa código→etiqueta tiene
+  // que cubrir los tres tipos del maestro y no romperse con un código nuevo.
+  it("traduce los tres tipos del maestro (mayúsculas, como en la base)", () => {
+    expect(roomTypeLabelKey("SIMPLE")).toBe("simple");
+    expect(roomTypeLabelKey("DOBLE")).toBe("doble");
+    expect(roomTypeLabelKey("SUITE")).toBe("suite");
+  });
+
+  it("un código desconocido (o ya en minúsculas) no se traduce: se pinta tal cual, nunca una clave cruda", () => {
+    expect(roomTypeLabelKey("LOFT")).toBeNull();
+    expect(roomTypeLabelKey("doble")).toBeNull();
+    expect(roomTypeLabelKey("")).toBeNull();
+  });
+});
+
+describe("groupRoomsByFloor — fichas por planta del panel del día", () => {
+  const room = (floor: number | null, roomNumber: number) => ({ floor, roomNumber });
+
+  it("agrupa por planta, ordena las plantas y ordena las habitaciones dentro de cada una", () => {
+    const groups = groupRoomsByFloor([
+      room(2, 203),
+      room(1, 104),
+      room(2, 201),
+      room(1, 101),
+      room(3, 301),
+    ]);
+    expect(groups.map((g) => g.floor)).toEqual([1, 2, 3]);
+    expect(groups[0]!.rooms.map((r) => r.roomNumber)).toEqual([101, 104]);
+    expect(groups[1]!.rooms.map((r) => r.roomNumber)).toEqual([201, 203]);
+  });
+
+  it("las habitaciones sin planta van a su propio grupo, al final (no se pierden)", () => {
+    const groups = groupRoomsByFloor([room(null, 999), room(1, 101), room(null, 998)]);
+    expect(groups.map((g) => g.floor)).toEqual([1, null]);
+    expect(groups[1]!.rooms.map((r) => r.roomNumber)).toEqual([998, 999]);
+  });
+
+  it("sin habitaciones no hay fichas (y no falla)", () => {
+    expect(groupRoomsByFloor([])).toEqual([]);
   });
 });

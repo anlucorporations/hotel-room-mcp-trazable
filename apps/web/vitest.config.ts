@@ -6,6 +6,10 @@ import { defineConfig } from "vitest/config";
  * Los E2E de Playwright (`e2e/*.spec.ts`) se ejecutan aparte (`test:e2e`) y se excluyen aquí.
  */
 export default defineConfig({
+  // JSX con el **runtime automático**, igual que Next: sin esto, esbuild compila los `.tsx` con
+  // `React.createElement` y una prueba que renderice un componente del back-office falla con
+  // «React is not defined» (los componentes no importan React: en Next no hace falta).
+  esbuild: { jsx: "automatic" },
   test: {
     include: ["src/**/*.test.ts"],
     exclude: ["e2e/**", "node_modules/**"],

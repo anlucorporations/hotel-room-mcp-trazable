@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { useAdminContext } from "@/components/admin/AdminLayout";
 import { AdminMint } from "@/components/admin/AdminMint";
@@ -38,6 +38,12 @@ export interface BoardDayActionsProps {
   readonly canMint: boolean;
   readonly onNotice: (notice: BoardNotice) => void;
   readonly onReload: () => Promise<void>;
+  /**
+   * Avisa de que hay un diálogo **apilado** encima (el TOTP de publicación). El contenedor flotante
+   * del día lo necesita para cederle `Escape` y `Tab` (`ModalShell.enabled`): sin esto, pulsar
+   * `Escape` con el TOTP abierto cerraría los dos diálogos de golpe.
+   */
+  readonly onNestedModalChange?: (open: boolean) => void;
 }
 
 const FIELD =
@@ -69,6 +75,7 @@ export function BoardDayActions({
   canMint,
   onNotice,
   onReload,
+  onNestedModalChange,
 }: BoardDayActionsProps) {
   const t = useTranslations("rooms");
   const ta = useTranslations("admin");
@@ -86,6 +93,11 @@ export function BoardDayActions({
   const [notes, setNotes] = useState("");
   const [shiftLabel, setShiftLabel] = useState<(typeof SHIFT_LABELS)[number]>("MANANA");
   const [assignee, setAssignee] = useState("");
+
+  // El contenedor flotante cede `Escape`/`Tab` mientras el TOTP está encima (ver `ModalShell.enabled`).
+  useEffect(() => {
+    onNestedModalChange?.(mfaOpen);
+  }, [mfaOpen, onNestedModalChange]);
 
   const roomIds = selectedRooms.map((room) => room.id);
   const noSelection = selectedRooms.length === 0;

@@ -4605,3 +4605,44 @@ se comprobó que la copia de §69 (D4/D5) y el widget del incremento v4 se sirve
 
 **Consumo de inventario.** La noche `10120261010` (habitación 101, 2026-10-10) queda vendida al huésped
 simulado en la cadena de pruebas: es la única noche consumida por la verificación.
+
+## 16. Back-office · Publicar: la gestión del día en flotante y las habitaciones con su tipo (2026-10-10) · `@asistenteProyecto`
+
+**Petición del responsable** sobre `/admin/habitacion/publicar`: (1) al seleccionar el día, la gestión
+del día debe mostrarse en un **flotante**; (2) las habitaciones del flotante deben **incluir el tipo**
+para poder seleccionarlas.
+
+**Qué cambió**
+
+| Pieza | Fichero | Detalle |
+|---|---|---|
+| Gestión del día en flotante | `components/admin/rooms/BoardDayDialog.tsx` (nuevo) | Diálogo sobre el propio calendario con `ModalShell` (foco al abrir, trampa de foco, `Escape`, devolución del foco al día que lo abrió, velo que cierra). Dentro: resumen del día, `BoardDayActions`, contador de selección y las habitaciones. Antes era una tarjeta **debajo** del calendario: al elegir día había que bajar por la página y se perdía de vista el mapa. |
+| **Una ficha por planta, en cuadrícula** (2.ª petición) | `BoardDayDialog.tsx` + `DayRoomRibbon.tsx` (nuevo) + `lib/room-board-calendar.ts` | Las habitaciones se agrupan **por planta** (`groupRoomsByFloor`: plantas ordenadas y habitaciones ordenadas dentro; las que no tienen planta, en su propia ficha al final). Cada planta es una ficha con su título (`Planta N`), el número de seleccionadas de esa planta y una **cuadrícula** `grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))]`: caben tantas columnas como permita el flotante (4 en el panel de 768 px), que es de lo que se trataba. |
+| **Ribbon mínimo por habitación** (2.ª petición) | `DayRoomRibbon.tsx` | Tres franjas: **cabecera** con el número y el **tipo**; **cuerpo** con el **estado** del día (icono **y** texto, o «Libre»); **pie** con el **check** de selección en un `<label>` de altura táctil. La casilla se deshabilita cuando la acción activa no admite esa habitación (misma regla que valida la API) y el ribbon seleccionado se resalta con borde azul. |
+| Contenedor | `components/admin/rooms/RoomsBoardAdmin.tsx` | Deja de pintar la tarjeta en línea: mantiene el estado (día, acción, selección, recarga) y abre el panel. El aviso de la operación se pinta **dentro** del panel (era invisible tras el velo). |
+| Diálogos apilados | `components/admin/rooms/BoardDayActions.tsx` | Nuevo aviso `onNestedModalChange`: mientras el TOTP de publicación está encima, el panel del día cede `Escape`/`Tab` (`ModalShell.enabled`). Sin esto, `Escape` cerraba los dos diálogos. |
+| Pruebas | `board-day-dialog.test.ts` (nuevo) + `room-board-calendar.test.ts` | Render SSR del panel (10 pruebas): es `role="dialog" aria-modal`; una ficha por planta **ordenada** (1 → 2 → sin planta) con su cuadrícula `auto-fill`; cada habitación es un ribbon con tipo (cabecera), estado (cuerpo) y check (pie); el tipo está en el `aria-label`; tipo desconocido crudo; y la selección/elegibilidad se refleja en las casillas. Más 5 pruebas del mapa código→etiqueta y de `groupRoomsByFloor`. |
+| Config de pruebas | `vitest.config.ts` | `esbuild.jsx = "automatic"` (como Next): sin esto, una prueba que renderice un `.tsx` falla con «React is not defined». |
+
+**Claves i18n**: se añaden tres (`admin.boardFloorTitle` = «Planta {floor}», `admin.boardFloorNone` =
+«Sin planta», `admin.boardRoomSelect` = «Seleccionar») en los **tres** idiomas; el resto se reutiliza
+(`admin.boardDayTitle`, `boardRoomsTitle`, `boardSummary`, `boardSelectedCount`, `boardSelectEligible`,
+`boardDayPick`, `boardLegend*`, `boardNoActivity`, `rooms.colNumber`, `rooms.colType`, `common.close` y
+el namespace `roomType`).
+
+**Verificación**: `typecheck` y `eslint` limpios; suite completa **106 ficheros · 987 pruebas**, ramas
+**74,75 %** (umbral 73, `EXIT=0`); `next build` de producción correcto (con
+`NODE_OPTIONS=--max-old-space-size=1536`). Además del render SSR de las pruebas, se hizo una
+**comprobación visual real**: el HTML del componente (con un hotel de tres plantas) se inyectó en una
+página servida con el **CSS compilado de la aplicación** y se capturó en Chromium. La medición en el
+navegador confirma la cuadrícula: **4 columnas de 168 px** en una ficha de 694 px, ribbons de 129 px de
+alto, **19 ribbons** sin desbordamiento horizontal. Evidencia:
+`RepoTecnico/evidencias/back-office-publicar-dia-flotante-2026-10-10/panel-fichas-por-planta.png`
+(panel) y `…-completo.png` (con el velo sobre la página).
+
+**Lo que NO se ha verificado**: el recorrido dentro del back-office **con sesión de operador** (la
+sección está protegida y este entorno no tiene el stack local PostgreSQL/Redis/Anvil ni credenciales de
+producción). Queda para el responsable abrir `/admin/habitacion/publicar` y pulsar un día: el panel
+debe abrirse sobre el calendario.
+
+**Pendiente**: no se ha hecho commit, push ni despliegue de este cambio (no se ha ordenado).

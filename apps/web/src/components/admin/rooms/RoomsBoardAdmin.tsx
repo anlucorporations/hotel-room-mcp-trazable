@@ -5,11 +5,9 @@ import { useLocale, useTranslations } from "next-intl";
 import { useAdminContext } from "@/components/admin/AdminLayout";
 import { AdminCard } from "@/components/admin/AdminPanel";
 import { CalendarioHabitaciones } from "@/components/rooms/CalendarioHabitaciones";
-import { MaintenanceIcon, OccupiedIcon, PublishedIcon, ReservedIcon } from "@/components/rooms/roomIcons";
 import {
   addDays,
   enumerateDates,
-  isDayRoomEligible,
   isoParts,
   rangeForView,
   type BoardDayAction,
@@ -17,24 +15,21 @@ import {
   type BoardRange,
   type BoardView,
 } from "@/lib/room-board-calendar";
-import { BoardDayActions } from "./BoardDayActions";
+import { BoardDayDialog } from "./BoardDayDialog";
 import type { BoardNotice, DayDetail } from "./board-dto";
 
 /**
  * **Tablero de disponibilidad** del back-office (2026-10-04, subsección «Publicar»).
  *
- * Es el contenedor: mantiene la vista (día/semana/mes/trimestre), el periodo y el día seleccionado,
- * pide los agregados a `GET /api/admin/rooms/calendar`, y compone:
+ * Es el contenedor: mantiene la vista (día/semana/mes/trimestre), el periodo, el día seleccionado y
+ * la selección de habitaciones; pide los agregados a `GET /api/admin/rooms/calendar`; y compone:
  *   · `CalendarioHabitaciones` (mapa reutilizable, solo presentación);
- *   · la lista de habitaciones del día con su estado;
- *   · `BoardDayActions` (publicar, reservar, liberar, acuñar y servicios).
+ *   · `BoardDayDialog`, la **gestión del día en flotante** (2026-10-10): al elegir un día se abre
+ *     sobre el calendario con el resumen, las acciones y las habitaciones (con su tipo).
  *
  * Acceso: owner y recepción (decisión del responsable). Publicar y acuñar se comprueban además con
  * el rol del operador: recepción los ve deshabilitados.
  */
-
-const FIELD =
-  "min-h-touch rounded-brand border border-line-strong bg-shell px-3 text-ink outline-none focus:border-azure";
 
 /** Fecha de hoy en UTC `YYYY-MM-DD` (la misma zona con la que el servidor clasifica los días). */
 function todayIso(): string {
@@ -132,15 +127,6 @@ export function RoomsBoardAdmin() {
     await loadTotals();
   }, [selectedDate, loadDay, loadTotals]);
 
-  const rooms = useMemo(() => day?.rooms ?? [], [day]);
-  const eligible = useMemo(
-    () => rooms.filter((room) => isDayRoomEligible(room, action)).map((room) => room.id),
-    [rooms, action],
-  );
-  const selectedRooms = useMemo(() => rooms.filter((room) => selectedIds.has(room.id)), [rooms, selectedIds]);
-
-  const allEligibleSelected = eligible.length > 0 && eligible.every((id) => selectedIds.has(id));
-
   const toggle = (roomId: string): void => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -157,7 +143,8 @@ export function RoomsBoardAdmin() {
 
   return (
     <div className="flex flex-col gap-5">
-      {notice && (
+      {/* El aviso vive en el panel cuando está abierto (es lo que el operador ve); si no, aquí. */}
+      {notice && !selectedDate && (
         <p
           data-testid="board-notice"
           role={notice.kind === "error" ? "alert" : "status"}
@@ -183,111 +170,28 @@ export function RoomsBoardAdmin() {
           heading={heading}
           locale={locale}
         />
+        {!selectedDate && <p className="mt-3 text-ink-soft">{ta("boardDayPick")}</p>}
       </AdminCard>
 
-      <AdminCard>
-        <h2 className="font-display text-h3 font-semibold text-ink">{ta("boardDayTitle")}</h2>
-        {!selectedDate ? (
-          <p className="mt-2 text-ink-soft">{ta("boardDayPick")}</p>
-        ) : (
-          <div className="mt-3 flex flex-col gap-4">
-            <p className="text-small text-ink-soft" data-testid="board-day-summary">
-              {day
-                ? ta("boardSummary", {
-                    published: day.summary.published,
-                    reserved: day.summary.reserved,
-                    occupied: day.summary.occupied,
-                    maintenance: day.summary.maintenance,
-                  })
-                : t("loading")}
-            </p>
-
-            <BoardDayActions
-              date={selectedDate}
-              selectedRooms={selectedRooms}
-              action={action}
-              onActionChange={setAction}
-              canPublish={canPublish}
-              canMint={canMint}
-              onNotice={setNotice}
-              onReload={reloadDay}
-            />
-
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-small font-semibold text-ink">{ta("boardRoomsTitle")}</h3>
-              <div className="flex items-center gap-2">
-                <span className="text-small text-ink-soft">
-                  {ta("boardSelectedCount", { count: selectedIds.size })}
-                </span>
-                {eligible.length > 0 && (
-                  <button
-                    type="button"
-                    data-testid="board-select-eligible"
-                    onClick={() => setSelectedIds(allEligibleSelected ? new Set() : new Set(eligible))}
-                    className={FIELD}
-                  >
-                    {ta("boardSelectEligible", { count: eligible.length })}
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {dayLoading ? (
-              <p role="status" className="text-ink-soft">
-                {t("loading")}
-              </p>
-            ) : rooms.length === 0 ? (
-              <p className="text-ink-soft">{t("empty")}</p>
-            ) : (
-              <ul className="flex flex-col divide-y divide-line" data-testid="board-room-list">
-                {rooms.map((room) => {
-                  const canSelect = isDayRoomEligible(room, action);
-                  return (
-                    <li key={room.id} className="flex items-center gap-3 py-2">
-                      <input
-                        type="checkbox"
-                        data-testid={`board-room-${room.roomNumber}`}
-                        checked={selectedIds.has(room.id)}
-                        disabled={!canSelect}
-                        onChange={() => toggle(room.id)}
-                        aria-label={`${t("colNumber")} ${room.roomNumber}`}
-                        className="h-4 w-4 disabled:opacity-30"
-                      />
-                      <span className="w-16 font-semibold text-ink">{room.roomNumber}</span>
-                      <span className="flex flex-wrap items-center gap-2 text-small text-ink-soft">
-                        {room.published && (
-                          <span className="inline-flex items-center gap-1 text-success">
-                            <PublishedIcon size={14} />
-                            {ta("boardLegendPublished")}
-                          </span>
-                        )}
-                        {room.reserved && (
-                          <span className="inline-flex items-center gap-1 text-info">
-                            <ReservedIcon size={14} />
-                            {ta("boardLegendReserved")}
-                          </span>
-                        )}
-                        {room.occupied && (
-                          <span className="inline-flex items-center gap-1 text-ink-soft">
-                            <OccupiedIcon size={14} />
-                            {ta("boardLegendOccupied")}
-                          </span>
-                        )}
-                        {room.maintenance && (
-                          <span className="inline-flex items-center gap-1 text-warning">
-                            <MaintenanceIcon size={14} />
-                            {ta("boardLegendMaintenance")}
-                          </span>
-                        )}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-        )}
-      </AdminCard>
+      {/* Gestión del día **en flotante** (2026-10-10): se abre al elegir un día del calendario. */}
+      {selectedDate !== null && (
+        <BoardDayDialog
+          date={selectedDate}
+          day={day}
+          loading={dayLoading}
+          action={action}
+          onActionChange={setAction}
+          selectedIds={selectedIds}
+          onToggle={toggle}
+          onSelectionChange={setSelectedIds}
+          canPublish={canPublish}
+          canMint={canMint}
+          notice={notice}
+          onNotice={setNotice}
+          onReload={reloadDay}
+          onClose={() => setSelectedDate(null)}
+        />
+      )}
     </div>
   );
 }

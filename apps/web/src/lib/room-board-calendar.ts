@@ -209,3 +209,66 @@ export function isDayRoomEligible(room: DayRoomFlags, action: BoardDayAction): b
       return true;
   }
 }
+
+/**
+ * Códigos de tipo de habitación que conoce el panel del día (`room_type` de la base, en mayúsculas).
+ * Son los mismos que traduce el namespace `rooms.types.*`; cualquier otro código se muestra tal cual
+ * en lugar de romper la fila.
+ */
+export const BOARD_ROOM_TYPES = ["SIMPLE", "DOBLE", "SUITE"] as const;
+
+export type BoardRoomTypeCode = (typeof BOARD_ROOM_TYPES)[number];
+
+/**
+ * Clave i18n del tipo de habitación en el namespace **`roomType`** (`simple`/`doble`/`suite`), o
+ * `null` si el código no es de los conocidos.
+ *
+ * El código llega en mayúsculas (es el `room_type` de la base, `SIMPLE`/`DOBLE`/`SUITE`) y la
+ * traducción vive en el namespace anidado `roomType` que ya usa el catálogo público —no en las claves
+ * planas `rooms["types.SIMPLE"]`, que next-intl no resuelve porque interpreta el punto como ruta.
+ *
+ * Vive aquí, y no en el componente, porque es la única traducción código→etiqueta del tablero: el
+ * operador elige la habitación **por número y tipo** (petición del responsable, 2026-10-10), y ese
+ * mapa tiene que poder probarse sin navegador.
+ */
+export function roomTypeLabelKey(code: string): string | null {
+  return (BOARD_ROOM_TYPES as readonly string[]).includes(code) ? code.toLowerCase() : null;
+}
+
+/** Lo mínimo para agrupar habitaciones por planta: la planta y el número (para ordenar). */
+export interface FloorGroupableRoom {
+  readonly floor: number | null;
+  readonly roomNumber: number;
+}
+
+/** Ficha de planta del panel del día: la planta y sus habitaciones ya ordenadas. */
+export interface FloorGroup<T> {
+  /** Número de planta; `null` para las habitaciones sin planta asignada. */
+  readonly floor: number | null;
+  readonly rooms: readonly T[];
+}
+
+/**
+ * Agrupa las habitaciones **por planta** para la vista en fichas del panel del día (2026-10-10).
+ *
+ * Reglas: las plantas se ordenan de menor a mayor y las habitaciones por número dentro de cada una;
+ * las que no tienen planta van a un grupo propio **al final** (nunca se mezclan con la planta 0 ni se
+ * pierden). Es aritmética de agrupación, no presentación, así que vive aquí y se prueba sin navegador.
+ */
+export function groupRoomsByFloor<T extends FloorGroupableRoom>(
+  rooms: readonly T[],
+): readonly FloorGroup<T>[] {
+  const groups = new Map<number | null, T[]>();
+  for (const room of rooms) {
+    const key = room.floor ?? null;
+    const bucket = groups.get(key);
+    if (bucket) bucket.push(room);
+    else groups.set(key, [room]);
+  }
+  return [...groups.entries()]
+    .sort(([a], [b]) => (a === null ? 1 : b === null ? -1 : a - b))
+    .map(([floor, list]) => ({
+      floor,
+      rooms: [...list].sort((x, y) => x.roomNumber - y.roomNumber),
+    }));
+}
