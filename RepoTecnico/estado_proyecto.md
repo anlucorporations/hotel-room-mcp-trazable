@@ -4645,4 +4645,22 @@ sección está protegida y este entorno no tiene el stack local PostgreSQL/Redis
 producción). Queda para el responsable abrir `/admin/habitacion/publicar` y pulsar un día: el panel
 debe abrirse sobre el calendario.
 
-**Pendiente**: no se ha hecho commit, push ni despliegue de este cambio (no se ha ordenado).
+### 16.1 Publicación y despliegue (release v49, 2026-10-10)
+
+El cambio se publicó como **`1a29701`** (`feat(admin): fichas por planta con ribbons en cuadricula en
+Publicar habitacion`) y se empujó a los **tres remotos** (`origin`, `github`, `codecrypto`), todos de
+`e156427`…`1a29701`. La imagen se construyó desde un **árbol de trabajo limpio en ese commit** y se
+desplegó por canario:
+
+| Servicio | Revisión sirviendo | Imagen | Tráfico | Rollback |
+|---|---|---|---|---|
+| web | `hotel-mcp-web-00095-qes` | `web:v49` (build `74b97cc1`, 4m38s) | **100 %** | `00093-zaj` (v48) |
+| mcp / worker | `00023-cal` / `00010-jut` | `mcp:v45` / `worker:v38` | 100 % | sin cambios |
+
+**Verificado**: el canario servía las claves nuevas (`boardFloorTitle`, `boardFloorNone`,
+`boardRoomSelect`) y «Sin planta» **1 vez**, frente a **0** en la v48 que estaba sirviendo —es decir, el
+artefacto desplegado es el código nuevo—; tras promover, las 12 rutas de regresión y `/health/ready`
+responden **200**; producción sirve las mismas señales; `mcp` y `worker` quedan intactos. Detalle en
+`despliegue_gcp.md` §71.
+
+**Pendiente**: la comprobación del panel **con sesión de operador** (arriba).

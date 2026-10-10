@@ -2568,3 +2568,58 @@ fidelidad antes de subir el modelo de exigencia.
 **Rollback.** `gcloud run services update-traffic hotel-mcp-web --region=europe-west1
 --to-revisions=hotel-mcp-web-00087-vup=100` (v46, la última con el prompt anterior) o
 `--to-revisions=hotel-mcp-web-00089-sor=100` (§69 sin las correcciones de esta línea).
+
+---
+
+## 71. Release v49 — Publicar habitación: gestión del día en flotante, fichas por planta y ribbons (2026-10-10)
+
+**Qué se desplegó.** El rediseño de `/admin/habitacion/publicar` (commit `1a29701`): al elegir un día, la
+gestión se abre en un **flotante** sobre el calendario; dentro, **una ficha por planta** con las
+habitaciones en **cuadrícula**, cada una como **ribbon** mínimo (cabecera con número y tipo, cuerpo con
+el estado del día y **check en el pie**). Solo cambia **`apps/web`**: `mcp` (v45) y `worker` (v38) se
+quedan como están.
+
+**Cómo se construyó.** Imagen desde un **árbol de trabajo limpio** en el commit publicado
+(`git worktree add /tmp/hotel-v49 1a29701`), con el registro de despliegues copiado (gitignored), igual
+que en §68-§70: en el árbol principal siguen los cambios **ajenos** sin commitear
+(`packages/shared/src/db/migrator.ts`, `RepoTecnico/base_datos.sql`), que no viajan a la imagen.
+
+| Componente | Imagen | Build | Duración |
+|---|---|---|---|
+| web | `…/hotel-mcp/web:v49` | ✅ SUCCESS `74b97cc1` | 4m38s |
+| mcp | `mcp:v45` (sin cambios) | vigente | — |
+| worker | `worker:v38` (sin cambios) | vigente | — |
+
+**Despliegue por canario** (procedimiento de §26/§68):
+
+```bash
+gcloud run deploy hotel-mcp-web --image=…/web:v49 --region=europe-west1 --no-traffic --tag=v49
+gcloud run services update-traffic hotel-mcp-web --to-revisions=hotel-mcp-web-00095-qes=100 \
+  --update-tags=canary=hotel-mcp-web-00095-qes
+```
+
+| Servicio | Revisión sirviendo | Imagen | Tráfico | Rollback |
+|---|---|---|---|---|
+| web | `hotel-mcp-web-00095-qes` | `web:v49` | **100 %** | `hotel-mcp-web-00093-zaj` (v48) |
+| mcp | `hotel-mcp-mcp-00023-cal` | `mcp:v45` | 100 % | `00021-tis` (v44) |
+| worker | `hotel-mcp-worker-00010-jut` | `worker:v38` | 100 % | sin cambios |
+
+**Verificación**
+
+| Comprobación | Resultado |
+|---|---|
+| Canario: `/`, `/catalogo`, `/asistente`, `/admin/habitacion/publicar`, `/health/ready` | **200** y salud `READY` (postgres, redis, RPC `UP`) ✅ |
+| Canario **sirve el build nuevo** (y la producción anterior no) | Las claves nuevas (`boardFloorTitle`, `boardFloorNone`, `boardRoomSelect`) y el texto «Sin planta» aparecen **1 vez en el canario y 0 en la v48** ✅ |
+| Tras promover: revisión que sirve e imagen | `00095-qes` · `web:v49` (comprobado en el `describe`) ✅ |
+| Producción: regresión de rutas | `/`, `/catalogo`, `/catalogo?tipo=simple`, `/reservar`, `/reventa`, `/mis-noches`, `/asistente`, `/ayuda`, `/historico`, `/recepcion`, `/admin/habitacion/publicar`, `/health/ready` → **200** ✅ |
+| Producción: señales del cambio servidas | `boardFloorTitle`, `boardFloorNone`, `boardRoomSelect`, «Sin planta» y el lanzador del asistente presentes ✅ |
+| Otros servicios | `mcp:v45` y `worker:v38` intactos ✅ |
+
+**Alcance de la verificación.** Es una comprobación de **entrega** (imagen, revisión que sirve, salud,
+rutas y textos servidos). El comportamiento de la interfaz está cubierto por las **pruebas de render**
+de la suite (10 del panel + 5 de la agrupación por plantas) y por la **captura con el CSS compilado**
+documentada en `estado_proyecto.md` §16; **no** se ha recorrido el panel con sesión de operador (hace
+falta credencial de back-office, que este entorno no tiene).
+
+**Rollback.** `gcloud run services update-traffic hotel-mcp-web --region=europe-west1
+--to-revisions=hotel-mcp-web-00093-zaj=100` (v48, la anterior).
