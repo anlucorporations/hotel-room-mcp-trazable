@@ -2623,3 +2623,59 @@ falta credencial de back-office, que este entorno no tiene).
 
 **Rollback.** `gcloud run services update-traffic hotel-mcp-web --region=europe-west1
 --to-revisions=hotel-mcp-web-00093-zaj=100` (v48, la anterior).
+
+---
+
+## 72. Release v50 — el asistente olvida al desconectar, nueva conversación y búsqueda siempre visible (2026-10-10)
+
+**Qué se desplegó.** El commit `6f80242`: (1) al **desconectar la billetera** se cierra el panel del
+asistente y se borra el contexto de la conversación; (2) **botón de nueva conversación** con su icono;
+(3) **respaldo determinista** para que una búsqueda de habitaciones se vea siempre en la ventana del
+navegador aunque el modelo no consulte el catálogo. Solo cambia **`apps/web`**: `mcp` (v45) y `worker`
+(v38) se quedan como están.
+
+**Cómo se construyó.** Imagen desde un **árbol de trabajo limpio** en el commit publicado
+(`git worktree add /tmp/hotel-v50 6f80242`), con el registro de despliegues copiado (gitignored), igual
+que en §68-§71: los cambios **ajenos** sin commitear (`packages/shared/src/db/migrator.ts`,
+`RepoTecnico/base_datos.sql`) no viajan a la imagen.
+
+| Componente | Imagen | Build | Duración |
+|---|---|---|---|
+| web | `…/hotel-mcp/web:v50` | ✅ SUCCESS `87fe2d44` | 4m47s |
+| mcp | `mcp:v45` (sin cambios) | vigente | — |
+| worker | `worker:v38` (sin cambios) | vigente | — |
+
+**Despliegue por canario** (procedimiento de §26/§68):
+
+```bash
+gcloud run deploy hotel-mcp-web --image=…/web:v50 --region=europe-west1 --no-traffic --tag=v50
+gcloud run services update-traffic hotel-mcp-web --to-revisions=hotel-mcp-web-00097-qex=100 \
+  --update-tags=canary=hotel-mcp-web-00097-qex
+```
+
+| Servicio | Revisión sirviendo | Imagen | Tráfico | Rollback |
+|---|---|---|---|---|
+| web | `hotel-mcp-web-00097-qex` | `web:v50` | **100 %** | `hotel-mcp-web-00095-qes` (v49) |
+| mcp | `hotel-mcp-mcp-00023-cal` | `mcp:v45` | 100 % | `00021-tis` (v44) |
+| worker | `hotel-mcp-worker-00010-jut` | `worker:v38` | 100 % | sin cambios |
+
+**Verificación**
+
+| Comprobación | Resultado |
+|---|---|
+| Canario: `/`, `/catalogo`, `/asistente`, `/health/ready` | **200** y salud `READY` (postgres, redis, RPC `UP`) ✅ |
+| Canario **sirve el build nuevo** (y la v49 que servía, no) | `Nueva conversación` y la clave `newChat` aparecen **1 vez en el canario y 0 en la v49** ✅ |
+| Tras promover: revisión que sirve e imagen | `00097-qex` · `web:v50` (comprobado en el `describe`) ✅ |
+| Producción: regresión de rutas | `/`, `/catalogo`, `/catalogo?tipo=simple`, `/reservar`, `/reventa`, `/mis-noches`, `/asistente`, `/ayuda`, `/historico`, `/recepcion`, `/health/ready` → **200** ✅ |
+| Producción: señales servidas | `Nueva conversación`, `newChat`, el lanzador del asistente y el cambio de la v49 (`Sin planta`) presentes ✅ |
+| **Producción · consulta real al asistente** | «¿qué habitaciones sencillas hay disponibles?» → `domainToolCalls: 1` y `pageAction = {"kind":"catalog","href":"/catalogo?tipo=simple",…}`: la búsqueda **se ve en la ventana** ✅ |
+| Otros servicios | `mcp:v45` y `worker:v38` intactos ✅ |
+
+**Alcance de la verificación.** Es una comprobación de **entrega** (imagen, revisión que sirve, salud,
+rutas, textos servidos) más **una llamada real** al endpoint para la acción de página. El resto del
+comportamiento (cierre y borrado al desconectar, nueva conversación) se verificó en **navegador** con el
+build local y billetera EIP-1193 inyectada, y con las pruebas de la suite
+(`estado_proyecto.md` §17).
+
+**Rollback.** `gcloud run services update-traffic hotel-mcp-web --region=europe-west1
+--to-revisions=hotel-mcp-web-00095-qes=100` (v49, la anterior).

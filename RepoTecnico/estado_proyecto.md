@@ -4710,4 +4710,21 @@ una acción de página, el navegador acaba en **`/catalogo?tipo=simple`** y el c
 `RepoTecnico/evidencias/asistente-nueva-conversacion-2026-10-10/` (`nueva-conversacion.png`,
 `tras-desconectar.png`, `busqueda-en-el-catalogo.png`).
 
-**Pendiente**: no se ha hecho commit, push ni despliegue de este cambio (no se ha ordenado).
+### 17.1 Publicación y despliegue (release v50, 2026-10-10)
+
+El cambio se publicó como **`6f80242`** (`feat(asistente): olvida la conversacion al desconectar, nueva
+conversacion y busqueda visible`) y se empujó a los **tres remotos** (`origin`, `github`, `codecrypto`),
+todos de `30ee51f`…`6f80242`. La imagen se construyó desde un **árbol de trabajo limpio en ese commit** y
+se desplegó por canario:
+
+| Servicio | Revisión sirviendo | Imagen | Tráfico | Rollback |
+|---|---|---|---|---|
+| web | `hotel-mcp-web-00097-qex` | `web:v50` (build `87fe2d44`, 4m47s) | **100 %** | `00095-qes` (v49) |
+| mcp / worker | `00023-cal` / `00010-jut` | `mcp:v45` / `worker:v38` | 100 % | sin cambios |
+
+**Verificado**: el canario servía `Nueva conversación` y la clave `newChat` **1 vez**, frente a **0** en
+la v49 que estaba sirviendo (el artefacto desplegado es el código nuevo); tras promover, las 11 rutas de
+regresión y `/health/ready` responden **200**; producción sirve las señales nuevas; y una **consulta real
+al asistente** («¿qué habitaciones sencillas hay disponibles?») devolvió
+`pageAction = {"kind":"catalog","href":"/catalogo?tipo=simple"}`, que es el punto 3 verificado en vivo.
+`mcp` y `worker` quedan intactos. Detalle en `despliegue_gcp.md` §72.
