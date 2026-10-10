@@ -52,6 +52,19 @@ describe("SYSTEM_PROMPT — citación y formato (RF-59)", () => {
   });
 });
 
+describe("SYSTEM_PROMPT — secuencia de preparación de la compra", () => {
+  it("exige obtener el tokenId de checkAvailability antes de buildPurchaseTx", () => {
+    // Defecto medido en producción el 2026-10-10: al confirmar, el modelo llamaba a buildPurchaseTx
+    // «directamente» con un tokenId que calculaba él (una sola llamada), el MCP lo rechazaba y el
+    // usuario recibía «el tokenId no es válido» sin ninguna reserva preparada. La regla ahora obliga
+    // a la secuencia checkAvailability → buildPurchaseTx dentro del mismo turno.
+    expect(SYSTEM_PROMPT).toMatch(/obtén el tokenId llamando a checkAvailability/i);
+    expect(SYSTEM_PROMPT).toMatch(/buildPurchaseTx con ESE tokenId/i);
+    expect(SYSTEM_PROMPT).toMatch(/No calcules ni inventes el tokenId/i);
+    expect(SYSTEM_PROMPT).toMatch(/EN ESTE MISMO turno/i);
+  });
+});
+
 describe("SYSTEM_PROMPT — idioma (RF-58)", () => {
   it("responde siempre en español y busca en español", () => {
     expect(SYSTEM_PROMPT).toMatch(/Responde siempre en español/i);
