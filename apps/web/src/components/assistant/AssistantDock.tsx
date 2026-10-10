@@ -13,8 +13,10 @@ import {
   type ReactNode,
 } from "react";
 import { useTranslations } from "next-intl";
+import { useOnboarding } from "@/components/wallet/useOnboarding";
 import type { AssistantPageAction } from "@/lib/assistant/page-action";
 import { AssistantChat } from "./AssistantChat";
+import { shouldForgetConversation } from "./history";
 
 /**
  * Asistente IA en toda la plataforma (incremento v4).
@@ -132,6 +134,16 @@ export function AssistantDock() {
   useEffect(() => {
     close?.();
   }, [pathname, close]);
+
+  // Al **desconectar** la billetera (o cambiar de cuenta) se cierra el panel (petición del
+  // responsable, 2026-10-10): el chat se olvida en el hook (misma regla) y la sección se aparta, para
+  // que no quede a la vista una conversación que hablaba de la billetera anterior.
+  const { address } = useOnboarding();
+  const walletRef = useRef<string | undefined>(address);
+  useEffect(() => {
+    if (shouldForgetConversation(walletRef.current, address)) close?.();
+    walletRef.current = address;
+  }, [address, close]);
 
   // La consulta se enseña EN LA PÁGINA: se navega al catálogo filtrado y se aparta el panel.
   const onPageAction = useCallback(

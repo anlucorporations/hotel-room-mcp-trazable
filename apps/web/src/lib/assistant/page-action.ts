@@ -72,22 +72,67 @@ export function catalogSearchOf(call: AssistantToolCall): CatalogSearch | null {
 }
 
 /**
- * Acción de página de un turno, con la **prioridad del handoff**: si el turno dejó una compra
- * preparada, NO se navega.
+ * Acción de página de un turno. Decide en este orden:
  *
- * Medido en producción el 2026-10-10 (v47): el flujo correcto de compra necesita DOS herramientas
- * (`checkAvailability` → `buildPurchaseTx`), y `checkAvailability` es una herramienta de catálogo,
- * así que generaba acción de página. El widget navegaba al catálogo y cerraba el panel **en el mismo
- * turno en que llegaba la compra preparada**, de modo que el usuario nunca veía el panel de firma
- * (aunque el servidor sí la había preparado). La compra preparada es el siguiente paso del usuario
- * —revisar y firmar—, así que manda sobre la navegación: el catálogo puede esperar.
+ * 1. **Compra preparada → no se navega.** Medido en producción el 2026-10-10 (v47): el flujo correcto
+ *    de compra usa DOS herramientas (`checkAvailability` → `buildPurchaseTx`) y `checkAvailability`
+ *    es de catálogo, así que generaba acción de página; el widget navegaba y cerraba el panel **en el
+ *    mismo turno en que llegaba la compra**, y el usuario nunca veía el panel de firma. La compra es
+ *    el siguiente paso del usuario: manda sobre la navegación.
+ * 2. **Consulta de catálogo del modelo → su acción** (con los filtros reales).
+ * 3. **El usuario pidió habitaciones y el modelo no consultó el catálogo → se abre el catálogo**
+ *    (filtrado por el tipo que haya nombrado). Es la garantía de que la búsqueda se ve en la ventana
+ *    aunque el modelo responda de memoria.
  */
 export function pageActionForTurn(turn: {
   readonly toolCalls: readonly AssistantToolCall[];
   readonly preparedPurchase: unknown | null;
+  /** Último mensaje del usuario del turno; habilita el respaldo por intención. */
+  readonly userText?: string;
 }): AssistantPageAction | null {
   if (turn.preparedPurchase) return null;
-  return derivePageAction(turn.toolCalls);
+  const derived = derivePageAction(turn.toolCalls);
+  if (derived) return derived;
+  if (!turn.userText || !wantsRoomSearch(turn.userText)) return null;
+  const search: CatalogSearch = {
+    type: roomTypeFromText(turn.userText),
+    from: "",
+    to: "",
+    room: "",
+  };
+  return { kind: "catalog", href: buildCatalogHref(search), search };
+}
+
+/**
+ * ¿El usuario pidió una **búsqueda de habitaciones**? (petición del responsable, 2026-10-10: «que
+ * cuando se solicita una búsqueda de habitaciones se muestre en la ventana del navegador»).
+ *
+ * Es el respaldo **determinista** para cuando el modelo no llega a consultar el catálogo (responde de
+ * memoria o su herramienta falla): sin él no habría `pageAction` y el usuario se quedaría con el
+ * texto, sin ver nada en la página.
+ *
+ * Exige señales de **habitación o tipo** (`habitaci…`, `sencill…`, `doble`, `suite`) junto a una de
+ * **búsqueda o disponibilidad** (`hay`, `disponib…`, `libre`, `cuál`, `busca`, `muestra`…) —o,
+ * directamente, una palabra de disponibilidad—, de modo que una duda de manual («¿cómo pongo mi noche
+ * en reventa?», «¿cuántas noches tengo?») **no** mueva al usuario de página.
+ */
+export function wantsRoomSearch(text: string): boolean {
+  const room = /habitaci|cuarto|sencill|simple|doble|suite/i.test(text);
+  // Ojo con las tildes: «muéstrame» NO contiene «muestra» (la é rompe la coincidencia), así que los
+  // verbos se escriben con su vocal acentuada opcional.
+  const search =
+    /disponib|libre|hay|cu[aá]l|cu[aá]nt|busca|mu[eé]stra|ens[eé]|ver\b|lista|opci|precio|cuesta/i.test(
+      text,
+    );
+  return (room && search) || /disponib|\blibre/i.test(text);
+}
+
+/** Tipo de habitación nombrado en el texto, si se nombra uno (para el respaldo por intención). */
+export function roomTypeFromText(text: string): NightType | null {
+  if (/suite/i.test(text)) return "suite";
+  if (/doble/i.test(text)) return "doble";
+  if (/sencill|simple/i.test(text)) return "simple";
+  return null;
 }
 
 /**

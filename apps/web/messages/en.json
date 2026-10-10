@@ -909,6 +909,7 @@
     "manualLink": "Go to catalog",
     "errorReply": "Sorry, I could not respond right now. Please try again.",
     "retry": "Retry",
+    "newChat": "New conversation",
     "suggestionsLabel": "Suggestions",
     "suggestions": {
       "availability": "Show suites in June",

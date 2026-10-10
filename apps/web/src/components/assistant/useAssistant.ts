@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChatMessage, PreparedPurchase } from "@/lib/assistant/types";
 import type { AssistantPageAction } from "@/lib/assistant/page-action";
-import { browserHistoryStorage, loadHistory, saveHistory } from "./history";
+import { browserHistoryStorage, clearHistory, loadHistory, saveHistory, shouldForgetConversation } from "./history";
 
 export type AssistantStatus = "idle" | "loading" | "error";
 
@@ -18,6 +18,11 @@ export interface UseAssistantResult {
   send: (text: string) => Promise<void>;
   /** Reenvía el último turno de usuario sin reescribir el input (MINOR#27). */
   retry: () => Promise<void>;
+  /**
+   * **Nueva conversación**: borra el hilo actual (memoria incluida) y deja el asistente como recién
+   * abierto. Es lo que dispara el botón con el icono de nueva conversación.
+   */
+  startNew: () => void;
 }
 
 interface AssistantApiResponse {
@@ -74,6 +79,31 @@ export function useAssistant(
   const persist = useCallback((conversation: ChatMessage[]): void => {
     saveHistory(storageRef.current, conversation);
   }, []);
+
+  /**
+   * **Nueva conversación** (petición del responsable, 2026-10-10): deja el hilo como recién abierto.
+   * Borra también la memoria de la pestaña, para que el contexto no reaparezca al navegar (el widget
+   * se remonta en cada página) ni al recargar.
+   */
+  const startNew = useCallback((): void => {
+    lastConversation.current = null;
+    setMessages([]);
+    setPreparedPurchase(null);
+    setStatus("idle");
+    setUnavailable(false);
+    clearHistory(storageRef.current);
+  }, []);
+
+  /**
+   * Al **desconectar** la billetera (o cambiar de cuenta) se olvida la conversación: el contexto que
+   * recibió el asistente era de esa billetera —«tus noches» se consultan con su dirección— y no debe
+   * sobrevivirle. La dirección es la señal: `undefined` después de haber tenido una = desconexión.
+   */
+  const walletRef = useRef<string | undefined>(walletAddress);
+  useEffect(() => {
+    if (shouldForgetConversation(walletRef.current, walletAddress)) startNew();
+    walletRef.current = walletAddress;
+  }, [walletAddress, startNew]);
 
   // Núcleo del envío: dada una conversación COMPLETA (ya incluye el turno de usuario), la manda.
   const dispatch = useCallback(
@@ -141,5 +171,6 @@ export function useAssistant(
     preparedPurchase,
     send,
     retry,
+    startNew,
   };
 }

@@ -12,6 +12,30 @@ import { PurchaseHandoff } from "./PurchaseHandoff";
 /** Altura máxima (px) del `<textarea>` autoexpandible antes de mostrar scroll interno (UX#16). */
 const TEXTAREA_MAX_PX = 160;
 
+/**
+ * Icono de **nueva conversación** (burbuja con un «+»): decorativo, el nombre accesible lo aporta el
+ * botón. A trazo, como el resto de iconos del proyecto.
+ */
+function NewChatIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={18}
+      height={18}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.7}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M20.5 12a8 8 0 0 1-8 8H8l-4.5 2.5V12a8 8 0 0 1 8-8h1" />
+      <path d="M18.5 3.5v5M16 6h5" />
+    </svg>
+  );
+}
+
 export interface AssistantChatProps {
   /**
    * `page` = la conversación ocupa la página completa (`/asistente`); `panel` = vive dentro del
@@ -39,11 +63,8 @@ export function AssistantChat({ variant = "page", onPageAction }: AssistantChatP
     },
     [onPageAction, router],
   );
-  const { messages, status, unavailable, canRetry, preparedPurchase, send, retry } = useAssistant(
-    address,
-    t("errorReply"),
-    navigate,
-  );
+  const { messages, status, unavailable, canRetry, preparedPurchase, send, retry, startNew } =
+    useAssistant(address, t("errorReply"), navigate);
   const [input, setInput] = useState("");
   const logRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -190,6 +211,19 @@ export function AssistantChat({ variant = "page", onPageAction }: AssistantChatP
       {preparedPurchase && <PurchaseHandoff purchase={preparedPurchase} />}
 
       <form onSubmit={onSubmit} className="flex items-end gap-2">
+        {/* Nueva conversación (2026-10-10): borra el hilo y su memoria. Se deshabilita cuando no hay
+            nada que borrar o mientras el asistente responde (borrar a medias dejaría un hilo roto). */}
+        <button
+          type="button"
+          data-testid="assistant-new-chat"
+          onClick={startNew}
+          disabled={messages.length === 0 || status === "loading"}
+          title={t("newChat")}
+          aria-label={t("newChat")}
+          className="inline-flex min-h-touch min-w-touch flex-none items-center justify-center rounded-brand border border-line bg-shell text-ink transition-colors hover:bg-mist-2 disabled:opacity-50"
+        >
+          <NewChatIcon />
+        </button>
         <textarea
           ref={textareaRef}
           data-testid="assistant-input"

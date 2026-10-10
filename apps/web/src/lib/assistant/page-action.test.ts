@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { catalogSearchOf, derivePageAction, pageActionForTurn, type AssistantToolCall } from "./page-action";
+import {
+  catalogSearchOf,
+  derivePageAction,
+  pageActionForTurn,
+  roomTypeFromText,
+  wantsRoomSearch,
+  type AssistantToolCall,
+} from "./page-action";
 
 /**
  * La consulta del asistente se convierte en la navegación que **muestra el resultado en la página**
@@ -122,6 +129,98 @@ describe("pageActionForTurn — prioridad del handoff", () => {
     expect(pageActionForTurn({ toolCalls: calls, preparedPurchase: null })?.href).toBe(
       "/catalogo?desde=2026-10-13&hasta=2026-10-13&buscar=101",
     );
+    expect(pageActionForTurn({ toolCalls: [], preparedPurchase: null })).toBeNull();
+  });
+});
+
+describe("wantsRoomSearch — el usuario pidió habitaciones", () => {
+  it("peticiones de búsqueda de habitaciones (lo que debe verse en la ventana)", () => {
+    for (const text of [
+      "¿qué habitaciones sencillas hay?",
+      "muéstrame las habitaciones disponibles",
+      "¿está libre la habitación 101?",
+      "¿hay suites en junio?",
+      "busca una doble para el 15 de junio",
+      "¿cuánto cuesta una habitación simple?",
+      "¿qué habitaciones hay libres?",
+      "muéstrame las habitaciones", // con tilde: «muéstrame» no contiene «muestra»
+      "enséñame las suites",
+      "¿cuál es el precio de las dobles?",
+    ]) {
+      expect(wantsRoomSearch(text), text).toBe(true);
+    }
+  });
+
+  it("dudas de manual o de cuenta NO cuentan como búsqueda de habitaciones", () => {
+    for (const text of [
+      "¿cuántas noches tengo?",
+      "¿cómo pongo mi noche en reventa?",
+      "¿qué documentos necesito para el check-in?",
+      "cuéntame un chiste",
+      "¿qué incluye una habitación doble?", // describe, no busca disponibilidad
+      "hola",
+    ]) {
+      expect(wantsRoomSearch(text), text).toBe(false);
+    }
+  });
+});
+
+describe("roomTypeFromText — el tipo nombrado, para el respaldo", () => {
+  it("reconoce los tres tipos, en singular y en plural", () => {
+    expect(roomTypeFromText("¿qué habitaciones sencillas hay?")).toBe("simple");
+    expect(roomTypeFromText("busca una doble")).toBe("doble");
+    expect(roomTypeFromText("¿hay suites libres?")).toBe("suite");
+  });
+
+  it("sin tipo nombrado no filtra", () => {
+    expect(roomTypeFromText("¿qué habitaciones hay?")).toBeNull();
+  });
+});
+
+describe("pageActionForTurn — la búsqueda se ve en la ventana aunque el modelo no consulte", () => {
+  it("si el modelo no consultó el catálogo pero el usuario pidió habitaciones, se abre el catálogo", () => {
+    const action = pageActionForTurn({
+      toolCalls: [],
+      preparedPurchase: null,
+      userText: "¿qué habitaciones sencillas hay?",
+    });
+    expect(action).toEqual({
+      kind: "catalog",
+      href: "/catalogo?tipo=simple",
+      search: { type: "simple", from: "", to: "", room: "" },
+    });
+  });
+
+  it("sin tipo nombrado, el respaldo abre el catálogo entero", () => {
+    expect(
+      pageActionForTurn({ toolCalls: [], preparedPurchase: null, userText: "muéstrame las habitaciones" })?.href,
+    ).toBe("/catalogo");
+  });
+
+  it("la consulta REAL del modelo manda sobre el respaldo (conserva sus filtros)", () => {
+    expect(
+      pageActionForTurn({
+        toolCalls: [{ name: "checkAvailability", input: { room: 7, date: 20260622 } }],
+        preparedPurchase: null,
+        userText: "¿está libre la habitación 7 el 22 de junio?",
+      })?.href,
+    ).toBe("/catalogo?desde=2026-06-22&hasta=2026-06-22&buscar=7");
+  });
+
+  it("la compra preparada sigue mandando: ni filtros del modelo ni respaldo", () => {
+    expect(
+      pageActionForTurn({
+        toolCalls: [{ name: "checkAvailability", input: { room: 7, date: 20260622 } }],
+        preparedPurchase: { tokenId: "720260622" },
+        userText: "reserva la habitación 7 para el 22 de junio",
+      }),
+    ).toBeNull();
+  });
+
+  it("una duda que no es de habitaciones no mueve al usuario (ni con texto)", () => {
+    expect(
+      pageActionForTurn({ toolCalls: [], preparedPurchase: null, userText: "¿cuántas noches tengo?" }),
+    ).toBeNull();
     expect(pageActionForTurn({ toolCalls: [], preparedPurchase: null })).toBeNull();
   });
 });

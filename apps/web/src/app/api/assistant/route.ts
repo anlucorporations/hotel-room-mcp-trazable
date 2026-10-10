@@ -206,9 +206,11 @@ export async function POST(request: Request): Promise<NextResponse> {
     // La respuesta conserva el contrato de siempre: la telemetría no sale al cliente.
     //
     // `pageAction` (incremento v4) es la navegación que el cliente ejecuta para que la consulta se
-    // VEA en la página: se deriva de las herramientas de catálogo que respondieron bien, no del
-    // texto del modelo. **Prioridad del handoff**: si el turno preparó una compra, no se navega
-    // (el panel de firma es el siguiente paso del usuario y lo perdería).
+    // VEA en la página: se deriva de las herramientas de catálogo que respondieron bien, no del texto
+    // del modelo. **Prioridad del handoff**: si el turno preparó una compra, no se navega (el panel
+    // de firma es el siguiente paso del usuario y lo perdería). Si el modelo no consultó el catálogo
+    // pero el usuario pidió habitaciones, se abre el catálogo igualmente (respaldo por intención).
+    const lastUserText = [...sanitized.messages].reverse().find((m) => m.role === "user")?.text;
     return NextResponse.json({
       reply: redactPromptLeak(result.reply, REDACTED_REPLY),
       domainToolCalls: result.domainToolCalls,
@@ -216,6 +218,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       pageAction: pageActionForTurn({
         toolCalls: result.toolCalls,
         preparedPurchase: result.preparedPurchase,
+        userText: lastUserText,
       }),
     });
   } catch (error) {

@@ -29,6 +29,7 @@ const MAX_MESSAGE_LENGTH = 4_000;
 export interface HistoryStorage {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
+  removeItem(key: string): void;
 }
 
 /**
@@ -91,4 +92,34 @@ export function saveHistory(
   } catch {
     // Sin memoria: la conversación sigue viva en pantalla.
   }
+}
+
+/**
+ * **Borra** la conversación guardada (petición del responsable, 2026-10-10): el botón «nueva
+ * conversación» y la desconexión de la billetera deben dejar la pestaña limpia, sin el hilo anterior.
+ * Un fallo del almacenamiento no rompe nada: sin memoria, el asistente sigue funcionando.
+ */
+export function clearHistory(storage: HistoryStorage | null): void {
+  if (storage === null) return;
+  try {
+    storage.removeItem(ASSISTANT_HISTORY_KEY);
+  } catch {
+    // Almacenamiento bloqueado: no hay nada que borrar.
+  }
+}
+
+/**
+ * ¿Hay que **olvidar** la conversación al cambiar la billetera conectada?
+ *
+ * Sí al **desconectar** (dirección → `undefined`) y al **cambiar de cuenta** (una dirección por
+ * otra): el contexto que se le dio al asistente era de la billetera anterior —«tus noches»,
+ * `getOwnedNights`— y no debe sobrevivirle (privacidad, y evita mezclar dos carteras en el mismo
+ * hilo). **No** al reconectar ni al hidratar: si no había dirección previa (primer render, la cartera
+ * aún reconectando), no hay nada que olvidar.
+ */
+export function shouldForgetConversation(
+  previous: string | undefined,
+  next: string | undefined,
+): boolean {
+  return previous !== undefined && next !== previous;
 }

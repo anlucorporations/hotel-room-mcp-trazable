@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import type { ChatMessage } from "@/lib/assistant/types";
 import {
   ASSISTANT_HISTORY_KEY,
+  clearHistory,
   loadHistory,
   saveHistory,
+  shouldForgetConversation,
   type HistoryStorage,
 } from "./history";
 
@@ -23,6 +25,9 @@ function fakeStorage(initial?: string): HistoryStorage & { readonly data: Map<st
     getItem: (key) => data.get(key) ?? null,
     setItem: (key, value) => {
       data.set(key, value);
+    },
+    removeItem: (key) => {
+      data.delete(key);
     },
   };
 }
@@ -91,7 +96,51 @@ describe("saveHistory", () => {
       setItem: () => {
         throw new Error("QuotaExceededError");
       },
+      removeItem: () => undefined,
     };
     expect(() => saveHistory(storage, [USER])).not.toThrow();
+  });
+});
+
+describe("clearHistory — nueva conversación y desconexión de la billetera", () => {
+  it("borra la conversación guardada", () => {
+    const storage = fakeStorage(JSON.stringify([USER, REPLY]));
+    clearHistory(storage);
+    expect(storage.data.has(ASSISTANT_HISTORY_KEY)).toBe(false);
+    expect(loadHistory(storage)).toEqual([]);
+  });
+
+  it("sin almacenamiento (o bloqueado) no lanza", () => {
+    expect(() => clearHistory(null)).not.toThrow();
+    const storage: HistoryStorage = {
+      getItem: () => null,
+      setItem: () => undefined,
+      removeItem: () => {
+        throw new Error("SecurityError");
+      },
+    };
+    expect(() => clearHistory(storage)).not.toThrow();
+  });
+});
+
+describe("shouldForgetConversation — cuándo se olvida el hilo", () => {
+  const ALICE = "0xAAA";
+  const BOB = "0xBBB";
+
+  it("al DESCONECTAR (había dirección y ya no) hay que olvidar", () => {
+    expect(shouldForgetConversation(ALICE, undefined)).toBe(true);
+  });
+
+  it("al CAMBIAR de cuenta también (el contexto era de la otra billetera)", () => {
+    expect(shouldForgetConversation(ALICE, BOB)).toBe(true);
+  });
+
+  it("al reconectar o hidratar NO se olvida (no había dirección previa)", () => {
+    expect(shouldForgetConversation(undefined, ALICE)).toBe(false);
+    expect(shouldForgetConversation(undefined, undefined)).toBe(false);
+  });
+
+  it("si la dirección no cambia, el hilo se conserva", () => {
+    expect(shouldForgetConversation(ALICE, ALICE)).toBe(false);
   });
 });

@@ -4664,3 +4664,50 @@ responden **200**; producción sirve las mismas señales; `mcp` y `worker` queda
 `despliegue_gcp.md` §71.
 
 **Pendiente**: la comprobación del panel **con sesión de operador** (arriba).
+
+## 17. Asistente IA: olvidar la conversación al desconectar, nueva conversación y la búsqueda siempre en la ventana (2026-10-10) · `@asistenteProyecto`
+
+**Petición del responsable** (tres puntos):
+1. al **desconectar la billetera**, se cierra la sección del asistente y se **borra el contexto** de la
+   conversación;
+2. poder **empezar una conversación nueva** borrando la actual, con su **icono**;
+3. **asegurar** que cuando se pide una **búsqueda de habitaciones** el resultado **se vea en la ventana
+   del navegador**.
+
+**Qué cambió**
+
+| Punto | Fichero | Detalle |
+|---|---|---|
+| 1 · Olvidar al desconectar | `components/assistant/history.ts` | `HistoryStorage` gana `removeItem`; nuevo `clearHistory` (borra la clave de la pestaña) y `shouldForgetConversation(anterior, nueva)`: hay que olvidar **al desconectar** (`0x…` → `undefined`) y **al cambiar de cuenta** (una dirección por otra), pero **no** al reconectar ni al hidratar (si no había dirección previa no hay nada que olvidar). |
+| 1 · Cerrar la sección | `components/assistant/AssistantDock.tsx` | Con la misma regla, el panel **se cierra** en cuanto la dirección deja de ser la misma (desconexión o cambio de cuenta): no queda a la vista una conversación que hablaba de la billetera anterior. |
+| 1 · Borrar el contexto | `components/assistant/useAssistant.ts` | El hook aplica la regla: al cambiar la billetera llama a `startNew()` (mensajes, compra preparada, reintento y **memoria de la pestaña**). |
+| 2 · Nueva conversación | `useAssistant.ts` + `AssistantChat.tsx` | `startNew()` deja el hilo como recién abierto y `clearHistory` impide que reaparezca al navegar (el widget se remonta en cada página) o al recargar. El **botón de icono** (burbuja con «+») vive en el compositor, junto al campo de texto: se **deshabilita** cuando no hay nada que borrar o mientras el asistente responde (borrar a medias dejaría un hilo roto). |
+| 3 · La búsqueda se ve en la ventana | `lib/assistant/page-action.ts` + `app/api/assistant/route.ts` | Nuevo **respaldo determinista**: si el modelo no llegó a consultar el catálogo (responde de memoria o su herramienta falla) pero el usuario **pidió habitaciones**, el endpoint devuelve igualmente `pageAction` y el navegador abre el catálogo, **filtrado por el tipo** que se haya nombrado. `wantsRoomSearch` exige señales de habitación/tipo junto a una de búsqueda o disponibilidad (o una palabra de disponibilidad), así que una duda de manual —«¿cómo pongo mi noche en reventa?», «¿cuántas noches tengo?»— **no** mueve al usuario; `roomTypeFromText` extrae `simple`/`doble`/`suite`. La consulta real del modelo sigue mandando (conserva sus filtros) y una compra preparada sigue bloqueando la navegación. |
+| i18n | `messages/{es,en,ru}.json` | Nueva clave `assistant.newChat` («Nueva conversación» / «New conversation» / «Новый диалог»). |
+
+**Defecto encontrado al escribir las pruebas (y corregido).** El primer patrón de intención buscaba
+`muestra`, que **no** está en «muéstrame» (la tilde rompe la coincidencia), así que «muéstrame las
+habitaciones» no habría abierto el catálogo. El patrón ahora admite la vocal acentuada (`mu[eé]stra`) y
+las pruebas incluyen casos con tilde («muéstrame», «enséñame»).
+
+**Verificación**
+
+| Comprobación | Resultado |
+|---|---|
+| `typecheck` · `eslint` | Limpios |
+| Suite completa | **107 ficheros · 1006 pruebas** en verde, ramas **75,01 %** (umbral 73) · `EXIT=0` |
+| `next build` | Correcto |
+| Pruebas nuevas | `history` (borrado + regla de olvido), `page-action` (intención, tipo nombrado y orden de decisión: compra → consulta del modelo → respaldo) y **`route-page-action.test.ts`** (integración del endpoint: sin herramienta y con «habitaciones sencillas» responde `pageAction=/catalogo?tipo=simple`; sin tipo, `/catalogo`; una duda de desayuno no navega; y la consulta real del modelo conserva sus filtros) |
+| **Navegador** (build local, billetera EIP-1193 inyectada, `/api/assistant` interceptado) | Ver los cinco pasos de abajo ✅ |
+
+Prueba de navegador (salida literal): (1) conecto la billetera —el menú muestra `0x15d3…6A65`—; (2) una
+conversación deja **1** mensaje del asistente y **memoria** en `sessionStorage`; (3) el **botón de nueva
+conversación** es visible, y al pulsarlo quedan **0** mensajes, vuelven las sugerencias de inicio y la
+memoria queda **borrada**; (4) tras otra conversación, al **desconectar** el panel queda **cerrado**
+(`visible: false`), la memoria **borrada**, y al reabrirlo la conversación arranca **de cero**; (5) con
+una acción de página, el navegador acaba en **`/catalogo?tipo=simple`** y el catálogo muestra
+«Resultados de tu consulta al asistente: Simple. Quitar filtros». Evidencia en
+`RepoTecnico/evidencias/asistente-nueva-conversacion-2026-10-10/` (`nueva-conversacion.png`,
+`tras-desconectar.png`, `busqueda-en-el-catalogo.png`).
+
+**Pendiente**: no se ha hecho commit, push ni despliegue de este cambio (no se ha ordenado).
