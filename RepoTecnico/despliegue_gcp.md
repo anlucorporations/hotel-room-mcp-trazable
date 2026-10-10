@@ -2411,3 +2411,64 @@ se movió a la revisión nueva; el tag `v39` de la revisión `00046-9t9` (sin tr
 
 **Nota de alcance.** El back-office (`admin/**`) conserva su plantilla y **no** monta el asistente: es la
 decisión D-83 del incremento (públicas + recepción), no un olvido.
+
+---
+
+## 69. Release v47 — la compra no puede fallar en silencio (2026-10-10)
+
+**Qué se desplegó.** El endurecimiento del flujo de compra a raíz de la verificación del reporte
+«al hacer una reserva la wallet da la transacción por fallida pero la plataforma la agrega a Mis
+noches» (commit `a2c7696`): motivo real del fallo (D1), recibo contrastado con el `Transfer` de la
+noche comprada (D2), guarda única de firma (D3), aviso de minado condicional (D4) y estado
+**«no verificable»** para distinguir «revirtió» de «no se pudo leer el recibo» (D5). El caso
+concreto quedó cerrado en el informe: la transacción del usuario **se asentó** (`ownerOf` suyo) y
+la plataforma mostraba la verdad. Solo cambia **`apps/web`**; `mcp` (v45), `worker` (v38) y
+`monitor` se quedan como están.
+
+**Cómo se construyó.** Imagen desde un **árbol de trabajo limpio** en el commit del arreglo
+(`git worktree add /tmp/hotel-v47 a2c7696`), porque el árbol principal tiene cambios **ajenos** sin
+commitear (`packages/shared/src/db/migrator.ts`, `RepoTecnico/base_datos.sql`) que no deben viajar
+a producción. El registro de despliegues (`packages/shared/deployments/*.json`, gitignored) se
+copia al árbol limpio, igual que en v46.
+
+| Componente | Imagen | Build | Duración |
+|---|---|---|---|
+| web | `…/hotel-mcp/web:v47` | ✅ SUCCESS `4cc57502` | 4m28s |
+| mcp | `mcp:v45` (sin cambios) | vigente | — |
+| worker | `worker:v38` (sin cambios) | vigente | — |
+
+**Despliegue por canario** (procedimiento de §26/§68):
+
+```bash
+gcloud run deploy hotel-mcp-web --image=…/web:v47 --region=europe-west1 --no-traffic --tag=v47
+gcloud run services update-traffic hotel-mcp-web --to-revisions=hotel-mcp-web-00089-sor=100 \
+  --update-tags=canary=hotel-mcp-web-00089-sor
+```
+
+| Servicio | Revisión sirviendo | Tráfico | Rollback |
+|---|---|---|---|
+| web | `hotel-mcp-web-00089-sor` (`web:v47`) | 100 % | `hotel-mcp-web-00087-vup` (v46) |
+| mcp | `hotel-mcp-mcp-00023-cal` (`mcp:v45`) | 100 % | sin cambios |
+| worker | `hotel-mcp-worker-00010-jut` (`worker:v38`) | 100 % | sin cambios |
+
+**Verificación**
+
+| Comprobación | Resultado |
+|---|---|
+| Canario: rutas `/`, `/catalogo`, `/catalogo?tipo=simple`, `/reservar`, `/mis-noches`, `/reventa`, `/asistente`, `/health/ready` | **200** en todas; salud `READY` (postgres/redis/RPC `UP`) ✅ |
+| Canario: copy D4 nueva | «la transacción sigue en la red…» **×2** (catálogo + asistente) y la antigua «la reserva continúa» **0** ✅ |
+| Canario: claves nuevas servidas | D5 `Comprobar de nuevo`, `No pudimos comprobar la reserva`; D1 `Esta noche ya está vendida o no está disponible`, `No pudimos leer el recibo de la transacción en la red` ✅ |
+| Tras promover: revisión que sirve e imagen | `00089-sor` · `web:v47` (comprobado en el `describe`) ✅ |
+| Producción: regresión de rutas | `/`, `/catalogo`, `/catalogo?tipo=simple`, `/reservar`, `/reventa`, `/mis-noches`, `/asistente`, `/ayuda`, `/historico`, `/recepcion`, `/health/ready` → **200** ✅ |
+| Producción: copy nueva servida y antigua ausente | igual que en el canario ✅ |
+| Otros servicios | `mcp:v45` y `worker:v38` intactos ✅ |
+
+**Rollback.** `gcloud run services update-traffic hotel-mcp-web --region=europe-west1
+--to-revisions=hotel-mcp-web-00087-vup=100` (revisión `v46`, viva y con estado `True`).
+
+**Alcance de la verificación.** La comprobación de la release es de **entrega** (imagen, rutas,
+salud y copy servidos). El comportamiento nuevo de la compra (motivo real, recibo verificado,
+estado «no verificable», guarda de firma) está cubierto por **pruebas herméticas** en la suite
+(105 ficheros / 969 tests) y por la reproducción on-chain del informe
+(`apps/web/scripts/verify-reserva-fallida.mts`); no se repitió una compra real en producción
+para esta release.
