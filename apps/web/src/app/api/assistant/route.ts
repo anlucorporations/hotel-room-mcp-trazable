@@ -7,7 +7,7 @@ import { sanitizeConversation } from "@/lib/assistant/pii-sanitizer";
 import { McpToolGateway } from "@/lib/assistant/mcp-gateway";
 import { createTxValidator } from "@/lib/assistant/chain-pricing";
 import { runAssistant } from "@/lib/assistant/orchestrator";
-import { derivePageAction } from "@/lib/assistant/page-action";
+import { pageActionForTurn } from "@/lib/assistant/page-action";
 import { buildSystemPrompt } from "@/lib/assistant/prompt";
 import { redactPromptLeak } from "@/lib/assistant/prompt-leak-filter";
 import { InMemoryRateLimiter, type RateLimiter } from "@/lib/assistant/rate-limit";
@@ -207,12 +207,16 @@ export async function POST(request: Request): Promise<NextResponse> {
     //
     // `pageAction` (incremento v4) es la navegación que el cliente ejecuta para que la consulta se
     // VEA en la página: se deriva de las herramientas de catálogo que respondieron bien, no del
-    // texto del modelo, así que un turno que no consultó disponibilidad devuelve `null`.
+    // texto del modelo. **Prioridad del handoff**: si el turno preparó una compra, no se navega
+    // (el panel de firma es el siguiente paso del usuario y lo perdería).
     return NextResponse.json({
       reply: redactPromptLeak(result.reply, REDACTED_REPLY),
       domainToolCalls: result.domainToolCalls,
       preparedPurchase: result.preparedPurchase,
-      pageAction: derivePageAction(result.toolCalls),
+      pageAction: pageActionForTurn({
+        toolCalls: result.toolCalls,
+        preparedPurchase: result.preparedPurchase,
+      }),
     });
   } catch (error) {
     return unavailable(error instanceof Error ? error.message : "error desconocido");

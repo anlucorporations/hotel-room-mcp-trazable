@@ -72,6 +72,25 @@ export function catalogSearchOf(call: AssistantToolCall): CatalogSearch | null {
 }
 
 /**
+ * Acción de página de un turno, con la **prioridad del handoff**: si el turno dejó una compra
+ * preparada, NO se navega.
+ *
+ * Medido en producción el 2026-10-10 (v47): el flujo correcto de compra necesita DOS herramientas
+ * (`checkAvailability` → `buildPurchaseTx`), y `checkAvailability` es una herramienta de catálogo,
+ * así que generaba acción de página. El widget navegaba al catálogo y cerraba el panel **en el mismo
+ * turno en que llegaba la compra preparada**, de modo que el usuario nunca veía el panel de firma
+ * (aunque el servidor sí la había preparado). La compra preparada es el siguiente paso del usuario
+ * —revisar y firmar—, así que manda sobre la navegación: el catálogo puede esperar.
+ */
+export function pageActionForTurn(turn: {
+  readonly toolCalls: readonly AssistantToolCall[];
+  readonly preparedPurchase: unknown | null;
+}): AssistantPageAction | null {
+  if (turn.preparedPurchase) return null;
+  return derivePageAction(turn.toolCalls);
+}
+
+/**
  * Acción de página de un turno: la **última** consulta de catálogo ejecutada manda (si el modelo
  * encadena varias, se navega a la más reciente, que es la que responde al usuario). `null` cuando
  * el turno no consultó el catálogo —una duda de manuales, por ejemplo— y no debe mover la pantalla.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { catalogSearchOf, derivePageAction, type AssistantToolCall } from "./page-action";
+import { catalogSearchOf, derivePageAction, pageActionForTurn, type AssistantToolCall } from "./page-action";
 
 /**
  * La consulta del asistente se convierte en la navegación que **muestra el resultado en la página**
@@ -102,5 +102,26 @@ describe("derivePageAction", () => {
     expect(
       derivePageAction([{ name: "checkAvailability", input: { room: 7, date: 20260622 } }])?.href,
     ).toBe("/catalogo?desde=2026-06-22&hasta=2026-06-22&buscar=7");
+  });
+});
+
+describe("pageActionForTurn — prioridad del handoff", () => {
+  const calls: AssistantToolCall[] = [
+    { name: "checkAvailability", input: { room: 101, date: 20261013 } },
+    { name: "buildPurchaseTx", input: { tokenId: "10120261013" } },
+  ];
+
+  it("si el turno preparó una compra NO se navega (el panel de firma manda)", () => {
+    // Defecto medido en producción el 2026-10-10: el flujo correcto de compra usa checkAvailability
+    // (herramienta de catálogo) y buildPurchaseTx, así que el widget navegaba al catálogo y cerraba
+    // el panel en el mismo turno, y el usuario nunca veía la compra preparada.
+    expect(pageActionForTurn({ toolCalls: calls, preparedPurchase: { tokenId: "10120261013" } })).toBeNull();
+  });
+
+  it("sin compra preparada, la consulta de catálogo navega como siempre", () => {
+    expect(pageActionForTurn({ toolCalls: calls, preparedPurchase: null })?.href).toBe(
+      "/catalogo?desde=2026-10-13&hasta=2026-10-13&buscar=101",
+    );
+    expect(pageActionForTurn({ toolCalls: [], preparedPurchase: null })).toBeNull();
   });
 });
