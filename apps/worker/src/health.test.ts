@@ -46,3 +46,39 @@ describe("salud del worker · checkpoint adelantado a la cadena", () => {
     expect(health.toReport().status).toBe("down");
   });
 });
+
+/**
+ * Señal de vida de la quema programada en `/health` (hallazgo **H-04** de la auditoría V6).
+ *
+ * El proceso no tenía señal: un worker desplegado sin la clave del firmante dejaba el planificador
+ * apagado con un `logger.warn` que nadie lee, y un día sin quema no se distinguía de un día sin nada
+ * que quemar. Ahora `/health` publica si el planificador está habilitado y el último ciclo.
+ */
+describe("salud del worker · señal de vida de la quema", () => {
+  it("sin planificador configurado se reporta `disabled` (el fallo real de producción)", () => {
+    const state = createWorkerHealthState();
+
+    const report = state.toReport();
+
+    expect(report.status).toBe("ok");
+    expect(report.details?.burn).toEqual({ scheduler: "disabled", lastRun: null });
+  });
+
+  it("con el planificador arrancado publica el último ciclo, al día en cada consulta", () => {
+    const state = createWorkerHealthState();
+    let lastRun: { at: string; dayKey: string; reason: string; burnedTokensCount: number } | null = null;
+    state.setBurnHealth(() => ({ scheduler: "enabled", lastRun }));
+
+    expect(state.toReport().details?.burn).toEqual({ scheduler: "enabled", lastRun: null });
+
+    lastRun = {
+      at: "2026-10-10T10:00:05.000Z",
+      dayKey: "2026-10-10",
+      reason: "COMPLETED",
+      burnedTokensCount: 3,
+    };
+
+    // El proveedor se evalúa en cada informe: un monitor externo ve el ciclo sin reiniciar nada.
+    expect(state.toReport().details?.burn).toEqual({ scheduler: "enabled", lastRun });
+  });
+});

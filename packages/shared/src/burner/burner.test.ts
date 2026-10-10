@@ -1,12 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { Mock } from "vitest";
-import { encodeEventTopics, parseAbiItem } from "viem";
+import { BaseError, ContractFunctionRevertedError, encodeEventTopics, parseAbiItem } from "viem";
 import type { PublicClient, WalletClient } from "viem";
-import { BurnerService, chunked, type BurnLock } from "./service";
+import { BurnerService, chunked, isRevertError, type BurnLock } from "./service";
 import type { NFTsRepository } from "../db/repositories/nfts.repository";
 import type { NotificationQueueService } from "../queue/notifications";
 
 const BURN_EVENT = parseAbiItem("event Burn(uint256 indexed tokenId)");
+
+/**
+ * Error con la forma de un **revert** del contrato, que es lo que `viem` lanza cuando `eth_call`
+ * revierte. La distinción importa desde el hallazgo H-01: un revert es un veredicto de negocio («esta
+ * noche no se puede quemar»), un error de red no lo es.
+ */
+function revertError(message = "execution reverted"): Error {
+  const error = new Error(message);
+  error.name = "ContractFunctionRevertedError";
+  return error;
+}
 
 /** Log de `Burn(tokenId)` como el que devuelve el recibo de una quema confirmada. */
 function burnLog(tokenId: bigint) {
@@ -97,6 +108,8 @@ describe("BurnerService (US-09 · D-03)", () => {
       getBalance: vi.fn().mockResolvedValue(10_000_000_000_000_000_000n), // 10 nativo
       readContract: vi.fn().mockImplementation(async ({ functionName }: { functionName: string }) => {
         if (functionName === "burnBatchMax") return BigInt(overrides.burnBatchMax ?? 10);
+        // `ownerOf` de un token que existe: un descarte que sigue on-chain NO se reconcilia.
+        if (functionName === "ownerOf") return OPERATOR;
         throw new Error(`no soportado en el mock: ${functionName}`);
       }),
       simulateContract: vi.fn().mockResolvedValue({ request: {} }),
@@ -174,7 +187,7 @@ describe("BurnerService (US-09 · D-03)", () => {
     publicClient.simulateContract.mockImplementation(async ({ args }: { args: [bigint[]] }) => {
       const tokenIds: bigint[] = args[0];
       if (tokenIds.length > 1 || tokenIds[0] === 10220260901n) {
-        throw new Error("execution reverted");
+        throw revertError("execution reverted");
       }
       return { request: {} };
     });
@@ -221,10 +234,10 @@ describe("BurnerService (US-09 · D-03)", () => {
 
   it("reconcilia como BURNED un candidato que ya no existe on-chain", async () => {
     // El lote revierte y el token tampoco existe (lo quemó otro operador): `ownerOf` revierte.
-    publicClient.simulateContract.mockRejectedValue(new Error("execution reverted"));
+    publicClient.simulateContract.mockRejectedValue(revertError("execution reverted"));
     publicClient.readContract.mockImplementation(async ({ functionName }: { functionName: string }) => {
       if (functionName === "burnBatchMax") return 10n;
-      if (functionName === "ownerOf") throw new Error("ERC721NonexistentToken");
+      if (functionName === "ownerOf") throw revertError("ERC721NonexistentToken");
       throw new Error("no soportado");
     });
 
@@ -234,6 +247,10 @@ describe("BurnerService (US-09 · D-03)", () => {
     expect(result.burnedTokensCount).toBe(0);
     expect(nftsRepo.updateNFTStatus).toHaveBeenCalledTimes(3);
     expect(nftsRepo.updateNFTStatus).toHaveBeenCalledWith("10120260901", "BURNED");
+    // Todas las candidatas ya estaban quemadas por otro operador: convergencia benigna, sin alerta
+    // (la alerta se reserva para candidatas VIVAS que no se pudieron quemar, ver H-05).
+    expect(result.reason).toBe("COMPLETED");
+    expect(queue.enqueueNotification).not.toHaveBeenCalled();
   });
 
   it("con saldo bajo NO quema y avisa a DevOps", async () => {
@@ -310,5 +327,138 @@ describe("BurnerService (US-09 · D-03)", () => {
   it("chunked trocea en lotes del tamaño pedido", () => {
     expect(chunked([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]]);
     expect(chunked([], 3)).toEqual([]);
+  });
+});
+
+/**
+ * Integridad del índice (hallazgo **H-01**, crítico, auditoría V6).
+ *
+ * El defecto: `canSimulate` devolvía «no quemable» ante CUALQUIER excepción y `isGoneOnChain`
+ * devolvía «ya no existe» ante CUALQUIER excepción. Con un `eth_call` degradado, todas las candidatas
+ * acababan descartadas, la reconciliación las marcaba `BURNED` en la base y el ciclo lo presentaba
+ * como éxito: inventario vivo dado por quemado, sin alerta y sin vuelta atrás. Estas pruebas fijan la
+ * frontera: **revert = veredicto de negocio; error de transporte = fallo del ciclo**.
+ */
+describe("isRevertError — revert de contrato frente a error de transporte", () => {
+  it("reconoce un revert de viem envuelto en un BaseError", () => {
+    const inner = new ContractFunctionRevertedError({
+      abi: [],
+      functionName: "ownerOf",
+      data: "0x7e2732890000000000000000000000000000000000000000000000000000000000000065",
+    });
+
+    expect(isRevertError(new BaseError("call failed", { cause: inner }))).toBe(true);
+    expect(isRevertError(inner)).toBe(true);
+  });
+
+  it("reconoce un revert ya normalizado por nombre", () => {
+    expect(isRevertError(revertError())).toBe(true);
+  });
+
+  it("NO confunde un error de red con un revert (esa confusión era el defecto)", () => {
+    expect(isRevertError(new Error("fetch failed: ECONNREFUSED"))).toBe(false);
+    expect(isRevertError(new BaseError("timeout"))).toBe(false);
+    expect(isRevertError("no es un error")).toBe(false);
+    expect(isRevertError(null)).toBe(false);
+  });
+});
+
+describe("BurnerService · error de transporte (H-01)", () => {
+  let nftsRepo: MockNftsRepo;
+  let queue: MockQueue;
+  let publicClient: MockPublicClient;
+  let walletClient: MockWalletClient;
+  let service: BurnerService;
+  let lock: InMemoryBurnLock;
+
+  const options = {
+    nftContractAddress: CONTRACT,
+    operatorAddress: OPERATOR,
+    minBalanceNative: 1,
+    devopsEmail: "devops@hotel.es",
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    nftsRepo = {
+      getUnsoldExpiredNFTs: vi
+        .fn()
+        .mockResolvedValue(["10120260901", "10220260901", "10320260901"].map(nft)),
+      updateNFTStatus: vi.fn().mockResolvedValue(true),
+    } as MockNftsRepo;
+    queue = { enqueueNotification: vi.fn().mockResolvedValue("notif-1") } as MockQueue;
+    lock = new InMemoryBurnLock();
+    publicClient = {
+      getBalance: vi.fn().mockResolvedValue(10_000_000_000_000_000_000n),
+      readContract: vi.fn().mockImplementation(async ({ functionName }: { functionName: string }) => {
+        if (functionName === "burnBatchMax") return 10n;
+        if (functionName === "ownerOf") return OPERATOR;
+        throw new Error("no soportado");
+      }),
+      simulateContract: vi.fn().mockResolvedValue({ request: {} }),
+      waitForTransactionReceipt: vi.fn(async () => ({ status: "success", logs: [] })),
+    } as MockPublicClient;
+    walletClient = {
+      account: { address: OPERATOR },
+      chain: { id: 81234 },
+      writeContract: vi.fn().mockResolvedValue("0xburnhash"),
+    } as unknown as MockWalletClient;
+    service = new BurnerService(nftsRepo, queue, { now: () => TODAY, lock });
+  });
+
+  it("si la SIMULACIÓN falla por red, el ciclo falla con alerta y NO descarta candidatas en silencio", async () => {
+    publicClient.simulateContract.mockRejectedValue(new Error("fetch failed: ECONNREFUSED"));
+
+    const result = await service.executeScheduledBurn(publicClient, walletClient, options);
+
+    expect(result.reason).toBe("ERROR");
+    expect(result.executed).toBe(false);
+    expect(walletClient.writeContract).not.toHaveBeenCalled();
+    // Lo esencial: no se marca nada en la base (antes se marcaban como BURNED las 3).
+    expect(nftsRepo.updateNFTStatus).not.toHaveBeenCalled();
+    expect(queue.enqueueNotification).toHaveBeenCalledWith(
+      "DEVOPS_ALERT",
+      "devops@hotel.es",
+      expect.objectContaining({ subject: expect.stringContaining("fallo en la quema") }),
+    );
+  });
+
+  it("si `ownerOf` falla por red, NO marca BURNED y el ciclo queda como error (índice intacto)", async () => {
+    // El lote revierte (revert legítimo: la noche no es quemable) y luego se cae la red al reconciliar.
+    publicClient.simulateContract.mockRejectedValue(revertError("execution reverted"));
+    publicClient.readContract.mockImplementation(async ({ functionName }: { functionName: string }) => {
+      if (functionName === "burnBatchMax") return 10n;
+      if (functionName === "ownerOf") throw new Error("network error: socket hang up");
+      throw new Error("no soportado");
+    });
+
+    const result = await service.executeScheduledBurn(publicClient, walletClient, options);
+
+    expect(result.reason).toBe("ERROR");
+    expect(result.skippedTokens).toHaveLength(3);
+    // Ni una fila marcada: un RPC mudo no puede convertir inventario vivo en `BURNED`.
+    expect(nftsRepo.updateNFTStatus).not.toHaveBeenCalled();
+    expect(queue.enqueueNotification).toHaveBeenCalledWith(
+      "DEVOPS_ALERT",
+      "devops@hotel.es",
+      expect.objectContaining({ subject: expect.stringContaining("reconciliación de la quema incompleta") }),
+    );
+  });
+
+  it("si había candidatas VIVAS que no se pudieron quemar, el ciclo no se declara completado (H-05)", async () => {
+    // Firmante sin BURNER_ROLE o contrato en pausa: todo revierte y los tokens siguen existiendo.
+    publicClient.simulateContract.mockRejectedValue(revertError("AccessControlUnauthorizedAccount"));
+
+    const result = await service.executeScheduledBurn(publicClient, walletClient, options);
+
+    expect(result.reason).toBe("SKIPPED_ALL");
+    expect(result.executed).toBe(false);
+    expect(result.burnedTokensCount).toBe(0);
+    expect(nftsRepo.updateNFTStatus).not.toHaveBeenCalled();
+    expect(queue.enqueueNotification).toHaveBeenCalledWith(
+      "DEVOPS_ALERT",
+      "devops@hotel.es",
+      expect.objectContaining({ subject: expect.stringContaining("no quemó ninguna") }),
+    );
   });
 });

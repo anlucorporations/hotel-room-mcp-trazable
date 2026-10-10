@@ -51,6 +51,8 @@ export class WorkerHealthState {
   private consecutiveAggregateFailures = 0;
   private emailDegraded = false;
   private processingDegraded = false;
+  /** Proveedor del estado de la quema (H-04); `null` = planificador no configurado. */
+  private burnHealthProvider: (() => BurnHealth) | null = null;
   private readonly lagThreshold: number;
   private readonly rpcFailureThreshold: number;
   private readonly aggregateFailureThreshold: number;
@@ -62,7 +64,6 @@ export class WorkerHealthState {
     this.aggregateFailureThreshold =
       options.aggregateFailureThreshold ?? DEFAULT_AGGREGATE_FAILURE_THRESHOLD;
   }
-
   /** Registra un ciclo de polling correcto: actualiza bloques y resetea fallos del RPC. */
   recordCycle(lastBlock: number, headBlock: number): void {
     this.lastBlock = lastBlock;
@@ -152,8 +153,19 @@ export class WorkerHealthState {
         consecutiveAggregateFailures: this.consecutiveAggregateFailures,
         emailDegraded: this.emailDegraded,
         processingDegraded: this.processingDegraded,
+        // Señal de vida de la quema (H-04). Sin proveedor configurado se reporta `disabled`: es el
+        // caso del worker arrancado sin clave de firma, que antes solo dejaba un `logger.warn`.
+        burn: this.burnHealthProvider?.() ?? { scheduler: "disabled", lastRun: null },
       },
     };
+  }
+
+  /**
+   * Registra el proveedor del estado de la quema (lo llama el arranque del worker, que es quien sabe
+   * si el planificador pudo arrancar). Se evalúa en cada `toReport()`, así que `lastRun` va al día.
+   */
+  setBurnHealth(provider: () => BurnHealth): void {
+    this.burnHealthProvider = provider;
   }
 }
 
@@ -167,6 +179,24 @@ const overThreshold = (value: number | null, threshold: number): boolean =>
  * avanzar, así que la salud debe degradarse en vez de reportar `ok` con un lag imposible.
  */
 const isAheadOfChain = (lag: number | null): boolean => lag !== null && lag < 0;
+
+/**
+ * Estado de la **quema programada** en `/health` (hallazgo **H-04** de la auditoría V6).
+ *
+ * El proceso de quema no tenía señal de vida: si el planificador no arrancaba (sin clave) o un día no
+ * se ejecutaba, nada lo delataba —el fallo ya ocurrió y se detectó a mano—. Ahora se publica si el
+ * planificador está `enabled` o `disabled` y el resumen del último ciclo, para que un monitor externo
+ * pueda alertar de «hoy no hubo quema».
+ */
+export interface BurnHealth {
+  readonly scheduler: "enabled" | "disabled";
+  readonly lastRun: {
+    readonly at: string;
+    readonly dayKey: string;
+    readonly reason: string;
+    readonly burnedTokensCount: number;
+  } | null;
+}
 
 export function createWorkerHealthState(
   options: WorkerHealthOptions = {},

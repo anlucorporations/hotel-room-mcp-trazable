@@ -50,7 +50,23 @@ export interface BurnSchedulerDeps {
 export interface BurnScheduler {
   /** Ejecuta el ciclo ahora (respetando cerrojo diario). Devuelve `null` si no procedía. */
   runOnce(): Promise<BurnCycleResult | null>;
+  /**
+   * Último ciclo observado (hallazgo **H-04**): `null` mientras no haya corrido ninguno. Es la señal
+   * que `/health` publica para que un monitor externo pueda alertar de un día sin quema.
+   */
+  lastRun(): BurnRunSnapshot | null;
   stop(): void;
+}
+
+/** Resumen del último ciclo, para la señal de vida de `/health`. */
+export interface BurnRunSnapshot {
+  /** Instante en que terminó el ciclo (reloj de la máquina, ISO 8601). */
+  readonly at: string;
+  /** Día natural del hotel al que correspondía el ciclo (`YYYY-MM-DD`). */
+  readonly dayKey: string;
+  readonly reason: string;
+  readonly burnedTokensCount: number;
+  readonly txHashes: readonly string[];
 }
 
 /** Día natural en la zona del hotel (`YYYY-MM-DD`), usado como clave del cerrojo diario. */
@@ -76,18 +92,21 @@ export function hourInZone(now: Date, timeZone = "Europe/Madrid"): number {
 
 /**
  * Reloj de la cadena: `() => Date` a partir del `timestamp` del último bloque. Si la lectura falla,
- * se degrada al reloj de la máquina (mejor un ciclo con reloj aproximado que ningún ciclo) y se
- * registra el aviso.
+ * se degrada al reloj de la máquina (mejor un ciclo con reloj aproximado que ningún ciclo) y **se
+ * avisa** por `onDegraded`: antes el aviso solo estaba en el docstring y el operador no podía saber
+ * que el ciclo había usado un reloj distinto del de la cadena (H-19).
  */
 export async function readChainClock(
   publicClient: { getBlock(args: { blockTag: "latest" }): Promise<{ timestamp: bigint }> },
   fallback: () => Date = () => new Date(),
+  onDegraded?: (error: unknown) => void,
 ): Promise<() => Date> {
   try {
     const block = await publicClient.getBlock({ blockTag: "latest" });
     const chainMs = Number(block.timestamp) * 1000;
     return () => new Date(chainMs);
-  } catch {
+  } catch (error: unknown) {
+    onDegraded?.(error);
     return fallback;
   }
 }
@@ -110,6 +129,7 @@ export function startBurnScheduler(deps: BurnSchedulerDeps): BurnScheduler {
 
   let cycleInFlight = false;
   let stopped = false;
+  let lastRunSnapshot: BurnRunSnapshot | null = null;
 
   const runOnce = async (): Promise<BurnCycleResult | null> => {
     if (cycleInFlight) return null;
@@ -128,8 +148,14 @@ export function startBurnScheduler(deps: BurnSchedulerDeps): BurnScheduler {
 
       // La caducidad la decide el `block.timestamp` del contrato, así que el ciclo se ejecuta con
       // la **hora de la cadena** (último bloque): con el reloj de la máquina, una cadena adelantada
-      // quemaría noches que en la cadena aún no han caducado (y al revés, no quemaría ninguna).
-      const chainClock = await readChainClock(publicClient);
+      // quemaría noches que en la cadena aún no han caducado (y al revés, no quemaría ninguna). Si la
+      // lectura falla se degrada al reloj de la máquina, pero **avisando** (H-19: antes era silencioso).
+      const chainClock = await readChainClock(publicClient, () => now(), (error) => {
+        logger.warn(
+          { error },
+          "no se pudo leer la hora de la cadena: el ciclo usará el reloj de la máquina",
+        );
+      });
       const result = await service.executeScheduledBurn(
         publicClient,
         walletClient,
@@ -146,6 +172,15 @@ export function startBurnScheduler(deps: BurnSchedulerDeps): BurnScheduler {
         },
         "planificador de quema: ciclo terminado",
       );
+
+      // Señal de vida para `/health` (H-04): qué se hizo y cuándo, aunque no se quemara nada.
+      lastRunSnapshot = {
+        at: new Date().toISOString(),
+        dayKey,
+        reason: result.reason,
+        burnedTokensCount: result.burnedTokensCount,
+        txHashes: result.txHashes.map(String),
+      };
 
       // Un ciclo que no se pudo completar libera el cerrojo diario para permitir el reintento.
       const completed = result.reason === "COMPLETED" || result.reason === "NO_TOKENS";
@@ -183,8 +218,21 @@ export function startBurnScheduler(deps: BurnSchedulerDeps): BurnScheduler {
     "planificador de quema activo",
   );
 
+  // Recuperación al arrancar (H-04): si el worker arranca **después** de la hora de quema, el tick
+  // diario ya no volvería a mirar hasta mañana, así que ese día se quedaba sin quema. Se intenta una
+  // pasada inmediata: el cerrojo diario (y el del propio ciclo) garantizan que, si ya se quemó, no se
+  // repita. Antes había que esperar a las 12:00 del día siguiente.
+  if (hourInZone(now(), timeZone) > hourLocal) {
+    logger.info(
+      { horaActual: hourInZone(now(), timeZone), hourLocal },
+      "el worker arranca después de la hora de quema: pasada de recuperación",
+    );
+    void runOnce();
+  }
+
   return {
     runOnce,
+    lastRun: () => lastRunSnapshot,
     stop: () => {
       stopped = true;
       clearInterval(timer);

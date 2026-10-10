@@ -88,6 +88,20 @@ describe("planificador de quema (D-03)", () => {
     scheduler.stop();
   });
 
+  it("un ciclo con TODAS las candidatas descartadas (SKIPPED_ALL) libera el cerrojo: no es éxito", async () => {
+    // H-05: antes se declaraba `COMPLETED` con 0 quemadas y el cerrojo del día quedaba tomado, así que
+    // nadie reintentaba y el fallo (firmante sin rol, contrato en pausa) pasaba inadvertido.
+    const scheduler = build({ reason: "SKIPPED_ALL" });
+
+    await scheduler.runOnce();
+    await scheduler.runOnce();
+
+    expect(service.executeScheduledBurn).toHaveBeenCalledTimes(2);
+    expect(lock.releaseCalls).toBe(2);
+    expect(lock.held.size).toBe(0);
+    scheduler.stop();
+  });
+
   it("si el ciclo no se completó (saldo o error), libera el cerrojo y reintenta", async () => {
     const scheduler = build({ reason: "INSUFFICIENT_GAS" });
 
@@ -172,5 +186,83 @@ describe("planificador · reloj de la cadena", () => {
     );
 
     expect(clock().getTime()).toBe(fallback.getTime());
+  });
+});
+
+/**
+ * Señal de vida, recuperación al arrancar y aviso del reloj degradado (hallazgos **H-04** y **H-19**
+ * de la auditoría V6).
+ */
+describe("planificador de quema · señal de vida y recuperación", () => {
+  function buildAt(reason: string, hourIso: string) {
+    const service = {
+      executeScheduledBurn: vi.fn().mockResolvedValue({
+        executed: true,
+        burnedTokensCount: reason === "COMPLETED" ? 2 : 0,
+        txHashes: reason === "COMPLETED" ? ["0xburn"] : [],
+        reason,
+      }),
+    };
+    const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() };
+    const scheduler = startBurnScheduler({
+      service: service as never,
+      publicClient: { getBlock: vi.fn().mockResolvedValue({ timestamp: 1_800_000_000n }) } as never,
+      walletClient: {} as never,
+      options: { nftContractAddress: CONTRACT, operatorAddress: OPERATOR },
+      logger: logger as never,
+      signal: new AbortController().signal,
+      lock: new InMemoryBurnLock(),
+      now: () => new Date(hourIso),
+      checkIntervalMs: 60_000,
+    });
+    return { service, logger, scheduler };
+  }
+
+  it("publica el último ciclo en `lastRun` (y `null` antes del primero)", async () => {
+    const { scheduler } = buildAt("COMPLETED", "2026-09-23T10:05:00Z");
+
+    expect(scheduler.lastRun()).toBeNull();
+
+    await scheduler.runOnce();
+
+    const last = scheduler.lastRun();
+    expect(last?.dayKey).toBe("2026-09-23");
+    expect(last?.reason).toBe("COMPLETED");
+    expect(last?.burnedTokensCount).toBe(2);
+    expect(last?.txHashes).toEqual(["0xburn"]);
+    expect(Number.isNaN(Date.parse(last!.at))).toBe(false);
+    scheduler.stop();
+  });
+
+  it("si el worker arranca DESPUÉS de la hora de quema, hace una pasada de recuperación", async () => {
+    // 13:05 de Madrid (CEST) del 23: la hora de quema (12:00) ya pasó y el día quedaba sin quemar
+    // hasta mañana. El cerrojo diario impide que la pasada duplique una quema ya hecha.
+    const { service, scheduler } = buildAt("COMPLETED", "2026-09-23T11:05:00Z");
+
+    await vi.waitFor(() => expect(service.executeScheduledBurn).toHaveBeenCalledTimes(1));
+    scheduler.stop();
+  });
+
+  it("si arranca dentro o antes de la hora, NO dispara ninguna pasada extra", async () => {
+    const { service, scheduler } = buildAt("COMPLETED", "2026-09-23T08:05:00Z"); // 10:05 Madrid
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(service.executeScheduledBurn).not.toHaveBeenCalled();
+    scheduler.stop();
+  });
+
+  it("avisa por log cuando no puede leer la hora de la cadena (H-19: antes era silencioso)", async () => {
+    const fallback = new Date("2026-01-01T00:00:00Z");
+    const onDegraded = vi.fn();
+
+    const clock = await readChainClock(
+      { getBlock: vi.fn().mockRejectedValue(new Error("RPC caído")) } as never,
+      () => fallback,
+      onDegraded,
+    );
+
+    expect(clock().getTime()).toBe(fallback.getTime());
+    expect(onDegraded).toHaveBeenCalledTimes(1);
   });
 });

@@ -183,6 +183,39 @@ async function main(): Promise<void> {
     controller.signal,
   );
 
+  // Señal de vida de la quema en `/health` (H-04 de la auditoría V6): si el planificador no arrancó
+  // —worker desplegado sin la clave de firma, el fallo real que pasó en producción— se reporta
+  // `disabled` y se avisa a DevOps, en vez de dejar solo una línea de log que nadie lee.
+  health.setBurnHealth(() => {
+    if (scheduler === null) return { scheduler: "disabled", lastRun: null };
+    const last = scheduler.lastRun();
+    return {
+      scheduler: "enabled",
+      lastRun:
+        last === null
+          ? null
+          : {
+              at: last.at,
+              dayKey: last.dayKey,
+              reason: last.reason,
+              burnedTokensCount: last.burnedTokensCount,
+            },
+    };
+  });
+
+  if (scheduler === null) {
+    await notificationQueue
+      .enqueueNotification("DEVOPS_ALERT", config.DEVOPS_ALERT_EMAIL || "devops@hotel.es", {
+        subject: "ALERTA: la quema programada está DESACTIVADA (falta la clave del firmante)",
+        message:
+          "El worker ha arrancado sin BURNER_WALLET_PRIVATE_KEY: el planificador diario no existe y las noches caducadas no se quemarán. Provisiona la variable (o el secreto) y reinicia el servicio.",
+        timestamp: new Date().toISOString(),
+      })
+      .catch((error: unknown) => {
+        logger.error({ error }, "no se pudo encolar el aviso de quema desactivada");
+      });
+  }
+
   // Retención de datos (M9 · ADR-24): los plazos de conservación se cumplen de verdad. Borra
   // sesiones caducadas (la traza pseudonimizada desaparece con la fila), códigos de rescate de
   // operadores que ya no existen y correos enviados con más de `NOTIFICATIONS_RETENTION_DAYS`.

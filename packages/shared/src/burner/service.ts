@@ -1,5 +1,11 @@
 import type { PublicClient, WalletClient, Address, Hex } from "viem";
-import { decodeEventLog, formatEther, getAddress } from "viem";
+import {
+  BaseError,
+  ContractFunctionRevertedError,
+  decodeEventLog,
+  formatEther,
+  getAddress,
+} from "viem";
 import { NFTsRepository } from "../db/repositories/nfts.repository";
 import { acquireDistributedLock, releaseDistributedLock } from "../redis/client";
 import { NotificationQueueService } from "../queue/notifications";
@@ -27,9 +33,36 @@ export interface BurnCycleResult {
   readonly executed: boolean;
   readonly burnedTokensCount: number;
   readonly txHashes: readonly Hex[];
-  /** Códigos estables: LOCKED · INSUFFICIENT_GAS · NO_TOKENS · COMPLETED · ERROR. */
-  readonly reason: "LOCKED" | "INSUFFICIENT_GAS" | "NO_TOKENS" | "COMPLETED" | "ERROR";
+  /**
+   * Códigos estables: LOCKED · INSUFFICIENT_GAS · NO_TOKENS · COMPLETED · **SKIPPED_ALL** · ERROR.
+   *
+   * `SKIPPED_ALL` (auditoría V6, H-05) es el caso «había candidatas y no se quemó ninguna»: NO es un
+   * éxito, porque el planificador retendría el cerrojo del día y nadie se enteraría. Se devuelve con
+   * alerta a DevOps y sin retener el cerrojo, para que el siguiente tick lo reintente.
+   */
+  readonly reason: "LOCKED" | "INSUFFICIENT_GAS" | "NO_TOKENS" | "COMPLETED" | "SKIPPED_ALL" | "ERROR";
   readonly skippedTokens?: readonly string[];
+}
+
+/**
+ * `true` si el error es un **revert** del contrato (un veredicto de negocio) y no un fallo de
+ * transporte (RPC caído, timeout, cuota, DNS).
+ *
+ * Es la pieza que separa «esta noche no se puede quemar» de «no he podido preguntar». Sin ella, un
+ * `eth_call` degradado se interpretaba como «no quemable» y, en la reconciliación, como «ya no existe
+ * on-chain»: el índice marcaba `BURNED` inventario vivo, sin alerta y sin vuelta atrás (hallazgo
+ * **H-01**, crítico, del informe de auditoría V6). Ante la duda, se propaga el error: fallar fuerte es
+ * recuperable; corromper el índice en silencio, no.
+ */
+export function isRevertError(error: unknown): boolean {
+  if (error instanceof BaseError) {
+    if (error.walk((candidate) => candidate instanceof ContractFunctionRevertedError) !== null) {
+      return true;
+    }
+  }
+  // Dobles de prueba y errores ya normalizados por otros clientes EIP-1193.
+  const name = (error as { name?: unknown } | null)?.name;
+  return name === "ContractFunctionRevertedError";
 }
 
 export interface BurnerServiceOptions {
@@ -184,16 +217,30 @@ export class BurnerService {
       }
 
       // Reconciliación de descartes: un candidato que ya no existe on-chain está quemado (o lo
-      // quemó otro operador) y el índice debe converger en vez de ofrecerlo eternamente.
+      // quemó otro operador) y el índice debe converger en vez de ofrecerlo eternamente. Solo un
+      // revert de `ownerOf` significa «no existe»: un error de red NO marca nada y se trata como
+      // fallo del ciclo (H-01), para que el siguiente tick lo reintente con el índice intacto.
+      let reconciliationFailed: string | null = null;
+      let stillPresent = 0;
       for (const tokenId of skipped) {
-        if (await this.isGoneOnChain(publicClient, options.nftContractAddress, BigInt(tokenId))) {
-          await this.nftsRepo.updateNFTStatus(tokenId, "BURNED");
-          // eslint-disable-next-line no-console -- traza operativa del planificador: formato de log de stdout ya consumido por la operación (no es un error)
-          console.log(`[Burner] Noche ${tokenId} ya no existe on-chain: reconciliada como BURNED.`);
+        try {
+          if (await this.isGoneOnChain(publicClient, options.nftContractAddress, BigInt(tokenId))) {
+            await this.nftsRepo.updateNFTStatus(tokenId, "BURNED");
+            // eslint-disable-next-line no-console -- traza operativa del planificador: formato de log de stdout ya consumido por la operación (no es un error)
+            console.log(`[Burner] Noche ${tokenId} ya no existe on-chain: reconciliada como BURNED.`);
+          } else {
+            stillPresent += 1;
+          }
+        } catch (error: unknown) {
+          reconciliationFailed = error instanceof Error ? error.message : String(error);
+          console.error(
+            `[Burner] No se pudo reconciliar la noche ${tokenId} (se deja como está): ${reconciliationFailed}`,
+          );
+          break;
         }
       }
 
-      // Aviso a administración y DevOps.
+      // Aviso a administración y DevOps de lo SÍ quemado, antes de decidir el resultado final.
       if (confirmed.length > 0) {
         await this.notificationQueue.enqueueNotification("BURN_EXECUTED", devopsEmail, {
           burnedCount: confirmed.length,
@@ -201,6 +248,49 @@ export class BurnerService {
           txHashes,
           date: todayIso,
         });
+      }
+
+      // Reconciliación incompleta: lo quemado ya está avisado, pero el ciclo se declara fallido para
+      // que el planificador libere el cerrojo del día, reintente y quede constancia de la alerta.
+      if (reconciliationFailed !== null) {
+        await this.notify(devopsEmail, {
+          subject: "ALERTA: reconciliación de la quema incompleta (error de red, índice intacto)",
+          message: reconciliationFailed,
+          burnedTokensCount: confirmed.length,
+          skippedTokens: skipped.length,
+          txHashes,
+          timestamp: this.now().toISOString(),
+        });
+        return {
+          executed: false,
+          burnedTokensCount: confirmed.length,
+          txHashes,
+          reason: "ERROR",
+          skippedTokens: skipped,
+        };
+      }
+
+      // Había candidatas **vivas** (siguen existiendo on-chain) y no se quemó ninguna: NO es un éxito
+      // silencioso (H-05). El caso real que lo provocaba —firmante sin `BURNER_ROLE`, contrato en
+      // pausa— se presentaba como `COMPLETED` con 0 quemadas, sin aviso y con el cerrojo del día
+      // retenido: nadie reintentaba y nadie se enteraba.
+      if (confirmed.length === 0 && stillPresent > 0) {
+        const message = `La quema descartó ${stillPresent} noches candidatas vivas sin quemar ninguna (${todayIso}). Revisar rol del firmante, pausa del contrato y estado del índice.`;
+        console.error(`[Burner] ALERTA: ${message}`);
+        await this.notify(devopsEmail, {
+          subject: "ALERTA: la quema no quemó ninguna de las noches candidatas",
+          message,
+          candidates: stillPresent,
+          skippedTokens: skipped,
+          timestamp: this.now().toISOString(),
+        });
+        return {
+          executed: false,
+          burnedTokensCount: 0,
+          txHashes,
+          reason: "SKIPPED_ALL",
+          skippedTokens: skipped,
+        };
       }
 
       return {
@@ -354,8 +444,12 @@ export class BurnerService {
         account: walletClient.account ?? options.operatorAddress,
       });
       return true;
-    } catch {
-      return false;
+    } catch (error: unknown) {
+      // Revert = la noche no es quemable (se omite y se registra). Cualquier otro error (RPC caído,
+      // timeout, cuota) NO es un veredicto de negocio: se propaga y el ciclo falla con alerta, en vez
+      // de descartar candidatas en silencio (H-01).
+      if (isRevertError(error)) return false;
+      throw error;
     }
   }
 
@@ -404,7 +498,13 @@ export class BurnerService {
     return { hash, burned };
   }
 
-  /** `true` si el token ya no existe on-chain (quemado): `ownerOf` revierte. */
+  /**
+   * `true` si el token ya no existe on-chain (quemado): `ownerOf` revierte.
+   *
+   * Solo un **revert** significa «no existe». Un error de transporte se propaga: dar por quemada una
+   * noche porque el RPC no contestó es exactamente el defecto H-01 (marcaría `BURNED` inventario vivo
+   * sin que nadie lo note).
+   */
   private async isGoneOnChain(
     publicClient: PublicClient,
     contractAddress: Address,
@@ -418,8 +518,9 @@ export class BurnerService {
         args: [tokenId],
       });
       return false;
-    } catch {
-      return true;
+    } catch (error: unknown) {
+      if (isRevertError(error)) return true;
+      throw error;
     }
   }
 
