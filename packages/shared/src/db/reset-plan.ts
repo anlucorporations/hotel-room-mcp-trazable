@@ -31,6 +31,8 @@ export const PRESERVED_TABLES = [
   "room_cleaning_checklist_items",
   "supply_items",
   "preventive_plans",
+  // vNext (F1): catálogo de áreas comunes con semilla de 10 tipos (4 críticas) — se conserva.
+  "maintenance_area_types",
   "platform_settings",
 ] as const;
 
@@ -49,6 +51,10 @@ export const CHECKPOINT_TABLES = ["worker_checkpoints", "worker_aggregate_counte
  * vez de perderse.
  */
 export const WIPE_ORDER = [
+  // — vNext (F1): cargos por daños y su notificación al huésped. Van PRIMERO porque
+  //   `housekeeping_damage_charges.charge_id → additional_charges(id)` es una FK real. —
+  "damage_charge_guest_notifications",
+  "housekeeping_damage_charges",
   // — derivados de checkout y cargos —
   "checkout_incidents",
   "activity_bookings",
@@ -67,12 +73,18 @@ export const WIPE_ORDER = [
   // — housekeeping —
   "room_cleaning_checklists",
   "housekeeping_room_logs",
+  "housekeeping_inspections",
+  "supply_alerts",
   "housekeeping_assignments",
   "housekeeping_shifts",
   // — mantenimiento (se conservan los planes, no las tareas ni las incidencias) —
   "maintenance_incident_events",
   "maintenance_incidents",
   "preventive_tasks",
+  // — vNext (F1): áreas comunes (el catálogo `maintenance_area_types` se conserva) —
+  "maintenance_area_logs",
+  "maintenance_area_tasks",
+  "maintenance_areas",
   // — índice de cadena y sus derivados —
   "listings",
   "sale_events",
@@ -87,6 +99,12 @@ export const WIPE_ORDER = [
   "room_status_history",
   // — habitaciones (al final: los planes preventivos quedan con room_id = NULL) —
   "rooms",
+  // — vNext (F1): registro unificado de firmas on-chain (padre de columnas `signature_id` en varias
+  //   tablas, incluidas `rooms`), wallets de operadores, terminales y auditoría append-only —
+  "on_chain_signatures",
+  "operator_wallets",
+  "terminal_operators",
+  "operator_audit_log",
   // — contenido de la web —
   "hotel_offers",
   "hotel_images",

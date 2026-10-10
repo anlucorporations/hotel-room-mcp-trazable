@@ -59,6 +59,61 @@ COMMON_ENV="RPC_URL=${ANVIL_URL},CHAIN_ID=${CHAIN_ID},CONTRACT_ADDRESS=${CONTRAC
 COMMON_SECRETS="DATABASE_URL=hotel-database-url:latest,REDIS_URL=hotel-redis-url:latest"
 SMTP_ENV="SMTP_HOST=smtp.invalid,SMTP_PORT=587,SMTP_USER=hotel@example.com,SMTP_PASS=,SMTP_FROM=no-reply@example.com"
 
+# Une solo los fragmentos NO vacíos: `--set-env-vars` con un `,,` (por un bloque opcional vacío)
+# falla en gcloud, y eso convertiría una función desactivada en un despliegue roto.
+join_nonempty() {
+  local out="" p
+  for p in "$@"; do
+    [[ -z "$p" ]] && continue
+    out="${out:+$out,}$p"
+  done
+  printf '%s' "$out"
+}
+
+# ── Quema de noches caducadas (US-09 + CU-13) ────────────────────────────────────────────────────
+# Auditoría V6 (H-03): este script es la vía documentada de redespliegue y no llevaba NINGUNA
+# variable de quema, así que cada despliegue normal apagaba el planificador y el relayer del panel
+# sin que nadie se enterara (el worker desplegado lleva desde entonces sin BURNER_* y la web sin
+# RELAYER_*, comprobado en vivo el 2026-10-10). Ahora:
+#   · las variables están en el script y se pasan SOLO con activación explícita;
+#   · sin activación, el despliegue AVISA por stdout (además de que /health publica
+#     burn.scheduler=disabled, hallazgo H-04) — ya no es silencioso;
+#   · los secretos viven en Secret Manager: `hotel-burner-private-key` (planificador) y
+#     `hotel-relayer-private-key` (botón «Quemar» del panel).
+#   ENABLE_BURN_SCHEDULER=1 -> worker firma la quema diaria a las BURN_HOUR_LOCAL del hotel
+#   ENABLE_RELAYER_BURN=1   -> web puede firmar la quema manual del panel
+BURN_ENV=""
+BURN_SECRETS=""
+if [[ "${ENABLE_BURN_SCHEDULER:-0}" == "1" ]]; then
+  if ! gcloud secrets describe hotel-burner-private-key --project="$GCP_PROJECT_ID" >/dev/null 2>&1; then
+    echo "ERROR: ENABLE_BURN_SCHEDULER=1 pero falta el secreto hotel-burner-private-key." >&2
+    echo "       Créalo con:  printf '%s' '<CLAVE>' | gcloud secrets create hotel-burner-private-key --project=$GCP_PROJECT_ID --data-file=-" >&2
+    exit 1
+  fi
+  BURN_ENV="BURN_HOUR_LOCAL=${BURN_HOUR_LOCAL:-12},BURN_TIMEZONE=${BURN_TIMEZONE:-Europe/Madrid},BURNER_MIN_BALANCE_NATIVE=${BURNER_MIN_BALANCE_NATIVE:-1},DEVOPS_ALERT_EMAIL=${DEVOPS_ALERT_EMAIL:-admin@example.com}"
+  BURN_SECRETS="BURNER_WALLET_PRIVATE_KEY=hotel-burner-private-key:latest"
+  echo "==> Quema programada ACTIVADA (${BURN_HOUR_LOCAL:-12}:00 ${BURN_TIMEZONE:-Europe/Madrid})"
+else
+  echo "AVISO: la quema programada quedará DESACTIVADA en el worker"
+  echo "       (define ENABLE_BURN_SCHEDULER=1 y el secreto hotel-burner-private-key para activarla)."
+fi
+
+RELAYER_ENV=""
+RELAYER_SECRETS=""
+if [[ "${ENABLE_RELAYER_BURN:-0}" == "1" ]]; then
+  if ! gcloud secrets describe hotel-relayer-private-key --project="$GCP_PROJECT_ID" >/dev/null 2>&1; then
+    echo "ERROR: ENABLE_RELAYER_BURN=1 pero falta el secreto hotel-relayer-private-key." >&2
+    echo "       Créalo con:  printf '%s' '<CLAVE>' | gcloud secrets create hotel-relayer-private-key --project=$GCP_PROJECT_ID --data-file=-" >&2
+    exit 1
+  fi
+  RELAYER_ENV="RELAYER_MIN_BALANCE_NATIVE=${RELAYER_MIN_BALANCE_NATIVE:-1}"
+  RELAYER_SECRETS="RELAYER_WALLET_PRIVATE_KEY=hotel-relayer-private-key:latest"
+  echo "==> Quema manual del panel ACTIVADA (relayer hotel-relayer-private-key)"
+else
+  echo "AVISO: el botón «Quemar» del panel responderá 503 RELAYER_NOT_CONFIGURED"
+  echo "       (define ENABLE_RELAYER_BURN=1 y el secreto hotel-relayer-private-key para activarlo)."
+fi
+
 # Asistente IA (H1-H5). El proveedor es Vertex AI: se autentica con la cuenta de servicio del
 # servicio (por eso necesita roles/aiplatform.user) y NO usa ningún secreto.
 #   GOOGLE_CLOUD_PROJECT es obligatorio: sin proyecto el asistente falla EN CERRADO (503).
@@ -93,8 +148,8 @@ gcloud run deploy hotel-mcp-worker \
   --service-account="$GCP_RUN_SA" \
   --port=8080 --no-cpu-throttling --min-instances=1 --max-instances=1 \
   --allow-unauthenticated \
-  --set-env-vars="${COMMON_ENV},WORKER_HOST=0.0.0.0,WORKER_PORT=8080,${SMTP_ENV},${VAPID_ENV},ADMIN_EMAIL=admin@example.com" \
-  --set-secrets="${COMMON_SECRETS},${VAPID_SECRETS}" \
+  --set-env-vars="$(join_nonempty "$COMMON_ENV" "WORKER_HOST=0.0.0.0" "WORKER_PORT=8080" "$SMTP_ENV" "$VAPID_ENV" "$BURN_ENV" "ADMIN_EMAIL=admin@example.com")" \
+  --set-secrets="$(join_nonempty "$COMMON_SECRETS" "$VAPID_SECRETS" "$BURN_SECRETS")" \
   --network="$NETWORK" --subnet="$SUBNET" --vpc-egress=private-ranges-only \
   $CANARY_FLAGS \
   --quiet
@@ -129,8 +184,8 @@ gcloud run deploy hotel-mcp-web \
   --service-account="$GCP_RUN_SA" \
   --port=3000 --allow-unauthenticated \
   --min-instances=0 --max-instances=3 --cpu=1 --memory=1Gi \
-  --set-env-vars="${COMMON_ENV},MCP_BASE_URL=${MCP_URL}/mcp,WORKER_BASE_URL=${WORKER_URL},LOG_LEVEL=info,${VAPID_ENV},${ASSISTANT_ENV}" \
-  --set-secrets="${COMMON_SECRETS},${VAPID_SECRETS},SESSION_SECRET=hotel-session-secret:latest,JWT_SECRET=hotel-jwt-secret:latest,TICKET_SIGNING_SECRET=hotel-ticket-signing-secret:latest,CHECKIN_SECRET_KEY=hotel-checkin-secret-key:latest,AES_SECRET_KEY=hotel-aes-secret-key:latest,MCP_SHARED_SECRET=hotel-mcp-shared-secret:latest" \
+  --set-env-vars="$(join_nonempty "$COMMON_ENV" "MCP_BASE_URL=${MCP_URL}/mcp" "WORKER_BASE_URL=${WORKER_URL}" "LOG_LEVEL=info" "$VAPID_ENV" "$ASSISTANT_ENV" "$RELAYER_ENV")" \
+  --set-secrets="$(join_nonempty "$COMMON_SECRETS" "$VAPID_SECRETS" "SESSION_SECRET=hotel-session-secret:latest" "JWT_SECRET=hotel-jwt-secret:latest" "TICKET_SIGNING_SECRET=hotel-ticket-signing-secret:latest" "CHECKIN_SECRET_KEY=hotel-checkin-secret-key:latest" "AES_SECRET_KEY=hotel-aes-secret-key:latest" "MCP_SHARED_SECRET=hotel-mcp-shared-secret:latest" "$RELAYER_SECRETS")" \
   --network="$NETWORK" --subnet="$SUBNET" --vpc-egress=private-ranges-only \
   $CANARY_FLAGS \
   --quiet

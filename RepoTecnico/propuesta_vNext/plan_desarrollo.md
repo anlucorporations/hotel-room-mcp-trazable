@@ -62,7 +62,7 @@
 
 | Ciclo | Nombre | Duración | Entregable verificable (demo) | CU-V | RF / RNF | Depende de |
 |---|---|---|---|---|---|---|
-| **F1** | Fundaciones: esquema vNext + auditoría append-only | S · 4 d | `base_datos.sql` aplicado y `runMigrations()` idempotente; 12 tablas + 5 extensiones; trigger append-only; semilla de 10 áreas (4 críticas) | CU-V-40 | RNF-M-19; D-C21, D-C31 | — |
+| **F1** | Fundaciones: esquema vNext + auditoría append-only | S · 4 d | `base_datos.sql` aplicado y `runMigrations()` idempotente; 12 tablas nuevas + 5 tablas extendidas (4 con DDL —19 columnas y 3 CHECK sobre `maintenance_incidents`, `preventive_tasks`, `rooms` y `preventive_plans`— y `admin_users`, cuya extensión de roles es lógica, sin DDL); trigger append-only; semilla de 10 áreas (4 críticas) | CU-V-40 | RNF-M-19; D-C21, D-C31 | — |
 | **F2** | Contrato `HotelOperations.sol` + motor EIP-712 | L · 9 d | Contrato en Anvil; `OperationalAction` con `signer = recovered_signer`; acción `CONFIG` y respaldo `OWNER_BACKUP`; vector EIP-712 §4.2.1 reproducible | CU-V-03, 05, 07, 21, 35, 37, 38 | RF-S-01/02/03/05; RNF-M-07/08; D-C16, D-C39, D-C42 | F1 |
 | **F3** | Outbox de anclaje y worker relayer | L · 9 d | Fila-outbox `on_chain_signatures` con `next_attempt_at`; backoff 8/TTL 24 h; `PENDING`→`SIGNED`→`MINED`; recuperación idempotente tras reinicio | CU-V-03, 05, 07, 43, 45 | RNF-M-03, M-13, M-14; D-C18 | F2 |
 | **F4** | Suite Mantenimiento | L · 12 d | `/mantenimiento/*` con bloqueo/desbloqueo firmado, preventivo crítico firmado, áreas comunes e informes | CU-V-01…11 | RF-M-01…12; RF-S-02/05/07 | F3 |
@@ -124,7 +124,7 @@ flowchart LR
 
 | # | Tarea | Archivos afectados | Verificación |
 |---|---|---|---|
-| T1.1 | Trasladar el DDL vNext al esquema inicial del migrador (12 `CREATE TABLE` + 26 `ALTER TABLE` + semilla + trigger) | `packages/shared/src/db/migrator.ts` | `migrator.test.ts` |
+| T1.1 | Trasladar el DDL vNext al esquema inicial del migrador (12 `CREATE TABLE` + 19 columnas y 3 CHECK sobre 4 tablas + semilla + trigger; `admin_users` con extensión lógica de roles) | `packages/shared/src/db/migrator.ts` | `migrator.test.ts` |
 | T1.2 | ~~**Corregir orden de creación:** `operator_audit_log` debe crearse **antes** de `housekeeping_damage_charges`~~ ✅ **CORREGIDO (2026-10-06)**: el bloque `operator_audit_log` ya se crea antes que `housekeeping_damage_charges` en `base_datos.sql` | `RepoTecnico/propuesta_vNext/base_datos.sql`; `packages/shared/src/db/migrator.ts` | Migración en base vacía sin error de FK |
 | T1.3 | Sincronizar el SQL suelto del paquete | `packages/shared/src/db/schema.sql` | Diff vacío frente a la sección vNext del migrador |
 | T1.4 | Ampliar el orden de borrado de tests/staging a las 12 tablas nuevas y a las extensiones | `packages/shared/src/db/reset-plan.ts`, `packages/shared/src/db/migrator.ts` (`resetDatabase`) | `reset-plan.test.ts` |
@@ -140,7 +140,7 @@ flowchart LR
 
 **Requisitos y casos de uso cubiertos:** RNF-M-19 (retención 5 años, append-only, exportación); RNF-M-06; D-C21, D-C31. CU-V-40 (base de la exportación).
 
-**Migración de datos:** es el ciclo de migración por excelencia. `base_datos.sql` es *forward-only* e idempotente (`CREATE TABLE IF NOT EXISTS`, `ALTER TABLE … ADD COLUMN IF NOT EXISTS`, `ON CONFLICT DO NOTHING`). Sembrar `maintenance_area_types`; verificar `12 tablas nuevas + 5 extensiones` y `uq_on_chain_signatures_nonce`. Rollback descrito en `documento_tecnico.md` §9.5.A (DROP en orden inverso de FK + `DROP COLUMN` de extensiones; nunca tocar `maintenance_incident_events`).
+**Migración de datos:** es el ciclo de migración por excelencia. `base_datos.sql` es *forward-only* e idempotente (`CREATE TABLE IF NOT EXISTS`, `ALTER TABLE … ADD COLUMN IF NOT EXISTS`, `ON CONFLICT DO NOTHING`). Sembrar `maintenance_area_types`; verificar `12 tablas nuevas + 5 tablas extendidas` (19 columnas con DDL) y `uq_on_chain_signatures_nonce`. Rollback descrito en `documento_tecnico.md` §9.5.A (DROP en orden inverso de FK + `DROP COLUMN` de extensiones; nunca tocar `maintenance_incident_events`).
 
 **Pruebas del ciclo**
 
@@ -151,7 +151,7 @@ flowchart LR
 | Contrato | No aplica en F1 | — |
 | E2E | No aplica (sin UI nueva) | — |
 
-**Criterios de salida (gates):** `pnpm typecheck` y `pnpm --filter @hotel/shared test` verdes; `psql` en CI con PostgreSQL 18 aplica el script dos veces sin error; `UPDATE`/`DELETE` sobre `operator_audit_log` revierten; `\d+` confirma 12 tablas + 5 columnas-extensión; `base_datos.sql`, `diccionario_datos.md` y `diagrama_er.md` coherentes.
+**Criterios de salida (gates):** `pnpm typecheck` y `pnpm --filter @hotel/shared test` verdes; `psql` en CI con PostgreSQL 18 aplica el script dos veces sin error; `UPDATE`/`DELETE` sobre `operator_audit_log` revierten; `\d+` confirma 12 tablas + las 19 columnas-extensión (la 5.ª tabla extendida, `admin_users`, es lógica); `base_datos.sql`, `diccionario_datos.md` y `diagrama_er.md` coherentes.
 
 **Riesgos del ciclo:** orden de FK `housekeeping_damage_charges → operator_audit_log` (mitigado en T1.2); desincronización `migrator.ts` ↔ `schema.sql` ↔ `base_datos.sql` (mitigado en T1.3 y con diff en CI); ausencia de `psql` en el entorno local (se valida en CI/PostgreSQL 18, B-1).
 
@@ -771,6 +771,7 @@ Las **12 decisiones D1–D12** quedaron resueltas con el cliente:
 
 | Versión | Fecha | Cambio |
 |---|---|---|
+| 1.0.1 | 2026-10-10 | Reconciliación de cifras con el artefacto SQL (análisis de arranque §8 · B1/B2, **rectificado**): «5 extensiones» = **5 tablas extendidas** (4 con DDL: 19 columnas + 3 CHECK; `admin_users` lógica, sin DDL) —el documento técnico ya lo decía (DT-AUD-11)—; el total real de `ALTER TABLE` es **25**, no 26. Añadidas a `diagrama_er.md` las dos columnas que faltaban (`housekeeping_damage_charges.audit_log_id`, `preventive_tasks.validation_status`). |
 | 1.0.0 | 2026-10-07 | Creación del plan de desarrollo vertical: 10 ciclos F1–F10 detallados, grafo de dependencias, estrategia de pruebas y despliegue, criterios globales de Fase 3, estimación de 77 días-persona y decisiones pendientes. |
 
 ---

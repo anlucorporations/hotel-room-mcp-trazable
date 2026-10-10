@@ -81,6 +81,17 @@ async function wipeOperational(head: bigint): Promise<void> {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    // La auditoría de operadores es **append-only por trigger** (RNF-M-19): sin desactivarlo dentro
+    // de la transacción, `DELETE FROM operator_audit_log` revienta con «es append-only» y el reset
+    // entero se cae. Se comprueba en el catálogo antes de tocarlo (una sentencia fallida abortaría la
+    // transacción) y se vuelve a activar al terminar.
+    const trigger = await client.query(
+      "SELECT 1 FROM pg_trigger WHERE tgname = 'trg_operator_audit_append_only' AND NOT tgisinternal",
+    );
+    const auditTrigger = trigger.rowCount !== null && trigger.rowCount > 0;
+    if (auditTrigger) {
+      await client.query("ALTER TABLE operator_audit_log DISABLE TRIGGER trg_operator_audit_append_only");
+    }
     for (const table of WIPE_ORDER) {
       await client.query(`DELETE FROM ${table}`);
     }
@@ -91,6 +102,9 @@ async function wipeOperational(head: bigint): Promise<void> {
        ON CONFLICT (id) DO UPDATE SET last_block = EXCLUDED.last_block, contract_address = EXCLUDED.contract_address`,
       [contractAddress, head.toString()],
     );
+    if (auditTrigger) {
+      await client.query("ALTER TABLE operator_audit_log ENABLE TRIGGER trg_operator_audit_append_only");
+    }
     await client.query("COMMIT");
   } catch (error) {
     await client.query("ROLLBACK");

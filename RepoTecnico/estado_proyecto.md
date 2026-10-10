@@ -4756,3 +4756,149 @@ configuración, y la auditoría recomienda hacerlo tras cerrar H-02/H-03.
 
 **Deuda ajena detectada al verificar**: `packages/shared/src/documentation-guardian.test.ts` ya fallaba
 en `HEAD` (cita `CU-38`/`CU-39` de un commit ajeno sin catalogar en el SRS). No se ha tocado.
+
+## 19. vNext: análisis de arranque de la Fase 3 (2026-10-10) · `@asistenteProyecto`
+
+**Petición:** «analiza vNext y prepárate para implementar». Análisis (lectura) en
+`RepoTecnico/propuesta_vNext/ANALISIS_ARRANQUE.md`; **no se ha escrito código de vNext**.
+
+**Estado.** La propuesta (Suite de Mantenimiento + Suite Ama de llaves con firma on-chain selectiva)
+está **completa y auditada**: 45 CU-V, diagramas, documento técnico y plan vertical de **10 ciclos
+F1–F10** (77 días-persona, ruta crítica F1→F2→F3→F4→F6→F10). Su auditoría V1 dio NO LISTA y sus **39
+hallazgos quedaron resueltos** con las decisiones D-C13…D-C42 → veredicto **APTA para Fase 3**.
+
+**Estado real del código (medido):** **0 de las 12 tablas** vNext están en `migrator.ts` o en el
+`base_datos.sql` raíz (48 tablas), `HotelOperations.sol` **no existe**, y el vocabulario de roles nuevo
+(`HEAD_KEEPER`, `HEAD_MAINTENANCE`, `MAINTENANCE_TECH`, `HOUSEKEEPER`) tampoco. La entrada real de F1
+es: 12 tablas, 19 columnas nuevas (25 `ALTER TABLE` sobre `maintenance_incidents`, `preventive_tasks`,
+`rooms`, `preventive_plans`), 3 CHECK redefinidas, función+trigger append-only y semilla de 10 áreas
+(4 críticas).
+
+**Huecos detectados al contrastar la propuesta con el repositorio** (detalle y evidencias en el
+análisis): (A1) el total de `ALTER TABLE` del plan («26») no cuadra con el artefacto (**25**: 19 columnas y 3 CHECK) —«5
+extensiones» sí era correcto: son 5 **tablas** extendidas, 4 con DDL y `admin_users` lógica (rectificado en el
+§8.2 del análisis tras mi primera lectura errónea)—; (A2) el gate de F1 está hoy en rojo por `documentation-guardian.test.ts` (CU-38/CU-39
+ajenos, sin catalogar en el SRS); (A3) falta extender el guardián de arquitectura a `base_datos.sql`
+(D8); (A4) no hay job de CI con `psql` (D11); (A5) el WIP ajeno sobre `base_datos.sql`/`migrator.ts`
+solapa con los ficheros de F1; (A7) los pendientes de la auditoría V6 de la quema (H-02 custodia de
+roles, H-03/QW-4 configuración) tocan wallets y roles de F2/F9 y conviene secuenciarlos antes.
+
+**Siguiente paso:** arrancar **F1 — Fundaciones** (esquema vNext + auditoría append-only) en el orden
+propuesto (9 pasos), con las tres decisiones del §6 del análisis pendientes de respuesta del
+responsable. Sin commit, push ni despliegue hasta que lo ordene.
+
+**Auditoría del DDL vNext (encargo del responsable: «revisa el SQL contra el plan antes de tocar
+nada»)**: hecha y añadida al análisis (§8). El DDL está **listo para portarse**: 12/12 tablas presentes
+en ER y diccionario, semilla de 10 áreas con las 4 críticas exactas (`POOL_FILTER`, `WATER_PUMP`,
+`ELEVATOR`, `ELECTRIC_GENERATOR` —el H-02 de la auditoría V1 sí está resuelto—), `uq_on_chain_signatures_nonce`
+y trigger append-only. Hallazgos a corregir **antes** de tocar el migrador: **B1** rectificado: el plan decía «26 `ALTER TABLE`» y el artefacto tiene **25** (19 columnas + 3 CHECK sobre 4
+tablas); «5 extensiones» = **5 tablas extendidas** (la 5.ª, `admin_users`, con extensión lógica de roles sin DDL) y **B2** (el ER omite `housekeeping_damage_charges.audit_log_id` y
+`preventive_tasks.validation_status`, que sí están en el SQL y en el diccionario); B3/B4 son
+aclaraciones de alcance. Nada modificado en la propuesta todavía.
+
+## 20. Decisiones de arranque de vNext y cierre de H-03/QW-4 (2026-10-10) · `@asistenteProyecto`
+
+**Decisión del responsable (bloque de arranque de la Fase 3):**
+1. **H-03/QW-4 se cierra ahora** (provisión de las variables de quema), porque es trabajo de horas y
+   evita que el próximo despliegue apague la quema en silencio.
+2. **H-02** (revocar `MINTER`/`BURNER` del firmante del panel y el `BURNER_ROLE` residual de la cuenta 0,
+   Safe 2-de-3) se cierra **justo antes de F2**, que es donde entran `HotelOperations`, el relayer y
+   `operator_wallets`.
+3. **F1 arranca en paralelo**, sin esperar a H-02.
+4. Para el delta de datos (A1/B1 del análisis) manda la revisión: **el SQL se contrasta con el plan antes
+   de tocar el migrador** — ya hecho (§8 del análisis: B1 y B2 documentales).
+
+**H-03/QW-4 · cerrado (implementación en el árbol de trabajo, sin commit todavía):**
+
+| Fichero | Cambio |
+|---|---|
+| `.env.example` | Añadidas `RELAYER_WALLET_PRIVATE_KEY` y `RELAYER_MIN_BALANCE_NATIVE` (la web no tenía ninguna de las dos documentadas); `BURNER_BOT_PRIVATE_KEY` queda marcada **OBSOLETA** (ningún código la lee) |
+| `infra/gcp/70-deploy-apps.sh` | Bloque de quema con **activación explícita**: `ENABLE_BURN_SCHEDULER=1` (worker: `BURNER_WALLET_PRIVATE_KEY` desde `hotel-burner-private-key` + horario y umbral) y `ENABLE_RELAYER_BURN=1` (web: `RELAYER_WALLET_PRIVATE_KEY` desde `hotel-relayer-private-key`). Sin activación **avisa por stdout** y comprueba que los secretos existen antes de usarlos. Nuevo `join_nonempty` para no generar `--set-env-vars` con comas dobles |
+| `RepoTecnico/Manuales/02-instalacion/01-variables-de-entorno.md` | Corregida la fila que atribuía la quema a `BURNER_BOT_PRIVATE_KEY`; documentadas las `RELAYER_*`, `DEVOPS_ALERT_EMAIL` y los dos flags de despliegue |
+| `packages/shared/src/env-guardian.test.ts` (nuevo) | Guardián: cada variable de quema está en `.env.example`, en el manual y **cableada en el script de despliegue**, y el código la sigue leyendo. `BURN_INTERVAL_MS` se excluye del script a propósito (modo forzado de desarrollo) |
+
+**Verificación**: `bash -n` del script OK; simulación de `join_nonempty` en los 4 casos (sin quema, con
+quema, sin secretos, con secretos → sin comas dobles); guardián **6/6** y **prueba de mutación**: al
+borrar `RELAYER_MIN_BALANCE_NATIVE` del script la prueba **falla** con el mensaje esperado y al
+restaurarlo vuelve a verde; typecheck y eslint de `shared` limpios (0 errores).
+
+**No cambia el estado de producción**: la quema sigue desactivada (`burn.scheduler=disabled` en
+`/health`); esta release solo hace que **activarla sea explícito y que desactivarla deje de ser
+silencioso**.
+
+**F1 · paso 1 completado (2026-10-10):** reconciliados los cuatro documentos con el artefacto SQL tras la
+revisión pedida por el responsable: el plan y el documento técnico dicen ya «**12 tablas nuevas + 5 tablas
+extendidas** (4 con DDL: 19 columnas y 3 CHECK; `admin_users` con extensión lógica de roles, sin DDL)» y el
+total real de `ALTER TABLE` (**25**, no 26); `diagrama_er.md` incorpora las dos columnas que le faltaban
+(`housekeeping_damage_charges.audit_log_id`, `preventive_tasks.validation_status`) y la **paridad SQL↔ER es
+completa** (12 tablas + 19 columnas-extensión, verificado por parseo). El plan registra su **1.0.1**. Mi
+primera lectura de B1 («5 extensiones» = extensiones de PostgreSQL) era **errónea** y queda rectificada en
+`ANALISIS_ARRANQUE.md` §8.2. **No se ha tocado todavía el migrador** (paso 2 de F1).
+
+## 21. F1 · Fundaciones — esquema vNext portado y sincronizado (2026-10-10) · `@asistenteProyecto`
+
+**Pasos 2-5 del ciclo F1 ejecutados** (el paso 1, la reconciliación documental, se cerró en §20):
+
+| # | Qué se hizo | Ficheros |
+|---|---|---|
+| 2 | **DDL vNext portado literalmente** al esquema que aplica el migrador (413 líneas: 12 `CREATE TABLE`, 25 `ALTER TABLE` = 19 columnas + 3 CHECK, semilla de 10 áreas y trigger append-only) | `packages/shared/src/db/migrator.ts` |
+| 3 | **Artefacto raíz sincronizado**: el mismo bloque, con cabecera que declara la fuente de verdad | `RepoTecnico/base_datos.sql` |
+| 4 | **Plan de reset ampliado**: las 12 tablas clasificadas (11 en `WIPE_ORDER`, `maintenance_area_types` se conserva por ser catálogo con semilla) y `resetDatabase` las borra en orden inverso de FK | `packages/shared/src/db/reset-plan.ts`, `packages/shared/src/db/migrator.ts` |
+| 4b | **El trigger append-only bloqueaba el reset**: `reset-all.ts` desactiva `trg_operator_audit_append_only` dentro de la transacción (comprobando antes el catálogo, porque una sentencia fallida abortaría la transacción) y lo re-activa al terminar | `packages/shared/scripts/reset-all.ts` |
+| 5 | **Guardián de paridad ampliado (D8)**: el artefacto raíz y `runMigrations` no pueden declarar tablas que el otro ignore (en los dos sentidos) | `packages/shared/src/architecture-guardian.test.ts` |
+| — | **Prueba nueva del ciclo**: `migrator.test.ts` con doble de pool — una sola sentencia, idempotencia por construcción (`IF NOT EXISTS`/`ON CONFLICT`), bloque vNext completo (12/19/3/10/4/trigger) y **sincronía triple**: el bloque es el **mismo texto** en el migrador, el script raíz y la propuesta aprobada | `packages/shared/src/db/migrator.test.ts` |
+
+**Incidencias corregidas durante el portado** (las cazaron las pruebas, no una lectura):
+1. Mi propio comentario de cabecera llevaba **backticks** y cerraba el literal de plantilla de
+   `INITIAL_SCHEMA_SQL` → `tsc` lo detectó (TS1005/TS1443).
+2. `reset-plan.test.ts` cazó una **infracción real de orden**: `housekeeping_damage_charges` es hijo de
+   `additional_charges` (posición 2) por una FK real, así que los cargos por daños y su notificación van
+   **primero** en `WIPE_ORDER`.
+3. El recuento de `ADD COLUMN IF NOT EXISTS` del esquema completo es **40** (19 de vNext + 21 de
+   migraciones anteriores): la prueba acota la comprobación al bloque vNext.
+
+**Verificación**: `tsc --noEmit` limpio; eslint de `shared` **0 errores**; 26 pruebas en verde
+(`architecture-guardian` 10, `migrator` 5, `env-guardian` 6, `reset-plan` 5); paridad de tablas
+migrador ↔ script raíz **60 = 60** y las 12 nuevas en ambos.
+
+**Pendiente del ciclo F1**: T1.5 (vocabulario de roles `HEAD_KEEPER`/`HEAD_MAINTENANCE`/
+`MAINTENANCE_TECH`/`HOUSEKEEPER`), T1.6 (`operations-state.ts`), T1.7–T1.11 (repositorios: auditoría con
+hash encadenado, operaciones con nonce, mantenimiento, terminales, housekeeping), T1.12 (variables
+nuevas) y **el gate de PostgreSQL real** (D11/A4): aplicar `base_datos.sql` dos veces con `psql` en CI
+—este entorno no tiene `psql`/`postgres`/`docker` y el CI **no tiene servicio de PostgreSQL**, así que
+ese gate necesita una decisión antes de añadirlo—.
+
+## 22. F1 · Repositorios de auditoría y de operaciones firmadas (T1.7/T1.8) — 2026-10-10 · `@asistenteProyecto`
+
+**T1.7 · `audit.repository.ts` (nuevo).** Auditoría de operadores **append-only con hash encadenado**
+(RNF-M-19 · D-C21 · D-C31 · CU-V-40):
+- `append()` cierra la cadena con **cerrojo de aviso** (`pg_advisory_xact_lock`) dentro de la
+  transacción: dos auditorías concurrentes no pueden bifurcar la cadena.
+- Hash **determinista** (`0x` + SHA-256 de `prev_hash|JSON canónico`): JSON con claves ordenadas en
+  profundidad; sin eso, el mismo contenido daría hashes distintos y la verificación no serviría.
+- `verifyChain()` recorre la cadena y devuelve **el primer eslabón roto** (id + motivo): detecta
+  contenido reescrito, hashes recalculados y eslabones borrados. `list()` acota el límite (1…1.000).
+- El repositorio **no expone `update` ni `delete`**: la inmutabilidad la impone además el trigger.
+
+**T1.8 · `operations.repository.ts` (nuevo).** `operator_wallets` + `on_chain_signatures` (F2/F3 ·
+D-C16, D-C18, D-C42; RNF-M-03/M-08/M-14/M-15):
+- **Anti-replay (DT-AUD-04)**: `buildSignatureNonce(firmante, contenido)` es **determinista**, y el
+  índice único parcial `(signer_address, nonce) WHERE nonce IS NOT NULL` respalda que la MISMA operación
+  no se firme dos veces; los reintentos reutilizan fila y nonce, y una acción nueva cambia el contenido.
+- **El firmante recuperado manda (H-10 de la auditoría vNext)**: `markSigned` **rechaza**
+  (`OperationsError RECOVERED_SIGNER_MISMATCH`) una firma que no corresponda a la wallet asignada y no
+  re-firma una fila ya firmada (`PENDING` es requisito de la sentencia).
+- Ciclo del *outbox*: `createSignatureRequest` (PENDING) → `markSigned` → `markMined`, con `markFailed`
+  (cuenta el intento y fija `next_attempt_at`), `revoke` (solo PENDING/FAILED), `consume` (un solo uso y
+  **solo sobre `MINED`**) y `findPendingForRetry` (pendientes vencidas, más antiguas primero).
+- Wallets: `assignWallet` (reactiva la revocada al rotar), `revokeWallet`, `findActiveWallet(role)`,
+  `listWallets`.
+
+**Verificación**: `tsc --noEmit` limpio; eslint de `shared` **0 errores** (2 despistes míos cazados y
+corregidos: el mapeo `consumesAt`/`consumedAt` y un `import type { Mock }` sin usar); **53 pruebas** del
+ciclo F1 en verde (`audit` 12, `operations` 15, `migrator` 5, `reset-plan` 5, `architecture-guardian`
+10, `env-guardian` 6) y **177 pruebas** de todos los repositorios (14 ficheros) sin tocar las existentes.
+
+**Pendiente de F1**: T1.5 (vocabulario de roles), T1.6 (`operations-state.ts` con los enums canónicos
+frente al SQL), T1.9–T1.11 (extender `maintenance`/`housekeeping` con áreas, inspecciones y alertas;
+repositorio de `terminal_operators`), T1.12 (variables nuevas) y el **gate de PostgreSQL real (D11/A4)**.

@@ -1038,7 +1038,7 @@ Retención 5 años de `operator_audit_log` y `on_chain_signatures`; auditoría a
 **A. Esquema F1 (`base_datos.sql`, forward-only e idempotente).**
 
 1. *Pre:* backup verificado (`pg_dump` + PITR) y ventana de mantenimiento; `psql -f RepoTecnico/propuesta_vNext/base_datos.sql` sobre una copia y validación con `\d+`.
-2. *Migración:* aplicar el script (usa `IF NOT EXISTS` / `ON CONFLICT DO NOTHING`); sembrar `maintenance_area_types`; verificar `12 tablas nuevas + 5 extensiones` y el índice único `uq_on_chain_signatures_nonce`.
+2. *Migración:* aplicar el script (usa `IF NOT EXISTS` / `ON CONFLICT DO NOTHING`); sembrar `maintenance_area_types`; verificar `12 tablas nuevas + 5 tablas extendidas (4 con DDL —19 columnas y 3 CHECK sobre `maintenance_incidents`, `preventive_tasks`, `rooms` y `preventive_plans`— y `admin_users`, cuya extensión de roles es lógica, sin DDL)` y el índice único `uq_on_chain_signatures_nonce`.
 3. *Rollback:* `DROP TABLE` de las 12 tablas nuevas en orden inverso de FK y `ALTER TABLE … DROP COLUMN` de las extensiones (`admin_users` solo rol lógico), desde el backup previo. El rollback **nunca** toca `maintenance_incident_events` (tabla existente) ni las tablas base.
 4. *Post:* repetir migración en staging (Besu real) y ejecutar la verificación CU-V-45.
 

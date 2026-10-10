@@ -29,6 +29,8 @@ import { describe, expect, it } from 'vitest';
  */
 const here = dirname(fileURLToPath(import.meta.url));
 const SRC = here;
+/** Raíz del repositorio: los guardianes comparan también artefactos de fuera del paquete. */
+const REPO_ROOT = join(here, '..', '..', '..');
 const read = (path: string): string => readFileSync(join(SRC, path), 'utf8');
 
 /** Ficheros fuente del paquete (sin tests: se audita el producto). */
@@ -153,6 +155,28 @@ describe('guardián de arquitectura de packages/shared (M8)', () => {
 
     const missing = declared.filter((table) => !applied.has(table));
     expect(missing, `tablas de schema.sql ausentes en runMigrations: ${missing.join(', ')}`).toEqual([]);
+  });
+
+  it('toda tabla del artefacto `RepoTecnico/base_datos.sql` existe en `runMigrations` (D8)', () => {
+    // Decisión D8 (auditoría vNext): el script que se aplica a mano en producción
+    // (`RepoTecnico/base_datos.sql`) y el esquema que aplica el migrador son dos copias del mismo
+    // modelo, y ya divergieron una vez (hallazgo H-08: el script describía tablas que el migrador no
+    // creaba). El guardián las compara tabla a tabla en los dos sentidos: ninguna de las dos puede
+    // declarar una tabla que la otra ignore.
+    const rootSql = readFileSync(join(REPO_ROOT, 'RepoTecnico', 'base_datos.sql'), 'utf8');
+    const tablesOf = (sql: string): string[] =>
+      [...sql.matchAll(/CREATE TABLE IF NOT EXISTS "?(\w+)"?/g)].map((match) => match[1] ?? '');
+    const enScript = tablesOf(rootSql);
+    const enMigrador = new Set(tablesOf(read('db/migrator.ts')));
+
+    expect(enScript.length).toBeGreaterThan(40);
+    const faltanEnMigrador = enScript.filter((table) => !enMigrador.has(table));
+    expect(faltanEnMigrador, `tablas de base_datos.sql ausentes en runMigrations: ${faltanEnMigrador.join(', ')}`).toEqual([]);
+
+    // Y al revés: el vNext añade 12 tablas a los dos artefactos a la vez (P8); si una se queda solo
+    // en el migrador, producción (que aplica el script) no la tendría.
+    const faltanEnScript = [...enMigrador].filter((table) => !enScript.includes(table));
+    expect(faltanEnScript, `tablas de runMigrations ausentes en base_datos.sql: ${faltanEnScript.join(', ')}`).toEqual([]);
   });
 
   it('la traza de sesión se pseudonimiza SIEMPRE antes de tocar la base de datos (ADR-24)', () => {

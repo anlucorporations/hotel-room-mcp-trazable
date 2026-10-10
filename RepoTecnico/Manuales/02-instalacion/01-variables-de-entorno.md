@@ -35,7 +35,9 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 |---|---|---|---|
 | `DEPLOYER_PRIVATE_KEY` | Sí, para desplegar | clave `0xac0974…ff80` → dirección `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` (cuenta 0 de Anvil) | `forge script` no arranca: `vm.envUint` revienta |
 | `MINTER_RELAYER_PRIVATE_KEY` | Sí para el alta de inventario desde back-office | clave `0x59c6995e…690d` → dirección `0x70997970C51812dc3A010C7d01b50e0d17dc79C8` (cuenta 1 de Anvil) | El minteo on-chain no puede firmarse |
-| `BURNER_BOT_PRIVATE_KEY` | Sí para la quema | clave `0x5de4111a…365a` → dirección `0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC` (cuenta 2 de Anvil) | Sin `BURNER_ROLE` operativo la quema no se firma |
+| `BURNER_WALLET_PRIVATE_KEY` | Sí para la quema **programada** (el worker) | clave `0x5de4111a…365a` → dirección `0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC` (cuenta 2 de Anvil) | Sin `BURNER_ROLE` operativo la quema no se firma |
+| `RELAYER_WALLET_PRIVATE_KEY` | Sí para la quema **manual** del panel (CU-13) | en producción, secreto `hotel-relayer-private-key`; en local, cuenta 4 de Anvil | La ruta responde `503 RELAYER_NOT_CONFIGURED` |
+| ~~`BURNER_BOT_PRIVATE_KEY`~~ | **Obsoleta** (auditoría V6 · H-03) | — | Ningún código la lee: el planificador usa `BURNER_WALLET_PRIVATE_KEY` y el panel `RELAYER_WALLET_PRIVATE_KEY` |
 | `RECEPTION_WALLET_PRIVATE_KEY` | Sí para el check-in | clave `0x7c852118…07a6` → dirección `0x90F79bf6EB2c4f870365e785982E1f101e93b906` (cuenta 3 de Anvil) | El check-in falla en cerrado (503 `ANCLAJE_NO_CONFIGURADO`) |
 | `GNOSIS_SAFE_ADDRESS` | No (alcance D-11, pendiente B-7) | vacío | No hay multisig: la gobernanza queda en el EOA admin |
 | `ADMIN_ADDRESS`, `TREASURY_ADDRESS`, `MINTER_ADDRESS`, `RECEPTION_ADDRESS`, `PAUSER_ADDRESS`, `BURNER_ADDRESS`, `TREASURER_ADDRESS`, `MIN_LISTING_PRICE` | Solo las lee `Deploy.s.sol` | `ADMIN_ADDRESS` = cuenta 1 | Sin ellas los roles recaen por defecto en el **desplegador** |
@@ -144,11 +146,15 @@ Sistema canónico **único**: contraseña + TOTP obligatorio + JWT de 15 min con
 
 | Variable | Obligatoria | Ejemplo | Si falta |
 |---|---|---|---|
-| `BURNER_WALLET_PRIVATE_KEY` | No | cuenta 2 de Anvil | **Vacío = planificador de quema desactivado** |
+| `BURNER_WALLET_PRIVATE_KEY` | No | cuenta 2 de Anvil | **Vacío = planificador de quema desactivado** (el `/health` del worker lo publica como `burn.scheduler=disabled`) |
 | `BURNER_MIN_BALANCE_NATIVE` | No | `1` | Sin umbral de aviso de gas |
 | `BURN_HOUR_LOCAL` | No | `12` | Hora por defecto: 12:00 de la zona del hotel |
 | `BURN_TIMEZONE` | No | `Europe/Madrid` | Zona por defecto de la quema; `UTC` si el hotel factura en UTC |
 | `BURN_INTERVAL_MS` | No (**solo dev/demo**) | vacío | Ciclo forzado cada N ms para demos |
+| `RELAYER_WALLET_PRIVATE_KEY` | No | secreto `hotel-relayer-private-key` | **Vacío = botón «Quemar» del panel deshabilitado** (`503 RELAYER_NOT_CONFIGURED`) |
+| `RELAYER_MIN_BALANCE_NATIVE` | No | `1` | Sin umbral de aviso de saldo del relayer |
+| `DEVOPS_ALERT_EMAIL` | No | `admin@example.com` | Las alertas de quema (gas, fallo, descartes) van a `devops@hotel.es` por defecto |
+| `ENABLE_BURN_SCHEDULER` / `ENABLE_RELAYER_BURN` | No (**solo despliegue**) | `1` para activarlos | `infra/gcp/70-deploy-apps.sh` despliega con la quema **desactivada y avisando**; activarla exige `1` y el secreto correspondiente |
 | `EMAIL_RECONCILE_INTERVAL_MS` | No | `300000` | Reconciliación cada 5 min |
 | `REORG_CONFIRMATIONS` | No | `1` en Anvil, `32` en Polygon | Confirmaciones exigidas antes de consolidar |
 | `SILENCE_THRESHOLD_MS` | No | `600000` (10 min) | Umbral de la alerta de silencio |

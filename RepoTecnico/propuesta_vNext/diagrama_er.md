@@ -234,6 +234,7 @@ erDiagram
         TIMESTAMP verified_at
         BOOLEAN requires_signature
         UUID signature_id FK "FK a on_chain_signatures(id)"
+        VARCHAR(30) validation_status "columna-extensión: PENDING_VERIFICATION · VALIDATED · PENDING_VERIFICATION_EXPIRED (SLA 24 h, RNF-M-21)"
         TEXT evidence_path
         TEXT notes
     }
@@ -280,6 +281,7 @@ erDiagram
         TEXT evidence_path
         VARCHAR(100) approved_by
         UUID signature_id FK "FK a on_chain_signatures(id)"
+        UUID audit_log_id FK "FK lógica a operator_audit_log(id): traza del cargo (columna-extensión)"
         TIMESTAMP created_at
     }
 
