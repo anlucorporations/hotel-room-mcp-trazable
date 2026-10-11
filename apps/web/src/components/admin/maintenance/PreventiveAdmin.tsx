@@ -69,6 +69,13 @@ export function PreventiveAdmin() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session.sessionUsername]);
 
+  // Los hooks van SIEMPRE antes del primer `return` (regla de React): si se llaman después del gate
+  // de sesión, el render de «cargando» o «sin rol» no los ejecuta y el siguiente sí, y React aborta
+  // con «Rendered more hooks than during the previous render». Movidos aquí al corregir el lint.
+  /** Ficha flotante del alta de plan preventivo. */
+  const [planOpen, setPlanOpen] = useState(false);
+  const tCommon = useTranslations("common");
+
   if (session.isLoading) {
     return (
       <p role="status" aria-live="polite" className="text-ink-soft">
@@ -83,10 +90,6 @@ export function PreventiveAdmin() {
       </p>
     );
   }
-
-  /** Ficha flotante del alta de plan preventivo. */
-  const [planOpen, setPlanOpen] = useState(false);
-  const tCommon = useTranslations("common");
 
   const createPlan = async (event: React.FormEvent): Promise<void> => {
     event.preventDefault();

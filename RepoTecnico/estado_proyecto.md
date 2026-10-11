@@ -4961,3 +4961,29 @@ i18n-keys, suite-access 7, admin-roles 6, admin-shell 28, wallet-menu-items 7).
 preexistentes** en ficheros que no he tocado (los scripts `audit-dialogs.mjs`/`audit-ui.mjs` del WIP
 ajeno, `verify-reserva-fallida.mts` y 5 componentes con `react-hooks/rules-of-hooks`). Es el segundo
 bloqueo del gate de cierre de F1, junto al guardián de documentación (`CU-38`/`CU-39`).
+
+## 24. Errores de lint de la web: 18 → 0, y eran un bug real de React (2026-10-11) · `@asistenteProyecto`
+
+**Composición de los 18 errores y qué se hizo con cada uno:**
+
+| Origen | Errores | Diagnóstico | Arreglo |
+|---|---|---|---|
+| 5 componentes del back-office (`ActivitiesAdmin`, `ContentAdmin`, `SuppliesAdmin`, `PreventiveAdmin`, `ReviewsModeration`) | **10** (`react-hooks/rules-of-hooks`) | **Bug real y latente**: tras los dos `return` tempranos (cargando / sin rol) se llamaban `useState` y `useTranslations`. Como `useAdminSession` arranca con `isLoading = true`, el primer render **no** ejecutaba esos hooks y el siguiente sí ⇒ React aborta con «Rendered more hooks than during the previous render». Estaba **enmascarado** porque `AdminLayout` no monta los hijos mientras carga (los componentes nunca veían el render de «cargando»), pero cualquier render fuera de ese gate (una prueba, otro layout, un refactor) habría reventado | Hooks movidos **antes del primer `return`**, con un comentario que explica la regla; mismo patrón en los 5 |
+| `scripts/verify-reserva-fallida.mts` (en git) | **1** (`prefer-const`) | `let deployed: Address;` se declara antes porque los ayudantes de más abajo la capturan, y se asigna una sola vez tras el despliegue: `const` exigiría reordenar todo el flujo del script | `eslint-disable-next-line` **con la justificación escrita** |
+| `scripts/audit-dialogs.mjs` y `scripts/audit-ui.mjs` (WIP ajeno **sin seguimiento**) | **7** (`no-undef`) | `document`/`getComputedStyle` se usan dentro de callbacks que Playwright ejecuta **en el navegador** | Directiva `/* global … */` (una línea por fichero). Al estar sin seguimiento, el arreglo vive solo en el árbol de trabajo |
+
+**Resultado**: `pnpm --filter @hotel/web lint` → **0 errores** (quedan 6 avisos de `no-console` en scripts),
+`@hotel/shared` sigue con 0 errores y **`pnpm lint` del monorepo: 6/6 tareas, `EXIT=0`**.
+
+**Verificación**: `tsc --noEmit` limpio (web y monorepo) y **suite completa de la web: 107 ficheros /
+1007 pruebas en verde**, sin fallos.
+
+**Hallazgo de proceso**: el CI **sí** ejecuta `pnpm lint` (`.github/workflows/ci.yml:59`) sobre un clon
+limpio y sin caché de turbo (solo cachea el store de pnpm). De los 18 errores, **11 están en ficheros
+versionados** (los 10 de los componentes, introducidos por `aeee4f2` el 2026-10-06, y el `prefer-const`
+de `verify-reserva-fallida.mts`, introducido por `a2c7696`); los otros **7 viven en scripts sin
+seguimiento**, que el CI nunca ve. Es decir: el gate de lint habría estado rojo desde el 2026-10-06, y
+conviene revisar las últimas ejecuciones del CI; no es un problema de configuración, es de vigilancia.
+
+Esto **cierra uno de los dos bloqueos** que quedaban para el gate de salida de F1. El otro sigue siendo el
+guardián de documentación con `CU-38`/`CU-39` (commit ajeno `c8b4792`) sin catalogar en el SRS.

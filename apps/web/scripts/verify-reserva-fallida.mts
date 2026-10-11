@@ -67,6 +67,9 @@ const MINTER_ROLE = keccak256(toHex("MINTER_ROLE"));
 const ROOM = 999n;
 const DATE = 20261220n;
 const PRICE = parseEther("0.1");
+// Se declara aquí (y no donde se asigna) porque los ayudantes definidos más abajo la capturan; se
+// asigna UNA sola vez tras el despliegue. `const` no es posible sin mover todo el flujo.
+// eslint-disable-next-line prefer-const
 let deployed: Address;
 let failures = 0;
 

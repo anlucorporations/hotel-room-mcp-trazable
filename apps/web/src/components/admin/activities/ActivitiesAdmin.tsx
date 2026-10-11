@@ -67,6 +67,13 @@ export function ActivitiesAdmin() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session.sessionUsername]);
 
+  // Los hooks van SIEMPRE antes del primer `return` (regla de React): si se llaman después del gate
+  // de sesión, el render de «cargando» o «sin rol» no los ejecuta y el siguiente sí, y React aborta
+  // con «Rendered more hooks than during the previous render». Movidos aquí al corregir el lint.
+  /** Fichas flotantes de alta: actividad y horario. */
+  const [dialog, setDialog] = useState<"activity" | "schedule" | null>(null);
+  const tCommon = useTranslations("common");
+
   if (session.isLoading) {
     return (
       <p role="status" aria-live="polite" className="text-ink-soft">
@@ -81,10 +88,6 @@ export function ActivitiesAdmin() {
       </p>
     );
   }
-
-  /** Fichas flotantes de alta: actividad y horario. */
-  const [dialog, setDialog] = useState<"activity" | "schedule" | null>(null);
-  const tCommon = useTranslations("common");
 
   const createActivity = async (event: React.FormEvent): Promise<void> => {
     event.preventDefault();

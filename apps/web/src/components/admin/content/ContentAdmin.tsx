@@ -71,6 +71,13 @@ export function ContentAdmin() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session.sessionUsername, section]);
 
+  // Los hooks van SIEMPRE antes del primer `return` (regla de React): si se llaman después del gate
+  // de sesión, el render de «cargando» o «sin rol» no los ejecuta y el siguiente sí, y React aborta
+  // con «Rendered more hooks than during the previous render». Movidos aquí al corregir el lint.
+  /** Fichas flotantes de alta: imagen de galería y plan informativo. */
+  const [dialog, setDialog] = useState<"image" | "offer" | null>(null);
+  const tCommon = useTranslations("common");
+
   if (session.isLoading) {
     return <p role="status" aria-live="polite" className="text-ink-soft">{t("loading")}</p>;
   }
@@ -81,10 +88,6 @@ export function ContentAdmin() {
       </p>
     );
   }
-
-  /** Fichas flotantes de alta: imagen de galería y plan informativo. */
-  const [dialog, setDialog] = useState<"image" | "offer" | null>(null);
-  const tCommon = useTranslations("common");
 
   const upload = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
