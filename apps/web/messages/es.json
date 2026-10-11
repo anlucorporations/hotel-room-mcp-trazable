@@ -1164,7 +1164,11 @@
     "suiteMaintenance": "Mantenimiento",
     "suitesTitle": "Tus suites",
     "roleHousekeeping": "LIMPIEZA",
-    "roleMaintenance": "MANTENIMIENTO"
+    "roleMaintenance": "MANTENIMIENTO",
+    "roleHeadMaintenance": "JEFE MANTENIMIENTO",
+    "roleHeadKeeper": "AMA DE LLAVES",
+    "roleMaintenanceTech": "TÉCNICO",
+    "roleHousekeeper": "CAMARERA"
   },
   "rooms": {
     "loading": "Cargando…",
@@ -1350,7 +1354,11 @@
     "passwordChanged": "Contraseña actualizada.",
     "passwordError": "No se pudo cambiar la contraseña.",
     "passwordSubmit": "Cambiar contraseña",
-    "processing": "Procesando…"
+    "processing": "Procesando…",
+    "roleHeadMaintenance": "Jefe de mantenimiento",
+    "roleHeadKeeper": "Ama de llaves",
+    "roleMaintenanceTech": "Técnico de mantenimiento",
+    "roleHousekeeper": "Camarera/o"
   },
   "housekeeping": {
     "title": "Servicio de habitaciones",

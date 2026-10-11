@@ -57,12 +57,17 @@ export function relayerContext(): RelayerContext {
   return cached;
 }
 
-/** Estados del ciclo → HTTP. `NO_TOKENS` es un éxito (no había nada que quemar). */
+/**
+ * Estados del ciclo → HTTP. `NO_TOKENS` es un éxito (no había nada que quemar); **`SKIPPED_ALL` no
+ * lo es**: había candidatas vivas y no se quemó ninguna (firmante sin rol, contrato en pausa), así
+ * que se responde como fallo para que el operador lo vea (auditoría V6 · H-05).
+ */
 const STATUS: Record<BurnCycleResult["reason"], number> = {
   COMPLETED: 200,
   NO_TOKENS: 200,
   LOCKED: 409,
   INSUFFICIENT_GAS: 503,
+  SKIPPED_ALL: 502,
   ERROR: 502,
 };
 

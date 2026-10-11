@@ -1138,7 +1138,7 @@ COMMENT ON COLUMN admin_users.id IS 'PK UUID';
 COMMENT ON COLUMN admin_users.username IS 'Identificador de acceso (único)';
 COMMENT ON COLUMN admin_users.password_hash IS 'Hash bcrypt de la contraseña';
 COMMENT ON COLUMN admin_users.totp_secret_enc IS 'Semilla TOTP cifrada con AES-256-GCM';
-COMMENT ON COLUMN admin_users.role IS 'DEFAULT_ADMIN_ROLE · RECEPTION_ROLE · HOUSEKEEPING · MAINTENANCE (D-56: roles de BD sin wallet)';
+COMMENT ON COLUMN admin_users.role IS 'DEFAULT_ADMIN_ROLE · RECEPTION_ROLE · HEAD_MAINTENANCE · HEAD_KEEPER · MAINTENANCE_TECH · HOUSEKEEPER · HOUSEKEEPING (heredado) · MAINTENANCE (heredado) (D-56; los jefes HEAD_* firman como wallet on-chain, los operarios usan PIN sin wallet)';
 COMMENT ON COLUMN admin_users.active IS 'Alta/baja del operador';
 COMMENT ON COLUMN admin_users.failed_attempts IS 'Intentos fallidos para el bloqueo temporal';
 COMMENT ON COLUMN admin_users.locked_until IS 'Bloqueo por fuerza bruta';

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { BACK_OFFICE_ROLE_NAMES } from "../domain/roles";
 
 // Reexporta `z` para que cada componente componga su esquema sin acoplar `zod` directamente.
 export { z } from "zod";
@@ -127,12 +128,7 @@ export const emptyAsUndefined = <S extends z.ZodTypeAny>(schema: S) =>
   );
 
 /** Validador zod para el nombre de rol de un operador del back-office (D-04, D-56). */
-export const adminRoleName = z.enum([
-  "DEFAULT_ADMIN_ROLE",
-  "RECEPTION_ROLE",
-  "HOUSEKEEPING",
-  "MAINTENANCE",
-]);
+export const adminRoleName = z.enum(BACK_OFFICE_ROLE_NAMES);
 
 /** Validadores reutilizables para componer los esquemas de cada componente. */
 export const env = {

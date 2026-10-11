@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import {
   AuthService,
+  BACK_OFFICE_ROLE_NAMES,
   SessionsRepository,
   UsersRepository,
   type AdminUserRecord,
@@ -16,12 +17,7 @@ const usersRepo = new UsersRepository();
 const sessionsRepo = new SessionsRepository();
 const authService = new AuthService();
 
-const ROLES: readonly AdminUserRole[] = [
-  "DEFAULT_ADMIN_ROLE",
-  "RECEPTION_ROLE",
-  "HOUSEKEEPING",
-  "MAINTENANCE",
-];
+const ROLES: readonly AdminUserRole[] = BACK_OFFICE_ROLE_NAMES;
 
 /** Vista pública de un operador: NUNCA incluye `passwordHash` ni `totpSecretEnc` (RNF-41). */
 function publicUser(user: AdminUserRecord) {

@@ -1164,7 +1164,11 @@
     "suiteMaintenance": "Maintenance",
     "suitesTitle": "Your suites",
     "roleHousekeeping": "HOUSEKEEPING",
-    "roleMaintenance": "MAINTENANCE"
+    "roleMaintenance": "MAINTENANCE",
+    "roleHeadMaintenance": "HEAD MAINTENANCE",
+    "roleHeadKeeper": "HEAD KEEPER",
+    "roleMaintenanceTech": "TECHNICIAN",
+    "roleHousekeeper": "HOUSEKEEPER"
   },
   "rooms": {
     "loading": "Loading…",
@@ -1350,7 +1354,11 @@
     "passwordChanged": "Password updated.",
     "passwordError": "The password could not be changed.",
     "passwordSubmit": "Change password",
-    "processing": "Processing…"
+    "processing": "Processing…",
+    "roleHeadMaintenance": "Head of maintenance",
+    "roleHeadKeeper": "Head housekeeper",
+    "roleMaintenanceTech": "Maintenance technician",
+    "roleHousekeeper": "Housekeeper"
   },
   "housekeeping": {
     "title": "Housekeeping",

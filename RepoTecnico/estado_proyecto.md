@@ -4910,3 +4910,54 @@ seguras sobre datos vivos (dos columnas son nuevas ⇒ `NULL`; `operational_stat
 el bloque va en transacción implícita (atómico). Detalle en `despliegue_gcp.md` §74. Los repositorios
 nuevos (auditoría y operaciones) viajan en la imagen pero **todavía no los consume ninguna ruta**: son la
 base de F2/F4/F6.
+
+## 23. F1 · T1.5 — vocabulario de roles de back-office ampliado (2026-10-10) · `@asistenteProyecto`
+
+**Qué se hizo (fuente única en `packages/shared/src/domain/roles.ts`):** el vocabulario pasa de 4 a 8
+roles, conservando los heredados (D3):
+
+| Grupo | Roles | Wallet |
+|---|---|---|
+| Gobierno y recepción | `DEFAULT_ADMIN_ROLE`, `RECEPTION_ROLE` | según rol on-chain |
+| **Jefes (nuevos)** | `HEAD_MAINTENANCE`, `HEAD_KEEPER` | **Sí**: firman on-chain |
+| **Operarios de terminal (nuevos)** | `MAINTENANCE_TECH`, `HOUSEKEEPER` | **No**: PIN |
+| Heredados (D3) | `HOUSEKEEPING`, `MAINTENANCE` | No (se conservan por compatibilidad) |
+
+Se exportan además los subconjuntos `WALLET_BACK_OFFICE_ROLE_NAMES`, `TERMINAL_BACK_OFFICE_ROLE_NAMES`
+y `LEGACY_BACK_OFFICE_ROLE_NAMES`, y **se eliminan las listas duplicadas**: el enum zod `adminRoleName`
+(`env`) y la validación del alta de operadores (`/api/admin/system/users`) se derivan ahora del
+vocabulario. El `COMMENT ON COLUMN admin_users.role` del script raíz enumera los 8 roles.
+
+**Guardián nuevo (`domain/roles.test.ts`, 6 pruebas)** que ata el vocabulario a los artefactos:
+coincidencia **bidireccional** con el comentario del esquema, con la tabla de roles del diccionario vNext
+(los 4 propuestos y solo esos), roles con wallet = CHECK de `operator_wallets` menos `OWNER_BACKUP`
+(firma de emergencia, que no es rol de back-office), disjunción wallet/terminal/heredados y cota de
+`VARCHAR(30)`. **Probado por mutación**: añadir un rol inventado al SQL lo pone en rojo.
+
+**Tres roturas reales que cazó el typecheck** (el valor de tener el vocabulario en un solo sitio):
+1. **Un fallo mío introducido en la release v52**: el mapa `STATUS: Record<BurnCycleResult["reason"], number>`
+   de `/api/admin/expired/burn` no tenía `SKIPPED_ALL` (lo añadí al tipo en H-05 y no a ese mapa). Con
+   `STATUS[reason]` indefinido, Next habría respondido **200** a un ciclo que descartó todo: exactamente
+   el fallo silencioso que H-05 prohíbe, reintroducido en la capa HTTP. **Sin impacto en producción**
+   porque la quema está desactivada (la ruta responde 503 antes de llegar al ciclo), pero queda
+   corregido a `502`.
+2. `SystemUsers.tsx`: el mapa de etiquetas i18n no cubría los roles nuevos → añadidas
+   `roleHeadMaintenance`, `roleHeadKeeper`, `roleMaintenanceTech`, `roleHousekeeper` en **es/en/ru**
+   (con paridad verificada) y el mapa ampliado.
+3. `WalletMenu.tsx`: la insignia de rol del menú público tampoco los cubría → igual.
+
+**Alcance deliberadamente diferido (documentado en el código y en la prueba):** las 17 rutas de las
+suites heredadas (`/api/housekeeping/*`, `/api/mantenimiento/*`) siguen exigiendo los roles heredados, y
+`suite-access.test.ts` fija que los roles nuevos **aún no tienen suite**: sus suites (`/ama-de-llaves` y
+la nueva `/mantenimiento`) llegan en **F6** y **F4**. Preferimos no ofrecerles un enlace que devolvería
+403.
+
+**Verificación**: `tsc --noEmit` limpio en **todo el monorepo** (worker, web, shared, mcp, monitor);
+eslint de `shared` **0 errores**; 51 pruebas del ciclo F1 (roles 6, migrator 5, reset-plan 5,
+architecture-guardian 10, env-guardian 6, quema 19) y 57 pruebas de web relacionadas (i18n-parity,
+i18n-keys, suite-access 7, admin-roles 6, admin-shell 28, wallet-menu-items 7).
+
+**Deuda ajena detectada al verificar (no de T1.5)**: `pnpm lint` de la web tiene **18 errores
+preexistentes** en ficheros que no he tocado (los scripts `audit-dialogs.mjs`/`audit-ui.mjs` del WIP
+ajeno, `verify-reserva-fallida.mts` y 5 componentes con `react-hooks/rules-of-hooks`). Es el segundo
+bloqueo del gate de cierre de F1, junto al guardián de documentación (`CU-38`/`CU-39`).

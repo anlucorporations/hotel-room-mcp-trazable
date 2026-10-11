@@ -1164,7 +1164,11 @@
     "suiteMaintenance": "Техобслуживание",
     "suitesTitle": "Ваши разделы",
     "roleHousekeeping": "УБОРКА",
-    "roleMaintenance": "ТЕХНИК"
+    "roleMaintenance": "ТЕХНИК",
+    "roleHeadMaintenance": "НАЧ. ЭКСПЛУАТАЦИИ",
+    "roleHeadKeeper": "СТАРШАЯ ГОРНИЧНАЯ",
+    "roleMaintenanceTech": "ТЕХНИК",
+    "roleHousekeeper": "ГОРНИЧНАЯ"
   },
   "rooms": {
     "loading": "Загрузка…",
@@ -1350,7 +1354,11 @@
     "passwordChanged": "Пароль обновлён.",
     "passwordError": "Не удалось изменить пароль.",
     "passwordSubmit": "Сменить пароль",
-    "processing": "Обработка…"
+    "processing": "Обработка…",
+    "roleHeadMaintenance": "Начальник службы эксплуатации",
+    "roleHeadKeeper": "Старшая горничная",
+    "roleMaintenanceTech": "Техник по эксплуатации",
+    "roleHousekeeper": "Горничная"
   },
   "housekeeping": {
     "title": "Служба номеров",

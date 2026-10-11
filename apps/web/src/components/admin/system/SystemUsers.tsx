@@ -6,13 +6,25 @@ import type { BackOfficeRoleName } from "@hotel/shared/domain";
 import { useAdminContext } from "@/components/admin/AdminLayout";
 import { MODAL_PRIMARY, MODAL_SECONDARY, ModalShell } from "@/components/ui/ModalShell";
 
-/** Clave i18n del `system` namespace para la etiqueta de cada rol de operador (D-56). */
+/** Clave i18n del `system` namespace para la etiqueta de cada rol de operador (D-56, D-C42). */
 const ROLE_LABEL_KEY: Record<
   BackOfficeRoleName,
-  "roleAdmin" | "roleReception" | "roleHousekeeping" | "roleMaintenance"
+  | "roleAdmin"
+  | "roleReception"
+  | "roleHeadMaintenance"
+  | "roleHeadKeeper"
+  | "roleMaintenanceTech"
+  | "roleHousekeeper"
+  | "roleHousekeeping"
+  | "roleMaintenance"
 > = {
   DEFAULT_ADMIN_ROLE: "roleAdmin",
   RECEPTION_ROLE: "roleReception",
+  HEAD_MAINTENANCE: "roleHeadMaintenance",
+  HEAD_KEEPER: "roleHeadKeeper",
+  MAINTENANCE_TECH: "roleMaintenanceTech",
+  HOUSEKEEPER: "roleHousekeeper",
+  // Heredados (D3): se conservan mientras se re-crean las cuentas con los roles nuevos.
   HOUSEKEEPING: "roleHousekeeping",
   MAINTENANCE: "roleMaintenance",
 };

@@ -15,11 +15,16 @@ import { FaucetButton } from "./FaucetButton";
 
 /**
  * Etiqueta i18n de cada rol de operador (namespace `walletMenu`). Incluye los roles de personal sin
- * wallet (`HOUSEKEEPING`, `MAINTENANCE`, D-56) para que la insignia del menú público no quede vacía.
+ * wallet (`HOUSEKEEPING`, `MAINTENANCE` heredados y los operarios de la vNext, D-56/D-C42) para que la
+ * insignia del menú público no quede vacía.
  */
 const ROLE_KEY: Readonly<Record<BackOfficeRoleName, string>> = {
   DEFAULT_ADMIN_ROLE: "roleDefaultAdmin",
   RECEPTION_ROLE: "roleReception",
+  HEAD_MAINTENANCE: "roleHeadMaintenance",
+  HEAD_KEEPER: "roleHeadKeeper",
+  MAINTENANCE_TECH: "roleMaintenanceTech",
+  HOUSEKEEPER: "roleHousekeeper",
   HOUSEKEEPING: "roleHousekeeping",
   MAINTENANCE: "roleMaintenance",
 };
