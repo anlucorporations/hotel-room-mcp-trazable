@@ -2818,3 +2818,60 @@ antiguas las ignoran; **no se debe ejecutar `resetDatabase()`** contra producci�
 **La quema sigue DESACTIVADA** (`burn.scheduler: disabled`): la release no la activa; lo que cambia es
 que ahora el script de despliegue lo **avisa** y la activación es explícita (`ENABLE_BURN_SCHEDULER=1` /
 `ENABLE_RELAYER_BURN=1`).
+
+---
+
+## 75. Release v53 — vocabulario de roles (F1 · T1.5) y arreglo del estado `SKIPPED_ALL` (2026-10-11)
+
+**Qué se desplegó.** El commit `90cae90`, con dos cosas:
+
+1. **T1.5 · vocabulario de roles ampliado** a 8 (jefes con wallet, operarios de terminal y los
+   heredados conservados), en la **fuente única** `packages/shared/src/domain/roles.ts`, con las listas
+   duplicadas eliminadas (enum zod y validación del alta de operadores derivados del vocabulario),
+   etiquetas i18n nuevas en es/en/ru y guardián propio.
+2. **Arreglo de un fallo introducido en la v52**: el mapa `STATUS: Record<BurnCycleResult["reason"], number>`
+   de `/api/admin/expired/burn` no incluía `SKIPPED_ALL` (se añadió al tipo en H-05 pero no al mapa), de
+   modo que Next habría respondido **200** a un ciclo que descartó todas las candidatas —el fallo
+   silencioso que H-05 prohíbe—, reintroducido en la capa HTTP. Corregido a **502**.
+
+**Alcance del despliegue: solo la web.** Se comprobó que **ni el worker ni el mcp** consumen el
+vocabulario de roles ni el enum derivado (`grep` en `apps/worker/src` y `apps/mcp/src`: sin
+coincidencias), y la corrección del estado vive en una ruta de la web. Redesplegar el worker habría
+reiniciado su listener de cadena y el mcp su servidor **sin ganancia funcional**, así que se quedan en
+`v52` a propósito (criterio: se reconstruye y redespliega lo que cambia de comportamiento).
+
+| Componente | Imagen | Build | Duración |
+|---|---|---|---|
+| web | `…/hotel-mcp/web:v53` | ✅ SUCCESS `b3a224f4` | 4m01s |
+| worker | `worker:v52` (sin cambios) | vigente | — |
+| mcp | `mcp:v52` (sin cambios) | vigente | — |
+
+| Servicio | Revisión sirviendo | Imagen | Tráfico | Rollback |
+|---|---|---|---|---|
+| web | `hotel-mcp-web-00103-viw` | `web:v53` | **100 %** | `hotel-mcp-web-00101-xik` (v52) |
+| worker | `hotel-mcp-worker-00018-n64` | `worker:v52` | 100 % | `00017-mrf` (v51) |
+| mcp | `hotel-mcp-mcp-00016-v9t` | `mcp:v52` | 100 % | `00023-cal` (v45) |
+
+**Verificación**
+
+| Comprobación | Resultado |
+|---|---|
+| Typecheck, eslint y pruebas antes de construir | `tsc --noEmit` limpio en **todo el monorepo**; eslint de `shared` 0 errores; **51 pruebas** del ciclo F1 y **57** de web relacionadas ✅ |
+| Canario v53: `/`, `/catalogo`, `/asistente`, `/admin`, `/health/ready` | **200** y salud `READY` ✅ |
+| Canario **sirve el build nuevo** (y la v52 que servía, no) | `roleHeadMaintenance` y «JEFE MANTENIMIENTO» aparecen **1 vez en el canario y 0 en la v52** ✅ |
+| Tras promover: regresión de rutas | Las 13 rutas (incluida `/admin`) y `/health/ready` → **200**, `postgres: UP` ✅ |
+| Señales de releases anteriores conservadas | «Nueva conversación» y «Sin planta» presentes ✅ |
+| Asistente end-to-end | `domainToolCalls: 1` y `pageAction = /catalogo?tipo=simple` ✅ |
+| Otros servicios | `worker:v52` y `mcp:v52` intactos; worker `/health` con `burn.scheduler=disabled` y `lastBlock 533` ✅ |
+
+**Alcance de la verificación del arreglo.** El mapa `SKIPPED_ALL → 502` **no tiene camino de
+verificación en vivo** en este entorno: la ruta exige sesión de `DEFAULT_ADMIN_ROLE` y la quema está
+desactivada (responde 503 antes de llegar al ciclo). Queda verificado por el **compilador** —el mapa es
+total sobre la unión de estados, y era justo lo que el typecheck señaló— y por las pruebas del ciclo.
+
+**Impacto real del fallo corregido**: **ninguno en producción**, porque la quema está desactivada
+(`burn.scheduler: disabled`); habría aparecido el día que se activara, presentando como éxito un ciclo
+que no quemó nada.
+
+**Rollback.** `gcloud run services update-traffic hotel-mcp-web --region=europe-west1
+--to-revisions=hotel-mcp-web-00101-xik=100` (v52).
