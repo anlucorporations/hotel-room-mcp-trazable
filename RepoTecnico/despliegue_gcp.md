@@ -2875,3 +2875,50 @@ que no quemó nada.
 
 **Rollback.** `gcloud run services update-traffic hotel-mcp-web --region=europe-west1
 --to-revisions=hotel-mcp-web-00101-xik=100` (v52).
+
+---
+
+## 76. Release v54 — hooks antes del `return` en 5 componentes del back-office (2026-10-11)
+
+**Qué se desplegó.** El commit `860f619`: la corrección de los **18 errores de lint** de la web (11 en
+ficheros versionados y 7 en scripts sin seguimiento), cuyo núcleo es un **bug real y latente de React**
+en cinco componentes del back-office (`ActivitiesAdmin`, `ContentAdmin`, `SuppliesAdmin`,
+`PreventiveAdmin`, `ReviewsModeration`): tras los dos `return` tempranos (cargando / sin rol) se llamaban
+`useState` y `useTranslations`. Como `useAdminSession` arranca con `isLoading = true`, el primer render no
+los ejecutaba y el siguiente sí ⇒ React aborta con «Rendered more hooks than during the previous render».
+Estaba **enmascarado** porque `AdminLayout` no monta los hijos mientras carga; cualquier render fuera de
+ese gate habría reventado. Los hooks se mueven antes del primer `return` en los cinco.
+
+**Alcance: solo la web** (el cambio está en componentes de la web; el worker y el mcp no lo consumen).
+
+| Componente | Imagen | Build | Duración |
+|---|---|---|---|
+| web | `…/hotel-mcp/web:v54` | ✅ SUCCESS `e8ecd73d` | 3m51s |
+| worker | `worker:v52` (sin cambios) | vigente | — |
+| mcp | `mcp:v52` (sin cambios) | vigente | — |
+
+| Servicio | Revisión sirviendo | Imagen | Tráfico | Rollback |
+|---|---|---|---|---|
+| web | `hotel-mcp-web-00105-zaj` | `web:v54` | **100 %** | `hotel-mcp-web-00103-viw` (v53) |
+| worker | `hotel-mcp-worker-00018-n64` | `worker:v52` | 100 % | `00017-mrf` (v51) |
+| mcp | `hotel-mcp-mcp-00016-v9t` | `mcp:v52` | 100 % | `00023-cal` (v45) |
+
+**Verificación**
+
+| Comprobación | Resultado |
+|---|---|
+| Lint, typecheck y pruebas antes de construir | `pnpm --filter @hotel/web lint` → **0 errores** (6 avisos) y `pnpm lint` del monorepo **6/6, EXIT=0**; `tsc --noEmit` limpio; suite completa de la web **107 ficheros / 1007 pruebas en verde** ✅ |
+| Canario v54: `/`, `/catalogo`, `/asistente`, `/admin`, `/health/ready` | **200** y salud `READY` ✅ |
+| Canario **sirve un build distinto** de la v53 | El chunk del panel cambia de hash (`1001-cfead535a0038167.js` en v54 frente a `1001-88e8b2bb6962af0a.js` en v53) y la huella de la lista de chunks de `/admin` difiere (`626c63421ea8` vs `3593d8d66cae`) ✅ |
+| Tras promover: regresión de rutas | Las 13 rutas (incluida `/admin`) y `/health/ready` → **200**, `postgres: UP` ✅ |
+| El chunk nuevo ya se sirve en producción | `/_next/static/chunks/1001-cfead535a0038167.js` ✅ |
+| Señales de releases anteriores conservadas | `roleHeadMaintenance`, «JEFE MANTENIMIENTO» y «Nueva conversación» presentes ✅ |
+| Asistente end-to-end | `domainToolCalls: 1` y `pageAction = /catalogo?tipo=simple` ✅ |
+| Otros servicios | `worker:v52` intacto (`burn.scheduler=disabled`, `lastBlock 533`) y `mcp:v52` intacto ✅ |
+
+**Nota de método.** El `buildId` y los manifiestos de Next **no** aparecen en el HTML servido (payload
+RSC), así que la comparación de artefacto se hizo por los **chunks JS** de `/admin`: es la evidencia de
+que lo desplegado es un build distinto, no una simple repetición del anterior.
+
+**Rollback.** `gcloud run services update-traffic hotel-mcp-web --region=europe-west1
+--to-revisions=hotel-mcp-web-00103-viw=100` (v53).
