@@ -2922,3 +2922,56 @@ que lo desplegado es un build distinto, no una simple repetición del anterior.
 
 **Rollback.** `gcloud run services update-traffic hotel-mcp-web --region=europe-west1
 --to-revisions=hotel-mcp-web-00103-viw=100` (v53).
+
+---
+
+## 77. Release v55 — asistente: reserva por rango de fechas y busqueda visible en panel y catalogo (2026-10-13)
+
+**Qué se desplegó.** El commit `c60a58d`, que cierra los tres puntos de la revisión del asistente:
+(1) la búsqueda se refleja en el **navegador** (`pageAction` → `/catalogo` filtrado) y en el **panel**
+(`highlights`, las noches reales del catálogo pintadas como fichas); (2) plantilla visual
+(`MessageText` + `NightHighlights` con jerarquía); (3) **reserva en rango de fechas**: nueva herramienta
+MCP `prepareStayTx` (una tx sin firmar por noche, todo o nada), validación server-side de cada tx,
+`preparedPurchases[]` en la respuesta y panel `StayHandoff` (noches numeradas, total y una firma por
+noche).
+
+**Alcance: web + mcp** (el asistente vive en la web y la herramienta nueva en el MCP). El worker no se
+tocó.
+
+| Componente | Imagen | Build | Duración |
+|---|---|---|---|
+| web | `…/hotel-mcp/web:v55` | ✅ SUCCESS `0f45c7f0` | 4m19s |
+| mcp | `…/hotel-mcp/mcp:v55` | ✅ SUCCESS `bfac0cf5` | 2m31s |
+| worker | `worker:v52` (sin cambios) | vigente | — |
+
+| Servicio | Revisión sirviendo | Imagen | Tráfico | Rollback |
+|---|---|---|---|---|
+| web | `hotel-mcp-web-00107-xoh` | `web:v55` | **100 %** | `hotel-mcp-web-00105-zaj` (v54) |
+| mcp | `hotel-mcp-mcp-00017-728` | `mcp:v55` | **100 %** | `hotel-mcp-mcp-00016-v9t` (v52) |
+
+**Método.** La imagen se construyó con `gcloud builds submit` desde un **worktree limpio** en `c60a58d`
+(`git worktree add --detach`), no desde el árbol de trabajo: este tenía ~74 ficheros de otro trabajo en
+curso (vNext, worker/monitor/shared) que **no debían entrar en la imagen**. Al worktree se copió el
+registro de despliegue `packages/shared/deployments/31337.json` (ignorado por git pero que la imagen
+necesita).
+
+**Verificación**
+
+| Comprobación | Resultado |
+|---|---|
+| MCP v55 `tools/list` | Expone **6 herramientas**, incluida `prepareStayTx` con `checkIn`/`checkOut`/`room`/`type` ✅ |
+| MCP `prepareStayTx` 14→16 `type=simple` | Devuelve **2 noches** (`10120261014`, `10120261015`) y total `100000000000000000` wei ✅ |
+| Canario web: `/health/ready`, `/`, `/asistente`, `/catalogo?tipo=simple` | **200** ✅ |
+| Canario web · búsqueda (punto 1) | `pageAction = /catalogo?tipo=simple` **y** `highlights = 6` (navegador + panel) ✅ |
+| Canario web · rango con habitación explícita | `preparedPurchases = 2` (`10120261014`, `10120261015`) y `preparedPurchase = 10120261014` (compatibilidad) ✅ |
+| Canario web · rango sin habitación (por tipo) | `preparedPurchases = 2`; el modelo ya no responde «solo noches individuales» ✅ |
+| Tras promover a producción | `/`, `/asistente`, `/health/ready`, `/catalogo` → **200**; búsqueda → `pageAction` + 6 `highlights`; rango → **2 compras preparadas** ✅ |
+| Worker | `worker:v52` intacto (no se desplegó) ✅ |
+
+**Nota.** El asistente no firma: `prepareStayTx` solo compone txs y el orquestador valida cada una
+contra el precio on-chain antes de ofrecerla. La reserva se completa cuando el huésped firma **cada**
+noche en su cartera.
+
+**Rollback.** `gcloud run services update-traffic hotel-mcp-mcp --region=europe-west1
+--to-revisions=hotel-mcp-mcp-00016-v9t=100` (v52) y, para la web, `gcloud run services update-traffic
+hotel-mcp-web --region=europe-west1 --to-revisions=hotel-mcp-web-00105-zaj=100` (v54).
