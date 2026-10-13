@@ -2975,3 +2975,58 @@ noche en su cartera.
 **Rollback.** `gcloud run services update-traffic hotel-mcp-mcp --region=europe-west1
 --to-revisions=hotel-mcp-mcp-00016-v9t=100` (v52) y, para la web, `gcloud run services update-traffic
 hotel-mcp-web --region=europe-west1 --to-revisions=hotel-mcp-web-00105-zaj=100` (v54).
+
+---
+
+## 78. Release v56 — ventana de redeploy de C1: royalty configurable en producción (2026-10-13)
+
+**Qué se desplegó.** La ventana de redeploy de C1 (ADR-27, RF-08): **contrato nuevo** con el royalty
+configurable por `ROYALTY_ADMIN` + **web y mcp v56** apuntando a la dirección nueva. **Sin siembra**
+(orden expresa del responsable): el catálogo queda **vacío** hasta que se registren habitaciones y se
+minteen noches.
+
+**Contrato (Anvil global, `chainId 31337`)**
+
+| Elemento | Valor |
+|---|---|
+| `HotelNights` nuevo | **`0x532802f2F9E0e3EE9d5Ba70C35E1F43C0498772D`** (bloque 538) |
+| Anterior D-06 (rollback, sigue on-chain) | `0xC66AB83418C20A65C3f8e83B3d11c8C3a6097b6F` (bloque 313) |
+| Faucet nuevo (fondeado 300 ETH) | `0x1f53E116c31F171e59f45f0752AEc5d1F5aA3714` (dispensa 30 ETH / 24 h) |
+| Registro | `packages/shared/deployments/31337.json` re-sincronizado (`abiHash 0x179d08e3…`) |
+
+Verificado on-chain: **7 roles** en el owner (incluye `ROYALTY_ADMIN`), `royaltyBpsOf` = 500/500/1000,
+`ROYALTY_BPS_MAX` = 2000, `isRoomRegistered(101)` = false (sin siembra).
+
+**Imágenes y revisiones**
+
+| Componente | Imagen | Build | Revisión sirviendo | Tráfico |
+|---|---|---|---|---|
+| web | `web:v56` | ✅ SUCCESS `cb3d3b75` (3m50s) | `hotel-mcp-web-00109-tiv` | **100 %** |
+| mcp | `mcp:v56` | ✅ SUCCESS `d4ce726c` (2m32s) | `hotel-mcp-mcp-00018-7pc` | **100 %** |
+| worker | `worker:v52` (sin cambios) | vigente | — | 100 % |
+
+Construidas desde un **worktree limpio** en `649251e` (el árbol de trabajo tenía el WIP de vNext).
+
+**Verificación**
+
+| Comprobación | Resultado |
+|---|---|
+| Canario `/`, `/catalogo`, `/asistente`, `/admin`, `/health/ready` | **200** y `READY` (`postgres/redis/polygonRPC` UP) |
+| El bundle servido trae el código y la dirección nuevos | `/_next/static/chunks/7362-…js` contiene `setRoyaltyBps` y `0x532802f2…` ✅ |
+| Catálogo **vacío** por la ausencia de siembra | «Sin noches» en `/catalogo`; el asistente responde «No hay habitaciones disponibles en este momento» ✅ |
+| MCP v56 | `/health` OK (leyendo la cadena, bloque 546) |
+| Consola de royalty | `/admin/royalty` pasa a mostrar el formulario (antes aviso de contrato D-06) |
+
+**Consecuencia declarada.** Sin sembrar, **no hay noches a la venta** en producción: la compra y el
+asistente no pueden ofrecer nada hasta que se ejecute la siembra (registro de habitaciones + minteo).
+La versión C1 es **irreversible por dirección**: para volver al comportamiento anterior basta promover
+las revisiones v55/v54 (la web/mcp antiguas seguían apuntando al contrato D-06).
+
+**Rollback**
+
+```bash
+# apps → revisión anterior (contrato D-06, catálogo con las noches que hubiera)
+gcloud run services update-traffic hotel-mcp-web --region=europe-west1 --to-revisions=hotel-mcp-web-00107-xoh=100
+gcloud run services update-traffic hotel-mcp-mcp --region=europe-west1 --to-revisions=hotel-mcp-mcp-00017-728=100
+# (si se volviera a construir sobre el contrato antiguo, re-sincronizar el registro a 0xC66AB…)
+```
