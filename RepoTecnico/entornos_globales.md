@@ -1,7 +1,8 @@
 # Entornos globales — Hotel Marina del Sol
 
-> **Fase**: 1 (Concepto) · **Fecha**: 2026-09-21
+> **Fase**: 1 (Concepto) · **Fecha**: 2026-09-21 · **Actualizado**: 2026-10-13
 > **Decisión de red vigente**: Anvil local (`D-01`) · **Infraestructura de desarrollo**: PostgreSQL 18 local + Redis nativo (`D-10`)
+> **Red de prueba Besu (C3)**: **desplegada y aceptada** el 2026-10-13 — ver §2.bis
 
 ---
 
@@ -31,20 +32,75 @@
 
 ## 2. Matriz de entornos
 
-| Parámetro | Desarrollo (vigente) | Besu (documentado, sin uso hoy) | Polygon (roadmap) |
+| Parámetro | Desarrollo (vigente) | Besu de Codecrypto (**desplegado 2026-10-13**) | Polygon (roadmap) |
 |---|---|---|---|
-| Red | **Anvil local** | Besu de Codecrypto | Polygon PoS 137 / Amoy 80002 |
+| Red | **Anvil local** | Besu de Codecrypto (testnet) | Polygon PoS 137 / Amoy 80002 |
 | `chainId` | **81234** | 81234 | 137 / 80002 |
-| RPC | **`http://127.0.0.1:8545`** | `besu1/besu2.proyectos.codecrypto.academy` | Alchemy / Infura |
-| Moneda | **ETH** (ETH nativo de Anvil) | ETH | POL |
-| Contrato | **`HotelNights`** | `HotelNights` | `HotelNights` |
+| RPC | **`http://127.0.0.1:8545`** | **`https://besu.alumnos.codecrypto.academy`** (antes `besu1/besu2.proyectos.codecrypto.academy`) | Alchemy / Infura |
+| Moneda | **ETH** (ETH nativo de Anvil) | **CC** (18 decimales) | POL |
+| Contrato | **`HotelNights`** | `HotelNights` @ `0xea2e…6eb73` + `HotelOperations` @ `0x222d…b9ffe` | `HotelNights` |
 | Confirmaciones | **1** (finalidad inmediata) | 1 | 32 (a configurar) |
-| Rango de `getLogs` | **5.000 bloques** | 5.000 | 2.000 |
+| Rango de `getLogs` | **5.000 bloques** | 5.000 (límite del nodo) | 2.000 |
+| Gas | baseFee 0 · min 1.000 wei | **baseFee 0 · min 1.000 wei** (`--legacy --with-gas-price 1000`) | a configurar |
 | Base de datos | **PostgreSQL 18 local** | PostgreSQL | PostgreSQL gestionado |
 | Redis | **nativo local** | sí | gestionado |
 | Observabilidad | logging estructurado | logging | + Sentry (fuera de alcance por D-12) |
 
 Los valores de Polygon quedan **documentados como configuración de mainnet** (D-12): no se implementan parámetros anti-reorganización ni failover multi-RPC.
+
+---
+
+## 2.bis Red de prueba Besu de Codecrypto (C3 · desplegada 2026-10-13)
+
+| Dato | Valor |
+|---|---|
+| Nombre | **Codecrypto** |
+| `chainId` | **81234** (`0x13d52`) |
+| RPC | **`https://besu.alumnos.codecrypto.academy`** |
+| Moneda | **CC**, 18 decimales |
+| Cliente | `besu/v24.12.0/linux-x86_64/openjdk-java-21` |
+| Gas | `eth_gasPrice` = **1.000 wei**; `baseFeePerGas` = **0** ⇒ enviar con `--legacy --with-gas-price 1000` |
+| `getLogs` | máximo **5.000 bloques** por consulta |
+| Faucet | **el de Codecrypto** (decisión C9): la obtención de CC de prueba la gestiona Codecrypto; la web se despliega con `NEXT_PUBLIC_FAUCET_ADDRESS` vacío |
+
+### Cuenta y despliegue
+
+| Elemento | Valor |
+|---|---|
+| Owner / deployer / treasury | `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` (cuenta de pruebas Anvil; **solo testnet**) |
+| `HotelNights` | `0xea2e668d430e5aa15baba2f5c5edfd4f9ef6eb73` · bloque `5491483` |
+| `HotelOperations` (vNext F2) | `0x222d74f33b0d07687a769a44399e2272a4cb9ffe` · bloque `5491513` |
+| Registro | `packages/shared/deployments/81234.json` (git-ignored; se copia a la imagen vía `.gcloudignore`) |
+| Roles | `DEFAULT_ADMIN`, `MINTER`, `RECEPTION`, `PAUSER`, `BURNER`, `TREASURER` **verificados on-chain** para el owner |
+| Evidencia | [`evidencias/aceptacion-besu-81234-2026-10-13.json`](./evidencias/aceptacion-besu-81234-2026-10-13.json) |
+
+### Comandos
+
+```bash
+export PATH=$HOME/.foundry/bin:$PATH
+export DEPLOYER_PRIVATE_KEY=<clave-de-la-cuenta-de-pruebas>
+RPC_URL=https://besu.alumnos.codecrypto.academy
+
+# 1) Contrato canónico + bootstrap de roles (sin faucet: lo pone Codecrypto)
+forge script script/Deploy.s.sol:Deploy --rpc-url "$RPC_URL" --broadcast --slow --legacy --with-gas-price 1000
+forge script script/DeployOperations.s.sol:DeployOperations --rpc-url "$RPC_URL" --broadcast --slow --legacy --with-gas-price 1000
+pnpm --filter @hotel/contracts sync
+
+# 2) Aceptación (TC-ACC-010/011/012)
+RPC_URL="$RPC_URL" CONTRACT_ADDRESS=0xea2e…6eb73 DEPLOYMENT_BLOCK=5491483 EXPECTED_MINTS=3 \
+  node packages/contracts/scripts/measure-besu.mjs
+```
+
+> ⚠️ **Incidencia del nodo (BESU-ESTIMATE-PASTDATE)**: `eth_estimateGas` revierte `PastDate` en `mint()`
+> aunque `eth_call` y la transacción minada funcionan. Workaround: enviar con `--gas-limit` explícito.
+> Reportado a Codecrypto; documentado en el runbook.
+
+> ⚠️ **Un solo registro para el chainId 81234**: Anvil local (dev) y Besu (testnet) comparten `chainId`,
+> de modo que `packages/shared/deployments/81234.json` es **un único fichero** y el `sync` de este
+> despliegue lo ha apuntado a Besu (`0xea2e…6eb73`). Para volver al contrato de Anvil local hay que
+> **re-desplegar en Anvil y re-sincronizar** (`forge script … --broadcast` + `pnpm --filter
+> @hotel/contracts sync`). El entorno de producción (GCP, `chainId 31337`) usa `31337.json` y **no se ve
+> afectado**; el desarrollo local toma la dirección de `.env` (`NEXT_PUBLIC_CONTRACT_ADDRESS`).
 
 ---
 

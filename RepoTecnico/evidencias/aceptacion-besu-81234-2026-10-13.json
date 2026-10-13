@@ -1,0 +1,129 @@
+{
+  "hito": "C3 · Despliegue y aceptación en la red de prueba Besu de Codecrypto",
+  "fecha": "2026-10-13",
+  "red": {
+    "nombre": "Codecrypto",
+    "chainId": 81234,
+    "rpcUrl": "https://besu.alumnos.codecrypto.academy",
+    "moneda": "CC",
+    "decimales": 18,
+    "cliente": "besu/v24.12.0/linux-x86_64/openjdk-java-21",
+    "gasPriceWei": 1000,
+    "baseFeeWei": 0,
+    "nota": "Besu exige gasPrice >= 1000 wei (baseFee = 0). Se fuerza `--legacy --with-gas-price 1000`."
+  },
+  "cuenta": {
+    "rol": "owner / deployer / treasury",
+    "address": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "saldoInicialCC": "183.62",
+    "nota": "Cuenta de pruebas de Anvil (clave conocida, solo para testnet). No usar con fondos reales."
+  },
+  "despliegue": {
+    "toolchain": "forge 1.8.3 · solc 0.8.24 · evm_version cancun",
+    "hotelNights": {
+      "address": "0xea2e668d430e5aa15baba2f5c5edfd4f9ef6eb73",
+      "tx": "0x64b7ddf7d0c6175a540910743fa47d3b005d5dae0b9a41281c4138c333f88ec1",
+      "block": 5491483,
+      "abiHash": "0x6b27034fc586ee2a0565588673b4602ea2768edf8bcf70dba8fa6c4decd08bc9"
+    },
+    "hotelOperations": {
+      "address": "0x222d74f33b0d07687a769a44399e2272a4cb9ffe",
+      "tx": "0x80b7abaa68f421711b105c3945ccc8eedbaa5fe3bf3ad4b27770a7861f655c65",
+      "block": 5491513,
+      "abiHash": "0x2657717b2a666dd557f100d2edff4092ab61e34519f574055fb3a2d73cdda443",
+      "nota": "Contrato vNext F2 (EIP-712), desplegado para que el registro de la cadena quede completo. Sin roles operativos asignados."
+    },
+    "registroSincronizado": "packages/shared/deployments/81234.json (git-ignored por diseño; se copia a la imagen vía .gcloudignore)"
+  },
+  "rolesVerificadosOnChain": {
+    "metodo": "hasRole(bytes32,address) con cast",
+    "titular": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "DEFAULT_ADMIN_ROLE": true,
+    "MINTER_ROLE": true,
+    "RECEPTION_ROLE": true,
+    "PAUSER_ROLE": true,
+    "BURNER_ROLE": true,
+    "TREASURER_ROLE": true,
+    "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "treasury": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "minListingPriceWei": "10000000000000000"
+  },
+  "seed": {
+    "habitacionesRegistradas": [
+      { "room": 101, "type": "simple", "tx": "0x0b94e3aec86add142b319fb7cf9ade5d269fd9e63aac55421ed937ee64dabe1c", "block": 5491529 },
+      { "room": 116, "type": "doble", "tx": "0x0b8c8347f8b5c85d0b9cc00578d5ed8021b13242af1cdbd1895c2405fedee733", "block": 5491532 },
+      { "room": 201, "type": "suite", "tx": "0x6571188b15c8ad2dc94812c16741b50b7ee3e8753c4dc73aea30335edd900c90", "block": 5491533 }
+    ],
+    "nochesMinteadas": [
+      { "tokenId": "10120261101", "room": 101, "date": 20261101, "type": "simple", "priceWei": "50000000000000000", "tx": "0x388ce1b887476ef338bcf510e7b0b01f4720726774bd986e1d5b92440302f295", "block": 5491608 },
+      { "tokenId": "10120261102", "room": 101, "date": 20261102, "type": "simple", "priceWei": "50000000000000000", "tx": "0xc7e07bb6090656d4a340fe60d1195c585a1237c1e785c8625004cb208696fe62", "block": 5491612 },
+      { "tokenId": "20120261101", "room": 201, "date": 20261101, "type": "suite", "priceWei": "150000000000000000", "tx": "0x621f3d9f56b1ba8474fbf6261f8ea37acdfffe9cb677f54aa99d812399205ae6", "block": 5491613 }
+    ]
+  },
+  "aceptacion": {
+    "TC-ACC-010": {
+      "descripcion": "Intervalo entre bloques P50 <= 3 s y P95 <= 6 s",
+      "medido": { "muestras": 50, "p50": "2 s", "p95": "2 s" },
+      "resultado": "PASS"
+    },
+    "TC-ACC-011": {
+      "descripcion": "Latencia de lectura RPC P95 <= 400 ms",
+      "medido": {
+        "blockNumber": { "p50Ms": 0.0, "p95Ms": 0.1 },
+        "call": { "p50Ms": 7.6, "p95Ms": 9.6 },
+        "getLogs": { "p50Ms": 9.2, "p95Ms": 10.5 },
+        "peorP95Ms": 10.5
+      },
+      "resultado": "PASS"
+    },
+    "TC-ACC-012": {
+      "descripcion": "0 eventos perdidos: getLogs(Mint) == noches minteadas",
+      "medido": { "eventosIndexables": 3, "esperados": 3, "perdidos": 0 },
+      "resultado": "PASS"
+    },
+    "TC-ACC-001": {
+      "descripcion": "Compra primaria real firmada: buy() success, ownerOf -> comprador, Sale(PRIMARY)",
+      "comprador": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+      "financiacion": { "importeCC": "1", "tx": "0xeda6029e30d8ba9ca798c01fc2afd2b482dc232a6d906c4102d3935a96c039bf" },
+      "compra": {
+        "tokenId": "10120261101",
+        "importeWei": "50000000000000000",
+        "tx": "0x30e5a6eb13bbd1a4dad6c6bb1a069363ce7699cb37d9475d3fec97687efb473c",
+        "block": 5491641,
+        "gasUsed": 112878,
+        "eventoSale": {
+          "topic0": "0x68481077b9ba6f388841ac079dcd65e25e9b84440ff5bc2aeb286d1fd6a5b812",
+          "tokenId": "10120261101",
+          "seller": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+          "buyer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+          "priceWei": "50000000000000000",
+          "saleType": "PRIMARY"
+        }
+      },
+      "verificacionesOnChain": { "ownerOf": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", "soldOnce": true },
+      "resultado": "PASS"
+    },
+    "ERC2981": {
+      "royaltyInfo(suite, 1 CC)": { "receiver": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", "amountWei": "100000000000000000", "bps": 1000 },
+      "royaltyInfo(simple, 1 CC)": { "receiver": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", "amountWei": "50000000000000000", "bps": 500 },
+      "nota": "Coherente con D-06 (inmutable por tipo). La venta primaria no paga royalty: el importe va íntegro a tesorería."
+    }
+  },
+  "incidencias": [
+    {
+      "id": "BESU-ESTIMATE-PASTDATE",
+      "sintoma": "eth_estimateGas de mint() revierte PastDate incluso con fechas futuras, mientras eth_call (latest) y la ejecución minada funcionan.",
+      "causa": "Comportamiento del estimador del nodo (usa un reloj/estado distinto al bloque latest).",
+      "workaround": "Enviar las transacciones con --gas-limit explícito (se usó 400000) para saltar la estimación; las txs se minan con status 1.",
+      "impacto": "Solo afecta a herramientas; la web/firma usan estimación del navegador y no se ven afectadas en la red real.",
+      "pendiente": "Reportar a Codecrypto y documentarlo en el runbook."
+    }
+  ],
+  "comandosClave": [
+    "forge script script/Deploy.s.sol:Deploy --rpc-url https://besu.alumnos.codecrypto.academy --broadcast --slow --legacy --with-gas-price 1000",
+    "forge script script/DeployOperations.s.sol:DeployOperations --rpc-url <besu> --broadcast --slow --legacy --with-gas-price 1000",
+    "pnpm --filter @hotel/contracts sync",
+    "RPC_URL=<besu> CONTRACT_ADDRESS=0xea2e... DEPLOYMENT_BLOCK=5491483 EXPECTED_MINTS=3 node packages/contracts/scripts/measure-besu.mjs",
+    "cast send <contrato> \"buy(uint256)\" 10120261101 --value 50000000000000000 --legacy --gas-price 1000 --gas-limit 400000"
+  ]
+}

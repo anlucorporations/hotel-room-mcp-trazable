@@ -55,7 +55,8 @@ Los fondos se retiran con **`TREASURER_ROLE`** (`withdraw()`), distinto de `DEFA
 (gestión de roles). Asigna `TREASURER_ROLE` a la cuenta/Safe de tesorería, no al admin de roles.
 
 ### 1.5 Despliegue y aceptación en Besu (FASE 5, T5.1)
-Red de aceptación: **Besu 81234** (`https://besu1.proyectos.codecrypto.academy`, espejo `besu2`).
+Red de aceptación: **Besu 81234** — RPC vigente **`https://besu.alumnos.codecrypto.academy`**
+(anteriores: `besu1`/`besu2.proyectos.codecrypto.academy`). Moneda **CC** (18 decimales).
 Particularidades frente a Anvil:
 - **Gas:** `baseFeePerGas = 0`, `eth_gasPrice = 1000 wei` (mín. > 0). Despliega con `forge script
   … --broadcast --slow --legacy` (legacy usa el `gasPrice` de la red; coste despreciable).
@@ -79,6 +80,29 @@ Particularidades frente a Anvil:
 - **Procedimiento:** idéntico a §1.2–§1.4 con `RPC_URL` de Besu + `--legacy`; `acceptOwnership()`
   desde el admin; `sync` escribe `deployments/81234.json`. Apps a Besu vía env `NEXT_PUBLIC_NETWORK=besu`
   (web) y `RPC_URL`/`CONTRACT_ADDRESS`/`DEPLOYMENT_BLOCK`/`CHAIN_ID=81234` (worker/mcp).
+
+#### 1.5.1 Ejecución vigente (C3 · 2026-10-13)
+
+| Elemento | Valor |
+|---|---|
+| RPC | `https://besu.alumnos.codecrypto.academy` · cliente `besu/v24.12.0` |
+| `HotelNights` | `0xea2e668d430e5aa15baba2f5c5edfd4f9ef6eb73` (bloque 5491483) |
+| `HotelOperations` | `0x222d74f33b0d07687a769a44399e2272a4cb9ffe` (bloque 5491513) |
+| Owner / treasury | `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` (roles verificados on-chain) |
+| Faucet | **el de Codecrypto** (no se despliega `Faucet.sol`) |
+| Aceptación | `TC-ACC-010` P50/P95 = 2 s · `TC-ACC-011` RPC P95 = 10,5 ms · `TC-ACC-012` 3/3 eventos, 0 perdidos · `TC-ACC-001` compra firmada `status=1`, `ownerOf`→comprador, `Sale(PRIMARY)` — **todo PASS** |
+| Evidencia | `RepoTecnico/evidencias/aceptacion-besu-81234-2026-10-13.json` |
+
+**Incidencia del nodo — `BESU-ESTIMATE-PASTDATE`.** `eth_estimateGas` de `mint()` revierte `PastDate`
+aunque `eth_call` (bloque `latest`) y la transacción minada funcionan con la misma fecha futura: el
+estimador evalúa con un reloj/estado distinto del último bloque. **Acción:** enviar con `--gas-limit`
+explícito (se usó `400000`); todas las txs se minaron con `status 1`. No afecta a la web (estima el
+navegador). **Pendiente:** reportar a Codecrypto.
+
+**Un solo registro por `chainId`.** Anvil local y Besu comparten `81234`, así que
+`packages/shared/deployments/81234.json` es único: tras desplegar en Besu apunta a Besu. Para volver al
+contrato local hay que re-desplegar en Anvil y re-sincronizar. Producción (GCP, `31337`) no se ve
+afectada.
 
 ---
 
