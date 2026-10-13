@@ -104,6 +104,40 @@ navegador). **Pendiente:** reportar a Codecrypto.
 contrato local hay que re-desplegar en Anvil y re-sincronizar. Producción (GCP, `31337`) no se ve
 afectada.
 
+#### 1.5.2 Redespliegue de C1 — royalty configurable (ventana acordada)
+
+El contrato es **inmutable** (ADR-22): el royalty configurable (RF-08 · C1, ADR-27) exige desplegar una
+dirección nueva y **re-sembrar**. Procedimiento de la ventana:
+
+```bash
+export PATH=$HOME/.foundry/bin:$PATH
+export DEPLOYER_PRIVATE_KEY=<owner>
+export ROYALTY_ADMIN_ADDRESS=<owner|wallet-dedicada>   # por defecto, el admin
+
+# 1) Contrato nuevo + bootstrap de los 7 roles (incluye ROYALTY_ADMIN_ROLE)
+forge script script/Deploy.s.sol:Deploy --rpc-url "$RPC_URL" --broadcast --slow --legacy --with-gas-price 1000
+pnpm --filter @hotel/contracts sync
+
+# 2) Re-minteo del catálogo y registro de habitaciones (el estado anterior NO migra)
+#    → reactivar el panel /admin/mint o el script de siembra del entorno
+
+# 3) Regenerar ABI y redesplegar web + MCP con la dirección nueva
+pnpm --filter @hotel/contracts gen:abi
+pnpm --filter @hotel/shared build
+# web/mcp: actualizar CONTRACT_ADDRESS / NEXT_PUBLIC_CONTRACT_ADDRESS y desplegar
+```
+
+Comprobaciones tras la ventana:
+
+| Comprobación | Cómo |
+|---|---|
+| Los 7 roles están concedidos | `cast call <nuevo> "hasRole(bytes32,address)(bool)" $(cast keccak ROYALTY_ADMIN_ROLE) <admin>` |
+| Valores iniciales | `cast call <nuevo> "royaltyBpsOf(string)(uint96)" suite` → `1000` |
+| El setter exige el rol | Llamada desde una cuenta sin rol → `AccessControlUnauthorizedAccount` |
+| Tope 0–2000 | `setRoyaltyBps("suite", 2001)` → `InvalidRoyaltyBps` |
+| El panel ya edita | `/admin/royalty` muestra el formulario (antes: aviso de contrato antiguo) |
+| Nadie perdió firmas | La web y el MCP apuntan a la dirección nueva; el asistente sigue operativo |
+
 ---
 
 ## 2. Despliegue de las apps (por entorno, vía `NEXT_PUBLIC_*` / env)

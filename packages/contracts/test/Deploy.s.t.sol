@@ -61,6 +61,7 @@ contract DeployTest is Test {
         cfg.pauser = ADMIN;
         cfg.burner = ADMIN;
         cfg.treasurer = ADMIN;
+        cfg.royaltyAdmin = ADMIN;
         cfg.minListingPrice = DEFAULT_FLOOR;
         cfg.deployFaucet = false;
         cfg.faucetAmount = 30 ether;
@@ -92,13 +93,14 @@ contract DeployTest is Test {
         assertEq(vm.parseJsonUint(json, ".chainId"), block.chainid, "chainId incorrecto");
         assertEq(nft.treasury(), TREASURY, "treasury incorrecto");
 
-        // (2) Los seis roles recaen en el admin con la configuración por defecto.
+        // (2) Los siete roles recaen en el admin con la configuración por defecto.
         assertTrue(nft.hasRole(nft.DEFAULT_ADMIN_ROLE(), ADMIN), "sin DEFAULT_ADMIN");
         assertTrue(nft.hasRole(nft.MINTER_ROLE(), ADMIN), "sin MINTER_ROLE");
         assertTrue(nft.hasRole(nft.RECEPTION_ROLE(), ADMIN), "sin RECEPTION_ROLE");
         assertTrue(nft.hasRole(nft.PAUSER_ROLE(), ADMIN), "sin PAUSER_ROLE");
         assertTrue(nft.hasRole(nft.BURNER_ROLE(), ADMIN), "sin BURNER_ROLE");
         assertTrue(nft.hasRole(nft.TREASURER_ROLE(), ADMIN), "sin TREASURER_ROLE");
+        assertTrue(nft.hasRole(nft.ROYALTY_ADMIN_ROLE(), ADMIN), "sin ROYALTY_ADMIN_ROLE");
 
         // (3) El EOA desplegador no conserva la gobernanza (ADR-06).
         assertFalse(
@@ -118,11 +120,13 @@ contract DeployTest is Test {
         address pauser = makeAddr("pauser");
         address burner = makeAddr("burner");
         address treasurer = makeAddr("treasurer");
+        address royaltyAdmin = makeAddr("royaltyAdmin");
         cfg.minter = minter;
         cfg.reception = reception;
         cfg.pauser = pauser;
         cfg.burner = burner;
         cfg.treasurer = treasurer;
+        cfg.royaltyAdmin = royaltyAdmin;
 
         (Deploy.Deployment memory d,) = _deploy(cfg);
         HotelNights nft = HotelNights(d.hotelNights);
@@ -132,8 +136,13 @@ contract DeployTest is Test {
         assertTrue(nft.hasRole(nft.PAUSER_ROLE(), pauser), "PAUSER no asignado");
         assertTrue(nft.hasRole(nft.BURNER_ROLE(), burner), "BURNER no asignado");
         assertTrue(nft.hasRole(nft.TREASURER_ROLE(), treasurer), "TREASURER no asignado");
+        assertTrue(nft.hasRole(nft.ROYALTY_ADMIN_ROLE(), royaltyAdmin), "ROYALTY_ADMIN no asignado");
         // La segregación no concede roles operativos al admin por accidente.
         assertFalse(nft.hasRole(nft.MINTER_ROLE(), ADMIN), "MINTER concedido al admin sin pedirlo");
+        assertFalse(
+            nft.hasRole(nft.ROYALTY_ADMIN_ROLE(), ADMIN),
+            "ROYALTY_ADMIN concedido al admin sin pedirlo"
+        );
     }
 
     function test_DeployAppliesOverriddenFloor() public {

@@ -32,13 +32,14 @@ export const CONFIRMATIONS_N = 1 as const;
 /** Máximo de bloques por consulta `getLogs` (spike). */
 export const GETLOGS_MAX_RANGE = 5000 as const;
 
-// ── Royalty (D-06) ───────────────────────────────────────────────────────────
-// El royalty es INMUTABLE y se deriva del tipo de habitación en el contrato:
-// 5 % para simple y doble (habitaciones 101-130) y 10 % para suite (201-220). NO existe
-// ningún parámetro gobernable, así que estas constantes solo reflejan el contrato para la
-// UI y las pruebas; el cambio de valores se hace en `HotelNights._royaltyBpsOf`.
-export const ROYALTY_BPS_STANDARD = 500 as const; // 5 %: simple y doble
-export const ROYALTY_BPS_SUITE = 1000 as const; // 10 %: suite
+// ── Royalty (RF-08 · C1, 2026-10-13) ─────────────────────────────────────────
+// El royalty se fija POR TIPO de habitación y lo gobierna `ROYALTY_ADMIN_ROLE` dentro de
+// 0–`ROYALTY_BPS_MAX`. Los valores siguientes son los INICIALES del contrato (los de D-06:
+// 5 % simple/doble, 10 % suite); el valor vigente se lee on-chain con `royaltyBpsOf`/`royaltyInfo`.
+export const ROYALTY_BPS_STANDARD = 500 as const; // 5 %: simple y doble (inicial)
+export const ROYALTY_BPS_SUITE = 1000 as const; // 10 %: suite (inicial)
+/** Tope duro del royalty configurable (20 %), espejo de `HotelNights.ROYALTY_BPS_MAX`. */
+export const ROYALTY_BPS_MAX = 2000 as const;
 export const BPS_DENOMINATOR = 10_000 as const;
 
 // ── Inventario / burn (CU-13, docs/SRS.md §9) ────────────────────────────────────────────────

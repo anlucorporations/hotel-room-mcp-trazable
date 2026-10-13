@@ -51,6 +51,7 @@ Traza inversa `git log --grep "RF-08"`; verificación `sdd-traceability-check`.
 | RF-06 (CU-16) | CU-16 | TC-CT-090/091/092/093 | **T3.3** | — | `HotelNights.sol` (AccessControl/Ownable2Step) |
 | RF-07 | CU-06, CU-07 | TC-CT-030..036, TC-CT-040..049, TC-E2E-023 | T2.1, T2.2 | — | `HotelNights.sol` |
 | RF-08 | CU-07, CU-12 | TC-CT-040/041, TC-CT-050/051 | T2.2, T2.4 | — | `HotelNights.sol` |
+| RF-08 (royalty configurable · C1) | **CU-47** | `HotelNights.royalty.t.sol` (defaults, set, tope 2000, rol, tipo inválido, reparto real), `HotelNights.admin.t.sol`, `royalty-bps.test.ts` | **C1** | `66ec822`+ | `HotelNights.setRoyaltyBps`/`royaltyBpsOf`, `ROYALTY_ADMIN_ROLE`, `AdminRoyalty.tsx`, ADR-27 |
 | RF-09 | CU-10 | TC-WK-001..006 | T1.4 | — | `apps/worker/src` |
 | RF-10 | CU-11 | TC-WK-020/021/022, TC-E2E-050/051 | T3.2 | — | `apps/worker`, `apps/web/src/app/admin/dashboard` (gateado server-side bajo `/admin/layout.tsx`, CU-11) |
 | RF-12 | CU-08 | TC-MCP-001..008, TC-E2E-030/031 | T4.1, T4.2, T4.3 | — | `apps/mcp/src`, `apps/web/src/{lib,components}/assistant`, `apps/web/src/app/{asistente,api/assistant}`, `packages/shared/src/domain/purchase-tx.ts` |

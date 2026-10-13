@@ -3,18 +3,21 @@ pragma solidity 0.8.24;
 
 import {Test} from "forge-std/Test.sol";
 
+import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
+
 import {HotelNights} from "../src/HotelNights.sol";
+import {IHotelNights} from "../src/IHotelNights.sol";
 
 import {RoomRegistrySeed} from "./RoomRegistrySeed.sol";
 
 /**
  * @title HotelNightsRoyaltyTest
- * @notice D-06 — Royalty ERC-2981 por TIPO de habitación, fijo por construcción: 500 bps
- *         (5 %) en simple/doble (101–130) y 1000 bps (10 %) en suite (201–220), receptor
- *         `treasury`. No existe almacenamiento, setter ni rol que lo altere, y el reparto de
- *         `buyResale` es exacto (royalty + proceeds == precio, sin wei atrapados).
- * @dev El tipo se resuelve con `RoomMaster` a partir de la habitación del `tokenId`, así que
- *      las consultas son deterministas y no dependen del estado del token.
+ * @notice RF-08 — Royalty ERC-2981 por TIPO de habitación: valores INICIALES de 500 bps
+ *         (5 %) en simple/doble y 1000 bps (10 %) en suite, receptor `treasury`, y desde C1
+ *         (2026-10-13) configurables por `ROYALTY_ADMIN_ROLE` dentro de 0–2000 bps.
+ *         El reparto de `buyResale` sigue siendo exacto (royalty + proceeds == precio).
+ * @dev El tipo se resuelve a partir de la habitación REGISTRADA del `tokenId`, así que las
+ *      consultas son deterministas y no dependen del estado del token.
  */
 contract HotelNightsRoyaltyTest is Test {
     HotelNights internal nft;
@@ -23,6 +26,7 @@ contract HotelNightsRoyaltyTest is Test {
     address internal minter = makeAddr("minter");
     address internal seller = makeAddr("seller");
     address internal buyer = makeAddr("buyer");
+    address internal royaltyAdmin = makeAddr("royaltyAdmin");
 
     uint256 internal constant DATE = 20_260_615;
     uint256 internal constant BASE_TS = 1_780_272_000; // 2026-06-01
@@ -37,6 +41,7 @@ contract HotelNightsRoyaltyTest is Test {
         nft = new HotelNights(treasury);
         RoomRegistrySeed.seed(nft);
         nft.grantRole(nft.MINTER_ROLE(), minter);
+        nft.grantRole(nft.ROYALTY_ADMIN_ROLE(), royaltyAdmin);
 
         vm.startPrank(minter);
         nft.mint(101, DATE, PRICE, "ipfs://simple");
@@ -102,11 +107,10 @@ contract HotelNightsRoyaltyTest is Test {
         assertEq(amount, 0);
     }
 
-    // ── Inmutabilidad por construcción ────────────────────────────────────────
-    /// @notice El royalty lo fija el TIPO de la habitación y no el despliegue: dos contratos
-    ///         independientes devuelven exactamente lo mismo, porque no existe parámetro que lo
-    ///         altere (el argumento de bps del constructor se eliminó con D-06).
-    function test_RoyaltyIsFixedByRoomTypeAcrossDeployments() public {
+    // ── Valores iniciales e inmutabilidad de partida ──────────────────────────
+    /// @notice Los valores INICIALES no dependen del despliegue: dos contratos recién creados
+    ///         devuelven lo mismo (5 %/10 %). Solo cambian si un `ROYALTY_ADMIN` lo decide.
+    function test_RoyaltyDefaultsAreEqualAcrossDeployments() public {
         HotelNights other = new HotelNights(treasury);
         RoomRegistrySeed.seed(other);
 
@@ -156,5 +160,95 @@ contract HotelNightsRoyaltyTest is Test {
         assertEq(royalty + proceeds, price); // reparto exacto: sin wei atrapados
         assertEq(nft.totalPending(), price);
         assertEq(nft.ownerOf(SUITE_ID), buyer);
+    }
+
+    // ── C1 (2026-10-13): royalty configurable por ROYALTY_ADMIN (RF-08) ───────
+
+    function test_InitialRoyaltyIsFiveAndTenPercent() public view {
+        assertEq(nft.royaltyBpsOf("simple"), 500, "simple 5 %");
+        assertEq(nft.royaltyBpsOf("doble"), 500, "doble 5 %");
+        assertEq(nft.royaltyBpsOf("suite"), 1000, "suite 10 %");
+        assertEq(nft.ROYALTY_BPS_MAX(), 2000, "tope 20 %");
+    }
+
+    function test_RoyaltyAdminCanRaiseSuiteToFifteenPercent() public {
+        vm.expectEmit(false, false, false, true);
+        emit IHotelNights.RoyaltyUpdated("suite", 1500);
+
+        vm.prank(royaltyAdmin);
+        nft.setRoyaltyBps("suite", 1500);
+
+        assertEq(nft.royaltyBpsOf("suite"), 1500);
+        (, uint256 suiteAmount) = nft.royaltyInfo(SUITE_ID, 1 ether);
+        assertEq(suiteAmount, 0.15 ether);
+        // Los demás tipos no se ven afectados por el cambio de uno.
+        (, uint256 simpleAmount) = nft.royaltyInfo(SIMPLE_ID, 1 ether);
+        assertEq(simpleAmount, 0.05 ether);
+        (, uint256 dobleAmount) = nft.royaltyInfo(DOBLE_ID, 1 ether);
+        assertEq(dobleAmount, 0.05 ether);
+    }
+
+    /// @notice El 0 es un valor legítimo: desactiva el royalty del tipo y queda auditable por evento.
+    function test_RoyaltyAdminCanDisableRoyaltyWithZero() public {
+        vm.prank(royaltyAdmin);
+        nft.setRoyaltyBps("simple", 0);
+
+        assertEq(nft.royaltyBpsOf("simple"), 0);
+        (, uint256 amount) = nft.royaltyInfo(SIMPLE_ID, 1 ether);
+        assertEq(amount, 0);
+    }
+
+    function test_SetRoyaltyBpsRevertsAboveMax() public {
+        vm.prank(royaltyAdmin);
+        vm.expectRevert(
+            abi.encodeWithSelector(IHotelNights.InvalidRoyaltyBps.selector, uint96(2001))
+        );
+        nft.setRoyaltyBps("suite", 2001);
+    }
+
+    function test_SetRoyaltyBpsRevertsForUnknownType() public {
+        vm.prank(royaltyAdmin);
+        vm.expectRevert(abi.encodeWithSelector(IHotelNights.InvalidRoomType.selector, "triple"));
+        nft.setRoyaltyBps("triple", 500);
+    }
+
+    function test_SetRoyaltyBpsRequiresRoyaltyAdminRole() public {
+        vm.startPrank(buyer);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                buyer,
+                nft.ROYALTY_ADMIN_ROLE()
+            )
+        );
+        nft.setRoyaltyBps("suite", 1500);
+        vm.stopPrank();
+    }
+
+    function test_RoyaltyBpsOfRejectsUnknownType() public {
+        vm.expectRevert(abi.encodeWithSelector(IHotelNights.InvalidRoomType.selector, "triple"));
+        nft.royaltyBpsOf("triple");
+    }
+
+    /// @notice El valor configurado llega al reparto REAL de `buyResale` (no solo a la vista).
+    function test_ConfiguredRoyaltyAppliesToResale() public {
+        vm.prank(royaltyAdmin);
+        nft.setRoyaltyBps("suite", 1500);
+
+        vm.deal(seller, PRICE);
+        vm.prank(seller);
+        nft.buy{value: PRICE}(SUITE_ID);
+
+        uint256 price = 1 ether;
+        vm.prank(seller);
+        nft.list(SUITE_ID, price);
+
+        vm.deal(buyer, price);
+        vm.prank(buyer);
+        nft.buyResale{value: price}(SUITE_ID);
+
+        assertEq(nft.pendingWithdrawals(treasury), 0.15 ether, "royalty 15 %");
+        assertEq(nft.pendingWithdrawals(seller), 0.85 ether, "proceeds 85 %");
+        assertEq(nft.totalPending(), price, "sin wei atrapados");
     }
 }

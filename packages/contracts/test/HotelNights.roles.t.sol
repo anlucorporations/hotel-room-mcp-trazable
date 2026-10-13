@@ -35,19 +35,20 @@ contract HotelNightsRolesTest is Test {
         assertEq(nft.owner(), address(this));
     }
 
-    /// @notice DoD T0.2: el bootstrap concede los 6 roles vigentes (D-05 añade RECEPTION y
-    ///         D-06 retira ROYALTY_ADMIN) y el EOA desplegador queda revocado.
-    function test_BootstrapGrantsSixRolesToAdminAndRevokesDeployer() public {
+    /// @notice DoD T0.2: el bootstrap concede los 7 roles vigentes (D-05 añade RECEPTION y
+    ///         C1 reintroduce ROYALTY_ADMIN para el royalty configurable) y el EOA queda revocado.
+    function test_BootstrapGrantsSevenRolesToAdminAndRevokesDeployer() public {
         HotelNightsBootstrap.grantRolesTo(nft, admin);
         nft.renounceRole(nft.DEFAULT_ADMIN_ROLE(), address(this));
 
-        // El admin definitivo tiene los 6 roles.
+        // El admin definitivo tiene los 7 roles.
         assertTrue(nft.hasRole(nft.DEFAULT_ADMIN_ROLE(), admin), "DEFAULT_ADMIN");
         assertTrue(nft.hasRole(nft.MINTER_ROLE(), admin), "MINTER");
         assertTrue(nft.hasRole(nft.RECEPTION_ROLE(), admin), "RECEPTION");
         assertTrue(nft.hasRole(nft.PAUSER_ROLE(), admin), "PAUSER");
         assertTrue(nft.hasRole(nft.BURNER_ROLE(), admin), "BURNER");
         assertTrue(nft.hasRole(nft.TREASURER_ROLE(), admin), "TREASURER");
+        assertTrue(nft.hasRole(nft.ROYALTY_ADMIN_ROLE(), admin), "ROYALTY_ADMIN");
 
         // El EOA desplegador queda sin DEFAULT_ADMIN (bootstrap completado).
         assertFalse(nft.hasRole(nft.DEFAULT_ADMIN_ROLE(), address(this)), "EOA revocado");
@@ -59,6 +60,7 @@ contract HotelNightsRolesTest is Test {
         assertEq(nft.PAUSER_ROLE(), keccak256("PAUSER_ROLE"));
         assertEq(nft.BURNER_ROLE(), keccak256("BURNER_ROLE"));
         assertEq(nft.TREASURER_ROLE(), keccak256("TREASURER_ROLE"));
+        assertEq(nft.ROYALTY_ADMIN_ROLE(), keccak256("ROYALTY_ADMIN_ROLE"));
         assertEq(nft.DEFAULT_ADMIN_ROLE(), bytes32(0));
     }
 

@@ -43,6 +43,8 @@ contract Deploy is Script {
         address pauser;
         address burner;
         address treasurer;
+        /// @dev RF-08 (C1): titular del rol que ajusta el royalty por tipo.
+        address royaltyAdmin;
         uint256 minListingPrice;
         bool deployFaucet;
         uint256 faucetAmount;
@@ -82,6 +84,8 @@ contract Deploy is Script {
         cfg.pauser = vm.envOr("PAUSER_ADDRESS", cfg.admin);
         cfg.burner = vm.envOr("BURNER_ADDRESS", cfg.admin);
         cfg.treasurer = vm.envOr("TREASURER_ADDRESS", cfg.admin);
+        // RF-08 (C1): el rol de royalty recae por defecto en el admin (decisión A3: owner actual).
+        cfg.royaltyAdmin = vm.envOr("ROYALTY_ADMIN_ADDRESS", cfg.admin);
 
         cfg.minListingPrice = vm.envOr("MIN_LISTING_PRICE", DEFAULT_MIN_LISTING_PRICE);
         cfg.deployFaucet = vm.envOr("DEPLOY_FAUCET", false);
@@ -108,6 +112,8 @@ contract Deploy is Script {
         if (cfg.pauser != address(0)) nft.grantRole(nft.PAUSER_ROLE(), cfg.pauser);
         if (cfg.burner != address(0)) nft.grantRole(nft.BURNER_ROLE(), cfg.burner);
         if (cfg.treasurer != address(0)) nft.grantRole(nft.TREASURER_ROLE(), cfg.treasurer);
+        // RF-08 (C1): rol de configuración del royalty (por defecto, el admin).
+        if (cfg.royaltyAdmin != address(0)) nft.grantRole(nft.ROYALTY_ADMIN_ROLE(), cfg.royaltyAdmin);
 
         // 3. Suelo anti-evasión de royalty (D-06), solo si difiere del valor del contrato
         if (cfg.minListingPrice != nft.minListingPrice()) {
@@ -161,6 +167,7 @@ contract Deploy is Script {
         console2.log("Admin definitivo:", cfg.admin);
         console2.log("MINTER:", cfg.minter);
         console2.log("RECEPTION:", cfg.reception);
+        console2.log("Royalty admin:", cfg.royaltyAdmin);
         console2.log("Min listing price (wei):", cfg.minListingPrice);
         if (d.faucet != address(0)) {
             console2.log("Faucet (solo pruebas):", d.faucet);

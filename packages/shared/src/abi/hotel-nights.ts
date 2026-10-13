@@ -67,6 +67,32 @@ export const hotelNightsAbi = [
   },
   {
     "type": "function",
+    "name": "DEFAULT_ROYALTY_BPS_STANDARD",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint96",
+        "internalType": "uint96"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "DEFAULT_ROYALTY_BPS_SUITE",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint96",
+        "internalType": "uint96"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "MINTER_ROLE",
     "inputs": [],
     "outputs": [
@@ -100,6 +126,32 @@ export const hotelNightsAbi = [
         "name": "",
         "type": "bytes32",
         "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "ROYALTY_ADMIN_ROLE",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "ROYALTY_BPS_MAX",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint96",
+        "internalType": "uint96"
       }
     ],
     "stateMutability": "view"
@@ -725,6 +777,25 @@ export const hotelNightsAbi = [
   },
   {
     "type": "function",
+    "name": "royaltyBpsOf",
+    "inputs": [
+      {
+        "name": "roomType",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint96",
+        "internalType": "uint96"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "royaltyInfo",
     "inputs": [
       {
@@ -829,6 +900,24 @@ export const hotelNightsAbi = [
         "name": "newPrice",
         "type": "uint256",
         "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setRoyaltyBps",
+    "inputs": [
+      {
+        "name": "roomType",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "bps",
+        "type": "uint96",
+        "internalType": "uint96"
       }
     ],
     "outputs": [],
@@ -1435,6 +1524,25 @@ export const hotelNightsAbi = [
   },
   {
     "type": "event",
+    "name": "RoyaltyUpdated",
+    "inputs": [
+      {
+        "name": "roomType",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      },
+      {
+        "name": "bps",
+        "type": "uint96",
+        "indexed": false,
+        "internalType": "uint96"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "Sale",
     "inputs": [
       {
@@ -1866,6 +1974,17 @@ export const hotelNightsAbi = [
         "name": "roomType",
         "type": "string",
         "internalType": "string"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "InvalidRoyaltyBps",
+    "inputs": [
+      {
+        "name": "bps",
+        "type": "uint96",
+        "internalType": "uint96"
       }
     ]
   },

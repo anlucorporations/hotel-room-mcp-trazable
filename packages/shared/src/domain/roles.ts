@@ -6,8 +6,8 @@ import { keccak256, stringToBytes, type Hex } from "viem";
  * Cada id coincide con el del contrato (`keccak256("<ROLE>")`), de modo que esta tabla es
  * la fuente única usada por el deploy, los tests y el back-office. `DEFAULT_ADMIN_ROLE` es
  * el `bytes32(0)` que define OpenZeppelin. `RECEPTION_ROLE` habilita el check-in (D-05) y
- * NO existe rol de royalty: con D-06 el royalty es inmutable y se deriva del tipo de
- * habitación, así que ningún rol puede alterarlo.
+ * `ROYALTY_ADMIN_ROLE` (RF-08 · C1, 2026-10-13) ajusta el royalty por tipo dentro de
+ * 0–2000 bps.
  */
 export const DEFAULT_ADMIN_ROLE: Hex = `0x${"00".repeat(32)}`;
 
@@ -18,6 +18,7 @@ export const OPERATIONAL_ROLE_NAMES = [
   "PAUSER_ROLE",
   "BURNER_ROLE",
   "TREASURER_ROLE",
+  "ROYALTY_ADMIN_ROLE",
 ] as const;
 
 export type OperationalRoleName = (typeof OPERATIONAL_ROLE_NAMES)[number];
@@ -26,7 +27,7 @@ export type RoleName = OperationalRoleName | "DEFAULT_ADMIN_ROLE";
 const computeRoleId = (name: OperationalRoleName): Hex =>
   keccak256(stringToBytes(name));
 
-/** Mapa nombre→id de los 6 roles del contrato. */
+/** Mapa nombre→id de los 7 roles del contrato. */
 export const ROLES: Readonly<Record<RoleName, Hex>> = Object.freeze({
   DEFAULT_ADMIN_ROLE,
   MINTER_ROLE: computeRoleId("MINTER_ROLE"),
@@ -34,9 +35,10 @@ export const ROLES: Readonly<Record<RoleName, Hex>> = Object.freeze({
   PAUSER_ROLE: computeRoleId("PAUSER_ROLE"),
   BURNER_ROLE: computeRoleId("BURNER_ROLE"),
   TREASURER_ROLE: computeRoleId("TREASURER_ROLE"),
+  ROYALTY_ADMIN_ROLE: computeRoleId("ROYALTY_ADMIN_ROLE"),
 });
 
-/** Los 6 roles, en orden, para iterar en deploy/tests. */
+/** Los 7 roles, en orden, para iterar en deploy/tests. */
 export const ALL_ROLE_NAMES: readonly RoleName[] = [
   "DEFAULT_ADMIN_ROLE",
   ...OPERATIONAL_ROLE_NAMES,

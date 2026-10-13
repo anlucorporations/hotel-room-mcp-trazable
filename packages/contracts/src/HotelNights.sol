@@ -58,6 +58,8 @@ contract HotelNights is
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
     bytes32 public constant TREASURER_ROLE = keccak256("TREASURER_ROLE");
+    /// @notice RF-08 (C1, 2026-10-13): ajusta el royalty por tipo dentro del rango permitido.
+    bytes32 public constant ROYALTY_ADMIN_ROLE = keccak256("ROYALTY_ADMIN_ROLE");
 
     // ── Límites de configuración ───────────────────────────────────────────────
     uint256 public constant BURN_BATCH_MAX = 50; // CU-13 (docs/SRS.md §9)
@@ -66,9 +68,16 @@ contract HotelNights is
     ///      (`minListingPrice`) arranca aquí; `DEFAULT_ADMIN_ROLE` puede ajustarlo después.
     uint256 public constant DEFAULT_MIN_LISTING_PRICE = 0.01 ether;
 
-    /// @dev D-06: royalty por TIPO de habitación (RF-08), inmutable por construcción.
-    uint96 private constant ROYALTY_BPS_STANDARD = 500; // 5 %: simple y doble (101–130)
-    uint96 private constant ROYALTY_BPS_SUITE = 1000; // 10 %: suite (201–220)
+    /// @dev RF-08 (C1): tope duro del royalty configurable (20 %).
+    uint96 public constant ROYALTY_BPS_MAX = 2000;
+
+    /// @dev RF-08 (C1): royalties INICIALES por tipo, iguales a los de D-06. `ROYALTY_ADMIN_ROLE`
+    ///      los puede cambiar después dentro de 0–2000 bps; el valor vigente vive en `_royaltyBps`.
+    uint96 public constant DEFAULT_ROYALTY_BPS_STANDARD = 500; // 5 %: simple y doble
+    uint96 public constant DEFAULT_ROYALTY_BPS_SUITE = 1000; // 10 %: suite
+
+    /// @dev Royalty vigente POR TIPO de habitación (clave = keccak256 del nombre del tipo).
+    mapping(bytes32 roomTypeHash => uint96 bps) private _royaltyBps;
 
     /// @dev Tipo "suite" del vocabulario de habitaciones (D-10), comparado por hash.
     bytes32 private constant SUITE_TYPE_HASH = keccak256("suite");
@@ -110,8 +119,8 @@ contract HotelNights is
     /**
      * @param treasury_ Receptor de la venta primaria y del royalty ERC-2981.
      * @dev El segundo argumento (bps de royalty) que existía por compatibilidad **se eliminó**:
-     *      el royalty se deriva del tipo de habitación y es inmutable (D-06), así que un
-     *      parámetro que no hacía nada era una trampa para quien leyera el despliegue.
+     *      el royalty vive en `_royaltyBps` con valores iniciales por tipo (C1, 2026-10-13) y lo
+     *      gobierna `ROYALTY_ADMIN_ROLE`, así que un parámetro de constructor no aportaba nada.
      */
     constructor(address treasury_)
         ERC721("Hotel Marina del Sol Nights", "HMSN")
@@ -122,6 +131,12 @@ contract HotelNights is
         }
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+
+        // RF-08 (C1): royalties iniciales por tipo. El rol de royalty NO se concede aquí: lo
+        // asigna el script de despliegue (bootstrap, ADR-06) a quien corresponda.
+        _royaltyBps[keccak256(bytes("simple"))] = DEFAULT_ROYALTY_BPS_STANDARD;
+        _royaltyBps[keccak256(bytes("doble"))] = DEFAULT_ROYALTY_BPS_STANDARD;
+        _royaltyBps[keccak256(bytes("suite"))] = DEFAULT_ROYALTY_BPS_SUITE;
 
         treasury = treasury_;
         emit TreasuryUpdated(address(0), treasury_);
@@ -308,6 +323,25 @@ contract HotelNights is
         if (newPrice == 0) revert InvalidPrice();
         minListingPrice = newPrice;
         emit MinListingPriceUpdated(newPrice);
+    }
+
+    /// @inheritdoc IHotelNights
+    function royaltyBpsOf(string calldata roomType) external view override returns (uint96) {
+        _checkRoomType(roomType);
+        return _royaltyBps[keccak256(bytes(roomType))];
+    }
+
+    /// @inheritdoc IHotelNights
+    function setRoyaltyBps(
+        string calldata roomType,
+        uint96 bps
+    ) external override onlyRole(ROYALTY_ADMIN_ROLE) {
+        _checkRoomType(roomType);
+        // Tope duro del pliego (RF-08): 0–2000 bps (0 %–20 %). El 0 se permite a propósito
+        // (desactivar el royalty es una decisión legítima del hotel y queda auditable por evento).
+        if (bps > ROYALTY_BPS_MAX) revert InvalidRoyaltyBps(bps);
+        _royaltyBps[keccak256(bytes(roomType))] = bps;
+        emit RoyaltyUpdated(roomType, bps);
     }
 
     /// @inheritdoc IHotelNights
@@ -503,17 +537,16 @@ contract HotelNights is
     }
 
     /**
-     * @dev D-06: bps del royalty derivados del TIPO de la habitación, con `RoomMaster` como
-     *      fuente única del maestro (no se duplican rangos). Un `tokenId` cuya habitación no
-     *      pertenece al maestro (p. ej. inexistente) devuelve 0 bps en vez de revertir:
-     *      `royaltyInfo` es una vista ERC-2981 que los marketplaces pueden consultar con
-     *      cualquier id.
+     * @dev RF-08 (C1): bps del royalty vigentes del TIPO de la habitación, leídos de
+     *      `_royaltyBps` (configurables por `ROYALTY_ADMIN_ROLE`). La inicialización la hace el
+     *      constructor y `_checkRoomType` garantiza el vocabulario. Un `tokenId` cuya habitación
+     *      no está registrada devuelve 0 bps en vez de revertir: `royaltyInfo` es una vista
+     *      ERC-2981 que los marketplaces pueden consultar con cualquier id.
      */
     function _royaltyBpsOf(uint256 tokenId) private view returns (uint96) {
         uint256 room = tokenId / ROOM_MULTIPLIER;
         if (!_roomRegistered[room]) return 0;
-        if (keccak256(bytes(_roomTypeName[room])) == SUITE_TYPE_HASH) return ROYALTY_BPS_SUITE;
-        return ROYALTY_BPS_STANDARD; // simple y doble comparten 5 % (RF-08/D-06)
+        return _royaltyBps[keccak256(bytes(_roomTypeName[room]))];
     }
 
     /// @dev D-10: el tipo persistido debe ser uno de los tres del maestro.

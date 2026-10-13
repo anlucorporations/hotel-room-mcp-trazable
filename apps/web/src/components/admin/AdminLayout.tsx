@@ -36,6 +36,7 @@ const ROLE_LABEL: Readonly<Record<RoleName, string>> = {
   PAUSER_ROLE: "PAUSER",
   BURNER_ROLE: "BURNER",
   TREASURER_ROLE: "TREASURER",
+  ROYALTY_ADMIN_ROLE: "ROYALTY_ADMIN",
 };
 
 /** Contexto de sesión del back-office: los paneles lo consumen sin reabrir SIWE (DRY). */

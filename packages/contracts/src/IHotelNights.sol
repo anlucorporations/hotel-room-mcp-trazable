@@ -48,6 +48,8 @@ interface IHotelNights {
     event RoomTypeUpdated(uint256 indexed room, string roomType);
     /// @notice D-18: huella de la ficha de una habitación anclada on-chain.
     event RoomPublished(uint256 indexed room, bytes32 contentHash, uint256 timestamp);
+    /// @notice RF-08 (C1, 2026-10-13): `ROYALTY_ADMIN` fija el royalty de un tipo de habitación.
+    event RoyaltyUpdated(string roomType, uint96 bps);
 
     // ── Errores canónicos (docs/SRS.md §9) ─────────────────────────────────────────
     error DuplicateNight(uint256 tokenId);
@@ -83,6 +85,8 @@ interface IHotelNights {
     error NightNotSold(uint256 tokenId);
     /// @dev D-06: el precio de listado queda por debajo del suelo de reventa.
     error PriceBelowMinimum(uint256 price, uint256 minimum);
+    /// @notice RF-08: el royalty pedido supera `ROYALTY_BPS_MAX` (2000 bps = 20 %).
+    error InvalidRoyaltyBps(uint96 bps);
     error NotExpired(uint256 tokenId);
     error AlreadySold(uint256 tokenId);
     error BatchTooLarge(uint256 size, uint256 max);
@@ -195,13 +199,23 @@ interface IHotelNights {
     function publicationHashOf(uint256 room) external view returns (bytes32);
 
     // ── Getters de configuración ──────────────────────────────────────────────
-    /// @notice D-06: royalty ERC-2981 inmutable, derivado del TIPO de la habitación del
-    ///         `tokenId` (500 bps = 5 % simple/doble 101–130; 1000 bps = 10 % suite 201–220)
-    ///         y con `treasury` como receptor. No existe setter ni rol que lo altere.
+    /// @notice RF-08: royalty ERC-2981 vigente del TIPO de la habitación del `tokenId`.
+    ///         Valores iniciales 500 bps (5 % simple/doble) y 1000 bps (10 % suite); desde
+    ///         C1 (2026-10-13) `ROYALTY_ADMIN_ROLE` puede cambiarlos dentro de 0–2000 bps.
+    ///         `treasury` es el receptor. Un `tokenId` sin habitación registrada devuelve 0.
     function royaltyInfo(uint256 tokenId, uint256 salePrice)
         external
         view
         returns (address receiver, uint256 royaltyAmount);
+
+    /// @notice RF-08: bps de royalty vigentes de un tipo ("simple" | "doble" | "suite").
+    /// @dev Revierte `InvalidRoomType` si el tipo no pertenece al vocabulario.
+    function royaltyBpsOf(string calldata roomType) external view returns (uint96);
+
+    /// @notice RF-08: fija los bps de royalty de un tipo de habitación (0–2000).
+    /// @dev Solo `ROYALTY_ADMIN_ROLE`. Emite `RoyaltyUpdated`. Revierte `InvalidRoyaltyBps`
+    ///      por encima del máximo e `InvalidRoomType` si el tipo no existe.
+    function setRoyaltyBps(string calldata roomType, uint96 bps) external;
 
     /// @notice D-06: suelo vigente de precio para listar en reventa.
     function minListingPrice() external view returns (uint256);

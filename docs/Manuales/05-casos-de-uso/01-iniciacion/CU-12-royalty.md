@@ -1,6 +1,6 @@
 # CU-12 · Decidir cuánto se queda el hotel en cada reventa
 
-> En una frase: el hotel se queda un pellizco fijo en cada reventa, y aquí puedes consultar de cuánto es.
+> En una frase: el hotel se queda un pellizco en cada reventa; aquí puedes consultarlo **y** ajustarlo por tipo de habitación.
 
 ![Infografía del CU-12: el porcentaje que el hotel se queda según el tipo de habitación](imagenes/doc-cu-12-royalty.svg)
 
@@ -8,94 +8,91 @@
 
 Cuando alguien compra una noche y luego la revende, el hotel se queda una parte del precio. Esa parte se llama *royalty* (la comisión del hotel en la reventa).
 
-Aquí conviene ser claro desde el principio: ese porcentaje **no se puede cambiar**. No hay ningún botón para subirlo ni bajarlo.
+El porcentaje se fija **por tipo de habitación** y, desde el incremento **C1** (2026-10-13, ADR-27), quien tenga el rol `ROYALTY_ADMIN` **puede cambiarlo** dentro del margen permitido: entre el 0 % y el 20 %. Los valores de partida son el 5 % para simple y doble, y el 10 % para suite.
 
-El porcentaje se decide al dar de alta la noche y depende del tipo de habitación. Después se queda fijo para siempre.
+Cada cambio queda firmado en la cartera y anotado en el registro del contrato, así que no es una cifra que baile sin dejar rastro: hay una traza de quién lo cambió y a qué valor.
 
-Este caso de uso sirve para **consultarlo**. Es una pantalla informativa: te dice cuánto cobra el hotel en cada tipo de habitación.
-
-Que no haya botón es una decisión a propósito. Así nadie puede cambiar las reglas de una reventa después de haberla anunciado.
-
-Piensa en ello como el precio de una etiqueta ya impresa. Se decide al principio y se queda tal cual. Si cambiara a mitad de camino, el que revende no sabría con qué cuenta.
+Si el contrato desplegado todavía es de la versión anterior (**D-06**), el porcentaje es fijo y el panel lo avisa: te enseña los valores vigentes pero no ofrece el formulario. La posibilidad de cambiarlo llega con el despliegue de C1.
 
 ## 2. Quién puede hacerlo
 
-La pantalla está pensada para el propietario (el rol de super-admin, `DEFAULT_ADMIN_ROLE`).
+Consultar el porcentaje puede hacerlo cualquiera: el dato es público.
 
-En el catálogo antiguo este caso de uso hablaba de un rol de royalty. Ese rol **no existe** hoy: no está en el contrato y no se puede asignar.
+Cambiarlo requiere el rol de **administrador de royalty** (`ROYALTY_ADMIN`). En este piloto lo ejerce el propietario (la misma cuenta que gobierna el resto de roles).
 
-Cualquiera puede preguntar el porcentaje de una noche concreta al contrato. El panel del hotel, en cambio, pide sesión de super-admin.
-
-Y nadie puede modificarlo. Ni el propietario. No hay función que lo permita.
+No hace falta ser el propietario para *leer*; sí para *escribir*. Y aunque el panel te muestre el formulario, quien manda es el contrato: si tu cuenta no tiene el rol, la operación se rechaza.
 
 ## 3. Antes de empezar
 
-- Ten una sesión abierta en el panel con el rol de super-admin.
-- Ten claro que es una pantalla de solo lectura: no vas a firmar nada.
-- Si lo que quieres es cambiar quién cobra, eso es otra operación distinta y no toca el porcentaje.
-- Si buscas un formulario para escribir un número nuevo, no lo vas a encontrar. Es normal.
+- Ten una sesión abierta en el panel del hotel.
+- Para cambiar el porcentaje, conecta la cartera que tiene el rol `ROYALTY_ADMIN`.
+- Piensa qué tipo de habitación quieres tocar: simple, doble o suite. El cambio se aplica **a ese tipo**, no a una noche concreta.
+- Ten a mano la cifra en *basis points*: 100 bps = 1 %. Por ejemplo, 1500 bps = 15 %.
 
 ## 4. Paso a paso
 
 1. Abre el panel del hotel y entra en la sección **Royalty** (la dirección es `/admin/royalty`).
-2. Lee el primer aviso: dice que el porcentaje se fija al crear la noche y que no se puede modificar.
-3. Mira la tabla de tipos. Tiene tres filas: **Simple** (habitaciones 101–130) al **5 %**, **Doble** (101–130) al **5 %** y **Suite** (201–220) al **10 %**.
-4. Lee la nota del final: el contrato es la fuente única del dato. El panel solo lo enseña.
-5. Si quieres comprobar una noche concreta, ese cálculo lo hace el contrato cuando alguien revende.
-6. Cierra la pantalla cuando termines. No hay nada que guardar.
+2. Lee la tabla de tipos. Tiene tres filas con su porcentaje vigente: **Simple** (101–115), **Doble** (116–130) y **Suite** (201–220).
+3. Si solo querías consultar, ya está: esa tabla sale del contrato y se actualiza sola.
+4. Para cambiarlo, elige el **tipo de habitación** en el desplegable.
+5. Escribe el **royalty en basis points** (de 0 a 2000). El panel te avisa si el valor no vale.
+6. Pulsa **Revisar y firmar**. Verás un resumen con el tipo y el porcentaje nuevos.
+7. Confirma y firma en tu cartera. Cuando la red lo acepte, la tabla se actualiza con el nuevo valor.
+
+Si tu cuenta no tiene el rol, el panel te lo dice y deja el botón apagado: no se firma nada.
 
 ## 5. Qué ves cuando sale bien
 
-- El aviso de que el royalty es inmutable, bien visible arriba.
-- La tabla con los tres tipos y su porcentaje: 5 %, 5 % y 10 %.
-- La nota que dice que el dato sale del contrato y no de este panel.
-- Ningún botón de guardar, ningún formulario y ninguna transacción que firmar.
+- La tabla con los tres tipos y su porcentaje vigente (5 %, 5 % y 10 % de partida).
+- Un formulario para cambiar el porcentaje, si tu cuenta puede hacerlo.
+- El resumen antes de firmar, con el tipo y el porcentaje que vas a fijar.
+- La tabla ya actualizada después de firmar.
+- Un registro on-chain del cambio, con la cuenta que lo hizo y el valor nuevo.
 
 ## 6. Si algo va mal
 
 | Lo que ves | Qué significa | Qué hacer |
 |-----------|---------------|-----------|
-| No hay ningún botón para cambiar el porcentaje | El royalty es inmutable por diseño | No hay nada que arreglar: es así |
-| No encuentras un rol de royalty | Ese rol no existe hoy | Usa una cuenta de super-admin |
-| El panel te avisa de que falta el rol | Tu sesión no es de super-admin | Entra con la cuenta del propietario |
+| El panel avisa de que el contrato aún no permite editar | El contrato desplegado es la versión anterior (D-06) | Espera al despliegue de C1; mientras, los valores vigentes se consultan igual |
+| El botón de firmar está apagado y dice que falta el rol | Tu cuenta no tiene `ROYALTY_ADMIN` | Entra con la cuenta que sí lo tiene |
+| «Introduce un número entero entre 0 y 2000 bps» | El valor no es válido | Corrige la cifra: 100 bps = 1 % |
+| La transacción se rechaza al firmar | El contrato ha rechazado la operación (falta el rol o el valor) | Revisa el rol y el rango, y vuelve a intentarlo |
 | Una noche concreta devuelve 0 % | Esa habitación no está dada de alta | Revisa el alta de la habitación |
 | El importe de la reventa no sale redondo | El reparto redondea hacia abajo | Usa un precio que reparta bien si te importa el céntimo |
-| Crees que el porcentaje ha cambiado solo | No cambia nunca | Comprueba que miras el tipo de habitación correcto |
+| Cambié el porcentaje y las reventas ya publicadas no cambian | El listado ya creado conserva su precio; el royalty se calcula al comprar | El cambio aplica a las reventas que se cierren después |
 
 ## 7. Un ejemplo de verdad
 
 El Hotel Marina del Sol tiene una suite, la 201. Al dar de alta esa noche, el sistema le pone el 10 % de royalty.
 
-Un cliente compra la noche por 200 €. Más adelante la revende por los mismos 200 €.
+Llega la temporada alta y el dueño quiere que el hotel se quede algo más en las reventas de suite. Entra en **Royalty**, elige «suite», escribe 1500 bps (15 %) y firma con su cartera. La tabla pasa a mostrar 15 %.
 
-En esa reventa, el hotel se queda 20 € y el vendedor recibe 180 €. El dinero del hotel no se manda al instante: queda apuntado y se retira más tarde.
+Un cliente compra la noche por 200 € y más adelante la revende por los mismos 200 €. En esa reventa el hotel se queda 30 € y el vendedor recibe 170 €. El dinero del hotel queda apuntado y se retira más tarde.
 
-Un mes después, el dueño entra en la sección **Royalty** para comprobar la cifra. Ve la fila de la suite con su 10 % y se queda tranquilo.
-
-Intenta buscar un botón para subirlo al 15 % en temporada alta. No lo encuentra, y es correcto: el porcentaje se decidió el día que se creó la noche.
+Las suites que ya estaban revendidas no se tocan: el porcentaje se aplica a la reventa en el momento de comprarla.
 
 ## 8. Preguntas frecuentes
 
 ### ¿Puedo subir el royalty a un 15 %?
 
-No. El porcentaje se fija al dar de alta la noche y ya no se cambia. No existe ninguna opción para tocarlo.
+Sí, si tu cuenta tiene el rol `ROYALTY_ADMIN`. Fija el tipo de habitación, escribe 1500 bps y firma. El tope es el 20 % (2000 bps). Si el contrato desplegado aún es la versión anterior (D-06), el panel te avisa y no ofrece el formulario.
 
 ### ¿Dónde se decide entonces el porcentaje?
 
-Al crear cada noche, según el tipo de habitación: 5 % para simple y doble, y 10 % para suite.
+Con la versión C1, en el contrato, por tipo de habitación: simple, doble y suite. Los valores de partida son 5 %, 5 % y 10 %. En la versión anterior (D-06) el porcentaje quedaba fijado al dar de alta la noche.
 
 ### ¿Quién cobra esa comisión?
 
-El hotel, a través de su cuenta de tesorería. Esa cuenta sí se puede cambiar sin tocar el porcentaje.
+El hotel, a través de su cuenta de tesorería. Esa cuenta se cambia en otra operación y no toca el porcentaje.
 
 ### ¿Por qué no hay un formulario en esta pantalla?
 
-Porque no hay nada que configurar. La pantalla solo enseña lo que el contrato tiene fijado. Cualquier cambio aquí sería un espejismo.
+Puede haber dos motivos: que tu cuenta no tenga el rol `ROYALTY_ADMIN` (el panel lo dice y deja el botón apagado) o que el contrato desplegado todavía sea la versión D-06, en la que el royalty era fijo.
 
 ### ¿El porcentaje es el mismo para todos los hoteles?
 
-En este sistema el porcentaje sale del código del contrato, no de una casilla que se rellene a gusto. Por eso todas las noches del mismo tipo se comportan igual.
+No: cada hotel despliega su propio contrato y decide sus porcentajes. Dentro de un mismo hotel, todas las noches de un tipo comparten el porcentaje vigente de ese tipo.
 
 ### ¿Y si quiero una excepción para una habitación concreta?
 
-Hoy no existe. No hay ninguna opción por noche ni por habitación dentro de este caso de uso.
+Hoy no existe: la unidad de configuración es el **tipo de habitación**, no la habitación ni la noche concreta.

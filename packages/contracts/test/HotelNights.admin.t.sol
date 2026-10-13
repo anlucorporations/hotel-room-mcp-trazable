@@ -57,18 +57,32 @@ contract HotelNightsAdminTest is Test {
     /// @notice No queda superficie de gobernanza del royalty: ni setter, ni getter de bps,
     ///         ni rol que lo administre. Cualquier llamada a esas firmas revierte (no existe
     ///         la función, así que no hay `fallback` que la atienda).
-    function test_RoyaltyHasNoGovernanceSurface() public {
-        (bool setterOk,) =
-            address(nft).call(abi.encodeWithSignature("setRoyaltyBps(uint96)", uint96(1000)));
-        assertFalse(setterOk, "setRoyaltyBps no debe existir");
+    /// @notice RF-08 · C1 (2026-10-13): el royalty recupera superficie de gobierno, pero
+    ///         acotada: existen el rol y el getter/setter, y **solo** `ROYALTY_ADMIN` escribe.
+    ///         Sustituye al test de D-06 que exigía que no hubiera ninguna superficie.
+    function test_RoyaltyGovernanceIsAdminGated() public {
+        (bool roleOk, bytes memory roleData) =
+            address(nft).staticcall(abi.encodeWithSignature("ROYALTY_ADMIN_ROLE()"));
+        assertTrue(roleOk, "ROYALTY_ADMIN_ROLE debe existir");
+        assertEq(abi.decode(roleData, (bytes32)), keccak256("ROYALTY_ADMIN_ROLE"));
 
-        (bool getterOk,) = address(nft).staticcall(abi.encodeWithSignature("royaltyBps()"));
-        assertFalse(getterOk, "royaltyBps no debe existir");
+        (bool getterOk, bytes memory bpsData) =
+            address(nft).staticcall(abi.encodeWithSignature("royaltyBpsOf(string)", "simple"));
+        assertTrue(getterOk, "royaltyBpsOf debe existir");
+        assertEq(abi.decode(bpsData, (uint96)), 500, "default simple 5 %");
 
-        (bool roleOk,) = address(nft).staticcall(abi.encodeWithSignature("ROYALTY_ADMIN_ROLE()"));
-        assertFalse(roleOk, "ROYALTY_ADMIN_ROLE no debe existir");
+        // Sin el rol, el setter revierte por control de acceso (no por no existir).
+        (bool setterOk, bytes memory revertData) = address(nft).call(
+            abi.encodeWithSignature("setRoyaltyBps(string,uint96)", "simple", uint96(1000))
+        );
+        assertFalse(setterOk, "sin ROYALTY_ADMIN no se puede escribir");
+        assertEq(
+            bytes4(revertData),
+            IAccessControl.AccessControlUnauthorizedAccount.selector,
+            "debe revertir por control de acceso"
+        );
 
-        // Y el royalty sigue siendo el derivado del tipo (hab. 102 = simple ⇒ 5 %).
+        // Y el royalty por defecto sigue derivándose del tipo (hab. 102 = simple ⇒ 5 %).
         (address receiver, uint256 amount) = nft.royaltyInfo(TOKEN_ID, 1 ether);
         assertEq(receiver, treasury);
         assertEq(amount, 0.05 ether);

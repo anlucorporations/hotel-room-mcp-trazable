@@ -126,8 +126,10 @@ paleta real, y verificación reproducible con artefactos.
 
 ### 3.2 Reglas económicas y de estado
 
-- **Royalty**: `simple` y `doble` → 5 %; `suite` → 10 %. Fijado en el mint desde el maestro de
-  habitaciones y **no modificable** (D-06, ADR-18). No existe parámetro global ni rol de royalty.
+- **Royalty**: valores iniciales `simple`/`doble` → 5 % y `suite` → 10 %, **configurables** por
+  `ROYALTY_ADMIN` entre 0 y 2000 bps (RF-08 · C1, ADR-27): `setRoyaltyBps(tipo, bps)` y
+  `royaltyBpsOf(tipo)`; `royaltyInfo` sigue siendo la fuente única de ERC-2981. El contrato desplegado
+  antes del redeploy de C1 conserva la versión inmutable de D-06/ADR-18.
 - **Suelo de listado**: `minListingPrice` (0,01 ETH en la red local); `list` por debajo revierte con
   `PriceBelowMinimum`; `setMinListingPrice(0)` revierte con `InvalidPrice` (D-19, ADR-19). Subir el
   suelo **no** invalida listados ya creados (deuda declarada).
@@ -378,6 +380,7 @@ huérfanas: la decisión D-15 los trae a este catálogo). `CU-PR-*` son casos de
 | **CU-44** | Consultar finanzas y retirar a tesorería desde Sistemas | Propietario | RF-44 | `SystemFinances`, `AdminFunds` |
 | **CU-45** | Consultar operaciones (salud del worker y de la cadena) | Propietario | RF-45 | `/api/admin/system/operations`, `SystemOperations` |
 | **CU-46** | Gestionar la seguridad de la propia cuenta (MFA y contraseña) | Todos | RF-46 | `/api/auth/password`, `/api/auth/mfa/setup`, `AdminSecurity`, D-45 |
+| **CU-47** | Configurar el porcentaje de royalty de reventa por tipo de habitación | `ROYALTY_ADMIN` | RF-08 | `HotelNights.setRoyaltyBps`/`royaltyBpsOf`, `ROYALTY_ADMIN_ROLE`, `AdminRoyalty`, ADR-27 |
 | **CU-PR-01** | Aprovisionar operadores (comando, no ruta) | Responsable técnico | RNF-06 | §4.6 |
 | **CU-PR-02** | Desplegar en la red local con roles, faucet opcional y registro sincronizado | Responsable técnico | RT-02 | ADR-06, ADR-13 |
 
@@ -396,6 +399,7 @@ esta es la vista de verificación, con el artefacto que lo demuestra.
 | RF-05 | CU-10 | US-08 | `email-consumer.test.ts`, E2E M6 (sumidero SMTP local) |
 | RF-06, RF-15, RF-16 | CU-06, CU-07 | US-06, US-16 | `HotelNights.resale.t.sol`, E2E M4 (`buyResale`, `claim`) |
 | RF-07, RF-08 | CU-08 | US-07 | E2E M5 (33 comprobaciones), `reception-guardian.test.ts` |
+| RF-08 (C1 · royalty configurable) | CU-47 | — | `HotelNights.royalty.t.sol`, `HotelNights.admin.t.sol`, `royalty-bps.test.ts`, ADR-27 |
 | RF-09 | CU-11 | US-14 | E2E M7 (SQL ↔ `summarizeHistory` ↔ derivación propia) |
 | RF-10 | CU-09 | US-10 | `apps/worker/src/http-server.test.ts`, E2E M7 |
 | RF-11 | CU-13 | US-09 | `burn-scheduler.test.ts`, E2E M6 |

@@ -52,6 +52,7 @@ fuente única de las decisiones; el código, el PRD y el SRS apuntan a él.
 | [ADR-24](ADR-24-privacidad-y-minimizacion-pii.md) | Minimización de PII y textos legales conforme al sistema real | D-14 | vigente |
 | [ADR-25](ADR-25-dashboard-fuente-unica.md) | El dashboard lee una fuente única (agregados del worker) | D-16 | vigente |
 | [ADR-26](ADR-26-resiliencia-y-observabilidad.md) | Resiliencia y observabilidad sin Sentry y sin failover multi-RPC | D-12 | vigente |
+| [ADR-27](ADR-27-royalty-configurable-por-rol.md) | Royalty configurable por `ROYALTY_ADMIN` (revierte D-06 en la inmutabilidad) | RF-08 · C1 | vigente |
 
 ## Trazabilidad con las decisiones de la auditoría V5
 

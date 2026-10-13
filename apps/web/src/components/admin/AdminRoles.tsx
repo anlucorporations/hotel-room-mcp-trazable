@@ -27,6 +27,7 @@ const ROLE_LABEL: Readonly<Record<RoleName, string>> = {
   PAUSER_ROLE: "PAUSER",
   BURNER_ROLE: "BURNER",
   TREASURER_ROLE: "TREASURER",
+  ROYALTY_ADMIN_ROLE: "ROYALTY_ADMIN",
 };
 
 /** Acción pendiente de confirmación explícita (UX#21): solo las destructivas/engañosas. */
