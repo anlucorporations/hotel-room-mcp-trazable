@@ -86,7 +86,7 @@ Particularidades frente a Anvil:
 | Elemento | Valor |
 |---|---|
 | RPC | `https://besu.alumnos.codecrypto.academy` · cliente `besu/v24.12.0` |
-| `HotelNights` | `0xea2e668d430e5aa15baba2f5c5edfd4f9ef6eb73` (bloque 5491483) |
+| `HotelNights` | **`0x676F5F71DAE1C83Dc31775E4c61212bC9e799d9C`** (bloque 5496805, redeploy C1 2026-10-13) · anterior D-06: `0xea2e…6eb73` (bloque 5491483) |
 | `HotelOperations` | `0x222d74f33b0d07687a769a44399e2272a4cb9ffe` (bloque 5491513) |
 | Owner / treasury | `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` (roles verificados on-chain) |
 | Faucet | **el de Codecrypto** (no se despliega `Faucet.sol`) |

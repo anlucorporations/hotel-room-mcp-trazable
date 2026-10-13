@@ -38,7 +38,7 @@
 | `chainId` | **81234** | 81234 | 137 / 80002 |
 | RPC | **`http://127.0.0.1:8545`** | **`https://besu.alumnos.codecrypto.academy`** (antes `besu1/besu2.proyectos.codecrypto.academy`) | Alchemy / Infura |
 | Moneda | **ETH** (ETH nativo de Anvil) | **CC** (18 decimales) | POL |
-| Contrato | **`HotelNights`** | `HotelNights` @ `0xea2e…6eb73` + `HotelOperations` @ `0x222d…b9ffe` | `HotelNights` |
+| Contrato | **`HotelNights`** | `HotelNights` @ `0x676F…d9C` (C1) + `HotelOperations` @ `0x222d…b9ffe` | `HotelNights` |
 | Confirmaciones | **1** (finalidad inmediata) | 1 | 32 (a configurar) |
 | Rango de `getLogs` | **5.000 bloques** | 5.000 (límite del nodo) | 2.000 |
 | Gas | baseFee 0 · min 1.000 wei | **baseFee 0 · min 1.000 wei** (`--legacy --with-gas-price 1000`) | a configurar |
@@ -68,10 +68,10 @@ Los valores de Polygon quedan **documentados como configuración de mainnet** (D
 | Elemento | Valor |
 |---|---|
 | Owner / deployer / treasury | `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` (cuenta de pruebas Anvil; **solo testnet**) |
-| `HotelNights` | `0xea2e668d430e5aa15baba2f5c5edfd4f9ef6eb73` · bloque `5491483` |
-| `HotelOperations` (vNext F2) | `0x222d74f33b0d07687a769a44399e2272a4cb9ffe` · bloque `5491513` |
+| `HotelNights` | **`0x676F5F71DAE1C83Dc31775E4c61212bC9e799d9C`** · bloque `5496805` (redeploy C1, 2026-10-13) — anterior (D-06, rollback): `0xea2e668d430e5aa15baba2f5c5edfd4f9ef6eb73` bloque `5491483` |
+| `HotelOperations` (vNext F2) | `0x222d74f33b0d07687a769a44399e2272a4cb9ffe` · bloque `5491513` (sin cambios) |
 | Registro | `packages/shared/deployments/81234.json` (git-ignored; se copia a la imagen vía `.gcloudignore`) |
-| Roles | `DEFAULT_ADMIN`, `MINTER`, `RECEPTION`, `PAUSER`, `BURNER`, `TREASURER` **verificados on-chain** para el owner |
+| Roles | `DEFAULT_ADMIN`, `MINTER`, `RECEPTION`, `PAUSER`, `BURNER`, `TREASURER` y **`ROYALTY_ADMIN`** (7) **verificados on-chain** para el owner |
 | Evidencia | [`evidencias/aceptacion-besu-81234-2026-10-13.json`](./evidencias/aceptacion-besu-81234-2026-10-13.json) |
 
 ### Comandos
@@ -86,8 +86,8 @@ forge script script/Deploy.s.sol:Deploy --rpc-url "$RPC_URL" --broadcast --slow 
 forge script script/DeployOperations.s.sol:DeployOperations --rpc-url "$RPC_URL" --broadcast --slow --legacy --with-gas-price 1000
 pnpm --filter @hotel/contracts sync
 
-# 2) Aceptación (TC-ACC-010/011/012)
-RPC_URL="$RPC_URL" CONTRACT_ADDRESS=0xea2e…6eb73 DEPLOYMENT_BLOCK=5491483 EXPECTED_MINTS=3 \
+# 2) Aceptación (TC-ACC-010/011/012). Con el contrato C1 sin sembrar, EXPECTED_MINTS=0.
+RPC_URL="$RPC_URL" CONTRACT_ADDRESS=0x676F…d9C DEPLOYMENT_BLOCK=5496805 EXPECTED_MINTS=0 \
   node packages/contracts/scripts/measure-besu.mjs
 ```
 
@@ -97,7 +97,7 @@ RPC_URL="$RPC_URL" CONTRACT_ADDRESS=0xea2e…6eb73 DEPLOYMENT_BLOCK=5491483 EXPE
 
 > ⚠️ **Un solo registro para el chainId 81234**: Anvil local (dev) y Besu (testnet) comparten `chainId`,
 > de modo que `packages/shared/deployments/81234.json` es **un único fichero** y el `sync` de este
-> despliegue lo ha apuntado a Besu (`0xea2e…6eb73`). Para volver al contrato de Anvil local hay que
+> despliegue lo ha apuntado a Besu (`0x676F…d9C`). Para volver al contrato de Anvil local hay que
 > **re-desplegar en Anvil y re-sincronizar** (`forge script … --broadcast` + `pnpm --filter
 > @hotel/contracts sync`). El entorno de producción (GCP, `chainId 31337`) usa `31337.json` y **no se ve
 > afectado**; el desarrollo local toma la dirección de `.env` (`NEXT_PUBLIC_CONTRACT_ADDRESS`).

@@ -1,0 +1,64 @@
+{
+  "hito": "Ventana de redeploy de C1 (royalty configurable) — red de prueba Besu de Codecrypto",
+  "fecha": "2026-10-13",
+  "motivo": "El contrato es inmutable (ADR-22): RF-08/C1 exige una dirección nueva. Decisión A2 del responsable.",
+  "alcance": {
+    "red": "Codecrypto Besu 81234 (https://besu.alumnos.codecrypto.academy)",
+    "siembra": "NINGUNA (orden expresa: «sin inyectar las habitaciones»): no se registran habitaciones ni se mintean noches",
+    "faucet": "no se despliega Faucet.sol (se usa el de Codecrypto, decisión C9)",
+    "apps": "no aplica en esta red (C3/C8: Besu es contrato + aceptación, sin entorno web)"
+  },
+  "contrato": {
+    "anterior": {
+      "address": "0xea2e668d430e5aa15baba2f5c5edfd4f9ef6eb73",
+      "deploymentBlock": 5491483,
+      "nota": "Versión D-06 (royalty inmutable). Se conserva on-chain como rollback."
+    },
+    "nuevo": {
+      "address": "0x676f5f71dae1c83dc31775e4c61212bc9e799d9c",
+      "deploymentBlock": 5496805,
+      "abiHash": "0x179d08e35cb852e7cfa36b7b4ecca957ed584272fb5bdaac7008c38f6bdd194f",
+      "tx": "ver packages/contracts/broadcast/Deploy.s.sol/81234/run-latest.json"
+    },
+    "registro": "packages/shared/deployments/81234.json (git-ignored por diseño)"
+  },
+  "verificacion": {
+    "roles": {
+      "titular": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "DEFAULT_ADMIN_ROLE": true,
+      "MINTER_ROLE": true,
+      "RECEPTION_ROLE": true,
+      "PAUSER_ROLE": true,
+      "BURNER_ROLE": true,
+      "TREASURER_ROLE": true,
+      "ROYALTY_ADMIN_ROLE": true
+    },
+    "royaltyInicial": { "simple": 500, "doble": 500, "suite": 1000 },
+    "royaltyMax": 2000,
+    "setRoyaltyBps": [
+      {
+        "accion": "fijar suite a 1500 bps",
+        "tx": "0xd9dfe03069572406fa231c9ccf4fc116677335528901b7b2534ca8ca6685d2d7",
+        "status": 1,
+        "lecturaPosterior": 1500
+      },
+      {
+        "accion": "restaurar suite a 1000 bps",
+        "tx": "0x139c08579c163b0139907cf7d0c9dbe815c97ef658e4cb3f6cb4e6521cd2d925",
+        "status": 1,
+        "lecturaPosterior": 1000
+      }
+    ],
+    "sinRol": "AccessControlUnauthorizedAccount(0x7099…79C8, 0x6db4061a…b43cb011) al llamar sin ROYALTY_ADMIN",
+    "porEncimaDelTope": "InvalidRoyaltyBps(2001)",
+    "siembra": "isRoomRegistered(101) = false (no se inyectó ninguna habitación, como se pidió)"
+  },
+  "rollback": {
+    "descripcion": "El contrato anterior sigue on-chain; volver a él es re-sincronizar su dirección o apuntar de nuevo a 0xea2e…6eb73.",
+    "comando": "cast call 0xea2e…6eb73 \"royaltyBpsOf(string)(uint96)\" suite --rpc-url https://besu.alumnos.codecrypto.academy"
+  },
+  "pendiente": [
+    "Producción GCP (Anvil 31337): el contrato sigue en D-06 y la web/mcp desplegados (v55) usan esa versión. El swap de producción requiere desplegar allí + recompilar web/mcp y, sin siembra, dejaría el catálogo vacío.",
+    "Cualquier red que use la versión C1 necesita registrar habitaciones y mintear noches antes de operar (no hecho por orden expresa)."
+  ]
+}
