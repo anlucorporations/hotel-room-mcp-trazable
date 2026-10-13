@@ -3,6 +3,11 @@ import { createPublicClient, formatEther, http, type PublicClient } from "viem";
 import { anvilChain, besuChain } from "@hotel/shared";
 import type { Alerter } from "./types";
 
+/** `true` para RPC locales (Anvil de desarrollo/CI). Misma regla que el worker y el MCP. */
+function isLocalRpc(url: string): boolean {
+  return url.includes("127.0.0.1") || url.includes("localhost");
+}
+
 /**
  * Vigilancia de **cadena y saldo de gas** (D-12).
  *
@@ -56,7 +61,10 @@ export interface ChainMonitor {
 
 export function startChainMonitor(deps: ChainMonitorDeps): ChainMonitor {
   const { config, alerter, logger, signal } = deps;
-  const chain = config.chainId === anvilChain.id ? anvilChain : besuChain;
+  // Besu y Anvil comparten `chainId` (81234): se distinguen por la URL del RPC, igual que el
+  // worker y el MCP. El transporte usa siempre `config.rpcUrl`; el objeto `chain` solo aporta
+  // metadatos (nombre y moneda nativa).
+  const chain = isLocalRpc(config.rpcUrl) ? anvilChain : besuChain;
   const client =
     deps.publicClient ?? createPublicClient({ chain, transport: http(config.rpcUrl) });
 
