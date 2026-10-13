@@ -32,19 +32,29 @@
 
 ## 2. Matriz de entornos
 
-| Parámetro | Desarrollo (vigente) | Besu de Codecrypto (**desplegado 2026-10-13**) | Polygon (roadmap) |
+> **Red del proyecto (2026-10-13): Besu.** El despliegue (Cloud Run) apunta a la **red de prueba Besu
+> de Codecrypto** (`chainId 81234`). Una **Anvil local** con el **mismo `chainId`** se usa como espejo
+> de desarrollo/CI: el código elige la cadena por la **URL del RPC** (localhost ⇒ Anvil), así que la
+> red no está cableada en la lógica. No hay ninguna dependencia del Anvil global de `mcc-ecommerce`.
+
+| Parámetro | Desarrollo local (espejo) | **Besu de Codecrypto (red del proyecto, desplegada)** | Polygon (roadmap) |
 |---|---|---|---|
-| Red | **Anvil local** | Besu de Codecrypto (testnet) | Polygon PoS 137 / Amoy 80002 |
-| `chainId` | **81234** | 81234 | 137 / 80002 |
-| RPC | **`http://127.0.0.1:8545`** | **`https://besu.alumnos.codecrypto.academy`** (antes `besu1/besu2.proyectos.codecrypto.academy`) | Alchemy / Infura |
-| Moneda | **ETH** (ETH nativo de Anvil) | **CC** (18 decimales) | POL |
-| Contrato | **`HotelNights`** | `HotelNights` @ `0x676F…d9C` (C1) + `HotelOperations` @ `0x222d…b9ffe` | `HotelNights` |
-| Confirmaciones | **1** (finalidad inmediata) | 1 | 32 (a configurar) |
-| Rango de `getLogs` | **5.000 bloques** | 5.000 (límite del nodo) | 2.000 |
+| Red | Anvil local (espejo de Besu) | **Besu de Codecrypto (testnet)** | Polygon PoS 137 / Amoy 80002 |
+| `chainId` | **81234** | **81234** | 137 / 80002 |
+| RPC | `http://127.0.0.1:8545` | **`https://besu.alumnos.codecrypto.academy`** (histórico: `besu1/besu2.proyectos.codecrypto.academy`) | Alchemy / Infura |
+| Moneda | ETH nativo de Anvil | **CC** (18 decimales) | POL |
+| Contrato | `HotelNights` local | `HotelNights` @ `0x676F…d9C` (C1) + `HotelOperations` @ `0x222d…b9ffe` | `HotelNights` |
+| Confirmaciones | 1 (finalidad inmediata) | 1 | 32 (a configurar) |
+| Rango de `getLogs` | 5.000 bloques | 5.000 (límite del nodo) | 2.000 |
 | Gas | baseFee 0 · min 1.000 wei | **baseFee 0 · min 1.000 wei** (`--legacy --with-gas-price 1000`) | a configurar |
-| Base de datos | **PostgreSQL 18 local** | PostgreSQL | PostgreSQL gestionado |
-| Redis | **nativo local** | sí | gestionado |
-| Observabilidad | logging estructurado | logging | + Sentry (fuera de alcance por D-12) |
+| Base de datos | PostgreSQL 18 local | PostgreSQL 18 (Cloud SQL) | PostgreSQL gestionado |
+| Redis | nativo local | gestionado (VPC) | gestionado |
+| Observabilidad | logging estructurado | logging + monitor | + Sentry (fuera de alcance por D-12) |
+
+**Variables que deciden la red** (una sola palanca): `GCP_CHAIN_RPC_URL` / `GCP_CHAIN_ID` en
+`infra/gcp/gcp-env.sh` (alias heredados `GCP_ANVIL_*`), y `RPC_URL` / `CHAIN_ID` /
+`CONTRACT_ADDRESS` / `NEXT_PUBLIC_*` en el despliegue. Para volver a un Anvil local:
+`GCP_CHAIN_RPC_URL=http://127.0.0.1:8545 GCP_CHAIN_ID=81234`.
 
 Los valores de Polygon quedan **documentados como configuración de mainnet** (D-12): no se implementan parámetros anti-reorganización ni failover multi-RPC.
 

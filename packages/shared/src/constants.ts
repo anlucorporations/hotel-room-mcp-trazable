@@ -6,14 +6,19 @@
  */
 
 // ── Red Besu / Anvil (ADR-01, ADR-17) ──────────────────────────────────
+// La red del proyecto es **Besu** (testnet de Codecrypto, chainId 81234). Anvil solo se usa como
+// espejo local de desarrollo/CI, arrancado con `--chain-id 81234` para que el código no dependa
+// de la red: se distingue por la URL del RPC (localhost ⇒ Anvil dev).
 export const CHAIN_ID = 81234 as const;
 export const NETWORK_NAME = "Codecrypto Besu" as const;
 export const CURRENCY_SYMBOL = "ETH" as const;
 export const CURRENCY_DECIMALS = 18 as const;
 
-export const BESU_RPC_URL = "https://besu1.proyectos.codecrypto.academy" as const;
-export const BESU_RPC_URL_FALLBACK =
-  "https://besu2.proyectos.codecrypto.academy" as const;
+/** RPC vigente de la red de prueba Besu de Codecrypto (C3, 2026-10-13). */
+export const BESU_RPC_URL = "https://besu.alumnos.codecrypto.academy" as const;
+/** RPC anterior del laboratorio, conservado como referencia histórica. */
+export const BESU_RPC_URL_LEGACY = "https://besu1.proyectos.codecrypto.academy" as const;
+export const BESU_RPC_URL_FALLBACK = BESU_RPC_URL_LEGACY;
 /** RPC local de Anvil para desarrollo/CI (se arranca con `--chain-id 81234`). */
 export const ANVIL_RPC_URL = "http://127.0.0.1:8545" as const;
 

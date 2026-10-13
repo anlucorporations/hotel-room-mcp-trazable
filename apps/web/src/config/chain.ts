@@ -3,8 +3,10 @@ import { defineChain, type Address, type Chain } from "viem";
 
 /**
  * Configuración de cadena/contrato para el cliente (CU-17, docs/SRS.md §9). Dirigida por `NEXT_PUBLIC_*`
- * (inyectadas en build); por defecto el proyecto usa la chainId canónica (81234, espejo de
- * Besu). En dev se puede apuntar a otra Anvil local (p. ej. 31337) vía `NEXT_PUBLIC_CHAIN_ID`.
+ * (inyectadas en build). La **red del proyecto es Besu** (testnet de Codecrypto, `chainId 81234`): si
+ * el RPC configurado es remoto, el cliente usa `besuChain`. En desarrollo/CI el RPC es local
+ * (Anvil, arrancado con el mismo `chainId` para que nada dependa de la red) y se usa `anvilChain`;
+ * `NEXT_PUBLIC_NETWORK=anvil` fuerza ese modo también con un RPC remoto.
  */
 const DEV_CONTRACT: Address = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
@@ -60,16 +62,27 @@ const blockExplorers: Chain["blockExplorers"] = explorerUrl
   ? { default: { name: process.env.NEXT_PUBLIC_BLOCK_EXPLORER_NAME ?? "Explorador", url: explorerUrl } }
   : undefined;
 
+/**
+ * ¿El RPC es una red **local de desarrollo**? Misma regla que el worker, el MCP y el monitor: la
+ * red del proyecto es **Besu** y Anvil solo es el espejo local (ambos con `chainId 81234`), así que
+ * la cadena se distingue por la URL del RPC y no por el `chainId`, que es compartido.
+ */
+export function isLocalRpc(url: string): boolean {
+  return url.includes("127.0.0.1") || url.includes("localhost");
+}
+
 function resolveChain(): Chain {
-  const base =
-    process.env.NEXT_PUBLIC_NETWORK === "besu"
-      ? besuChain
+  const base: Chain =
+    process.env.NEXT_PUBLIC_NETWORK === "anvil" || isLocalRpc(rpcUrl)
+      ? // Desarrollo/CI: Anvil local con el chainId canónico (espejo de Besu).
+        { ...anvilChain, rpcUrls: { default: { http: [rpcUrl] } } }
       : envChainId === CHAIN_ID
-        ? anvilChain
-        : // Dev sobre otra chainId local (p. ej. 31337, la de Anvil por defecto).
+        ? // Red del proyecto: Besu de Codecrypto.
+          { ...besuChain, rpcUrls: { default: { http: [rpcUrl] } } }
+        : // Otra red EVM declarada por entorno (p. ej. Polygon en una fase posterior).
           defineChain({
             id: envChainId,
-            name: `Anvil dev (${envChainId})`,
+            name: `Red EVM (${envChainId})`,
             nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
             rpcUrls: { default: { http: [rpcUrl] } },
           });

@@ -96,12 +96,13 @@ phase_contract() {
     fi
     echo "  (recuerda: en la ejecución real hay que exportar DEPLOYER_PRIVATE_KEY)"
   fi
-  echo "  RPC: $GCP_ANVIL_URL (chainId $GCP_ANVIL_CHAIN_ID)"
+  echo "  RPC: $GCP_CHAIN_RPC_URL (chainId $GCP_CHAIN_ID)"
   echo "  (guarda la dirección y bloque ACTUALES como rollback: ver preflight §Rollback)"
-  run env PATH="$HOME/.foundry/bin:$PATH" RPC_URL="$GCP_ANVIL_URL" \
+  # Besu exige gasPrice >= 1000 wei con baseFee = 0 ⇒ legacy con precio explícito (Anvil lo acepta igual).
+  run env PATH="$HOME/.foundry/bin:$PATH" RPC_URL="$GCP_CHAIN_RPC_URL" \
     DEPLOYER_PRIVATE_KEY="${DEPLOYER_PRIVATE_KEY:-<clave>}" \
     DEPLOY_FAUCET="${DEPLOY_FAUCET:-true}" \
-    bash -c "cd '$REPO_ROOT/packages/contracts' && forge script script/Deploy.s.sol:Deploy --rpc-url \"$GCP_ANVIL_URL\" --broadcast --slow"
+    bash -c "cd '$REPO_ROOT/packages/contracts' && forge script script/Deploy.s.sol:Deploy --rpc-url \"$GCP_CHAIN_RPC_URL\" --broadcast --slow --legacy --with-gas-price 1000"
   run bash -c "cd '$REPO_ROOT/packages/contracts' && pnpm sync"
   echo "  Registro nuevo (revísalo):"
   echo "    node -e \"console.log(require('$DEP_FILE'))\""

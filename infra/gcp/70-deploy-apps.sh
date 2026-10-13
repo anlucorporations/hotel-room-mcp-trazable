@@ -6,7 +6,8 @@
 # del worker y del MCP). El monitor se trata aparte (no expone HTTP).
 #
 # Servicios globales consumidos:
-#   - Anvil:    https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app (chainId 31337)
+#   - Red:      **Besu de Codecrypto** https://besu.alumnos.codecrypto.academy (chainId 81234)
+#               (Anvil solo como espejo local de dev/CI; se cambia con GCP_CHAIN_RPC_URL/GCP_CHAIN_ID)
 #   - Postgres: Cloud SQL hotel-mcp-pg (IP privada 10.104.0.3)
 #   - Redis:    VM hotel-mcp-redis (10.10.0.10)
 # ---------------------------------------------------------------------------
@@ -34,12 +35,13 @@ if [[ "$CANARY" == "1" ]]; then CANARY_FLAGS="--no-traffic --tag=canary"; fi
 
 should() { [[ ",${ONLY}," == *",$1,"* ]]; }
 
-ANVIL_URL="${GCP_ANVIL_URL:-https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app}"
+# Red del proyecto: Besu (testnet de Codecrypto). `GCP_ANVIL_*` se mantiene como alias heredado.
+CHAIN_URL="${GCP_CHAIN_RPC_URL:-${GCP_ANVIL_URL:-https://besu.alumnos.codecrypto.academy}}"
+CHAIN_ID="${GCP_CHAIN_ID:-${GCP_ANVIL_CHAIN_ID:-81234}}"
 IMAGE_TAG="${GCP_IMAGE_TAG:-v1}"
 REGISTRY="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/hotel-mcp"
 NETWORK="hotel-mcp-vpc"
 SUBNET="hotel-mcp-euw1"
-CHAIN_ID=31337
 
 DEP_FILE="$REPO_ROOT/packages/shared/deployments/${CHAIN_ID}.json"
 CONTRACT="$(node -e "console.log(require('${DEP_FILE}').address)")"
@@ -55,7 +57,7 @@ if ! gcloud secrets describe hotel-mcp-shared-secret --project="$GCP_PROJECT_ID"
   echo "==> hotel-mcp-shared-secret creado"
 fi
 
-COMMON_ENV="RPC_URL=${ANVIL_URL},CHAIN_ID=${CHAIN_ID},CONTRACT_ADDRESS=${CONTRACT},DEPLOYMENT_BLOCK=${DEPLOY_BLOCK}"
+COMMON_ENV="RPC_URL=${CHAIN_URL},CHAIN_ID=${CHAIN_ID},CONTRACT_ADDRESS=${CONTRACT},DEPLOYMENT_BLOCK=${DEPLOY_BLOCK}"
 COMMON_SECRETS="DATABASE_URL=hotel-database-url:latest,REDIS_URL=hotel-redis-url:latest"
 SMTP_ENV="SMTP_HOST=smtp.invalid,SMTP_PORT=587,SMTP_USER=hotel@example.com,SMTP_PASS=,SMTP_FROM=no-reply@example.com"
 

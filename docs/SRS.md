@@ -28,8 +28,9 @@ afirmación del PRD pueda seguirse hasta el código, la prueba y el artefacto qu
 
 ### 1.2 Alcance entregado
 
-Plataforma web de venta de noches de hotel como tokens ERC-721 sobre **`HotelNights`** en una **red
-local Anvil** (`chainId 81234`): catálogo primario con filtros e i18n real (ES/EN/RU), compra anónima
+Plataforma web de venta de noches de hotel como tokens ERC-721 sobre **`HotelNights`** en la **red de
+prueba Besu de Codecrypto** (`chainId 81234`; Anvil local se usa como **espejo** de desarrollo/CI con
+el mismo `chainId`): catálogo primario con filtros e i18n real (ES/EN/RU), compra anónima
 con wallet y firma de lo revisado, mercado secundario en vista propia con royalty inmutable por tipo
 y suelo de precio, resguardo QR con titularidad EIP-712 y check-in **anclado on-chain** de un solo
 uso, quema programada desatendida, avisos push reales, cola única de correo con reconciliación,
@@ -331,8 +332,8 @@ igualdad con el SQL del worker **es** el criterio de aceptación del dashboard (
 
 | Elemento | Valor |
 |---|---|
-| Red | Anvil `http://127.0.0.1:8545`, `chainId 81234` |
-| Despliegue | `forge script script/Deploy.s.sol:Deploy --broadcast --slow` + bootstrap de roles |
+| Red | **Besu de Codecrypto** `https://besu.alumnos.codecrypto.academy`, `chainId 81234` (dev/CI: Anvil local con el mismo `chainId`) |
+| Despliegue | `forge script script/Deploy.s.sol:Deploy --broadcast --slow --legacy --with-gas-price 1000` + bootstrap de roles (Besu: `baseFee = 0`, mínimo 1000 wei) |
 | Registro | `packages/shared/deployments/81234.json` (`address`, `block`, `abiHash`) validado por esquema |
 | Sincronización | `pnpm --filter @hotel/contracts sync` |
 | Servicios locales | PostgreSQL 18 (5432), Redis-compatible (6379), web (3000), worker (8787), mcp (8788) |

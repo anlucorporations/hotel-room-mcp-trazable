@@ -39,17 +39,19 @@ export GCP_SECRET_DB_PASSWORD="${GCP_SECRET_DB_PASSWORD:-hotel-db-password}"
 export GCP_LOCAL_SECRETS_DIR="${GCP_LOCAL_SECRETS_DIR:-$HOME/.config/hotel-mcp}"
 
 # ---------------------------------------------------------------------------
-# Servicios globales (compartidos por todos los componentes desplegados)
+# Red del proyecto: **Besu de Codecrypto** (testnet, chainId 81234)
 # ---------------------------------------------------------------------------
-# Anvil global ya existente en el proyecto mcc-ecommerce (Cloud Run, público,
-# estado persistido en el bucket mcc-ecommerce-anvil-state vía GCS Fuse).
-# OJO: su chainId es 31337, no el 81234 canónico del proyecto.
+# Anvil queda como **espejo local** de desarrollo/CI (mismo chainId): el código elige la cadena por
+# la URL del RPC (localhost ⇒ Anvil), de modo que cambiar de red es cambiar estas variables.
 # URL pública de la web (metadata Open Graph/Twitter). Se inyecta en el BUILD de la imagen.
 export GCP_WEB_URL="${GCP_WEB_URL:-https://hotel-mcp-web-475955050238.europe-west1.run.app}"
 
-export GCP_ANVIL_URL="${GCP_ANVIL_URL:-https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app}"
-export GCP_ANVIL_CHAIN_ID="${GCP_ANVIL_CHAIN_ID:-31337}"
-export GCP_ANVIL_PROJECT="${GCP_ANVIL_PROJECT:-mcc-ecommerce}"
+export GCP_CHAIN_RPC_URL="${GCP_CHAIN_RPC_URL:-https://besu.alumnos.codecrypto.academy}"
+export GCP_CHAIN_ID="${GCP_CHAIN_ID:-81234}"
+# Compatibilidad: los scripts/runbooks antiguos leían `GCP_ANVIL_*`; ahora apuntan a Besu salvo que
+# se fijen explícitamente (p. ej. para un ensayo contra un Anvil local).
+export GCP_ANVIL_URL="${GCP_ANVIL_URL:-$GCP_CHAIN_RPC_URL}"
+export GCP_ANVIL_CHAIN_ID="${GCP_ANVIL_CHAIN_ID:-$GCP_CHAIN_ID}"
 
 # Redis global: VM privada en la VPC dedicada (sin IP pública).
 export GCP_REDIS_HOST="${GCP_REDIS_HOST:-10.10.0.10}"
