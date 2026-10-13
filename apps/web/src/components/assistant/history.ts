@@ -1,4 +1,5 @@
 import type { ChatMessage } from "@/lib/assistant/types";
+import { sanitizeHighlights } from "@/lib/assistant/highlights";
 
 /**
  * Memoria de la conversación del asistente (incremento v4).
@@ -46,12 +47,22 @@ export function browserHistoryStorage(): HistoryStorage | null {
   }
 }
 
-/** `true` si el valor es un mensaje del asistente con forma válida. */
+/**
+ * `true` si el valor es un mensaje del asistente con forma válida. Las **noches destacadas** son
+ * opcionales (un mensaje sin información de habitaciones no las lleva) y se sanean al leerlas.
+ */
 function isChatMessage(value: unknown): value is ChatMessage {
   if (typeof value !== "object" || value === null) return false;
   const candidate = value as { role?: unknown; text?: unknown };
   const roleOk = candidate.role === "user" || candidate.role === "assistant";
   return roleOk && typeof candidate.text === "string" && candidate.text.length > 0;
+}
+
+/** Mensaje tal y como viaja en la memoria: el texto recortado y las noches saneadas. */
+function toPersisted(m: ChatMessage): ChatMessage {
+  const highlights = sanitizeHighlights(m.highlights);
+  const base = { role: m.role, text: m.text.slice(0, MAX_MESSAGE_LENGTH) };
+  return highlights.length > 0 ? { ...base, highlights } : base;
 }
 
 /**
@@ -68,7 +79,7 @@ export function loadHistory(storage: HistoryStorage | null): ChatMessage[] {
     return parsed
       .filter(isChatMessage)
       .slice(-MAX_PERSISTED_MESSAGES)
-      .map((m) => ({ role: m.role, text: m.text.slice(0, MAX_MESSAGE_LENGTH) }));
+      .map(toPersisted);
   } catch {
     return [];
   }
@@ -84,10 +95,7 @@ export function saveHistory(
 ): void {
   if (storage === null) return;
   try {
-    const trimmed = messages.slice(-MAX_PERSISTED_MESSAGES).map((m) => ({
-      role: m.role,
-      text: m.text.slice(0, MAX_MESSAGE_LENGTH),
-    }));
+    const trimmed = messages.slice(-MAX_PERSISTED_MESSAGES).map(toPersisted);
     storage.setItem(ASSISTANT_HISTORY_KEY, JSON.stringify(trimmed));
   } catch {
     // Sin memoria: la conversación sigue viva en pantalla.

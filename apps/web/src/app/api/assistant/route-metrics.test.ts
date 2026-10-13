@@ -92,14 +92,19 @@ describe("POST /api/assistant — telemetría por petición", () => {
     const body = (await response.json()) as Record<string, unknown>;
 
     expect(response.status).toBe(200);
-    // `pageAction` (incremento v4) es la única incorporación al contrato: la navegación que enseña
-    // el resultado en la página. Esta conversación no consultó el catálogo, así que va a `null`.
+    // `pageAction` (incremento v4) es la navegación que enseña el resultado en la página y
+    // `highlights` (2026-10-11) son las noches ofrecidas, ya ordenadas para pintarlas como tarjetas.
+    // Esta conversación no consultó el catálogo: la primera va a `null` y la segunda, vacía.
     expect(Object.keys(body).sort()).toEqual([
       "domainToolCalls",
+      "highlights",
       "pageAction",
       "preparedPurchase",
+      "preparedPurchases",
       "reply",
     ]);
     expect(body.pageAction).toBeNull();
+    expect(body.highlights).toEqual([]);
+    expect(body.preparedPurchases).toEqual([]);
   });
 });

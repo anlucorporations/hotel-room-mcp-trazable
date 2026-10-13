@@ -35,7 +35,14 @@ vi.mock("@/lib/assistant/mcp-gateway", () => ({
         { name: "listAvailableNights", description: "", inputSchema: {} },
       ];
     }
-    async callTool(): Promise<unknown> {
+    async callTool(name: string): Promise<unknown> {
+      if (name === "listAvailableNights") {
+        // Desordenadas a propósito: la respuesta debe normalizarlas y ordenarlas.
+        return [
+          { tokenId: "10120260622", room: 101, dateYYYYMMDD: 20260622, type: "simple", priceWei: "10000000000000000", saleType: "PRIMARY" },
+          { tokenId: "10120260620", room: 101, dateYYYYMMDD: 20260620, type: "simple", priceWei: "10000000000000000", saleType: "PRIMARY" },
+        ];
+      }
       return { exists: true, available: true, tokenId: "10120260620", priceWei: "1", saleType: "PRIMARY" };
     }
     async close(): Promise<void> {
@@ -110,5 +117,30 @@ describe("POST /api/assistant — la búsqueda de habitaciones se muestra en la 
     ])) as { href: string } | null;
 
     expect(action!.href).toBe("/catalogo?desde=2026-06-22&hasta=2026-06-22&buscar=7");
+  });
+
+  it("la respuesta lleva las noches ofrecidas, normalizadas y ordenadas (formato amigable)", async () => {
+    // El catálogo devuelve dos noches desordenadas: la respuesta debe entregarlas ordenadas para que
+    // el panel las pinte como tarjetas (tipo, fecha y precio) en vez de dejar la información en prosa.
+    estado.respuestas = [
+      {
+        text: "Te muestro lo que hay.",
+        toolUses: [{ id: "t1", name: "listAvailableNights", input: { type: "simple" } }],
+      },
+      { text: "Estas son las noches.", toolUses: [] },
+    ];
+
+    const res = await post([{ role: "user", text: "¿qué habitaciones sencillas hay?" }]);
+    const body = (await res.json()) as { highlights: { tokenId: string; room: number; dateYYYYMMDD: number; priceWei: string }[] };
+
+    expect(body.highlights.map((n) => n.tokenId)).toEqual(["10120260620", "10120260622"]);
+    expect(body.highlights[0]).toEqual({
+      tokenId: "10120260620",
+      room: 101,
+      type: "simple",
+      dateYYYYMMDD: 20260620,
+      priceWei: "10000000000000000",
+      saleType: "PRIMARY",
+    });
   });
 });

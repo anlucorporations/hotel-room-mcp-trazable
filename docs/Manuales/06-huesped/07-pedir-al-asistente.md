@@ -10,6 +10,8 @@
 4. Cuando el asistente te diga la noche y el precio, contéstale que sí.
 5. En la tarjeta **Reserva preparada — revisa y firma**, revisa los datos y pulsa **Firmar reserva**. La firma se hace en tu cartera.
 
+Si quieres **varias noches seguidas**, pídeselas como un rango (por ejemplo, «la 102 del 15 al 18 de junio»). El asistente comprueba la estancia entera y, si está libre, te enseña **una tarjeta por noche** dentro del panel **Estancia**, con el total; las firmas una a una. Si falta alguna noche, te lo dice y te propone otras fechas u otra habitación en vez de dejar la reserva a medias.
+
 ## Paso a paso
 
 1. Entra en la página del asistente. Verás el título **Asistente IA** y, debajo, la frase «Pregunta por disponibilidad y prepara tu reserva; tú firmas en tu wallet.»
@@ -66,3 +68,4 @@ flowchart TD
 - **¿Con qué se paga?** Con ETH, la moneda digital de la red de pruebas del hotel; el importe aparece en la tarjeta antes de firmar.
 - **¿Puedo pedir la reserva sin cartera?** Puedes preguntar, pero para reservar necesitas conectar la cartera y firmar.
 - **¿El asistente se inventa los precios?** No: lee el precio real anotado en el registro del hotel y lo vuelve a comprobar antes de dejarte firmar.
+- **¿Puedo pedirle varias noches seguidas?** Sí. Dile el rango con la fecha de entrada y la de salida (la noche de salida no se compra). Te prepara una compra por noche; verás el total y las firmas una a una. Si alguna noche del rango no está disponible, te lo dice y te ofrece alternativas. No firma por ti en ningún caso.

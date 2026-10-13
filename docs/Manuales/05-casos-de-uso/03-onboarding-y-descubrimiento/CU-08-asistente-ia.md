@@ -12,6 +12,8 @@ El asistente es un chat. Le escribes como le hablarías a un amigo. Por ejemplo:
 
 Lo importante: el asistente **no firma nada y no mueve dinero**. Solo prepara los datos de la compra. La firma la das tú en tu cartera, cuando tú quieras.
 
+También puedes pedirle una **estancia de varias noches** («la 102 del 15 al 18 de junio»). En ese caso comprueba las noches del rango, te dice el total y te deja **una compra preparada por noche, en un solo panel**, porque cada noche es una ficha distinta y se firma aparte. Si alguna noche del rango no está libre, no prepara media estancia: te lo dice y te propone alternativas.
+
 Antes de enseñarte el botón de firmar, el sistema comprueba el precio por su cuenta. Si alguien ha tocado el precio por el camino, la compra no se ofrece.
 
 Ese doble control existe para que no te cobren de más. Primero valida el servidor. Después, la propia ventana de compra lo vuelve a comprobar delante de ti.
@@ -49,6 +51,8 @@ El asistente no es una persona. Es un programa que consulta el sistema y respond
 
 Si la verificación falla, no verás el botón. El sistema prefiere no ofrecerte una compra dudosa.
 
+**Si pides varias noches seguidas**, el paso 8 cambia un poco: en vez de una tarjeta, verás un panel de estancia con **una tarjeta por noche, numeradas y por orden de fecha**, y el importe total. Se firma igual, pero una vez por noche; cuando termines con una, sigue con la siguiente.
+
 ## 5. Qué ves cuando sale bien
 
 - Una respuesta en español, corta y clara.
@@ -58,6 +62,7 @@ Si la verificación falla, no verás el botón. El sistema prefiere no ofrecerte
 - El sello **Verificado** antes de dejarte firmar.
 - Tu cartera pidiendo la firma, con el importe a la vista.
 - Si preguntas por tus noches, la lista de las que ya son tuyas.
+- Si pides una **estancia de varias noches**, un panel con una tarjeta por noche y el importe total. Cada noche se firma aparte, porque cada noche es una ficha distinta.
 
 ## 6. Si algo va mal
 
@@ -101,3 +106,5 @@ No se guarda en ninguna base de datos del hotel. Mientras la usas, vive en tu na
 ### ¿Qué pasa si le pido cosas que no son del hotel?
 
 Te dirá que no puede ayudarte con eso y volverá al tema de las noches. Está acotado a propósito.
+
+Sobre las estancias de varias noches: dile el rango («del 15 al 18»), teniendo en cuenta que la fecha de salida es la del último día de estancia y esa noche no se compra. Él comprueba las noches y te deja una tarjeta por noche para que las firmes por separado. Si el rango no está completo, te lo dice y te ofrece otras fechas u otra habitación en lugar de preparar solo una parte.

@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChatMessage, PreparedPurchase } from "@/lib/assistant/types";
 import type { AssistantPageAction } from "@/lib/assistant/page-action";
 import { browserHistoryStorage, clearHistory, loadHistory, saveHistory, shouldForgetConversation } from "./history";
+import { sanitizeHighlights } from "@/lib/assistant/highlights";
+import { sanitizePreparedPurchases } from "@/lib/assistant/stay";
 
 export type AssistantStatus = "idle" | "loading" | "error";
 
@@ -14,7 +16,11 @@ export interface UseAssistantResult {
   readonly unavailable: boolean;
   /** `true` si hay un último turno de usuario que se puede reenviar (MINOR#27). */
   readonly canRetry: boolean;
-  readonly preparedPurchase: PreparedPurchase | null;
+  /**
+   * Compras preparadas del turno: una para una noche, varias para una **estancia** (petición del
+   * responsable, 2026-10-13). Vacío si no hay nada que firmar.
+   */
+  readonly preparedPurchases: readonly PreparedPurchase[];
   send: (text: string) => Promise<void>;
   /** Reenvía el último turno de usuario sin reescribir el input (MINOR#27). */
   retry: () => Promise<void>;
@@ -23,11 +29,22 @@ export interface UseAssistantResult {
    * abierto. Es lo que dispara el botón con el icono de nueva conversación.
    */
   startNew: () => void;
+  /**
+   * Añade al hilo un mensaje del asistente generado **en el cliente** (petición del responsable,
+   * 2026-10-11): se usa para que el resultado de la firma con la billetera —confirmada, no
+   * verificable o fallida— quede **como parte de la conversación**, y no solo en el recibo del panel.
+   */
+  appendLocal: (text: string) => void;
 }
 
 interface AssistantApiResponse {
   readonly reply: string;
-  readonly preparedPurchase: PreparedPurchase | null;
+  /** Compra suelta (una noche); se mantiene por compatibilidad con el contrato anterior. */
+  readonly preparedPurchase?: PreparedPurchase | null;
+  /** Estancia de varias noches: una compra por noche, ya validadas server-side. */
+  readonly preparedPurchases?: unknown;
+  /** Noches ofrecidas en el turno (formato amigable): llegan ya normalizadas del servidor. */
+  readonly highlights?: unknown;
   /** Navegación que muestra el resultado de la consulta en la página (incremento v4). */
   readonly pageAction?: AssistantPageAction | null;
 }
@@ -53,7 +70,7 @@ export function useAssistant(
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [status, setStatus] = useState<AssistantStatus>("idle");
   const [unavailable, setUnavailable] = useState(false);
-  const [preparedPurchase, setPreparedPurchase] = useState<PreparedPurchase | null>(null);
+  const [preparedPurchases, setPreparedPurchases] = useState<PreparedPurchase[]>([]);
   // Almacenamiento de la pestaña, resuelto una sola vez (puede ser `null`: sin memoria y ya).
   const storageRef = useRef<ReturnType<typeof browserHistoryStorage>>(null);
   // Última conversación enviada con éxito de envío (no necesariamente de respuesta): base del reintento.
@@ -88,7 +105,7 @@ export function useAssistant(
   const startNew = useCallback((): void => {
     lastConversation.current = null;
     setMessages([]);
-    setPreparedPurchase(null);
+    setPreparedPurchases([]);
     setStatus("idle");
     setUnavailable(false);
     clearHistory(storageRef.current);
@@ -113,7 +130,7 @@ export function useAssistant(
       persist(conversation);
       setStatus("loading");
       setUnavailable(false); // se está (re)intentando: oculta el aviso previo mientras carga.
-      setPreparedPurchase(null);
+      setPreparedPurchases([]);
 
       const fail = (): void => {
         setUnavailable(true);
@@ -133,10 +150,16 @@ export function useAssistant(
         if (!res.ok) return fail();
         const data = (await res.json()) as AssistantApiResponse;
         setUnavailable(false);
-        const answered: ChatMessage[] = [...conversation, { role: "assistant", text: data.reply }];
+        const highlights = sanitizeHighlights(data.highlights);
+        const answered: ChatMessage[] = [
+          ...conversation,
+          highlights.length > 0
+            ? { role: "assistant", text: data.reply, highlights }
+            : { role: "assistant", text: data.reply },
+        ];
         setMessages(answered);
         persist(answered);
-        setPreparedPurchase(data.preparedPurchase ?? null);
+        setPreparedPurchases(sanitizePreparedPurchases(data.preparedPurchases, data.preparedPurchase));
         setStatus("idle");
         // La consulta se materializa en la página (catálogo filtrado): se avisa al llamante.
         if (data.pageAction) onPageAction?.(data.pageAction);
@@ -156,6 +179,22 @@ export function useAssistant(
     [dispatch, messages, status],
   );
 
+  /**
+   * Añade un mensaje del asistente generado localmente (el resultado de la firma, petición del
+   * responsable 2026-10-11). No toca `lastConversation`: el reintento sigue apuntando al último turno
+   * del usuario, no a este aviso del sistema.
+   */
+  const appendLocal = useCallback(
+    (text: string): void => {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+      const next: ChatMessage[] = [...messages, { role: "assistant", text: trimmed }];
+      setMessages(next);
+      persist(next);
+    },
+    [messages, persist],
+  );
+
   // Reenvía la última conversación: reutiliza el turno de usuario sin reescribir el input (MINOR#27).
   const retry = useCallback(async (): Promise<void> => {
     const last = lastConversation.current;
@@ -168,9 +207,10 @@ export function useAssistant(
     status,
     unavailable,
     canRetry: status === "error" && lastConversation.current !== null,
-    preparedPurchase,
+    preparedPurchases,
     send,
     retry,
     startNew,
+    appendLocal,
   };
 }

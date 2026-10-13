@@ -8,6 +8,7 @@ import {
   checkAvailability,
   getOwnedNights,
   listAvailableNights,
+  prepareStayTx,
   searchHotelManuals,
   type ToolConfig,
 } from "./tools";
@@ -275,5 +276,102 @@ describe("searchHotelManuals (TC-MCP-009, H2)", () => {
 
   it("respeta el límite pedido", () => {
     expect(searchHotelManuals({ query: "noche", limit: 1 }).length).toBeLessThanOrEqual(1);
+  });
+});
+
+describe("prepareStayTx (TC-MCP-010) · reserva en rango de fechas", () => {
+  const D1 = 20260615;
+  const D2 = 20260616;
+  const D3 = 20260617;
+  const D4 = 20260618; // salida: la noche de salida NO se compra
+
+  const t102 = (date: number): bigint => encodeTokenId(102, date);
+  const t116 = (date: number): bigint => encodeTokenId(116, date);
+  const DOBLE_PRICE = 80_000_000_000_000_000n;
+
+  /** Estancia completa en la 102 (simple); en la 116 (doble) falta la tercera noche. */
+  const stayReader = new FakeChainReader({
+    mints: [
+      mint(t102(D1), 102, D1),
+      mint(t102(D2), 102, D2),
+      mint(t102(D3), 102, D3),
+      mint(t116(D1), 116, D1, DOBLE_PRICE),
+      mint(t116(D2), 116, D2, DOBLE_PRICE),
+    ],
+    signals: new Map<string, NightSignals>([
+      [t102(D1).toString(), disponible()],
+      [t102(D2).toString(), disponible()],
+      [t102(D3).toString(), disponible()],
+      [t116(D1).toString(), disponible(DOBLE_PRICE)],
+      [t116(D2).toString(), disponible(DOBLE_PRICE)],
+    ]),
+  });
+
+  it("devuelve una tx sin firmar por noche, en la misma habitación, y el importe total", async () => {
+    const plan = await prepareStayTx(stayReader, CONFIG, { room: 102, checkIn: D1, checkOut: D4 });
+
+    expect(plan.room).toBe(102);
+    expect(plan.checkIn).toBe(D1);
+    expect(plan.checkOut).toBe(D4);
+    expect(plan.nights.map((n) => n.dateYYYYMMDD)).toEqual([D1, D2, D3]);
+    expect(plan.nights.map((n) => n.tokenId)).toEqual([
+      t102(D1).toString(),
+      t102(D2).toString(),
+      t102(D3).toString(),
+    ]);
+    expect(plan.totalPriceWei).toBe((PRICE * 3n).toString());
+
+    for (const night of plan.nights) {
+      const check = verifyPurchaseTx({
+        tx: night.tx,
+        expectedTokenId: BigInt(night.tokenId),
+        expectedPriceWei: PRICE,
+        expectedContract: CONTRACT,
+        expectedChainId: CONFIG.chainId,
+      });
+      expect(check.ok).toBe(true);
+    }
+  });
+
+  it("checkOut es la fecha de salida: esa noche no entra en la estancia", async () => {
+    const plan = await prepareStayTx(stayReader, CONFIG, { room: 102, checkIn: D1, checkOut: D3 });
+    expect(plan.nights.map((n) => n.dateYYYYMMDD)).toEqual([D1, D2]);
+  });
+
+  it("es todo o nada: una noche no comprable no produce un plan parcial", async () => {
+    await expect(
+      prepareStayTx(stayReader, CONFIG, { room: 116, checkIn: D1, checkOut: D4 }),
+    ).rejects.toMatchObject({ code: "STAY_NOT_AVAILABLE" });
+  });
+
+  it("sin habitación fija elige la primera con la estancia completa y respeta el tipo", async () => {
+    const cualquiera = await prepareStayTx(stayReader, CONFIG, { checkIn: D1, checkOut: D4 });
+    expect(cualquiera.room).toBe(102); // la 116 no completa las tres noches
+
+    const doble = await prepareStayTx(stayReader, CONFIG, { type: "doble", checkIn: D1, checkOut: D3 });
+    expect(doble.room).toBe(116);
+    expect(doble.nights).toHaveLength(2);
+    expect(doble.totalPriceWei).toBe((DOBLE_PRICE * 2n).toString());
+  });
+
+  it("rechaza una entrada ya pasada", async () => {
+    await expect(
+      prepareStayTx(stayReader, CONFIG, { room: 102, checkIn: 20260530, checkOut: 20260602 }),
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" });
+  });
+
+  it("rechaza una salida que no es posterior a la entrada y una fecha inexistente", async () => {
+    await expect(
+      prepareStayTx(stayReader, CONFIG, { room: 102, checkIn: D2, checkOut: D2 }),
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" });
+    await expect(
+      prepareStayTx(stayReader, CONFIG, { room: 102, checkIn: 20260230, checkOut: 20260302 }),
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" });
+  });
+
+  it("acota la estancia a 14 noches", async () => {
+    await expect(
+      prepareStayTx(stayReader, CONFIG, { room: 102, checkIn: D1, checkOut: 20260701 }),
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" });
   });
 });

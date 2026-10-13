@@ -3,11 +3,15 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useOnboarding } from "@/components/wallet/useOnboarding";
 import type { AssistantPageAction } from "@/lib/assistant/page-action";
 import { useAssistant } from "./useAssistant";
+import { MessageText } from "./MessageText";
+import { NightHighlights, formatNightDate } from "./NightHighlights";
+import type { NightHighlight } from "@/lib/assistant/highlights";
 import { PurchaseHandoff } from "./PurchaseHandoff";
+import { StayHandoff } from "./StayHandoff";
 
 /** Altura máxima (px) del `<textarea>` autoexpandible antes de mostrar scroll interno (UX#16). */
 const TEXTAREA_MAX_PX = 160;
@@ -49,6 +53,7 @@ export interface AssistantChatProps {
 /** Panel de chat del asistente IA (CU-08, docs/SRS.md §9): conversación + handoff a firma + estado 08e. */
 export function AssistantChat({ variant = "page", onPageAction }: AssistantChatProps = {}) {
   const t = useTranslations("assistant");
+  const locale = useLocale();
   const router = useRouter();
   const { address } = useOnboarding();
   // Sin manejador propio (la página `/asistente`), el resultado se enseña igual navegando a la
@@ -63,7 +68,7 @@ export function AssistantChat({ variant = "page", onPageAction }: AssistantChatP
     },
     [onPageAction, router],
   );
-  const { messages, status, unavailable, canRetry, preparedPurchase, send, retry, startNew } =
+  const { messages, status, unavailable, canRetry, preparedPurchases, send, retry, startNew, appendLocal } =
     useAssistant(address, t("errorReply"), navigate);
   const [input, setInput] = useState("");
   const logRef = useRef<HTMLDivElement>(null);
@@ -163,17 +168,35 @@ export function AssistantChat({ variant = "page", onPageAction }: AssistantChatP
           </>
         )}
         {messages.map((m, i) => (
-          <p
+          <div
             key={i}
             data-testid={`msg-${m.role}`}
             className={
               m.role === "user"
                 ? "self-end rounded-brand bg-azure px-3 py-2 text-shell"
-                : "self-start rounded-brand bg-mist-2 px-3 py-2 text-ink"
+                : "self-start max-w-full rounded-brand bg-mist-2 px-3 py-2 text-ink"
             }
           >
-            {m.text}
-          </p>
+            {/* Formato amigable (2026-10-11): el markdown ligero del modelo se pinta con jerarquía. */}
+            <MessageText text={m.text} />
+            {/* Noches ofrecidas en este mensaje: tarjetas ordenadas con su botón de reserva. */}
+            {m.highlights && m.highlights.length > 0 && (
+              <div className="mt-2">
+                <NightHighlights
+                  nights={m.highlights}
+                  onReserve={(night: NightHighlight) => {
+                    const date = formatNightDate(night.dateYYYYMMDD, locale);
+                    void send(
+                      t("highlights.reservePrompt", {
+                        room: night.room ?? night.tokenId,
+                        date: date ?? String(night.dateYYYYMMDD ?? ""),
+                      }),
+                    );
+                  }}
+                />
+              </div>
+            )}
+          </div>
         ))}
         {status === "loading" && (
           <p data-testid="assistant-loading" className="self-start text-ink-soft" role="status">
@@ -208,7 +231,13 @@ export function AssistantChat({ variant = "page", onPageAction }: AssistantChatP
         </div>
       )}
 
-      {preparedPurchase && <PurchaseHandoff purchase={preparedPurchase} />}
+      {/* Una noche → handoff de siempre. Varias (estancia) → panel de estancia, una firma por noche. */}
+      {preparedPurchases.length === 1 && (
+        <PurchaseHandoff purchase={preparedPurchases[0]!} onOutcome={appendLocal} />
+      )}
+      {preparedPurchases.length > 1 && (
+        <StayHandoff purchases={preparedPurchases} onOutcome={appendLocal} />
+      )}
 
       <form onSubmit={onSubmit} className="flex items-end gap-2">
         {/* Nueva conversación (2026-10-10): borra el hilo y su memoria. Se deshabilita cuando no hay

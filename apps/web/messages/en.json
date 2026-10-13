@@ -943,6 +943,27 @@
         "failed": "Could not complete booking."
       },
       "nightAlreadySold": "This night is already sold. Ask the assistant for another or pick one in the catalogue."
+    },
+    "highlights": {
+      "title": "Available nights",
+      "room": "Room {room}",
+      "roomUnknown": "Available night",
+      "resale": "Resale",
+      "reserve": "Prepare booking",
+      "reservePrompt": "Prepare the booking for room {room} on {date}."
+    },
+    "outcome": {
+      "confirmed": "Done: the booking for {where} is signed and confirmed (tx {hash}). You can see it in “My nights”.",
+      "unverifiable": "The signature for {where} was sent, but I could not read the receipt. Check “My nights” before buying again.",
+      "reverted": "The purchase of {where} did not go through: the network rejected the transaction.",
+      "rejected": "The booking for {where} was not signed: {reason}. You can try again whenever you like."
+    },
+    "stay": {
+      "title": "Stay of {count} nights",
+      "subtitle": "Review and sign each night separately: that is how the whole range is booked.",
+      "nightOf": "Night {index} of {total}",
+      "total": "Total: {total} ETH",
+      "hint": "Each night is a separate purchase: your wallet will ask you to sign once per night."
     }
   },
   "contractPaused": {

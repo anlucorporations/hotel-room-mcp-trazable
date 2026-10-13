@@ -1,5 +1,6 @@
 import type { PurchaseTxData } from "@hotel/shared/domain";
 import type { AssistantToolCall } from "./page-action";
+import type { NightHighlight } from "./highlights";
 
 /**
  * Tipos neutrales del asistente (RF-12, CU-08, docs/SRS.md §9). No dependen del proveedor LLM ni del MCP:
@@ -70,6 +71,12 @@ export interface LlmResponse {
 export interface ChatMessage {
   readonly role: "user" | "assistant";
   readonly text: string;
+  /**
+   * Noches ofrecidas en este mensaje (petición del responsable, 2026-10-11): el panel las pinta como
+   * tarjetas ordenadas en lugar de dejar la información de habitaciones en prosa. Viaja también en la
+   * memoria del hilo (`history.ts`) para que el formato sobreviva a la navegación.
+   */
+  readonly highlights?: readonly NightHighlight[];
 }
 
 /** Tx de compra preparada y **validada server-side** lista para que el usuario firme. */
@@ -84,6 +91,12 @@ export interface AssistantResult {
   readonly domainToolCalls: number;
   /** Compra preparada y verificada, o `null` si no procede / no validó. */
   readonly preparedPurchase: PreparedPurchase | null;
+  /**
+   * **Todas** las compras preparadas y verificadas del turno. Para una noche es una sola; para una
+   * **estancia de varias noches** (`prepareStayTx`, petición del responsable 2026-10-13) es una por
+   * noche, en orden de fecha. `preparedPurchase` es la primera de esta lista (compatibilidad).
+   */
+  readonly preparedPurchases: readonly PreparedPurchase[];
   /** Nº de llamadas al modelo (rondas de herramientas más el cierre). */
   readonly llmCalls: number;
   /** Consumo de tokens sumado de todas las llamadas de la petición (RNF-24). */
@@ -95,4 +108,9 @@ export interface AssistantResult {
    * prima de la acción de página (`derivePageAction`): una herramienta que falló no mueve al usuario.
    */
   readonly toolCalls: readonly AssistantToolCall[];
+  /**
+   * Noches ofrecidas en el turno, ya ordenadas (formato amigable para su compra): se derivan de los
+   * resultados reales del catálogo, no de la prosa del modelo.
+   */
+  readonly highlights: readonly NightHighlight[];
 }

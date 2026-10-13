@@ -33,6 +33,19 @@ export const buildPurchaseTxShape = {
   tokenId,
 } as const;
 
+/**
+ * Estancia de varias noches (petición del responsable, 2026-10-13: «no se realizan la reserva en
+ * rango de fechas»). `checkIn` es la **primera noche** y `checkOut` la **fecha de salida**: la noche
+ * del `checkOut` NO se compra (semántica hotelera estándar). `room` fija la habitación; si se omite,
+ * la herramienta elige la primera del `type` pedido (o de cualquier tipo) con la estancia completa.
+ */
+export const prepareStayTxShape = {
+  checkIn: yyyymmdd,
+  checkOut: yyyymmdd,
+  room: roomNumber.optional(),
+  type: z.enum(["simple", "doble", "suite"]).optional(),
+} as const;
+
 /** Audiencias del índice de conocimiento (H2); la escalera de visibilidad vive en `knowledge/search`. */
 const knowledgeAudience = z.enum(["cliente", "recepcion", "propietario", "interno"]);
 
@@ -52,10 +65,12 @@ export const listAvailableNightsInput = z.object(listAvailableNightsShape);
 export const checkAvailabilityInput = z.object(checkAvailabilityShape);
 export const getOwnedNightsInput = z.object(getOwnedNightsShape);
 export const buildPurchaseTxInput = z.object(buildPurchaseTxShape);
+export const prepareStayTxInput = z.object(prepareStayTxShape);
 export const searchHotelManualsInput = z.object(searchHotelManualsShape);
 
 export type ListAvailableNightsInput = z.infer<typeof listAvailableNightsInput>;
 export type CheckAvailabilityInput = z.infer<typeof checkAvailabilityInput>;
 export type GetOwnedNightsInput = z.infer<typeof getOwnedNightsInput>;
 export type BuildPurchaseTxInput = z.infer<typeof buildPurchaseTxInput>;
+export type PrepareStayTxInput = z.infer<typeof prepareStayTxInput>;
 export type SearchHotelManualsInput = z.infer<typeof searchHotelManualsInput>;

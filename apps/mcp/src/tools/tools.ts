@@ -6,19 +6,29 @@ import {
   decodeTokenId,
   encodeTokenId,
   isPurchasable,
+  isValidCalendarDate,
   roomTypeOf,
+  splitYYYYMMDD,
   type NightState,
   type SaleType,
 } from "@hotel/shared";
 import type { ChainReader, NightSignals } from "../chain/chain-reader";
 import { searchKnowledge, type KnowledgeHit } from "../knowledge/search";
 import { ToolError } from "./errors";
-import type { AvailabilityResult, NightDescriptor, OwnedNightDescriptor, PurchaseTxData } from "./types";
+import type {
+  AvailabilityResult,
+  NightDescriptor,
+  OwnedNightDescriptor,
+  PurchaseTxData,
+  StayNightDescriptor,
+  StayPlan,
+} from "./types";
 import type {
   BuildPurchaseTxInput,
   CheckAvailabilityInput,
   GetOwnedNightsInput,
   ListAvailableNightsInput,
+  PrepareStayTxInput,
   SearchHotelManualsInput,
 } from "./schemas";
 
@@ -42,6 +52,16 @@ const ABSENT_SIGNALS: NightSignals = {
   primaryPriceWei: 0n,
   listingPriceWei: 0n,
 };
+
+/**
+ * Tope de noches de una estancia preparada. Es una palanca de coste y de UX: cada noche es una tx
+ * que el huésped firma a mano, así que una «estancia» de meses no es un caso real y multiplicaría
+ * las lecturas on-chain sin aportar nada.
+ */
+export const MAX_STAY_NIGHTS = 14;
+
+/** Tope de habitaciones candidatas cuando la estancia no fija habitación (acota las lecturas). */
+export const MAX_STAY_ROOMS = 8;
 
 function todayYYYYMMDD(): number {
   const now = new Date();
@@ -206,6 +226,162 @@ export async function buildPurchaseTx(
     contractAddress: config.contractAddress,
     chainId: config.chainId,
   });
+}
+
+/**
+ * Noches (AAAAMMDD) de la estancia `[checkIn, checkOut)`: `checkOut` es la **fecha de salida**, así
+ * que esa noche no se compra. Lanza `INVALID_INPUT` si alguna fecha no existe en el calendario
+ * (2026-02-30, 29-feb no bisiesto): no se normaliza en silencio a otra noche.
+ */
+function stayDates(checkIn: number, checkOut: number): number[] {
+  const start = splitYYYYMMDD(checkIn);
+  const end = splitYYYYMMDD(checkOut);
+  if (!isValidCalendarDate(start) || !isValidCalendarDate(end)) {
+    throw new ToolError("INVALID_INPUT", `Fecha de estancia inválida: ${checkIn}–${checkOut}.`);
+  }
+  const dates: number[] = [];
+  const cursor = new Date(Date.UTC(start.year, start.month - 1, start.day));
+  // El bucle se acota por `checkOut`; el tope evita un rango absurdo (años) si el llamante se pasa.
+  while (dates.length <= MAX_STAY_NIGHTS) {
+    const date =
+      cursor.getUTCFullYear() * 10_000 + (cursor.getUTCMonth() + 1) * 100 + cursor.getUTCDate();
+    if (date >= checkOut) break;
+    dates.push(date);
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return dates;
+}
+
+/** Plan de una habitación concreta: las noches comprables y las que no lo son. */
+async function planRoom(
+  reader: ChainReader,
+  config: ToolConfig,
+  room: number,
+  dates: readonly number[],
+): Promise<{ nights: StayNightDescriptor[]; missing: number[] }> {
+  const type = roomTypeOf(room);
+  const nights: StayNightDescriptor[] = [];
+  const missing: number[] = [];
+  if (!type) return { nights, missing: [...dates] };
+
+  for (const date of dates) {
+    let tokenId: bigint;
+    try {
+      tokenId = encodeTokenId(room, date);
+    } catch {
+      missing.push(date);
+      continue;
+    }
+    // Cada lectura se aísla: un revert puntual se cuenta como «noche no disponible» en lugar de
+    // tumbar toda la estancia (paridad con `listAvailableNights`).
+    const signals = await reader.getNightSignals(tokenId).catch((): NightSignals => ABSENT_SIGNALS);
+    const terms = signals.exists ? purchaseTermsOf(signals) : null;
+    if (!terms) {
+      missing.push(date);
+      continue;
+    }
+    nights.push({
+      tokenId: tokenId.toString(),
+      room,
+      dateYYYYMMDD: date,
+      type,
+      priceWei: terms.priceWei.toString(),
+      saleType: terms.saleType,
+      tx: buildPurchaseTxData({
+        tokenId,
+        priceWei: terms.priceWei,
+        saleType: terms.saleType,
+        contractAddress: config.contractAddress,
+        chainId: config.chainId,
+      }),
+    });
+  }
+  return { nights, missing };
+}
+
+/**
+ * TC-MCP-010: prepara la compra de **todas las noches de una estancia** en una misma habitación
+ * (petición del responsable, 2026-10-13: «no se realizan la reserva en rango de fechas»). Devuelve
+ * una tx **sin firmar** por noche —cada noche es una compra distinta, con su propia firma— y el
+ * importe total.
+ *
+ * Es **todo o nada**: si alguna noche de la estancia no es comprable en la habitación elegida, no
+ * devuelve un plan parcial (el asistente pide alternativas con `listAvailableNights`), porque un
+ * huésped no debe firmar media estancia sin saberlo. Sin `room`, elige la primera habitación del
+ * `type` pedido —o de cualquier tipo— que tenga la estancia completa.
+ */
+export async function prepareStayTx(
+  reader: ChainReader,
+  config: ToolConfig,
+  input: PrepareStayTxInput,
+): Promise<StayPlan> {
+  const dates = stayDates(input.checkIn, input.checkOut);
+  if (input.checkIn < todayYYYYMMDD()) {
+    throw new ToolError(
+      "INVALID_INPUT",
+      `La entrada (${input.checkIn}) ya pasó: hoy es ${todayYYYYMMDD()} y las noches pasadas no se compran.`,
+    );
+  }
+  if (dates.length === 0) {
+    throw new ToolError(
+      "INVALID_INPUT",
+      `La salida (${input.checkOut}) debe ser posterior a la entrada (${input.checkIn}).`,
+    );
+  }
+  if (dates.length > MAX_STAY_NIGHTS) {
+    throw new ToolError(
+      "INVALID_INPUT",
+      `La estancia no puede superar ${MAX_STAY_NIGHTS} noches (se pidieron ${dates.length}).`,
+    );
+  }
+
+  let candidates: number[];
+  if (input.room !== undefined) {
+    candidates = [input.room];
+  } else {
+    // Sin habitación fija: solo las habitaciones que tienen TODAS las noches minteadas pueden
+    // completar la estancia, así que el filtro barato (los `Mint`) evita leer señales en balde.
+    const mints = await reader.getMintRecords();
+    const mintedByRoom = new Map<number, Set<number>>();
+    for (const mint of mints) {
+      const type = roomTypeOf(mint.room);
+      if (!type) continue;
+      if (input.type && input.type !== type) continue;
+      const minted = mintedByRoom.get(mint.room) ?? new Set<number>();
+      minted.add(mint.dateYYYYMMDD);
+      mintedByRoom.set(mint.room, minted);
+    }
+    candidates = [...mintedByRoom.entries()]
+      .filter(([, minted]) => dates.every((date) => minted.has(date)))
+      .map(([room]) => room)
+      .sort((a, b) => a - b)
+      .slice(0, MAX_STAY_ROOMS);
+
+    if (candidates.length === 0) {
+      throw new ToolError(
+        "STAY_NOT_AVAILABLE",
+        `Ninguna habitación tiene disponibles todas las noches de la estancia (${dates.join(", ")}).`,
+      );
+    }
+  }
+
+  const failures: { room: number; missing: number[] }[] = [];
+  for (const room of candidates) {
+    const plan = await planRoom(reader, config, room, dates);
+    if (plan.missing.length === 0) {
+      return {
+        room,
+        checkIn: input.checkIn,
+        checkOut: input.checkOut,
+        nights: plan.nights,
+        totalPriceWei: plan.nights.reduce((sum, night) => sum + BigInt(night.priceWei), 0n).toString(),
+      };
+    }
+    failures.push({ room, missing: plan.missing });
+  }
+
+  const detail = failures.map((f) => `hab. ${f.room}: sin comprar ${f.missing.join(", ")}`).join("; ");
+  throw new ToolError("STAY_NOT_AVAILABLE", `No hay una habitación libre para toda la estancia. ${detail}`);
 }
 
 /**

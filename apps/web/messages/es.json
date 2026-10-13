@@ -943,6 +943,27 @@
         "failed": "No se pudo completar la reserva. Revisa la red y vuelve a intentarlo."
       },
       "nightAlreadySold": "Esta noche ya está vendida. Pide otra al asistente o elígela en el catálogo."
+    },
+    "highlights": {
+      "title": "Noches disponibles",
+      "room": "Habitación {room}",
+      "roomUnknown": "Noche disponible",
+      "resale": "Reventa",
+      "reserve": "Preparar reserva",
+      "reservePrompt": "Prepara la reserva de la habitación {room} para el {date}."
+    },
+    "outcome": {
+      "confirmed": "Listo: la reserva de {where} está firmada y confirmada (tx {hash}). Puedes verla en «Mis noches».",
+      "unverifiable": "La firma de {where} se envió, pero no he podido leer el recibo. Comprueba «Mis noches» antes de repetir la compra.",
+      "reverted": "La compra de {where} no se completó: la red rechazó la transacción.",
+      "rejected": "No se firmó la reserva de {where}: {reason}. Puedes intentarlo de nuevo cuando quieras."
+    },
+    "stay": {
+      "title": "Estancia de {count} noches",
+      "subtitle": "Revisa y firma cada noche por separado: así se reserva el rango completo.",
+      "nightOf": "Noche {index} de {total}",
+      "total": "Total: {total} ETH",
+      "hint": "Cada noche es una compra distinta: tu cartera te pedirá la firma una vez por noche."
     }
   },
   "contractPaused": {

@@ -2,7 +2,7 @@
  * GENERADO por `apps/mcp/scripts/build-knowledge-index.mjs` — NO EDITAR A MANO.
  *
  * Regenerar con: `corepack pnpm --filter @hotel/mcp run knowledge`.
- * Última generación: 2026-10-08
+ * Última generación: 2026-10-13
  *
  * Fuentes: 21 manuales dirigidos a personas (huésped, recepción y propietario).
  *
@@ -1701,13 +1701,22 @@ export const KNOWLEDGE_CHUNKS: readonly KnowledgeChunk[] = [
     text: "Es para ti, que quieres una noche en el Hotel Marina del Sol sin buscar a mano en el catálogo. Le cuentas al asistente qué noche buscas, él comprueba si está libre y a qué precio, y te deja la reserva lista para que la firmes tú.",
   },
   {
-    id: "huesped-07-pedir-al-asistente#empezar-en-5-minutos",
+    id: "huesped-07-pedir-al-asistente#empezar-en-5-minutos~1",
     doc: "huesped-07-pedir-al-asistente",
     docTitle: "Pídele una noche al asistente",
     section: "Empezar en 5 minutos",
     audience: "cliente",
     source: "docs/Manuales/06-huesped/07-pedir-al-asistente.md",
     text: "1. Conecta tu cartera (la aplicación donde guardas tus monedas digitales) y ponla en la red del hotel. 2. Abre el menú Descubre de la cabecera y entra en Asistente . 3. Escribe la noche que quieres, por ejemplo «¿hay alguna suite disponible en junio?», y pulsa Enviar . 4. Cuando el asistente te diga la noche y el precio, contéstale que sí. 5. En la tarjeta Reserva preparada — revisa y firma , revisa los datos y pulsa Firmar reserva . La firma se hace en tu cartera.",
+  },
+  {
+    id: "huesped-07-pedir-al-asistente#empezar-en-5-minutos~2",
+    doc: "huesped-07-pedir-al-asistente",
+    docTitle: "Pídele una noche al asistente",
+    section: "Empezar en 5 minutos",
+    audience: "cliente",
+    source: "docs/Manuales/06-huesped/07-pedir-al-asistente.md",
+    text: "Si quieres varias noches seguidas , pídeselas como un rango (por ejemplo, «la 102 del 15 al 18 de junio»). El asistente comprueba la estancia entera y, si está libre, te enseña una tarjeta por noche dentro del panel Estancia , con el total; las firmas una a una. Si falta alguna noche, te lo dice y te propone otras fechas u otra habitación en vez de dejar la reserva a medias.",
   },
   {
     id: "huesped-07-pedir-al-asistente#paso-a-paso~1",
@@ -1782,13 +1791,22 @@ export const KNOWLEDGE_CHUNKS: readonly KnowledgeChunk[] = [
     text: "El sistema admite 40 mensajes por conversación. Si te pasas, la rechaza: empieza una conversación nueva. - Cierras la página después de firmar. No pasa nada. Verás la frase «Puedes cerrar: la reserva continúa y aparecerá en «Mis noches».» y la noche estará ahí.",
   },
   {
-    id: "huesped-07-pedir-al-asistente#preguntas-rapidas",
+    id: "huesped-07-pedir-al-asistente#preguntas-rapidas~1",
     doc: "huesped-07-pedir-al-asistente",
     docTitle: "Pídele una noche al asistente",
     section: "Preguntas rápidas",
     audience: "cliente",
     source: "docs/Manuales/06-huesped/07-pedir-al-asistente.md",
-    text: "- ¿El asistente puede firmar por mí? No. Nunca firma ni toca tus claves: la firma es siempre tuya, en tu cartera. - ¿Se guarda la conversación? No queda guardada: vive solo en tu navegador mientras la tienes abierta. - ¿Con qué se paga? Con ETH, la moneda digital de la red de pruebas del hotel; el importe aparece en la tarjeta antes de firmar. - ¿Puedo pedir la reserva sin cartera? Puedes preguntar, pero para reservar necesitas conectar la cartera y firmar. - ¿El asistente se inventa los precios? No: lee el precio real anotado en el registro del hotel y lo vuelve a comprobar antes de dejarte firmar.",
+    text: "- ¿El asistente puede firmar por mí? No. Nunca firma ni toca tus claves: la firma es siempre tuya, en tu cartera. - ¿Se guarda la conversación? No queda guardada: vive solo en tu navegador mientras la tienes abierta. - ¿Con qué se paga? Con ETH, la moneda digital de la red de pruebas del hotel; el importe aparece en la tarjeta antes de firmar. - ¿Puedo pedir la reserva sin cartera? Puedes preguntar, pero para reservar necesitas conectar la cartera y firmar. - ¿El asistente se inventa los precios? No: lee el precio real anotado en el registro del hotel y lo vuelve a comprobar antes de dejarte firmar. - ¿Puedo pedirle varias noches seguidas? Sí. Dile el rango con la fecha de entrada y la de salida (la noche de salida no se compra).",
+  },
+  {
+    id: "huesped-07-pedir-al-asistente#preguntas-rapidas~2",
+    doc: "huesped-07-pedir-al-asistente",
+    docTitle: "Pídele una noche al asistente",
+    section: "Preguntas rápidas",
+    audience: "cliente",
+    source: "docs/Manuales/06-huesped/07-pedir-al-asistente.md",
+    text: "Te prepara una compra por noche; verás el total y las firmas una a una. Si alguna noche del rango no está disponible, te lo dice y te ofrece alternativas. No firma por ti en ningún caso.",
   },
   {
     id: "huesped-08-poner-tu-noche-en-reventa#portada",

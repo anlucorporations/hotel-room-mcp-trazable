@@ -15,6 +15,8 @@ import type {
   Turn,
 } from "./types";
 import type { AssistantToolCall } from "./page-action";
+import { highlightsFromToolResult, mergeHighlights, type NightHighlight } from "./highlights";
+import { mergePreparedPurchases, stayPurchasesFrom } from "./stay";
 
 /** Validación server-side independiente de la tx (ADR-11); inyectada para poder testearla. */
 export type ValidatePreparedTx = (tokenId: string, tx: PurchaseTxData) => Promise<PreparedTxCheck>;
@@ -33,6 +35,8 @@ export interface AssistantDeps {
 }
 
 const BUILD_PURCHASE_TOOL = "buildPurchaseTx";
+/** Estancia de varias noches (petición del responsable, 2026-10-13): una tx por noche. */
+const PREPARE_STAY_TOOL = "prepareStayTx";
 const DEFAULT_MAX_ROUNDS = 2;
 
 /**
@@ -81,11 +85,14 @@ export async function runAssistant(
   const maxRounds = deps.maxToolRounds ?? DEFAULT_MAX_ROUNDS;
 
   let domainToolCalls = 0;
-  let preparedPurchase: PreparedPurchase | null = null;
+  let preparedPurchases: PreparedPurchase[] = [];
   // Herramientas que respondieron con éxito (incremento v4): base determinista de la acción de
   // página. Se registra la ENTRADA real, no la prosa del modelo, así que el filtro del catálogo no
   // se puede manipular desde el prompt.
   const toolCalls: AssistantToolCall[] = [];
+  // Noches ofrecidas en el turno (formato amigable para su compra): se derivan de los
+  // resultados REALES del catálogo, no de la prosa del modelo.
+  let highlights: NightHighlight[] = [];
   // Consumo agregado de la petición (RNF-24): cada ronda de herramientas es una llamada facturable.
   let usage: LlmUsage = EMPTY_USAGE;
   let llmCalls = 0;
@@ -98,11 +105,13 @@ export async function runAssistant(
       return {
         reply: replyOrFallback(res.text),
         domainToolCalls,
-        preparedPurchase,
+        preparedPurchase: preparedPurchases[0] ?? null,
+        preparedPurchases,
         llmCalls,
         usage,
         droppedTurns: budget.droppedTurns,
         toolCalls,
+        highlights,
       };
     }
 
@@ -116,9 +125,16 @@ export async function runAssistant(
       // no debe llevar al catálogo con un filtro que nadie ha podido resolver).
       if (!outcome.result.isError) {
         toolCalls.push({ name: toolUse.name, input: toolUse.input });
+        highlights = mergeHighlights(
+          highlights,
+          highlightsFromToolResult(toolUse.name, parseToolContent(outcome.result.content)),
+        );
       }
-      if (toolUse.name === BUILD_PURCHASE_TOOL) {
-        preparedPurchase = outcome.preparedPurchase ?? null; // null si no validó.
+      // Compras preparadas: una noche (`buildPurchaseTx`) o la estancia entera (`prepareStayTx`).
+      // Se acumulan sin repetir tokenId, así que varias herramientas del turno componen una reserva
+      // de varias noches sin pisarse.
+      if (outcome.prepared && outcome.prepared.length > 0) {
+        preparedPurchases = mergePreparedPurchases(preparedPurchases, outcome.prepared);
       }
     }
     turns.push({ role: "user", toolResults: results });
@@ -131,18 +147,20 @@ export async function runAssistant(
   return {
     reply: replyOrFallback(closing.text),
     domainToolCalls,
-    preparedPurchase,
+    preparedPurchase: preparedPurchases[0] ?? null,
+    preparedPurchases,
     llmCalls,
     usage,
     droppedTurns: budget.droppedTurns,
     toolCalls,
+    highlights,
   };
 }
 
 async function dispatchTool(
   deps: AssistantDeps,
   toolUse: ToolUse,
-): Promise<{ result: ToolResult; preparedPurchase?: PreparedPurchase }> {
+): Promise<{ result: ToolResult; prepared?: PreparedPurchase[] }> {
   try {
     const raw = await deps.gateway.callTool(toolUse.name, toolUse.input);
 
@@ -162,14 +180,48 @@ async function dispatchTool(
       }
       return {
         result: { toolUseId: toolUse.id, content: JSON.stringify(tx) },
-        preparedPurchase: { tokenId, tx },
+        prepared: [{ tokenId, tx }],
       };
+    }
+
+    if (toolUse.name === PREPARE_STAY_TOOL) {
+      // Estancia de varias noches: **cada** tx se valida antes de ofrecerse y el conjunto es todo o
+      // nada. Si una noche no cuadra, no se devuelve ninguna: el usuario no debe firmar una estancia
+      // a la que le falta una noche sin saberlo (mismo guardrail que la compra de una noche).
+      const purchases = stayPurchasesFrom(raw);
+      if (purchases.length === 0) {
+        return {
+          result: toolError(toolUse.id, { error: "VALIDATION_FAILED", reasons: ["plan de estancia vacío o mal formado"] }),
+        };
+      }
+      for (const purchase of purchases) {
+        const check = await deps.validatePreparedTx(purchase.tokenId, purchase.tx);
+        if (!check.ok) {
+          return {
+            result: toolError(toolUse.id, { error: "VALIDATION_FAILED", reasons: check.reasons }),
+          };
+        }
+      }
+      return { result: { toolUseId: toolUse.id, content: JSON.stringify(raw) }, prepared: purchases };
     }
 
     return { result: { toolUseId: toolUse.id, content: JSON.stringify(raw) } };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return { result: toolError(toolUse.id, { error: message }) };
+  }
+}
+
+/**
+ * Contenido de una herramienta como objeto. El MCP devuelve texto JSON; si viniera corrupto (o no
+ * fuera JSON), se ignora en silencio: las tarjetas de noches son un extra, nunca un motivo para
+ * tumbar el turno.
+ */
+function parseToolContent(content: string): unknown {
+  try {
+    return JSON.parse(content) as unknown;
+  } catch {
+    return null;
   }
 }
 

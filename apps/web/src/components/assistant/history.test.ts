@@ -144,3 +144,40 @@ describe("shouldForgetConversation — cuándo se olvida el hilo", () => {
     expect(shouldForgetConversation(ALICE, ALICE)).toBe(false);
   });
 });
+
+describe("memoria del hilo · noches destacadas (formato amigable)", () => {
+  it("las noches sobreviven al guardado y a la recarga, ordenadas", () => {
+    const storage = fakeStorage();
+    const noche = (tokenId: string, dateYYYYMMDD: number) => ({
+      tokenId,
+      room: 101,
+      type: "simple" as const,
+      dateYYYYMMDD,
+      priceWei: "50000000000000000",
+      saleType: "PRIMARY",
+    });
+
+    saveHistory(storage, [
+      { role: "user", text: "¿qué hay?" },
+      { role: "assistant", text: "Estas:", highlights: [noche("b", 20261013), noche("a", 20261012)] },
+    ]);
+
+    const restaurado = loadHistory(storage);
+    expect(restaurado[1]!.highlights?.map((n) => n.tokenId)).toEqual(["a", "b"]);
+  });
+
+  it("las noches con forma dudosa se descartan y un mensaje sin noches no las lleva", () => {
+    const storage = fakeStorage(
+      JSON.stringify([
+        { role: "assistant", text: "sin noches" },
+        { role: "assistant", text: "con basura", highlights: [null, { room: 101 }, { tokenId: "ok", dateYYYYMMDD: 20261012 }] },
+        { role: "assistant", text: "no es lista", highlights: "no" },
+      ]),
+    );
+
+    const restaurado = loadHistory(storage);
+    expect(restaurado[0]!.highlights).toBeUndefined();
+    expect(restaurado[1]!.highlights?.map((n) => n.tokenId)).toEqual(["ok"]);
+    expect(restaurado[2]!.highlights).toBeUndefined();
+  });
+});

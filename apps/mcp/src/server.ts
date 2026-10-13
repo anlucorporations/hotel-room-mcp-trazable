@@ -7,6 +7,7 @@ import {
   checkAvailabilityShape,
   getOwnedNightsShape,
   listAvailableNightsShape,
+  prepareStayTxShape,
   searchHotelManualsShape,
 } from "./tools/schemas";
 import {
@@ -14,6 +15,7 @@ import {
   checkAvailability,
   getOwnedNights,
   listAvailableNights,
+  prepareStayTx,
   searchHotelManuals,
   type ToolConfig,
 } from "./tools/tools";
@@ -34,9 +36,11 @@ const fail = (message: string): CallToolResult => ({
 
 /**
  * Crea el MCP server del contrato (RF-12, CU-08, docs/SRS.md §9): **4 herramientas read-only**
- * (`listAvailableNights`, `checkAvailability`, `getOwnedNights`, `searchHotelManuals`) + `buildPurchaseTx`
- * (sin firma). Las herramientas de cadena delegan en el núcleo (`tools/`), que depende del puerto
- * {@link ChainReader}; `searchHotelManuals` es local (índice en memoria) y no toca la cadena.
+ * (`listAvailableNights`, `checkAvailability`, `getOwnedNights`, `searchHotelManuals`) + **2 de
+ * preparación sin firma** (`buildPurchaseTx` para una noche y `prepareStayTx` para una estancia de
+ * varias noches, petición del responsable 2026-10-13). Las herramientas de cadena delegan en el
+ * núcleo (`tools/`), que depende del puerto {@link ChainReader}; `searchHotelManuals` es local
+ * (índice en memoria) y no toca la cadena.
  * El MCP **nunca firma ni custodia claves** (§8, ADR-11).
  */
 export function createMcpServer(deps: McpServerDeps): McpServer {
@@ -82,6 +86,23 @@ export function createMcpServer(deps: McpServerDeps): McpServer {
     async (input) => {
       try {
         return ok(await buildPurchaseTx(reader, config, input));
+      } catch (error) {
+        if (error instanceof ToolError) return fail(`${error.code}: ${error.message}`);
+        throw error;
+      }
+    },
+  );
+
+  server.registerTool(
+    "prepareStayTx",
+    {
+      description:
+        "Prepara la compra de TODAS las noches de una estancia (varias noches seguidas) en una misma habitación: devuelve una transacción SIN firmar por cada noche y el importe total. `checkIn` es la primera noche y `checkOut` la fecha de salida (la noche de salida NO se compra). Si no se indica `room`, elige la primera habitación del `type` pedido con la estancia completa. Es todo o nada: si alguna noche no es comprable, no devuelve plan y hay que ofrecer alternativas con listAvailableNights.",
+      inputSchema: prepareStayTxShape,
+    },
+    async (input) => {
+      try {
+        return ok(await prepareStayTx(reader, config, input));
       } catch (error) {
         if (error instanceof ToolError) return fail(`${error.code}: ${error.message}`);
         throw error;

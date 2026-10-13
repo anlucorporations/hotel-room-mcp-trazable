@@ -361,7 +361,7 @@ huérfanas: la decisión D-15 los trae a este catálogo). `CU-PR-*` son casos de
 | **CU-13** | Quemar las noches caducadas no vendidas (automático y manual) | Sistema, Propietario | RF-11 | `burn-scheduler`, ADR-21 |
 | **CU-14** | Pausar y reanudar el contrato, con las vistas reflejando la pausa | Propietario | RF-03 | ADR-07, `/admin/pausa` |
 | **CU-15** | Retirar los fondos de la tesorería | Propietario | RF-03 | `withdrawFunds`, `/admin/fondos` |
-| **CU-16** | Pedir una noche al asistente y comprarla tras confirmar | Comprador | RF-20 | MCP + `validate-tx` |
+| **CU-16** | Pedir al asistente una noche —o una **estancia** en rango de fechas— y comprarla tras confirmar | Comprador | RF-20 | MCP (`buildPurchaseTx`/`prepareStayTx`) + `validate-tx` |
 | **CU-17** | Suscribirse a avisos push y darse de baja | Comprador | RF-12 | RFC 8291/8292, ADR-24 |
 | **CU-30** | Operar **todos** los paneles del back-office con la cuenta owner (`DEFAULT_ADMIN_ROLE`) | Propietario | RF-30 | `admin-roles.ts`, D-30 |
 | **CU-31** | Ver las reservas del día y el estado de las 50 habitaciones | Recepcionista | RF-31, RF-32 | `/recepcion`, `overview`, D-31 |

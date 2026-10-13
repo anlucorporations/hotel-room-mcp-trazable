@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { formatEther } from "viem";
@@ -33,7 +34,17 @@ function shortAddress(address: string): string {
  * Honestidad de la garantía (MINOR#20/#25): el guardrail efectivo NO es el tokenId (lo afirma el
  * LLM) sino el precio on-chain + el contrato + esta revisión del usuario.
  */
-export function PurchaseHandoff({ purchase }: { purchase: PreparedPurchase }) {
+export function PurchaseHandoff({
+  purchase,
+  onOutcome,
+}: {
+  purchase: PreparedPurchase;
+  /**
+   * Desenlace de la firma **como parte de la conversación** (petición del responsable, 2026-10-11):
+   * el panel recibe el texto ya redactado y lo añade al hilo. Se avisa UNA vez por desenlace.
+   */
+  onOutcome?: (text: string) => void;
+}) {
   const t = useTranslations("assistant");
   // El motivo del fallo y el estado «no se pudo comprobar» reutilizan el copy del namespace `buy`
   // (una sola redacción para el catálogo y el asistente: misma verdad, mismo texto).
@@ -62,6 +73,42 @@ export function PurchaseHandoff({ purchase }: { purchase: PreparedPurchase }) {
   // Guarda compartida con el catálogo (D3) + la pre-comprobación de saldo propia del handoff.
   const canSign =
     canSignPurchase({ walletReady, verified: review.verified, status }) && !insufficientBalance;
+
+  // ── El desenlace entra en la conversación (2026-10-11) ──────────────────────────────────────────
+  // Los hooks van ANTES de los `return` de los estados terminales (regla de React). Se informa una
+  // sola vez por desenlace: firmada, revertida, no verificable o rechazada en la cartera.
+  const reportedRef = useRef<string | null>(null);
+  const outcomeKey =
+    status === "confirmed"
+      ? "confirmed"
+      : status === "unverifiable"
+        ? "unverifiable"
+        : status === "reverted"
+          ? "reverted"
+          : failureKey !== null
+            ? `rejected:${failureKey}`
+            : null;
+
+  useEffect(() => {
+    if (!onOutcome || outcomeKey === null || reportedRef.current === outcomeKey) return;
+    reportedRef.current = outcomeKey;
+    const where = [
+      review.room !== null ? t("handoff.roomValue", { room: review.room, type: typeLabel ?? "" }).trim() : null,
+      review.dateYYYYMMDD !== null ? String(review.dateYYYYMMDD) : null,
+    ]
+      .filter((part): part is string => part !== null && part.length > 0)
+      .join(" · ");
+
+    const text =
+      outcomeKey === "confirmed"
+        ? t("outcome.confirmed", { where, hash: hash ? shortAddress(hash) : "—" })
+        : outcomeKey === "unverifiable"
+          ? t("outcome.unverifiable", { where })
+          : outcomeKey === "reverted"
+            ? t("outcome.reverted", { where })
+            : t("outcome.rejected", { where, reason: tBuy(failureKey ?? "buyError.rejected") });
+    onOutcome(text);
+  }, [onOutcome, outcomeKey, review.room, review.dateYYYYMMDD, typeLabel, hash, failureKey, t, tBuy]);
 
   function sign(): void {
     if (!canSign) return;

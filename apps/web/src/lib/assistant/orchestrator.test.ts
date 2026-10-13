@@ -11,13 +11,14 @@ const CONTRACT = "0x5FbDB2315678afecb367f032d93F642f64180aa3" as const;
 const TOKEN = "10220260615";
 const TX = buildPurchaseTxData({ tokenId: BigInt(TOKEN), priceWei: 50_000_000_000_000_000n, saleType: "PRIMARY", contractAddress: CONTRACT, chainId: 81234 });
 
-/** Las 5 herramientas que expone el MCP (ninguna de firma/custodia). */
+/** Las 6 herramientas que expone el MCP (ninguna de firma/custodia). */
 const TOOLS: ToolDescriptor[] = [
   { name: "listAvailableNights", description: "", inputSchema: {} },
   { name: "checkAvailability", description: "", inputSchema: {} },
   { name: "getOwnedNights", description: "", inputSchema: {} },
   { name: "searchHotelManuals", description: "", inputSchema: {} },
   { name: "buildPurchaseTx", description: "", inputSchema: {} },
+  { name: "prepareStayTx", description: "", inputSchema: {} },
 ];
 
 /** LLM de replay: devuelve respuestas pregrabadas en orden y captura las peticiones. */
@@ -142,6 +143,7 @@ describe("runAssistant — flujo de compra (CU-08)", () => {  it("encadena check
     expect(gateway.calls.map((c) => c.name)).toEqual(["checkAvailability", "buildPurchaseTx"]);
     expect(result.domainToolCalls).toBe(2);
     expect(result.preparedPurchase).toEqual({ tokenId: TOKEN, tx: TX });
+    expect(result.preparedPurchases).toEqual([{ tokenId: TOKEN, tx: TX }]);
     expect(result.reply).toBe("Listo, firma en tu wallet.");
   });
 
@@ -158,9 +160,79 @@ describe("runAssistant — flujo de compra (CU-08)", () => {  it("encadena check
     ]);
 
     expect(result.preparedPurchase).toBeNull();
+    expect(result.preparedPurchases).toEqual([]);
     // El resultado de la tool devuelto al LLM marca el error de validación.
     const followUp = llm.requests[1]!.turns.at(-1);
     expect(JSON.stringify(followUp)).toContain("VALIDATION_FAILED");
+  });
+});
+
+describe("runAssistant — estancia en rango de fechas (prepareStayTx, 2026-10-13)", () => {
+  const TOKEN_2 = "10220260616";
+  const TOKEN_3 = "10220260617";
+  const D1 = 20260615;
+  const txOf = (tokenId: string): ReturnType<typeof buildPurchaseTxData> =>
+    buildPurchaseTxData({ tokenId: BigInt(tokenId), priceWei: 50_000_000_000_000_000n, saleType: "PRIMARY", contractAddress: CONTRACT, chainId: 81234 });
+  const plan = {
+    room: 102,
+    checkIn: D1,
+    checkOut: 20260618,
+    totalPriceWei: "150000000000000000",
+    nights: [
+      { tokenId: TOKEN, dateYYYYMMDD: D1, tx: txOf(TOKEN) },
+      { tokenId: TOKEN_2, dateYYYYMMDD: 20260616, tx: txOf(TOKEN_2) },
+      { tokenId: TOKEN_3, dateYYYYMMDD: 20260617, tx: txOf(TOKEN_3) },
+    ],
+  };
+
+  it("prepara una compra por noche y las devuelve juntas", async () => {
+    const llm = new FakeLlm([
+      { text: "Preparo la estancia.", toolUses: [{ id: "s1", name: "prepareStayTx", input: { checkIn: D1, checkOut: 20260618, room: 102 } }] },
+      { text: "Tienes tres noches listas para firmar.", toolUses: [] },
+    ]);
+    const gateway = new FakeGateway({ listAvailableNights: [], prepareStayTx: plan });
+
+    const result = await runAssistant({ llm, gateway, validatePreparedTx: okValidator, system: SYSTEM_PROMPT }, [
+      { role: "user", text: "quiero la 102 del 15 al 18 de junio" },
+    ]);
+
+    expect(result.preparedPurchases.map((p) => p.tokenId)).toEqual([TOKEN, TOKEN_2, TOKEN_3]);
+    // La compra suelta sigue siendo la primera noche (compatibilidad).
+    expect(result.preparedPurchase).toEqual({ tokenId: TOKEN, tx: txOf(TOKEN) });
+    expect(result.reply).toBe("Tienes tres noches listas para firmar.");
+  });
+
+  it("es todo o nada: si una noche no valida, no se ofrece ninguna firma", async () => {
+    const llm = new FakeLlm([
+      { text: "Preparo la estancia.", toolUses: [{ id: "s1", name: "prepareStayTx", input: { checkIn: D1, checkOut: 20260618, room: 102 } }] },
+      { text: "No he podido prepararla entera.", toolUses: [] },
+    ]);
+    const gateway = new FakeGateway({ prepareStayTx: plan });
+    const failing: ValidatePreparedTx = (tokenId) =>
+      Promise.resolve(tokenId === TOKEN_2 ? { ok: false, reasons: ["value≠precio"] } : { ok: true, reasons: [] });
+
+    const result = await runAssistant({ llm, gateway, validatePreparedTx: failing, system: SYSTEM_PROMPT }, [
+      { role: "user", text: "quiero la 102 del 15 al 18 de junio" },
+    ]);
+
+    expect(result.preparedPurchases).toEqual([]);
+    expect(result.preparedPurchase).toBeNull();
+    const followUp = llm.requests[1]!.turns.at(-1);
+    expect(JSON.stringify(followUp)).toContain("VALIDATION_FAILED");
+  });
+
+  it("un plan vacío o mal formado nunca llega al usuario", async () => {
+    const llm = new FakeLlm([
+      { text: "Preparo la estancia.", toolUses: [{ id: "s1", name: "prepareStayTx", input: { checkIn: D1, checkOut: 20260618, room: 102 } }] },
+      { text: "Lo siento.", toolUses: [] },
+    ]);
+    const gateway = new FakeGateway({ prepareStayTx: { room: 102, nights: [{ tokenId: TOKEN }] } });
+
+    const result = await runAssistant({ llm, gateway, validatePreparedTx: okValidator, system: SYSTEM_PROMPT }, [
+      { role: "user", text: "quiero la 102 del 15 al 18 de junio" },
+    ]);
+
+    expect(result.preparedPurchases).toEqual([]);
   });
 });
 

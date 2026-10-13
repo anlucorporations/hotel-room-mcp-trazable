@@ -215,6 +215,12 @@ export async function POST(request: Request): Promise<NextResponse> {
       reply: redactPromptLeak(result.reply, REDACTED_REPLY),
       domainToolCalls: result.domainToolCalls,
       preparedPurchase: result.preparedPurchase,
+      // Estancia de varias noches (petición del responsable, 2026-10-13): una compra preparada por
+      // noche, ya validadas server-side. El panel las presenta juntas para firmarlas una a una.
+      preparedPurchases: result.preparedPurchases,
+      // Noches ofrecidas en el turno (petición del responsable, 2026-10-11): el panel las pinta como
+      // tarjetas ordenadas con su tipo, fecha y precio. Salen de los resultados reales del catálogo.
+      highlights: result.highlights,
       pageAction: pageActionForTurn({
         toolCalls: result.toolCalls,
         preparedPurchase: result.preparedPurchase,
