@@ -3030,3 +3030,66 @@ gcloud run services update-traffic hotel-mcp-web --region=europe-west1 --to-revi
 gcloud run services update-traffic hotel-mcp-mcp --region=europe-west1 --to-revisions=hotel-mcp-mcp-00017-728=100
 # (si se volviera a construir sobre el contrato antiguo, re-sincronizar el registro a 0xC66AB…)
 ```
+
+---
+
+## 79. Release v57 — el proyecto pasa de Anvil a **Besu** (2026-10-13)
+
+**Qué se desplegó.** La adaptación de red completa: la plataforma deja de usar el **Anvil global**
+(`chainId 31337`, proyecto `mcc-ecommerce`) y pasa a la **red de prueba Besu de Codecrypto**
+(`chainId 81234`, `https://besu.alumnos.codecrypto.academy`). Anvil queda **solo como espejo local de
+desarrollo/CI** con el mismo `chainId`; el código elige la red por la **URL del RPC** (localhost ⇒
+Anvil), de modo que no hay lógica cableada a una red concreta.
+
+**Código y configuración** (commit `7e17f94`; monitor `4c77786`)
+
+- `packages/shared`: `BESU_RPC_URL` apunta al nodo vigente (`besu.alumnos.codecrypto.academy`) y
+  `besuChain` ya no arrastra el RPC histórico del laboratorio.
+- `apps/web/config/chain.ts`: un RPC remoto resuelve `besuChain` (antes exigía `NEXT_PUBLIC_NETWORK=besu`
+  y, con `chainId 81234`, caía en `anvilChain`). `NEXT_PUBLIC_NETWORK=anvil` fuerza el modo dev.
+- `infra/gcp`: `GCP_CHAIN_RPC_URL`/`GCP_CHAIN_ID` (Besu por defecto; `GCP_ANVIL_*` quedan como alias),
+  `_NEXT_PUBLIC_NETWORK=besu` en el build, `--legacy --with-gas-price 1000` en el `cut` (Besu: `baseFee=0`,
+  mínimo 1000 wei) y el monitor elige la cadena por la URL del RPC.
+
+**Contrato (Besu 81234)**
+
+| Elemento | Valor |
+|---|---|
+| `HotelNights` | `0x676F5F71DAE1C83Dc31775E4c61212bC9e799d9C` (bloque 5.496.805) |
+| `HotelOperations` (vNext F2) | `0x222d74f33b0d07687a769a44399e2272a4cb9ffe` |
+| Registro | `packages/shared/deployments/81234.json` |
+| Faucet | **el de Codecrypto** (no se despliega el del proyecto en Besu, decisión C9) |
+
+**Imágenes y revisiones**
+
+| Componente | Imagen | Build | Revisión sirviendo | Tráfico |
+|---|---|---|---|---|
+| web | `web:v57` | ✅ `899b4122` (4m02s) | `hotel-mcp-web-00111-kaf` | **100 %** |
+| mcp | `mcp:v57` | ✅ `56eb63ca` (2m45s) | `hotel-mcp-mcp-00019-4cs` | **100 %** |
+| worker | `worker:v57` | ✅ `9548c9e8` (2m18s) | `hotel-mcp-worker-00019-tm4` | 100 % |
+| monitor | `monitor:v58` | ✅ `e24248fd` (2m37s) | pool `hotel-mcp-monitor` | — |
+
+**Verificación**
+
+| Comprobación | Resultado |
+|---|---|
+| Rutas de producción y `/health/ready` | `/`, `/catalogo`, `/asistente`, `/admin`, `/health/ready` → **200** y **READY** |
+| El bundle servido apunta a Besu | contiene `besu.alumnos.codecrypto.academy`, el contrato `0x676f…d9C` y `chainId 81234` ✅ |
+| MCP conectado a Besu | `/health` → `block 5.499.846` (Besu, no los ~550 bloques del Anvil global) ✅ |
+| Worker indexando Besu | `/health` → `lastBlock=headBlock=5.499.844`, `lag 0`; `/aggregates` con contadores a **0** (reset por cambio de dirección, MAJOR#3) ✅ |
+| Monitor | pool con `CHAIN_RPC_URL=https://besu.alumnos.codecrypto.academy`, `CHAIN_ID=81234`; imagen `monitor:v58` ✅ |
+| Catálogo | **vacío** («Sin noches») y el asistente responde que no hay disponibilidad: Besu **no tiene siembra** ✅ |
+
+**Estados conocidos.** El worker reporta `emailDegraded: true` (y por tanto `COMPONENT_DOWN`) porque el
+despliegue configura `SMTP_HOST=smtp.invalid`: es el **stub de correo de siempre**, previo a esta release
+y ajeno al cambio de red. El catálogo está vacío hasta que se registren habitaciones y se minteen noches
+en Besu.
+
+**Rollback** (volver a Anvil 31337 / contrato D-06, revisiones de la release v56)
+
+```bash
+gcloud run services update-traffic hotel-mcp-web  --region=europe-west1 --to-revisions=hotel-mcp-web-00109-tiv=100
+gcloud run services update-traffic hotel-mcp-mcp  --region=europe-west1 --to-revisions=hotel-mcp-mcp-00018-7pc=100
+gcloud run services update-traffic hotel-mcp-worker --region=europe-west1 --to-revisions=hotel-mcp-worker-00018-n64=100
+# y el monitor: bash infra/gcp/deploy-monitor.sh …/monitor:v14 con CHAIN_RPC_URL/CHAIN_ID del Anvil
+```
