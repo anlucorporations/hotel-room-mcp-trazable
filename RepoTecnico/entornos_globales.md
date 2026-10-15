@@ -112,6 +112,37 @@ RPC_URL="$RPC_URL" CONTRACT_ADDRESS=0x676F…d9C DEPLOYMENT_BLOCK=5496805 EXPECT
 > @hotel/contracts sync`). El entorno de producción (GCP, `chainId 31337`) usa `31337.json` y **no se ve
 > afectado**; el desarrollo local toma la dirección de `.env` (`NEXT_PUBLIC_CONTRACT_ADDRESS`).
 
+### 2.ter Inyección de datos en la red del proyecto (Besu)
+
+`packages/contracts/scripts/inject-data.ts` sirve para **las dos redes**: en Anvil local usa su pool
+determinista y deja estimar el gas; en **Besu** toma la topología del **entorno** y envía transacciones
+**legacy con gas y precio explícitos** (Besu tiene `baseFee = 0`, mínimo 1000 wei, y su
+`eth_estimateGas` revierte `PastDate` en `mint()`: incidencia BESU-ESTIMATE-PASTDATE).
+
+```bash
+export RPC_URL=https://besu.alumnos.codecrypto.academy CHAIN_ID=81234
+export CONTRACT_ADDRESS=0x676F5F71DAE1C83Dc31775E4c61212bC9e799d9C
+export DEPLOYER_PRIVATE_KEY=…       # obligatoria: con una sola cuenta con fondos basta
+export DATABASE_URL=…              # solo para los pasos de BD (hay que correr dentro de la VPC)
+
+pnpm --filter @hotel/contracts exec tsx scripts/inject-data.ts --dry-run        # simulación
+pnpm --filter @hotel/contracts exec tsx scripts/inject-data.ts --fund-accounts  # gas a las cuentas
+pnpm --filter @hotel/contracts exec tsx scripts/inject-data.ts                  # inyección real
+```
+
+| Comportamiento | Anvil local | **Besu (red del proyecto)** |
+|---|---|---|
+| Cuentas (0–3 y huéspedes 4–9) | pool determinista del repositorio | `DEPLOYER_PRIVATE_KEY` + `ADMIN_`/`BURNER_`/`RECEPTION_PRIVATE_KEY` y `GUEST_PRIVATE_KEYS` (1–6); lo no declarado cae al propietario |
+| Gas | estimación automática | legacy · `BESU_GAS_PRICE_WEI` (1000) · `BESU_GAS_LIMIT` (500.000) |
+| Sin cuentas de huésped | n/a | se **mintean** las noches y quedan a la venta; se omiten compra primaria y reventa |
+| Sembrado de `rooms` (F8) | `INSERT … ON CONFLICT DO NOTHING` | igual (requiere `DATABASE_URL`) |
+| Registro on-chain | `registerRoom` con `DEFAULT_ADMIN_ROLE` | igual (el propietario tiene los 7 roles) |
+| Roles | concede lo que falte | idempotente: en Besu ya están concedidos |
+
+Verificado el 2026-10-15 con `--dry-run --skip-db` contra `0x676F…d9C`: red detectada («Codecrypto
+Besu»), gas legacy 1000 wei / 500.000, los 7 roles ya presentes, **50 habitaciones** en el plan de
+registro, **6 noches** a mintear y aviso de que quedan a la venta al haber una sola cuenta configurada.
+
 ---
 
 ## 3. Inventario de variables de entorno

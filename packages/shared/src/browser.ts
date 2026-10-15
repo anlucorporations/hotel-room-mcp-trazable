@@ -51,6 +51,11 @@ export * from "./domain/faucet";
 // periodicidades que ofrecen los formularios de cliente y valida el servidor.
 export * from "./domain/maintenance";
 
+// Plan de inyección de datos para redes no locales (2026-10-15): topología de cuentas desde el
+// entorno, overrides de gas de Besu (legacy + explícitos) y detección de cuentas repetidas.
+// Puro: solo `viem` (tipos) y constantes del proyecto.
+export * from "./domain/injection-plan";
+
 // Autorización EIP-712 del resguardo (dominio y tipos): datos constantes que el CLIENTE tiene que
 // firmar con el mismo formato que verifica el servidor. Se movieron aquí desde `passes/jws.ts`
 // (que importa `node:crypto`) para que el componente de compra pueda importarlos sin arrastrar el

@@ -43,8 +43,27 @@
  *   pnpm --filter @hotel/contracts exec tsx scripts/inject-data.ts --skip-db     # solo cadena
  *   pnpm --filter @hotel/contracts exec tsx scripts/inject-data.ts --skip-rooms  # sin registro F8
  *   pnpm --filter @hotel/contracts exec tsx scripts/inject-data.ts --rotate-operators
+ *   pnpm --filter @hotel/contracts exec tsx scripts/inject-data.ts --fund-accounts
  *
- * Requiere: Anvil en marcha (127.0.0.1:8545) y el contrato desplegado (`pnpm deploy:anvil`).
+ * ── Red del proyecto (Besu de Codecrypto) ───────────────────────────────────────────────────────
+ *
+ *   RPC_URL=https://besu.alumnos.codecrypto.academy CHAIN_ID=81234 \
+ *   CONTRACT_ADDRESS=0x676f…d9C DATABASE_URL=postgres://… DEPLOYER_PRIVATE_KEY=0x… \
+ *   pnpm --filter @hotel/contracts exec tsx scripts/inject-data.ts --dry-run
+ *
+ * En una red no local la topología sale del ENTORNO (las claves de Anvil son públicas y su saldo
+ * está comprometido): `DEPLOYER_PRIVATE_KEY` (obligatoria) y, opcionalmente, `ADMIN_PRIVATE_KEY`,
+ * `BURNER_PRIVATE_KEY`, `RECEPTION_PRIVATE_KEY` y `GUEST_PRIVATE_KEYS` (hasta 6, separadas por
+ * comas). Los puestos no declarados caen a la clave del propietario, así que con una sola cuenta
+ * con fondos se pueden registrar habitaciones y mintear noches; sin cuentas de huésped distintas se
+ * omiten la compra primaria y la reventa (no se puede simular mercado con la misma cuenta).
+ * `--fund-accounts` reparte gas desde el propietario a las cuentas sin saldo (`FUND_WEI`, 0,5 por
+ * defecto). El gas se envía **legacy con precio y límite explícitos** (`BESU_GAS_PRICE_WEI` ≥ 1000,
+ * `BESU_GAS_LIMIT`), porque Besu tiene `baseFee = 0` y su `eth_estimateGas` revierte `PastDate` en
+ * `mint()` aunque la transacción se mine (incidencia BESU-ESTIMATE-PASTDATE).
+ *
+ * Requiere: Anvil en marcha (127.0.0.1:8545) y el contrato desplegado (`pnpm deploy:anvil`), o el
+ * RPC/contrato de la red del proyecto en el entorno.
  */
 import { parseArgs } from "node:util";
 import crypto from "node:crypto";
@@ -63,9 +82,14 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 import {
   anvilChain,
+  besuChain,
   buildNightMetadata,
   buildRoomRegistrationPlan,
   buildRoomSeed,
+  INJECTION_ACCOUNT_LABELS,
+  injectionGasOverrides,
+  MIN_GAS_PRICE_WEI,
+  resolveRemoteInjectionAccounts,
   roomTypeOf,
   toRoomTypeDb,
   type NightType,
@@ -95,12 +119,26 @@ const { values } = parseArgs({
     // F8 (D-3/D-10): sembrado del maestro en `rooms` y registro on-chain. `--skip-rooms` lo omite
     // para despliegues anteriores al corte de contrato.
     "skip-rooms": { type: "boolean", default: false },
+    // Redes no locales: reparte gas desde el propietario a las cuentas sin saldo antes de operar.
+    "fund-accounts": { type: "boolean", default: false },
   },
 });
 
 const DRY_RUN = values["dry-run"] === true;
 const RPC_URL = process.env.RPC_URL ?? "http://127.0.0.1:8545";
 const CHAIN_ID = Number(process.env.CHAIN_ID ?? anvilChain.id);
+
+/**
+ * ¿El RPC es una red local de desarrollo (Anvil)? Misma regla que worker, MCP, monitor y web: la
+ * red del proyecto es Besu y Anvil solo el espejo local, ambos con el mismo `chainId`.
+ */
+const IS_LOCAL_RPC = RPC_URL.includes("127.0.0.1") || RPC_URL.includes("localhost");
+
+/** Gas de las transacciones: automático en Anvil; legacy y explícito en Besu (ver cabecera). */
+const GAS_OVERRIDES = injectionGasOverrides(IS_LOCAL_RPC, process.env, MIN_GAS_PRICE_WEI);
+
+/** Saldo que reparte `--fund-accounts` a cada cuenta sin fondos (en wei). */
+const FUND_WEI = BigInt(process.env.FUND_WEI ?? "500000000000000000");
 
 const CONTRACT_RAW = process.env.CONTRACT_ADDRESS;
 if (!CONTRACT_RAW) {
@@ -116,22 +154,43 @@ interface AccountPlan {
   readonly account: ReturnType<typeof privateKeyToAccount>;
 }
 
-/** Topologia interna aprobada: una hot-wallet = un solo proposito (cuentas_anvil.md). */
-const plan = (slot: number, label: string): AccountPlan => ({
-  slot,
-  label,
-  account: privateKeyToAccount(ANVIL_KEYS_BY_INDEX[slot]!),
+/**
+ * Topología de cuentas.
+ *
+ * - **Anvil local**: pool determinista de 10 cuentas (claves públicas de prueba del repositorio).
+ * - **Red del proyecto (Besu)**: se resuelve desde el entorno (gestor de secretos); los puestos no
+ *   declarados caen a la clave del propietario, así que con una sola cuenta con fondos se pueden
+ *   registrar habitaciones y mintear noches.
+ */
+const ACCOUNT_PLANS: readonly AccountPlan[] = IS_LOCAL_RPC
+  ? ANVIL_KEYS_BY_INDEX.slice(0, 10).map((key, slot) => ({
+      slot,
+      label: INJECTION_ACCOUNT_LABELS[slot] ?? `puesto ${slot}`,
+      account: privateKeyToAccount(key),
+    }))
+  : resolveRemoteInjectionAccounts(process.env).map((entry) => ({
+      slot: entry.slot,
+      label: entry.label,
+      account: privateKeyToAccount(entry.privateKey),
+    }));
+
+const owner = ACCOUNT_PLANS[0]!;
+const adminMinter = ACCOUNT_PLANS[1]!;
+const burner = ACCOUNT_PLANS[2]!;
+const receptionOperator = ACCOUNT_PLANS[3]!;
+const GUESTS: readonly AccountPlan[] = ACCOUNT_PLANS.slice(4);
+
+const ACCOUNTS = ACCOUNT_PLANS;
+
+/**
+ * Cuentas de huésped **distintas del minteador**: las únicas que pueden comprar y revender. Con la
+ * misma cuenta no se puede simular mercado (comprar la noche que uno mismo posee revierte).
+ */
+const TRADE_ACCOUNTS: readonly AccountPlan[] = GUESTS.filter((candidate, index) => {
+  const address = candidate.account.address.toLowerCase();
+  if (address === adminMinter.account.address.toLowerCase()) return false;
+  return GUESTS.findIndex((other) => other.account.address.toLowerCase() === address) === index;
 });
-
-const owner = plan(0, "desplegador y tesoreria (sin rol on-chain tras el handover)");
-const adminMinter = plan(1, "administrador con wallet: DEFAULT_ADMIN + MINTER + PAUSER + TREASURER");
-const burner = plan(2, "hot-wallet de quema (BURNER_ROLE)");
-const receptionOperator = plan(3, "hot-wallet de recepcion (RECEPTION_ROLE)");
-const GUESTS: readonly AccountPlan[] = [4, 5, 6, 7, 8, 9].map((slot) =>
-  plan(slot, `huesped simulado #${slot}`),
-);
-
-const ACCOUNTS = [owner, adminMinter, burner, receptionOperator, ...GUESTS] as const;
 
 /** Rol on-chain → cuenta que debe tenerlo (topologia pedida). */
 const ROLES: readonly { name: string; slot: number; why: string }[] = [
@@ -144,19 +203,20 @@ const ROLES: readonly { name: string; slot: number; why: string }[] = [
 ];
 
 /**
- * Cadena de los clientes viem, derivada de `CHAIN_ID` (entorno).
+ * Cadena de los clientes viem: la del proyecto (**Besu**) o el espejo local (**Anvil**), según el RPC.
  *
- * `anvilChain` de `@hotel/shared` fija `id = 81234` (la cadena canónica del proyecto).
- * Contra un Anvil con otra chainId (p. ej. el servicio global en 31337) hay que construir
- * el objeto con el id real: si no, viem firma con el chainId equivocado y la transacción
- * se rechaza con "Transaction creation failed.".
+ * El `id` sale de `CHAIN_ID` (entorno) y el RPC de `RPC_URL`: si no coinciden con la red real, viem
+ * firma con otro `chainId` y la transacción se rechaza con "Transaction creation failed.".
  */
+const baseChain = IS_LOCAL_RPC ? anvilChain : besuChain;
 const activeChain = {
+  ...baseChain,
   id: CHAIN_ID,
-  name: "Anvil",
-  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
   rpcUrls: { default: { http: [RPC_URL] } },
-} as const;
+};
+
+/** Símbolo de la moneda nativa de la red (ETH en el proyecto; se pinta en los avisos). */
+const NATIVE_SYMBOL = activeChain.nativeCurrency.symbol;
 
 const publicClient = createPublicClient({ chain: activeChain, transport: http(RPC_URL) });
 
@@ -247,7 +307,13 @@ async function supportsRoomRegistry(): Promise<boolean> {
   }
 }
 
-/** Envia una transaccion y espera el recibo; devuelve el hash. */
+/**
+ * Envia una transaccion y espera el recibo; devuelve el hash.
+ *
+ * En redes no locales `GAS_OVERRIDES` fuerza **legacy con gas y precio explícitos**: Besu tiene
+ * `baseFee = 0` (mínimo 1000 wei) y su `eth_estimateGas` revierte `PastDate` en `mint()` aunque la
+ * transacción sí se mine (incidencia BESU-ESTIMATE-PASTDATE, reportada a Codecrypto).
+ */
 async function send(
   plan: AccountPlan,
   functionName: string,
@@ -260,13 +326,65 @@ async function send(
     abi: hotelNightsAbi,
     functionName: functionName as "mint",
     args: args as never,
-    value,
+    // `functionName` es dinámico (`mint` no es pagadera; `buy` y `buyResale` sí), así que viem no
+    // puede inferir el `value` a partir del ABI: se marca como `never` igual que los `args`.
+    value: value as never,
+    ...GAS_OVERRIDES,
   });
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
   if (receipt.status !== "success") {
     throw new Error(`la transaccion ${functionName} revirtio (hash ${hash})`);
   }
   return hash;
+}
+
+/** Transferencia de gas entre cuentas del guion (usa los mismos overrides de red). */
+async function sendValue(plan: AccountPlan, to: Address, value: bigint): Promise<Hex> {
+  const wallet = walletFor(plan);
+  const hash = await wallet.sendTransaction({
+    account: plan.account,
+    chain: activeChain,
+    to,
+    value,
+    ...GAS_OVERRIDES,
+  });
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  if (receipt.status !== "success") {
+    throw new Error(`la transferencia de gas a ${to} revirtio (hash ${hash})`);
+  }
+  return hash;
+}
+
+/**
+ * Reparte gas desde el propietario (cuenta 0) a cualquier cuenta del guion sin saldo.
+ *
+ * En una red real solo el desplegador suele tener fondos: sin este paso, los roles de las cuentas
+ * 1–3 y las compras de los huéspedes no podrían firmar.
+ */
+async function fundAccounts(): Promise<void> {
+  heading("1.bis Gas de las cuentas");
+  if (IS_LOCAL_RPC) {
+    log("  omitido: en Anvil local todas las cuentas salen con 10.000 ETH");
+    return;
+  }
+  const funder = owner;
+  const funderBalance = await publicClient.getBalance({ address: funder.account.address });
+  log(`  Fondeador      cuenta 0 (${funder.account.address}) · ${formatEther(funderBalance)} ${NATIVE_SYMBOL}`);
+
+  for (const plan of ACCOUNTS) {
+    if (plan.account.address.toLowerCase() === funder.account.address.toLowerCase()) continue;
+    const balance = await publicClient.getBalance({ address: plan.account.address });
+    if (balance > 0n) {
+      log(`  ya tiene       cuenta ${plan.slot} · ${formatEther(balance)} ${NATIVE_SYMBOL}`);
+      continue;
+    }
+    if (DRY_RUN) {
+      log(`  [dry-run]      enviaria ${formatEther(FUND_WEI)} ${NATIVE_SYMBOL} a la cuenta ${plan.slot}`);
+      continue;
+    }
+    const hash = await sendValue(funder, plan.account.address, FUND_WEI);
+    log(`  financiada     cuenta ${plan.slot} con ${formatEther(FUND_WEI)} ${NATIVE_SYMBOL} · tx ${hash}`);
+  }
 }
 
 // ── 1. Entorno ──────────────────────────────────────────────────────────────────────────────────
@@ -287,14 +405,28 @@ async function checkEnvironment(): Promise<void> {
     functionName: "treasury",
   })) as Address;
 
+  log(`  Red            ${activeChain.name} (${IS_LOCAL_RPC ? "espejo local" : "red del proyecto"})`);
   log(`  RPC            ${RPC_URL} (chainId ${chainId})`);
   log(`  Contrato       ${CONTRACT}`);
   log(`  Tesoreria      ${treasury}`);
+  log(
+    `  Gas            ${
+      IS_LOCAL_RPC
+        ? "estimado automáticamente (Anvil)"
+        : `legacy · gasPrice ${GAS_OVERRIDES.gasPrice} wei · gas ${GAS_OVERRIDES.gas}`
+    }`,
+  );
   for (const plan of ACCOUNTS) {
     const balance = await publicClient.getBalance({ address: plan.account.address });
-    log(`  Cuenta ${plan.slot}       ${plan.account.address} · ${plan.label} · ${formatEther(balance)} ETH`);
+    log(
+      `  Cuenta ${plan.slot}       ${plan.account.address} · ${plan.label} · ${formatEther(balance)} ${NATIVE_SYMBOL}`,
+    );
     if (balance === 0n) {
-      log(`    AVISO: la cuenta ${plan.slot} no tiene saldo para pagar gas.`);
+      log(
+        `    AVISO: la cuenta ${plan.slot} no tiene saldo para pagar gas${
+          IS_LOCAL_RPC ? "" : " (usa --fund-accounts)"
+        }.`,
+      );
     }
   }
 }
@@ -524,20 +656,21 @@ interface NightPlan {
   readonly room: number;
   readonly type: NightType;
   readonly priceEth: string;
-  readonly buyer: AccountPlan;
 }
 
 /**
  * Surtido de la inyeccion: los tres tipos del maestro (simple, doble y suite) para que el catalogo,
- * el filtro por tipo y el desglose del panel tengan contenido real.
+ * el filtro por tipo y el desglose del panel tengan contenido real. El comprador se asigna en
+ * tiempo de ejecucion entre las cuentas de huesped **distintas del minteador** (en una red donde
+ * solo el propietario tiene clave/fondos no hay mercado que simular).
  */
 const NIGHTS: readonly NightPlan[] = [
-  { room: 101, type: "simple", priceEth: "0.05", buyer: GUESTS[0]! },
-  { room: 108, type: "simple", priceEth: "0.06", buyer: GUESTS[1]! },
-  { room: 118, type: "doble", priceEth: "0.09", buyer: GUESTS[2]! },
-  { room: 124, type: "doble", priceEth: "0.1", buyer: GUESTS[3]! },
-  { room: 202, type: "suite", priceEth: "0.25", buyer: GUESTS[4]! },
-  { room: 210, type: "suite", priceEth: "0.3", buyer: GUESTS[5]! },
+  { room: 101, type: "simple", priceEth: "0.05" },
+  { room: 108, type: "simple", priceEth: "0.06" },
+  { room: 118, type: "doble", priceEth: "0.09" },
+  { room: 124, type: "doble", priceEth: "0.1" },
+  { room: 202, type: "suite", priceEth: "0.25" },
+  { room: 210, type: "suite", priceEth: "0.3" },
 ];
 
 
@@ -555,7 +688,8 @@ async function injectInventory(): Promise<void> {
   heading("4. Inventario y reservas");
 
   const now = await chainNow();
-  const mintedTokens: { plan: NightPlan; tokenId: bigint }[] = [];
+  const buyers = TRADE_ACCOUNTS;
+  const mintedTokens: { plan: NightPlan; tokenId: bigint; buyer: AccountPlan | null }[] = [];
 
   // 4.1 Minteo con el administrador con wallet (MINTER_ROLE, cuenta 1).
   for (const [index, night] of NIGHTS.entries()) {
@@ -574,8 +708,11 @@ async function injectInventory(): Promise<void> {
       throw new Error("la metadata de la noche debe referenciar la imagen por ipfs:// (ADR-12)");
     }
 
+    const buyer = buyers.length > 0 ? buyers[index % buyers.length]! : null;
     if (DRY_RUN) {
-      log(`  [dry-run]      mintearia ${tokenId} (hab. ${night.room} ${night.type}) a ${night.priceEth} ETH`);
+      log(
+        `  [dry-run]      mintearia ${tokenId} (hab. ${night.room} ${night.type}) a ${night.priceEth} ${NATIVE_SYMBOL}`,
+      );
       log(`                 metadata: "${metadata.name}" · imagen ${metadata.image}`);
       continue;
     }
@@ -585,30 +722,50 @@ async function injectInventory(): Promise<void> {
       parseEther(night.priceEth),
       metadataURI,
     ]);
-    log(`  minteada       ${tokenId} · hab. ${night.room} (${toRoomTypeDb(night.type)}) · ${night.priceEth} ETH · tx ${hash}`);
-    mintedTokens.push({ plan: night, tokenId });
+    log(
+      `  minteada       ${tokenId} · hab. ${night.room} (${toRoomTypeDb(night.type)}) · ${night.priceEth} ${NATIVE_SYMBOL} · tx ${hash}`,
+    );
+    mintedTokens.push({ plan: night, tokenId, buyer });
   }
 
   if (DRY_RUN) {
-    log("  [dry-run]      compraria en primaria y publicaria una reventa");
+    log(
+      buyers.length >= 2
+        ? "  [dry-run]      compraria en primaria y publicaria una reventa"
+        : "  [dry-run]      quedarian a la venta (sin cuentas de huesped distintas del minteador)",
+    );
     return;
   }
 
-  // 4.2 Compra primaria con las cuentas de usuario (cada una paga su gas y su noche).
-  for (const { plan, tokenId } of mintedTokens) {
-    const hash = await send(plan.buyer, "buy", [tokenId], parseEther(plan.priceEth));
-    log(`  comprada       ${tokenId} por cuenta ${plan.buyer.slot} (${plan.buyer.label}) · tx ${hash}`);
+  // 4.2 Compra primaria con las cuentas de huesped (cada una paga su gas y su noche).
+  if (buyers.length === 0) {
+    log(
+      "  omitida        no hay cuentas de huesped con clave propia y distinta del minteador:",
+    );
+    log("                 las noches quedan minteadas y a la venta en el catalogo.");
+  } else {
+    log(
+      `  compradores    ${buyers.map((plan) => `#${plan.slot}`).join(", ")}${
+        buyers.length < 2 ? " (una sola cuenta: sin reventa)" : ""
+      }`,
+    );
+    for (const { plan, tokenId, buyer } of mintedTokens) {
+      if (!buyer) continue;
+      const hash = await send(buyer, "buy", [tokenId], parseEther(plan.priceEth));
+      log(`  comprada       ${tokenId} por cuenta ${buyer.slot} (${buyer.label}) · tx ${hash}`);
+    }
   }
 
-  // 4.3 Reventa: huesped #7 lista una de sus noches y huesped #4 la recompra (royalty real).
-  if (!values["no-reservations"]) {
-    const seller = GUESTS[3]!;
-    const buyer = GUESTS[0]!;
-    const resale = mintedTokens.find((entry) => entry.plan.buyer === seller);
+  // 4.3 Reventa: un huesped lista una de sus noches y otro la recompra (royalty real). Hacen falta
+  //     DOS cuentas de huesped distintas: nadie puede comprar su propia reventa.
+  if (!values["no-reservations"] && buyers.length >= 2) {
+    const seller = buyers[buyers.length - 1]!;
+    const buyer = buyers[0]!;
+    const resale = mintedTokens.find((entry) => entry.buyer === seller);
     if (resale) {
       const resalePrice = parseEther("0.15");
       const listHash = await send(seller, "list", [resale.tokenId, resalePrice]);
-      log(`  listada        ${resale.tokenId} por cuenta ${seller.slot} a 0.15 ETH · tx ${listHash}`);
+      log(`  listada        ${resale.tokenId} por cuenta ${seller.slot} a 0.15 ${NATIVE_SYMBOL} · tx ${listHash}`);
 
       const buyHash = await send(buyer, "buyResale", [resale.tokenId], resalePrice);
       log(`  revendida      ${resale.tokenId} a cuenta ${buyer.slot} · tx ${buyHash}`);
@@ -619,6 +776,8 @@ async function injectInventory(): Promise<void> {
         throw new Error("la reventa no dejo la noche en manos del huesped comprador");
       }
     }
+  } else if (!values["no-reservations"] && buyers.length < 2) {
+    log("  omitida        la reventa necesita dos cuentas de huesped distintas");
   }
 
   // 4.4 Resumen del estado final de lo inyectado.
@@ -642,6 +801,12 @@ async function main(): Promise<void> {
   for (const plan of ACCOUNTS) log(`  #${plan.slot}  ${plan.account.address}  ${plan.label}`);
 
   await checkEnvironment();
+
+  if (values["fund-accounts"]) {
+    await fundAccounts();
+  } else if (!IS_LOCAL_RPC && TRADE_ACCOUNTS.length > 0) {
+    log("\n(AVISO: en una red no local, si las cuentas no tienen fondos usa --fund-accounts)");
+  }
 
   if (values["skip-chain"]) {
     heading("2. Roles on-chain");
