@@ -3093,3 +3093,31 @@ gcloud run services update-traffic hotel-mcp-mcp  --region=europe-west1 --to-rev
 gcloud run services update-traffic hotel-mcp-worker --region=europe-west1 --to-revisions=hotel-mcp-worker-00018-n64=100
 # y el monitor: bash infra/gcp/deploy-monitor.sh …/monitor:v14 con CHAIN_RPC_URL/CHAIN_ID del Anvil
 ```
+
+---
+
+## 80. Release v59 — frontend reconstruido desde `main` (2026-10-15)
+
+**Qué se desplegó.** La web se recompiló y desplegó desde el commit **exacto** que se subió a `main`
+(`45669c9`, push a los tres remotos), para que la imagen en ejecución corresponda al código publicado
+(adaptación a Besu + corrección del reset). Sin cambios funcionales en la web: entre `7e17f94` (base de
+`web:v57`) y `45669c9` solo cambiaron el monitor y el script de reset.
+
+| Elemento | Valor |
+|---|---|
+| Imagen | **`web:v59`** (build `ad0c87e0`, 4m51s, SUCCESS) |
+| Revisión | **`hotel-mcp-web-00113-yuh`** · tráfico **100 %** |
+| Origen | worktree limpio en `45669c9` (registro `81234.json` → contrato Besu `0x676F…d9C`, bloque 5.496.805) |
+| Push | `origin`, `github` y `codecrypto`: `main` y `Hotel-DSH-GCP-v3` → `45669c9` |
+
+**Verificación**
+
+| Comprobación | Resultado |
+|---|---|
+| Canario y producción: `/`, `/catalogo`, `/asistente`, `/admin`, `/health/ready` | **200** y **READY** (postgres/redis/RPC UP) |
+| Bundle servido | contiene `besu.alumnos.codecrypto.academy`, `0x676f…d9C` y «Codecrypto Besu»; **`mcc-foundry-anvil` ausente** ✅ |
+| Catálogo | «Sin noches» (cadena Besu y BD off-chain sin habitaciones tras el reset) |
+| Worker / MCP | agregados a 0; MCP en el bloque de Besu (5.545.664) |
+
+**Rollback:** `gcloud run services update-traffic hotel-mcp-web --region=europe-west1
+--to-revisions=hotel-mcp-web-00111-kaf=100` (release v57, mismo contenido funcional).
