@@ -16,7 +16,8 @@ import { PRESERVED_TABLES, WIPE_ORDER } from "../src/db/reset-plan";
  * Por qué el **checkpoint va antes** del borrado: el worker indexa la cadena por su cuenta. Si se
  * vaciara primero y se fijara el checkpoint después, en ese hueco el worker podría escribir datos
  * viejos que sobrevivirían al borrado. Fijando antes `worker_checkpoints` y
- * `worker_aggregate_counters.last_block` a la **cabeza actual**, el worker deja de mirar el pasado y
+ * `worker_aggregate_counters` (contadores a 0 y `last_block` a la **cabeza actual**), el worker deja
+ * de mirar el pasado y
  * lo que borre después ya no se repuebla solo.
  *
  * Y por qué **`DELETE` ordenado** en vez de `TRUNCATE`: `preventive_plans.room_id → rooms(id) ON DELETE
@@ -61,9 +62,14 @@ async function pinCheckpoints(head: bigint): Promise<void> {
       [contractAddress, head.toString()],
     );
     await client.query(
-      `INSERT INTO worker_aggregate_counters (id, last_block, contract_address)
-       VALUES (0, $2, $1)
-       ON CONFLICT (id) DO UPDATE SET last_block = EXCLUDED.last_block, contract_address = EXCLUDED.contract_address`,
+      `INSERT INTO worker_aggregate_counters
+         (id, primary_volume_wei, royalties_wei, secondary_volume_wei,
+          sold_count, minted_count, burned_count, last_block, contract_address)
+       VALUES (0, 0, 0, 0, 0, 0, 0, $2, $1)
+       ON CONFLICT (id) DO UPDATE SET
+         primary_volume_wei = 0, royalties_wei = 0, secondary_volume_wei = 0,
+         sold_count = 0, minted_count = 0, burned_count = 0,
+         last_block = EXCLUDED.last_block, contract_address = EXCLUDED.contract_address`,
       [contractAddress, head.toString()],
     );
     await client.query("COMMIT");
@@ -97,9 +103,14 @@ async function wipeOperational(head: bigint): Promise<void> {
     }
     // La fila semilla id = 0 es obligatoria (el worker la espera) y su `last_block` vuelve a la cabeza.
     await client.query(
-      `INSERT INTO worker_aggregate_counters (id, last_block, contract_address)
-       VALUES (0, $2, $1)
-       ON CONFLICT (id) DO UPDATE SET last_block = EXCLUDED.last_block, contract_address = EXCLUDED.contract_address`,
+      `INSERT INTO worker_aggregate_counters
+         (id, primary_volume_wei, royalties_wei, secondary_volume_wei,
+          sold_count, minted_count, burned_count, last_block, contract_address)
+       VALUES (0, 0, 0, 0, 0, 0, 0, $2, $1)
+       ON CONFLICT (id) DO UPDATE SET
+         primary_volume_wei = 0, royalties_wei = 0, secondary_volume_wei = 0,
+         sold_count = 0, minted_count = 0, burned_count = 0,
+         last_block = EXCLUDED.last_block, contract_address = EXCLUDED.contract_address`,
       [contractAddress, head.toString()],
     );
     if (auditTrigger) {
@@ -119,7 +130,7 @@ console.log("cabeza de la cadena :", (await chainHead()).toString());
 console.log("antes               :", JSON.stringify(before));
 console.log(`se borran           : ${WIPE_ORDER.length} tablas`);
 console.log(`se conservan        : ${PRESERVED_TABLES.join(", ")}`);
-console.log("se reescriben       : worker_checkpoints, worker_aggregate_counters (last_block = cabeza)");
+console.log("se reescriben       : worker_checkpoints, worker_aggregate_counters (contadores a 0, last_block = cabeza)");
 
 if (!apply) {
   console.log("MODO SECO: no se ha borrado nada. Añade --apply para ejecutarlo.");

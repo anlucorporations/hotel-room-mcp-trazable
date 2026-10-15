@@ -42,6 +42,11 @@ export const PRESERVED_TABLES = [
  * `worker_checkpoints` y `worker_aggregate_counters.last_block` se fijan a la **cabeza actual** de la
  * cadena para que el worker no reindexe el pasado. Si se dejaran a 0 (o se borraran), el worker
  * rebobinaría al bloque de despliegue y **repoblaría** la base con las noches y ventas antiguas.
+ *
+ * Además, los **contadores acumulados** de `worker_aggregate_counters` (volúmenes, ventas, mints y
+ * burns) se ponen a **cero**: son datos derivados del índice que se vacía y, si se conservaran, el
+ * panel mostraría ventas que ya no existen en la base ni en la cadena (mismo efecto que
+ * `AggregateStore.reset()` en un redeploy).
  */
 export const CHECKPOINT_TABLES = ["worker_checkpoints", "worker_aggregate_counters"] as const;
 
