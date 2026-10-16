@@ -15,6 +15,19 @@ export const hotelNightsAbi = [
   },
   {
     "type": "function",
+    "name": "AUCTION_ROLE",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "BURNER_ROLE",
     "inputs": [],
     "outputs": [
@@ -931,6 +944,29 @@ export const hotelNightsAbi = [
         "name": "newTreasury",
         "type": "address",
         "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "settleAuction",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "winner",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "priceWei",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [],
@@ -1987,6 +2023,11 @@ export const hotelNightsAbi = [
         "internalType": "uint96"
       }
     ]
+  },
+  {
+    "type": "error",
+    "name": "InvalidWinner",
+    "inputs": []
   },
   {
     "type": "error",

@@ -2,9 +2,14 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { keccak256, stringToBytes } from "viem";
 import {
+  ALL_ROLE_NAMES,
+  AUCTION_ROLE_NAMES,
+  AUCTION_ROLES,
   BACK_OFFICE_ROLE_NAMES,
   LEGACY_BACK_OFFICE_ROLE_NAMES,
+  ROLES,
   TERMINAL_BACK_OFFICE_ROLE_NAMES,
   WALLET_BACK_OFFICE_ROLE_NAMES,
 } from "./roles";
@@ -116,5 +121,20 @@ describe("vocabulario de roles de back-office (T1.5)", () => {
     }
     const todos = grupos.flat();
     expect(new Set(todos).size, "hay un rol en dos grupos").toBe(todos.length);
+  });
+});
+
+describe("roles de la subasta (C2 · RF-13)", () => {
+  it("los ids son `keccak256` del nombre y `PAUSER_ROLE` se comparte con las noches", () => {
+    expect([...AUCTION_ROLE_NAMES]).toEqual(["AUCTION_ADMIN_ROLE", "PAUSER_ROLE"]);
+    expect(AUCTION_ROLES.AUCTION_ADMIN_ROLE).toBe(keccak256(stringToBytes("AUCTION_ADMIN_ROLE")));
+    // La misma wallet pausa la subasta y el contrato de noches: el id tiene que ser idéntico.
+    expect(AUCTION_ROLES.PAUSER_ROLE).toBe(ROLES.PAUSER_ROLE);
+  });
+
+  it("los roles de subasta no contaminan el vocabulario del contrato de noches", () => {
+    // Consultar `AUCTION_ADMIN_ROLE` contra `HotelNights` daría siempre `false`: se declara aparte.
+    expect(Object.keys(ROLES)).not.toContain("AUCTION_ADMIN_ROLE");
+    expect([...ALL_ROLE_NAMES]).not.toContain("AUCTION_ADMIN_ROLE");
   });
 });

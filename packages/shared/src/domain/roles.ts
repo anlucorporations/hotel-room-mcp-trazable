@@ -45,6 +45,22 @@ export const ALL_ROLE_NAMES: readonly RoleName[] = [
 ];
 
 /**
+ * Roles del contrato de **subastas** `NightAuction` (C2 · RF-13).
+ *
+ * Viven en ese contrato, **no** en `HotelNights`: se declaran aparte para que la UI no consulte roles
+ * de subasta contra el contrato de noches (donde siempre darían `false`). `PAUSER_ROLE` es el mismo
+ * `keccak` que el del contrato de noches a propósito: una sola wallet pausa ambos.
+ */
+export const AUCTION_ROLE_NAMES = ["AUCTION_ADMIN_ROLE", "PAUSER_ROLE"] as const;
+
+export type AuctionRoleName = (typeof AUCTION_ROLE_NAMES)[number];
+
+export const AUCTION_ROLES: Readonly<Record<AuctionRoleName, Hex>> = Object.freeze({
+  AUCTION_ADMIN_ROLE: keccak256(stringToBytes("AUCTION_ADMIN_ROLE")),
+  PAUSER_ROLE: ROLES.PAUSER_ROLE,
+});
+
+/**
  * Roles de **operador de back-office** que viven en la base de datos (D-04, D-56).
  *
  * A diferencia de `RoleName` (roles del contrato), estos no existen on-chain. Se declaran aquí, en el

@@ -406,6 +406,21 @@ contract NightAuctionTest is Test {
         assertEq(nft.ownerOf(SUITE_ID), bidderB);
     }
 
+    // ── Constantes espejo ─────────────────────────────────────────────────────
+    /**
+     * @dev Anclaje con `@hotel/shared` (`AUCTION_*` de `constants.ts`, fijadas por
+     *      `domain/auction.test.ts`): si alguien cambia una, la otra prueba debe cambiar igual y la
+     *      UI dejaría de validar con las mismas reglas que el contrato.
+     */
+    function test_ConstantsMatchTheSharedMirror() public view {
+        assertEq(auction.MIN_DURATION(), 3_600); // 1 hora
+        assertEq(auction.MAX_DURATION(), 1_209_600); // 14 días
+        assertEq(auction.ANTI_SNIPE_WINDOW(), 300); // 5 minutos
+        assertEq(auction.MIN_BID_INCREMENT_BPS(), 500); // 5 %
+        assertEq(auction.MIN_BID_INCREMENT_WEI(), 1_000_000_000_000_000); // 0,001
+        assertEq(auction.BPS_DENOMINATOR(), 10_000);
+    }
+
     // ── Gancho de liquidación en HotelNights ──────────────────────────────────
     function test_SettleAuctionOnNightsIsRoleGated() public {
         vm.startPrank(stranger);

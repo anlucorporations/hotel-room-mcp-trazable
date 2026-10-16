@@ -56,6 +56,10 @@ export * from "./domain/maintenance";
 // Puro: solo `viem` (tipos) y constantes del proyecto.
 export * from "./domain/injection-plan";
 
+// Subastas (C2 · RF-13): reglas puras espejo de `NightAuction.sol` (fase, puja mínima, anti-sniping
+// y ventana del alta) para que la UI valide y pinte la cuenta atrás sin firmar nada.
+export * from "./domain/auction";
+
 // Autorización EIP-712 del resguardo (dominio y tipos): datos constantes que el CLIENTE tiene que
 // firmar con el mismo formato que verifica el servidor. Se movieron aquí desde `passes/jws.ts`
 // (que importa `node:crypto`) para que el componente de compra pueda importarlos sin arrastrar el

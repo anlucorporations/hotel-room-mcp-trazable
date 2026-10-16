@@ -88,3 +88,18 @@ export const TOUCH_TARGET_MIN_PX = 44 as const;
 // ── Observabilidad (RNF-17) ──────────────────────────────────────────────────
 /** Fallos consecutivos de `/health` antes de marcar `COMPONENT_DOWN` / responder 503. */
 export const HEALTH_FAILURE_THRESHOLD = 3 as const;
+
+// ── Subastas (C2 · RF-13) ────────────────────────────────────────────────────
+// Espejo de las constantes de `NightAuction.sol`: la UI valida y muestra la cuenta atrás con los
+// mismos números que aplica el contrato. Los valores on-chain quedan fijados por `NightAuction.t.sol`
+// y estos por `domain/auction.test.ts`; si uno cambia, la otra prueba debe cambiar igual.
+/** Duración mínima y máxima de una subasta (1 hora / 14 días). */
+export const AUCTION_MIN_DURATION_SECONDS = 3_600 as const;
+export const AUCTION_MAX_DURATION_SECONDS = 1_209_600 as const;
+/** Anti-sniping: una puja dentro de los últimos 5 minutos desplaza el cierre. */
+export const AUCTION_ANTI_SNIPE_WINDOW_SECONDS = 300 as const;
+/** Incremento mínimo sobre la mejor puja: 5 % con un suelo absoluto de 0,001. */
+export const AUCTION_MIN_BID_INCREMENT_BPS = 500 as const;
+export const AUCTION_MIN_BID_INCREMENT_WEI = 1_000_000_000_000_000n;
+/** Denominador de los *basis points* usado en las reglas de puja. */
+export const AUCTION_BPS_DENOMINATOR = 10_000 as const;

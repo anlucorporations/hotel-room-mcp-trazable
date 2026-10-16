@@ -32,3 +32,5 @@ function writeAbiModule(file: string, exportName: string, contract: string): voi
 mkdirSync(sharedAbiDir, { recursive: true });
 writeAbiModule("hotel-nights.ts", "hotelNightsAbi", "HotelNights");
 writeAbiModule("faucet.ts", "faucetAbi", "Faucet");
+// C2 · RF-13: subasta primaria de noches (la venta se cierra en `HotelNights.settleAuction`).
+writeAbiModule("night-auction.ts", "nightAuctionAbi", "NightAuction");
