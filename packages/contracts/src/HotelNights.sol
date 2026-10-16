@@ -60,6 +60,9 @@ contract HotelNights is
     bytes32 public constant TREASURER_ROLE = keccak256("TREASURER_ROLE");
     /// @notice RF-08 (C1, 2026-10-13): ajusta el royalty por tipo dentro del rango permitido.
     bytes32 public constant ROYALTY_ADMIN_ROLE = keccak256("ROYALTY_ADMIN_ROLE");
+    /// @notice C2 (2026-10-15): autoriza al contrato `NightAuction` a cerrar una subasta primaria
+    ///         (`settleAuction`). Se concede **al contrato** en el despliegue, nunca a una wallet.
+    bytes32 public constant AUCTION_ROLE = keccak256("AUCTION_ROLE");
 
     // ── Límites de configuración ───────────────────────────────────────────────
     uint256 public constant BURN_BATCH_MAX = 50; // CU-13 (docs/SRS.md §9)
@@ -198,6 +201,38 @@ contract HotelNights is
         // `receive` bloquearía la primaria hasta un `setTreasury` (riesgo bajo: es el hotel).
         (bool ok,) = payable(treasury).call{value: price}("");
         if (!ok) revert EthTransferFailed();
+    }
+
+    // ── Cierre de subasta primaria (C2 · RF-13) ───────────────────────────────
+    /// @inheritdoc IHotelNights
+    /// @dev El importe **no** entra aquí: `NightAuction` custodia las pujas y pone el importe a
+    ///      disposición del hotel por *pull payment* (`withdraw`). Esta función solo completa la
+    ///      venta primaria: marca `soldOnce`, limpia el listado y entrega la noche.
+    function settleAuction(uint256 tokenId, address winner, uint256 priceWei)
+        external
+        override
+        onlyRole(AUCTION_ROLE)
+        whenNotPaused
+        nonReentrant
+    {
+        if (winner == address(0)) revert InvalidWinner();
+        if (priceWei == 0) revert InvalidPrice();
+
+        address seller = _ownerOf(tokenId);
+        if (seller == address(0) || _soldOnce[tokenId]) revert NightNotAvailable(tokenId);
+        if (_checkedIn[tokenId]) revert NightNotAvailable(tokenId);
+        if (_isExpired(tokenId)) revert NightExpired(tokenId);
+
+        // Effects (CEI): la misma marca que una compra primaria, para que el ganador pueda listar
+        // y hacer check-in, y para que la noche deje de ser inventario quemable del hotel.
+        _soldOnce[tokenId] = true;
+        delete _listings[tokenId];
+        emit Sale(tokenId, seller, winner, priceWei, SaleType.PRIMARY);
+
+        // Interaction: entrega al ganador. `_transfer` (sin `_safeTransfer`) a propósito: un
+        // receptor que revierta en `onERC721Received` no debe poder bloquear la liquidación.
+        _unlockTransfer();
+        _transfer(seller, winner, tokenId);
     }
 
     // ── Check-in on-chain (D-05) ───────────────────────────────────────────────

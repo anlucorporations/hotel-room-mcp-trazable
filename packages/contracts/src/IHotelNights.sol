@@ -93,6 +93,8 @@ interface IHotelNights {
     error NoFunds();
     error ZeroAddress();
     error EthTransferFailed();
+    /// @notice C2: la liquidación de una subasta llega con un ganador inválido (dirección cero).
+    error InvalidWinner();
 
     // ── Operaciones (FASE 1) ──────────────────────────────────────────────────
     /**
@@ -109,6 +111,20 @@ interface IHotelNights {
 
     /// @notice Compra primaria de una noche `DISPONIBLE` (paga el precio exacto; 100 % a treasury).
     function buy(uint256 tokenId) external payable;
+
+    /**
+     * @notice C2: cierra la venta **primaria** de una noche subastada y la entrega al ganador.
+     *
+     * @dev La llama el contrato `NightAuction` (rol `AUCTION_ROLE`). Existe porque una mera
+     *      transferencia ERC-721 dejaría la noche con `soldOnce = false`, y con ella el ganador
+     *      **no podría revender** (`list` exige venta primaria) ni hacer **check-in**
+     *      (`markCheckedIn` también), además de seguir siendo quemable como inventario del hotel.
+     *
+     *      No mueve ETH: el importe lo custodia `NightAuction` y llega al hotel por *pull payment*.
+     *      Usa `_transfer` (no `_safeTransfer`) para que un ganador con `onERC721Received`
+     *      revirtiente no pueda bloquear la liquidación.
+     */
+    function settleAuction(uint256 tokenId, address winner, uint256 priceWei) external;
 
     /// @notice Precio de venta primaria en wei.
     function priceOf(uint256 tokenId) external view returns (uint256);
