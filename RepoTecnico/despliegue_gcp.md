@@ -3121,3 +3121,38 @@ gcloud run services update-traffic hotel-mcp-worker --region=europe-west1 --to-r
 
 **Rollback:** `gcloud run services update-traffic hotel-mcp-web --region=europe-west1
 --to-revisions=hotel-mcp-web-00111-kaf=100` (release v57, mismo contenido funcional).
+
+---
+
+## 81. Release v60 — UI de subastas (C2 · RF-13) en producción
+
+**Qué se desplegó.** La web con la **vista pública `/subastas`** y el **panel del hotel
+`/admin/subastas`** (ciclo C2), más el arreglo del lector on-chain. El contrato `NightAuction` todavía
+**no** está desplegado en la red: el build sale sin `NEXT_PUBLIC_AUCTION_ADDRESS`, así que `/subastas`
+muestra su estado honesto («Las subastas no están desplegadas en este entorno») en vez de apuntar a un
+contrato inexistente. La activación real llega con la **ventana de redeploy** (ADR-28: `HotelNights`
+con el gancho + `NightAuction`).
+
+| Elemento | Valor |
+|---|---|
+| Imagen | **`web:v60`** (build `6513b0b1`, 3m50s, SUCCESS) |
+| Revisión | **`hotel-mcp-web-00115-gev`** · tráfico **100 %** |
+| Origen | worktree limpio en `4bbb9f9` |
+| Build | `f8-build-images.sh` lee ahora `deployments/<chain>-auction.json` (lo escribirá `DeployAuction.s.sol`) y lo inyecta como `NEXT_PUBLIC_AUCTION_ADDRESS`/`_DEPLOYMENT_BLOCK`; si no existe, la web arranca sin subasta |
+
+**Verificación (canario y producción)**
+
+| Comprobación | Resultado |
+|---|---|
+| Rutas `/`, `/catalogo`, `/subastas`, `/asistente`, `/health/ready` | **200** y `READY` |
+| `/subastas` sin subasta desplegada | renderiza `data-testid="auctions-not-configured"` (estado honesto) |
+| Cabecera pública | enlace **«Subastas»** presente en el HTML |
+| `/admin/subastas` sin sesión | **no** se renderiza el panel (0 `data-testid` de la subasta); el texto que aparece en el HTML es el payload serializado de i18n |
+| Catálogo | «Sin noches» (sin siembra) |
+| `next build` local | **OK**, 106 páginas, con `/subastas` y `/admin/subastas` en la tabla de rutas |
+
+**Pendiente declarado:** la ventana de redeploy (`HotelNights` + `NightAuction`, RUNBOOK §1.5.3) es lo
+que activa la subasta de punta a punta; hasta entonces la página queda en su estado «no configurada».
+
+**Rollback:** `gcloud run services update-traffic hotel-mcp-web --region=europe-west1
+--to-revisions=hotel-mcp-web-00113-yuh=100` (release v59).

@@ -158,8 +158,10 @@ AUCTION_ADMIN_ADDRESS=<owner|multisig> \
   forge script script/DeployAuction.s.sol:DeployAuction --rpc-url "$RPC_URL" --broadcast --slow --legacy --with-gas-price 1000
 pnpm --filter @hotel/contracts sync
 
-# 3) La web necesita las dos direcciones y su bloque de despliegue
-#    NEXT_PUBLIC_AUCTION_ADDRESS=<0x…>   NEXT_PUBLIC_AUCTION_DEPLOYMENT_BLOCK=<bloque>
+# 3) La web recibe las dos direcciones desde el build: `f8-build-images.sh` lee
+#    `deployments/<chain>-auction.json` (lo escribe `DeployAuction`) y lo inyecta como
+#    NEXT_PUBLIC_AUCTION_ADDRESS / NEXT_PUBLIC_AUCTION_DEPLOYMENT_BLOCK. Sin ese fichero la web
+#    arranca SIN subasta configurada y `/subastas` lo dice (no apunta a un contrato inexistente).
 ```
 
 Comprobaciones tras la ventana:

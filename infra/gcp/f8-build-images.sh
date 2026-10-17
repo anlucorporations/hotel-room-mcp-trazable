@@ -52,10 +52,23 @@ fi
 read -r CONTRACT DEPLOY_BLOCK FAUCET <<<"$(
   node -e "const d=require('${DEP_FILE}');console.log([d.address,d.deploymentBlock,d.faucet ?? ''].join(' '))"
 )"
+# Subasta (C2 · RF-13): es OPCIONAL. `DeployAuction.s.sol` escribe `deployments/<chain>-auction.json`
+# en la ventana de despliegue; si el fichero no existe, la web arranca sin subasta configurada y
+# `/subastas` lo dice en vez de apuntar a un contrato que no existe.
+AUCTION_FILE="$REPO_ROOT/packages/contracts/deployments/${CHAIN_ID}-auction.json"
+AUCTION=""
+AUCTION_BLOCK="0"
+if [[ -f "$AUCTION_FILE" ]]; then
+  read -r AUCTION AUCTION_BLOCK <<<"$(
+    node -e "const a=require('${AUCTION_FILE}');console.log([a.address,a.deploymentBlock ?? 0].join(' '))"
+  )"
+fi
+
 echo "==> Registro $CHAIN_ID: contrato $CONTRACT · bloque $DEPLOY_BLOCK · faucet ${FAUCET:-—}"
+echo "==> Subasta: ${AUCTION:-sin desplegar (la vista lo dira)}"
 echo "==> Tag de release: $TAG"
 
-WEB_SUBS="_NEXT_PUBLIC_SITE_URL=${GCP_WEB_URL},_NEXT_PUBLIC_RPC_URL=${CHAIN_URL},_NEXT_PUBLIC_CHAIN_ID=${CHAIN_ID},_NEXT_PUBLIC_CONTRACT_ADDRESS=${CONTRACT},_NEXT_PUBLIC_DEPLOYMENT_BLOCK=${DEPLOY_BLOCK},_NEXT_PUBLIC_FAUCET_ADDRESS=${FAUCET},_NEXT_PUBLIC_NETWORK=besu"
+WEB_SUBS="_NEXT_PUBLIC_SITE_URL=${GCP_WEB_URL},_NEXT_PUBLIC_RPC_URL=${CHAIN_URL},_NEXT_PUBLIC_CHAIN_ID=${CHAIN_ID},_NEXT_PUBLIC_CONTRACT_ADDRESS=${CONTRACT},_NEXT_PUBLIC_DEPLOYMENT_BLOCK=${DEPLOY_BLOCK},_NEXT_PUBLIC_FAUCET_ADDRESS=${FAUCET},_NEXT_PUBLIC_NETWORK=besu,_NEXT_PUBLIC_AUCTION_ADDRESS=${AUCTION},_NEXT_PUBLIC_AUCTION_DEPLOYMENT_BLOCK=${AUCTION_BLOCK}"
 
 build() {
   local app="$1" extra="$2"
