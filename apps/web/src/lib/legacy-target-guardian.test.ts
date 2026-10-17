@@ -25,7 +25,9 @@ import { describe, expect, it } from "vitest";
  *      un segundo camino de firma.
  *   3. Las direcciones `0x…40` literales solo pueden vivir en `config/chain.ts`; en cualquier otro
  *      sitio una dirección hardcodeada sería un segundo destino invisible.
- *   4. `config/chain.ts` expone un único destino de escritura (más el faucet de pruebas).
+ *   4. `config/chain.ts` expone un único destino de escritura de la **noche** (más el faucet de
+ *      pruebas), y desde C2 también el contrato de **subasta**, cuya dirección queda acotada a la
+ *      superficie de subastas: allí solo se puja y la venta la cierra `HotelNights.settleAuction`.
  */
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -124,12 +126,37 @@ describe("guardián de destino único y firma única (D-07)", () => {
     ).toEqual([]);
   });
 
-  it("`config/chain.ts` solo expone el contrato canónico (y el faucet de pruebas)", () => {
+  it("`config/chain.ts` solo expone el contrato canónico, el faucet de pruebas y la subasta (C2)", () => {
     const chainTs = readFileSync(join(SRC, "config", "chain.ts"), "utf8");
     const exported = [...chainTs.matchAll(/export const (\w*[Aa]ddress\w*)/g)].map((m) => m[1]);
 
     // Un segundo destino de compra/escritura es exactamente el fallo que D-07 cierra.
-    expect(new Set(exported)).toEqual(new Set(["contractAddress", "faucetAddress"]));
+    // `auctionAddress` (C2 · RF-13) se admite porque **no** es un segundo camino para vender una
+    // noche: ahí solo se puja y la venta primaria la cierra `HotelNights.settleAuction` (la noche
+    // sigue teniendo un único destino). Su uso queda acotado a la superficie de subastas, y eso lo
+    // comprueba la prueba siguiente.
+    expect(new Set(exported)).toEqual(
+      new Set(["contractAddress", "faucetAddress", "auctionAddress"]),
+    );
+  });
+
+  it("la dirección de la subasta solo la usa la superficie de subastas (no es un segundo destino)", () => {
+    const offenders: string[] = [];
+
+    for (const { path, content } of SOURCES) {
+      if (!content.includes("auctionAddress")) continue;
+      const allowed =
+        path === "config/chain.ts" ||
+        path === "lib/auctions.ts" ||
+        path.startsWith("components/auctions/");
+      if (!allowed) offenders.push(path);
+    }
+
+    expect(
+      offenders,
+      "`auctionAddress` fuera de la superficie de subastas sería un destino alternativo de " +
+        `compra/reventa (D-07):\n  ${offenders.join("\n  ")}`,
+    ).toEqual([]);
   });
 
   it("la firma de la compra envía el objeto verificado contra el contrato canónico", () => {

@@ -150,7 +150,8 @@
     "navReviews": "Reviews",
     "navContact": "Contact",
     "navHotelGroup": "The hotel",
-    "navDiscoverGroup": "Discover"
+    "navDiscoverGroup": "Discover",
+    "navAuctions": "Auctions"
   },
   "help": {
     "title": "Help and manuals",
@@ -1851,5 +1852,63 @@
     "back": "Back",
     "remove": "Remove",
     "processing": "Processing…"
+  },
+  "auctions": {
+    "title": "Premium night auctions",
+    "intro": "The hotel auctions a suite night. Bid above the reserve price and, if nobody outbids you, the night is yours when the auction closes. Outbid amounts can be claimed back.",
+    "liveTitle": "Live auctions",
+    "history": "Past auctions",
+    "noLive": "There is no open auction right now; closed ones are below.",
+    "empty": "No auctions yet.",
+    "emptyHint": "The hotel will publish its premium auction nights here, with a countdown.",
+    "notConfigured": "Auctions are not deployed in this environment.",
+    "degraded": "We could not read the auctions from the contract. Please try again shortly.",
+    "retry": "Try again",
+    "premium": "Suite",
+    "reserve": "Reserve",
+    "currentBid": "Top bid",
+    "noBids": "No bids yet",
+    "minNextBid": "Minimum bid",
+    "endsIn": "Closes in {time}",
+    "nightHeading": "Night {room}",
+    "antiSnipe": "A bid within the last 5 minutes extends the closing time by another 5.",
+    "connectWallet": "Connect your wallet to bid.",
+    "bid": "Bid",
+    "bidAmount": "Your bid ({symbol})",
+    "bidHelp": "Minimum {min} {symbol}",
+    "bidInvalid": "The bid must be at least {min} {symbol}.",
+    "bidReview": "You are about to bid {amount} {symbol} for night {room} on {date}. If someone outbids you, you can claim your amount back.",
+    "withdraw": "Withdraw {amount} {symbol}",
+    "withdrawReview": "You are about to withdraw {amount} {symbol} to your wallet.",
+    "confirm": "Sign",
+    "cancel": "Cancel",
+    "phase": {
+      "SCHEDULED": "Starting soon",
+      "OPEN": "Open",
+      "CLOSED": "Closed · awaiting settlement",
+      "SETTLED": "Settled",
+      "CANCELLED": "Cancelled",
+      "NONE": "—"
+    },
+    "unit": {
+      "days": "{n} d",
+      "hours": "{n} h",
+      "minutes": "{n} min",
+      "seconds": "{n} s"
+    },
+    "tx": {
+      "review": "Review your bid",
+      "reviewHint": "Check the amount and the night before signing.",
+      "signing": "Sign in your wallet",
+      "signingHint": "Confirm the transaction in your wallet.",
+      "pending": "Sending your bid…",
+      "pendingHint": "Waiting for the network to confirm the transaction.",
+      "confirmed": "Bid recorded",
+      "confirmedHint": "Your bid is on-chain. If you are outbid, you can withdraw the amount.",
+      "reverted": "The bid was not completed",
+      "revertedHint": "The network rejected the transaction. Check the amount and try again.",
+      "unverifiable": "We could not read the receipt",
+      "unverifiableHint": "The transaction may be mined. Refresh the page to check your bid."
+    }
   }
 }

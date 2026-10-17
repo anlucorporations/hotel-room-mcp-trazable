@@ -138,6 +138,43 @@ Comprobaciones tras la ventana:
 | El panel ya edita | `/admin/royalty` muestra el formulario (antes: aviso de contrato antiguo) |
 | Nadie perdió firmas | La web y el MCP apuntan a la dirección nueva; el asistente sigue operativo |
 
+#### 1.5.3 Despliegue de la subasta (C2 · RF-13)
+
+La subasta es un contrato **nuevo** (`NightAuction`) más un **gancho** en el contrato de noches
+(`AUCTION_ROLE` + `settleAuction`, ADR-28). Es decir: **la ventana incluye las dos cosas** — se
+despliega `HotelNights` (con el gancho) y `NightAuction`, y se concede el rol al contrato de subastas.
+
+```bash
+export PATH=$HOME/.foundry/bin:$PATH
+export DEPLOYER_PRIVATE_KEY=<owner-con-DEFAULT_ADMIN>
+export RPC_URL=<rpc>            # Besu: --legacy --with-gas-price 1000
+
+# 1) Contrato de noches con el gancho (si no se hizo ya en esta ventana)
+forge script script/Deploy.s.sol:Deploy --rpc-url "$RPC_URL" --broadcast --slow --legacy --with-gas-price 1000
+export CONTRACT_ADDRESS=$(node -e "console.log(require('./deployments/latest.json').address)")
+
+# 2) Subasta + AUCTION_ROLE al contrato + registro crudo
+AUCTION_ADMIN_ADDRESS=<owner|multisig> \
+  forge script script/DeployAuction.s.sol:DeployAuction --rpc-url "$RPC_URL" --broadcast --slow --legacy --with-gas-price 1000
+pnpm --filter @hotel/contracts sync
+
+# 3) La web necesita las dos direcciones y su bloque de despliegue
+#    NEXT_PUBLIC_AUCTION_ADDRESS=<0x…>   NEXT_PUBLIC_AUCTION_DEPLOYMENT_BLOCK=<bloque>
+```
+
+Comprobaciones tras la ventana:
+
+| Comprobación | Cómo |
+|---|---|
+| `AUCTION_ROLE` es del **contrato** | `cast call <noches> "hasRole(bytes32,address)(bool)" $(cast keccak AUCTION_ROLE) <subasta>` → `true` |
+| El rol no está en wallets | La misma llamada con el owner → `false` |
+| La subasta apunta a las noches | `cast call <subasta> "hotel()(address)"` → dirección de `HotelNights` |
+| Constantes de la mecánica | `MIN_DURATION` 3600 · `MAX_DURATION` 1209600 · `ANTI_SNIPE_WINDOW` 300 · `MIN_BID_INCREMENT_BPS` 500 |
+| Alta de una noche del hotel | `createAuction(<token suite futura>, reserva, inicio, cierre)` con una cuenta con `AUCTION_ADMIN_ROLE` |
+| La venta se cierra como primaria | Tras `settle`, `soldOnce(tokenId)` = `true` y el ganador **puede** `list` y `markCheckedIn` |
+| La vista pública la ve | `/subastas` muestra la tarjeta con cuenta atrás y puja mínima |
+| Nadie perdió firmas | Compra, reventa y back-office siguen contra `contractAddress` (la subasta no es un segundo destino de compra) |
+
 ---
 
 ## 2. Despliegue de las apps (por entorno, vía `NEXT_PUBLIC_*` / env)

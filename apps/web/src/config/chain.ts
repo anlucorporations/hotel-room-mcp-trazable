@@ -41,6 +41,20 @@ export const faucetAddress: Address | null =
  */
 export const deploymentBlock: bigint = BigInt(process.env.NEXT_PUBLIC_DEPLOYMENT_BLOCK ?? "0");
 
+/**
+ * Subastas (C2 · RF-13): dirección de `NightAuction` y bloque desde el que se escanea
+ * `AuctionCreated`. `null` = la subasta no está desplegada en este entorno, y `/subastas` lo dice
+ * (no se inventa una dirección ni se apunta a otro contrato: D-07).
+ */
+export const auctionAddress: Address | null =
+  (process.env.NEXT_PUBLIC_AUCTION_ADDRESS as Address | undefined) ?? null;
+
+export const auctionDeploymentBlock: bigint = BigInt(
+  process.env.NEXT_PUBLIC_AUCTION_DEPLOYMENT_BLOCK ??
+    process.env.NEXT_PUBLIC_DEPLOYMENT_BLOCK ??
+    "0",
+);
+
 if (process.env.NODE_ENV !== "development" && deploymentBlock === 0n) {
   console.warn(
     "[chain] NEXT_PUBLIC_DEPLOYMENT_BLOCK=0 fuera de desarrollo: el escaneo de getLogs " +

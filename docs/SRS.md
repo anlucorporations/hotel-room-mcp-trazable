@@ -382,6 +382,8 @@ huérfanas: la decisión D-15 los trae a este catálogo). `CU-PR-*` son casos de
 | **CU-45** | Consultar operaciones (salud del worker y de la cadena) | Propietario | RF-45 | `/api/admin/system/operations`, `SystemOperations` |
 | **CU-46** | Gestionar la seguridad de la propia cuenta (MFA y contraseña) | Todos | RF-46 | `/api/auth/password`, `/api/auth/mfa/setup`, `AdminSecurity`, D-45 |
 | **CU-47** | Configurar el porcentaje de royalty de reventa por tipo de habitación | `ROYALTY_ADMIN` | RF-08 | `HotelNights.setRoyaltyBps`/`royaltyBpsOf`, `ROYALTY_ADMIN_ROLE`, `AdminRoyalty`, ADR-27 |
+| **CU-48** | Subastar una noche premium del hotel (reserva, inicio y cierre, anti-sniping) | `AUCTION_ADMIN` | RF-13 | `NightAuction.createAuction`/`cancel`, `DeployAuction.s.sol`, ADR-28 |
+| **CU-49** | Pujar, seguir la subasta y liquidar la noche al cierre | Comprador | RF-13 | `NightAuction.bid`/`settle`/`withdraw`, `HotelNights.settleAuction`, `/subastas`, ADR-28 |
 | **CU-PR-01** | Aprovisionar operadores (comando, no ruta) | Responsable técnico | RNF-06 | §4.6 |
 | **CU-PR-02** | Desplegar en la red local con roles, faucet opcional y registro sincronizado | Responsable técnico | RT-02 | ADR-06, ADR-13 |
 
@@ -401,6 +403,7 @@ esta es la vista de verificación, con el artefacto que lo demuestra.
 | RF-06, RF-15, RF-16 | CU-06, CU-07 | US-06, US-16 | `HotelNights.resale.t.sol`, E2E M4 (`buyResale`, `claim`) |
 | RF-07, RF-08 | CU-08 | US-07 | E2E M5 (33 comprobaciones), `reception-guardian.test.ts` |
 | RF-08 (C1 · royalty configurable) | CU-47 | — | `HotelNights.royalty.t.sol`, `HotelNights.admin.t.sol`, `royalty-bps.test.ts`, ADR-27 |
+| RF-13 (C2 · subasta primaria) | CU-48, CU-49 | — | `NightAuction.t.sol` (29), `NightAuction.invariants.t.sol` (256 runs), `DeployAuction.t.sol`, `auction-view.test.ts`, `/subastas`, ADR-28 |
 | RF-09 | CU-11 | US-14 | E2E M7 (SQL ↔ `summarizeHistory` ↔ derivación propia) |
 | RF-10 | CU-09 | US-10 | `apps/worker/src/http-server.test.ts`, E2E M7 |
 | RF-11 | CU-13 | US-09 | `burn-scheduler.test.ts`, E2E M6 |

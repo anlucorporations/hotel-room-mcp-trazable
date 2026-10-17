@@ -150,7 +150,8 @@
     "navReviews": "Reseñas",
     "navContact": "Contacto",
     "navHotelGroup": "El hotel",
-    "navDiscoverGroup": "Descubre"
+    "navDiscoverGroup": "Descubre",
+    "navAuctions": "Subastas"
   },
   "help": {
     "title": "Ayuda y manuales",
@@ -1851,5 +1852,63 @@
     "back": "Volver",
     "remove": "Quitar",
     "processing": "Procesando…"
+  },
+  "auctions": {
+    "title": "Subastas de noches premium",
+    "intro": "El hotel subasta una noche de suite. Puja por encima del precio de reserva y, si nadie te supera, la noche es tuya al cierre. Las pujas superadas se devuelven cuando las reclamas.",
+    "liveTitle": "Subastas en curso",
+    "history": "Subastas anteriores",
+    "noLive": "Ahora mismo no hay ninguna subasta abierta; las cerradas están abajo.",
+    "empty": "Todavía no hay subastas.",
+    "emptyHint": "El hotel publicará aquí las noches premium que subaste, con su cuenta atrás.",
+    "notConfigured": "Las subastas no están desplegadas en este entorno.",
+    "degraded": "No pudimos leer las subastas del contrato. Inténtalo de nuevo en un momento.",
+    "retry": "Reintentar",
+    "premium": "Suite",
+    "reserve": "Reserva",
+    "currentBid": "Mejor puja",
+    "noBids": "Sin pujas todavía",
+    "minNextBid": "Puja mínima",
+    "endsIn": "Cierra en {time}",
+    "nightHeading": "Noche {room}",
+    "antiSnipe": "Si alguien puja en los últimos 5 minutos, el cierre se amplía otros 5.",
+    "connectWallet": "Conecta tu cartera para pujar.",
+    "bid": "Pujar",
+    "bidAmount": "Tu puja ({symbol})",
+    "bidHelp": "Mínimo {min} {symbol}",
+    "bidInvalid": "La puja debe ser al menos {min} {symbol}.",
+    "bidReview": "Vas a pujar {amount} {symbol} por la noche {room} del {date}. Si otro puja más, podrás reclamar tu importe.",
+    "withdraw": "Retirar {amount} {symbol}",
+    "withdrawReview": "Vas a retirar {amount} {symbol} a tu cartera.",
+    "confirm": "Firmar",
+    "cancel": "Cancelar",
+    "phase": {
+      "SCHEDULED": "Próximamente",
+      "OPEN": "Abierta",
+      "CLOSED": "Cerrada · pendiente de liquidar",
+      "SETTLED": "Liquidada",
+      "CANCELLED": "Cancelada",
+      "NONE": "—"
+    },
+    "unit": {
+      "days": "{n} d",
+      "hours": "{n} h",
+      "minutes": "{n} min",
+      "seconds": "{n} s"
+    },
+    "tx": {
+      "review": "Revisa tu puja",
+      "reviewHint": "Comprueba el importe y la noche antes de firmar.",
+      "signing": "Firma en tu cartera",
+      "signingHint": "Confirma la transacción en tu cartera.",
+      "pending": "Enviando la puja…",
+      "pendingHint": "Esperando a que la red confirme la transacción.",
+      "confirmed": "Puja registrada",
+      "confirmedHint": "Tu puja ya está on-chain. Si te superan, podrás retirar el importe.",
+      "reverted": "La puja no se completó",
+      "revertedHint": "La red rechazó la transacción. Revisa el importe y vuelve a intentarlo.",
+      "unverifiable": "No pudimos leer el recibo",
+      "unverifiableHint": "La transacción puede estar minada. Actualiza la página para comprobar tu puja."
+    }
   }
 }

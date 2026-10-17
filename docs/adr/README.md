@@ -53,6 +53,7 @@ fuente única de las decisiones; el código, el PRD y el SRS apuntan a él.
 | [ADR-25](ADR-25-dashboard-fuente-unica.md) | El dashboard lee una fuente única (agregados del worker) | D-16 | vigente |
 | [ADR-26](ADR-26-resiliencia-y-observabilidad.md) | Resiliencia y observabilidad sin Sentry y sin failover multi-RPC | D-12 | vigente |
 | [ADR-27](ADR-27-royalty-configurable-por-rol.md) | Royalty configurable por `ROYALTY_ADMIN` (revierte D-06 en la inmutabilidad) | RF-08 · C1 | vigente |
+| [ADR-28](ADR-28-subastas-on-chain-con-pull-payments.md) | Subastas on-chain con *pull payments* y liquidación en `HotelNights` | RF-13 · C2 (B4/B5/B6) | vigente |
 
 ## Trazabilidad con las decisiones de la auditoría V5
 

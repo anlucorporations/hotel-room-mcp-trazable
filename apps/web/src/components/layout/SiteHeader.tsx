@@ -13,6 +13,7 @@ type ShellLabelKey =
   // D-76: la suite pública es el home del proyecto; su primera entrada es «Inicio».
   | "navHome"
   | "navCatalog"
+  | "navAuctions"
   | "navReserve"
   | "navResale"
   | "navMyNights"
@@ -49,6 +50,8 @@ const PRIMARY_ITEMS: readonly NavItem[] = [
   { href: "/", labelKey: "navHome" },
   { href: "/habitaciones", labelKey: "navRooms" },
   { href: "/catalogo", labelKey: "navCatalog" },
+  // C2 (RF-13): subasta primaria de noches premium, junto a la compra directa.
+  { href: "/subastas", labelKey: "navAuctions" },
   // D-65/D-72: reserva con wallet (retención + anticipo por transferencia).
   { href: "/reservar", labelKey: "navReserve" },
 ];
