@@ -15,6 +15,15 @@ export interface UseAuctionWriteResult {
   readonly settle: (tokenId: bigint) => void;
   /** Retira los fondos pendientes del llamante (pujas superadas o importe del hotel). */
   readonly withdraw: () => void;
+  /** Abre una subasta (panel del hotel; exige `AUCTION_ADMIN_ROLE` en el contrato). */
+  readonly create: (args: {
+    readonly tokenId: bigint;
+    readonly reserveWei: bigint;
+    readonly startTime: bigint;
+    readonly endTime: bigint;
+  }) => void;
+  /** Cancela una subasta (panel del hotel; solo sin pujas, o si la noche ya caducó). */
+  readonly cancel: (tokenId: bigint) => void;
   readonly reset: () => void;
   readonly status: TxStatus;
   readonly hash: `0x${string}` | undefined;
@@ -32,7 +41,11 @@ export function useAuctionWrite(): UseAuctionWriteResult {
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
   const receipt = useWaitForTransactionReceipt({ hash });
 
-  function write(functionName: "bid" | "settle" | "withdraw", args: readonly unknown[], value?: bigint): void {
+  function write(
+    functionName: "bid" | "settle" | "withdraw" | "createAuction" | "cancel",
+    args: readonly unknown[],
+    value?: bigint,
+  ): void {
     if (!auctionAddress) return;
     writeContract({
       address: auctionAddress,
@@ -56,6 +69,9 @@ export function useAuctionWrite(): UseAuctionWriteResult {
     bid: (tokenId, valueWei) => write("bid", [tokenId], valueWei),
     settle: (tokenId) => write("settle", [tokenId]),
     withdraw: () => write("withdraw", []),
+    create: ({ tokenId, reserveWei, startTime, endTime }) =>
+      write("createAuction", [tokenId, reserveWei, startTime, endTime]),
+    cancel: (tokenId) => write("cancel", [tokenId]),
     reset,
     status,
     hash,

@@ -562,7 +562,9 @@
       "preventivo": "Preventivo",
       "actividades": "Actividades",
       "resenas": "Reseñas",
-      "contenido": "Contenido"
+      "contenido": "Contenido",
+      "subastas": "Subastas",
+      "auctions": "Subastas"
     },
     "mintTitle": "Back-office · Publicar noche",
     "roomsTitle": "Back-office · Habitaciones",
@@ -848,7 +850,34 @@
     "boardMintPick": "Selecciona una sola habitación para acuñar su noche.",
     "boardRunMaintenance": "Crear incidencias",
     "boardRunLinen": "Asignar lencería",
-    "boardSelectedCount": "{count} seleccionadas"
+    "boardSelectedCount": "{count} seleccionadas",
+    "auctionsTitle": "Subastas",
+    "auctionsTagline": "Abre la subasta de una noche premium y sigue sus pujas. La noche sigue siendo del hotel hasta la liquidación.",
+    "auctionsCreateTitle": "Abrir una subasta",
+    "auctionsCreateIntro": "Elige una noche de suite del inventario, la reserva y la duración. Si nadie puja, podrás cancelarla.",
+    "auctionsListTitle": "Subastas de tus noches",
+    "auctionsNoCandidates": "No hay noches de suite disponibles en el inventario para subastar.",
+    "auctionsNight": "Noche a subastar",
+    "auctionsNightOption": "Noche {room} · {date}",
+    "auctionsReserve": "Precio de reserva ({symbol})",
+    "auctionsCatalogPrice": "Precio de catálogo de esa noche: {price} {symbol} (orientativo para la reserva)",
+    "auctionsHours": "Duración (horas, 1–336)",
+    "auctionsCreate": "Abrir subasta",
+    "auctionsCancel": "Cancelar",
+    "auctionsStateNone": "Sin subasta",
+    "auctionsStateOpen": "Subasta abierta",
+    "auctionsStateSettled": "Subasta liquidada",
+    "auctionsStateCancelled": "Subasta cancelada",
+    "auctionsReviewCreate": "Vas a abrir la subasta de la noche {room} con reserva {reserve} {symbol} y {hours} h de duración.",
+    "auctionsReviewCancel": "Vas a cancelar la subasta de la noche {room}. La noche vuelve a estar disponible sin subasta.",
+    "auctionsNotConfigured": "La subasta no está desplegada en este entorno: no hay dirección configurada.",
+    "auctionsNoRole": "Tu wallet no tiene AUCTION_ADMIN_ROLE en el contrato de subastas.",
+    "auctionsIssue": {
+      "NO_NIGHT": "Elige una noche.",
+      "INVALID_RESERVE": "La reserva no es un importe válido.",
+      "TOO_SHORT": "La duración mínima es 1 hora.",
+      "TOO_LONG": "La duración máxima es 14 días (336 horas)."
+    }
   },
   "legal": {
     "terms": {

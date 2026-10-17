@@ -6,6 +6,7 @@ export type AdminNavLabelKey =
   | "publishBoard"
   | "dashboard"
   | "royalty"
+  | "auctions"
   | "pause"
   | "funds"
   | "expired"
@@ -108,6 +109,9 @@ export const ADMIN_NAV_SECTIONS: readonly AdminNavSection[] = [
       // incluye el minteo on-chain de una noche en su panel del día. La entrada se muestra a
       // recepción y al owner (que satisface cualquier rol, D-30).
       { href: "/admin/habitacion/publicar", labelKey: "publishBoard", role: "RECEPTION_ROLE" },
+      // C2 (RF-13): subastas de noches premium. Mismo rol que el minteo (operador del hotel); la
+      // autoridad real es `AUCTION_ADMIN_ROLE` en el contrato de subastas.
+      { href: "/admin/subastas", labelKey: "auctions", role: "MINTER_ROLE" },
     ],
   },
   {

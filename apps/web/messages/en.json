@@ -562,7 +562,9 @@
       "preventivo": "Preventive",
       "actividades": "Activities",
       "resenas": "Reviews",
-      "contenido": "Content"
+      "contenido": "Content",
+      "subastas": "Auctions",
+      "auctions": "Auctions"
     },
     "mintTitle": "Back-office · Mint night",
     "roomsTitle": "Back-office · Rooms",
@@ -848,7 +850,34 @@
     "boardMintPick": "Select a single room to mint its night.",
     "boardRunMaintenance": "Create incidents",
     "boardRunLinen": "Assign housekeeping",
-    "boardSelectedCount": "{count} selected"
+    "boardSelectedCount": "{count} selected",
+    "auctionsTitle": "Auctions",
+    "auctionsTagline": "Open an auction for a premium night and follow its bids. The night stays with the hotel until settlement.",
+    "auctionsCreateTitle": "Open an auction",
+    "auctionsCreateIntro": "Pick a suite night from the inventory, the reserve price and the duration. If nobody bids, you can cancel it.",
+    "auctionsListTitle": "Auctions of your nights",
+    "auctionsNoCandidates": "There are no suite nights available in the inventory to auction.",
+    "auctionsNight": "Night to auction",
+    "auctionsNightOption": "Night {room} · {date}",
+    "auctionsReserve": "Reserve price ({symbol})",
+    "auctionsCatalogPrice": "Catalogue price for that night: {price} {symbol} (a guide for the reserve)",
+    "auctionsHours": "Duration (hours, 1–336)",
+    "auctionsCreate": "Open auction",
+    "auctionsCancel": "Cancel",
+    "auctionsStateNone": "No auction",
+    "auctionsStateOpen": "Auction open",
+    "auctionsStateSettled": "Auction settled",
+    "auctionsStateCancelled": "Auction cancelled",
+    "auctionsReviewCreate": "You are about to open the auction for night {room} with a {reserve} {symbol} reserve and a {hours} h duration.",
+    "auctionsReviewCancel": "You are about to cancel the auction for night {room}. The night becomes available again with no auction.",
+    "auctionsNotConfigured": "Auctions are not deployed in this environment: no address is configured.",
+    "auctionsNoRole": "Your wallet does not hold AUCTION_ADMIN_ROLE on the auction contract.",
+    "auctionsIssue": {
+      "NO_NIGHT": "Choose a night.",
+      "INVALID_RESERVE": "The reserve is not a valid amount.",
+      "TOO_SHORT": "The minimum duration is 1 hour.",
+      "TOO_LONG": "The maximum duration is 14 days (336 hours)."
+    }
   },
   "legal": {
     "terms": {

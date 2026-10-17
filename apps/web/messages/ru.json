@@ -562,7 +562,9 @@
       "preventivo": "Профилактика",
       "actividades": "Мероприятия",
       "resenas": "Отзывы",
-      "contenido": "Контент"
+      "contenido": "Контент",
+      "subastas": "Аукционы",
+      "auctions": "Аукционы"
     },
     "mintTitle": "Бэк-офис · Выпуск ночи",
     "roomsTitle": "Бэк-офис · Номера",
@@ -848,7 +850,34 @@
     "boardMintPick": "Выберите один номер, чтобы опубликовать его ночь.",
     "boardRunMaintenance": "Создать инциденты",
     "boardRunLinen": "Назначить обслуживание",
-    "boardSelectedCount": "Выбрано: {count}"
+    "boardSelectedCount": "Выбрано: {count}",
+    "auctionsTitle": "Аукционы",
+    "auctionsTagline": "Откройте аукцион премиальной ночи и следите за ставками. Ночь остаётся у отеля до расчёта.",
+    "auctionsCreateTitle": "Открыть аукцион",
+    "auctionsCreateIntro": "Выберите ночь в люксе из инвентаря, резервную цену и длительность. Если ставок нет, аукцион можно отменить.",
+    "auctionsListTitle": "Аукционы ваших ночей",
+    "auctionsNoCandidates": "В инвентаре нет доступных ночей в люксе для аукциона.",
+    "auctionsNight": "Ночь для аукциона",
+    "auctionsNightOption": "Ночь {room} · {date}",
+    "auctionsReserve": "Резервная цена ({symbol})",
+    "auctionsCatalogPrice": "Каталожная цена этой ночи: {price} {symbol} (ориентир для резерва)",
+    "auctionsHours": "Длительность (часы, 1–336)",
+    "auctionsCreate": "Открыть аукцион",
+    "auctionsCancel": "Отменить",
+    "auctionsStateNone": "Без аукциона",
+    "auctionsStateOpen": "Аукцион открыт",
+    "auctionsStateSettled": "Аукцион рассчитан",
+    "auctionsStateCancelled": "Аукцион отменён",
+    "auctionsReviewCreate": "Вы открываете аукцион для ночи {room} с резервом {reserve} {symbol} и длительностью {hours} ч.",
+    "auctionsReviewCancel": "Вы отменяете аукцион ночи {room}. Ночь снова будет доступна без аукциона.",
+    "auctionsNotConfigured": "Аукционы не развёрнуты в этом окружении: адрес не задан.",
+    "auctionsNoRole": "У вашего кошелька нет роли AUCTION_ADMIN_ROLE в контракте аукционов.",
+    "auctionsIssue": {
+      "NO_NIGHT": "Выберите ночь.",
+      "INVALID_RESERVE": "Резерв — некорректная сумма.",
+      "TOO_SHORT": "Минимальная длительность — 1 час.",
+      "TOO_LONG": "Максимальная длительность — 14 дней (336 часов)."
+    }
   },
   "legal": {
     "terms": {

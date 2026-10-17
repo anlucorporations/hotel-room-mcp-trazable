@@ -148,7 +148,8 @@ describe("guardián de destino único y firma única (D-07)", () => {
       const allowed =
         path === "config/chain.ts" ||
         path === "lib/auctions.ts" ||
-        path.startsWith("components/auctions/");
+        path === "components/admin/AdminAuctions.tsx" || // panel del hotel (abrir/cancelar)
+        path.startsWith("components/auctions/"); // superficie pública (pujar/retirar)
       if (!allowed) offenders.push(path);
     }
 
