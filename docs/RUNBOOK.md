@@ -229,6 +229,10 @@ GCP_IMAGE_TAG=<tag> bash infra/gcp/70-deploy-apps.sh --only=web --canary
 > El `projectId` es una variable **de build**, no de runtime: cambiarlo o rotarlo exige recompilar la
 > imagen de la web. No afecta a los demás servicios.
 
+**Estado:** el 2026-10-17 se construyó `web:v64` con el `projectId` del proyecto de WalletConnect Cloud
+(revisión `hotel-mcp-web-00122-lal`), así que producción **ya ofrece WalletConnect**. Falta la
+aceptación en móvil real (TC-ACC-003).
+
 ### 2.1 Imágenes en IPFS (ADR-12, Decisión 13)
 Los 3 CIDs de `IMAGE_CIDS` (`packages/shared/src/domain/ipfs.ts`) están **pineados** (2026-06-11)
 en un nodo **Kubo** del host del demo (`brew services start ipfs`; pins en `~/.ipfs`) y su

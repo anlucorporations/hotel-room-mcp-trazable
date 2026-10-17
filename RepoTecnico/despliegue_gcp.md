@@ -3247,3 +3247,32 @@ Builds: `web` 3m57s · `worker` 2m19s · `mcp` 2m23s (Cloud Build, SUCCESS), des
 
 **Estado**: repo publicado en `6e38fe5` (rama de trabajo, `main` intacto en `9c5ed07`) y producción
 sirviendo exactamente ese commit.
+
+---
+
+## 84. Activación de WalletConnect v2 en producción (C0 · RF-11 · `web:v64`)
+
+**Qué se hizo.** El responsable aportó el `projectId` de WalletConnect Cloud y se construyó la web con
+la variable de build `WALLETCONNECT_PROJECT_ID` (ADR-29, RUNBOOK §2.0), de modo que el conector
+`walletConnect` de wagmi pasa a registrarse junto a las billeteras inyectadas (EIP-6963) y Coinbase.
+
+| Elemento | Valor |
+|---|---|
+| Imagen | **`web:v64`** (build `687e27e2`, 3m39s, SUCCESS) |
+| Revisión | **`hotel-mcp-web-00122-lal`** · tráfico **100 %** |
+| Build-arg verificado | el log de Cloud Build muestra `--build-arg=NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=de05…` |
+| Rollback | `hotel-mcp-web-00120-nag` (v63, sin WalletConnect) |
+
+**Verificación** (canario y producción):
+
+| Comprobación | Resultado |
+|---|---|
+| Rutas `/`, `/reservar`, `/catalogo`, `/subastas`, `/health/ready` | **200** |
+| `projectId` inlined en el bundle servido | **sí** — 2 chunks del canario (`7362-*.js` y `app/layout-*.js`) y el chunk de layout en producción |
+| Conector `walletConnect` en el bundle | **sí** |
+| Sin regresiones | la subasta sigue viva y el catálogo sigue excluyendo la noche subastada |
+
+**Pendiente de verificación manual (necesita un móvil):** abrir el selector de cartera, comprobar que
+aparece **WalletConnect** y que el modal pinta el **QR**; emparejar con MetaMask móvil, añadir la red
+**81234** y firmar (TC-ACC-003). El relay de WalletConnect es un tercero: si no responde, las
+billeteras inyectadas siguen funcionando.

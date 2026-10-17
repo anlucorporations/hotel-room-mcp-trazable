@@ -1,0 +1,30 @@
+{
+  "hito": "C0 — WalletConnect v2 activado en producción (RF-11, ADR-29)",
+  "fecha": "2026-10-17",
+  "red": "Besu 81234 (producción)",
+  "projectId": "de053d144ca84cbf4eab76fad97f200a (público: viaja en el bundle del cliente)",
+  "cambio": "el conector walletConnect de wagmi se registra junto a inyectadas (EIP-6963) y Coinbase; metadata.url desde NEXT_PUBLIC_SITE_URL",
+  "build": {
+    "imagen": "web:v64",
+    "build_id": "687e27e2-0205-4ba9-b928-2b778613aad7",
+    "duracion": "3m39s",
+    "build_arg": "NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID verificado en el log de Cloud Build"
+  },
+  "deploy": {
+    "revision": "hotel-mcp-web-00122-lal",
+    "trafico": "100 %",
+    "rollback": "hotel-mcp-web-00120-nag (v63)"
+  },
+  "verificacion": {
+    "rutas": "/, /reservar, /catalogo, /subastas, /health/ready -> 200",
+    "projectId_en_bundle": "sí: 2 chunks del canario (7362-*.js, app/layout-*.js) y el layout de producción",
+    "conector_en_bundle": "sí (walletConnect)",
+    "sin_regresiones": "subasta viva y catálogo sin la noche subastada"
+  },
+  "pendiente": "verificación manual en móvil (QR + red 81234 + firma) = TC-ACC-003; el relay es un tercero y su caída no afecta a inyectadas/Coinbase",
+  "tests": "wallet-connectors.test.ts (28 en el fichero, 3 nuevas de metadatos) · suite web 118 ficheros / 1093 pruebas",
+  "commits": [
+    "e239dd5 feat(walletconnect): activacion por projectId cableada y documentada (C0 · RF-11)",
+    "ec6508e fix(docs): corrige la ruta relativa del ADR-29 a RepoTecnico"
+  ]
+}
