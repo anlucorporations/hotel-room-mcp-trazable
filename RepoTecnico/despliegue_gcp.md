@@ -3156,3 +3156,63 @@ que activa la subasta de punta a punta; hasta entonces la página queda en su es
 
 **Rollback:** `gcloud run services update-traffic hotel-mcp-web --region=europe-west1
 --to-revisions=hotel-mcp-web-00113-yuh=100` (release v59).
+
+---
+
+## 82. Ventana de C2 en Besu — subasta operativa (2026-10-17)
+
+**Decisión del responsable:** red **Besu 81234** + **una suite sembrada** para que la subasta sea
+demostrable. La producción ya corría sobre Besu (release v57), así que la ventana fue: contratos
+nuevos en Besu + apuntar la app al contrato nuevo + recompilar.
+
+### Contratos (Besu 81234)
+
+| Contrato | Dirección | Bloque | Nota |
+|---|---|---|---|
+| `HotelNights` **(C2)** | **`0xF8b1d4d0A2Dd9Dd53200A4C6783a69c15E3a25F4`** | `5655376` | con el gancho `AUCTION_ROLE`/`settleAuction`; 7 roles verificados para el owner |
+| `NightAuction` **(C2)** | **`0x934A389CaBFB84cdB3f0260B2a4FD575b8B345A3`** | `5655388` | `AUCTION_ROLE` **al contrato**, no al owner; `hotel()` apunta al contrato nuevo |
+| Rollback `HotelNights` | `0x676F5F71DAE1C83Dc31775E4c61212bC9e799d9C` | `5496805` | C1 (sin gancho) |
+
+`HotelOperations` (`0x222d74f3…`) no cambia: C2 no toca su interfaz.
+
+### Siembra (mínima, para la demo)
+
+- Habitación **201 (`suite`)** registrada en el contrato nuevo.
+- Noche **`20120261115`** (2026-11-15, 0,2 CC) minteada al hotel (treasury).
+- **Subasta abierta**: reserva **0,1 CC**, duración 7 días, puja inicial de **0,12 CC** de la cuenta 1
+  ⇒ `/subastas` la muestra «Abierta» con mínima siguiente **0,126 CC** (0,12 + 5 %).
+
+### Aplicación (Cloud Run)
+
+| Servicio | Revisión | Imagen |
+|---|---|---|
+| web | **`hotel-mcp-web-00118-neb`** (100 %) | **`web:v62`** (`NEXT_PUBLIC_CONTRACT_ADDRESS=0xf8b1d4…`, `NEXT_PUBLIC_AUCTION_ADDRESS=0x934A…`) |
+| mcp | `hotel-mcp-mcp-00020-6rn` | `mcp:v61` |
+| worker | `hotel-mcp-worker-00020-qpr` | `worker:v57` (imagen sin cambios; **env** al contrato nuevo; agregados reseteados, `mintedCount=1`) |
+
+### Verificación
+
+| Comprobación | Resultado |
+|---|---|
+| Aceptación Besu (`measure-besu.mjs`, `EXPECTED_MINTS=1`) | **PASS** — bloques P50 2 s/P95 2 s, RPC P95 12,1 ms, 1/1 mints indexables |
+| `/subastas` (canario y producción) | `auctions-live`: «Noche 201», «Abierta», reserva 0,1, puja 0,12, **mínima 0,126**, cuenta atrás |
+| `/catalogo` | ya **no** ofrece la noche subastada (filtro `excludeAuctionedNights`, commit `5a5265a`) |
+| Rutas `/`, `/catalogo`, `/subastas`, `/health/ready` | 200 |
+| Worker | lag 0, `aggregateLag` 0, `mintedCount=1` |
+| Rollback web | `hotel-mcp-web-00115-gev` (v60) |
+
+### Incidencias de la ventana
+
+1. **Timeout transitorio del RPC de Besu** durante el sembrado: `registerRoom` y `mint` quedaron
+   minadas; `createAuction` se reenvió.
+2. **`createAuction` revertía `InvalidStartTime`** al calcular el inicio con el `timestamp` del bloque
+   anterior (quedaba en el pasado al minarse): se simula con `eth_call` y se usa `start = now + margen`.
+3. **Cloud Build rechazaba las sustituciones de la subasta** (`INVALID_ARGUMENT`): faltaban en
+   `infra/docker/cloudbuild.yaml` y `Dockerfile` → corregido en `6f356f3`.
+
+### Deuda declarada (próxima ventana de contrato)
+
+`HotelNights.buy()` sigue permitiendo comprar en primaria una noche en subasta (el contrato de noches
+no conoce el estado de la subasta). **Mitigado** en la app (el catálogo excluye las noches con
+subasta viva); el arreglo on-chain (flag `_auctioned` por `AUCTION_ROLE` o escrow) queda para la
+próxima ventana. Detalle en [ADR-28](docs/adr/ADR-28-subastas-on-chain-con-pull-payments.md).

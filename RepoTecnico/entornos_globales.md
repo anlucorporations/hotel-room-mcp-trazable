@@ -78,11 +78,13 @@ Los valores de Polygon quedan **documentados como configuración de mainnet** (D
 | Elemento | Valor |
 |---|---|
 | Owner / deployer / treasury | `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` (cuenta de pruebas Anvil; **solo testnet**) |
-| `HotelNights` | **`0x676F5F71DAE1C83Dc31775E4c61212bC9e799d9C`** · bloque `5496805` (redeploy C1, 2026-10-13) — anterior (D-06, rollback): `0xea2e668d430e5aa15baba2f5c5edfd4f9ef6eb73` bloque `5491483` |
+| `HotelNights` | **`0xF8b1d4d0A2Dd9Dd53200A4C6783a69c15E3a25F4`** · bloque `5655376` (redeploy C2, 2026-10-17, **con el gancho `AUCTION_ROLE`/`settleAuction`**) — anterior (C1, rollback): `0x676F5F71DAE1C83Dc31775E4c61212bC9e799d9C` bloque `5496805` |
+| `NightAuction` (C2 · RF-13) | **`0x934A389CaBFB84cdB3f0260B2a4FD575b8B345A3`** · bloque `5655388` · `AUCTION_ROLE` concedido **al contrato** (el owner no lo tiene); registro `packages/contracts/deployments/81234-auction.json` (git-ignored) |
 | `HotelOperations` (vNext F2) | `0x222d74f33b0d07687a769a44399e2272a4cb9ffe` · bloque `5491513` (sin cambios) |
 | Registro | `packages/shared/deployments/81234.json` (git-ignored; se copia a la imagen vía `.gcloudignore`) |
 | Roles | `DEFAULT_ADMIN`, `MINTER`, `RECEPTION`, `PAUSER`, `BURNER`, `TREASURER` y **`ROYALTY_ADMIN`** (7) **verificados on-chain** para el owner |
-| Evidencia | [`evidencias/aceptacion-besu-81234-2026-10-13.json`](./evidencias/aceptacion-besu-81234-2026-10-13.json) |
+| Catálogo sembrado (C2) | habitación **201 (`suite`)** registrada; noche **`20120261115`** (2026-11-15, 0,2 CC) del hotel; **subasta abierta** (reserva 0,1 CC, 7 días, puja inicial 0,12 de la cuenta 1) |
+| Evidencia | [`evidencias/aceptacion-besu-81234-2026-10-13.json`](./evidencias/aceptacion-besu-81234-2026-10-13.json) · [`evidencias/c2-redeploy-besu-81234-2026-10-17.json`](./evidencias/c2-redeploy-besu-81234-2026-10-17.json) |
 
 ### Comandos
 
@@ -96,8 +98,12 @@ forge script script/Deploy.s.sol:Deploy --rpc-url "$RPC_URL" --broadcast --slow 
 forge script script/DeployOperations.s.sol:DeployOperations --rpc-url "$RPC_URL" --broadcast --slow --legacy --with-gas-price 1000
 pnpm --filter @hotel/contracts sync
 
-# 2) Aceptación (TC-ACC-010/011/012). Con el contrato C1 sin sembrar, EXPECTED_MINTS=0.
-RPC_URL="$RPC_URL" CONTRACT_ADDRESS=0x676F…d9C DEPLOYMENT_BLOCK=5496805 EXPECTED_MINTS=0 \
+# 1.bis) Subasta (C2): deploy con la dirección del contrato de noches
+CONTRACT_ADDRESS=0xF8b1d4d0A2Dd9Dd53200A4C6783a69c15E3a25F4 \
+  forge script script/DeployAuction.s.sol:DeployAuction --rpc-url "$RPC_URL" --broadcast --slow --legacy --with-gas-price 1000
+
+# 2) Aceptación (TC-ACC-010/011/012). Desde C2 hay 1 noche sembrada: EXPECTED_MINTS=1.
+RPC_URL="$RPC_URL" CONTRACT_ADDRESS=0xF8b1d4d0A2Dd9Dd53200A4C6783a69c15E3a25F4 DEPLOYMENT_BLOCK=5655376 EXPECTED_MINTS=1 \
   node packages/contracts/scripts/measure-besu.mjs
 ```
 

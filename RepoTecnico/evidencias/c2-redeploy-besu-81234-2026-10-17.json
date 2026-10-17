@@ -1,0 +1,61 @@
+{
+  "hito": "C2 — ventana de redeploy en Besu 81234 (subasta primaria operativa)",
+  "fecha": "2026-10-17",
+  "red": "Codecrypto Besu testnet · chainId 81234 · RPC https://besu.alumnos.codecrypto.academy",
+  "decision_del_responsable": "red Besu + una suite sembrada para que la subasta sea demostrable",
+  "despliegue": {
+    "HotelNights": {
+      "address": "0xF8b1d4d0A2Dd9Dd53200A4C6783a69c15E3a25F4",
+      "deploymentBlock": 5655376,
+      "cambios": "AUCTION_ROLE + settleAuction (ADR-28) sobre el C1 (royalty configurable)",
+      "roles_owner_verificados": ["DEFAULT_ADMIN_ROLE", "MINTER_ROLE", "RECEPTION_ROLE", "PAUSER_ROLE", "BURNER_ROLE", "TREASURER_ROLE", "ROYALTY_ADMIN_ROLE"],
+      "rollback": "0x676F5F71DAE1C83Dc31775E4c61212bC9e799d9C (bloque 5496805)"
+    },
+    "NightAuction": {
+      "address": "0x934A389CaBFB84cdB3f0260B2a4FD575b8B345A3",
+      "deploymentBlock": 5655388,
+      "admin": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "hotel": "0xF8b1d4d0A2Dd9Dd53200A4C6783a69c15E3a25F4",
+      "verificado": "AUCTION_ROLE concedido AL CONTRATO y NO al owner; hotel() apunta al HotelNights nuevo; MIN_DURATION=3600; ANTI_SNIPE_WINDOW=300"
+    },
+    "app": {
+      "worker": "revision hotel-mcp-worker-00020-qpr · worker:v57 · env CONTRACT_ADDRESS=0xf8b1d4… (agregados reseteados; mintedCount=1)",
+      "mcp": "revision hotel-mcp-mcp-00020-6rn · mcp:v61",
+      "web": "revision hotel-mcp-web-00118-neb · web:v62 · 100 % · NEXT_PUBLIC_CONTRACT_ADDRESS=0xf8b1d4… + NEXT_PUBLIC_AUCTION_ADDRESS=0x934A…",
+      "rollback_web": "hotel-mcp-web-00115-gev (v60) o reconstruir con el registro C1"
+    }
+  },
+  "siembra": {
+    "room": { "room": 201, "type": "suite", "tx": "registerRoom(201, 'suite')" },
+    "night": { "tokenId": "20120261115", "date": "2026-11-15", "priceWei": "200000000000000000", "owner": "0xf39F…2266 (treasury)" },
+    "auction": {
+      "reserveWei": "100000000000000000",
+      "startTime": 1792246907,
+      "endTime": 1792851707,
+      "duracion": "7 días",
+      "tx_creacion": "0x2f67480ec7e1667c89cc2fc187bf1241a2e08588966a3d16d841b431ef5e3a35",
+      "puja_inicial": { "bidder": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", "amountWei": "120000000000000000", "tx": "0x1e802a8bce3163ffc131cdf28ee7f87f419356017431fdfe288bb4325dfe0487" },
+      "minima_siguiente": "126000000000000000 (0,12 + 5 %)"
+    }
+  },
+  "verificacion": {
+    "aceptacion_onchain": "measure-besu.mjs con EXPECTED_MINTS=1 → TC-ACC-010 P50=2s/P95=2s PASS · TC-ACC-011 P95=12,1 ms PASS · TC-ACC-012 1/1 mints (0 perdidos) PASS · RESULTADO GLOBAL PASS",
+    "worker": "bound al contrato nuevo, lag 0, aggregateLag 0, mintedCount=1 (asienta la noche sembrada)",
+    "mcp": "/health ok con el bloque de Besu",
+    "web_canario": "rutas 200; /subastas con data-testid=auctions-live («Noche 201», «Abierta», reserva 0,1, puja 0,12, mínima 0,126, cuenta atrás); /catalogo SIN el tokenId subastado",
+    "web_produccion": "web:v62 al 100 % (hotel-mcp-web-00118-neb); /subastas muestra la subasta viva; /catalogo no contiene 20120261115",
+    "incidencias": [
+      "RPC de Besu con timeout transitorio durante el sembrado: reintento (registerRoom/mint quedaron, createAuction se reenvió)",
+      "createAuction revirtió InvalidStartTime al usar el timestamp del bloque anterior; se corrigió con start = now + margen y se verificó con eth_call antes de firmar",
+      "Cloud Build rechazaba las sustituciones nuevas de la subasta (INVALID_ARGUMENT): faltaban en infra/docker/cloudbuild.yaml y Dockerfile → commit 6f356f3"
+    ]
+  },
+  "deuda_declarada": {
+    "buy_durante_subasta": "HotelNights.buy() sigue permitiendo comprar en primaria una noche en subasta (el contrato de noches no conoce el estado de la subasta). Mitigado: el catálogo web excluye las noches con subasta viva (commit 5a5265a). Fix on-chain pendiente para la próxima ventana: flag _auctioned[tokenId] fijado por AUCTION_ROLE, o escrow de la noche. Documentado en ADR-28.",
+    "web_no_apunta_a_anvil": "el registro 81234 es único para Besu y Anvil local; el entorno local vuelve a Anvil desplegando de nuevo."
+  },
+  "commits": [
+    "6f356f3 fix(build): declarar las sustituciones de la subasta en Cloud Build",
+    "5a5265a fix(subastas): el catalogo excluye las noches con subasta viva (C2)"
+  ]
+}
