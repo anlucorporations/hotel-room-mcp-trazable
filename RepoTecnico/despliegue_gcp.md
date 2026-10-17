@@ -3216,3 +3216,34 @@ nuevos en Besu + apuntar la app al contrato nuevo + recompilar.
 no conoce el estado de la subasta). **Mitigado** en la app (el catálogo excluye las noches con
 subasta viva); el arreglo on-chain (flag `_auctioned` por `AUCTION_ROLE` o escrow) queda para la
 próxima ventana. Detalle en [ADR-28](docs/adr/ADR-28-subastas-on-chain-con-pull-payments.md).
+
+---
+
+## 83. Release v63 — alineación completa con el commit publicado (`6e38fe5`)
+
+**Motivo.** Cerrar la entrega de C2 con las **tres imágenes reconstruidas desde el commit exacto
+publicado** en la rama `Hotel-DSH-GCP-v3` (`6e38fe5`), para que lo que corre en Cloud Run sea
+reproducible desde el repositorio (hasta ahora el worker seguía en `v57` y la web en `v62`,
+construida desde un worktree).
+
+| Servicio | Revisión | Imagen |
+|---|---|---|
+| web | **`hotel-mcp-web-00120-nag`** (100 %) | **`web:v63`** |
+| mcp | **`hotel-mcp-mcp-00021-v64`** | **`mcp:v63`** |
+| worker | **`hotel-mcp-worker-00021-cwq`** | **`worker:v63`** |
+
+Builds: `web` 3m57s · `worker` 2m19s · `mcp` 2m23s (Cloud Build, SUCCESS), desde un worktree limpio en
+`6e38fe5` con el registro de Besu (`0xf8b1d4…`) y la subasta (`0x934A…`) copiados.
+
+**Verificación del canario y de producción**
+
+| Comprobación | Resultado |
+|---|---|
+| Rutas `/`, `/catalogo`, `/subastas`, `/asistente`, `/health/ready` | **200** |
+| `/subastas` | `auctions-live`: «Noche 201», «Abierta», 0,12 y mínima **0,126** |
+| `/catalogo` | sin la noche subastada (filtro C2) |
+| worker | `mintedCount=1`, `lag=0` |
+| Rollback | `hotel-mcp-web-00118-neb` (v62) / `00020-qpr` (worker) / `00020-6rn` (mcp) |
+
+**Estado**: repo publicado en `6e38fe5` (rama de trabajo, `main` intacto en `9c5ed07`) y producción
+sirviendo exactamente ese commit.
