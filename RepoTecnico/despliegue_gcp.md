@@ -3276,3 +3276,37 @@ la variable de build `WALLETCONNECT_PROJECT_ID` (ADR-29, RUNBOOK §2.0), de modo
 aparece **WalletConnect** y que el modal pinta el **QR**; emparejar con MetaMask móvil, añadir la red
 **81234** y firmar (TC-ACC-003). El relay de WalletConnect es un tercero: si no responde, las
 billeteras inyectadas siguen funcionando.
+
+---
+
+## 85. Release v65 — mensajes de firma legibles en la wallet (ADR-30)
+
+**Qué se desplegó.** Los mensajes que la wallet enseña al firmar ya son los del diseño ADR-30:
+resguardo y reseña con **motivo, habitación y noche** (EIP-712 v2) y publicación de ficha con un
+**texto legible** (huella + hora UTC + dominio) en vez de un `0x…` suelto. Sin cambios on-chain.
+
+| Elemento | Valor |
+|---|---|
+| Imagen | **`web:v65`** (build `5262baf4`, 3m37s, SUCCESS, con `WALLETCONNECT_PROJECT_ID`) |
+| Revisión | **`hotel-mcp-web-00124-gav`** · tráfico **100 %** |
+| Origen | worktree limpio en `324c2b2` (incluye el fix de los barriles de `shared`) |
+| Rollback | `hotel-mcp-web-00122-lal` (v64, mensajes v1) |
+
+**Verificación**
+
+| Comprobación | Resultado |
+|---|---|
+| Rutas `/`, `/mis-noches`, `/catalogo`, `/subastas`, `/health/ready` | **200** |
+| Bundle servido | contiene «Descargar el resguardo de mi noche», `TicketAuthorization` y `ReviewAuthorization` (chunk `7362-*`) |
+| WalletConnect | `projectId` sigue inlined en el layout (no se perdió en el rebuild) |
+| Round-trip de firma | pruebas de `pass`, `qr`, `publish` y `rooms` en verde con las estructuras v2 (cliente firma ↔ servidor verifica) |
+| Sin regresiones | subasta viva y catálogo sin la noche subastada |
+
+**Incidencia de la release:** el primer build de `v65` falló porque el commit `9cfe7a1` había versionado
+exports de vNext cuyos ficheros no están versionados. Corregido en `324c2b2` (los barriles versionados
+solo exportan módulos versionados; el WIP de vNext sigue intacto en el árbol de trabajo).
+
+**Pendiente de aceptación manual (TC-ACC-004):** abrir la wallet en MetaMask desktop y en móvil por
+WalletConnect y comprobar que el mensaje del resguardo/reseña dice «Descargar el resguardo de mi
+noche» / «Publicar mi reseña de la noche» con habitación y noche. Las operaciones vNext conservan la
+firma opaca hasta la próxima ventana de contrato (ADR-30).

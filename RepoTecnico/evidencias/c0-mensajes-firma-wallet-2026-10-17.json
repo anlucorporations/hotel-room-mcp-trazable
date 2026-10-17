@@ -1,0 +1,83 @@
+{
+  "hito": "C0 — mensajes de firma legibles en la wallet (ADR-30)",
+  "fecha": "2026-10-17",
+  "alcance": [
+    "análisis e inventario de firmas",
+    "estructura de mensajes por interacción",
+    "casos de uso (CU-50)",
+    "documento de casos+proceso+mensaje",
+    "cableado en resguardo, reseña y publicación",
+    "despliegue en producción"
+  ],
+  "interacciones": {
+    "resguardo": {
+      "metodo": "eth_signTypedData_v4",
+      "estructura": "TicketAuthorization",
+      "campos": [
+        "motivo",
+        "habitacion",
+        "noche",
+        "nonce",
+        "validoHasta"
+      ],
+      "antes": "tokenId/nonce/expiresAt"
+    },
+    "resena": {
+      "metodo": "eth_signTypedData_v4",
+      "estructura": "ReviewAuthorization",
+      "campos": [
+        "motivo",
+        "habitacion",
+        "noche",
+        "estrellas",
+        "nonce",
+        "validoHasta"
+      ],
+      "antes": "tokenId/rating/nonce/expiresAt"
+    },
+    "publicacion": {
+      "metodo": "personal_sign",
+      "mensaje": "texto de 9 lineas con habitacion, huella, hora UTC y dominio",
+      "antes": "solo el hash 0x…",
+      "vigencia": "5 min (issuedAt + host)"
+    },
+    "operaciones_vnext": {
+      "estado": "limitacion de contrato desplegado",
+      "propuesta": "campo descripcion en ACTION_TYPEHASH (v3)"
+    },
+    "transacciones": {
+      "estado": "la wallet no admite texto libre; revision obligatoria en la app + catalogo de copy"
+    }
+  },
+  "artefactos": [
+    "packages/shared/src/domain/wallet-messages.ts (catalogo 17 interacciones + formateadores + EIP-712 v2 + texto de publicacion)",
+    "wallet-messages.test.ts (18)",
+    "docs/MENSAJES-FIRMA-WALLET.md",
+    "docs/adr/ADR-30-mensajes-firmados-legibles-en-la-wallet.md",
+    "SRS CU-50",
+    "TC-E2E-074 / TC-ACC-004"
+  ],
+  "verificacion": {
+    "shared": "64 ficheros / 676 pruebas",
+    "web": "117 ficheros / 1090 pruebas",
+    "tsc": "shared y web limpios",
+    "round_trip": "firma con estructuras v2 verificada por los verificadores de servidor (pass, qr, publish, rooms)",
+    "bundle_produccion": "contiene el motivo legible y TicketAuthorization/ReviewAuthorization",
+    "guardines": "catalogo completo, lenguaje llano, sin identificadores opacos, determinismo"
+  },
+  "release": {
+    "imagen": "web:v65",
+    "build": "5262baf4",
+    "revision": "hotel-mcp-web-00124-gav",
+    "trafico": "100 %",
+    "rollback": "hotel-mcp-web-00122-lal (v64)"
+  },
+  "incidencia": "el build inicial fallo por exports de vNext versionados en los barriles de shared; corregido en 324c2b2",
+  "pendiente_manual": "TC-ACC-004 (MetaMask desktop + WalletConnect movil)",
+  "commits": [
+    "9cfe7a1",
+    "fbfe936",
+    "12c6d90",
+    "324c2b2"
+  ]
+}

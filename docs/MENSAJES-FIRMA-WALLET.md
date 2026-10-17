@@ -184,7 +184,10 @@ Mensaje propuesto (lo que la wallet muestra como filas):
 | **2. Resguardo y reseña** | Firmantes (`useTicket`, `useReviewSubmission`), verificadores (`verifyEIP712*`, rutas `/api/qr`, `/api/reviews`, `passes/jws`) y sus pruebas → estructuras v2 | **Hecha** (dominio v2, `TicketAuthorization`/`ReviewAuthorization`, `ticketSignature.ts` retirado) |
 | **3. Publicación de contenido** | Sustituir `personal_sign(contentHash)` por `roomPublicationMessage(...)`; la API recibe `issuedAt` y valida la ventana de 5 min | **Hecha** (cliente, `verifyRoomPublicationSignature` y ruta `/api/admin/rooms/[id]/publish` con `issuedAt` + host) |
 | **4. Operaciones vNext** | Campo de descripción en `ACTION_TYPEHASH` → **ventana de contrato** (HotelOperations) | Bloqueada por redeploy |
-| **5. Aceptación** | Revisión de cada pantalla de firma en MetaMask desktop y móvil (WalletConnect) + evidencia | Pendiente |
+
+> **Estado 2026-10-17**: fases 1-3 desplegadas en producción (`web:v65`). Evidencia:
+> `RepoTecnico/evidencias/c0-mensajes-firma-wallet-2026-10-17.json` y `despliegue_gcp.md §85`.
+| **5. Aceptación** | Revisión de cada pantalla de firma en MetaMask desktop y móvil (WalletConnect) + evidencia | **Desplegado** en `web:v65` (revisión `hotel-mcp-web-00124-gav`); la revisión manual en wallet real es el TC-ACC-004 y queda pendiente de una persona |
 
 ### Nota de compatibilidad (fase 3)
 
