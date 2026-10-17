@@ -96,6 +96,8 @@ Las referencias huérfanas del código se resuelven así:
 | `US-nn` | historias de usuario | se conservan: siguen vigentes en `docs/BACKLOG-SPRINTS.md` |
 | `TC-*` | casos de prueba | se conservan: viven en las suites de pruebas |
 
+| [ADR-29](./ADR-29-walletconnect-v2-activacion-por-projectid.md) | WalletConnect v2 activado por `projectId` por entorno (C0 · RF-11) | 2026-10-17 | C0 |
+
 ---
 
 *Registro de ADR · creado en M9 · toda decisión nueva entra aquí antes de tocar el código.*

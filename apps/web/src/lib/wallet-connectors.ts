@@ -22,12 +22,44 @@ export type WalletKind = "injected" | "coinbase" | "walletconnect";
 
 export interface WalletEnv {
   readonly walletConnectProjectId?: string | undefined;
+  /** URL pública del sitio para los metadatos de WalletConnect (`NEXT_PUBLIC_SITE_URL`). */
+  readonly siteUrl?: string | undefined;
 }
 
 /** `projectId` de WalletConnect, saneado: vacío o solo espacios ⇒ `undefined` (conector desactivado). */
 export function walletConnectProjectId(raw: string | undefined = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID): string | undefined {
   const value = raw?.trim();
   return value ? value : undefined;
+}
+
+/** URL pública del sitio con la que se anuncian los metadatos de WalletConnect (sin `/` final). */
+export const WALLETCONNECT_DEFAULT_URL = "https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app";
+
+/** `NEXT_PUBLIC_SITE_URL` saneada; si falta, el host de producción. */
+export function walletConnectSiteUrl(raw: string | undefined): string {
+  const value = raw?.trim();
+  return value ? value.replace(/\/+$/, "") : WALLETCONNECT_DEFAULT_URL;
+}
+
+export interface WalletConnectMetadata {
+  readonly name: string;
+  readonly description: string;
+  readonly url: string;
+  readonly icons: string[];
+}
+
+/**
+ * Metadatos que WalletConnect muestra en la app del móvil al emparejar. El `url` sale de
+ * `NEXT_PUBLIC_SITE_URL` (antes estaba fijado al host de producción, de modo que un preview o un
+ * dominio nuevo anunciaban una URL equivocada).
+ */
+export function walletConnectMetadata(siteUrl: string | undefined = process.env.NEXT_PUBLIC_SITE_URL): WalletConnectMetadata {
+  return {
+    name: "Marina del Sol",
+    description: "Reserva de noches del hotel",
+    url: walletConnectSiteUrl(siteUrl),
+    icons: [],
+  };
 }
 
 /** Plan de conectores: inyectadas (EIP-6963) + Coinbase, y WalletConnect solo si hay `projectId`. */
@@ -45,7 +77,7 @@ export function buildWalletConnectors(env: WalletEnv = {}): CreateConnectorFn[] 
     return walletConnect({
       projectId: walletConnectProjectId(env.walletConnectProjectId) as string,
       showQrModal: true,
-      metadata: { name: "Marina del Sol", description: "Reserva de noches del hotel", url: "https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app", icons: [] },
+      metadata: walletConnectMetadata(env.siteUrl),
     });
   });
 }

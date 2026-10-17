@@ -226,7 +226,10 @@ Riesgo a vigilar: uptime de la red (estuvo ~9,5 días caída) → RNF-17.
 | TC-E2E-061 | Sin `window.ethereum` | E2E | `data-testid=no-wallet` + guía | Anvil |
 | TC-E2E-062 | Red incorrecta | E2E | `data-testid=wrong-network`, sin tx | Anvil |
 | TC-E2E-063 | Estados de tx | E2E (control de minado) | pendiente→confirmada; revertida con mensaje claro | Anvil |
+| TC-E2E-072 | **WalletConnect sin `projectId`** | E2E | el selector **no** ofrece WalletConnect (solo inyectadas + Coinbase); la app no falla | Anvil |
+| TC-E2E-073 | **WalletConnect con `projectId`** | E2E | el selector ofrece WalletConnect y el modal pinta el **QR**; los metadatos anuncian `NEXT_PUBLIC_SITE_URL` | Anvil |
 | TC-ACC-002 | Add-network + firma reales | aceptación | MetaMask añade red 81234 y firma primaria/secundaria | Besu |
+| TC-ACC-003 | **Conexión móvil por WalletConnect** | aceptación | un móvil empareja por QR, añade la red 81234 y firma una compra de prueba en Besu | Besu |
 
 ### CU-PR-01 — Faucet (dev/test, RF-21)
 | TC | Escenario | Nivel | Oráculo | Estado |

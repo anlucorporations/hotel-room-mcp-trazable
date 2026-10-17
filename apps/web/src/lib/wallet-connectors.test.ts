@@ -4,8 +4,11 @@ import {
   METAMASK_RDNS,
   pickPreferredConnector,
   visibleWalletConnectors,
+  walletConnectMetadata,
   walletConnectProjectId,
+  walletConnectSiteUrl,
   walletPlan,
+  WALLETCONNECT_DEFAULT_URL,
 } from "./wallet-connectors";
 
 /**
@@ -89,5 +92,24 @@ describe("detección de MetaMask por otras señales", () => {
   it("como último recurso mira el nombre", () => {
     expect(isMetaMaskConnector({ id: "injected", name: "MetaMask" })).toBe(true);
     expect(isMetaMaskConnector({ id: "injected", name: "Otra" })).toBe(false);
+  });
+});
+
+describe("metadatos de WalletConnect (URL anunciada al móvil)", () => {
+  it("usa NEXT_PUBLIC_SITE_URL y quita el `/` final", () => {
+    expect(walletConnectSiteUrl("https://marina.example/")).toBe("https://marina.example");
+    expect(walletConnectSiteUrl("  https://marina.example  ")).toBe("https://marina.example");
+  });
+
+  it("sin siteUrl cae al host de producción (nunca anuncia una URL vacía)", () => {
+    expect(walletConnectSiteUrl(undefined)).toBe(WALLETCONNECT_DEFAULT_URL);
+    expect(walletConnectSiteUrl("   ")).toBe(WALLETCONNECT_DEFAULT_URL);
+  });
+
+  it("los metadatos llevan la URL pública y el nombre del hotel", () => {
+    const meta = walletConnectMetadata("https://staging.example/");
+    expect(meta.url).toBe("https://staging.example");
+    expect(meta.name).toBe("Marina del Sol");
+    expect(meta.description.length).toBeGreaterThan(0);
   });
 });

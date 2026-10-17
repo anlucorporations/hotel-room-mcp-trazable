@@ -198,12 +198,36 @@ Comprobaciones tras la ventana:
 | `NEXT_PUBLIC_CONTRACT_ADDRESS`, `NEXT_PUBLIC_DEPLOYMENT_BLOCK` | web | del registro `deployments/<chainId>.json` |
 | `NEXT_PUBLIC_FAUCET_ADDRESS` | web | **solo dev/test**; sin ella, toda la UI de faucet queda oculta |
 | `NEXT_PUBLIC_BLOCK_EXPLORER_URL`/`_NAME` | web | opcional; sin él, el recibo degrada a hash+copiar |
+| `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | web (**build**) | opcional; sin él, WalletConnect no se ofrece (ADR-29). Se pasa al build como `WALLETCONNECT_PROJECT_ID` |
 | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`, `MCP_BASE_URL` | web (server) | **solo servidor**; nunca expuesta al cliente |
 | `MCP_SHARED_SECRET` | web↔mcp | secreto compartido del gateway |
 | `RPC_URL`, `CONTRACT_ADDRESS`, `DEPLOYMENT_BLOCK`, SMTP/secret email | worker | checkpoint en SQLite |
 | `MCP_HOST` (default `127.0.0.1`), allowlist anti DNS-rebinding | mcp | no abrir a `0.0.0.0` sin allowlist |
 
 Orden recomendado: contrato → sync deployment → worker (que ya indexa desde el bloque) → mcp → web → monitor.
+
+### 2.0 WalletConnect v2 (RF-11 · C0, ADR-29)
+
+WalletConnect **solo existe en el bundle si el build recibe el `projectId`**. Sin él, la app ofrece
+solo billeteras inyectadas (EIP-6963) y Coinbase: no es un fallo, es la degradación prevista.
+
+1. Crear el proyecto en <https://cloud.reown.com> y registrar el **dominio del sitio** (el mismo de
+   `NEXT_PUBLIC_SITE_URL`).
+2. Construir el web con el identificador del entorno (no es un secreto; **no** se versiona):
+
+```bash
+WALLETCONNECT_PROJECT_ID=<projectId> GCP_IMAGE_TAG=<tag> \
+  bash infra/gcp/f8-build-images.sh --only=web --execute
+GCP_IMAGE_TAG=<tag> bash infra/gcp/70-deploy-apps.sh --only=web --canary
+```
+
+3. Verificar en el canario: el selector de cartera muestra **WalletConnect**, el modal pinta el **QR**
+   y un móvil puede emparejar. El móvil debe aceptar la red **81234** (la app ofrece añadirla, TC-E2E-060).
+4. Promocionar el canario. **Rollback**: reconstruir sin `WALLETCONNECT_PROJECT_ID` (o con el build
+   anterior) y desplegar; el conector desaparece.
+
+> El `projectId` es una variable **de build**, no de runtime: cambiarlo o rotarlo exige recompilar la
+> imagen de la web. No afecta a los demás servicios.
 
 ### 2.1 Imágenes en IPFS (ADR-12, Decisión 13)
 Los 3 CIDs de `IMAGE_CIDS` (`packages/shared/src/domain/ipfs.ts`) están **pineados** (2026-06-11)

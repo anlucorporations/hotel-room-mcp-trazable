@@ -15,7 +15,10 @@ const wagmiConfig = createConfig({
   //     **respaldo** para navegadores sin anuncio EIP-6963.
   //   · El plan añade **Coinbase Wallet** siempre y **WalletConnect** solo si existe
   //     `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` (ver `lib/wallet-connectors.ts`).
-  connectors: buildWalletConnectors({ walletConnectProjectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID }),
+  connectors: buildWalletConnectors({
+    walletConnectProjectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
+    siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
+  }),
   multiInjectedProviderDiscovery: true,
   // Menos carga para la cartera y el RPC: `batch` agrupa las lecturas del mismo tick (multicall) y
   // `retryCount` evita que un fallo puntual se traduzca en un error visible al huésped.
