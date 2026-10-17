@@ -217,3 +217,16 @@ export function liveTimeLeft(
   if (livePhase(item, nowSeconds) !== "OPEN") return 0;
   return Math.max(0, item.endTimeSeconds - nowSeconds);
 }
+
+/**
+ * Noches que deben **desaparecer del catálogo** por tener una subasta viva: una noche en subasta no
+ * está en venta directa (si se comprara por `buy`, la liquidación ya no podría entregarla al ganador).
+ * Se compara por `tokenId` (string) para no mezclar representaciones.
+ */
+export function excludeAuctionedNights<T extends { tokenId: string }>(
+  nights: readonly T[],
+  auctionedTokenIds: ReadonlySet<string>,
+): T[] {
+  if (auctionedTokenIds.size === 0) return [...nights];
+  return nights.filter((night) => !auctionedTokenIds.has(night.tokenId));
+}

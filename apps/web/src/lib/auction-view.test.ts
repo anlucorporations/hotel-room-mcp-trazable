@@ -5,6 +5,7 @@ import {
   buildAuctionItem,
   countdownParts,
   countdownUnits,
+  excludeAuctionedNights,
   formatAuctionDate,
   livePhase,
   liveTimeLeft,
@@ -241,5 +242,20 @@ describe("fase en vivo (la tarjeta pasa el tiempo sin volver al RPC)", () => {
     expect(liveTimeLeft(base, 1_500)).toBe(500);
     expect(liveTimeLeft(base, 999)).toBe(0);
     expect(liveTimeLeft(base, 3_000)).toBe(0);
+  });
+});
+
+describe("catálogo · las noches en subasta no se ofrecen en venta directa", () => {
+  const night = (tokenId: string) => ({ tokenId });
+
+  it("sin subastas vivas el catálogo no cambia", () => {
+    const nights = [night("20120261115"), night("10120261020")];
+    expect(excludeAuctionedNights(nights, new Set())).toHaveLength(2);
+  });
+
+  it("excluye exactamente las noches con subasta abierta", () => {
+    const nights = [night("20120261115"), night("10120261020")];
+    const visible = excludeAuctionedNights(nights, new Set(["20120261115"]));
+    expect(visible.map((n) => n.tokenId)).toEqual(["10120261020"]);
   });
 });

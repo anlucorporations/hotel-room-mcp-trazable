@@ -79,3 +79,20 @@ del hotel. El borrador, por tanto, no era implementable tal cual sin romper el m
 - **Escrow del NFT en la subasta**: añade una transferencia más y deja la noche fuera del hotel si la
   subasta se abandona; el gancho hace innecesario mover el NFT antes de venderlo.
 - **Subasta holandesa o de sobre cerrado**: la inglesa con anti-sniping es la mecánica aprobada (B5).
+
+## Deuda declarada (ventana de C2 en Besu, 2026-10-17)
+
+Al activar la primera subasta real en Besu se comprobó que `HotelNights.buy()` **sigue** permitiendo
+comprar en primaria una noche que está en subasta: el contrato de noches no conoce el estado de la
+subasta (por diseño, para no acoplarlos). Consecuencia: un comprador directo podría dejar la noche
+vendida y la liquidación revertiría con `NightNotAvailable`; los pujantes recuperarían su importe por
+*pull payment*, pero el ganador perdería la subasta.
+
+**Mitigación aplicada**: el **catálogo de la web excluye** las noches con subasta viva
+(`fetchCatalog` → `excludeAuctionedNights`), de modo que la vía normal de compra no las ofrece y la
+noche en subasta se muestra únicamente en `/subastas`.
+
+**Pendiente para la próxima ventana de contrato** (no bloquea la demo): bloquear `buy` **on-chain**
+para noches en subasta —p. ej. un flag `_auctioned[tokenId]` que fije `AUCTION_ROLE` al abrir y
+libere al cerrar—, o escrowar la noche en la subasta. Se prefiere el flag: mantiene la custodia en el
+hotel y no mueve el NFT antes de venderlo.

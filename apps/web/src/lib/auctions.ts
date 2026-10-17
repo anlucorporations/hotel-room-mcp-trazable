@@ -63,6 +63,39 @@ export async function fetchAuctions(nowSeconds?: bigint): Promise<AuctionsResult
   }
 }
 
+/**
+ * `tokenId`s con subasta **viva** (abierta o pendiente de empezar, que el contrato ya reporta como
+ * `OPEN`). La consume el catálogo para no ofrecer en venta directa una noche que está en subasta.
+ * Si no hay subasta configurada o el RPC falla, devuelve un conjunto vacío: el catálogo no se rompe.
+ */
+export async function fetchAuctionedTokenIds(): Promise<ReadonlySet<string>> {
+  const address = auctionAddress;
+  if (!address) return new Set();
+
+  try {
+    const client = serverPublicClient();
+    const head = await client.getBlockNumber();
+    const creations = await scanCreations(client, address, auctionDeploymentBlock, head);
+    const tokenIds = latestPerToken(creations);
+
+    const states = await Promise.all(
+      tokenIds.map(async (tokenId) => {
+        const state = (await client.readContract({
+          address,
+          abi: nightAuctionAbi,
+          functionName: "stateOf",
+          args: [tokenId],
+        })) as number;
+        return { tokenId: tokenId.toString(), state };
+      }),
+    );
+    // `AuctionState.OPEN == 1` (el contrato reporta OPEN también antes de la hora de inicio).
+    return new Set(states.filter((entry) => entry.state === 1).map((entry) => entry.tokenId));
+  } catch {
+    return new Set();
+  }
+}
+
 /** Paginado de `getLogs` en tramos de `GETLOGS_MAX_RANGE` con concurrencia acotada. */
 async function scanCreations(
   client: PublicClient,

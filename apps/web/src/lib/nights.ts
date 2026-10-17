@@ -19,6 +19,8 @@ import {
 import { hotelNightsAbi } from "@hotel/shared/abi";
 import { contractAddress, deploymentBlock } from "@/config/chain";
 import { serverPublicClient } from "@/lib/server-client";
+import { excludeAuctionedNights } from "@/lib/auction-view";
+import { fetchAuctionedTokenIds } from "@/lib/auctions";
 import { roomCoverUrl } from "@/lib/room-image-url";
 
 const nftsRepo = new NFTsRepository();
@@ -339,7 +341,13 @@ export async function fetchCatalog(): Promise<CatalogResult> {
       // §35 · segunda capa, on-chain: aunque ambas fuentes de BD cuadren, la verdad es del contrato.
       // Se conserva lo que no se pudo leer (un pico de red no debe ocultar inventario sano).
       const nights = await filterSoldOnChain(withoutGhosts);
-      return { nights: await attachRoomCovers(nights), hiddenSoldCount: Math.max(0, fromDb.length - nights.length) };
+      // C2 (RF-13): una noche con subasta viva no está en venta directa (si se comprara por `buy`,
+      // la liquidación ya no podría entregarla al ganador).
+      const visible = excludeAuctionedNights(
+        await attachRoomCovers(nights),
+        await fetchAuctionedTokenIds(),
+      );
+      return { nights: visible, hiddenSoldCount: Math.max(0, fromDb.length - nights.length) };
     }
   } catch (dbErr) {
     // Si la BD no está disponible, degradación elegante al RPC on-chain
@@ -376,7 +384,12 @@ export async function fetchCatalog(): Promise<CatalogResult> {
   // En el camino on-chain no hay nada que «ocultar»: `sold` sale de los propios logs, así que no
   // existe desfase entre dos fuentes y avisar de sincronización sería mentira.
   const fallbackNights = [...byToken.values()].sort((a, b) => a.dateYYYYMMDD - b.dateYYYYMMDD);
-  return { nights: await attachRoomCovers(fallbackNights), hiddenSoldCount: 0 };
+  // C2 (RF-13): mismo filtro que en el camino de BD: fuera las noches con subasta viva.
+  const visible = excludeAuctionedNights(
+    await attachRoomCovers(fallbackNights),
+    await fetchAuctionedTokenIds(),
+  );
+  return { nights: visible, hiddenSoldCount: 0 };
 }
 
 /**
