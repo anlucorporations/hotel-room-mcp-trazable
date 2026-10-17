@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ZERO_ADDRESS } from "@hotel/shared/domain";
 import {
+  auctionStructToRaw,
   buildAuctionItem,
   countdownParts,
   countdownUnits,
@@ -60,6 +61,49 @@ function item(overrides: Partial<AuctionItem>): AuctionItem {
 }
 
 describe("modelo de vista de la subasta (C2 · RF-13)", () => {
+  it("mapea el `struct` con nombre que devuelve viem (no una tupla)", () => {
+    // viem devuelve `{ tokenId, seller, reservePrice, … }`; tratarlo como array deja todo undefined.
+    const view = auctionStructToRaw(
+      {
+        tokenId: TOKEN,
+        seller: SELLER,
+        reservePrice: 100_000_000_000_000_000n,
+        startTime: 1_000n,
+        endTime: 2_000n,
+        highestBidder: BIDDER,
+        highestBid: 120_000_000_000_000_000n,
+        settled: false,
+        cancelled: false,
+      },
+      TOKEN,
+    );
+
+    expect(view).not.toBeNull();
+    expect(view!.room).toBe(201);
+    expect(view!.dateYYYYMMDD).toBe(20_267_001);
+    expect(view!.roomType).toBe("suite");
+    expect(view!.highestBid).toBe(120_000_000_000_000_000n);
+    expect(buildAuctionItem(view!, 1_500n).minNextBidWei).toBe("126000000000000000");
+  });
+
+  it("una noche sin subasta (`tokenId == 0`) se descarta", () => {
+    const view = auctionStructToRaw(
+      {
+        tokenId: 0n,
+        seller: ZERO_ADDRESS,
+        reservePrice: 0n,
+        startTime: 0n,
+        endTime: 0n,
+        highestBidder: ZERO_ADDRESS,
+        highestBid: 0n,
+        settled: false,
+        cancelled: false,
+      },
+      TOKEN,
+    );
+    expect(view).toBeNull();
+  });
+
   it("mapea la subasta abierta con su puja mínima y su cuenta atrás", () => {
     const view = buildAuctionItem(raw(), 1_500n);
 

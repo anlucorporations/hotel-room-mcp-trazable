@@ -1,14 +1,16 @@
 import "server-only";
 import { parseAbiItem, type Address, type PublicClient } from "viem";
-import { GETLOGS_MAX_RANGE, decodeTokenId, roomTypeOf, type NightType } from "@hotel/shared/domain";
+import { GETLOGS_MAX_RANGE } from "@hotel/shared/domain";
 import { nightAuctionAbi } from "@hotel/shared/abi";
 import { auctionAddress, auctionDeploymentBlock } from "@/config/chain";
 import { serverPublicClient } from "@/lib/server-client";
 import {
+  auctionStructToRaw,
   buildAuctionItem,
   sortAuctionItems,
   type AuctionItem,
   type AuctionRaw,
+  type AuctionStruct,
 } from "@/lib/auction-view";
 
 /**
@@ -110,50 +112,24 @@ export function latestPerToken(
   return [...byToken.values()].map((entry) => entry.tokenId);
 }
 
-/** Estado autoritativo de una subasta + datos de su noche. `null` si la noche no existe. */
+/**
+ * Estado autoritativo de una subasta + datos de su noche.
+ *
+ * viem devuelve el `struct` como **objeto con nombre** (no tupla): el mapeo vive en
+ * `auctionStructToRaw`, que es puro y está probado. `null` si esa noche no tiene subasta
+ * (`tokenId == 0`), lo que descarta un `AuctionCreated` de una subasta ya reabierta.
+ */
 async function readAuction(
   client: PublicClient,
   address: Address,
   tokenId: bigint,
 ): Promise<AuctionRaw | null> {
-  const raw = (await client.readContract({
+  const struct = (await client.readContract({
     address,
     abi: nightAuctionAbi,
     functionName: "auctionOf",
     args: [tokenId],
-  })) as unknown as readonly [
-    bigint, // tokenId
-    Address, // seller
-    bigint, // reservePrice
-    bigint, // startTime
-    bigint, // endTime
-    Address, // highestBidder
-    bigint, // highestBid
-    boolean, // settled
-    boolean, // cancelled
-  ];
+  })) as unknown as AuctionStruct;
 
-  // `tokenId == 0` significa "esa noche nunca se subastó" (el evento puede venir de otra creación).
-  if (raw[0] === 0n) return null;
-
-  const { room, dateYYYYMMDD } = decodeTokenId(tokenId);
-  const type: NightType = roomTypeOf(room) ?? "simple";
-
-  return {
-    tokenId: raw[0],
-    seller: raw[1],
-    reservePrice: raw[2],
-    startTime: raw[3],
-    endTime: raw[4],
-    highestBidder: raw[5],
-    highestBid: raw[6],
-    settled: raw[7],
-    cancelled: raw[8],
-    room,
-    dateYYYYMMDD,
-    roomType: type,
-    // La portada de la habitación vive en el maestro (PostgreSQL); la tarjeta cae a la imagen del
-    // tipo mientras no se resuelva aquí, igual que hace el catálogo con las noches sin foto.
-    coverUrl: null,
-  };
+  return auctionStructToRaw(struct, tokenId);
 }

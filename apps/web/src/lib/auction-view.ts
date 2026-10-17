@@ -1,7 +1,9 @@
 export type { AuctionPhase } from "@hotel/shared/domain";
 import {
   auctionPhase,
+  decodeTokenId,
   nextMinBid,
+  roomTypeOf,
   timeLeftSeconds,
   type AuctionPhase,
   type AuctionView,
@@ -36,6 +38,53 @@ export interface AuctionRaw extends AuctionView {
   readonly dateYYYYMMDD: number;
   readonly roomType: string;
   readonly coverUrl?: string | null;
+}
+
+/**
+ * Forma que devuelve viem para `auctionOf`: **objeto con los nombres del `struct`** del ABI
+ * (`{ tokenId, seller, reservePrice, … }`), no una tupla posicional. Se tipa aquí para que el mapeo
+ * sea comprobable sin red: confundirla con un array deja todos los campos `undefined` (y la vista
+ * degradaría en silencio).
+ */
+export interface AuctionStruct {
+  readonly tokenId: bigint;
+  readonly seller: string;
+  readonly reservePrice: bigint;
+  readonly startTime: bigint;
+  readonly endTime: bigint;
+  readonly highestBidder: string;
+  readonly highestBid: bigint;
+  readonly settled: boolean;
+  readonly cancelled: boolean;
+}
+
+/**
+ * Convierte el `struct` de `auctionOf` en el modelo de vista. `null` si esa noche nunca se subastó
+ * (el contrato devuelve `tokenId == 0`), que es lo que permite descartar un `AuctionCreated` viejo de
+ * una noche cuya subasta ya no existe.
+ */
+export function auctionStructToRaw(
+  struct: AuctionStruct,
+  tokenId: bigint,
+  coverUrl: string | null = null,
+): AuctionRaw | null {
+  if (struct.tokenId === 0n) return null;
+  const { room, dateYYYYMMDD } = decodeTokenId(tokenId);
+  return {
+    tokenId: struct.tokenId,
+    seller: struct.seller as AuctionRaw["seller"],
+    reservePrice: struct.reservePrice,
+    startTime: struct.startTime,
+    endTime: struct.endTime,
+    highestBidder: struct.highestBidder as AuctionRaw["highestBidder"],
+    highestBid: struct.highestBid,
+    settled: struct.settled,
+    cancelled: struct.cancelled,
+    room,
+    dateYYYYMMDD,
+    roomType: roomTypeOf(room) ?? "simple",
+    coverUrl,
+  };
 }
 
 export function buildAuctionItem(raw: AuctionRaw, nowSeconds: bigint): AuctionItem {
