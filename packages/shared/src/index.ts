@@ -21,11 +21,6 @@ export * from "./domain/purchase-tx";
 export * from "./domain/ipfs";
 export * from "./domain/faucet";
 export * from "./domain/maintenance";
-// Vocabulario canónico de estados y tipos de entidad (vNext · F1 · T1.6).
-export * from "./domain/operations-state";
-// Motor EIP-712 de operaciones (vNext · F2 · T2.6/T2.9): isomorfo (solo `viem`), para que la app y el
-// worker firmen/verifiquen exactamente el mensaje que valida el contrato.
-export * from "./operations/index";
 export * from "./deployments/schema";
 export * from "./logger";
 
@@ -43,7 +38,6 @@ export * from "./db/repositories/operations.repository";
 export * from "./db/repositories/reservations.repository";
 export * from "./db/repositories/reviews.repository";
 export * from "./db/repositories/rooms.repository";
-export * from "./db/repositories/terminal-operators.repository";
 export * from "./db/repositories/settings.repository";
 export * from "./db/repositories/sessions.repository";
 export * from "./db/repositories/users.repository";
@@ -54,9 +48,6 @@ export * from "./auth/service";
 export * from "./rates/exchange-service";
 export * from "./health/service";
 export * from "./queue/notifications";
-// Cola aceleradora del outbox de anclaje (vNext · F3 · T3.6): solo DESPIERTA al worker relayer;
-// la verdad es la tabla `on_chain_signatures`. Módulo de servidor: NO se expone en `browser.ts`.
-export * from "./queue/operational-signatures";
 export * from "./burner/service";
 export * from "./events/listener";
 export * from "./passes/jws";
