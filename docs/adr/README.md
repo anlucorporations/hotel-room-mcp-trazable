@@ -54,6 +54,8 @@ fuente única de las decisiones; el código, el PRD y el SRS apuntan a él.
 | [ADR-26](ADR-26-resiliencia-y-observabilidad.md) | Resiliencia y observabilidad sin Sentry y sin failover multi-RPC | D-12 | vigente |
 | [ADR-27](ADR-27-royalty-configurable-por-rol.md) | Royalty configurable por `ROYALTY_ADMIN` (revierte D-06 en la inmutabilidad) | RF-08 · C1 | vigente |
 | [ADR-28](ADR-28-subastas-on-chain-con-pull-payments.md) | Subastas on-chain con *pull payments* y liquidación en `HotelNights` | RF-13 · C2 (B4/B5/B6) | vigente |
+| [ADR-29](ADR-29-walletconnect-v2-activacion-por-projectid.md) | WalletConnect v2 activado por `projectId` por entorno | RF-11 · C0 | vigente |
+| [ADR-30](ADR-30-mensajes-firmados-legibles-en-la-wallet.md) | Mensajes firmados legibles en la wallet: catálogo, EIP-712 v2 y texto de publicación | RNF-19 · C0 | vigente |
 
 ## Trazabilidad con las decisiones de la auditoría V5
 
@@ -96,7 +98,7 @@ Las referencias huérfanas del código se resuelven así:
 | `US-nn` | historias de usuario | se conservan: siguen vigentes en `docs/BACKLOG-SPRINTS.md` |
 | `TC-*` | casos de prueba | se conservan: viven en las suites de pruebas |
 
-| [ADR-29](./ADR-29-walletconnect-v2-activacion-por-projectid.md) | WalletConnect v2 activado por `projectId` por entorno (C0 · RF-11) | 2026-10-17 | C0 |
+
 
 ---
 

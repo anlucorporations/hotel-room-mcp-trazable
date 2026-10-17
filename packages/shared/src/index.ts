@@ -21,6 +21,11 @@ export * from "./domain/purchase-tx";
 export * from "./domain/ipfs";
 export * from "./domain/faucet";
 export * from "./domain/maintenance";
+// Vocabulario canónico de estados y tipos de entidad (vNext · F1 · T1.6).
+export * from "./domain/operations-state";
+// Motor EIP-712 de operaciones (vNext · F2 · T2.6/T2.9): isomorfo (solo `viem`), para que la app y el
+// worker firmen/verifiquen exactamente el mensaje que valida el contrato.
+export * from "./operations/index";
 export * from "./deployments/schema";
 export * from "./logger";
 
@@ -38,6 +43,7 @@ export * from "./db/repositories/operations.repository";
 export * from "./db/repositories/reservations.repository";
 export * from "./db/repositories/reviews.repository";
 export * from "./db/repositories/rooms.repository";
+export * from "./db/repositories/terminal-operators.repository";
 export * from "./db/repositories/settings.repository";
 export * from "./db/repositories/sessions.repository";
 export * from "./db/repositories/users.repository";
@@ -48,6 +54,9 @@ export * from "./auth/service";
 export * from "./rates/exchange-service";
 export * from "./health/service";
 export * from "./queue/notifications";
+// Cola aceleradora del outbox de anclaje (vNext · F3 · T3.6): solo DESPIERTA al worker relayer;
+// la verdad es la tabla `on_chain_signatures`. Módulo de servidor: NO se expone en `browser.ts`.
+export * from "./queue/operational-signatures";
 export * from "./burner/service";
 export * from "./events/listener";
 export * from "./passes/jws";
@@ -66,3 +75,7 @@ export * from "./maintenance/retention";
 // Ventana global de acuñación (F8 · D-4/D-11/D-16/D-17): resumen por habitación que comparten el
 // barrido global del back-office y el aviso de agotamiento del worker.
 export * from "./maintenance/mint-window-watch";
+
+// Mensajes de firma/autorización que muestra la wallet (ADR-30): catálogo, formateadores
+// deterministas y estructura EIP-712 legible. Lo usan el cliente (firma) y el servidor (verifica).
+export * from "./domain/wallet-messages";

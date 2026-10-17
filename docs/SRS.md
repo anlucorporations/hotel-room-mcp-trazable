@@ -384,6 +384,7 @@ huérfanas: la decisión D-15 los trae a este catálogo). `CU-PR-*` son casos de
 | **CU-47** | Configurar el porcentaje de royalty de reventa por tipo de habitación | `ROYALTY_ADMIN` | RF-08 | `HotelNights.setRoyaltyBps`/`royaltyBpsOf`, `ROYALTY_ADMIN_ROLE`, `AdminRoyalty`, ADR-27 |
 | **CU-48** | Subastar una noche premium del hotel (reserva, inicio y cierre, anti-sniping) | `AUCTION_ADMIN` | RF-13 | `NightAuction.createAuction`/`cancel`, `DeployAuction.s.sol`, ADR-28 |
 | **CU-49** | Pujar, seguir la subasta y liquidar la noche al cierre | Comprador | RF-13 | `NightAuction.bid`/`settle`/`withdraw`, `HotelNights.settleAuction`, `/subastas`, ADR-28 |
+| **CU-50** | **Comprender y autorizar lo que se firma en la wallet**: cada mensaje de firma dice en lenguaje llano qué autoriza, sobre qué noche/habitación, con qué vigencia y qué NO autoriza (ADR-30) | Huésped, Operador | RF-04, RF-07, RF-16, RNF-19 | `wallet-messages.ts`, `docs/MENSAJES-FIRMA-WALLET.md` |
 | **CU-PR-01** | Aprovisionar operadores (comando, no ruta) | Responsable técnico | RNF-06 | §4.6 |
 | **CU-PR-02** | Desplegar en la red local con roles, faucet opcional y registro sincronizado | Responsable técnico | RT-02 | ADR-06, ADR-13 |
 

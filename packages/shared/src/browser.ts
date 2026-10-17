@@ -51,6 +51,10 @@ export * from "./domain/faucet";
 // periodicidades que ofrecen los formularios de cliente y valida el servidor.
 export * from "./domain/maintenance";
 
+// Vocabulario canónico de estados y tipos de entidad (vNext · F1 · T1.6): puro, sin E/S, para que las
+// suites de cliente ofrezcan exactamente los valores que valida el servidor.
+export * from "./domain/operations-state";
+
 // Plan de inyección de datos para redes no locales (2026-10-15): topología de cuentas desde el
 // entorno, overrides de gas de Besu (legacy + explícitos) y detección de cuentas repetidas.
 // Puro: solo `viem` (tipos) y constantes del proyecto.
@@ -59,6 +63,10 @@ export * from "./domain/injection-plan";
 // Subastas (C2 · RF-13): reglas puras espejo de `NightAuction.sol` (fase, puja mínima, anti-sniping
 // y ventana del alta) para que la UI valide y pinte la cuenta atrás sin firmar nada.
 export * from "./domain/auction";
+
+// Motor EIP-712 de operaciones (vNext · F2 · T2.6/T2.9): isomorfo (solo `viem` + `canonicalJson`
+// puro). Un componente de cliente tiene que poder firmar el MISMO mensaje que verifica el servidor.
+export * from "./operations/index";
 
 // Autorización EIP-712 del resguardo (dominio y tipos): datos constantes que el CLIENTE tiene que
 // firmar con el mismo formato que verifica el servidor. Se movieron aquí desde `passes/jws.ts`
@@ -74,3 +82,7 @@ export * from "./abi/index";
 // servidor al bundle. El repositorio y los servicios de recepción NO se exponen aquí.
 export * from "./reception/day-board";
 export * from "./reception/checkout-vocabulary";
+
+// Mensajes de firma/autorización que muestra la wallet (ADR-30). Puro: lo usan los componentes de
+// cliente para construir EXACTAMENTE el mismo texto/EIP-712 que verifica el servidor.
+export * from "./domain/wallet-messages";
