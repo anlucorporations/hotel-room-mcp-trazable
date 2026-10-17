@@ -12,9 +12,10 @@ import { activeChain, contractAddress } from "@/config/chain";
 /**
  * Envío de una reseña firmada por el titular (F6 · D-59).
  *
- * Firma EIP-712 el mensaje `SubmitReview` (token, **nota**, nonce de un solo uso y caducidad) y lo
- * envía con las cabeceras que exige el guardián. Si la wallet rechaza la firma, se dice tal cual; si
- * la noche no está consumida o ya tiene reseña, la API responde 409 y se muestra su motivo.
+ * Firma EIP-712 el mensaje **`ReviewAuthorization`** (ADR-30: motivo, habitación, noche, **estrellas**,
+ * nonce de un solo uso y vigencia) y lo envía con las cabeceras que exige el guardián. Si la wallet
+ * rechaza la firma, se dice tal cual; si la noche no está consumida o ya tiene reseña, la API responde
+ * 409 y se muestra su motivo.
  */
 export type ReviewSubmitStatus = "idle" | "signing" | "sending" | "done" | "error";
 
