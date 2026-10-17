@@ -2,7 +2,7 @@
 
 - **Estado:** aceptado (ciclo C0 · RF-11).
 - **Fecha:** 2026-10-17.
-- **Contexto del plan:** punto **C7** de [la propuesta de cumplimiento](../RepoTecnico/propuesta_cumplimiento_4_puntos.md);
+- **Contexto del plan:** punto **C7** de [la propuesta de cumplimiento](../../RepoTecnico/propuesta_cumplimiento_4_puntos.md);
   requisito **RF-11** (otras billeteras además de MetaMask) y **RNF-18** (flujo móvil web3).
 - **Decisores:** responsable del proyecto (decisión C7 aprobada) + equipo técnico.
 
