@@ -144,6 +144,17 @@ La subasta es un contrato **nuevo** (`NightAuction`) más un **gancho** en el co
 (`AUCTION_ROLE` + `settleAuction`, ADR-28). Es decir: **la ventana incluye las dos cosas** — se
 despliega `HotelNights` (con el gancho) y `NightAuction`, y se concede el rol al contrato de subastas.
 
+**Paso 0 — preflight (solo lectura).** Antes de tocar nada:
+
+```bash
+bash infra/gcp/preflight-auction-window.sh
+```
+
+Comprueba la red y el `chainId`, si el `HotelNights` desplegado **ya** tiene `AUCTION_ROLE`
+(ventana «solo subasta») o si hay que desplegar uno nuevo, si existe registro de subasta y qué
+revisiones de Cloud Run sirven hoy (rollback). No firma ni modifica nada.
+
+
 ```bash
 export PATH=$HOME/.foundry/bin:$PATH
 export DEPLOYER_PRIVATE_KEY=<owner-con-DEFAULT_ADMIN>
