@@ -235,6 +235,42 @@ Riesgo a vigilar: uptime de la red (estuvo ~9,5 días caída) → RNF-17.
 | TC-CT-101 | Cooldown | unit | revert `FaucetCooldownActive`; éxito a las 24 h | Anvil |
 | TC-CT-102 | Saldo bajo | unit | saldo < `FAUCET_LOW_THRESHOLD` → no dispensa + alerta | Anvil |
 
+### CU-48 — Subasta: abrir y cancelar (RF-13, B4/B5, RNF-13) · **ciclo C2**
+| TC | Escenario | Nivel | Oráculo | Estado |
+|----|-----------|-------|---------|--------|
+| TC-CT-110 | Alta válida de una noche del hotel | unit | `AuctionCreated`; vendedor = `treasury`; reserva y ventana guardadas; **el NFT sigue en el hotel** (sin escrow ni aprobaciones) | Anvil |
+| TC-CT-111 | Alta sin `AUCTION_ADMIN_ROLE` | unit | revert `AccessControlUnauthorizedAccount` | Anvil |
+| TC-CT-112 | Alta de una noche que no es inventario del hotel | unit | revert `NightNotHotelInventory` (B4: solo primaria del hotel) | Anvil |
+| TC-CT-113 | Alta de noche caducada | unit | revert `NightNotSellable` | Anvil |
+| TC-CT-114 | Ventana fuera de rango | unit | inicio en el pasado → `InvalidStartTime`; duración < 1 h o > 14 d → `InvalidDuration` | Anvil |
+| TC-CT-115 | Alta duplicada con subasta viva | unit | revert `AuctionAlreadyExists` | Anvil |
+| TC-CT-116 | Cancelar sin pujas | unit | `AuctionCancelled`; la noche sigue en el hotel y `soldOnce == false` | Anvil |
+| TC-CT-117 | Cancelar con pujas | unit | revert `NotCancellable`; si la noche ya caducó, cancela y deja la puja **reclamable** | Anvil |
+| TC-CT-118 | Reabrir tras cancelar | unit | nueva `AuctionCreated` con la nueva reserva | Anvil |
+| TC-CT-119 | Constantes de la mecánica | unit | `MIN_DURATION`/`MAX_DURATION`/`ANTI_SNIPE_WINDOW`/incrementos/BPS coinciden con el espejo de `@hotel/shared` | Anvil |
+
+### CU-49 — Subasta: pujar, liquidar y retirar (RF-13, B5) · **ciclo C2**
+| TC | Escenario | Nivel | Oráculo | Estado |
+|----|-----------|-------|---------|--------|
+| TC-CT-120 | Puja por debajo de la reserva | unit | revert `BidTooLow(required, sent)` | Anvil |
+| TC-CT-121 | Incremento mínimo 5 % con suelo 0,001 | unit | `nextMinBid` exacto y la puja mínima se acepta; una unidad menos revierte | Anvil |
+| TC-CT-122 | Puja fuera de la ventana | unit | antes de abrir → `AuctionNotStarted`; tras el cierre → `AuctionEnded` | Anvil |
+| TC-CT-123 | **Anti-sniping** | unit | puja en los últimos 5 min ⇒ cierre = puja + 5 min; puja temprana **no** mueve el cierre | Anvil |
+| TC-CT-124 | Puja superada reclamable (*pull*) | unit | `pendingWithdrawals(superado) == su importe`; `withdraw` lo devuelve una sola vez | Anvil |
+| TC-CT-125 | Liquidación | unit | NFT al ganador, `soldOnce == true`, `Sale(PRIMARY)` con el **importe de la subasta** e importe acreditado al hotel (*pull*) | Anvil |
+| TC-CT-126 | Liquidación inválida | unit | antes del cierre → `AuctionNotEnded`; sin pujas → `NothingToSettle`; repetida → `AuctionClosed` | Anvil |
+| TC-CT-127 | **El ganador revende y hace check-in** | unit | `list` y `markCheckedIn` funcionan (el gancho marca `soldOnce`; sin él no podrían) | Anvil |
+| TC-CT-128 | Compra primaria tras la subasta | unit | revert `NightNotAvailable` (una sola venta primaria) | Anvil |
+| TC-CT-129 | `settleAuction` mal invocada | unit | sin `AUCTION_ROLE` → `AccessControlUnauthorizedAccount`; ganador 0 → `InvalidWinner`; precio 0 → `InvalidPrice` | Anvil |
+| TC-CT-130 | Pausa | unit | no crea, no puja, no liquida; **`withdraw` sí funciona** | Anvil |
+| TC-CT-131 | Invariante solvencia | invariant | `balance(contrato) >= totalPending()` siempre | Anvil |
+| TC-CT-132 | Invariante contabilidad | invariant | `totalPending() == Σ pendingWithdrawals(cuentas)` | Anvil |
+| TC-CT-133 | Invariante coherencia subasta↔noche | invariant | liquidada ⇒ `soldOnce` y ya no es del hotel; abierta ⇒ **sin escrow** y sin venta primaria | Anvil |
+| TC-CT-134 | Invariante sin doble liquidación | invariant | `SETTLED`/`CANCELLED` son terminales (no admiten pujas ni segunda liquidación) | Anvil |
+| TC-E2E-070 | Vista pública `/subastas` | E2E | abiertas e histórico con cuenta atrás y puja mínima; estados **vacío**, **degradado** y **no configurado** | Anvil |
+| TC-E2E-071 | Panel del hotel `/admin/subastas` | E2E | abre una subasta con reserva y duración; cancela solo sin pujas; panel oculto sin sesión | Anvil |
+| TC-NF-031 | Accesibilidad de la vista de subastas | a11y | axe sin *critical/serious*; el estado y la cuenta atrás se anuncian en **texto** (no solo color) | Anvil |
+
 ---
 
 ## 5. Verificación de RNF (restricciones globales)

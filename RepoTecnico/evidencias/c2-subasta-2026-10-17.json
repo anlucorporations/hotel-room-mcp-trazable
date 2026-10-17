@@ -1,0 +1,93 @@
+{
+  "hito": "C2 — Subasta primaria inglesa de noches premium (RF-13)",
+  "fecha": "2026-10-17",
+  "estado": "implementado y verificado; REDEPLOY PENDIENTE de la ventana acordada con el responsable",
+  "decisiones": {
+    "B4": "Solo venta primaria del hotel (la noche debe ser inventario del hotel: owner == treasury); sin royalty; la reventa por subasta queda fuera",
+    "B5": "Inglesa con precio de reserva, incremento mínimo (5 % con suelo 0,001) y anti-sniping (5 min); pagos por pull payments (withdraw) para el hotel y para las devoluciones",
+    "B6": "Solo on-chain: sin tablas nuevas; diccionario_datos.md, diagrama_er.md y base_datos.sql no se tocan"
+  },
+  "correccion_de_diseno": {
+    "problema": "El borrador liquidaba con transferFrom desde la subasta; eso deja soldOnce=false y el ganador no podría revender (list) ni hacer check-in (markCheckedIn), y la noche seguiría siendo inventario quemable",
+    "solucion": "AUCTION_ROLE + settleAuction(tokenId, winner, priceWei) en HotelNights: marca soldOnce, limpia listado, emite Sale(PRIMARY) y entrega con _transfer (sin _safeTransfer para que un receptor revirtiente no bloquee la liquidación)",
+    "consecuencia": "El redeploy incluye HotelNights además de NightAuction"
+  },
+  "entregables": {
+    "contratos": [
+      "packages/contracts/src/NightAuction.sol",
+      "packages/contracts/src/INightAuction.sol",
+      "packages/contracts/src/HotelNights.sol (AUCTION_ROLE, settleAuction)",
+      "packages/contracts/src/IHotelNights.sol (settleAuction, InvalidWinner)",
+      "packages/contracts/script/DeployAuction.s.sol"
+    ],
+    "shared": [
+      "packages/shared/src/abi/night-auction.ts (generado)",
+      "packages/shared/src/domain/auction.ts (+ 14 pruebas)",
+      "packages/shared/src/domain/roles.ts (AUCTION_ROLES)",
+      "packages/shared/src/constants.ts (AUCTION_*)"
+    ],
+    "web": [
+      "apps/web/src/app/subastas/page.tsx",
+      "apps/web/src/app/admin/subastas/page.tsx",
+      "apps/web/src/components/auctions/{AuctionCard,AuctionStatus,useAuctionWrite}",
+      "apps/web/src/components/admin/{AdminAuctions,auction-form}",
+      "apps/web/src/lib/{auction-view,auctions} (+ pruebas)",
+      "i18n es/en/ru (58 claves nuevas en total)"
+    ],
+    "docs": [
+      "docs/adr/ADR-28-subastas-on-chain-con-pull-payments.md",
+      "docs/SRS.md (CU-48/CU-49 en §9 + trazabilidad RF-13)",
+      "docs/MATRIZ-TRAZABILIDAD.md (RF-13 → TC-CT-110…134, TC-E2E-070/071, TC-NF-031)",
+      "docs/PLAN-DE-PRUEBAS.md (CU-48/CU-49: 25 TC-CT + 2 E2E + 1 a11y)",
+      "docs/RUNBOOK.md §1.5.3 (ventana de despliegue)",
+      "RepoTecnico/estado_proyecto.md §33/33.bis/33.ter"
+    ]
+  },
+  "verificacion": {
+    "forge": {
+      "total": "202 pruebas / 20 suites",
+      "subasta": "29 unitarias (alta, pujas, anti-sniping, liquidación, cancelación, pausa, reventa y check-in del ganador, constantes)",
+      "despliegue": "5 (DeployAuction: AUCTION_ROLE al contrato, handover, registro, e2e)",
+      "invariantes": "256 runs / 8.192 llamadas / 0 reverts — solvencia (balance >= totalPending), contabilidad (Σ pendientes), coherencia subasta↔noche"
+    },
+    "vitest": {
+      "web": "118 ficheros / 1088 pruebas",
+      "shared": "658 pruebas",
+      "worker": "183",
+      "mcp": "82",
+      "monitor": "42",
+      "total": "2.255 pruebas"
+    },
+    "estatico": {
+      "tsc": "limpio (web, shared, contracts scripts)",
+      "eslint": "0 errores (24 avisos preexistentes en scripts/temporales)",
+      "next_build": "OK — 106 páginas; /subastas (4,46 kB) y /admin/subastas (5,6 kB) en la tabla de rutas"
+    },
+    "en_vivo_local": {
+      "entorno": "Anvil propio chainId 81234 + HotelNights 0x5FbDB2315678afecb367f032d93F642f64180aa3 + NightAuction 0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+      "escenario": "noche de suite 201 (2027-01-01) subastada con reserva 0,1 y pujada con 0,12 por la cuenta 1",
+      "comprobaciones": "9/9 — evento AuctionCreated, struct con nombre de auctionOf, hab. 201 / 2027-01-01 / suite, fase OPEN, reserva y puja correctas, mínima siguiente 0,126 (0,12 + 5 %), titularidad del hotel (sin escrow)",
+      "hallazgo": "viem devuelve el struct de auctionOf como OBJETO con nombre (no tupla): corregido con auctionStructToRaw y 2 pruebas (commit 4bbb9f9)"
+    },
+    "canario": {
+      "imagen": "web:v60",
+      "revision": "hotel-mcp-web-00115-gev",
+      "trafico": "100 %",
+      "comprobaciones": "rutas /, /catalogo, /subastas, /asistente y /health/ready → 200/READY; /subastas en su estado honesto 'no configurada' (contrato sin desplegar); enlace «Subastas» en la cabecera; panel admin no renderizado sin sesión; catálogo «Sin noches»",
+      "rollback": "hotel-mcp-web-00113-yuh (v59)"
+    }
+  },
+  "pendiente": {
+    "ventana_de_redeploy": "Desplegar HotelNights (con el gancho) + NightAuction, conceder AUCTION_ROLE al contrato, sincronizar registro y reconstruir la web (f8-build-images.sh lee deployments/<chain>-auction.json). Procedimiento y comprobaciones en docs/RUNBOOK.md §1.5.3",
+    "redes": "a decidir con el responsable: Besu 81234 (testnet de Codecrypto) y/o producción 31337",
+    "siembra": "la subasta necesita una noche de suite en el inventario del hotel para poder demostrarse (el catálogo está vacío por orden expresa)"
+  },
+  "commits": [
+    "8b59c67 feat(subastas): NightAuction (subasta inglesa) y gancho de liquidacion primaria (C2 · RF-13)",
+    "8c02697 feat(subastas): capa shared de C2 (ABI, constantes espejo, roles y dominio puro)",
+    "37e49fd feat(subastas): vista publica /subastas y documentacion de C2 (RF-13)",
+    "c13ac3e feat(subastas): panel del hotel para abrir y cancelar subastas (C2 · CU-48)",
+    "4bbb9f9 fix(subastas): leer el struct de auctionOf como objeto (viem) y no como tupla",
+    "39c6019 docs(despliegue): release v60 (UI de subastas) y cableado de la direccion de subasta"
+  ]
+}
