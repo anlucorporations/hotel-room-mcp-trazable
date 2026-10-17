@@ -201,11 +201,20 @@ describe('guardián de arquitectura de packages/shared (M8)', () => {
 
     const ticketAuth = read('domain/ticket-auth.ts');
     expect(ticketAuth).toContain('QR_REDOWNLOAD_DOMAIN');
-    expect(ticketAuth).toContain('QR_REDOWNLOAD_TYPES');
     expect(ticketAuth).not.toMatch(/from "node:/);
+    // ADR-30: las estructuras v2 viven en el módulo de dominio `wallet-messages.ts` y `ticket-auth.ts`
+    // las re-exporta; así el cliente y el servidor usan exactamente las mismas.
+    expect(ticketAuth).toContain('TICKET_AUTHORIZATION_TYPES');
+    expect(ticketAuth).toContain('REVIEW_AUTHORIZATION_TYPES');
+    const messages = read('domain/wallet-messages.ts');
+    expect(messages).toContain('TICKET_AUTHORIZATION_TYPES');
+    expect(messages).toContain('REVIEW_AUTHORIZATION_TYPES');
+    expect(messages).not.toMatch(/from "node:/);
+    expect(read('passes/jws.ts')).toContain('from "../domain/wallet-messages"');
 
-    // Y el punto de entrada isomorfo lo expone: es lo que permite al cliente importarlo.
+    // Y el punto de entrada isomorfo los expone: es lo que permite al cliente construir lo mismo.
     expect(read('browser.ts')).toContain('domain/ticket-auth');
+    expect(read('browser.ts')).toContain('domain/wallet-messages');
   });
 
   it('la retención declarada tiene un ejecutor (M9): purga de sesiones y correos', () => {

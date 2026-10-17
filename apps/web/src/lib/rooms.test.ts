@@ -9,6 +9,7 @@ import {
   roomContentHash,
   verifyRoomPublicationSignature,
 } from "./rooms";
+import { roomPublicationMessage } from "@hotel/shared/domain";
 
 const baseRoom = {
   roomNumber: 101,
@@ -78,36 +79,101 @@ describe("rooms: validación y huella (F1)", () => {
       expect(isEthAddress("0x1234")).toBe(false);
     });
 
-    it("verifica una firma EIP-191 correcta sobre la huella", async () => {
+    it("verifica la firma del mensaje legible de publicación (ADR-30)", async () => {
       const account = privateKeyToAccount(`0x${"33".repeat(32)}`);
       const contentHash = roomContentHash(baseRoom);
-      const signature = await account.signMessage({ message: contentHash });
+      const issuedAtSeconds = 1_792_246_737;
+      const message = roomPublicationMessage({
+        roomNumber: baseRoom.roomNumber,
+        roomType: baseRoom.roomType,
+        contentHash,
+        issuedAtSeconds,
+        domain: "hotel.example",
+      });
+      const signature = await account.signMessage({ message });
 
       expect(
         await verifyRoomPublicationSignature({
+          roomNumber: baseRoom.roomNumber,
+          roomType: baseRoom.roomType,
           contentHash,
+          issuedAtSeconds,
+          domain: "hotel.example",
           signature,
           signerAddress: account.address,
+          nowSeconds: issuedAtSeconds + 30,
         }),
       ).toBe(true);
     });
 
+    it("rechaza la firma caducada (más de 5 minutos) y la de otro dominio", async () => {
+      const account = privateKeyToAccount(`0x${"55".repeat(32)}`);
+      const contentHash = roomContentHash(baseRoom);
+      const issuedAtSeconds = 1_792_246_737;
+      const sign = (domain: string): Promise<`0x${string}`> =>
+        account.signMessage({
+          message: roomPublicationMessage({
+            roomNumber: baseRoom.roomNumber,
+            roomType: baseRoom.roomType,
+            contentHash,
+            issuedAtSeconds,
+            domain,
+          }),
+        });
+      const base = {
+        roomNumber: baseRoom.roomNumber,
+        roomType: baseRoom.roomType,
+        contentHash,
+        issuedAtSeconds,
+        signerAddress: account.address,
+      };
+
+      // Caducada: se firmó hace 10 minutos.
+      expect(
+        await verifyRoomPublicationSignature({
+          ...base,
+          domain: "hotel.example",
+          signature: await sign("hotel.example"),
+          nowSeconds: issuedAtSeconds + 600,
+        }),
+      ).toBe(false);
+
+      // Otro dominio (anti-phishing): la firma se hizo para otra web.
+      expect(
+        await verifyRoomPublicationSignature({
+          ...base,
+          domain: "hotel-malicioso.example",
+          signature: await sign("hotel.example"),
+          nowSeconds: issuedAtSeconds + 30,
+        }),
+      ).toBe(false);
+    });
+
     it("rechaza una firma de otra huella y una mal formada", async () => {
       const account = privateKeyToAccount(`0x${"44".repeat(32)}`);
+      const issuedAtSeconds = 1_792_246_737;
       const signature = await account.signMessage({ message: "0xotra" });
+      const base = {
+        roomNumber: baseRoom.roomNumber,
+        roomType: baseRoom.roomType,
+        issuedAtSeconds,
+        domain: "hotel.example",
+        signerAddress: account.address,
+        nowSeconds: issuedAtSeconds,
+      };
 
       expect(
         await verifyRoomPublicationSignature({
+          ...base,
           contentHash: roomContentHash(baseRoom),
           signature,
-          signerAddress: account.address,
         }),
       ).toBe(false);
       expect(
         await verifyRoomPublicationSignature({
+          ...base,
           contentHash: roomContentHash(baseRoom),
           signature: "0x1234",
-          signerAddress: account.address,
         }),
       ).toBe(false);
     });
@@ -323,8 +389,12 @@ describe("verifyRoomPublicationSignature — firma que no se puede verificar", (
     // Firma con forma correcta pero inservible: `viem` no puede validarla y la función lo resuelve
     // como `false` (la publicación no se acepta) en vez de reventar con una excepción.
     const resultado = await verifyRoomPublicationSignature({
+      roomNumber: 101,
+      roomType: "DOBLE",
       signerAddress: "0x1234567890abcdef1234567890abcdef12345678",
       contentHash: `0x${"ab".repeat(32)}`,
+      issuedAtSeconds: Math.floor(Date.now() / 1000),
+      domain: "hotel.example",
       signature: "0x00",
     });
 
@@ -397,8 +467,12 @@ describe("parseRoomFields — más ramas de validación", () => {
 describe("verifyRoomPublicationSignature — firma con forma válida pero irrecuperable", () => {
   it("resuelve false en lugar de propagar el fallo de la librería", async () => {
     const resultado = await verifyRoomPublicationSignature({
+      roomNumber: 101,
+      roomType: "DOBLE",
       signerAddress: "0x1234567890abcdef1234567890abcdef12345678",
       contentHash: `0x${"ab".repeat(32)}`,
+      issuedAtSeconds: Math.floor(Date.now() / 1000),
+      domain: "hotel.example",
       signature: `0x${"00".repeat(65)}`,
     });
 

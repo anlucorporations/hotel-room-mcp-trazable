@@ -65,7 +65,7 @@ async function signedHeaders(
   tokenId: string = TOKEN_ID,
   overrides: { nonce?: string; expiresAt?: number; signerPk?: `0x${string}` } = {},
 ) {
-  const { QR_REDOWNLOAD_DOMAIN, QR_REDOWNLOAD_TYPES } = await import("@hotel/shared");
+  const { QR_REDOWNLOAD_DOMAIN, TICKET_AUTHORIZATION_TYPES, ticketAuthorizationMessage } = await import("@hotel/shared");
   const { activeChain, contractAddress } = await import("@/config/chain");
   const nonce = overrides.nonce ?? `nonce-${Math.random().toString(36).slice(2)}`;
   const expiresAt = overrides.expiresAt ?? Math.floor(Date.now() / 1000) + 120;
@@ -73,9 +73,9 @@ async function signedHeaders(
 
   const signature = await signer.signTypedData({
     domain: { ...QR_REDOWNLOAD_DOMAIN, chainId: activeChain.id, verifyingContract: contractAddress },
-    types: QR_REDOWNLOAD_TYPES,
-    primaryType: "DownloadTicket",
-    message: { tokenId: BigInt(tokenId), nonce, expiresAt: BigInt(expiresAt) },
+    types: TICKET_AUTHORIZATION_TYPES,
+    primaryType: "TicketAuthorization",
+    message: ticketAuthorizationMessage({ tokenId, nonce, expiresAtSeconds: expiresAt }),
   });
 
   return {

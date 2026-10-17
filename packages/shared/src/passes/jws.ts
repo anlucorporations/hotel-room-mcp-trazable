@@ -105,8 +105,18 @@ export interface EIP712TicketDomain {
  * bundle del navegador. Se reexportan para no romper a los consumidores de servidor que ya los
  * importaban desde `passes/jws`.
  */
-import { QR_REDOWNLOAD_DOMAIN, QR_REDOWNLOAD_TYPES, REVIEW_AUTH_TYPES } from "../domain/ticket-auth";
-export { QR_REDOWNLOAD_DOMAIN, QR_REDOWNLOAD_TYPES, REVIEW_AUTH_TYPES };
+import { QR_REDOWNLOAD_DOMAIN } from "../domain/ticket-auth";
+import {
+  REVIEW_AUTHORIZATION_TYPES,
+  TICKET_AUTHORIZATION_TYPES,
+  reviewAuthorizationMessage,
+  ticketAuthorizationMessage,
+} from "../domain/wallet-messages";
+export {
+  QR_REDOWNLOAD_DOMAIN,
+  REVIEW_AUTHORIZATION_TYPES,
+  TICKET_AUTHORIZATION_TYPES,
+};
 
 /**
  * Verifica la firma EIP-712 de una wallet que solicita la descarga de un resguardo.
@@ -135,16 +145,13 @@ export async function verifyEIP712TicketRequest(
   }
 
   try {
+    // Mensaje v2 (ADR-30): motivo + habitación + noche legibles, no un `tokenId` opaco.
     return await verifyTypedData({
       address: walletAddress,
       domain,
-      types: QR_REDOWNLOAD_TYPES,
-      primaryType: "DownloadTicket",
-      message: {
-        tokenId,
-        nonce,
-        expiresAt,
-      },
+      types: TICKET_AUTHORIZATION_TYPES,
+      primaryType: "TicketAuthorization",
+      message: ticketAuthorizationMessage({ tokenId, nonce, expiresAtSeconds: expiresAt }),
       signature,
     });
   } catch (err) {
@@ -179,9 +186,9 @@ export async function verifyEIP712ReviewRequest(
     return await verifyTypedData({
       address: walletAddress,
       domain,
-      types: REVIEW_AUTH_TYPES,
-      primaryType: "SubmitReview",
-      message: { tokenId, rating, nonce, expiresAt },
+      types: REVIEW_AUTHORIZATION_TYPES,
+      primaryType: "ReviewAuthorization",
+      message: reviewAuthorizationMessage({ tokenId, rating, nonce, expiresAtSeconds: expiresAt }),
       signature,
     });
   } catch (err) {

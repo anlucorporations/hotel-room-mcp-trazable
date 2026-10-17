@@ -1,5 +1,6 @@
 import "server-only";
 import { keccak256, toHex, verifyMessage } from "viem";
+import { isFreshPublicationSignature, roomPublicationMessage } from "@hotel/shared/domain";
 import type { RoomTypeCode } from "@hotel/shared";
 import {
   DECOR_STYLES,
@@ -349,23 +350,37 @@ export function isEthAddress(value: unknown): value is `0x${string}` {
 }
 
 /**
- * Verifica que `signature` es una firma EIP-191 (`personal_sign`) de `contentHash` por
- * `signerAddress` (D-1/D-2).
+ * Verifica la firma EIP-191 de la **publicación de una ficha** (D-1/D-2 · ADR-30).
  *
- * La firma la produce la wallet del administrador sobre la **huella** de la ficha; el anclaje
- * on-chain de esa huella llega con el registro dinámico del contrato (F8, D-10). Una firma inválida
- * o mal formada devuelve `false` (nunca lanza).
+ * El administrador ya no firma un `0x…` opaco: firma el texto legible de
+ * `roomPublicationMessage` (habitación, huella, hora UTC y dominio), y el servidor lo **reconstruye**
+ * con los datos de la base de datos y la marca temporal que declara el cliente. La firma caduca a los
+ * 5 minutos (`ROOM_PUBLICATION_SIGNATURE_TTL_SECONDS`), así que una firma interceptada no sirve.
  */
 export async function verifyRoomPublicationSignature(input: {
+  roomNumber: number;
+  roomType: string;
   contentHash: string;
+  issuedAtSeconds: number;
+  domain: string;
   signature: string;
   signerAddress: string;
+  nowSeconds?: number;
 }): Promise<boolean> {
   if (!isHexSignature(input.signature) || !isEthAddress(input.signerAddress)) return false;
+  const nowSeconds = input.nowSeconds ?? Math.floor(Date.now() / 1000);
+  if (!isFreshPublicationSignature(input.issuedAtSeconds, nowSeconds)) return false;
   try {
+    const message = roomPublicationMessage({
+      roomNumber: input.roomNumber,
+      roomType: input.roomType,
+      contentHash: input.contentHash,
+      issuedAtSeconds: input.issuedAtSeconds,
+      domain: input.domain,
+    });
     return await verifyMessage({
       address: input.signerAddress,
-      message: input.contentHash,
+      message,
       signature: input.signature,
     });
   } catch {

@@ -186,6 +186,15 @@ describe("typed data legible del resguardo y de la reseña", () => {
     expect(names).toEqual(["motivo", "habitacion", "noche", "nonce", "validoHasta"]);
   });
 
+  it("rechaza un tokenId que no es un número decimal (no se redondea nada)", () => {
+    expect(() =>
+      ticketAuthorizationMessage({ tokenId: "1.5", nonce: "n", expiresAtSeconds: 1 }),
+    ).toThrow("tokenId inválido");
+    expect(() =>
+      ticketAuthorizationMessage({ tokenId: "no-es-un-token", nonce: "n", expiresAtSeconds: 1 }),
+    ).toThrow("tokenId inválido");
+  });
+
   it("la reseña firma además la nota como estrellas (no manipulable)", () => {
     const message = reviewAuthorizationMessage({
       tokenId: 20120261115n,

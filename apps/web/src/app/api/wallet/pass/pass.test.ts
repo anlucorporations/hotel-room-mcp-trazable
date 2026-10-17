@@ -49,7 +49,7 @@ vi.mock("@hotel/shared", async (importOriginal) => {
 
 /** Cabeceras EIP-712 firmadas por la propietaria (misma estructura que exige la API). */
 async function signedHeaders(signerPk: `0x${string}` = OWNER_PK) {
-  const { QR_REDOWNLOAD_DOMAIN, QR_REDOWNLOAD_TYPES } = await import("@hotel/shared");
+  const { QR_REDOWNLOAD_DOMAIN, TICKET_AUTHORIZATION_TYPES, ticketAuthorizationMessage } = await import("@hotel/shared");
   const { activeChain, contractAddress } = await import("@/config/chain");
   const nonce = `nonce-${Math.random().toString(36).slice(2)}`;
   const expiresAt = Math.floor(Date.now() / 1000) + 120;
@@ -57,9 +57,9 @@ async function signedHeaders(signerPk: `0x${string}` = OWNER_PK) {
 
   const signature = await signer.signTypedData({
     domain: { ...QR_REDOWNLOAD_DOMAIN, chainId: activeChain.id, verifyingContract: contractAddress },
-    types: QR_REDOWNLOAD_TYPES,
-    primaryType: "DownloadTicket",
-    message: { tokenId: BigInt(TOKEN_ID), nonce, expiresAt: BigInt(expiresAt) },
+    types: TICKET_AUTHORIZATION_TYPES,
+    primaryType: "TicketAuthorization",
+    message: ticketAuthorizationMessage({ tokenId: TOKEN_ID, nonce, expiresAtSeconds: expiresAt }),
   });
 
   return {
@@ -134,7 +134,7 @@ describe("Digital Wallet Passes Endpoint (US-12 · D-05)", () => {
   });
 
   it("rechaza una firma que no es del propietario (401)", async () => {
-    const { QR_REDOWNLOAD_DOMAIN, QR_REDOWNLOAD_TYPES } = await import("@hotel/shared");
+    const { QR_REDOWNLOAD_DOMAIN, TICKET_AUTHORIZATION_TYPES, ticketAuthorizationMessage } = await import("@hotel/shared");
     const { activeChain, contractAddress } = await import("@/config/chain");
     const stranger = privateKeyToAccount(
       "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
@@ -143,9 +143,9 @@ describe("Digital Wallet Passes Endpoint (US-12 · D-05)", () => {
     const expiresAt = Math.floor(Date.now() / 1000) + 120;
     const signature = await stranger.signTypedData({
       domain: { ...QR_REDOWNLOAD_DOMAIN, chainId: activeChain.id, verifyingContract: contractAddress },
-      types: QR_REDOWNLOAD_TYPES,
-      primaryType: "DownloadTicket",
-      message: { tokenId: BigInt(TOKEN_ID), nonce, expiresAt: BigInt(expiresAt) },
+      types: TICKET_AUTHORIZATION_TYPES,
+      primaryType: "TicketAuthorization",
+      message: ticketAuthorizationMessage({ tokenId: TOKEN_ID, nonce, expiresAtSeconds: expiresAt }),
     });
 
     const req = new NextRequest(`http://localhost:3000/api/wallet/pass/${TOKEN_ID}?type=apple`, {

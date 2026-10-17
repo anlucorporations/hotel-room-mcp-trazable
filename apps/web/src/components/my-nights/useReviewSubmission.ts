@@ -2,7 +2,11 @@
 
 import { useCallback, useState } from "react";
 import { useAccount, useSignTypedData } from "wagmi";
-import { QR_REDOWNLOAD_DOMAIN, REVIEW_AUTH_TYPES } from "@hotel/shared/domain";
+import {
+  QR_REDOWNLOAD_DOMAIN,
+  REVIEW_AUTHORIZATION_TYPES,
+  reviewAuthorizationMessage,
+} from "@hotel/shared/domain";
 import { activeChain, contractAddress } from "@/config/chain";
 
 /**
@@ -57,9 +61,14 @@ export function useReviewSubmission(tokenId: string): UseReviewSubmissionResult 
             chainId: activeChain.id,
             verifyingContract: contractAddress,
           },
-          types: REVIEW_AUTH_TYPES,
-          primaryType: "SubmitReview",
-          message: { tokenId: BigInt(tokenId), rating, nonce, expiresAt: BigInt(expiresAt) },
+          types: REVIEW_AUTHORIZATION_TYPES,
+          primaryType: "ReviewAuthorization",
+          message: reviewAuthorizationMessage({
+            tokenId,
+            rating,
+            nonce,
+            expiresAtSeconds: expiresAt,
+          }),
         });
 
         setStatus("sending");

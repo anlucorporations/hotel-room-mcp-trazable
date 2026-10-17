@@ -101,7 +101,13 @@ export async function POST(request: NextRequest, { params }: RouteParams): Promi
 
   const { id } = await params;
   const body = (await request.json().catch(() => null)) as
-    | { confirmTotpCode?: unknown; txHash?: unknown; signature?: unknown; signerAddress?: unknown }
+    | {
+        confirmTotpCode?: unknown;
+        txHash?: unknown;
+        signature?: unknown;
+        signerAddress?: unknown;
+        issuedAt?: unknown;
+      }
     | null;
 
   const confirmCode = typeof body?.confirmTotpCode === "string" ? body.confirmTotpCode : undefined;
@@ -147,9 +153,11 @@ export async function POST(request: NextRequest, { params }: RouteParams): Promi
       );
     }
 
-    // Firma opcional de la wallet: si viene una, vienen las dos y deben verificar la huella.
+    // Firma opcional de la wallet: si viene una, vienen las dos y deben verificar el MENSAJE LEGIBLE
+    // (ADR-30), que se reconstruye aquí con los datos de la BD, la hora declarada y el host.
     const signature = typeof body?.signature === "string" ? body.signature : null;
     const signerAddress = typeof body?.signerAddress === "string" ? body.signerAddress : null;
+    const issuedAt = typeof body?.issuedAt === "number" ? body.issuedAt : null;
     if (signature !== null || signerAddress !== null) {
       if (!signature || !signerAddress) {
         return NextResponse.json(
@@ -157,8 +165,23 @@ export async function POST(request: NextRequest, { params }: RouteParams): Promi
           { status: 400 },
         );
       }
+      // El host del header es lo normal; el respaldo en la URL cubre proxies/tests que no lo rellenan.
+      const host = request.headers.get("host") ?? new URL(request.url).host;
+      if (issuedAt === null || !Number.isInteger(issuedAt) || !host) {
+        return NextResponse.json(
+          {
+            error: "INVALID_SIGNATURE",
+            message: "Falta la marca temporal de la firma (issuedAt) o el host de la petición.",
+          },
+          { status: 400 },
+        );
+      }
       const valid = await verifyRoomPublicationSignature({
+        roomNumber: prepared.room.roomNumber,
+        roomType: prepared.room.roomType,
         contentHash: prepared.contentHash,
+        issuedAtSeconds: issuedAt,
+        domain: host,
         signature,
         signerAddress,
       });
@@ -166,7 +189,8 @@ export async function POST(request: NextRequest, { params }: RouteParams): Promi
         return NextResponse.json(
           {
             error: "INVALID_SIGNATURE",
-            message: "La firma no corresponde a la huella de la ficha o el firmante no coincide.",
+            message:
+              "La firma no corresponde a esta ficha, ha caducado (más de 5 minutos) o el firmante no coincide.",
           },
           { status: 422 },
         );

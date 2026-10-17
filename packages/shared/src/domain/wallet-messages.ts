@@ -366,7 +366,9 @@ export function roomTypeLabel(type: string): string {
     doble: "doble",
     suite: "suite",
   };
-  return labels[type] ?? type;
+  // La BD guarda el tipo en mayúsculas (`DOBLE`); el mensaje firmado debe ser el mismo en cliente y
+  // servidor, así que la normalización vive aquí y no en cada consumidor.
+  return labels[type.trim().toLowerCase()] ?? type;
 }
 
 /** `20120261115` → `habitación 201 (suite), noche del 15 de noviembre de 2026`. */
@@ -457,13 +459,21 @@ export const TICKET_AUTHORIZATION_TYPES = {
 /** Motivo que viaja **dentro** de la firma del resguardo. */
 export const TICKET_AUTHORIZATION_MOTIVO = "Descargar el resguardo de mi noche";
 
+/** Convierte el `tokenId` a `bigint` rechazando valores no decimales (no se redondea nada). */
+function toTokenId(value: bigint | string): bigint {
+  if (typeof value === "bigint") return value;
+  const trimmed = value.trim();
+  if (!/^\d+$/.test(trimmed)) throw new Error("tokenId inválido");
+  return BigInt(trimmed);
+}
+
 /** Mensaje del resguardo a partir de la noche y la vigencia. */
 export function ticketAuthorizationMessage(input: {
   readonly tokenId: bigint | string;
   readonly nonce: string;
   readonly expiresAtSeconds: number | bigint;
 }): TicketAuthorizationMessage {
-  const { room, dateYYYYMMDD } = decodeTokenId(BigInt(input.tokenId));
+  const { room, dateYYYYMMDD } = decodeTokenId(toTokenId(input.tokenId));
   return {
     motivo: TICKET_AUTHORIZATION_MOTIVO,
     habitacion: BigInt(room),

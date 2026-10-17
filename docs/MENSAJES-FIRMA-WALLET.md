@@ -181,10 +181,18 @@ Mensaje propuesto (lo que la wallet muestra como filas):
 | Fase | Alcance | Estado |
 |---|---|---|
 | **1. Estructura + catálogo + doc** | `wallet-messages.ts` (catálogo, formateadores, EIP-712 v2, texto de publicación), pruebas, este documento, ADR-30, CU-50 y TC | **Hecha** |
-| **2. Resguardo y reseña** | Firmantes (`useTicket`, `useReviewSubmission`), verificadores (`verifyEIP712*`, rutas `/api/qr`, `/api/reviews`, `passes/jws`) y sus pruebas → estructuras v2 | Siguiente |
-| **3. Publicación de contenido** | Sustituir `personal_sign(contentHash)` por `roomPublicationMessage(...)`; la API recibe `issuedAt` y valida la ventana de 5 min | Siguiente |
+| **2. Resguardo y reseña** | Firmantes (`useTicket`, `useReviewSubmission`), verificadores (`verifyEIP712*`, rutas `/api/qr`, `/api/reviews`, `passes/jws`) y sus pruebas → estructuras v2 | **Hecha** (dominio v2, `TicketAuthorization`/`ReviewAuthorization`, `ticketSignature.ts` retirado) |
+| **3. Publicación de contenido** | Sustituir `personal_sign(contentHash)` por `roomPublicationMessage(...)`; la API recibe `issuedAt` y valida la ventana de 5 min | **Hecha** (cliente, `verifyRoomPublicationSignature` y ruta `/api/admin/rooms/[id]/publish` con `issuedAt` + host) |
 | **4. Operaciones vNext** | Campo de descripción en `ACTION_TYPEHASH` → **ventana de contrato** (HotelOperations) | Bloqueada por redeploy |
 | **5. Aceptación** | Revisión de cada pantalla de firma en MetaMask desktop y móvil (WalletConnect) + evidencia | Pendiente |
+
+### Nota de compatibilidad (fase 3)
+
+La ruta `POST /api/admin/rooms/[id]/publish` acepta ahora el campo **`issuedAt`** (epoch en
+segundos) junto a `signature` y `signerAddress`. Si falta, responde 400 `INVALID_SIGNATURE`. El
+servidor reconstruye el texto con los datos de la base de datos, el `issuedAt` declarado y el **host**
+de la petición (`host` header, con respaldo en la URL), y exige |ahora − issuedAt| ≤ 5 min. Las
+publicaciones **sin** firma siguen funcionando igual (el anclaje queda pendiente, D-18).
 
 ## 7. Trazabilidad
 

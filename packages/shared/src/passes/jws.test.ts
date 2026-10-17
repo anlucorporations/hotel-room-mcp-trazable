@@ -7,9 +7,9 @@ import {
   encryptSecret,
   verifyEIP712TicketRequest,
   QR_REDOWNLOAD_DOMAIN,
-  QR_REDOWNLOAD_TYPES,
   type TicketPayload,
 } from "./jws";
+import { TICKET_AUTHORIZATION_TYPES, ticketAuthorizationMessage } from "../domain/wallet-messages";
 
 describe("Ticket JWS & AES Cryptography", () => {
   const samplePayload: TicketPayload = {
@@ -80,13 +80,9 @@ describe("EIP-712 Ticket Redownload Verification", () => {
 
     const signature = await account.signTypedData({
       domain: QR_REDOWNLOAD_DOMAIN,
-      types: QR_REDOWNLOAD_TYPES,
-      primaryType: "DownloadTicket",
-      message: {
-        tokenId,
-        nonce,
-        expiresAt,
-      },
+      types: TICKET_AUTHORIZATION_TYPES,
+      primaryType: "TicketAuthorization",
+      message: ticketAuthorizationMessage({ tokenId, nonce, expiresAtSeconds: expiresAt }),
     });
 
     const isValid = await verifyEIP712TicketRequest(
@@ -108,9 +104,9 @@ describe("EIP-712 Ticket Redownload Verification", () => {
 
     const signature = await account.signTypedData({
       domain: QR_REDOWNLOAD_DOMAIN,
-      types: QR_REDOWNLOAD_TYPES,
-      primaryType: "DownloadTicket",
-      message: { tokenId, nonce, expiresAt },
+      types: TICKET_AUTHORIZATION_TYPES,
+      primaryType: "TicketAuthorization",
+      message: ticketAuthorizationMessage({ tokenId, nonce, expiresAtSeconds: expiresAt }),
     });
 
     const isValid = await verifyEIP712TicketRequest(
@@ -132,13 +128,9 @@ describe("EIP-712 Ticket Redownload Verification", () => {
 
     const signature = await account.signTypedData({
       domain: QR_REDOWNLOAD_DOMAIN,
-      types: QR_REDOWNLOAD_TYPES,
-      primaryType: "DownloadTicket",
-      message: {
-        tokenId,
-        nonce,
-        expiresAt: pastExpiresAt,
-      },
+      types: TICKET_AUTHORIZATION_TYPES,
+      primaryType: "TicketAuthorization",
+      message: ticketAuthorizationMessage({ tokenId, nonce, expiresAtSeconds: pastExpiresAt }),
     });
 
     const isValid = await verifyEIP712TicketRequest(
@@ -163,13 +155,9 @@ describe("EIP-712 Ticket Redownload Verification", () => {
 
     const signature = await account.signTypedData({
       domain: QR_REDOWNLOAD_DOMAIN,
-      types: QR_REDOWNLOAD_TYPES,
-      primaryType: "DownloadTicket",
-      message: {
-        tokenId,
-        nonce,
-        expiresAt,
-      },
+      types: TICKET_AUTHORIZATION_TYPES,
+      primaryType: "TicketAuthorization",
+      message: ticketAuthorizationMessage({ tokenId, nonce, expiresAtSeconds: expiresAt }),
     });
 
     const isValid = await verifyEIP712TicketRequest(

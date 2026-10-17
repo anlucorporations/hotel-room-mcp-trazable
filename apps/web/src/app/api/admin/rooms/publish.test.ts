@@ -30,6 +30,7 @@ vi.mock("@hotel/shared", async (importOriginal) => {
 
 import { GET, POST } from "./[id]/publish/route";
 import { roomContentHash } from "@/lib/rooms";
+import { roomPublicationMessage } from "@hotel/shared/domain";
 
 const room = {
   id: "room-1",
@@ -198,7 +199,16 @@ describe("POST /api/admin/rooms/[id]/publish (F1 · D-2, D-18, D-21)", () => {
       baseRateWei: room.baseRateWei,
       imageFileNames: [image.fileName],
     });
-    const signature = await account.signMessage({ message: contentHash });
+    // ADR-30: se firma el mensaje legible (ficha + huella + hora + dominio), no el `0x…` suelto.
+    const issuedAt = Math.floor(Date.now() / 1000);
+    const message = roomPublicationMessage({
+      roomNumber: room.roomNumber,
+      roomType: room.roomType,
+      contentHash,
+      issuedAtSeconds: issuedAt,
+      domain: "localhost:3000",
+    });
+    const signature = await account.signMessage({ message });
 
     mockRepo.findById.mockResolvedValueOnce(room);
     mockRepo.listImages.mockResolvedValueOnce([image]);
@@ -217,7 +227,7 @@ describe("POST /api/admin/rooms/[id]/publish (F1 · D-2, D-18, D-21)", () => {
     mockRepo.setPublicationStatus.mockResolvedValueOnce({ ...room, publicationStatus: "PUBLISHED" });
 
     const res = await POST(
-      request({ confirmTotpCode: "123456", signature, signerAddress: account.address }),
+      request({ confirmTotpCode: "123456", signature, signerAddress: account.address, issuedAt }),
       idParams(),
     );
     expect(res.status).toBe(202);
@@ -236,7 +246,12 @@ describe("POST /api/admin/rooms/[id]/publish (F1 · D-2, D-18, D-21)", () => {
     mockRepo.listImages.mockResolvedValueOnce([image]);
 
     const res = await POST(
-      request({ confirmTotpCode: "123456", signature, signerAddress: account.address }),
+      request({
+        confirmTotpCode: "123456",
+        signature,
+        signerAddress: account.address,
+        issuedAt: Math.floor(Date.now() / 1000),
+      }),
       idParams(),
     );
     expect(res.status).toBe(422);

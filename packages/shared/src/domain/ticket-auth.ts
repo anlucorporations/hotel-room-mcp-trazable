@@ -1,4 +1,5 @@
 import type { Address } from "viem";
+import { WALLET_DOMAIN_NAME, WALLET_DOMAIN_VERSION } from "./wallet-messages";
 
 /**
  * Tipos y mensaje EIP-712 con el que el titular autoriza la emisión de su resguardo (RF-07 · CU-08).
@@ -16,35 +17,29 @@ export interface EIP712TicketDomain {
   verifyingContract: Address;
 }
 
-/** Dominio EIP-712 del resguardo. El `chainId` y el contrato los sobreescribe el consumidor. */
+/**
+ * Dominio EIP-712 del resguardo. El `chainId` y el contrato los sobreescribe el consumidor.
+ *
+ * **v2 (ADR-30)**: el nombre sale de `WALLET_DOMAIN_NAME` y la versión de `WALLET_DOMAIN_VERSION`;
+ * el mensaje firmado ya no es `{ tokenId, nonce, expiresAt }` sino
+ * `{ motivo, habitacion, noche, nonce, validoHasta }` (ver `wallet-messages.ts`).
+ */
 export const QR_REDOWNLOAD_DOMAIN: EIP712TicketDomain = {
-  name: "Hotel Marina del Sol",
-  version: "1",
+  name: WALLET_DOMAIN_NAME,
+  version: WALLET_DOMAIN_VERSION,
   chainId: 137, // Polygon PoS por defecto
   verifyingContract: "0x0000000000000000000000000000000000000000" as Address,
 };
 
-/** Campos que firma el titular para volver a descargar su resguardo. */
-export const QR_REDOWNLOAD_TYPES = {
-  DownloadTicket: [
-    { name: "tokenId", type: "uint256" },
-    { name: "nonce", type: "string" },
-    { name: "expiresAt", type: "uint256" },
-  ],
-} as const;
-
 /**
- * Campos que firma el titular de una noche **consumida** al enviar su reseña (F6 · D-59).
- *
- * La nota (`rating`) va **dentro de la firma**: el servidor rechaza una reseña cuya nota no sea la
- * que el huésped firmó. Reutiliza el mismo dominio que el resguardo (`QR_REDOWNLOAD_DOMAIN`) y el
- * patrón de ADR-05 (nonce de un solo uso + vigencia corta).
+ * Campos v2 (ADR-30) que firma el titular. Se re-exportan desde `wallet-messages.ts`, que es la
+ * **fuente única**: cliente y servidor construyen y verifican con estas mismas estructuras.
  */
-export const REVIEW_AUTH_TYPES = {
-  SubmitReview: [
-    { name: "tokenId", type: "uint256" },
-    { name: "rating", type: "uint8" },
-    { name: "nonce", type: "string" },
-    { name: "expiresAt", type: "uint256" },
-  ],
-} as const;
+export {
+  TICKET_AUTHORIZATION_TYPES,
+  REVIEW_AUTHORIZATION_TYPES,
+  TICKET_AUTHORIZATION_MOTIVO,
+  REVIEW_AUTHORIZATION_MOTIVO,
+  ticketAuthorizationMessage,
+  reviewAuthorizationMessage,
+} from "./wallet-messages";

@@ -2,9 +2,12 @@
 
 import { useCallback, useState } from "react";
 import { useAccount, useSignTypedData } from "wagmi";
-import { QR_REDOWNLOAD_DOMAIN, QR_REDOWNLOAD_TYPES } from "@hotel/shared/domain";
+import {
+  QR_REDOWNLOAD_DOMAIN,
+  TICKET_AUTHORIZATION_TYPES,
+  ticketAuthorizationMessage,
+} from "@hotel/shared/domain";
 import { activeChain, contractAddress } from "@/config/chain";
-import { ticketSignatureMessage } from "./ticketSignature";
 
 /** Resguardo emitido por la API (`GET /api/qr/:tokenId`) y listo para mostrar o descargar. */
 export interface IssuedTicket {
@@ -19,6 +22,9 @@ export interface IssuedTicket {
   readonly checkInDate: string;
   readonly expiresAt: string;
 }
+
+/** Tope de vigencia de la firma del resguardo (2 min); la API admite hasta 5 min. */
+const TICKET_SIGNATURE_TTL_SECONDS = 120;
 
 export type TicketStatus = "idle" | "signing" | "requesting" | "ready" | "error";
 
@@ -74,10 +80,11 @@ export function useTicket(tokenId: string): UseTicketResult {
         const { nonce } = (await nonceRes.json()) as { nonce?: string };
         if (!nonce) throw new Error("nonce");
 
-        const message = ticketSignatureMessage({
+        // Mensaje v2 (ADR-30): la wallet muestra motivo, habitación y noche, no un tokenId opaco.
+        const message = ticketAuthorizationMessage({
           tokenId,
           nonce,
-          nowSeconds: Math.floor(Date.now() / 1000),
+          expiresAtSeconds: Math.floor(Date.now() / 1000) + TICKET_SIGNATURE_TTL_SECONDS,
         });
         const signature = await signTypedDataAsync({
           domain: {
@@ -85,8 +92,8 @@ export function useTicket(tokenId: string): UseTicketResult {
             chainId: activeChain.id,
             verifyingContract: contractAddress,
           },
-          types: QR_REDOWNLOAD_TYPES,
-          primaryType: "DownloadTicket",
+          types: TICKET_AUTHORIZATION_TYPES,
+          primaryType: "TicketAuthorization",
           message,
         });
 
@@ -96,7 +103,7 @@ export function useTicket(tokenId: string): UseTicketResult {
             "x-wallet-address": address,
             "x-signature": signature,
             "x-nonce": nonce,
-            "x-expires-at": String(message.expiresAt),
+            "x-expires-at": String(message.validoHasta),
           },
         });
 

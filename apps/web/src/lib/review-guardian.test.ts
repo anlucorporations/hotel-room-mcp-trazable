@@ -47,7 +47,14 @@ describe("Guardián de reseñas (F6 · D-58/D-59)", () => {
       fileURLToPath(new URL("../../../../packages/shared/src/domain/ticket-auth.ts", import.meta.url)),
       "utf8",
     );
-    expect(auth).toContain("SubmitReview");
-    expect(auth).toMatch(/name: "rating", type: "uint8"/);
+    // ADR-30: la estructura v2 vive en `wallet-messages.ts` y `ticket-auth.ts` la re-exporta;
+    // la nota sigue dentro de la firma, ahora con nombre legible (`estrellas`).
+    const messages = readFileSync(
+      fileURLToPath(new URL("../../../../packages/shared/src/domain/wallet-messages.ts", import.meta.url)),
+      "utf8",
+    );
+    expect(auth).toContain("REVIEW_AUTHORIZATION_TYPES");
+    expect(messages).toContain("REVIEW_AUTHORIZATION_TYPES");
+    expect(messages).toMatch(/name: "estrellas", type: "uint8"/);
   });
 });

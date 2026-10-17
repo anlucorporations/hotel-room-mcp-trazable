@@ -14,7 +14,7 @@ import { formatEther } from "viem";
 import { useAccount, useConfig, useSignMessage } from "wagmi";
 import { readContract, waitForTransactionReceipt, writeContract } from "wagmi/actions";
 import { hotelNightsAbi } from "@hotel/shared/abi";
-import { CURRENCY_SYMBOL } from "@hotel/shared/domain";
+import { CURRENCY_SYMBOL, roomPublicationMessage } from "@hotel/shared/domain";
 import { contractAddress } from "@/config/chain";
 import { useAdminContext } from "@/components/admin/AdminLayout";
 import { AdminCard } from "@/components/admin/AdminPanel";
@@ -402,6 +402,7 @@ export function RoomsAdmin() {
       let signature: string | undefined;
       let signerAddress: string | undefined;
       let txHash: string | undefined;
+      let issuedAtSeconds: number | undefined;
 
       // Paso 2: con wallet conectada, sincronizar el registro y anclar la huella on-chain
       // (D-2/D-3/D-10/D-18). Es best-effort: si falla, se publica y queda PENDING_ANCHOR.
@@ -432,7 +433,16 @@ export function RoomsAdmin() {
           });
           await waitForTransactionReceipt(config, { hash: txHash as `0x${string}` });
 
-          signature = await signMessageAsync({ message: contentHash });
+          // ADR-30: se firma un mensaje legible (ficha + huella + hora + dominio), no el `0x…` suelto.
+          issuedAtSeconds = Math.floor(Date.now() / 1000);
+          const publicationMessage = roomPublicationMessage({
+            roomNumber: room.roomNumber,
+            roomType: room.roomType,
+            contentHash,
+            issuedAtSeconds,
+            domain: window.location.host,
+          });
+          signature = await signMessageAsync({ message: publicationMessage });
           signerAddress = address;
         } catch {
           // Sin wallet/RPC disponible el anclaje no se completa: se publica pendiente (F8/F1).
@@ -448,7 +458,9 @@ export function RoomsAdmin() {
         body: JSON.stringify({
           confirmTotpCode: mfaCode.trim(),
           ...(txHash ? { txHash } : {}),
-          ...(signature && signerAddress ? { signature, signerAddress } : {}),
+          ...(signature && signerAddress && issuedAtSeconds
+            ? { signature, signerAddress, issuedAt: issuedAtSeconds }
+            : {}),
         }),
       });
       const data = await res.json().catch(() => ({}));
