@@ -5527,3 +5527,55 @@ el fix (flag `_auctioned` por `AUCTION_ROLE` o escrow) se dejó para la próxima
 
 **Estado del ciclo C2: cerrado** — implementación, pruebas, docs, canario y redeploy en Besu con la
 subasta operativa y demostrable.
+
+---
+
+## 34. F3 DESPLEGADO en producción — outbox de anclaje operativo en Besu (2026-10-18) · `@asistenteProyecto`
+
+**Qué se hizo.** Cierre del plan de puesta en producción: commit y push del trabajo vNext F2/F3 y de
+su documentación, y despliegue de **F3** (outbox + relayer) sobre la red Besu 81234, con un
+**anclaje real verificado** contra el contrato `HotelOperations`.
+
+### Commit y push (paso 1)
+
+| Commit | Contenido |
+|---|---|
+| `70e08f1` | **F1 cierre**: esquema vNext, repositorios, gate PostgreSQL y vocabulario canónico |
+| `ce5e1bf` | **F2**: contrato `HotelOperations` + motor EIP-712 de operaciones |
+| `5382e45` | **F3**: outbox de anclaje, worker relayer y alertas del monitor |
+| `8466297` | Docs: estado de F1–F3, C3, C1 y C2 + plan actualizado |
+| `fd6d33f` | Docs: inventario del despliegue vigente (§86 de `despliegue_gcp.md`) |
+
+Push autorizado a los tres remotos de `anlucorporations`, rama **`Hotel-DSH-GCP-v3`** (`origin`,
+`github`, `codecrypto`). Puertas locales antes del commit: `pnpm typecheck` **0**, `pnpm lint` **0**,
+`pnpm test` **7/7 tareas** (web **1.090 pruebas**, shared, worker, mcp, monitor y forge). Se retiraron
+los scripts temporales del árbol (`shot.tmp.mjs`, `verify-reserva*.tmp.mjs`).
+
+### Despliegue (paso 2)
+
+| Elemento | Valor |
+|---|---|
+| Imágenes | **`worker:v66`** (build `78d93cbd…`, SUCCESS) y **`monitor:v66`** (build `70603f40…`, SUCCESS), desde un *worktree* limpio en `fd6d33f` |
+| Worker | revisión **`hotel-mcp-worker-00022-pv9`** al 100 % |
+| Monitor | worker pool `hotel-mcp-monitor` con `monitor:v66` (env/secretos conservados) |
+| Env nueva del worker | `HOTEL_OPERATIONS_CONTRACT_ADDRESS=0x222d74f3…b9ffe`, `HOTEL_OPERATIONS_DEPLOYMENT_BLOCK=5491505`, `ANCHOR_RELAYER_PRIVATE_KEY` ← secreto `hotel-relayer-private-key` |
+| Relayer | cuenta 4 `0x15d34A…6A65`, **sin roles** en `HotelOperations` (por diseño DT-AUD-01), financiada con **5 CC** (tx `0xe8e5fe8d…f0bb`) |
+
+### Anclaje real verificado
+
+Se creó un **job temporal** (`f3-anchor-smoke`, eliminado después) que firmó con el owner una acción
+`CONFIG` (EIP-712, nonce `0x042300ab…c826`) y la insertó como `SIGNED` en `on_chain_signatures`. El
+worker la reclamó en el siguiente ciclo y la ancló con el relayer:
+
+| Comprobación | Resultado |
+|---|---|
+| Log del worker | `outbox: firma anclada` · `outbox de anclaje: ciclo completado {claimed:1, mined:1, failed:0}` |
+| Transacción | `0x1856106c1fd7ca0a509ade665ebfa999a7c4f6eab393a5edd1faca50075949af` · bloque **`5715738`** · `status: success` |
+| Evento on-chain | `OperationalAction(actionType=CONFIG, payloadHash=0xbf7f…45e5, signer=owner)` |
+| Relayer | nonce `1`; la tx la pagó la hot wallet sin roles y el contrato acreditó al **firmante EIP-712** |
+| `/health` del worker | `anchor.scheduler = "enabled"` · último ciclo `{claimed:0, mined:0, failed:0}` (sin pendientes tras el anclaje) |
+| Evidencia | [`evidencias/f3-deploy-produccion-2026-10-18.json`](./evidencias/f3-deploy-produccion-2026-10-18.json) |
+
+**Deuda heredada que sigue abierta (paso 4):** el worker continúa `down` por `emailDegraded`
+(SMTP `smtp.invalid`), la quema automática sigue desactivada y aún no hay UI que emita firmas
+operativas (llega con F4). El anclaje ya está operativo para cuando existan firmas.

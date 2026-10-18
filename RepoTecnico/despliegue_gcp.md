@@ -3481,3 +3481,35 @@ gcloud run services update-traffic hotel-mcp-worker --region=europe-west1 --to-r
   [ADR-30](../docs/adr/ADR-30-mensajes-firmados-legibles-en-la-wallet.md).
 - Evidencias: `RepoTecnico/evidencias/aceptacion-besu-81234-2026-10-13.json` y
   `RepoTecnico/evidencias/c2-redeploy-besu-81234-2026-10-17.json`.
+
+---
+
+## 87. Release v66 — F3 desplegado: outbox de anclaje operativo en Besu (2026-10-18)
+
+**Qué se desplegó.** El cierre de **F3** (outbox de anclaje + worker relayer) sobre la red Besu
+81234, después de commitear y publicar el trabajo vNext F2/F3 y su documentación en la rama
+`Hotel-DSH-GCP-v3` (commits `70e08f1`, `ce5e1bf`, `5382e45`, `8466297`, `fd6d33f`).
+
+| Elemento | Valor |
+|---|---|
+| Imágenes | **`worker:v66`** (build `78d93cbd…`, 3m15s, SUCCESS) y **`monitor:v66`** (build `70603f40…`, 2m58s, SUCCESS), desde *worktree* limpio en `fd6d33f` |
+| Worker | revisión **`hotel-mcp-worker-00022-pv9`** (100 %) |
+| Monitor | worker pool `hotel-mcp-monitor` con `monitor:v66` (8 env/secretos conservados) |
+| Config nueva | `HOTEL_OPERATIONS_CONTRACT_ADDRESS=0x222d74f3…b9ffe` · `HOTEL_OPERATIONS_DEPLOYMENT_BLOCK=5491505` · secreto `ANCHOR_RELAYER_PRIVATE_KEY` (`hotel-relayer-private-key`) |
+| Relayer | cuenta 4 `0x15d34A…6A65`, **sin roles** en `HotelOperations`, financiada con 5 CC (tx `0xe8e5fe8d…f0bb`) |
+| Rollback | `gcloud run services update-traffic hotel-mcp-worker --region=europe-west1 --to-revisions=hotel-mcp-worker-00021-cwq=100` (worker:v63, sin anclaje) y monitor `monitor:v58` |
+
+**Verificación (anclaje real, no simulado)**
+
+| Comprobación | Resultado |
+|---|---|
+| Job temporal que firma una acción `CONFIG` y la deja `SIGNED` | insertada en `on_chain_signatures` |
+| Worker la reclama y la ancla | `outbox: firma anclada` · ciclo `{claimed:1, mined:1, failed:0}` |
+| Transacción | `0x1856106c…75949af` · bloque **`5715738`** · `status: success` |
+| Evento | `OperationalAction(CONFIG, payloadHash=0xbf7f…45e5, signer=owner)`; el gas lo pagó el relayer sin roles |
+| `/health` | `anchor.scheduler="enabled"`; sin firmas pendientes |
+| Evidencia | `RepoTecnico/evidencias/f3-deploy-produccion-2026-10-18.json` |
+
+**Pendiente de este bloque (paso siguiente):** SMTP real (el worker sigue en 503 por
+`emailDegraded`), reactivar la quema, decidir roles/mínimo privilegio y actualizar los jobs
+obsoletos. El anclaje queda operativo a la espera de que F4 emita firmas desde la UI.

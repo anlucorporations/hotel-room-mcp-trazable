@@ -1,0 +1,51 @@
+{
+  "hito": "F3 desplegado en producción — outbox de anclaje operativo en Besu 81234",
+  "fecha": "2026-10-18",
+  "commit": "fd6d33f",
+  "imagenes": {
+    "worker": "europe-west1-docker.pkg.dev/hotel-mcp/hotel-mcp/worker:v66 (build 78d93cbd-f697-4177-83a5-c088e2498ced, SUCCESS)",
+    "monitor": "europe-west1-docker.pkg.dev/hotel-mcp/hotel-mcp/monitor:v66 (build 70603f40-83a5-4fa4-bea4-3cc698f9cd93, SUCCESS)"
+  },
+  "despliegue": {
+    "worker": {
+      "revision": "hotel-mcp-worker-00022-pv9",
+      "env_nuevas": {
+        "HOTEL_OPERATIONS_CONTRACT_ADDRESS": "0x222d74f33b0d07687a769a44399e2272a4cb9ffe",
+        "HOTEL_OPERATIONS_DEPLOYMENT_BLOCK": "5491505",
+        "ANCHOR_RELAYER_PRIVATE_KEY": "secret:hotel-relayer-private-key:latest"
+      }
+    },
+    "monitor": "worker pool hotel-mcp-monitor · imagen monitor:v66 · env/secretos conservados (8)"
+  },
+  "relayer": {
+    "cuenta": 4,
+    "direccion": "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65",
+    "financiacion": { "tx": "0xe8e5fe8dd9ba8147c2f5ff4f92da46fa23adafd3065a33455c759e16ce00f0bb", "importeWei": "5000000000000000000" },
+    "roles_en_HotelOperations": "ninguno (por diseño DT-AUD-01)"
+  },
+  "smoke_test": {
+    "job_temporal": "f3-anchor-smoke (creado y eliminado en la misma ventana)",
+    "accion": "CONFIG firmada EIP-712 por el owner (cuenta 0)",
+    "firma": {
+      "signer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "entityId": "0x6e81dc16620a8711c31d36a0386351239a6f33312d3ebbf0ff0e272895b28b4f",
+      "payloadHash": "0xbf7f624adda14ab6178a2985d976c4fdc6ca77d56b7715e22e2e9e5ba23345e5",
+      "nonce": "0x042300ab04ef5521dfed0256083954d1ac94bdecb65b7408f42b0155ca92c826",
+      "domainSeparator": "0x03581151e021d9d88112dfb3a2994ba392d70205065e869524ce1989cdf56d37"
+    },
+    "anclaje": {
+      "txHash": "0x1856106c1fd7ca0a509ade665ebfa999a7c4f6eab393a5edd1faca50075949af",
+      "bloque": 5715738,
+      "status": "success",
+      "evento": "OperationalAction(actionType=CONFIG, payloadHash=0xbf7f…45e5, signer=owner)",
+      "log_worker": "outbox: firma anclada · outbox de anclaje: ciclo completado {claimed:1, mined:1}"
+    }
+  },
+  "verificacion": {
+    "worker_health": "anchor.scheduler=enabled · lastCycle {claimed:0,mined:0,failed:0} tras el ciclo del anclaje",
+    "relayer_nonce": 1,
+    "worker": "revision 00022-pv9 · worker:v66",
+    "monitor": "monitor:v66 en el worker pool",
+    "pendiente_heredado": "worker /health sigue 503 por emailDegraded (SMTP inválido) — paso 4"
+  }
+}
