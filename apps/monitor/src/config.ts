@@ -96,6 +96,16 @@ const monitorEnvSchema = z.object({
   MIN_GAS_NATIVE: z.coerce.number().nonnegative().default(1),
   /** Ciclos consecutivos sin bloque nuevo antes de alertar (por defecto 3). */
   STALL_CYCLES: z.coerce.number().int().positive().default(3),
+
+  // ── Outbox de anclaje (F3 · RNF-M-13) ────────────────────────────────────────
+  /**
+   * Minutos que una firma puede llevar `SIGNED` sin anclarse antes de alertar. El dato sale de
+   * `details.anchor.stats.oldestSignedAt` del `/health` del worker (T3.7); el monitor no consulta
+   * la base de datos.
+   */
+  PENDING_ALERT_MIN: z.coerce.number().int().positive().default(10),
+  /** Reintentos acumulados de una firma (`maxRetryCount`) antes de alertar. */
+  RETRY_ALERT_COUNT: z.coerce.number().int().positive().default(5),
 });
 
 export type MonitorConfig = z.infer<typeof monitorEnvSchema>;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadMonitorConfig, type MonitorConfig } from "./config";
-import { MonitorCore } from "./monitor-core";
+import { MonitorCore, diagnose } from "./monitor-core";
 import {
   FakeAlerter,
   FakeHealthProbe,
@@ -187,5 +187,47 @@ describe("MonitorCore (TC-NF-020)", () => {
 
     expect(cycles).toBeGreaterThanOrEqual(3);
     expect(alerter.sent).toHaveLength(1);
+  });
+});
+
+describe("diagnose · outbox de anclaje (F3 · T3.8)", () => {
+  const NOW = new Date("2026-10-12T12:00:00.000Z");
+  const options = { now: NOW, pendingAlertMin: 10, retryAlertCount: 5 };
+
+  function anchorReport(stats: Record<string, unknown>): Parameters<typeof diagnose>[0] {
+    return {
+      ok: true,
+      httpStatus: 200,
+      report: {
+        status: "ok",
+        component: "worker",
+        details: { anchor: { scheduler: "enabled", stats } },
+      },
+    };
+  }
+
+  it("una firma SIGNED más antigua que el umbral alerta ANCHOR_PENDING", () => {
+    const failure = diagnose(anchorReport({ signed: 2, oldestSignedAt: "2026-10-12T11:30:00.000Z", maxRetryCount: 0 }), 50, options);
+    expect(failure?.reason).toBe("ANCHOR_PENDING");
+    expect(failure?.detail).toContain("30 min");
+  });
+
+  it("una firma dentro del umbral no alerta", () => {
+    const failure = diagnose(anchorReport({ signed: 1, oldestSignedAt: "2026-10-12T11:55:00.000Z", maxRetryCount: 0 }), 50, options);
+    expect(failure).toBeNull();
+  });
+
+  it("reintentos por encima del umbral alertan ANCHOR_RETRY aunque no haya antigüedad", () => {
+    const failure = diagnose(anchorReport({ signed: 0, oldestSignedAt: null, maxRetryCount: 6 }), 50, options);
+    expect(failure?.reason).toBe("ANCHOR_RETRY");
+  });
+
+  it("sin umbrales de outbox el diagnóstico es el de siempre", () => {
+    expect(diagnose(anchorReport({ signed: 9, oldestSignedAt: "2026-01-01T00:00:00.000Z", maxRetryCount: 99 }), 50)).toBeNull();
+  });
+
+  it("una fecha corrupta no genera un falso positivo", () => {
+    const failure = diagnose(anchorReport({ signed: 1, oldestSignedAt: "no-es-fecha", maxRetryCount: 0 }), 50, options);
+    expect(failure).toBeNull();
   });
 });

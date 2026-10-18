@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
+import { keccak256, stringToBytes } from "viem";
 import type { Pool, QueryResultRow } from "pg";
 import { getDbPool } from "../pool";
+import type { SignatureEntityType, SignatureStatus } from "../../domain/operations-state";
 
 /**
  * Repositorio de **operaciones firmadas** (`operator_wallets` + `on_chain_signatures`) — F2/F3 de la
@@ -32,18 +34,9 @@ import { getDbPool } from "../pool";
 /** Roles con wallet propia (`operator_wallets.role`, CHECK del esquema). */
 export type OperatorWalletRole = "HEAD_MAINTENANCE" | "HEAD_KEEPER" | "OWNER_BACKUP";
 
-/** Tipos de entidad firmable (`on_chain_signatures.entity_type`, CHECK del esquema). */
-export type SignatureEntityType =
-  | "ROOM_BLOCK"
-  | "ROOM_UNBLOCK"
-  | "INSPECTION"
-  | "DAMAGE_CHARGE"
-  | "PREVENTIVE_TASK"
-  | "AREA_LOG"
-  | "CONFIG";
-
-/** Estados de la firma (`on_chain_signatures.status`, CHECK del esquema). */
-export type SignatureStatus = "PENDING" | "SIGNED" | "MINED" | "FAILED" | "REVOKED";
+/** Tipos de entidad firmable y estados de la firma: vocabulario canónico de `domain/operations-state.ts`
+ * (T1.6). Se reexportan aquí para no romper a los consumidores que los importaban del repositorio. */
+export type { SignatureEntityType, SignatureStatus };
 
 export interface OperatorWalletRecord {
   readonly id: string;
@@ -76,6 +69,10 @@ export interface SignatureRecord {
   readonly roleSnapshot: string | null;
   readonly retryCount: number;
   readonly nextAttemptAt: Date | null;
+  /** Caducidad del *outbox* (TTL): pasado el plazo, la firma se marca `FAILED` sin anclarse. */
+  readonly expiresAt: Date | null;
+  /** Caducidad de la FIRMA EIP-712 (`deadline` del TypedData): el contrato la exige vigente. */
+  readonly deadline: Date | null;
   readonly consumedAt: Date | null;
   readonly createdAt: Date;
   readonly minedAt: Date | null;
@@ -106,6 +103,42 @@ export interface MarkSignedInput {
   readonly recoveredSigner: string;
   readonly domainHash: string;
   readonly roleSnapshot: string;
+}
+
+/**
+ * Opciones de reclamo del outbox por el worker relayer (T3.1). El **lease** (`leaseSeconds`) es la
+ * garantía de que un worker que muere a mitad de anclaje no deja la fila bloqueada para siempre: otro
+ * worker la recupera cuando el lease vence (`recoverAfterRestart`), sin necesidad de una transacción
+ * de larga duración.
+ */
+export interface OutboxClaimOptions {
+  readonly now?: Date;
+  /** Tamaño del lote reclamado en una sola sentencia. Por defecto 10. */
+  readonly limit?: number;
+  /** Segundos que la fila queda «alquilada» antes de poder reclamarse de nuevo. Por defecto 120. */
+  readonly leaseSeconds?: number;
+}
+
+/** Resultado de la recuperación tras reinicio/restore (RNF-M-12): leases reencolados y TTL expirados. */
+export interface OutboxRecoveryResult {
+  readonly requeued: number;
+  readonly expired: number;
+}
+
+/**
+ * Instantánea agregada del outbox para las alertas operativas (RNF-M-13, DT-AUD-12). **Sin PII**: solo
+ * contadores y la fecha de la firma `SIGNED` más antigua, que es lo que compara `PENDING_ALERT_MIN`
+ * (`oldestSignedAt`) y `RETRY_ALERT_COUNT` (`maxRetryCount`).
+ */
+export interface OutboxStats {
+  readonly pending: number;
+  readonly signed: number;
+  readonly mined: number;
+  readonly failed: number;
+  /** Fecha de creación de la firma `SIGNED` más antigua (alerta PENDING_ALERT_MIN); `null` si no hay. */
+  readonly oldestSignedAt: Date | null;
+  /** Mayor `retry_count` del outbox (alerta RETRY_ALERT_COUNT). */
+  readonly maxRetryCount: number;
 }
 
 /** Error con código estable: la ruta HTTP lo traduce a un 4xx/5xx concreto. */
@@ -150,9 +183,22 @@ interface SignatureRow extends QueryResultRow {
   role_snapshot: string | null;
   retry_count: number;
   next_attempt_at: Date | null;
+  expires_at: Date | null;
+  deadline: Date | null;
   consumed_at: Date | null;
   created_at: Date;
   mined_at: Date | null;
+}
+
+/** Proyección agregada de `outboxStats`; los `COUNT`/`MAX` van casteados a `int` para que `pg` los
+ * devuelva como `number` (un `bigint` llegaría como `string`). */
+interface OutboxStatsRow extends QueryResultRow {
+  pending: number;
+  signed: number;
+  mined: number;
+  failed: number;
+  oldest_signed_at: Date | null;
+  max_retry_count: number;
 }
 
 /**
@@ -166,6 +212,33 @@ export function buildSignatureNonce(signerAddress: string, contentHash: string):
     .update(`${signerAddress.toLowerCase()}|${contentHash.toLowerCase()}`)
     .digest("hex");
   return `0x${digest}`;
+}
+
+/**
+ * Clave idempotente del anclaje (**DT-AUD-06**): `keccak256` de
+ * `chainId|actionType|entityType|entityId|nonce`.
+ *
+ * **No se persiste**: la unicidad real la impone el índice único parcial `(signer_address, nonce)` de
+ * `on_chain_signatures`, que es la barrera anti-replay. Esta clave existe para que el relayer y su
+ * *log* hablen el mismo identificador de operación y para poder deduplicar antes de firmar. Es
+ * **determinista** y **insensible a mayúsculas** en `actionType`, `entityId` y `nonce` (se normalizan a
+ * minúsculas: la misma operación escrita con otra caja no puede producir dos anclajes distintos).
+ */
+export function buildIdempotencyKey(input: {
+  chainId: number;
+  actionType: string;
+  entityType: string;
+  entityId: string;
+  nonce: string;
+}): string {
+  const canonical = [
+    String(input.chainId),
+    input.actionType.toLowerCase(),
+    input.entityType,
+    input.entityId.toLowerCase(),
+    input.nonce.toLowerCase(),
+  ].join("|");
+  return keccak256(stringToBytes(canonical));
 }
 
 function mapWallet(row: WalletRow): OperatorWalletRecord {
@@ -202,9 +275,22 @@ function mapSignature(row: SignatureRow): SignatureRecord {
     roleSnapshot: row.role_snapshot,
     retryCount: row.retry_count,
     nextAttemptAt: row.next_attempt_at,
+    expiresAt: row.expires_at,
+    deadline: row.deadline,
     consumedAt: row.consumed_at,
     createdAt: row.created_at,
     minedAt: row.mined_at,
+  };
+}
+
+function mapOutboxStats(row: OutboxStatsRow): OutboxStats {
+  return {
+    pending: row.pending,
+    signed: row.signed,
+    mined: row.mined,
+    failed: row.failed,
+    oldestSignedAt: row.oldest_signed_at,
+    maxRetryCount: row.max_retry_count,
   };
 }
 
@@ -433,5 +519,123 @@ export class OperationsRepository {
       [entityType, entityId],
     );
     return rows.map(mapSignature);
+  }
+
+  // ── Worker relayer: outbox, lease y recuperación (F3 · D-C18, DT-AUD-06, RNF-M-12) ──
+
+  /**
+   * Reclama y **alquila** el siguiente lote de trabajo de anclaje en **una sola sentencia**
+   * (D-C18 · DT-AUD-06). Es la pieza que permite varios workers sin coordinador externo:
+   *
+   *   - `FOR UPDATE SKIP LOCKED` dentro del CTE `picked`: dos workers concurrentes **no** ven la misma
+   *     fila (el segundo salta las bloqueadas en vez de esperarlas), así que no hay doble envío que
+   *     provoque `NonceAlreadyConsumed` en el contrato.
+   *   - El `UPDATE … FROM picked` fija `next_attempt_at = now + lease` en la MISMA sentencia: el
+   *     reclamo y el lease son atómicos sin transacción explícita. Si el worker muere, el lease vence y
+   *     otro lo recupera (`recoverAfterRestart`); no hay filas bloqueadas para siempre.
+   *   - Solo se reclama lo ya firmado y no consumido, cuyo reintento ya venció y que **no ha caducado**:
+   *     firmar/anclar algo que ya no aplica es trabajo perdido (lo caducado lo cierra `expireStale`).
+   *
+   * `make_interval(secs => $3)` parametriza el lease sin interpolar texto en el SQL (sin inyección).
+   */
+  async claimForAnchoring(options: OutboxClaimOptions = {}): Promise<SignatureRecord[]> {
+    const now = options.now ?? new Date();
+    const limit = options.limit ?? 10;
+    const leaseSeconds = options.leaseSeconds ?? 120;
+    const { rows } = await this.pool.query<SignatureRow>(
+      `WITH picked AS (
+         SELECT id FROM on_chain_signatures
+          WHERE status = 'SIGNED' AND consumed_at IS NULL
+            AND (next_attempt_at IS NULL OR next_attempt_at <= $1)
+            AND (expires_at IS NULL OR expires_at > $1)
+          ORDER BY next_attempt_at ASC NULLS FIRST, created_at ASC
+          LIMIT $2
+          FOR UPDATE SKIP LOCKED
+       )
+       UPDATE on_chain_signatures s
+          SET next_attempt_at = $1 + make_interval(secs => $3)
+         FROM picked
+        WHERE s.id = picked.id
+        RETURNING s.*`,
+      [now, limit, leaseSeconds],
+    );
+    return rows.map(mapSignature);
+  }
+
+  /**
+   * Cierra por TTL lo que ya no se va a anclar (D-C18: 24 h en cola): `PENDING`/`SIGNED` caducadas pasan
+   * a `FAILED`, cuentan un reintento y dejan el motivo legible. **Devuelve cuántas cerró** para que el
+   * worker registre la métrica; no toca `tx_hash` (una transacción ya enviada se confirma por recibo
+   * antes de dar nada por fallido — T3.3).
+   */
+  async expireStale(now: Date = new Date()): Promise<number> {
+    const { rows } = await this.pool.query<{ id: string } & QueryResultRow>(
+      `UPDATE on_chain_signatures
+          SET status = 'FAILED',
+              error_message = 'outbox TTL expirado',
+              retry_count = retry_count + 1
+        WHERE status IN ('PENDING', 'SIGNED')
+          AND expires_at IS NOT NULL
+          AND expires_at <= $1
+        RETURNING id`,
+      [now],
+    );
+    return rows.length;
+  }
+
+  /**
+   * Recuperación tras reinicio o *restore* (**RNF-M-12**): el worker no confía en Redis, reconstruye el
+   * outbox desde la tabla al arrancar.
+   *
+   *   (a) **Reencola los leases vivos**: toda firma `SIGNED` no consumida con `next_attempt_at` en el
+   *       futuro quedó «alquilada» por un worker que ya no existe; se adelanta a `now` para que otro la
+   *       reclame ya. No se toca `tx_hash`: el relayer comprueba el recibo antes de reenviar (T3.3),
+   *       así que reencolar nunca duplica una transacción ya minada.
+   *   (b) **Expira lo caducado** con la misma lógica de `expireStale`.
+   */
+  async recoverAfterRestart(now: Date = new Date()): Promise<OutboxRecoveryResult> {
+    const { rows } = await this.pool.query<{ id: string } & QueryResultRow>(
+      `UPDATE on_chain_signatures
+          SET next_attempt_at = $1
+        WHERE status = 'SIGNED' AND consumed_at IS NULL
+          AND next_attempt_at IS NOT NULL AND next_attempt_at > $1
+        RETURNING id`,
+      [now],
+    );
+    const requeued = rows.length;
+    const expired = await this.expireStale(now);
+    return { requeued, expired };
+  }
+
+  /**
+   * Instantánea agregada del outbox en **una consulta** (RNF-M-13): alimenta las alertas
+   * `PENDING_ALERT_MIN` (vía `oldestSignedAt`) y `RETRY_ALERT_COUNT` (vía `maxRetryCount`). Solo
+   * contadores: **sin PII**.
+   *
+   * El parámetro `_now` se mantiene por simetría con el resto del outbox (el worker pasa su reloj), pero
+   * el agregado es global; se documenta para que nadie espere un filtro temporal que no existe. No se
+   * usa, de ahí el guion bajo.
+   */
+  async outboxStats(_now?: Date): Promise<OutboxStats> {
+    const { rows } = await this.pool.query<OutboxStatsRow>(
+      `SELECT
+         COUNT(*) FILTER (WHERE status = 'PENDING')::int AS pending,
+         COUNT(*) FILTER (WHERE status = 'SIGNED')::int AS signed,
+         COUNT(*) FILTER (WHERE status = 'MINED')::int AS mined,
+         COUNT(*) FILTER (WHERE status = 'FAILED')::int AS failed,
+         MIN(created_at) FILTER (WHERE status = 'SIGNED') AS oldest_signed_at,
+         COALESCE(MAX(retry_count), 0)::int AS max_retry_count
+       FROM on_chain_signatures`,
+    );
+    return mapOutboxStats(rows[0]!);
+  }
+
+  /** Firma por el hash de su transacción de anclaje (detección de reenvíos y reconciliación del worker). */
+  async findByTxHash(txHash: string): Promise<SignatureRecord | null> {
+    const { rows } = await this.pool.query<SignatureRow>(
+      `SELECT * FROM on_chain_signatures WHERE tx_hash = $1`,
+      [txHash],
+    );
+    return rows[0] ? mapSignature(rows[0]) : null;
   }
 }

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { FetchHealthProbe } from "./probe";
+import { FetchHealthProbe, extractAnchorStats } from "./probe";
 
 /**
  * Pruebas de `FetchHealthProbe` con `fetch` simulado (sin red real). Verifican la normalización
@@ -67,5 +67,41 @@ describe("FetchHealthProbe", () => {
     mockFetch(async () => jsonResponse(200, { foo: "bar" }));
     const result = await new FetchHealthProbe().probe(URL);
     expect(result.report).toBeNull();
+  });
+});
+
+describe("extractAnchorStats (F3 · outbox de anclaje)", () => {
+  const report = (details: Record<string, unknown>): Parameters<typeof extractAnchorStats>[0] => ({
+    status: "ok",
+    component: "worker",
+    details,
+  });
+
+  it("lee el resumen del outbox del /health del worker", () => {
+    const stats = extractAnchorStats(
+      report({
+        anchor: {
+          scheduler: "enabled",
+          stats: { signed: 3, oldestSignedAt: "2026-10-12T10:00:00.000Z", maxRetryCount: 4 },
+        },
+      }),
+    );
+    expect(stats).toEqual({
+      signed: 3,
+      oldestSignedAt: "2026-10-12T10:00:00.000Z",
+      maxRetryCount: 4,
+    });
+  });
+
+  it("normaliza campos ausentes o de tipo incorrecto sin lanzar", () => {
+    const stats = extractAnchorStats(
+      report({ anchor: { scheduler: "enabled", stats: { signed: "3", maxRetryCount: null } } }),
+    );
+    expect(stats).toEqual({ signed: 0, oldestSignedAt: null, maxRetryCount: 0 });
+  });
+
+  it("devuelve null si el componente no publica el bloque anchor", () => {
+    expect(extractAnchorStats(report({ lag: 1 }))).toBeNull();
+    expect(extractAnchorStats(report({ anchor: { scheduler: "disabled" } }))).toBeNull();
   });
 });

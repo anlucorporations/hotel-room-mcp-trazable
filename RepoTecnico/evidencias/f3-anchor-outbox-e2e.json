@@ -1,0 +1,21 @@
+{
+  "fecha": "2026-10-13T01:25:20.986Z",
+  "contrato": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+  "relayer": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+  "firmante": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+  "cicloNormal": {
+    "claimed": 1,
+    "mined": 1,
+    "txHash": "0x17442fe3e2a0488ce99bae19f4ad79ab772c3b0c45d7ddc940626191ff7d70c2"
+  },
+  "recuperacion": {
+    "mined": 1,
+    "reenviado": false
+  },
+  "rpcCaido": {
+    "failed": 1,
+    "nextAttemptAt": "2026-10-13T01:25:49.984Z",
+    "backoffSegundos": 29,
+    "error": "writeContract: timeout tras 1000 ms"
+  }
+}

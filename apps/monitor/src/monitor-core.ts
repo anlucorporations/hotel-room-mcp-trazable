@@ -1,6 +1,7 @@
 import type { Logger } from "pino";
 import type { HealthReport } from "@hotel/shared/health";
 import type { MonitorConfig, MonitorTarget } from "./config";
+import { extractAnchorStats } from "./probe";
 import type { Alerter, HealthProbe, ProbeResult } from "./types";
 
 /**
@@ -21,7 +22,7 @@ import type { Alerter, HealthProbe, ProbeResult } from "./types";
  * Recibe `probe`, `alerter`, `config` y `logger` por inyección (DIP): es ejecutable en tests
  * con fakes, sin red ni SMTP reales.
  */
-export type AlertReason = "COMPONENT_DOWN" | "LAG";
+export type AlertReason = "COMPONENT_DOWN" | "LAG" | "ANCHOR_PENDING" | "ANCHOR_RETRY";
 
 /** Estado mutable que el núcleo mantiene por cada target entre ciclos. */
 interface TargetState {
@@ -97,7 +98,11 @@ export class MonitorCore {
       this.logger.error({ target: target.name, error }, "el probe lanzó una excepción");
       result = { ok: false, httpStatus: 0, report: null };
     }
-    const failure = diagnose(result, this.config.LAG_THRESHOLD);
+    const failure = diagnose(result, this.config.LAG_THRESHOLD, {
+      now: new Date(),
+      pendingAlertMin: this.config.PENDING_ALERT_MIN,
+      retryAlertCount: this.config.RETRY_ALERT_COUNT,
+    });
 
     if (failure === null) {
       await this.handleHealthy(target, state);
@@ -187,10 +192,29 @@ export class MonitorCore {
 }
 
 /**
+ * Umbrales de la vigilancia del **outbox de anclaje** (F3 · T3.8). Se leen del `/health` del worker.
+ */
+export interface AnchorAlertOptions {
+  /** Reloj inyectable para que el cálculo de antigüedad sea determinista en los tests. */
+  readonly now: Date;
+  /** Minutos que una firma `SIGNED` puede llevar sin anclar antes de alertar. */
+  readonly pendingAlertMin: number;
+  /** Reintentos acumulados antes de alertar. */
+  readonly retryAlertCount: number;
+}
+
+/**
  * Decide si un resultado de sondeo es un fallo y, en su caso, por qué. Devuelve `null` si el
  * componente está sano. Es una función pura para poder probar la regla de forma aislada.
+ *
+ * Orden de severidad: caído > lag > outbox de anclaje (`ANCHOR_PENDING` y `ANCHOR_RETRY`). Los
+ * umbrales del outbox son opcionales: sin ellos, el diagnóstico es el de siempre.
  */
-export function diagnose(result: ProbeResult, lagThreshold: number): FailureDiagnosis | null {
+export function diagnose(
+  result: ProbeResult,
+  lagThreshold: number,
+  anchor?: AnchorAlertOptions,
+): FailureDiagnosis | null {
   if (!result.ok) {
     return {
       reason: "COMPONENT_DOWN",
@@ -207,6 +231,44 @@ export function diagnose(result: ProbeResult, lagThreshold: number): FailureDiag
   const lag = extractLag(report);
   if (lag !== null && lag > lagThreshold) {
     return { reason: "LAG", detail: `lag=${lag} (umbral ${lagThreshold})` };
+  }
+  return anchor === undefined ? null : diagnoseAnchor(report, anchor);
+}
+
+/**
+ * Vigilancia del outbox a partir del reporte de salud (F3 · T3.8):
+ *   - `ANCHOR_PENDING`: la firma `SIGNED` más antigua lleva más de `pendingAlertMin` minutos sin
+ *     anclarse (el relayer no avanza, o el RPC está caído y el backoff se agota);
+ *   - `ANCHOR_RETRY`: alguna firma acumula más de `retryAlertCount` reintentos.
+ *
+ * Un `oldestSignedAt` que no parsea no alerta (dato corrupto ≠ firma atascada): mejor callar que
+ * inundar el correo con un falso positivo.
+ */
+function diagnoseAnchor(
+  report: HealthReport,
+  options: AnchorAlertOptions,
+): FailureDiagnosis | null {
+  const stats = extractAnchorStats(report);
+  if (stats === null) return null;
+
+  if (stats.oldestSignedAt !== null) {
+    const oldest = Date.parse(stats.oldestSignedAt);
+    if (Number.isFinite(oldest)) {
+      const minutes = (options.now.getTime() - oldest) / 60_000;
+      if (minutes > options.pendingAlertMin) {
+        return {
+          reason: "ANCHOR_PENDING",
+          detail: `firma SIGNED sin anclar ${Math.round(minutes)} min (umbral ${options.pendingAlertMin})`,
+        };
+      }
+    }
+  }
+
+  if (stats.maxRetryCount > options.retryAlertCount) {
+    return {
+      reason: "ANCHOR_RETRY",
+      detail: `reintentos de anclaje=${stats.maxRetryCount} (umbral ${options.retryAlertCount})`,
+    };
   }
   return null;
 }

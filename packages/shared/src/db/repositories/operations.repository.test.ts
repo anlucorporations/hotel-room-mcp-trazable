@@ -3,6 +3,7 @@ import type { Pool, QueryResultRow } from "pg";
 import {
   OperationsError,
   OperationsRepository,
+  buildIdempotencyKey,
   buildSignatureNonce,
 } from "./operations.repository";
 
@@ -274,5 +275,196 @@ describe("OperationsRepository · outbox de firmas", () => {
 
     expect(firmas).toHaveLength(2);
     expect(String(query.mock.calls[0]![0])).toContain("entity_type = $1 AND entity_id = $2");
+  });
+});
+
+describe("buildIdempotencyKey · idempotencia del anclaje (DT-AUD-06)", () => {
+  const base = {
+    chainId: 81234,
+    actionType: "ROOM_BLOCK",
+    entityType: "ROOM_BLOCK",
+    entityId: "11111111-1111-1111-1111-111111111111",
+    nonce: "0xABC",
+  } as const;
+
+  it("es determinista e insensible a mayúsculas en actionType/entityId/nonce", () => {
+    const key = buildIdempotencyKey(base);
+    expect(key).toMatch(/^0x[0-9a-f]{64}$/);
+    expect(key).toBe(
+      buildIdempotencyKey({
+        ...base,
+        actionType: "room_block",
+        entityId: base.entityId.toUpperCase(),
+        nonce: "0xabc",
+      }),
+    );
+    // Y estable entre llamadas.
+    expect(key).toBe(buildIdempotencyKey(base));
+  });
+
+  it("cambia si cambia cualquier campo (colisión de operaciones distintas = prohibida)", () => {
+    const key = buildIdempotencyKey(base);
+    expect(buildIdempotencyKey({ ...base, chainId: 1 })).not.toBe(key);
+    expect(buildIdempotencyKey({ ...base, actionType: "ROOM_UNBLOCK" })).not.toBe(key);
+    expect(buildIdempotencyKey({ ...base, entityType: "INSPECTION" })).not.toBe(key);
+    expect(buildIdempotencyKey({ ...base, entityId: "22222222-2222-2222-2222-222222222222" })).not.toBe(key);
+    expect(buildIdempotencyKey({ ...base, nonce: "0xdef" })).not.toBe(key);
+  });
+});
+
+describe("OperationsRepository · worker relayer (outbox, lease, recuperación)", () => {
+  it("claimForAnchoring alquila el trabajo SIGNED con SKIP LOCKED en una sola sentencia", async () => {
+    const { pool, query } = fakePool();
+    const now = new Date("2026-10-10T10:00:00Z");
+    query.mockResolvedValue({ rows: [signatureRow({ status: "SIGNED", recovered_signer: "0xabc" })] });
+
+    const reclamadas = await new OperationsRepository(pool).claimForAnchoring({
+      now,
+      limit: 3,
+      leaseSeconds: 45,
+    });
+
+    expect(reclamadas).toHaveLength(1);
+    expect(reclamadas[0]!.status).toBe("SIGNED");
+    const [sql, params] = query.mock.calls[0]!;
+    const statement = String(sql);
+    // Una sola sentencia: CTE + UPDATE, sin transacción explícita.
+    expect(statement).toContain("WITH picked AS");
+    expect(statement).toContain("UPDATE on_chain_signatures s");
+    expect(statement).toContain("status = 'SIGNED' AND consumed_at IS NULL");
+    expect(statement).toContain("next_attempt_at IS NULL OR next_attempt_at <= $1");
+    expect(statement).toContain("expires_at IS NULL OR expires_at > $1");
+    expect(statement).toContain("ORDER BY next_attempt_at ASC NULLS FIRST, created_at ASC");
+    expect(statement).toContain("LIMIT $2");
+    expect(statement).toContain("FOR UPDATE SKIP LOCKED");
+    // El lease es parametrizable (make_interval), nunca interpolado.
+    expect(statement).toContain("make_interval(secs => $3)");
+    expect(statement).not.toContain("45");
+    expect(params).toEqual([now, 3, 45]);
+  });
+
+  it("claimForAnchoring usa limit=10 y lease=120 s por defecto", async () => {
+    const { pool, query } = fakePool();
+    query.mockResolvedValue({ rows: [] });
+
+    expect(await new OperationsRepository(pool).claimForAnchoring()).toEqual([]);
+
+    const params = query.mock.calls[0]![1] as unknown[];
+    expect(params[0]).toBeInstanceOf(Date);
+    expect(params[1]).toBe(10);
+    expect(params[2]).toBe(120);
+  });
+
+  it("expireStale cierra el TTL como FAILED y devuelve cuántas filas cerró", async () => {
+    const { pool, query } = fakePool();
+    const now = new Date("2026-10-10T10:00:00Z");
+    query.mockResolvedValue({ rows: [{ id: "sig-1" }, { id: "sig-2" }] });
+
+    const cerradas = await new OperationsRepository(pool).expireStale(now);
+
+    expect(cerradas).toBe(2);
+    const [sql, params] = query.mock.calls[0]!;
+    const statement = String(sql);
+    expect(statement).toContain("status = 'FAILED'");
+    expect(statement).toContain("'outbox TTL expirado'");
+    expect(statement).toContain("retry_count = retry_count + 1");
+    expect(statement).toContain("status IN ('PENDING', 'SIGNED')");
+    expect(statement).toContain("expires_at IS NOT NULL");
+    expect(statement).toContain("expires_at <= $1");
+    expect(statement).toContain("RETURNING id");
+    expect(statement).not.toContain("tx_hash");
+    expect(params).toEqual([now]);
+  });
+
+  it("recoverAfterRestart reencola los leases vivos y expira los caducados (RNF-M-12)", async () => {
+    const { pool, query } = fakePool();
+    const now = new Date("2026-10-10T10:00:00Z");
+    query
+      .mockResolvedValueOnce({ rows: [{ id: "sig-1" }, { id: "sig-2" }] }) // reencolado
+      .mockResolvedValueOnce({ rows: [{ id: "sig-3" }] }); // expiración
+
+    const result = await new OperationsRepository(pool).recoverAfterRestart(now);
+
+    expect(result).toEqual({ requeued: 2, expired: 1 });
+    const [requeueSql, requeueParams] = query.mock.calls[0]!;
+    const statement = String(requeueSql);
+    expect(statement).toContain("SET next_attempt_at = $1");
+    expect(statement).toContain("status = 'SIGNED' AND consumed_at IS NULL");
+    expect(statement).toContain("next_attempt_at IS NOT NULL AND next_attempt_at > $1");
+    // Reencolar no reescribe el tx_hash: el recibo se comprueba antes de reenviar (T3.3).
+    expect(statement).not.toContain("tx_hash");
+    expect(requeueParams).toEqual([now]);
+    // (b) la expiración reutiliza expireStale con el mismo reloj.
+    expect(String(query.mock.calls[1]![0])).toContain("'outbox TTL expirado'");
+    expect(query.mock.calls[1]![1]).toEqual([now]);
+    expect(query).toHaveBeenCalledTimes(2);
+  });
+
+  it("outboxStats mapea los contadores agregados y la fecha de la firma SIGNED más antigua", async () => {
+    const { pool, query } = fakePool();
+    const oldest = new Date("2026-10-10T07:30:00Z");
+    query.mockResolvedValue({
+      rows: [
+        {
+          pending: 2,
+          signed: 3,
+          mined: 5,
+          failed: 1,
+          oldest_signed_at: oldest,
+          max_retry_count: 4,
+        },
+      ],
+    });
+
+    const stats = await new OperationsRepository(pool).outboxStats(new Date("2026-10-10T10:00:00Z"));
+
+    expect(stats).toEqual({
+      pending: 2,
+      signed: 3,
+      mined: 5,
+      failed: 1,
+      oldestSignedAt: oldest,
+      maxRetryCount: 4,
+    });
+    const statement = String(query.mock.calls[0]![0]);
+    expect(statement).toContain("COUNT(*) FILTER (WHERE status = 'PENDING')");
+    expect(statement).toContain("MIN(created_at) FILTER (WHERE status = 'SIGNED')");
+    expect(statement).toContain("COALESCE(MAX(retry_count), 0)");
+    expect(statement).toContain("::int");
+  });
+
+  it("outboxStats devuelve ceros y sin fecha cuando el outbox está vacío", async () => {
+    const { pool, query } = fakePool();
+    query.mockResolvedValue({
+      rows: [{ pending: 0, signed: 0, mined: 0, failed: 0, oldest_signed_at: null, max_retry_count: 0 }],
+    });
+
+    expect(await new OperationsRepository(pool).outboxStats()).toEqual({
+      pending: 0,
+      signed: 0,
+      mined: 0,
+      failed: 0,
+      oldestSignedAt: null,
+      maxRetryCount: 0,
+    });
+  });
+
+  it("findByTxHash localiza la firma por su transacción de anclaje", async () => {
+    const { pool, query } = fakePool();
+    const txHash = "0x" + "a".repeat(64);
+    query.mockResolvedValue({ rows: [signatureRow({ status: "MINED", tx_hash: txHash })] });
+
+    const encontrada = await new OperationsRepository(pool).findByTxHash(txHash);
+
+    expect(encontrada?.txHash).toBe(txHash);
+    expect(String(query.mock.calls[0]![0])).toContain("WHERE tx_hash = $1");
+    expect(query.mock.calls[0]![1]).toEqual([txHash]);
+  });
+
+  it("findByTxHash devuelve null si no hay anclaje con ese hash", async () => {
+    const { pool, query } = fakePool();
+    query.mockResolvedValue({ rows: [] });
+
+    expect(await new OperationsRepository(pool).findByTxHash("0xdead")).toBeNull();
   });
 });

@@ -82,3 +82,38 @@ describe("salud del worker · señal de vida de la quema", () => {
     expect(state.toReport().details?.burn).toEqual({ scheduler: "enabled", lastRun });
   });
 });
+
+describe("salud del worker · outbox de anclaje (F3)", () => {
+  it("sin relayer configurado se reporta `disabled` con contadores a cero", () => {
+    const state = createWorkerHealthState();
+    expect(state.toReport().details?.anchor).toEqual({
+      scheduler: "disabled",
+      lastCycle: null,
+      stats: { signed: 0, failed: 0, oldestSignedAt: null, maxRetryCount: 0 },
+    });
+  });
+
+  it("con el relayer arrancado publica el último ciclo y los contadores del outbox, al día", () => {
+    const state = createWorkerHealthState();
+    let lastCycle: {
+      at: string;
+      claimed: number;
+      mined: number;
+      failed: number;
+    } | null = null;
+    let stats = { signed: 0, failed: 0, oldestSignedAt: null as string | null, maxRetryCount: 0 };
+    state.setAnchorHealth(() => ({ scheduler: "enabled", lastCycle, stats }));
+
+    expect(state.toReport().details?.anchor).toEqual({
+      scheduler: "enabled",
+      lastCycle: null,
+      stats: { signed: 0, failed: 0, oldestSignedAt: null, maxRetryCount: 0 },
+    });
+
+    lastCycle = { at: "2026-10-12T12:00:00.000Z", claimed: 3, mined: 2, failed: 1 };
+    stats = { signed: 5, failed: 1, oldestSignedAt: "2026-10-12T11:30:00.000Z", maxRetryCount: 6 };
+
+    // El monitor lee estos datos del /health para alertar de firmas atascadas (T3.8).
+    expect(state.toReport().details?.anchor).toEqual({ scheduler: "enabled", lastCycle, stats });
+  });
+});

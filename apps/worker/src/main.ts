@@ -2,20 +2,32 @@ import { fileURLToPath } from "node:url";
 import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import {
+  acquireDistributedLock,
   anvilChain,
   besuChain,
   BurnerService,
   closeDbPool,
+  CONFIRMATIONS_N,
   EventListenerService,
   getDbPool,
   NFTsRepository,
   NotificationQueueService,
+  OperationsRepository,
+  OperationalSignatureQueue,
+  releaseDistributedLock,
   runMigrations,
 } from "@hotel/shared";
 import { tryReadDeployment } from "@hotel/shared/deployments";
 import { loadWorkerConfig, type WorkerConfig } from "./config";
-import { createWorkerHealthState, workerHealthProvider } from "./health";
+import {
+  createWorkerHealthState,
+  workerHealthProvider,
+  type AnchorHealth,
+  type WorkerHealthState,
+} from "./health";
 import { createLogger } from "./logger";
+import { AnchorOutbox } from "./anchor-outbox";
+import { ViemAnchorRelayer } from "./anchor-relayer";
 import { PgCheckpointStore } from "./checkpoint-store";
 import { PgAggregateStore } from "./aggregate-store";
 import { AggregateProcessor } from "./aggregate-processor";
@@ -183,6 +195,18 @@ async function main(): Promise<void> {
     controller.signal,
   );
 
+  // Outbox de anclaje (F3 · D-C18): el worker reclama las firmas `SIGNED` de `on_chain_signatures` y
+  // las ancla en `HotelOperations` con la hot wallet del relayer (sin roles). Sin clave o sin
+  // contrato no arranca; se avisa y la salud publica `anchor.scheduler = "disabled"`.
+  const anchorRuntime = startAnchorOutboxIfConfigured(
+    config,
+    pool,
+    chain,
+    logger,
+    health,
+    controller.signal,
+  );
+
   // Señal de vida de la quema en `/health` (H-04 de la auditoría V6): si el planificador no arrancó
   // —worker desplegado sin la clave de firma, el fallo real que pasó en producción— se reporta
   // `disabled` y se avisa a DevOps, en vez de dejar solo una línea de log que nadie lee.
@@ -290,6 +314,7 @@ async function main(): Promise<void> {
   } finally {
     // El bucle ya terminó (o falló): ahora sí es seguro cerrar servidor, consumidor y stores.
     scheduler?.stop();
+    anchorRuntime?.stop();
     retentionScheduler.stop();
     preventiveScheduler.stop();
     mintWindowScheduler.stop();
@@ -351,6 +376,156 @@ function startBurnSchedulerIfConfigured(
     timeZone: config.BURN_TIMEZONE,
     forceIntervalMs: config.BURN_INTERVAL_MS,
   });
+}
+
+/**
+ * Arranca el **outbox de anclaje** (F3 · D-C18) si hay relayer y contrato configurados. Nunca impide
+ * arrancar el worker: sin clave o sin dirección se registra el aviso, la salud publica `disabled` y el
+ * resto del sistema sigue operativo.
+ *
+ * El bucle barre `on_chain_signatures` cada `OPERATIONAL_SIGNATURE_RETRY_MS` (la cola solo lo despierta
+ * antes) y publica en `/health` el último ciclo y los contadores del outbox para que el monitor alerte
+ * de firmas atascadas (T3.7/T3.8). La recuperación tras reinicio la hace el motor en su primer ciclo.
+ */
+function startAnchorOutboxIfConfigured(
+  config: WorkerConfig,
+  pool: ReturnType<typeof getDbPool>,
+  chain: typeof anvilChain | typeof besuChain,
+  logger: ReturnType<typeof createLogger>,
+  health: WorkerHealthState,
+  signal: AbortSignal,
+): { stop: () => void } | null {
+  if (!config.ANCHOR_RELAYER_PRIVATE_KEY) {
+    logger.warn(
+      "sin ANCHOR_RELAYER_PRIVATE_KEY: el outbox de anclaje queda DESACTIVADO (las firmas SIGNED no se anclarán)",
+    );
+    return null;
+  }
+  if (!config.HOTEL_OPERATIONS_CONTRACT_ADDRESS) {
+    logger.warn(
+      "sin HOTEL_OPERATIONS_CONTRACT_ADDRESS: el outbox de anclaje queda DESACTIVADO",
+    );
+    return null;
+  }
+
+  const repository = new OperationsRepository(pool);
+  const relayer = new ViemAnchorRelayer({
+    rpcUrl: config.RPC_URL,
+    contractAddress: config.HOTEL_OPERATIONS_CONTRACT_ADDRESS as `0x${string}`,
+    chain,
+    privateKey: config.ANCHOR_RELAYER_PRIVATE_KEY as `0x${string}`,
+    confirmations: CONFIRMATIONS_N,
+    timeoutMs: config.RPC_TIMEOUT_MS,
+  });
+  const outbox = new AnchorOutbox({
+    repository,
+    relayer,
+    logger,
+    options: {
+      maxRetries: config.OPERATIONAL_SIGNATURE_MAX_RETRIES,
+      ttlHours: config.OPERATIONAL_SIGNATURE_TTL_HOURS,
+      backoffSeconds: config.ANCHOR_BACKOFF,
+    },
+  });
+
+  let lastCycle: AnchorHealth["lastCycle"] = null;
+  let stats: AnchorHealth["stats"] = {
+    signed: 0,
+    failed: 0,
+    oldestSignedAt: null,
+    maxRetryCount: 0,
+  };
+  health.setAnchorHealth(() => ({ scheduler: "enabled", lastCycle, stats }));
+
+  let running = false;
+  // Cerrojo por HOT WALLET (F3 · §4.3): dos instancias del worker enviando tx con la misma wallet se
+  // pisarían el nonce de transacción. El cerrojo serializa el envío; si Redis no está, se degrada a
+  // «instancia única» con aviso (el outbox debe seguir funcionando sin Redis: esa es su razón de ser).
+  const relayerAddress = privateKeyToAccount(
+    config.ANCHOR_RELAYER_PRIVATE_KEY as `0x${string}`,
+  ).address.toLowerCase();
+  const lockKey = `lock:anchor-relayer:${relayerAddress}`;
+
+  const tick = async (): Promise<void> => {
+    // Un ciclo a la vez en ESTE proceso; entre procesos lo serializan el lease de la fila y el cerrojo.
+    if (signal.aborted || running) return;
+    let lockValue: string | null = null;
+    let lockUnavailable = false;
+    try {
+      lockValue = await acquireDistributedLock(lockKey, 60);
+    } catch (error: unknown) {
+      lockUnavailable = true;
+      logger.warn(
+        { error },
+        "no se pudo tomar el cerrojo del relayer (Redis); se ancla sin cerrojo (asume instancia única)",
+      );
+    }
+    if (lockValue === null && !lockUnavailable) return; // otra instancia está anclando ahora mismo
+
+    running = true;
+    try {
+      const result = await outbox.runOnce();
+      lastCycle = {
+        at: new Date().toISOString(),
+        claimed: result.claimed,
+        mined: result.mined,
+        failed: result.failed,
+      };
+      if (result.claimed > 0 || result.failed > 0 || result.errors > 0) {
+        logger.info({ ...result }, "outbox de anclaje: ciclo completado");
+      }
+      const snapshot = await repository.outboxStats();
+      stats = {
+        signed: snapshot.signed,
+        failed: snapshot.failed,
+        oldestSignedAt: snapshot.oldestSignedAt?.toISOString() ?? null,
+        maxRetryCount: snapshot.maxRetryCount,
+      };
+    } catch (error: unknown) {
+      logger.error({ error }, "fallo del ciclo del outbox de anclaje (se reintentará)");
+    } finally {
+      running = false;
+      if (lockValue !== null) {
+        await releaseDistributedLock(lockKey, lockValue).catch((error: unknown) => {
+          logger.warn({ error }, "no se pudo liberar el cerrojo del relayer (caducará solo)");
+        });
+      }
+    }
+  };
+
+  void tick();
+  const timer = setInterval(() => {
+    void tick();
+  }, config.OPERATIONAL_SIGNATURE_RETRY_MS);
+  timer.unref?.();
+
+  // Cola aceleradora (T3.6): solo despierta al relayer; un aviso perdido no pierde trabajo porque el
+  // barrido periódico sigue leyendo la tabla.
+  const queue = new OperationalSignatureQueue();
+  const queueWorker = queue.createWorker(async () => {
+    await tick();
+  });
+
+  logger.info(
+    {
+      rpcUrl: config.RPC_URL,
+      contract: config.HOTEL_OPERATIONS_CONTRACT_ADDRESS,
+      operationsDeploymentBlock: config.HOTEL_OPERATIONS_DEPLOYMENT_BLOCK ?? null,
+      retryMs: config.OPERATIONAL_SIGNATURE_RETRY_MS,
+      maxRetries: config.OPERATIONAL_SIGNATURE_MAX_RETRIES,
+      ttlHours: config.OPERATIONAL_SIGNATURE_TTL_HOURS,
+      backoffSeconds: config.ANCHOR_BACKOFF,
+    },
+    "outbox de anclaje activo · el worker ancla firmas SIGNED con el relayer (sin roles)",
+  );
+
+  return {
+    stop: () => {
+      clearInterval(timer);
+      void queueWorker.close();
+      void queue.close();
+    },
+  };
 }
 
 /**

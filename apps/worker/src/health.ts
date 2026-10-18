@@ -53,6 +53,8 @@ export class WorkerHealthState {
   private processingDegraded = false;
   /** Proveedor del estado de la quema (H-04); `null` = planificador no configurado. */
   private burnHealthProvider: (() => BurnHealth) | null = null;
+  /** Proveedor del estado del outbox de anclaje (F3); `null` = relayer no configurado. */
+  private anchorHealthProvider: (() => AnchorHealth) | null = null;
   private readonly lagThreshold: number;
   private readonly rpcFailureThreshold: number;
   private readonly aggregateFailureThreshold: number;
@@ -156,6 +158,14 @@ export class WorkerHealthState {
         // Señal de vida de la quema (H-04). Sin proveedor configurado se reporta `disabled`: es el
         // caso del worker arrancado sin clave de firma, que antes solo dejaba un `logger.warn`.
         burn: this.burnHealthProvider?.() ?? { scheduler: "disabled", lastRun: null },
+        // Outbox de anclaje (F3 · RNF-M-13): si el relayer no está configurado se reporta `disabled`
+        // con contadores a cero, y el monitor puede alertar de firmas que llevan demasiado tiempo sin
+        // anclarse (`oldestSignedAt`) o que acumulan reintentos (`maxRetryCount`).
+        anchor: this.anchorHealthProvider?.() ?? {
+          scheduler: "disabled",
+          lastCycle: null,
+          stats: { signed: 0, failed: 0, oldestSignedAt: null, maxRetryCount: 0 },
+        },
       },
     };
   }
@@ -166,6 +176,14 @@ export class WorkerHealthState {
    */
   setBurnHealth(provider: () => BurnHealth): void {
     this.burnHealthProvider = provider;
+  }
+
+  /**
+   * Registra el proveedor del estado del **outbox de anclaje** (F3). Igual que la quema, el arranque
+   * decide si el relayer pudo configurarse; el reporte se evalúa en cada `/health`.
+   */
+  setAnchorHealth(provider: () => AnchorHealth): void {
+    this.anchorHealthProvider = provider;
   }
 }
 
@@ -196,6 +214,31 @@ export interface BurnHealth {
     readonly reason: string;
     readonly burnedTokensCount: number;
   } | null;
+}
+
+/**
+ * Estado del **outbox de anclaje** en `/health` (F3 · RNF-M-13).
+ *
+ * Publica dos cosas que el monitor necesita para alertar sin mirar la base de datos:
+ *   - `lastCycle`: resumen del último ciclo del outbox (si el worker está anclando de verdad);
+ *   - `stats`: contadores de la tabla `on_chain_signatures`, incluidos los dos umbrales del ciclo:
+ *     `oldestSignedAt` (firma `SIGNED` más antigua → alerta `PENDING_ALERT_MIN`) y `maxRetryCount`
+ *     (→ alerta `RETRY_ALERT_COUNT`).
+ */
+export interface AnchorHealth {
+  readonly scheduler: "enabled" | "disabled";
+  readonly lastCycle: {
+    readonly at: string;
+    readonly claimed: number;
+    readonly mined: number;
+    readonly failed: number;
+  } | null;
+  readonly stats: {
+    readonly signed: number;
+    readonly failed: number;
+    readonly oldestSignedAt: string | null;
+    readonly maxRetryCount: number;
+  };
 }
 
 export function createWorkerHealthState(

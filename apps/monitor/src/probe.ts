@@ -65,3 +65,34 @@ function toHealthReport(body: unknown): HealthReport | null {
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
+
+/**
+ * Resumen del **outbox de anclaje** publicado por el worker en `/health` (F3 · T3.7/T3.8).
+ *
+ * El monitor no consulta PostgreSQL: lee este resumen del reporte de salud. `null` significa que el
+ * componente no publica el bloque `anchor` (p. ej. no es el worker).
+ */
+export interface AnchorStats {
+  readonly signed: number;
+  readonly oldestSignedAt: string | null;
+  readonly maxRetryCount: number;
+}
+
+/**
+ * Extrae `details.anchor.stats` de un `HealthReport` de forma **defensiva** (función pura y
+ * testeable): campos ausentes o de tipo incorrecto se normalizan a cero/`null`, sin lanzar.
+ */
+export function extractAnchorStats(report: HealthReport): AnchorStats | null {
+  const anchor = report.details?.anchor;
+  if (!isRecord(anchor)) return null;
+  const stats = anchor.stats;
+  if (!isRecord(stats)) return null;
+  const signed =
+    typeof stats.signed === "number" && Number.isFinite(stats.signed) ? stats.signed : 0;
+  const maxRetryCount =
+    typeof stats.maxRetryCount === "number" && Number.isFinite(stats.maxRetryCount)
+      ? stats.maxRetryCount
+      : 0;
+  const oldestSignedAt = typeof stats.oldestSignedAt === "string" ? stats.oldestSignedAt : null;
+  return { signed, oldestSignedAt, maxRetryCount };
+}
