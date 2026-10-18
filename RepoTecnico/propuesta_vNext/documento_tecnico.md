@@ -1149,6 +1149,46 @@ Cambios aplicados en la revisión **1.1.0** (2026-10-07) para resolver los 18 ha
 
 > **Integridad documental:** los **6 bloques Mermaid** del documento (§2.3, §2.4, §2.5, §4.7, §5.1, §5.4) se mantienen balanceados y válidos; se verificó el cierre de cada valla.
 
+### Notas de implementación de F2 (2026-10-12)
+
+El contrato y el motor se implementaron y verificaron contra este documento. Cuatro precisiones que la
+especificación no fijaba y conviene registrar:
+
+1. **Custom errors en vez de `require(..., "DeadlineExpired")` (§3.4).** `_relay` usa
+   `DeadlineExpired(uint256 deadline, uint256 now)` y `NonceAlreadyConsumed(address signer, bytes32 nonce)`;
+   el constructor añade `AdminZeroAddress`. Los selectores son más baratos y el oráculo de las suites
+   queda tipado. `ECDSAInvalidSignatureLength(uint256)` (OZ v5) es lo que revierte una firma mal formada.
+2. **Bootstrap de gobernanza del despliegue (§9.5).** `HotelOperations` concede `DEFAULT_ADMIN_ROLE` a su
+   argumento de constructor, así que `DeployOperations.s.sol` despliega con el **EOA desplegador como
+   admin temporal**, concede roles y `OWNER_BACKUP`, y al final hace el handover al admin definitivo y
+   renuncia. Sin ese paso, con un Safe multisig como admin el bootstrap sería imposible sin su clave.
+3. **Recuperación de firmante off-chain: `async`.** En viem 2.52 `recoverTypedDataAddress` es asíncrona
+   (carga `@noble/curves` en diferido), así que `recoverOperationalSigner` y `verifyOperationalSignature`
+   devuelven `Promise`. El contrato no depende de esto: on-chain recupera con `ECDSA.recover`.
+4. **Vector §4.2.1 verificado en las tres orillas.** Coincide byte a byte en el contrato (suite Forge),
+   en el motor (`typed-data.test.ts`) y en una comprobación independiente con viem. Los tests de contrato
+   despliegan en `0x…0a11` con el helper `deployCodeTo` de `StdCheats` (no es un cheatcode de `Vm` en
+   forge-std 1.9.4).
+
+### Notas de implementación de F3 (2026-10-12)
+
+El outbox y el relayer se implementaron y verificaron contra §4.7. Tres precisiones:
+
+1. **El outbox vive en `operations.repository.ts`, no en un `signatures.repository.ts` nuevo.** La tabla
+   `on_chain_signatures` ya tenía dueño (§4.7 y T1.8); un segundo repositorio sobre la misma tabla
+   duplicaría la lógica de estados. Se añadieron ahí `claimForAnchoring` (con `FOR UPDATE SKIP LOCKED` y
+   *lease* en una sola sentencia), `expireStale`, `recoverAfterRestart`, `outboxStats` y
+   `buildIdempotencyKey`.
+2. **`SignatureRecord` expone `deadline` y `expiresAt`.** Las columnas existían desde F1 pero no salían
+   del repositorio: sin ellas el relayer no puede construir la tx (necesita el `deadline` firmado) ni el
+   outbox aplicar el TTL. Se añadieron al tipo y al mapeo.
+3. **La recuperación reclama también las filas con `tx_hash`.** Si el worker muere tras enviar la tx y
+   antes de marcarla, la fila queda `SIGNED` con `tx_hash`; el outbox la reclama, comprueba el recibo con
+   `isMined` y la marca `MINED` **sin reenviar** (idempotencia por recibo). Un recibo `reverted` cuenta
+   como no minado: la reversión deshace el `consumedNonce`, así que reintentar es correcto.
+4. **`ANCHOR_BACKOFF` son SEGUNDOS** (`30,60,120,300,600` = 30 s → 1 → 2 → 5 → 10 min) y la hot wallet
+   del relayer es una variable propia (`ANCHOR_RELAYER_PRIVATE_KEY`), sin roles en el contrato.
+
 ---
 
 ## Anexo A — Glosario de decisiones D-C

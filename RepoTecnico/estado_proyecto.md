@@ -4987,3 +4987,543 @@ conviene revisar las últimas ejecuciones del CI; no es un problema de configura
 
 Esto **cierra uno de los dos bloqueos** que quedaban para el gate de salida de F1. El otro sigue siendo el
 guardián de documentación con `CU-38`/`CU-39` (commit ajeno `c8b4792`) sin catalogar en el SRS.
+
+---
+
+## 25. F1 CERRADA — pendientes T1.6/T1.9–T1.13 y los dos gates (2026-10-12) · `@asistenteProyecto`
+
+**Encargo:** «cerrar los pendientes de F1». Al terminar, los únicos pendientes declarados de F1
+(`ANALISIS_ARRANQUE.md` §A2/§22) quedan cerrados salvo la **ejecución efectiva** del gate de PostgreSQL,
+que se cablea en CI y no puede correrse en este entorno (no hay `psql`, `postgres` ni `docker`).
+
+### Qué se cerró
+
+| Tarea | Qué se entregó |
+|---|---|
+| **T1.6** | `packages/shared/src/domain/operations-state.ts` (nuevo): vocabulario canónico isomorfo de firma (`entity_type`, `status`), habitación (publicación y operativo), validación del preventivo y alertas de suministros. **Se eliminaron las copias locales** de `operations.repository.ts`, `rooms.repository.ts`, `housekeeping.repository.ts` y `apps/web/src/lib/room-fields.ts` (que además tenía el estado operativo **sin** `IN_INSPECTION`). Guardián `operations-state.test.ts` (8 pruebas) que compara **en los dos sentidos** contra los CHECK de `base_datos.sql` **y** del bloque de `migrator.ts`, y que exige que el valor más largo quepa en su `VARCHAR`. |
+| **T1.9** | `maintenance.repository.ts`: 12 métodos de áreas comunes (`listAreaTypes`, `listAreas`, `listCriticalAreas`, `findArea`, `createArea`, `updateArea`, `listAreaTasks`, `createAreaTask`, `setAreaTaskActive`, `registerAreaLog`, `verifyAreaLog`, `listAreaLogs`) y `areaId` en incidencias y planes. 33 pruebas. |
+| **T1.10** | `terminal-operators.repository.ts` (nuevo): alta (duplicado → `USERNAME_TAKEN`), rotación de PIN, intento fallido atómico con bloqueo a los 5, `unlock`, baja/reactivación y consultas. 20 pruebas. |
+| **T1.11** | `housekeeping.repository.ts`: inspecciones (`createInspection`, `linkInspectionSignature`, `applyInspectionToRoom` con retrabajo de la asignación a `PENDING` si `REJECTED`) y ciclo de alertas de suministros (`openSupplyAlert` idempotente, recordatorio y cierre). 32 pruebas. |
+| **T1.12** | `.env.example`: 24 variables del ciclo F1–F6 (contrato de operaciones, outbox, terminal con PIN, cargos por daños, firma selectiva por criticidad). Sin valor por defecto en código, como exige el resto de la plantilla. |
+| **T1.13** | Sincronía triple de los tres artefactos (verde), `diccionario_datos.md` y los dos `diagrama_er.md` con `VARCHAR(20)` e `IN_INSPECTION`; changelog de `base_datos.sql` (1.4.0, 60 tablas); `plan_desarrollo.md` con las tareas marcadas; este §25. |
+| **Gate documentación** | `docs/SRS.md` **2.2.1**: CU-38 y CU-39 catalogados en §9 (faltaban, no solo estaban «sin catalogar»: el hueco lo destapó el guardián al citarlos `day-board.test.ts`) y fila nueva en §10.1 declarando que RF-30…RF-55 (incrementos de operación hotelera) aún no tienen fila en el PRD. `documentation-guardian.test.ts` en verde (6/6). |
+| **Gate PostgreSQL (D11/A4)** | Job **`schema`** nuevo en `.github/workflows/ci.yml` con servicio `postgres:18`, y `scripts/db/verify-vnext-schema.sh`: aplica `RepoTecnico/base_datos.sql` **dos veces**, comprueba las 12 tablas, las 19 columnas de extensión, el ancho de `operational_status`, que `IN_INSPECTION` se guarda de verdad y que `UPDATE`/`DELETE` sobre `operator_audit_log` revierten. |
+
+### El defecto real que cazó el guardián (y que se corrigió)
+
+`rooms.operational_status` era **`VARCHAR(12)`** mientras el CHECK canónico admitía **`IN_INSPECTION`**
+(13 caracteres). El estado que introduce la propia vNext **no se podía guardar**: PostgreSQL habría
+rechazado el `UPDATE` con «value too long» justo en el gate de F1. Se ensancha a `VARCHAR(20)` en las
+tres copias del esquema (bloque del migrador, `RepoTecnico/base_datos.sql` y la propuesta aprobada) con
+`ALTER TABLE … ALTER COLUMN … TYPE VARCHAR(20)` para las bases ya creadas —operación segura: solo
+ensancha, no reescribe—, y se actualizan diccionario y los dos ER. El guardián de longitud lo habría
+cazado solo; ahora lo impide para siempre.
+
+### Verificación (ejecutada)
+
+| Comprobación | Resultado |
+|---|---|
+| `pnpm --filter @hotel/shared test` | **54 ficheros / 581 pruebas en verde** (antes 54/580 y 1 roja) |
+| `pnpm --filter @hotel/web test` | **109 ficheros / 1.028 pruebas en verde** |
+| `turbo run typecheck` | **6/6 tareas OK** (el vocabulario destapó y se corrigió un map de estados operativos en `/api/admin/rooms/[id]`) |
+| `pnpm --filter @hotel/web lint` | **0 errores** (24 avisos de scripts sin seguimiento) |
+| `documentation-guardian.test.ts` | **6/6** (el gate que bloqueaba F1) |
+| Sincronía triple + guardián de estados | **verde** en los bytes de los tres artefactos |
+| Gate PostgreSQL real | **cableado, no ejecutado aquí**: no hay `psql`, `postgres` ni `docker`. Lo ejecuta el job `schema` del CI |
+
+### Estado de F1 y siguientes pasos
+
+- **F1 cerrada** en código, pruebas y documentación; queda **pendiente de CI** la primera ejecución del
+  job `schema` (única parte no verificable en local).
+- **Deuda declarada que no bloquea**: `packages/shared/src/db/schema.sql` sigue siendo el artefacto legado
+  de 6 tablas (T1.3); la paridad la vigila `architecture-guardian.test.ts` y unificarlo con el migrador
+  es trabajo de un ciclo de limpieza.
+- **Sin commit, push ni despliegue**: no se ha tocado producción. El ensanchado de `rooms.operational_status`
+  se aplicará solo cuando se despliegue la siguiente imagen del worker (idempotente y sin pérdida).
+- **Siguiente hito de la ruta crítica: F2** (`HotelOperations.sol` + motor EIP-712), con los repositorios
+  de auditoría y operaciones ya listos para consumirse.
+
+---
+
+## 26. F2 CERRADA — `HotelOperations.sol` + motor EIP-712 (2026-10-12) · `@asistenteProyecto`
+
+**Encargo:** «f2». Plan completo en `plan_desarrollo.md` §4.2 (T2.1–T2.10). El contrato y sus suites los
+escribió un primer agente; el motor EIP-712, otro; el despliegue, el registro, el ABI, las constantes, el
+guardián y la verificación de integración, yo.
+
+### Entregables
+
+| Tarea | Qué se entregó |
+|---|---|
+| **T2.1** | [HotelOperations.sol](packages/contracts/src/HotelOperations.sol): inmutable, sin proxy, `AccessControl + EIP712("HotelOperations","1")`. Roles `HEAD_MAINTENANCE_ROLE`/`HEAD_KEEPER_ROLE`; acciones `ROOM_BLOCK`, `ROOM_UNBLOCK`, `PREVENTIVE_TASK`, `INSPECTION`, `AREA_LOG` (reservado) y `CONFIG`; `backupForRole` (respaldo `OWNER_BACKUP`, DT-AUD-02) y `consumedNonce` (anti-replay); `OperationalAction` emite **siempre el firmante recuperado**, nunca `msg.sender`. |
+| **T2.2** | [HotelOperations.t.sol](packages/contracts/test/HotelOperations.t.sol) (16 unit+fuzz) y [HotelOperations.invariants.t.sol](packages/contracts/test/HotelOperations.invariants.t.sol) (3 invariantes: nonce consumido permanece consumido, el signer nunca es el relayer, `backupForRole` solo cambia por el admin). |
+| **T2.3** | [DeployOperations.s.sol](packages/contracts/script/DeployOperations.s.sol) + [DeployOperations.t.sol](packages/contracts/test/DeployOperations.t.sol); [smoke-operations.sh](packages/contracts/scripts/smoke-operations.sh) y [f2-operations.ts](packages/contracts/scripts/e2e/f2-operations.ts) (E2E real). |
+| **T2.4** | `test:operations`, `deploy:operations` y `smoke:operations` en [package.json](packages/contracts/package.json). |
+| **T2.5** | Bloque `operations` (opcional y retrocompatible) en [schema.ts](packages/shared/src/deployments/schema.ts) y doble contrato en [sync-deployment.ts](packages/contracts/scripts/sync-deployment.ts). |
+| **T2.6** | Motor EIP-712 en [operations/](packages/shared/src/operations/): dominio, tipos, `entityId`, `payloadHash`, nonce, deadline, digest y recuperación de firmante. `canonicalJson` se movió al dominio puro ([canonical-json.ts](packages/shared/src/domain/canonical-json.ts)) y `audit.repository` la reexporta. |
+| **T2.7** | [hotel-operations.ts](packages/shared/src/abi/hotel-operations.ts) generado por `gen:abi` y registrado en [abi/index.ts](packages/shared/src/abi/index.ts). |
+| **T2.8** | `HOTEL_OPERATIONS_DOMAIN_NAME`/`_VERSION`, `HOTEL_OPERATIONS_ACTION_TYPES` y `OPERATIONAL_SIGNATURE_QUEUE` en [constants.ts](packages/shared/src/constants.ts); `domain.ts` los toma de ahí (fuente única). |
+| **T2.9** | Vector canónico §4.2.1 en [typed-data.test.ts](packages/shared/src/operations/typed-data.test.ts): 36 pruebas del motor. |
+| **T2.10** | Guardián ampliado en [architecture-guardian.test.ts](packages/shared/src/architecture-guardian.test.ts): ata contrato ↔ constantes ↔ motor (dominio, acciones y firma de tipo), exige el ABI nuevo y el entry isomorfo. |
+
+### El vector canónico coincide en las tres orillas
+
+`entityId` de los dos casos, `domainSeparator` (`0x38a2ca72…14cc`) y `digest` (`0x1c5f82f7…dac1`) salen
+**exactamente** como los fija `documento_tecnico.md` §4.2.1: en el contrato (suite Forge), en el motor
+(`@hotel/shared`) y en una verificación independiente con viem. No se hardcodeó ningún valor ni se ajustó
+la fórmula: si el documento hubiera estado mal, se habría reportado en vez de forzar el test.
+
+### El defecto de integración que cazó el smoke
+
+El contrato concede `DEFAULT_ADMIN_ROLE` a su argumento de constructor, así que el EOA desplegador **no
+puede** hacer el bootstrap cuando el admin definitivo es otro (el caso de producción, con el Safe). El
+primer `smoke:operations` revirtió con `AccessControlUnauthorizedAccount` al conceder el rol del jefe.
+Se corrigió el **script**, no el contrato: se despliega con el desplegador como admin temporal, se
+conceden roles y respaldo, y al final se hace el handover y la renuncia (mismo patrón que `Deploy.s.sol`).
+Queda fijado por `DeployOperations.t.sol`.
+
+### Verificación (ejecutada)
+
+| Comprobación | Resultado |
+|---|---|
+| `forge test` | **159/159** (139 base + 16 unit/fuzz + 3 invariantes + 3 de despliegue); `forge fmt --check` limpio |
+| Vector §4.2.1 en Forge | `domainSeparator` y `digest` **idénticos** al documento en el contrato desplegado en `0x…0a11` |
+| `pnpm --filter @hotel/shared test` | **60 ficheros / 618 pruebas** ✅ |
+| `turbo run typecheck` | **6/6** ✅ |
+| `pnpm --filter @hotel/web lint` | **0 errores** ✅ |
+| **E2E real en Anvil** (`smoke:operations`) | Relayer **sin rol** (`0x9965…A4dc`) envía `roomBlocked`; el evento acredita al jefe (`0x3C44…93BC`); nonce consumido y **replay rechazado**; evidencia en [f2-operations-e2e.json](RepoTecnico/evidencias/f2-operations-e2e.json) ✅ |
+| Registro de despliegue | `packages/shared/deployments/81234.json` con bloque `operations` validado por Zod ✅ |
+
+### Estado de F2 y siguientes pasos
+
+- **F2 cerrada** en código, pruebas y documentación.
+- **Sin cambios en `HotelNights.sol`** y **sin commit, push ni despliegue**: el E2E corrió contra Anvil
+  local; producción no se ha tocado. El registro de despliegue es un artefacto generado (ignorado por Git).
+- **Desviación declarada**: `recoverOperationalSigner`/`verifyOperationalSignature` son `async` porque en
+  viem 2.52 la recuperación carga `@noble/curves` en diferido. F3 solo necesita `await`; se descartó añadir
+  una dependencia nueva para tener una firma síncrona.
+- **Siguiente hito de la ruta crítica: F3** (outbox de anclaje y worker relayer), que ya tiene las piezas:
+  `on_chain_signatures` (F1), el motor EIP-712 (F2), el contrato desplegable y el registro por cadena.
+
+---
+
+## 27. F3 CERRADA — outbox de anclaje y worker relayer (2026-10-12) · `@asistenteProyecto`
+
+**Encargo:** «si» (arrancar F3 tras cerrar F2). Plan en `plan_desarrollo.md` §4.3 (T3.1–T3.8). El
+repositorio outbox lo escribió un agente; el motor + relayer, otro; la config + cola, un tercero; yo
+hice el cableado del worker, la salud, las alertas del monitor, el E2E y la verificación.
+
+### Entregables
+
+| Tarea | Qué se entregó |
+|---|---|
+| **T3.1** | Outbox en [operations.repository.ts](packages/shared/src/db/repositories/operations.repository.ts): `claimForAnchoring` con **`FOR UPDATE SKIP LOCKED`** y lease en una sola sentencia, `expireStale`, `recoverAfterRestart`, `outboxStats` y `buildIdempotencyKey`. **Decisión**: no se creó `signatures.repository.ts` — habría duplicado el dueño de la tabla; se extendió el repositorio existente. |
+| **T3.2** | [anchor-outbox.ts](apps/worker/src/anchor-outbox.ts): reloj inyectable, backoff **30→60→120→300→600 s** saturado, terminal a los 8 intentos o 24 h, recuperación de arranque idempotente y aislamiento de errores por firma. |
+| **T3.3** | [anchor-relayer.ts](apps/worker/src/anchor-relayer.ts): tx de las 5 acciones con `entityId` **derivado** (el UUID no viaja), `contentHash` como `payloadHash` y `CONFIRMATIONS_N = 1`; `AREA_LOG`/`DAMAGE_CHARGE` → `UnanchorableActionError` (no tienen función en el contrato). |
+| **T3.4** | Variables en [config.ts](apps/worker/src/config.ts) con `parseAnchorBackoff` (segundos) y la nueva **`ANCHOR_RELAYER_PRIVATE_KEY`** (hot wallet sin roles, DT-AUD-01). |
+| **T3.5** | [main.ts](apps/worker/src/main.ts): bucle de anclaje con barrido periódico + consumidor de la cola, salud `anchor.*` y parada limpia. Sin clave o sin contrato queda `disabled` con aviso. |
+| **T3.6** | [operational-signatures.ts](packages/shared/src/queue/operational-signatures.ts): cola timbre con `jobId = signatureId` (idempotente) y `createWorker` para el consumidor. |
+| **T3.7** | `details.anchor` en [health.ts](apps/worker/src/health.ts): último ciclo + contadores (`signed`, `failed`, `oldestSignedAt`, `maxRetryCount`). |
+| **T3.8** | [probe.ts](apps/monitor/src/probe.ts) extrae el resumen y [monitor-core.ts](apps/monitor/src/monitor-core.ts) diagnostica `ANCHOR_PENDING` / `ANCHOR_RETRY`; umbrales en la config del monitor. |
+
+### Dos defectos que cazó la integración
+
+1. **`SignatureRecord` no exponía `deadline` ni `expiresAt`** aunque las columnas existían desde F1:
+   el relayer no podía construir la tx ni el outbox aplicar el TTL. Se añadieron al tipo, al mapeo y a
+   la fila del repositorio (el `SELECT *` ya las traía).
+2. **El E2E reveló que la recuperación debía reclamar también las filas con `tx_hash`**: si el worker
+   murió tras enviar y antes de marcar `MINED`, la fila sigue `SIGNED` con `tx_hash`; el outbox la
+   reclama, comprueba el recibo (`isMined`) y la marca `MINED` **sin reenviar**. Mi primer doble en
+   memoria las filtraba y el E2E lo delató.
+
+### Verificación (ejecutada)
+
+| Comprobación | Resultado |
+|---|---|
+| `forge test` | **159/159** ✅ |
+| `pnpm --filter @hotel/shared test` | **61 ficheros / 634 pruebas** ✅ |
+| `pnpm --filter @hotel/worker test` | **17 ficheros / 183 pruebas** ✅ |
+| `pnpm --filter @hotel/monitor test` | **5 ficheros / 42 pruebas** ✅ |
+| `pnpm --filter @hotel/web test` | **109 ficheros / 1.028 pruebas** ✅ |
+| `turbo run typecheck` / `pnpm lint` | **6/6** · **6/6 con 0 errores** ✅ |
+| **E2E real en Anvil** (`smoke:operations`) | F2 (relay firmado) + F3: anclaje real, **recuperación idempotente sin reenviar** y **backoff con RPC caído**; evidencia en [f3-anchor-outbox-e2e.json](RepoTecnico/evidencias/f3-anchor-outbox-e2e.json) ✅ |
+
+### Decisiones declaradas
+
+- **`isMined` con recibo `reverted` ⇒ `false`**: un recibo revertido no acredita nada on-chain (y el
+  `consumedNonce` se deshace con la reversión), así que reintentar es correcto; devolver `true` habría
+  marcado `MINED` una acción que nunca se emitió.
+- **`ANCHOR_BACKOFF` en segundos** (30 s → 1 → 2 → 5 → 10 min): el comentario de `.env.example` decía
+  «minutos» y se corrigió; el parser y los tests fijan la unidad.
+- **T3.8 vive en `monitor-core.ts`**, no en `chain-monitor.ts`: la regla es de salud (se deriva del
+  `/health`), y `chain-monitor` vigila cadena y gas, no reportes de componentes.
+- **Serialización del nonce de transacción por hot wallet**: el ciclo de anclaje toma un cerrojo
+  distribuido por dirección del relayer (`lock:anchor-relayer:<address>`), de modo que dos instancias no
+  envíen con la misma wallet a la vez. Si Redis no responde, se degrada a «instancia única» con aviso:
+  el outbox debe seguir anclando sin Redis (esa es su razón de ser).
+- **Sin commit, push ni despliegue**: el E2E corrió contra Anvil local; producción intacta.
+
+### Siguiente
+
+Ruta crítica desbloqueada: **F4** (Suite de Mantenimiento), que ya puede consumir el outbox, el contrato
+y el motor de firma para el bloqueo/desbloqueo firmado de habitaciones.
+
+---
+
+## 27. Revisión del asistente — búsqueda visible, plantilla de noches y reserva por rango (2026-10-13)
+
+**Encargo del responsable:** «revisemos el asistente: (1) al solicitar una habitación no se muestra la
+búsqueda en el navegador ni en el asistente, debe reflejarse en ambos; (2) aplicar un formato más visual
+a la información de las habitaciones en el asistente, en una plantilla agradable; (3) no se realizan la
+reserva en rango de fechas».
+
+### Qué se entregó
+
+| Punto | Qué había | Qué se hizo |
+|---|---|---|
+| **(1) La búsqueda se ve en los dos sitios** | El panel no enseñaba nada estructurado: la oferta quedaba en la prosa del modelo. La página sí recibía `pageAction` (incremento v4). | Se conservan las **noches reales** que devolvió el catálogo en la respuesta (`highlights`, módulo `highlights.ts`) y el panel las pinta como tarjetas. La navegación a `/catalogo` filtrado sigue saliendo de la **entrada real** de la herramienta (`page-action.ts`). Resultado: la búsqueda se refleja en el navegador **y** en el asistente. |
+| **(2) Plantilla visual** | Lista de asteriscos en crudo y tarjetas planas. | `MessageText.tsx` pinta el markdown ligero con jerarquía (negritas, viñetas, listas) sin `dangerouslySetInnerHTML`; `NightHighlights.tsx` pasa a **ficha** con cabecera (habitación + tipo/reventa), fecha con icono, precio destacado y acción. |
+| **(3) Reserva en rango de fechas** | El modelo solo podía preparar **una** noche (`buildPurchaseTx`); ante un rango respondía «solo noches individuales» y no había nada que firmar. | Nueva herramienta MCP **`prepareStayTx`** (`checkIn`–`checkOut`, habitación o tipo): devuelve **una tx sin firmar por noche** en una misma habitación y el importe total, y es **todo o nada**. El orquestador valida **cada** tx con `validatePreparedTx` y devuelve `preparedPurchases[]`; el panel nuevo **`StayHandoff`** las numera por fecha y permite firmarlas una a una (cada noche es una ficha distinta, como documenta el manual del huésped). |
+
+### Decisiones
+
+- **`checkOut` es la fecha de salida** y esa noche **no** se compra (semántica hotelera). Se explica en el
+  prompt y en la descripción de la herramienta para que el modelo no traduzca «del 12 al 15» como 4 noches.
+- **Todo o nada**: si una noche del rango no es comprable, `prepareStayTx` no devuelve plan parcial y el
+  asistente debe ofrecer alternativas (`listAvailableNights`). Un huésped no debe firmar media estancia
+  creyendo que firma la estancia entera.
+- **Acumulación y compatibilidad**: `preparedPurchase` (singular) se mantiene y es la **primera** noche;
+  el campo nuevo es `preparedPurchases[]`. El cliente acepta ambos, así que los E2E existentes no cambian.
+- **Nada de firmar**: el MCP sigue sin exponer firma ni custodia; `prepareStayTx` solo compone txs y las
+  valida server-side el orquestador.
+
+### Verificación (ejecutada)
+
+| Comprobación | Resultado |
+|---|---|
+| `apps/mcp` · `vitest run` | **6 ficheros / 82 pruebas en verde** (25 en `tools.test.ts`, con 7 nuevas de `prepareStayTx`) |
+| `apps/web` · `vitest run` | **112 ficheros / 1.045 pruebas en verde** (nuevas: `stay.test.ts`, `route-stay.test.ts`, `stay-handoff.test.ts`, acumulación en `orchestrator.test.ts` y plantilla en `night-highlights.test.ts`) |
+| `packages/shared` · `vitest run` | **61 ficheros / 634 pruebas en verde** (guardianes de documentación y de arquitectura incluidos) |
+| `apps/web` · `tsc --noEmit` | **OK** |
+| `apps/web` · `eslint .` | **0 errores** (24 avisos de scripts sin seguimiento, preexistentes) |
+| Índice de conocimiento | regenerado (`pnpm --filter @hotel/mcp run knowledge`): 303 fragmentos · `index-sync.test.ts` en verde |
+
+### Sin verificar aquí
+
+- **LLM real en vivo**: no hay claves (`ANTHROPIC_API_KEY`/Vertex vacías) ni MCP+Anvil en este entorno, así
+  que la elección de la herramienta por parte del modelo se validó con el arnés de replay determinista
+  (ADR-23) y con la prueba de integración del endpoint (`route-stay.test.ts`), no contra el proveedor.
+- **Despliegue**: commit `c60a58d` y release `d9681c5` **desplegados** (web `v55` / mcp `v55`) y subidos a `main` en los tres remotos; verificado en vivo (búsqueda → `pageAction` + 6 `highlights`; rango → 2 `preparedPurchases`). Detalle en `despliegue_gcp.md` §77.
+
+---
+
+## 28. Propuesta de cierre de brechas del pliego — 4 puntos (2026-10-13) · `@asistenteProyecto`
+
+**Encargo:** «genera una propuesta para cumplir con: (1) royalty configurable por `ROYALTY_ADMIN`;
+(2) subastas para habitaciones premium; (3) WalletConnect; (4) despliegue en el faucet de la red de
+prueba Besu de Codecrypto».
+
+**Entregable:** [`propuesta_cumplimiento_4_puntos.md`](./propuesta_cumplimiento_4_puntos.md) — propuesta
+con diseño técnico por punto, casos de uso en Gherkin/EARS con trazabilidad (CU-47…CU-51), plan de
+**5 ciclos verticales**, artefactos afectados (incluidos los tres artefactos de datos si el punto 2 se
+indexa off-chain), DoD, riesgos y **9 decisiones pendientes** del responsable agrupadas en 3 bloques.
+
+**Resumen de la propuesta:**
+
+| Punto | Requisito | Enfoque | Ciclo | Estimación |
+|---|---|---|---|---|
+| 1 | RF-08 | Rol `ROYALTY_ADMIN` + `setRoyaltyBps` por tipo (valores iniciales 5 %/10 %, rango 0–2000 bps) | C1 | 26–32 h |
+| 2 | RF-13 | `NightAuction.sol` separado: subasta inglesa, reserva, incremento mínimo, anti-sniping y *pull payments* | C2 | 54–70 h |
+| 3 | RF-11 | Activar WalletConnect (projectId + build + UI + aceptación móvil) | C0 | 10–14 h |
+| 4 | RNF-22/T5.1 | Desplegar y **aceptar** en Besu 81234 (RPC ya validado en `SPIKE-BESU`) con faucet y preview aislado | C3 | 18–26 h |
+| — | cierre | Evidencias, manuales, matriz y release | C4 | 6–10 h |
+
+**Total:** 96–124 h (≈ 2,5–3 semanas a 40 h/semana). Los puntos 1 y 2 implican **redeploy del contrato
+inmutable (ADR-22)** ⇒ requieren ventana de re-siembra.
+
+**Decisiones aprobadas por el responsable (2026-10-13):**
+
+| # | Decisión |
+|---|---|
+| A1 | Royalty **por tipo, editable** (5 %/10 % iniciales, `ROYALTY_ADMIN_ROLE`, rango 0–2000 bps) |
+| A2 | Redeploy del contrato en **ventana acordada**, con re-siembra y demo congelada |
+| A3 | `ROYALTY_ADMIN` lo ejerce el **owner actual** (`DEFAULT_ADMIN_ROLE`) en el piloto |
+| B4 | Subastas **solo primaria del hotel** (sin reventa por subasta) |
+| B5 | Subasta **inglesa** con reserva, incremento mínimo y anti-sniping |
+| B6 | Subastas **solo on-chain** ⇒ sin cambios en los tres artefactos de datos |
+| C7 | WalletConnect **solo preparado** (config/build/UI/tests); activación y QR móvil pendientes de `projectId` |
+| C8 | Besu: **solo contrato + aceptación** con scripts; sin entorno web de preview |
+| C9 | En Besu se usa **el faucet de Codecrypto**; el `Faucet.sol` del proyecto no se despliega allí |
+
+**Estado:** propuesta **aprobada en sus 9 decisiones**, pendiente de arrancar el primer ciclo. No se ha
+escrito código; no hay cambios en `base_datos.sql`, `diagrama_er.md` ni `diccionario_datos.md` (ningún
+punto cambia el esquema). Único bloqueo externo: credenciales de escritura y cuenta financiada de
+**Codecrypto** para C3.
+
+---
+
+## 29. C3 EJECUTADO — despliegue y aceptación en la red de prueba Besu de Codecrypto (2026-10-13) · `@asistenteProyecto`
+
+**Encargo:** «C3» con los datos de red facilitados por el responsable (Codecrypto · chainId 81234 · RPC
+`https://besu.alumnos.codecrypto.academy` · moneda CC 18 decimales · Owner `0xf39Fd6…92266`).
+
+### Qué se entregó
+
+| Paso | Resultado |
+|---|---|
+| **Despliegue del contrato** | `HotelNights` en **`0xea2e668d430e5aa15baba2f5c5edfd4f9ef6eb73`** (bloque 5491483) con bootstrap de roles (ADR-06) |
+| **Contrato vNext F2** | `HotelOperations` en `0x222d74f33b0d07687a769a44399e2272a4cb9ffe` (bloque 5491513), para que el registro de la cadena quede completo |
+| **Roles verificados on-chain** | `DEFAULT_ADMIN`, `MINTER`, `RECEPTION`, `PAUSER`, `BURNER`, `TREASURER` → owner; `owner()` y `treasury()` = owner |
+| **Registro sincronizado** | `packages/shared/deployments/81234.json` con `abiHash` de ambos contratos (`pnpm --filter @hotel/contracts sync`) |
+| **Sembrado de prueba** | 3 habitaciones registradas (101 simple, 116 doble, 201 suite) y 3 noches minteadas (101/2026-11-01, 101/2026-11-02 simple 0,05 CC; 201/2026-11-01 suite 0,15 CC) |
+| **Aceptación TC-ACC-010** | Intervalo de bloque **P50 2 s / P95 2 s** (≤3 s / ≤6 s) → **PASS** |
+| **Aceptación TC-ACC-011** | Latencia RPC peor **P95 10,5 ms** (≤400 ms) → **PASS** |
+| **Aceptación TC-ACC-012** | **3/3** eventos `Mint` indexables, **0 perdidos** → **PASS** |
+| **Aceptación TC-ACC-001** | Compra primaria firmada por `0x7099…79C8` (financiada con 1 CC): `buy()` status 1, `ownerOf`→comprador, `soldOnce`=true, evento `Sale(PRIMARY)` con 0,05 CC → **PASS** |
+| **ERC-2981** | `royaltyInfo(suite, 1 CC)` = 0,10 CC y `royaltyInfo(simple, 1 CC)` = 0,05 CC, receptor = treasury (coherente con D-06) |
+
+**Evidencia:** [`evidencias/aceptacion-besu-81234-2026-10-13.json`](./evidencias/aceptacion-besu-81234-2026-10-13.json)
+· **Entorno documentado:** `entornos_globales.md` §2.bis.
+
+### Incidencia detectada en el nodo (a reportar a Codecrypto)
+
+`eth_estimateGas` de `mint()` revierte `PastDate` **aunque** `eth_call` (latest) y la transacción minada
+funcionan con la misma fecha futura: el estimador usa un reloj/estado distinto del bloque `latest`.
+**Workaround aplicado:** enviar con `--gas-limit` explícito (400.000); todas las txs se minaron con
+`status 1`. No afecta a la web (estima el navegador) pero sí a herramientas y scripts.
+
+### Decisiones aplicadas
+
+- **C9**: no se desplegó `Faucet.sol` en Besu; el ETH/CC de prueba lo pone el faucet de **Codecrypto**.
+- **C8**: sin entorno web de preview; la verificación es de contrato + scripts.
+- El contrato se desplegó **sin `setRoyaltyBps`** (D-06 vigente); el punto 1 de la propuesta (royalty
+  configurable) sigue pendiente de su ciclo C1 y de la ventana de redeploy.
+
+### Sin commit ni push
+
+Los cambios de C3 están en el árbol de trabajo. El registro `packages/shared/deployments/81234.json` es
+**git-ignored por diseño** (solo se versiona `.gitkeep`); la evidencia, `entornos_globales.md` y este
+apartado sí son versionables. **No se ha hecho `push`** (no hay orden `/push`).
+
+---
+
+## 30. C1 IMPLEMENTADO — royalty configurable por `ROYALTY_ADMIN` (2026-10-13) · `@asistenteProyecto`
+
+**Encargo:** ciclo **C1** de la propuesta (`propuesta_cumplimiento_4_puntos.md`): recuperar el royalty
+configurable de **RF-08** con las decisiones **A1** (por tipo, 5 %/10 % iniciales, rango 0–2000 bps),
+**A3** (titular = owner actual) y **A2** (el **redeploy espera a una ventana acordada**).
+
+### Qué se implementó
+
+| Capa | Cambio |
+|---|---|
+| `HotelNights.sol` | `ROYALTY_ADMIN_ROLE`; royalty por tipo en `mapping(bytes32 => uint96)` con iniciales 5 %/5 %/10 % (los de D-06); `setRoyaltyBps(tipo, bps)` con tope `ROYALTY_BPS_MAX = 2000`; `royaltyBpsOf(tipo)`; evento `RoyaltyUpdated`; error `InvalidRoyaltyBps`. El 0 % es válido y queda auditado. |
+| `IHotelNights.sol` | Firma de `setRoyaltyBps`/`royaltyBpsOf`, evento y error; `royaltyInfo` pasa a leer el valor vigente. |
+| `HotelNightsBootstrap.sol` · `Deploy.s.sol` | El bootstrap concede los **7 roles**; `ROYALTY_ADMIN_ADDRESS` (por defecto, el admin). |
+| `packages/shared` | `roles.ts` (+`ROYALTY_ADMIN_ROLE`), `constants.ts` (`ROYALTY_BPS_MAX`), **ABI regenerada** (`gen:abi`). |
+| `apps/web` | `AdminRoyalty` pasa de informativo a **editable y firmable** (select de tipo + bps, revisión, `TxModal`), con **degradación segura**: si el contrato desplegado aún es D-06 detecta que `royaltyBpsOf` no responde, muestra los valores vigentes, avisa y **oculta el formulario**; gating por `hasRole(ROYALTY_ADMIN_ROLE)`. Lógica pura extraída a `royalty-bps.ts`. i18n es/en/ru. |
+| Docs | **ADR-27** (revierte D-06 en inmutabilidad), SRS (CU-47 + regla económica §3.2), `MATRIZ-TRAZABILIDAD`, **RUNBOOK §1.5.2** (procedimiento del redeploy con re-siembra) y manual CU-12 reescrito. |
+
+### Verificación ejecutada
+
+| Comprobación | Resultado |
+|---|---|
+| `forge test` | **167/167 en verde** (17 suites; +8 pruebas de royalty configurable: defaults, cambio por rol, 0 %, tope 2000, tipo inválido, sin rol, `royaltyBpsOf`, reparto real de `buyResale` al 15 %) |
+| `packages/shared` | **634/634** (incluye guardianes de documentación y arquitectura tras añadir ADR-27/CU-47) |
+| `apps/mcp` | **82/82** |
+| `apps/web` | suite completa en verde (incluye `royalty-bps.test.ts`, 6 pruebas nuevas) |
+| `tsc --noEmit` · `eslint .` | **OK** · **0 errores** |
+| ABI | `setRoyaltyBps`, `royaltyBpsOf`, `RoyaltyUpdated`, `InvalidRoyaltyBps`, `ROYALTY_ADMIN_ROLE` presentes |
+
+### Lo que NO se ha hecho (a propósito)
+
+- **Redeploy**: el contrato inmutable (ADR-22) sigue siendo el de D-06 en Anvil `31337` y en Besu
+  `81234`. El despliegue de la nueva versión + re-siembra se ejecuta en la **ventana acordada** (A2);
+  el procedimiento y las comprobaciones están en `docs/RUNBOOK.md` §1.5.2.
+- **Push**: cambios en el árbol de trabajo; sin `/push`.
+
+---
+
+## 31. Ventana de redeploy de C1 EJECUTADA en Besu 81234 — sin siembra (2026-10-13) · `@asistenteProyecto`
+
+**Orden del responsable:** ejecutar la ventana de redeploy de C1 **sin inyectar las habitaciones**.
+
+| Elemento | Resultado |
+|---|---|
+| Red | Codecrypto **Besu 81234** (`https://besu.alumnos.codecrypto.academy`) |
+| Contrato nuevo | **`0x676F5F71DAE1C83Dc31775E4c61212bC9e799d9C`** · bloque `5496805` |
+| Contrato anterior (rollback, sigue on-chain) | `0xea2e668d430e5aa15babaA2f5c5edfd4f9Ef6EB73` · bloque `5491483` (D-06) |
+| Registro | `packages/shared/deployments/81234.json` re-sincronizado (git-ignored) |
+| Faucet | no se despliega (se usa el de Codecrypto, C9) |
+| **Siembra** | **ninguna** por orden expresa: `isRoomRegistered(101) = false`; no hay habitaciones ni noches |
+
+**Verificación en vivo**
+
+| Comprobación | Resultado |
+|---|---|
+| Los **7 roles** en el owner | `DEFAULT_ADMIN`, `MINTER`, `RECEPTION`, `PAUSER`, `BURNER`, `TREASURER`, **`ROYALTY_ADMIN`** ✅ |
+| Valores iniciales | `royaltyBpsOf`: simple 500 · doble 500 · suite 1000 · `ROYALTY_BPS_MAX` 2000 ✅ |
+| Setter en vivo | `setRoyaltyBps("suite", 1500)` → lee 1500 (tx `0xd9dfe030…`); restaurado a 1000 (tx `0x139c0857…`) ✅ |
+| Sin rol | `AccessControlUnauthorizedAccount(0x7099…, ROYALTY_ADMIN_ROLE)` ✅ |
+| Por encima del tope | `InvalidRoyaltyBps(2001)` ✅ |
+
+**Evidencia:** [`evidencias/redeploy-c1-besu-81234-2026-10-13.json`](./evidencias/redeploy-c1-besu-81234-2026-10-13.json).
+
+**Pendiente declarado:** la **producción GCP (Anvil 31337)** sigue en la versión D-06 con la web/mcp
+`v55`; su swap exige desplegar allí el contrato C1 y recompilar web/mcp. Al no sembrar, ese entorno
+quedaría con el catálogo vacío hasta que se inyecten las habitaciones: se decide con el responsable
+antes de tocar producción.
+
+### 31.bis Producción GCP también redeployada (misma ventana, decisión del responsable)
+
+El responsable eligió **redeploy completo en producción asumiendo el catálogo vacío**:
+
+| Elemento | Valor |
+|---|---|
+| Contrato nuevo | **`0x532802f2F9E0e3EE9d5Ba70C35E1F43C0498772D`** (bloque 538) + faucet `0x1f53…3714` (300 ETH) |
+| Anterior (rollback, on-chain) | `0xC66AB83418C20A65C3f8e83B3d11c8C3a6097b6F` (bloque 313) |
+| Imágenes | `web:v56` (build `cb3d3b75`) · `mcp:v56` (build `d4ce726c`), construidas desde worktree limpio `649251e` |
+| Revisiones | web `hotel-mcp-web-00109-tiv` **100 %** · mcp `hotel-mcp-mcp-00018-7pc` **100 %** |
+| Verificación | rutas 200 y `/health/ready` READY; el bundle sirve `setRoyaltyBps` y `0x532802f2…`; `/catalogo` «Sin noches»; el asistente responde «No hay habitaciones disponibles» |
+| Documentación | `despliegue_gcp.md` §78 (release v56) |
+
+**Consecuencia:** producción **no tiene noches a la venta** hasta que se ejecute la siembra (registro de
+habitaciones + minteo), por orden expresa. Rollback disponible a las revisiones v55 (contrato D-06).
+
+---
+
+## 32. El proyecto pasa de Anvil a **Besu** (2026-10-13) · `@asistenteProyecto`
+
+**Encargo:** «adapta el proyecto para que use Besu en vez de Anvil».
+
+**Qué cambió**
+
+| Capa | Cambio |
+|---|---|
+| `packages/shared` | `BESU_RPC_URL` → `https://besu.alumnos.codecrypto.academy` (el laboratorio `besu1/besu2` queda como referencia); `besuChain` con un único RPC vigente |
+| `apps/web` | `config/chain.ts`: un RPC remoto resuelve **Besu** (antes exigía `NEXT_PUBLIC_NETWORK=besu`); `NEXT_PUBLIC_NETWORK=anvil` fuerza el modo dev; prueba nueva `chain.test.ts` (4 casos) |
+| `infra/gcp` | `GCP_CHAIN_RPC_URL`/`GCP_CHAIN_ID` con **Besu por defecto** (alias heredados `GCP_ANVIL_*`); `70-deploy-apps.sh` ya no fija `31337`; build con `_NEXT_PUBLIC_NETWORK=besu`; `f8-cut.sh` con `--legacy --with-gas-price 1000`; **monitor** elige la cadena por URL de RPC (`4c77786`) |
+| Docs | SRS (red del proyecto = Besu; Anvil espejo local), `entornos_globales.md` §2 (matriz y variables que deciden la red), `.env.example` |
+
+**Desplegado (release v57)** — todo el entorno de producción sobre Besu `81234`:
+
+| Componente | Imagen | Revisión / pool |
+|---|---|---|
+| web | `web:v57` | `hotel-mcp-web-00111-kaf` (100 %) |
+| mcp | `mcp:v57` | `hotel-mcp-mcp-00019-4cs` (100 %) |
+| worker | `worker:v57` | `hotel-mcp-worker-00019-tm4` |
+| monitor | `monitor:v58` | pool `hotel-mcp-monitor` |
+
+Contrato: `0x676F5F71DAE1C83Dc31775E4c61212bC9e799d9C` (bloque 5.496.805) + `HotelOperations`.
+
+**Verificación:** rutas y `/health/ready` OK; el bundle sirve el RPC de Besu, el contrato y `chainId 81234`;
+MCP `/health` con bloque ~5,5 M; worker indexando Besu con `lag 0` y contadores reseteados; monitor con
+`CHAIN_RPC_URL`/`CHAIN_ID` de Besu. Detalle en `despliegue_gcp.md` §79.
+
+**Estados conocidos:** catálogo vacío (Besu sin siembra, por orden expresa) y `emailDegraded` del worker por
+el stub `SMTP_HOST=smtp.invalid` (previo y ajeno al cambio de red). Rollback a las revisiones v56 (Anvil).
+
+---
+
+## 33. C2 ARRANCADO — capa de contrato de la subasta primaria (2026-10-15) · `@asistenteProyecto`
+
+**Encargo:** «continuemos con C2» (punto 2 de la propuesta): subasta **primaria inglesa** de una noche
+premium, con las decisiones **B4** (solo venta primaria del hotel, sin royalty), **B5** (inglesa con
+reserva, incremento mínimo y anti-sniping; *pull payments*) y **B6** (solo on-chain, sin tocar
+`diccionario_datos.md`, `diagrama_er.md` ni `base_datos.sql`).
+
+### Desviación necesaria respecto al borrador (§2.1 de la propuesta)
+
+El borrador decía «no extender `HotelNights.sol`» y liquidar con un `transferFrom` desde la subasta
+(con `approve`/`setApprovalForAll` del hotel). **No es correcto**: `list()` exige `_soldOnce[tokenId]`
+(`NightNotResellable`) y `markCheckedIn` también (`NightNotSold`), y el burn del hotel solo se bloquea
+si `_soldOnce` es `true`. Una transferencia «pelada» dejaría al ganador **sin poder revender ni hacer
+check-in**, y la noche seguiría siendo inventario quemable.
+
+Solución implementada (mínima y con una única fuente de verdad de la venta primaria):
+`AUCTION_ROLE` + `settleAuction(tokenId, winner, priceWei)` en `HotelNights`: marca `soldOnce`, limpia
+listado, emite `Sale(PRIMARY)` y entrega con `_transfer` (**sin** `_safeTransfer`, para que un receptor
+que revierta en `onERC721Received` no pueda bloquear la liquidación). El importe **no** entra ahí: lo
+custodia `NightAuction` y llega al hotel por *pull payment*. Ventaja añadida: **no hace falta aprobar
+nada** ni escrowear el NFT. Consecuencia de planificación: **el redeploy vuelve a incluir
+`HotelNights`** (ventana acordada con el responsable).
+
+### Entregado en este ciclo (commit `8b59c67`)
+
+| Pieza | Contenido |
+|---|---|
+| `src/NightAuction.sol` + `src/INightAuction.sol` | `createAuction` (solo `AUCTION_ADMIN_ROLE` y solo inventario del hotel, futura/no vendida/sin check-in), `bid` (reserva o mejor + 5 % con suelo 0,001; puja superada → pendiente de retirada), anti-sniping 5 min, `settle` (una sola liquidación; acredita al hotel), `cancel` (sin pujas, o con pujas si la noche caducó), `withdraw` (también en pausa), `Pausable` con `PAUSER_ROLE` compartido, `ReentrancyGuard`, CEI |
+| `src/HotelNights.sol` + `src/IHotelNights.sol` | `AUCTION_ROLE` y `settleAuction` (arriba); error `InvalidWinner` |
+| `script/DeployAuction.s.sol` | Despliega la subasta, concede `AUCTION_ROLE` **al contrato** en `HotelNights`, handover de gobernanza y registro crudo `*-auction.json` |
+| Pruebas | 28 unitarias (alta, pujas, anti-sniping, liquidación, cancelación, pausa, reventa y check-in del ganador) + 5 del script + invariantes (solvencia, contabilidad de pendientes, coherencia subasta↔noche) con **256 runs / 8.192 llamadas / 0 reverts** |
+
+**Verificación:** `forge test` → **201 pruebas / 20 suites en verde** (antes 167/17).
+
+### Pendiente de C2 (siguiente)
+
+1. `packages/shared`: ABI (`NightAuction`), `constants.ts` (incremento, ventana anti-sniping,
+   duraciones), `roles.ts` (+`AUCTION_ADMIN_ROLE`) y dominio (lectura de la subasta) con pruebas.
+2. `apps/web`: `/subastas` pública (cuenta atrás, pujar, retirar) + panel admin (abrir/cancelar) con
+   `TxModal`, i18n es/en/ru, estados vacío/degradado y a11y.
+3. Docs: ADR (subastas con *pull payments*), CU-48/CU-49, SRS, `MATRIZ-TRAZABILIDAD`, RUNBOOK y manual.
+4. **Redeploy en ventana acordada** (`HotelNights` + `NightAuction`) + siembra del catálogo si se decide.
+
+### 33.bis Avance de la ronda 2 — `shared` y UI pública entregadas
+
+| Capa | Entregado | Commit |
+|---|---|---|
+| `shared` | ABI de `NightAuction` (`night-auction.ts`), constantes espejo (duración 1 h–14 d, anti-sniping 5 min, incremento 5 %/0,001), `AUCTION_ROLES` (aparte del vocabulario de `HotelNights`), dominio puro (`domain/auction.ts`: fase, cuenta atrás, puja mínima, anti-sniping, ventana del alta) con anclaje doble de constantes | `8c02697` |
+| Web (datos) | `config/chain.ts` (+`auctionAddress`/`auctionDeploymentBlock`), `lib/auction-view.ts` (modelo de vista puro: fase en vivo, orden de la parrilla, cuenta atrás, fecha) y `lib/auctions.ts` (lectura **solo on-chain**: escaneo paginado de `AuctionCreated` + `auctionOf`, degradación honesta y `configured:false` si no hay dirección) | ronda 2 |
+| Web (UI) | `/subastas` (RSC: en curso, histórico, vacío, degradado y no configurado), `components/auctions/{AuctionCard,AuctionStatus,useAuctionWrite}` (cuenta atrás en vivo, puja con revisión y `TxModal`, retirada de fondos), entrada **Subastas** en la cabecera pública, i18n es/en/ru (31 claves) | ronda 2 |
+| Docs | **ADR-28** (subastas on-chain con pull payments y liquidación en `HotelNights`), CU-48/CU-49 en SRS §9 + fila de trazabilidad, fila RF-13 en `MATRIZ-TRAZABILIDAD`, **RUNBOOK §1.5.3** (ventana de despliegue de la subasta) | ronda 2 |
+
+**Guardianes actualizados (y por qué):** `legacy-target-guardian.test.ts` (D-07) admite ahora
+`auctionAddress` en `config/chain.ts` **con una prueba nueva** que acota su uso a la superficie de
+subastas: allí solo se puja, y la venta primaria la sigue cerrando `HotelNights.settleAuction`, de modo
+que la noche conserva un único destino. También se corrigieron tokens de diseño en la UI nueva
+(`text-h3` en vez de `text-lead`, `text-error` en vez de `text-danger` y `line-strong` en los
+controles), que los guardianes de accesibilidad detectaron.
+
+**Pendiente de C2:** panel admin de apertura/cancelación de subastas (hoy el contrato y la vista
+pública están listos; el alta se hace por script) y la ventana de redeploy.
+
+
+
+### 33.ter Ronda 3 — panel admin, verificación en vivo y release v60
+
+| Pieza | Resultado |
+|---|---|
+| Panel del hotel | `/admin/subastas` + `AdminAuctions` + `auction-form.ts` (validación con las mismas cotas que `createAuction`), entrada en el sidebar y 27 claves i18n (commit `c13ac3e`) |
+| **Bug real cazado en vivo** | `readContract` de viem devuelve el `struct` de `auctionOf` como **objeto con nombre**, no como tupla: el lector lo desempaquetaba por índices y la vista habría degradado en silencio. Corregido con `auctionStructToRaw` puro y 2 pruebas (commit `4bbb9f9`) |
+| Verificación en vivo local | Anvil propio (chainId 81234) + `HotelNights` + `NightAuction` desplegados + una subasta pujada: **9/9** comprobaciones del lector (escaneo de `AuctionCreated`, mapeo con nombre, hab. 201 / 2027-01-01 / suite, fase OPEN, mínima 0,126 = mejor 0,12 + 5 %, y la noche sigue en el hotel sin escrow) |
+| Verificación completa | `forge` **202/202 (20 suites)** · web **118 ficheros / 1088 pruebas** · `tsc` limpio · `eslint` **0 errores** · `next build` OK (106 páginas; `/subastas` y `/admin/subastas` en la tabla de rutas) |
+| Release v60 | `web:v60` → `hotel-mcp-web-00115-gev` al **100 %**, canario verificado (rutas 200; `/subastas` con el estado honesto «no configurada»; enlace en la cabecera; panel admin **no** renderizado sin sesión) |
+| Cableado | `f8-build-images.sh` lee `deployments/<chain>-auction.json` y lo inyecta como `NEXT_PUBLIC_AUCTION_ADDRESS`/`_DEPLOYMENT_BLOCK`; `RUNBOOK §1.5.3` y `.env.example` actualizados (commit `39c6019`) |
+
+**Estado de C2:** implementación **completa y verificada**. Lo único que falta es la **ventana de
+redeploy** (`HotelNights` con el gancho + `NightAuction`, RUNBOOK §1.5.3), que activa la subasta de
+punta a punta; hasta entonces `/subastas` permanece en su estado «no configurada» y el catálogo sigue
+vacío (sin siembra).
+
+### 33.quater Ventana de C2 ejecutada en Besu (2026-10-17) — **subasta operativa**
+
+Decisión del responsable: **red Besu 81234 + una suite sembrada** para que la subasta sea demostrable.
+
+| Elemento | Valor |
+|---|---|
+| `HotelNights` (C2) | **`0xF8b1d4d0A2Dd9Dd53200A4C6783a69c15E3a25F4`** · bloque `5655376` (con el gancho) · rollback `0x676F5F71…` (C1) |
+| `NightAuction` | **`0x934A389CaBFB84cdB3f0260B2a4FD575b8B345A3`** · bloque `5655388` · `AUCTION_ROLE` al contrato (no al owner) |
+| Siembra | hab. **201 (suite)** + noche **`20120261115`** (2026-11-15, 0,2 CC) + **subasta abierta**: reserva 0,1 CC, 7 días, puja inicial 0,12 (mínima siguiente **0,126**) |
+| Web | **`web:v62`** → `hotel-mcp-web-00118-neb` al **100 %** · `NEXT_PUBLIC_CONTRACT_ADDRESS`/`_AUCTION_ADDRESS` inyectados desde el registro |
+| MCP / worker | `mcp:v61` (`00020-6rn`) · worker `v57` con env nuevo (`00020-qpr`, agregados reseteados, `mintedCount=1`) |
+| Aceptación | `measure-besu.mjs` con `EXPECTED_MINTS=1` → **PASS** (bloques P50 2 s/P95 2 s, RPC P95 12,1 ms, 1/1 mints) |
+| Verificación | `/subastas` en producción con `auctions-live` (Noche 201 · Abierta · 0,12 · mínima 0,126 · cuenta atrás); `/catalogo` **sin** la noche subastada; rutas 200; worker lag 0 |
+| Arreglos de la ventana | `6f356f3` (sustituciones de Cloud Build que faltaban) · `5a5265a` (el catálogo excluye noches con subasta viva) |
+| Evidencia | `evidencias/c2-redeploy-besu-81234-2026-10-17.json` |
+
+**Deuda declarada:** `buy()` on-chain sigue pudiendo vender una noche en subasta (mitigado en la app);
+el fix (flag `_auctioned` por `AUCTION_ROLE` o escrow) se dejó para la próxima ventana de contrato
+(ADR-28). **Suite completa de la web:** 118 ficheros / **1.090 pruebas** en verde.
+
+**Estado del ciclo C2: cerrado** — implementación, pruebas, docs, canario y redeploy en Besu con la
+subasta operativa y demostrable.

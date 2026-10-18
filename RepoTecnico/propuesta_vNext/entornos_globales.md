@@ -13,6 +13,7 @@
 | `HOTEL_OPERATIONS_CONTRACT_ADDRESS` | web / worker / mcp (solo lectura) | Dirección del nuevo contrato `HotelOperations.sol`; el **MCP** la consume en modo **read-only** (sin custodia, sin firma, sin tx, DT-AUD-15) | `0x...` |
 | `HOTEL_OPERATIONS_DEPLOYMENT_BLOCK` | worker | Bloque de despliegue de `HotelOperations` (catch-up del outbox) | `123456` |
 | `ENABLE_OPERATIONAL_SIGNATURES` | web | Feature flag **solo dev/test**; en producción es fijo | `true` |
+| `ANCHOR_RELAYER_PRIVATE_KEY` | worker | **Hot wallet del relayer de anclaje** (F3 · DT-AUD-01): envía la tx y paga el gas, pero **no firma** ni tiene roles en `HotelOperations`. Vacía = outbox de anclaje desactivado | `0x…` |
 | `OPERATIONAL_SIGNATURE_QUEUE` | worker | Nombre de la cola que **despierta** al relayer; el outbox real es la tabla `on_chain_signatures` (DT-AUD-06) | `operational-signatures` |
 | `OPERATIONAL_SIGNATURE_RETRY_MS` | worker | Reintento de anclajes on-chain | `30000` |
 | `OPERATIONAL_SIGNATURE_MAX_RETRIES` | worker | Máximo de reintentos de anclaje | `8` |
