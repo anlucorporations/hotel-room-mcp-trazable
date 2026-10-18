@@ -3,9 +3,9 @@
  * Lo consumen web, backend y workers con inferencia de tipos de viem (`as const`).
  * Ejecutar tras `forge build`.
  *
- * Solo se generan los contratos del runtime: `HotelNights` (canónico, D-02) y `Faucet`. La
- * generación legacy (`HotelNFT` + `HotelMarketplace`) ya no existe en el repositorio, así que no
- * hay nada que emitir para ella; este script no debe volver a nombrarla.
+ * Solo se generan los contratos del runtime: `HotelNights` (canónico, D-02), `Faucet` y
+ * `HotelOperations` (vNext · F2). La generación legacy (`HotelNFT` + `HotelMarketplace`) ya no existe
+ * en el repositorio, así que no hay nada que emitir para ella; este script no debe volver a nombrarla.
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -32,5 +32,7 @@ function writeAbiModule(file: string, exportName: string, contract: string): voi
 mkdirSync(sharedAbiDir, { recursive: true });
 writeAbiModule("hotel-nights.ts", "hotelNightsAbi", "HotelNights");
 writeAbiModule("faucet.ts", "faucetAbi", "Faucet");
+// vNext · F2: contrato auxiliar de operaciones firmadas.
+writeAbiModule("hotel-operations.ts", "hotelOperationsAbi", "HotelOperations");
 // C2 · RF-13: subasta primaria de noches (la venta se cierra en `HotelNights.settleAuction`).
 writeAbiModule("night-auction.ts", "nightAuctionAbi", "NightAuction");

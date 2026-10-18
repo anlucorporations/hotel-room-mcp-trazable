@@ -2,6 +2,12 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import {
+  HOTEL_OPERATIONS_ACTION_TYPES,
+  HOTEL_OPERATIONS_DOMAIN_NAME,
+  HOTEL_OPERATIONS_DOMAIN_VERSION,
+} from './constants';
+import { OPERATIONAL_ACTION_TYPES } from './operations/typed-data';
 
 /**
  * Guardián de arquitectura de `packages/shared` (M8 · D-08).
@@ -226,5 +232,58 @@ describe('guardián de arquitectura de packages/shared (M8)', () => {
     expect(retention).toContain('purgeOldNotifications');
     // El módulo tiene que estar exportado por el paquete: si no, el worker no puede invocarlo.
     expect(read('index.ts')).toContain('maintenance/retention');
+  });
+
+  it('el contrato HotelOperations y el motor EIP-712 comparten vocabulario, dominio y tipos (F2)', () => {
+    // El contrato y el motor viven en paquetes distintos y firman/verifican los MISMOS bytes. Si
+    // diverge un literal de acción, el nombre del dominio o el orden de los campos, la firma deja de
+    // verificar on-chain y el fallo solo aparece en producción (con una tx que revierte). Este
+    // guardián ata las dos orillas a `constants.ts`, que es la fuente única.
+    const contract = readFileSync(
+      join(REPO_ROOT, 'packages/contracts/src/HotelOperations.sol'),
+      'utf8',
+    );
+
+    // 1. Dominio: `EIP712("HotelOperations", "1")` exactamente como `constants.ts`.
+    expect(contract).toContain(
+      `EIP712(${JSON.stringify(HOTEL_OPERATIONS_DOMAIN_NAME)}, ${JSON.stringify(
+        HOTEL_OPERATIONS_DOMAIN_VERSION,
+      )})`,
+    );
+
+    // 2. Vocabulario de acciones: las constantes `ACTION_*` del contrato son EXACTAMENTE las que
+    //    declara `constants.ts` (ni una de más ni de menos).
+    const onChainActions = [
+      ...contract.matchAll(/bytes32 public constant ACTION_[A-Z_]+ = keccak256\("([A-Z_]+)"\)/g),
+    ].map((match) => match[1]!);
+    expect(onChainActions.sort()).toEqual([...HOTEL_OPERATIONS_ACTION_TYPES].sort());
+
+    // 3. La firma de tipo EIP-712 del contrato coincide con `OPERATIONAL_ACTION_TYPES` del motor.
+    const engineSignature = `${'OperationalAction'}(${OPERATIONAL_ACTION_TYPES.OperationalAction.map(
+      (field) => `${field.type} ${field.name}`,
+    ).join(',')})`;
+    expect(contract).toContain(`keccak256(\n        "${engineSignature}"\n    )`);
+    expect(engineSignature).toBe(
+      'OperationalAction(bytes32 actionType,bytes32 entityId,bytes32 payloadHash,bytes32 nonce,uint256 deadline)',
+    );
+
+    // 4. ABI tipado del contrato nuevo: existe, está registrado y expone las funciones de relay.
+    expect(existsSync(join(SRC, 'abi/hotel-operations.ts')), 'falta el ABI de HotelOperations').toBe(true);
+    expect(read('abi/index.ts')).toContain('hotelOperationsAbi');
+    const operationsAbi = read('abi/hotel-operations.ts');
+    for (const fn of [
+      'roomBlocked',
+      'roomUnblocked',
+      'preventiveTaskVerified',
+      'inspectionCertified',
+      'configChanged',
+    ]) {
+      expect(operationsAbi, `el ABI no expone ${fn}`).toContain(`"name": "${fn}"`);
+    }
+
+    // 5. El motor es isomorfo: el cliente tiene que poder firmar el mismo TypedData que verifica el
+    //    servidor, así que se expone por el entry de navegador (no solo por el barril raíz).
+    expect(read('browser.ts')).toContain('operations/index');
+    expect(read('index.ts')).toContain('operations/index');
   });
 });

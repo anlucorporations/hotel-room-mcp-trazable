@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import type { Pool, PoolClient, QueryResultRow } from "pg";
+import { canonicalJson } from "../../domain/canonical-json";
 import { getDbPool } from "../pool";
 
 /**
@@ -104,16 +105,14 @@ function mapRow(row: AuditRow): AuditEntryRecord {
   };
 }
 
-/** JSON con claves ordenadas en profundidad: el mismo contenido debe dar SIEMPRE el mismo texto. */
-export function canonicalJson(value: unknown): string {
-  if (value === null || typeof value !== "object") return JSON.stringify(value ?? null);
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
-  const entries = Object.entries(value as Record<string, unknown>)
-    .filter(([, v]) => v !== undefined)
-    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-    .map(([k, v]) => `${JSON.stringify(k)}:${canonicalJson(v)}`);
-  return `{${entries.join(",")}}`;
-}
+/**
+ * JSON con claves ordenadas en profundidad: el mismo contenido debe dar SIEMPRE el mismo texto.
+ *
+ * La implementación vive en el dominio isomorfo (`../../domain/canonical-json`) porque el motor
+ * EIP-712 de operaciones necesita la misma serialización sin arrastrar `node:crypto` ni `pg` al
+ * bundle del navegador. Se reexporta aquí para no romper la API pública del repositorio.
+ */
+export { canonicalJson };
 
 /**
  * Hash del eslabón: `0x` + SHA-256 de `prev_hash|contexto|contenido`. Se exporta porque la

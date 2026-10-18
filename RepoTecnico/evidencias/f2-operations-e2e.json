@@ -1,0 +1,25 @@
+{
+  "fecha": "2026-10-13T01:25:06.991Z",
+  "chainId": 81234,
+  "contrato": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+  "relayer": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+  "firmante": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+  "actionType": "ROOM_BLOCK",
+  "entityUuid": "3f2504e0-4f89-11d3-9a0c-0305e82c3301",
+  "entityId": "0x5c41210b06cc3b609178b5590a2e82a14824789eedc3e40e39de005661e08d0e",
+  "payloadHash": "0x0a44397da488fcdae4ed8b9e2cb56ae2d162174e2d8c12d91d2cc79c17eb80e5",
+  "nonce": "0x556b4cb09ee66199061be9771eaf997e2c696285ad03f18df9e0bfbb3893f573",
+  "deadline": "1791858306",
+  "digest": "0x746603d28417fbb7c915bd9edd634812c2c97b235484d10aba4e2beca43853cf",
+  "domainSeparator": {
+    "contrato": "0x67bdf6ad4ed7e14ab83b9ba49dd16caa11e49a397e1deb6a9e936fdea37bc357",
+    "motor": "0x67bdf6ad4ed7e14ab83b9ba49dd16caa11e49a397e1deb6a9e936fdea37bc357"
+  },
+  "txHash": "0x6e310a4f8cbcab765822f0989cba975656de8897a7382bd0d72359bc2bc84481",
+  "evento": {
+    "signer": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+    "timestamp": "1791854706"
+  },
+  "nonceConsumido": true,
+  "replayRechazado": true
+}

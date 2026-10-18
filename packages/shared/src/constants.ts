@@ -103,3 +103,27 @@ export const AUCTION_MIN_BID_INCREMENT_BPS = 500 as const;
 export const AUCTION_MIN_BID_INCREMENT_WEI = 1_000_000_000_000_000n;
 /** Denominador de los *basis points* usado en las reglas de puja. */
 export const AUCTION_BPS_DENOMINATOR = 10_000 as const;
+
+// ── HotelOperations (F2 · D-C16, D-C39, DT-AUD-01/02) ────────────────────────
+// El contrato auxiliar inmutable se despliega aparte de `HotelNights`; estas constantes son el punto
+// de encuentro entre lo que firma el motor EIP-712 de `@hotel/shared` y lo que verifica el contrato.
+// Cualquier divergencia en el dominio o en la firma de tipos invalidaría las firmas.
+/** Nombre del dominio EIP-712; debe coincidir con `EIP712("HotelOperations", …)` del contrato. */
+export const HOTEL_OPERATIONS_DOMAIN_NAME = "HotelOperations" as const;
+/** Versión del dominio EIP-712 (segundo argumento del constructor del contrato). */
+export const HOTEL_OPERATIONS_DOMAIN_VERSION = "1" as const;
+/**
+ * Acciones con función de relay en el contrato (`keccak256` del literal). `DAMAGE_CHARGE` existe en
+ * el vocabulario de firmas pero **no** tiene función: por decisión D-C27 no se emite en producción.
+ */
+export const HOTEL_OPERATIONS_ACTION_TYPES = [
+  "ROOM_BLOCK",
+  "ROOM_UNBLOCK",
+  "PREVENTIVE_TASK",
+  "INSPECTION",
+  "AREA_LOG",
+  "CONFIG",
+] as const;
+export type HotelOperationsActionType = (typeof HOTEL_OPERATIONS_ACTION_TYPES)[number];
+/** Nombre por defecto de la cola que despierta al relayer (`OPERATIONAL_SIGNATURE_QUEUE`). */
+export const OPERATIONAL_SIGNATURE_QUEUE = "operational-signatures" as const;
