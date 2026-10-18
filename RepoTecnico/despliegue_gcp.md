@@ -3310,3 +3310,174 @@ solo exportan módulos versionados; el WIP de vNext sigue intacto en el árbol d
 WalletConnect y comprobar que el mensaje del resguardo/reseña dice «Descargar el resguardo de mi
 noche» / «Publicar mi reseña de la noche» con habitación y noche. Las operaciones vNext conservan la
 firma opaca hasta la próxima ventana de contrato (ADR-30).
+
+---
+
+## 86. Inventario del despliegue vigente — cuentas, contratos y usuarios (2026-10-18)
+
+> **Sección saneada: NO contiene secretos.** Es la foto del estado vigente y **sustituye como
+> referencia** a las tablas de §1–§11 (que describen el despliegue original sobre el Anvil global
+> `31337` y se conservan como histórico). El inventario **completo con contraseñas, semillas TOTP y
+> claves privadas** está en `~/.config/hotel-mcp/DESPLIEGUE-GCP.md` (permisos `600`, fuera del
+> repositorio; aquí solo se indica **dónde** vive cada credencial). Verificado en vivo el
+> 2026-10-18 contra GCP y la red Besu.
+
+### 86.1. Red y contratos
+
+| Dato | Valor |
+|---|---|
+| Red | **Besu de Codecrypto** (testnet) · `chainId` **81234** (`0x13D52`) · moneda **CC** (18 dec.) |
+| RPC | `https://besu.alumnos.codecrypto.academy` · `getLogs` máx. 5.000 bloques |
+| Gas | `eth_gasPrice` = 1.000 wei · `baseFeePerGas` = 0 ⇒ tx **legacy** `--with-gas-price 1000` |
+| `HotelNights` **(C2, vigente)** | **`0xF8b1d4d0A2Dd9Dd53200A4C6783a69c15E3a25F4`** · bloque real `5655378` (2026-10-17 14:18:23 UTC) · tx `0x6c1fa694…9d0592` |
+| `NightAuction` **(C2, vigente)** | **`0x934A389CaBFB84cdB3f0260B2a4FD575b8B345A3`** · bloque real `5655390` (2026-10-17 14:18:43 UTC) · tx `0x3e68c9db…a3ce2f86` |
+| `HotelOperations` (vNext F2) | `0x222d74f33b0d07687a769a44399e2272a4cb9ffe` · bloque real `5491513` (2026-10-13) |
+| Rollback `HotelNights` (C1) | `0x676F5F71DAE1C83Dc31775E4c61212bC9e799d9C` · bloque `5496805` |
+| Faucet | **no desplegado en Besu** (decisión C9: se usa el de Codecrypto) |
+| Registros | `packages/shared/deployments/81234.json` y `packages/contracts/deployments/81234-{auction,operations}.json` (git-ignored; se copian a la imagen) |
+
+> Los `deployments/latest*.json` guardan el `block.number` previo al broadcast (2–8 bloques por
+> debajo del real). Los servicios usan `DEPLOYMENT_BLOCK=5655378` y la subasta `5655388`.
+
+**Roles on-chain (verificados por RPC):** la **cuenta 0** tiene los 7 roles
+(`DEFAULT_ADMIN`, `MINTER`, `BURNER`, `TREASURER`, `RECEPTION`, `PAUSER`, `ROYALTY_ADMIN`) y es
+`treasury()`; `AUCTION_ROLE` lo tiene el **contrato `NightAuction`** (no el owner). Las cuentas
+1–9 **no tienen ningún rol** en C2.
+
+### 86.2. Servicios y revisiones vigentes
+
+| Servicio | Revisión (tráfico) | Imagen | URL |
+|---|---|---|---|
+| web | **`hotel-mcp-web-00124-gav`** (100 %) | **`web:v65`** | https://hotel-mcp-web-475955050238.europe-west1.run.app |
+| mcp | **`hotel-mcp-mcp-00021-v64`** (100 %) | **`mcp:v63`** | https://hotel-mcp-mcp-475955050238.europe-west1.run.app |
+| worker | **`hotel-mcp-worker-00021-cwq`** (100 %) | **`worker:v63`** | https://hotel-mcp-worker-475955050238.europe-west1.run.app |
+| monitor | worker pool `hotel-mcp-monitor` | `monitor:v58` | — (sondea `/health`) |
+| pgAdmin | `hotel-pgadmin-00004-jjf` (100 %) | `dpage/pgadmin4:latest` | https://hotel-pgadmin-d6jlzeq5yq-ew.a.run.app |
+
+- Jobs: `hotel-mcp-inject-data` (imagen `mcp:f8`, **entorno obsoleto**: Anvil `31337`) y
+  `hotel-mcp-reset-all` (imagen `mcp:v58`, apunta al contrato **C1**: actualizar antes de usarlo).
+- Servicios globales: Cloud SQL `hotel-mcp-pg` (PostgreSQL 18, IP privada `10.104.0.3`, base
+  `hotel_nft`, usuario `hotel_admin`), VM Redis `hotel-mcp-redis` (`10.10.0.10:6379`),
+  VPC `hotel-mcp-vpc`/`hotel-mcp-euw1` + NAT `hotel-mcp-router`.
+
+### 86.3. Cuentas desplegadas (cadena)
+
+Cuentas **deterministas de Anvil/Hardhat** (claves públicas conocidas; **no son secretos reales**).
+Saldos/nonces el 2026-10-18.
+
+| # | Dirección | Roles en C2 | Uso |
+|---|---|---|---|
+| 0 | `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` | los 7 + `treasury()` | desplegador, **cartera operadora del panel**, tesorería |
+| 1 | `0x70997970C51812dc3A010C7d01b50e0d17dc79C8` | — | pujador actual de la subasta (0,12 CC) |
+| 2 | `0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC` | — | huésped/pujador de pruebas (100 CC) |
+| 3 | `0x90F79bf6EB2c4f870365E785982E1f101E93b906` | — | huésped/pujador de pruebas (100 CC) |
+| 4 | `0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65` | — | cuenta del **relayer** (sin fondos/roles; no cableado) |
+| 5–8 | `0x9965…A4dc`, `0x976E…0aa9`, `0x14dC…9955`, `0x2361…1E8f` | — | huéspedes simulados (0 CC) |
+| 9 | `0xa0Ee7A142d267C1f36714E4a8F75612F20a79720` | — | huésped/pujador de pruebas (100 CC) |
+
+- **Dónde viven las claves**: en `.env` (`DEPLOYER_`, `MINTER_RELAYER_`, `BURNER_WALLET_`,
+  `RECEPTION_WALLET_`) y en Secret Manager (`hotel-burner-private-key`,
+  `hotel-reception-private-key`, `hotel-relayer-private-key`). El inventario completo está en
+  `~/.config/hotel-mcp/DESPLIEGUE-GCP.md` §3.
+- **Consecuencia práctica**: al no tener roles las cuentas 1–3, **todo lo privilegiado debe
+  firmarse con la cuenta 0** (mint, pausa, fondos, check-in). Recepción también: es la única con
+  `RECEPTION_ROLE`.
+
+### 86.4. Usuarios de la plataforma (off-chain, `admin_users`)
+
+| Usuario | Rol | Estado | Cartera documentada |
+|---|---|---|---|
+| `admin@hotel.es` | `DEFAULT_ADMIN_ROLE` (owner) | **activo** (creado 2026-09-25) | cuenta 0 |
+| `recepcion@hotel.es` | `RECEPTION_ROLE` | **activo** (creado 2026-09-25) | cuenta 0 en C2 (la cuenta 1 ya no tiene el rol) |
+
+- Solo existen **2 operadores**; no hay cuentas de housekeeping ni mantenimiento. La baja es
+  `active=false`.
+- El acceso es **contraseña + TOTP obligatorio** (`POST /api/auth/login` →
+  `POST /api/auth/mfa/verify`, 10 min de reto y cookies HttpOnly; 5 intentos / 15 min de bloqueo).
+- **Dónde viven las credenciales**: contraseñas, semillas TOTP, URIs `otpauth://`, códigos de
+  rescate y QR en `~/.config/hotel-mcp/` (`inject-data-output.txt`, `totp-admin.png`,
+  `totp-recepcion.png`) y en el inventario confidencial §4. **No se versionan.**
+- Verificación del 2026-10-18: login + MFA de ambos operadores **200**, y `/api/admin/system/users`
+  (como owner) devuelve los 2 operadores activos sin hashes; como recepción devuelve **403**.
+- No hay usuario de BD por operador: la autenticación es de aplicación sobre `admin_users`.
+
+### 86.5. Credenciales de infraestructura: dónde viven (no sus valores)
+
+| Qué | Dónde |
+|---|---|
+| URL y contraseña de Cloud SQL | Secret Manager `hotel-database-url` / `hotel-db-password`; copia local `~/.config/hotel-mcp/db-password` |
+| URL y contraseña de Redis | Secret Manager `hotel-redis-url`; copia local `~/.config/hotel-mcp/redis-password` |
+| Secretos de aplicación | Secret Manager: `hotel-session-secret`, `hotel-jwt-secret`, `hotel-ticket-signing-secret`, `hotel-checkin-secret-key`, `hotel-aes-secret-key`, `hotel-mcp-shared-secret`, `hotel-vapid-private-key` |
+| Claves on-chain | `.env` + Secret Manager `hotel-burner-private-key`, `hotel-reception-private-key`, `hotel-relayer-private-key` |
+| pgAdmin | `PGADMIN_PASSWORD` (Secret Manager); email `anlucorporations@gmail.com` (env del servicio) |
+| Inventario completo en claro | `~/.config/hotel-mcp/DESPLIEGUE-GCP.md` (permisos `600`, fuera de git) |
+| WalletConnect | projectId de build inyectado en la imagen `web:v65` |
+
+### 86.6. Estado de los datos de prueba
+
+| Elemento | Estado |
+|---|---|
+| Noches en el contrato C2 | **1**: `20120261115` (habitación 201, `SUITE`, 0,2 CC), dueño = tesorería |
+| Room master on-chain | solo la habitación **201** |
+| Habitaciones en BD (`/api/admin/rooms`) | **0**; el panel de recepción usa las **50** estáticas del maestro |
+| Índice off-chain `/api/nfts` | **98 noches heredadas de C1** (75 `AVAILABLE`, 15 `SOLD`, 7 `BURNED`, 1 `CHECKED_IN`) |
+| Catálogo `/catalogo` | ofrece **74 noches heredadas que no existen en C2** (ver §86.7.2) |
+| Reservas de hoy | 0 |
+| Métricas | `mintedCount=1`, `soldCount=0` |
+| **Subasta viva** | noche `20120261115` · reserva 0,1 CC · puja actual 0,12 CC (cuenta 1) · **mínima 0,126 CC** · `OPEN` · cierra **2026-10-24 14:21:47 UTC** · `settle` permissionless tras el cierre |
+| Salud | web **READY**; mcp **ok**; worker **down** por `emailDegraded` (SMTP `smtp.invalid`) aunque indexa con `lag=0` |
+
+### 86.7. Limitaciones conocidas (leer antes de probar)
+
+1. **No hay compra/check-in end-to-end posible hoy**: la única noche de C2 está en subasta y no hay
+   inventario libre ni noches vendidas. Requiere re-sembrar o abrir ventana de contrato.
+2. **Catálogo inconsistente**: el índice off-chain no se reseteó tras el redeploy C2; las 75 noches
+   `AVAILABLE` heredadas **no existen** en `0xF8b1…25F4` (`ownerOf` revierte
+   `ERC721NonexistentToken`) ⇒ una compra contra el contrato vigente fallaría. Antes de una demo de
+   compra hay que resetear el índice o alinear el catálogo.
+3. **Roles centralizados en la cuenta 0** (las hot-wallets 1–3 no tienen rol en Besu).
+4. **Sin relayer**: la web no tiene `RELAYER_WALLET_PRIVATE_KEY`; firma siempre la cartera conectada.
+5. **Quema automática desactivada** (`burn.scheduler=disabled` en `/health`).
+6. **Emails no operativos** (SMTP `smtp.invalid`); `/api/admin/system/operations` responde **503**.
+7. **Deuda on-chain**: `buy()` sigue permitiendo comprar una noche en subasta (mitigado solo en el
+   catálogo; ADR-28).
+8. **Nodo Besu**: timeouts intermitentes; `getLogs` máx. 5.000; `eth_estimateGas` revierte
+   `PastDate` en `mint()` ⇒ `--gas-limit` explícito.
+9. **Faucet**: el de Codecrypto (externo, no hay URL documentada en el repo); la web se despliega
+   con `NEXT_PUBLIC_FAUCET_ADDRESS` vacío.
+10. **Jobs obsoletos** (`inject-data` → Anvil 31337; `reset-all` → contrato C1).
+
+### 86.8. Verificación realizada (2026-10-18)
+
+| Comprobación | Resultado |
+|---|---|
+| `/health/ready` web · `/health` mcp · `/health` worker | **200 READY** · **200 ok** · **503** `down` por email, `lag=0` |
+| Login + TOTP de `admin@hotel.es` y `recepcion@hotel.es` | **200/200** ambos, sesiones `DEFAULT_ADMIN_ROLE` y `RECEPTION_ROLE` |
+| `/api/admin/system/users` (owner / recepción) | **200** (2 operadores) / **403** |
+| `cast chain-id` · roles · `auctionOf` · `nextMinBid` | 81234 · 7 roles en cuenta 0 · reserva 0,1/puja 0,12 · mínima **0,126** |
+| `/subastas` · `/catalogo` · `/api/nfts` · `/api/admin/metrics` | subasta viva · 74 noches heredadas · 98 registros · `mintedCount=1`/`soldCount=0` |
+| pgAdmin | **200** en `/login` (login no automatizado; credenciales fuera de git) |
+
+### 86.9. Rollback
+
+| Servicio | Actual | Rollback |
+|---|---|---|
+| web | `00124-gav` (v65) | `00122-lal` (v64) → `00120-nag` (v63) |
+| mcp | `00021-v64` (v63) | `00020-6rn` (v61) |
+| worker | `00021-cwq` (v63) | `00020-qpr` (v57) |
+
+```bash
+gcloud run services update-traffic hotel-mcp-web --region=europe-west1 --to-revisions=hotel-mcp-web-00122-lal=100
+gcloud run services update-traffic hotel-mcp-mcp --region=europe-west1 --to-revisions=hotel-mcp-mcp-00020-6rn=100
+gcloud run services update-traffic hotel-mcp-worker --region=europe-west1 --to-revisions=hotel-mcp-worker-00020-qpr=100
+```
+
+### 86.10. Referencias
+
+- Credenciales completas (CONFIDENCIAL, fuera de git): `~/.config/hotel-mcp/DESPLIEGUE-GCP.md`.
+- Inventario de sistema saneado (**histórico, cadena Anvil 31337**): [`BaseOperaciones/inventario_sistema.md`](./BaseOperaciones/inventario_sistema.md).
+- Red Besu: [`entornos_globales.md`](./entornos_globales.md) §2.bis; runbook: [`RUNBOOK.md`](../docs/RUNBOOK.md).
+- Subasta: [ADR-28](../docs/adr/ADR-28-subastas-on-chain-con-pull-payments.md); mensajes de firma:
+  [ADR-30](../docs/adr/ADR-30-mensajes-firmados-legibles-en-la-wallet.md).
+- Evidencias: `RepoTecnico/evidencias/aceptacion-besu-81234-2026-10-13.json` y
+  `RepoTecnico/evidencias/c2-redeploy-besu-81234-2026-10-17.json`.
