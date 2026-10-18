@@ -345,7 +345,7 @@ CREATE TABLE IF NOT EXISTS rooms (
     decor_notes_ru TEXT NULL,
     -- Dos estados INDEPENDIENTES (D-19): publicación y operativo.
     publication_status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
-    operational_status VARCHAR(12) NOT NULL DEFAULT 'CLEAN',
+    operational_status VARCHAR(20) NOT NULL DEFAULT 'CLEAN',
     -- Archivar, nunca borrar (D-8): NULL = vigente; con fecha = archivada.
     archived_at TIMESTAMP NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -1292,7 +1292,9 @@ COMMENT ON TABLE operator_audit_log IS 'Auditoría de acciones off-chain de oper
 
 -- rooms.publication_status: se mantiene (DRAFT, PUBLISHED, PAUSED, MAINTENANCE, OUT_OF_SERVICE).
 -- 'AVAILABLE' NO existe: el estado publicable es 'PUBLISHED'.
--- rooms.operational_status: se añade IN_INSPECTION a los ya existentes.
+-- rooms.operational_status: se añade IN_INSPECTION a los ya existentes. La columna era VARCHAR(12) e
+-- IN_INSPECTION mide 13: sin ensancharla, el CHECK admitiría un valor que PostgreSQL no puede guardar.
+ALTER TABLE rooms ALTER COLUMN operational_status TYPE VARCHAR(20);
 ALTER TABLE rooms DROP CONSTRAINT IF EXISTS rooms_operational_status_check;
 ALTER TABLE rooms ADD CONSTRAINT rooms_operational_status_check
     CHECK (operational_status IN ('CLEAN', 'DIRTY', 'OCCUPIED', 'PENDING_CLEANING', 'IN_INSPECTION'));

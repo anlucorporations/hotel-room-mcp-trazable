@@ -2,8 +2,8 @@
 
 ## Hotel Marina del Sol: plataforma de noches tokenizadas
 
-> **Versión**: 2.2.0 (añade el incremento v3: menú de cuenta/wallet y sección Sistemas; catálogo CU-40…CU-46)
-> **Fecha**: 2026-09-26 · **Hito**: Incremento v3 · **Decisión de origen**: D-15, D-40…D-45
+> **Versión**: 2.2.1 (cataloga CU-38 y CU-39, del incremento de operación hotelera v2, que faltaban en §9)
+> **Fecha**: 2026-10-12 · **Hito**: Incremento v3 + recepción v2 · **Decisión de origen**: D-15, D-40…D-45
 > **Referencia de producto**: [`docs/PRD.md`](PRD.md) v2.0.0
 > **Decisiones normativas**: [`docs/adr/`](adr/README.md)
 > **Origen de requisitos**: [`docs/BRIEF-CLIENTE-INICIAL.md`](BRIEF-CLIENTE-INICIAL.md)
@@ -374,6 +374,8 @@ huérfanas: la decisión D-15 los trae a este catálogo). `CU-PR-*` son casos de
 | **CU-35** | Dar de alta cargos adicionales de una estancia | Recepcionista | RF-35 | `additional_charges`, D-34 |
 | **CU-36** | Publicar, editar el precio y retirar una reventa propia | Portador | RF-36 | `/mis-noches/mis-reventas`, `list`/`unlist` |
 | **CU-37** | Recibir avisos in-app y push de las reventas propias | Portador | RF-37 | `useWebPush`, `sw.js`, D-36 |
+| **CU-38** | Liberar una habitación tras la limpieza (pasa a `CLEAN` y vuelve a ser vendible) | Recepcionista | RF-50 | `reception.repository.ts` (`liberar`), `docs/Manuales/05-casos-de-uso/08-operacion-hotelera-v2/CU-38-liberar-habitacion.md` |
+| **CU-39** | Consultar la ficha detalle de una habitación, con el contenido según su estado | Recepcionista | RF-51, RF-52, RF-53, RF-54, RF-55 | `reception/day-board.ts` (`resolveRoomDetailState`), `day-board.test.ts`, manual CU-39 |
 | **CU-40** | Usar el menú desplegable de cuenta/wallet (identidad, rol, accesos y salir) | Todos | RF-40 | `WalletMenu`, `wallet-menu-items.ts`, D-40 |
 | **CU-41** | Entrar en la sección **Sistemas** (solo owner) | Propietario | RF-41 | `adminNav`, `app/admin/sistemas/*`, D-42 |
 | **CU-42** | Gestionar los usuarios de la plataforma (listar/crear-rotar/activar) | Propietario | RF-42 | `/api/admin/system/users`, `SystemUsers`, D-43 |
@@ -434,6 +436,7 @@ trazabilidad. Estos son, con su motivo y su condición para activarse:
 | **RF-21** (subastas de la suite) | **FASE POSTERIOR** | Diferido por decisión (D-11); no hay diseño ni código |
 | **RF-22** (metadatos en Arweave) | **PAR** | El camino `ipfs://` con gateway propio está implementado (ADR-12); Arweave y el *pinning* automático son fase posterior |
 | **RF-23** (MiCA y fiscalidad) | **FASE POSTERIOR** | Lo firma un asesor externo; es gate de la venta al público, no del MVP |
+| **RF-30…RF-55** (incrementos de operación hotelera: recepción, cuenta/wallet, Sistemas y ficha de habitación) | **PAR** | El catálogo §9 y los manuales los citan (CU-30…CU-39, CU-40…CU-46), pero el PRD v2.0.0 solo declara RF-01…RF-23: son requisitos de negocio pendientes de incorporar al PRD. Mientras tanto, la trazabilidad de esos casos de uso se apoya en los manuales y en las pruebas citadas en §9 |
 
 ---
 

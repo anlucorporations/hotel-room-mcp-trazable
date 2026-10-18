@@ -5,6 +5,7 @@ import {
   MaintenanceError,
   MaintenanceRepository,
   nextDueDate,
+  type AreaPeriodicity,
 } from "./maintenance.repository";
 
 /** Pruebas del repositorio de Mantenimiento (F4 · D-52…D-54, D-63). */
@@ -58,6 +59,65 @@ function planRow(overrides: Partial<Record<string, unknown>> = {}): QueryResultR
     periodicity: "MONTHLY",
     active: true,
     created_at: new Date("2026-09-01T00:00:00Z"),
+    ...overrides,
+  };
+}
+
+function areaTypeRow(overrides: Partial<Record<string, unknown>> = {}): QueryResultRow {
+  return {
+    code: "POOL_FILTER",
+    name_es: "Filtro/Bomba de Piscina",
+    name_en: "Pool filter/pump",
+    name_ru: "Фильтр/насос бассейна",
+    is_critical: true,
+    sort_order: 1,
+    ...overrides,
+  };
+}
+
+/** Fila de área ya unida con su tipo (`AREA_SELECT`). */
+function areaRow(overrides: Partial<Record<string, unknown>> = {}): QueryResultRow {
+  return {
+    id: "area-1",
+    area_type_code: "POOL_FILTER",
+    area_type_name: "Filtro/Bomba de Piscina",
+    is_critical: true,
+    name: "Piscina principal",
+    location_notes: "Planta baja",
+    is_active: true,
+    created_at: new Date("2026-09-01T00:00:00Z"),
+    ...overrides,
+  };
+}
+
+function areaTaskRow(overrides: Partial<Record<string, unknown>> = {}): QueryResultRow {
+  return {
+    id: "atask-1",
+    area_id: "area-1",
+    label: "Limpieza de filtros",
+    periodicity: "WEEKLY",
+    estimated_minutes: 30,
+    is_active: true,
+    created_by: "jefe-mantenimiento",
+    created_at: new Date("2026-09-02T00:00:00Z"),
+    ...overrides,
+  };
+}
+
+function areaLogRow(overrides: Partial<Record<string, unknown>> = {}): QueryResultRow {
+  return {
+    id: "alog-1",
+    task_id: "atask-1",
+    performed_by: "tecnico",
+    performed_at: new Date("2026-09-27T08:00:00Z"),
+    notes: "Filtros limpios",
+    evidence_path: "evidencia/alog-1.jpg",
+    verified_by: null,
+    verified_at: null,
+    signature_id: null,
+    area_id: "area-1",
+    task_label: "Limpieza de filtros",
+    area_name: "Piscina principal",
     ...overrides,
   };
 }
@@ -272,6 +332,322 @@ describe("MaintenanceRepository (F4 · D-52…D-54)", () => {
       expect(board.incidents).toHaveLength(1);
       expect(board.dueTasks).toHaveLength(1);
       expect(board.blockedRoomIds).toEqual(["room-1"]);
+    });
+  });
+});
+
+/** Pruebas de áreas comunes y áreas críticas (F1 · T1.9). */
+describe("MaintenanceRepository · áreas comunes (F1 · T1.9)", () => {
+  let repository: MaintenanceRepository;
+  let mockPool: Pool & { query: Mock; connect: Mock };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockPool = { query: vi.fn(), connect: vi.fn() } as unknown as Pool & { query: Mock; connect: Mock };
+    repository = new MaintenanceRepository(mockPool);
+  });
+
+  describe("catálogo y áreas", () => {
+    it("lista el catálogo de tipos ordenado, con 4 críticas", async () => {
+      mockPool.query.mockResolvedValueOnce({
+        rows: [
+          areaTypeRow(),
+          areaTypeRow({ code: "GARDEN", name_es: "Jardines", is_critical: false, sort_order: 2 }),
+          areaTypeRow({ code: "WATER_PUMP", name_es: "Bomba de agua", sort_order: 3 }),
+          areaTypeRow({ code: "ELEVATOR", name_es: "Ascensor", sort_order: 8 }),
+          areaTypeRow({ code: "ELECTRIC_GENERATOR", name_es: "Generador Eléctrico", sort_order: 9 }),
+        ],
+        rowCount: 5,
+      });
+      const types = await repository.listAreaTypes();
+      expect(types).toHaveLength(5);
+      expect(types.filter((type) => type.isCritical)).toHaveLength(4);
+      expect(types[0]).toMatchObject({
+        code: "POOL_FILTER",
+        nameEs: "Filtro/Bomba de Piscina",
+        sortOrder: 1,
+        isCritical: true,
+      });
+      expect(String(mockPool.query.mock.calls[0]?.[0])).toContain("ORDER BY sort_order");
+    });
+
+    it("lista áreas activas por defecto y filtra por críticas o inactivas", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [areaRow()], rowCount: 1 });
+      const active = await repository.listAreas();
+      expect(active[0]).toMatchObject({
+        id: "area-1",
+        areaTypeCode: "POOL_FILTER",
+        areaTypeName: "Filtro/Bomba de Piscina",
+        isCritical: true,
+        isActive: true,
+      });
+      const defaultSql = String(mockPool.query.mock.calls[0]?.[0]);
+      expect(defaultSql).toContain("a.is_active = TRUE");
+      expect(defaultSql).not.toContain("is_critical = TRUE");
+
+      mockPool.query.mockResolvedValueOnce({ rows: [areaRow()], rowCount: 1 });
+      await repository.listAreas({ onlyCritical: true });
+      expect(String(mockPool.query.mock.calls[1]?.[0])).toContain("t.is_critical = TRUE");
+
+      mockPool.query.mockResolvedValueOnce({ rows: [areaRow({ is_active: false })], rowCount: 1 });
+      const all = await repository.listAreas({ includeInactive: true });
+      expect(String(mockPool.query.mock.calls[2]?.[0])).not.toContain("a.is_active = TRUE");
+      expect(all[0]?.isActive).toBe(false);
+    });
+
+    it("findArea devuelve el área con su tipo o null", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [areaRow()], rowCount: 1 });
+      const area = await repository.findArea("area-1");
+      expect(area?.name).toBe("Piscina principal");
+      expect(area?.isCritical).toBe(true);
+
+      mockPool.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      expect(await repository.findArea("nope")).toBeNull();
+    });
+
+    it("createArea rechaza un tipo inexistente", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      await expect(repository.createArea({ areaTypeCode: "NOPE", name: "Área X" })).rejects.toMatchObject({
+        code: "AREA_TYPE_NOT_FOUND",
+      });
+      expect(mockPool.query).toHaveBeenCalledTimes(1);
+    });
+
+    it("createArea valida el tipo y devuelve el registro con su tipo", async () => {
+      mockPool.query
+        .mockResolvedValueOnce({ rows: [areaTypeRow()], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [areaRow({ location_notes: null })], rowCount: 1 });
+      const area = await repository.createArea({ areaTypeCode: "POOL_FILTER", name: "Piscina principal" });
+      expect(area.isCritical).toBe(true);
+      expect(area.areaTypeName).toBe("Filtro/Bomba de Piscina");
+      const insert = mockPool.query.mock.calls[1];
+      expect(String(insert?.[0])).toContain("INSERT INTO maintenance_areas");
+      expect(insert?.[1]).toEqual(["POOL_FILTER", "Piscina principal", null]);
+    });
+
+    it("updateArea lanza AREA_NOT_FOUND si no existe", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      await expect(repository.updateArea("nope", { name: "Área X" })).rejects.toMatchObject({
+        code: "AREA_NOT_FOUND",
+      });
+    });
+
+    it("updateArea aplica los cambios y devuelve el área", async () => {
+      mockPool.query
+        .mockResolvedValueOnce({ rows: [{ id: "area-1" }], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [areaRow({ name: "Piscina reformada", is_active: false })], rowCount: 1 });
+      const area = await repository.updateArea("area-1", { name: "Piscina reformada", isActive: false });
+      expect(area.name).toBe("Piscina reformada");
+      expect(area.isActive).toBe(false);
+      const [sql, values] = mockPool.query.mock.calls[0] as [string, unknown[]];
+      expect(sql).toContain("name = $2");
+      expect(sql).toContain("is_active = $3");
+      expect(values).toEqual(["area-1", "Piscina reformada", false]);
+    });
+
+    it("listCriticalAreas devuelve solo áreas activas de tipo crítico", async () => {
+      mockPool.query.mockResolvedValueOnce({
+        rows: [
+          areaRow(),
+          areaRow({ id: "area-2", area_type_code: "ELEVATOR", area_type_name: "Ascensor", name: "Ascensor 1" }),
+        ],
+        rowCount: 2,
+      });
+      const areas = await repository.listCriticalAreas();
+      expect(areas).toHaveLength(2);
+      expect(areas.every((area) => area.isCritical && area.isActive)).toBe(true);
+      const sql = String(mockPool.query.mock.calls[0]?.[0]);
+      expect(sql).toContain("t.is_critical = TRUE");
+      expect(sql).toContain("a.is_active = TRUE");
+    });
+  });
+
+  describe("tareas de área", () => {
+    it("listAreaTasks filtra las inactivas salvo que se pidan", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [areaTaskRow()], rowCount: 1 });
+      const tasks = await repository.listAreaTasks("area-1");
+      expect(tasks[0]).toMatchObject({
+        id: "atask-1",
+        areaId: "area-1",
+        label: "Limpieza de filtros",
+        periodicity: "WEEKLY",
+        estimatedMinutes: 30,
+        isActive: true,
+      });
+      expect(String(mockPool.query.mock.calls[0]?.[0])).toContain("is_active = TRUE");
+      expect(mockPool.query.mock.calls[0]?.[1]).toEqual(["area-1"]);
+
+      mockPool.query.mockResolvedValueOnce({ rows: [areaTaskRow({ is_active: false })], rowCount: 1 });
+      const all = await repository.listAreaTasks("area-1", { includeInactive: true });
+      expect(String(mockPool.query.mock.calls[1]?.[0])).not.toContain("is_active = TRUE");
+      expect(all[0]?.isActive).toBe(false);
+    });
+
+    it("createAreaTask crea la tarea tras validar el área", async () => {
+      mockPool.query
+        .mockResolvedValueOnce({ rows: [{ id: "area-1" }], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [areaTaskRow()], rowCount: 1 });
+      const task = await repository.createAreaTask({
+        areaId: "area-1",
+        label: "Limpieza de filtros",
+        periodicity: "WEEKLY",
+        estimatedMinutes: 30,
+        createdBy: "jefe-mantenimiento",
+      });
+      expect(task).toMatchObject({ periodicity: "WEEKLY", estimatedMinutes: 30, createdBy: "jefe-mantenimiento" });
+      expect(String(mockPool.query.mock.calls[1]?.[0])).toContain("INSERT INTO maintenance_area_tasks");
+    });
+
+    it("createAreaTask rechaza un área inexistente", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      await expect(
+        repository.createAreaTask({ areaId: "nope", label: "X", periodicity: "DAILY", createdBy: "yo" }),
+      ).rejects.toMatchObject({ code: "AREA_NOT_FOUND" });
+    });
+
+    it("createAreaTask rechaza una periodicidad fuera del dominio sin tocar la BD", async () => {
+      await expect(
+        repository.createAreaTask({
+          areaId: "area-1",
+          label: "X",
+          periodicity: "HOURLY" as AreaPeriodicity,
+          createdBy: "yo",
+        }),
+      ).rejects.toMatchObject({ code: "AREA_TASK_INVALID_PERIODICITY" });
+      expect(mockPool.query).not.toHaveBeenCalled();
+    });
+
+    it("setAreaTaskActive activa/desactiva y falla si la tarea no existe", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [areaTaskRow({ is_active: false })], rowCount: 1 });
+      expect((await repository.setAreaTaskActive("atask-1", false)).isActive).toBe(false);
+
+      mockPool.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      await expect(repository.setAreaTaskActive("nope", true)).rejects.toMatchObject({
+        code: "AREA_TASK_NOT_FOUND",
+      });
+    });
+  });
+
+  describe("registros y verificación", () => {
+    it("registerAreaLog registra la ejecución con verificación nula", async () => {
+      mockPool.query
+        .mockResolvedValueOnce({ rows: [{ id: "atask-1" }], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [areaLogRow()], rowCount: 1 });
+      const log = await repository.registerAreaLog({
+        taskId: "atask-1",
+        performedBy: "tecnico",
+        notes: "Filtros limpios",
+        evidencePath: "evidencia/alog-1.jpg",
+      });
+      expect(log).toMatchObject({
+        taskId: "atask-1",
+        performedBy: "tecnico",
+        verifiedBy: null,
+        verifiedAt: null,
+        signatureId: null,
+      });
+      expect(String(mockPool.query.mock.calls[1]?.[0])).toContain("INSERT INTO maintenance_area_logs");
+    });
+
+    it("registerAreaLog rechaza una tarea inexistente", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      await expect(repository.registerAreaLog({ taskId: "nope", performedBy: "tecnico" })).rejects.toMatchObject({
+        code: "AREA_TASK_NOT_FOUND",
+      });
+    });
+
+    it("verifyAreaLog fija quién, cuándo y la firma", async () => {
+      const verifiedAt = new Date("2026-09-27T09:00:00Z");
+      mockPool.query.mockResolvedValueOnce({
+        rows: [areaLogRow({ verified_by: "supervisor", verified_at: verifiedAt, signature_id: "sig-1" })],
+        rowCount: 1,
+      });
+      const log = await repository.verifyAreaLog("alog-1", { verifiedBy: "supervisor", signatureId: "sig-1" });
+      expect(log.verifiedBy).toBe("supervisor");
+      expect(log.verifiedAt).toBe(verifiedAt);
+      expect(log.signatureId).toBe("sig-1");
+      const [sql, values] = mockPool.query.mock.calls[0] as [string, unknown[]];
+      expect(sql).toContain("verified_at = NOW()");
+      expect(sql).toContain("verified_at IS NULL");
+      expect(values).toEqual(["alog-1", "supervisor", "sig-1"]);
+    });
+
+    it("verifyAreaLog rechaza una doble verificación (AREA_LOG_NOT_FOUND, motivo 'ya verificado')", async () => {
+      mockPool.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+        .mockResolvedValueOnce({ rows: [{ verified_at: new Date() }], rowCount: 1 });
+      await expect(repository.verifyAreaLog("alog-1", { verifiedBy: "supervisor" })).rejects.toMatchObject({
+        code: "AREA_LOG_NOT_FOUND",
+        message: expect.stringContaining("ya estaba verificado"),
+      });
+    });
+
+    it("verifyAreaLog rechaza un registro inexistente (AREA_LOG_NOT_FOUND, motivo 'no existe')", async () => {
+      mockPool.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      await expect(repository.verifyAreaLog("nope", { verifiedBy: "supervisor" })).rejects.toMatchObject({
+        code: "AREA_LOG_NOT_FOUND",
+        message: expect.stringContaining("no existe"),
+      });
+    });
+
+    it("listAreaLogs aplica filtros y une tarea/área", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [areaLogRow()], rowCount: 1 });
+      const logs = await repository.listAreaLogs({
+        areaId: "area-1",
+        from: "2026-09-01",
+        to: "2026-09-30",
+        pendingVerification: true,
+      });
+      expect(logs[0]).toMatchObject({
+        areaId: "area-1",
+        taskLabel: "Limpieza de filtros",
+        areaName: "Piscina principal",
+        verifiedAt: null,
+      });
+      const [sql, values] = mockPool.query.mock.calls[0] as [string, unknown[]];
+      expect(sql).toContain("JOIN maintenance_area_tasks");
+      expect(sql).toContain("t.area_id = $1");
+      expect(sql).toContain("l.performed_at >= $2");
+      expect(sql).toContain("l.performed_at <= $3");
+      expect(sql).toContain("l.verified_at IS NULL");
+      expect(sql).toContain("ORDER BY l.performed_at DESC");
+      expect(values).toEqual(["area-1", "2026-09-01", "2026-09-30"]);
+    });
+  });
+
+  describe("área en incidencias y planes", () => {
+    it("escribe area_id al reportar una incidencia y al crear un plan", async () => {
+      const incidentClient = fakeTxClient({});
+      mockPool.connect.mockResolvedValueOnce(incidentClient);
+      await repository.reportIncident({
+        roomId: "room-1",
+        kind: "FONTANERIA",
+        reportedBy: "recepcion",
+        areaId: "area-1",
+      });
+      const incidentInsert = incidentClient.query.mock.calls.find(([sql]) =>
+        String(sql).includes("INSERT INTO maintenance_incidents"),
+      );
+      expect(String(incidentInsert?.[0])).toContain("area_id");
+      expect(incidentInsert?.[1] as unknown[]).toContain("area-1");
+
+      const planClient = fakeTxClient({});
+      mockPool.connect.mockResolvedValueOnce(planClient);
+      await repository.createPlan({
+        code: "CAL-02",
+        name: "Caldera auxiliar",
+        equipment: "Caldera",
+        periodicity: "MONTHLY",
+        firstDueDate: "2026-10-01",
+        areaId: "area-1",
+      });
+      const planInsert = planClient.query.mock.calls.find(([sql]) =>
+        String(sql).includes("INSERT INTO preventive_plans"),
+      );
+      expect(String(planInsert?.[0])).toContain("area_id");
+      expect(planInsert?.[1] as unknown[]).toContain("area-1");
     });
   });
 });

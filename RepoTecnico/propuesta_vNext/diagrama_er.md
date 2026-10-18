@@ -162,7 +162,7 @@ erDiagram
         UUID id PK
         INT room_number UK
         VARCHAR(20) publication_status
-        VARCHAR(12) operational_status
+        VARCHAR(20) operational_status
         DATE maintenance_blocked_until
         VARCHAR(200) maintenance_blocked_reason
         TIMESTAMP last_inspection_at

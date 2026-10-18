@@ -43,6 +43,38 @@ function assignmentRow(overrides: Partial<Record<string, unknown>> = {}): QueryR
   };
 }
 
+/** Alias de `supplyRow` para las comprobaciones de existencia de `supply_items`. */
+function supplyItemRow(overrides: Partial<Record<string, unknown>> = {}): QueryResultRow {
+  return supplyRow(overrides);
+}
+
+function inspectionRow(overrides: Partial<Record<string, unknown>> = {}): QueryResultRow {
+  return {
+    id: "insp-1",
+    room_id: "room-1",
+    assignment_id: "asg-1",
+    inspected_by: "Ama de llaves",
+    inspection_type: "CHECKOUT",
+    result: "APPROVED",
+    observations: "Todo correcto",
+    signature_id: null,
+    created_at: new Date("2026-09-27T12:00:00Z"),
+    ...overrides,
+  };
+}
+
+function supplyAlertRow(overrides: Partial<Record<string, unknown>> = {}): QueryResultRow {
+  return {
+    id: "alert-1",
+    supply_item_id: "sup-1",
+    status: "OPEN",
+    opened_at: new Date("2026-09-27T08:00:00Z"),
+    last_reminded_at: null,
+    closed_at: null,
+    ...overrides,
+  };
+}
+
 /** Cliente transaccional simulado: enruta por palabra clave del SQL. */
 function fakeTxClient(handlers: {
   lockedAssignment?: QueryResultRow | null;
@@ -60,6 +92,10 @@ function fakeTxClient(handlers: {
       return { rows: locked ? [locked] : [], rowCount: locked ? 1 : 0 };
     }
     if (s.startsWith("SELECT id, room_number, room_type, operational_status FROM rooms")) {
+      const room = handlers.roomLock;
+      return { rows: room ? [room] : [], rowCount: room ? 1 : 0 };
+    }
+    if (s.startsWith("SELECT id FROM rooms WHERE id = $1 AND archived_at IS NULL")) {
       const room = handlers.roomLock;
       return { rows: room ? [room] : [], rowCount: room ? 1 : 0 };
     }
@@ -270,6 +306,228 @@ describe("HousekeepingRepository (F3 · D-48…D-51, D-62, D-64)", () => {
 
     it("define el consumo por defecto de una habitación limpia", () => {
       expect(DEFAULT_CLEANING_CONSUMPTION.map((line) => line.code)).toContain("SHEETS");
+    });
+  });
+
+  describe("inspecciones (D-19, D-C33)", () => {
+    it("registra una inspección y la mapea", async () => {
+      mockPool.query
+        .mockResolvedValueOnce({ rows: [{ id: "room-1" }], rowCount: 1 }) // habitación existe
+        .mockResolvedValueOnce({ rows: [inspectionRow()], rowCount: 1 }); // INSERT
+      const inspection = await repository.createInspection({
+        roomId: "room-1",
+        assignmentId: "asg-1",
+        inspectedBy: "Ama de llaves",
+        inspectionType: "CHECKOUT",
+        result: "APPROVED",
+        observations: "Todo correcto",
+      });
+      expect(inspection).toEqual({
+        id: "insp-1",
+        roomId: "room-1",
+        assignmentId: "asg-1",
+        inspectedBy: "Ama de llaves",
+        inspectionType: "CHECKOUT",
+        result: "APPROVED",
+        observations: "Todo correcto",
+        signatureId: null,
+        createdAt: new Date("2026-09-27T12:00:00Z"),
+      });
+    });
+
+    it("rechaza crear una inspección de una habitación inexistente o archivada", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      await expect(
+        repository.createInspection({
+          roomId: "room-x",
+          inspectedBy: "Ama de llaves",
+          inspectionType: "CHECKOUT",
+          result: "APPROVED",
+        }),
+      ).rejects.toMatchObject({ code: "ROOM_NOT_FOUND" });
+    });
+
+    it("lista inspecciones con filtros de habitación, resultado y fechas", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [inspectionRow({ result: "REJECTED" })], rowCount: 1 });
+      const from = new Date("2026-09-01T00:00:00Z");
+      const to = new Date("2026-09-30T00:00:00Z");
+      const list = await repository.listInspections({ roomId: "room-1", result: "REJECTED", from, to });
+      expect(list[0]?.result).toBe("REJECTED");
+      const [sql, values] = mockPool.query.mock.calls[0] as [string, unknown[]];
+      expect(String(sql)).toContain("WHERE");
+      expect(String(sql)).toContain("ORDER BY created_at DESC");
+      expect(values).toEqual(["room-1", "REJECTED", from, to]);
+    });
+
+    it("enlaza la firma on-chain de una inspección", async () => {
+      mockPool.query.mockResolvedValueOnce({
+        rows: [inspectionRow({ signature_id: "sig-1" })],
+        rowCount: 1,
+      });
+      const inspection = await repository.linkInspectionSignature("insp-1", "sig-1");
+      expect(inspection.signatureId).toBe("sig-1");
+    });
+
+    it("lanza INSPECTION_NOT_FOUND si la inspección a firmar no existe", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      await expect(repository.linkInspectionSignature("insp-x", "sig-1")).rejects.toMatchObject({
+        code: "INSPECTION_NOT_FOUND",
+      });
+    });
+
+    it("aplica APPROVED: deja la habitación CLEAN en una transacción sin tocar asignaciones", async () => {
+      const client = fakeTxClient({ roomLock: { id: "room-1" } });
+      mockPool.connect.mockResolvedValueOnce(client);
+      const inspectedAt = new Date("2026-09-27T12:30:00Z");
+
+      await repository.applyInspectionToRoom({ roomId: "room-1", result: "APPROVED", inspectedAt });
+
+      const calls = client.query.mock.calls;
+      const sqls = calls.map(([sql]) => String(sql));
+      expect(sqls[0]).toBe("BEGIN");
+      expect(sqls.at(-1)).toBe("COMMIT");
+      const roomUpdate = calls.find(([sql]) => String(sql).includes("UPDATE rooms"));
+      expect(roomUpdate?.[1]).toEqual(["room-1", inspectedAt, "APPROVED", "CLEAN"]);
+      expect(sqls.some((sql) => sql.includes("UPDATE housekeeping_assignments"))).toBe(false);
+    });
+
+    it("aplica REJECTED: deja la habitación DIRTY y devuelve la asignación a PENDING", async () => {
+      const client = fakeTxClient({ roomLock: { id: "room-1" } });
+      mockPool.connect.mockResolvedValueOnce(client);
+
+      await repository.applyInspectionToRoom({
+        roomId: "room-1",
+        result: "REJECTED",
+        assignmentId: "asg-1",
+      });
+
+      const calls = client.query.mock.calls;
+      const roomUpdate = calls.find(([sql]) => String(sql).includes("UPDATE rooms"));
+      expect(roomUpdate?.[1]).toEqual(["room-1", null, "REJECTED", "DIRTY"]);
+      const assignmentUpdate = calls.find(([sql]) =>
+        String(sql).startsWith("UPDATE housekeeping_assignments"),
+      );
+      expect(assignmentUpdate).toBeDefined();
+      expect(String(assignmentUpdate?.[0])).toContain("status = 'PENDING'");
+      expect(assignmentUpdate?.[1]).toEqual(["asg-1"]);
+      expect(calls.map(([sql]) => String(sql)).at(-1)).toBe("COMMIT");
+    });
+
+    it("no aplica la inspección si la habitación no existe", async () => {
+      const client = fakeTxClient({ roomLock: null });
+      mockPool.connect.mockResolvedValueOnce(client);
+      await expect(
+        repository.applyInspectionToRoom({ roomId: "room-x", result: "APPROVED" }),
+      ).rejects.toMatchObject({ code: "ROOM_NOT_FOUND" });
+      const sqls = client.query.mock.calls.map(([sql]) => String(sql));
+      expect(sqls).toContain("ROLLBACK");
+      expect(sqls).not.toContain("COMMIT");
+    });
+  });
+
+  describe("alertas de suministros (D-C33)", () => {
+    it("es idempotente: devuelve la alerta abierta existente sin insertar otra", async () => {
+      mockPool.query
+        .mockResolvedValueOnce({ rows: [supplyItemRow()], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [supplyAlertRow()], rowCount: 1 });
+      const alert = await repository.openSupplyAlert("sup-1");
+      expect(alert.id).toBe("alert-1");
+      expect(alert.status).toBe("OPEN");
+      expect(
+        mockPool.query.mock.calls.some(([sql]) => String(sql).includes("INSERT INTO supply_alerts")),
+      ).toBe(false);
+    });
+
+    it("abre una alerta nueva si no había ninguna abierta", async () => {
+      mockPool.query
+        .mockResolvedValueOnce({ rows: [supplyItemRow()], rowCount: 1 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+        .mockResolvedValueOnce({ rows: [supplyAlertRow()], rowCount: 1 });
+      const alert = await repository.openSupplyAlert("sup-1");
+      expect(alert.supplyItemId).toBe("sup-1");
+      const insert = mockPool.query.mock.calls.find(([sql]) =>
+        String(sql).includes("INSERT INTO supply_alerts"),
+      );
+      expect(insert?.[1]).toEqual(["sup-1"]);
+    });
+
+    it("lanza SUPPLY_ITEM_NOT_FOUND si el artículo no existe", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      await expect(repository.openSupplyAlert("sup-x")).rejects.toMatchObject({
+        code: "SUPPLY_ITEM_NOT_FOUND",
+      });
+    });
+
+    it("lista las alertas abiertas por antigüedad", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [supplyAlertRow()], rowCount: 1 });
+      const alerts = await repository.listOpenAlerts();
+      expect(alerts).toHaveLength(1);
+      const [sql] = mockPool.query.mock.calls[0] as [string];
+      expect(String(sql)).toContain("ORDER BY opened_at ASC");
+    });
+
+    it("recuerda una alerta abierta fijando last_reminded_at", async () => {
+      const remindedAt = new Date("2026-09-28T08:00:00Z");
+      mockPool.query.mockResolvedValueOnce({
+        rows: [supplyAlertRow({ last_reminded_at: remindedAt })],
+        rowCount: 1,
+      });
+      const alert = await repository.remindSupplyAlert("alert-1");
+      expect(alert.lastRemindedAt).toEqual(remindedAt);
+    });
+
+    it("no recuerda una alerta ya cerrada", async () => {
+      mockPool.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+        .mockResolvedValueOnce({
+          rows: [supplyAlertRow({ status: "CLOSED", closed_at: new Date("2026-09-27T09:00:00Z") })],
+          rowCount: 1,
+        });
+      const alert = await repository.remindSupplyAlert("alert-1");
+      expect(alert.status).toBe("CLOSED");
+      expect(alert.lastRemindedAt).toBeNull();
+    });
+
+    it("lanza SUPPLY_ALERT_NOT_FOUND al recordar una alerta inexistente", async () => {
+      mockPool.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      await expect(repository.remindSupplyAlert("alert-x")).rejects.toMatchObject({
+        code: "SUPPLY_ALERT_NOT_FOUND",
+      });
+    });
+
+    it("cierra una alerta abierta fijando status y closed_at", async () => {
+      const closedAt = new Date("2026-09-27T10:00:00Z");
+      mockPool.query.mockResolvedValueOnce({
+        rows: [supplyAlertRow({ status: "CLOSED", closed_at: closedAt })],
+        rowCount: 1,
+      });
+      const alert = await repository.closeSupplyAlert("alert-1");
+      expect(alert.status).toBe("CLOSED");
+      expect(alert.closedAt).toEqual(closedAt);
+    });
+
+    it("no reabre ni vuelve a fechar una alerta ya cerrada", async () => {
+      const closedAt = new Date("2026-09-27T09:00:00Z");
+      mockPool.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+        .mockResolvedValueOnce({
+          rows: [supplyAlertRow({ status: "CLOSED", closed_at: closedAt })],
+          rowCount: 1,
+        });
+      const alert = await repository.closeSupplyAlert("alert-1");
+      expect(alert.status).toBe("CLOSED");
+      expect(alert.closedAt).toEqual(closedAt);
+    });
+
+    it("lanza SUPPLY_ALERT_NOT_FOUND al cerrar una alerta inexistente", async () => {
+      mockPool.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 })
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      await expect(repository.closeSupplyAlert("alert-x")).rejects.toMatchObject({
+        code: "SUPPLY_ALERT_NOT_FOUND",
+      });
     });
   });
 

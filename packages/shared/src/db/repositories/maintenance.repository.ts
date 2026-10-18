@@ -43,6 +43,8 @@ export interface MaintenanceIncidentRecord {
   createdAt: Date;
   resolvedAt: Date | null;
   resolvedBy: string | null;
+  /** Área común afectada, si la incidencia se reportó contra una (F1 · T1.9). */
+  areaId?: string | null;
 }
 
 export interface MaintenanceIncidentEventRecord {
@@ -64,6 +66,8 @@ export interface PreventivePlanRecord {
   periodicity: PreventivePeriodicity;
   active: boolean;
   createdAt: Date;
+  /** Área común asociada al plan preventivo, si la hay (F1 · T1.9). */
+  areaId?: string | null;
 }
 
 export interface PreventiveTaskRecord {
@@ -84,6 +88,60 @@ export interface PreventiveTaskRecord {
   overdue: boolean;
 }
 
+/** Periodicidad de una tarea rutinaria de área común (F1 · T1.9). */
+export const AREA_PERIODICITIES = ["DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "ANNUAL"] as const;
+export type AreaPeriodicity = (typeof AREA_PERIODICITIES)[number];
+
+export interface MaintenanceAreaTypeRecord {
+  code: string;
+  nameEs: string;
+  nameEn: string;
+  nameRu: string;
+  /** `true` para áreas críticas (piscina, ascensor, generador…): control reforzado. */
+  isCritical: boolean;
+  sortOrder: number;
+}
+
+export interface MaintenanceAreaRecord {
+  id: string;
+  /** Código del tipo (`maintenance_area_types.code`). */
+  areaTypeCode: string;
+  /** Nombre visible del tipo, unido para pintar sin consulta extra. */
+  areaTypeName: string | null;
+  isCritical: boolean;
+  name: string;
+  locationNotes: string | null;
+  isActive: boolean;
+  createdAt: Date;
+}
+
+export interface MaintenanceAreaTaskRecord {
+  id: string;
+  areaId: string;
+  label: string;
+  periodicity: AreaPeriodicity;
+  estimatedMinutes: number | null;
+  isActive: boolean;
+  createdBy: string;
+  createdAt: Date;
+}
+
+export interface MaintenanceAreaLogRecord {
+  id: string;
+  taskId: string;
+  performedBy: string;
+  performedAt: Date;
+  notes: string | null;
+  evidencePath: string | null;
+  verifiedBy: string | null;
+  verifiedAt: Date | null;
+  signatureId: string | null;
+  /** Datos de la tarea y el área, unidos para el listado (nulos al registrar/verificar). */
+  areaId: string | null;
+  taskLabel: string | null;
+  areaName: string | null;
+}
+
 export interface MaintenanceBoard {
   date: string;
   incidents: MaintenanceIncidentRecord[];
@@ -99,7 +157,12 @@ export type MaintenanceErrorCode =
   | "PLAN_EXISTS"
   | "PLAN_NOT_FOUND"
   | "TASK_NOT_FOUND"
-  | "TASK_CLOSED";
+  | "TASK_CLOSED"
+  | "AREA_TYPE_NOT_FOUND"
+  | "AREA_NOT_FOUND"
+  | "AREA_TASK_NOT_FOUND"
+  | "AREA_TASK_INVALID_PERIODICITY"
+  | "AREA_LOG_NOT_FOUND";
 
 export class MaintenanceError extends Error {
   constructor(
@@ -139,6 +202,7 @@ export class MaintenanceRepository {
     priority?: MaintenancePriority;
     blocksSale?: boolean;
     reportedBy: string;
+    areaId?: string | null;
   }): Promise<MaintenanceIncidentRecord> {
     const client = await this.pool.connect();
     try {
@@ -152,8 +216,8 @@ export class MaintenanceRepository {
       }
       const inserted = await client.query(
         `INSERT INTO maintenance_incidents
-           (room_id, kind, description, priority, status, blocks_sale, reported_by)
-         VALUES ($1, $2, $3, $4, 'OPEN', $5, $6)
+           (room_id, kind, description, priority, status, blocks_sale, reported_by, area_id)
+         VALUES ($1, $2, $3, $4, 'OPEN', $5, $6, $7)
          RETURNING *`,
         [
           input.roomId,
@@ -162,6 +226,7 @@ export class MaintenanceRepository {
           input.priority ?? "MEDIUM",
           input.blocksSale ?? true,
           input.reportedBy,
+          input.areaId ?? null,
         ],
       );
       await client.query(
@@ -288,6 +353,7 @@ export class MaintenanceRepository {
     roomId?: string | null;
     periodicity: PreventivePeriodicity;
     firstDueDate: string;
+    areaId?: string | null;
   }): Promise<PreventivePlanRecord> {
     const client = await this.pool.connect();
     try {
@@ -295,10 +361,10 @@ export class MaintenanceRepository {
       let planId: string;
       try {
         const inserted = await client.query(
-          `INSERT INTO preventive_plans (code, name, equipment, room_id, periodicity)
-           VALUES ($1, $2, $3, $4, $5)
+          `INSERT INTO preventive_plans (code, name, equipment, room_id, periodicity, area_id)
+           VALUES ($1, $2, $3, $4, $5, $6)
            RETURNING id`,
-          [input.code, input.name, input.equipment, input.roomId ?? null, input.periodicity],
+          [input.code, input.name, input.equipment, input.roomId ?? null, input.periodicity, input.areaId ?? null],
         );
         planId = inserted.rows[0].id as string;
       } catch (error: unknown) {
@@ -417,6 +483,240 @@ export class MaintenanceRepository {
       this.listBlockedRoomIds(),
     ]);
     return { date, incidents, dueTasks, blockedRoomIds, generatedAt: new Date().toISOString() };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Áreas comunes (F1 · T1.9)
+  // ---------------------------------------------------------------------------
+
+  /** Catálogo de tipos de área común, ordenado para la interfaz. */
+  async listAreaTypes(): Promise<MaintenanceAreaTypeRecord[]> {
+    const res = await this.pool.query(
+      `SELECT * FROM maintenance_area_types ORDER BY sort_order ASC, code ASC`,
+    );
+    return res.rows.map(mapAreaType);
+  }
+
+  /** Áreas comunes con su tipo; por defecto solo activas y sin filtrar por criticidad. */
+  async listAreas(
+    options: { includeInactive?: boolean; onlyCritical?: boolean } = {},
+  ): Promise<MaintenanceAreaRecord[]> {
+    const where: string[] = [];
+    if (!(options.includeInactive ?? false)) where.push(`a.is_active = TRUE`);
+    if (options.onlyCritical ?? false) where.push(`t.is_critical = TRUE`);
+    const res = await this.pool.query(
+      `${AREA_SELECT}${where.length > 0 ? ` WHERE ${where.join(" AND ")}` : ""}
+        ORDER BY t.sort_order ASC, a.name ASC`,
+    );
+    return res.rows.map(mapArea);
+  }
+
+  /** Áreas cuyo tipo es crítico y que siguen activas (criterio de F1). */
+  async listCriticalAreas(): Promise<MaintenanceAreaRecord[]> {
+    const res = await this.pool.query(
+      `${AREA_SELECT} WHERE t.is_critical = TRUE AND a.is_active = TRUE
+        ORDER BY t.sort_order ASC, a.name ASC`,
+    );
+    return res.rows.map(mapArea);
+  }
+
+  async findArea(id: string): Promise<MaintenanceAreaRecord | null> {
+    const res = await this.pool.query(`${AREA_SELECT} WHERE a.id = $1`, [id]);
+    return res.rows.length > 0 ? mapArea(res.rows[0]) : null;
+  }
+
+  /** Alta de un área común; el tipo debe existir en el catálogo. */
+  async createArea(input: {
+    areaTypeCode: string;
+    name: string;
+    locationNotes?: string | null;
+  }): Promise<MaintenanceAreaRecord> {
+    const type = await this.pool.query(
+      `SELECT code, name_es, is_critical FROM maintenance_area_types WHERE code = $1`,
+      [input.areaTypeCode],
+    );
+    if (type.rows.length === 0) {
+      throw new MaintenanceError("AREA_TYPE_NOT_FOUND", `El tipo de área ${input.areaTypeCode} no existe.`);
+    }
+    const inserted = await this.pool.query(
+      `INSERT INTO maintenance_areas (area_type_code, name, location_notes)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [input.areaTypeCode, input.name, input.locationNotes?.trim() || null],
+    );
+    return mapArea({
+      ...inserted.rows[0],
+      area_type_name: type.rows[0].name_es,
+      is_critical: type.rows[0].is_critical,
+    });
+  }
+
+  /** Actualiza nombre, notas o estado de un área; `AREA_NOT_FOUND` si no existe. */
+  async updateArea(
+    id: string,
+    input: { name?: string; locationNotes?: string | null; isActive?: boolean },
+  ): Promise<MaintenanceAreaRecord> {
+    const sets: string[] = [];
+    const values: unknown[] = [id];
+    if (input.name !== undefined) {
+      values.push(input.name);
+      sets.push(`name = $${values.length}`);
+    }
+    if (input.locationNotes !== undefined) {
+      values.push(input.locationNotes?.trim() || null);
+      sets.push(`location_notes = $${values.length}`);
+    }
+    if (input.isActive !== undefined) {
+      values.push(input.isActive);
+      sets.push(`is_active = $${values.length}`);
+    }
+    if (sets.length === 0) {
+      const current = await this.findArea(id);
+      if (current === null) {
+        throw new MaintenanceError("AREA_NOT_FOUND", "El área no existe.");
+      }
+      return current;
+    }
+    const updated = await this.pool.query(
+      `UPDATE maintenance_areas SET ${sets.join(", ")} WHERE id = $1 RETURNING id`,
+      values,
+    );
+    if (updated.rows.length === 0) {
+      throw new MaintenanceError("AREA_NOT_FOUND", "El área no existe.");
+    }
+    const area = await this.findArea(id);
+    if (area === null) {
+      throw new MaintenanceError("AREA_NOT_FOUND", "El área no existe.");
+    }
+    return area;
+  }
+
+  async listAreaTasks(
+    areaId: string,
+    options: { includeInactive?: boolean } = {},
+  ): Promise<MaintenanceAreaTaskRecord[]> {
+    const where = [`area_id = $1`];
+    if (!(options.includeInactive ?? false)) where.push(`is_active = TRUE`);
+    const res = await this.pool.query(
+      `SELECT * FROM maintenance_area_tasks WHERE ${where.join(" AND ")} ORDER BY label ASC`,
+      [areaId],
+    );
+    return res.rows.map(mapAreaTask);
+  }
+
+  /** Alta de una tarea rutinaria; valida el área y la periodicidad en el dominio. */
+  async createAreaTask(input: {
+    areaId: string;
+    label: string;
+    periodicity: AreaPeriodicity;
+    estimatedMinutes?: number | null;
+    createdBy: string;
+  }): Promise<MaintenanceAreaTaskRecord> {
+    if (!(AREA_PERIODICITIES as readonly string[]).includes(input.periodicity)) {
+      throw new MaintenanceError(
+        "AREA_TASK_INVALID_PERIODICITY",
+        `Periodicidad inválida: ${String(input.periodicity)}.`,
+      );
+    }
+    const area = await this.pool.query(`SELECT id FROM maintenance_areas WHERE id = $1`, [input.areaId]);
+    if (area.rows.length === 0) {
+      throw new MaintenanceError("AREA_NOT_FOUND", "El área no existe.");
+    }
+    const inserted = await this.pool.query(
+      `INSERT INTO maintenance_area_tasks (area_id, label, periodicity, estimated_minutes, created_by)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [input.areaId, input.label, input.periodicity, input.estimatedMinutes ?? null, input.createdBy],
+    );
+    return mapAreaTask(inserted.rows[0]);
+  }
+
+  /** Activa o desactiva una tarea rutinaria; `AREA_TASK_NOT_FOUND` si no existe. */
+  async setAreaTaskActive(taskId: string, isActive: boolean): Promise<MaintenanceAreaTaskRecord> {
+    const res = await this.pool.query(
+      `UPDATE maintenance_area_tasks SET is_active = $2 WHERE id = $1 RETURNING *`,
+      [taskId, isActive],
+    );
+    if (res.rows.length === 0) {
+      throw new MaintenanceError("AREA_TASK_NOT_FOUND", "La tarea de área no existe.");
+    }
+    return mapAreaTask(res.rows[0]);
+  }
+
+  /** Registra la ejecución de una tarea rutinaria (todavía sin verificar). */
+  async registerAreaLog(input: {
+    taskId: string;
+    performedBy: string;
+    notes?: string | null;
+    evidencePath?: string | null;
+  }): Promise<MaintenanceAreaLogRecord> {
+    const task = await this.pool.query(`SELECT id FROM maintenance_area_tasks WHERE id = $1`, [input.taskId]);
+    if (task.rows.length === 0) {
+      throw new MaintenanceError("AREA_TASK_NOT_FOUND", "La tarea de área no existe.");
+    }
+    const inserted = await this.pool.query(
+      `INSERT INTO maintenance_area_logs (task_id, performed_by, notes, evidence_path)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [input.taskId, input.performedBy, input.notes?.trim() || null, input.evidencePath ?? null],
+    );
+    return mapAreaLog(inserted.rows[0]);
+  }
+
+  /**
+   * Verifica un registro de área fijando quién y (opcionalmente) la firma on-chain.
+   *
+   * Criterio aplicado: **un registro solo puede verificarse una vez**; el `UPDATE` exige
+   * `verified_at IS NULL`. Si no afecta filas se distingue el motivo consultando la
+   * existencia: no existe → «no existe»; existe y ya estaba verificado → «ya verificado».
+   * Ambos motivos comparten el código `AREA_LOG_NOT_FOUND` y se cubren en el test.
+   */
+  async verifyAreaLog(
+    logId: string,
+    input: { verifiedBy: string; signatureId?: string | null },
+  ): Promise<MaintenanceAreaLogRecord> {
+    const res = await this.pool.query(
+      `UPDATE maintenance_area_logs
+          SET verified_by = $2, verified_at = NOW(), signature_id = $3
+        WHERE id = $1 AND verified_at IS NULL
+        RETURNING *`,
+      [logId, input.verifiedBy, input.signatureId ?? null],
+    );
+    if (res.rows.length === 0) {
+      const existing = await this.pool.query(`SELECT verified_at FROM maintenance_area_logs WHERE id = $1`, [logId]);
+      if (existing.rows.length === 0) {
+        throw new MaintenanceError("AREA_LOG_NOT_FOUND", "El registro de área no existe.");
+      }
+      throw new MaintenanceError("AREA_LOG_NOT_FOUND", "El registro de área ya estaba verificado.");
+    }
+    return mapAreaLog(res.rows[0]);
+  }
+
+  /** Historial de ejecuciones de áreas comunes, con filtros por área, rango y verificación. */
+  async listAreaLogs(
+    filter: { areaId?: string; from?: string | Date; to?: string | Date; pendingVerification?: boolean } = {},
+  ): Promise<MaintenanceAreaLogRecord[]> {
+    const where: string[] = [];
+    const values: unknown[] = [];
+    if (filter.areaId) {
+      values.push(filter.areaId);
+      where.push(`t.area_id = $${values.length}`);
+    }
+    if (filter.from !== undefined) {
+      values.push(filter.from);
+      where.push(`l.performed_at >= $${values.length}`);
+    }
+    if (filter.to !== undefined) {
+      values.push(filter.to);
+      where.push(`l.performed_at <= $${values.length}`);
+    }
+    if (filter.pendingVerification ?? false) where.push(`l.verified_at IS NULL`);
+    const res = await this.pool.query(
+      `${AREA_LOG_SELECT}${where.length > 0 ? ` WHERE ${where.join(" AND ")}` : ""}
+        ORDER BY l.performed_at DESC`,
+      values,
+    );
+    return res.rows.map(mapAreaLog);
   }
 
   // ---------------------------------------------------------------------------
@@ -558,6 +858,15 @@ const TASK_SELECT = `SELECT t.*, p.code AS plan_code, p.name AS plan_name, p.equ
    JOIN preventive_plans p ON p.id = t.plan_id
    LEFT JOIN rooms r ON r.id = p.room_id`;
 
+const AREA_SELECT = `SELECT a.*, t.name_es AS area_type_name, t.is_critical
+   FROM maintenance_areas a
+   JOIN maintenance_area_types t ON t.code = a.area_type_code`;
+
+const AREA_LOG_SELECT = `SELECT l.*, t.area_id, t.label AS task_label, a.name AS area_name
+   FROM maintenance_area_logs l
+   JOIN maintenance_area_tasks t ON t.id = l.task_id
+   JOIN maintenance_areas a ON a.id = t.area_id`;
+
 // -----------------------------------------------------------------------------
 // Traducción snake_case → camelCase
 // -----------------------------------------------------------------------------
@@ -577,6 +886,7 @@ function mapIncident(row: QueryResultRow): MaintenanceIncidentRecord {
     createdAt: row.created_at as Date,
     resolvedAt: (row.resolved_at as Date | null) ?? null,
     resolvedBy: (row.resolved_by as string | null) ?? null,
+    areaId: (row.area_id as string | null) ?? null,
   };
 }
 
@@ -602,6 +912,7 @@ function mapPlan(row: QueryResultRow): PreventivePlanRecord {
     periodicity: row.periodicity as PreventivePeriodicity,
     active: row.active as boolean,
     createdAt: row.created_at as Date,
+    areaId: (row.area_id as string | null) ?? null,
   };
 }
 
@@ -629,4 +940,61 @@ function mapTask(row: QueryResultRow): PreventiveTaskRecord {
 function isoDate(value: unknown): string {
   if (value instanceof Date) return value.toISOString().slice(0, 10);
   return String(value).slice(0, 10);
+}
+
+function mapAreaType(row: QueryResultRow): MaintenanceAreaTypeRecord {
+  return {
+    code: row.code as string,
+    nameEs: row.name_es as string,
+    nameEn: row.name_en as string,
+    nameRu: row.name_ru as string,
+    isCritical: row.is_critical === true,
+    sortOrder: Number(row.sort_order),
+  };
+}
+
+function mapArea(row: QueryResultRow): MaintenanceAreaRecord {
+  return {
+    id: row.id as string,
+    areaTypeCode: row.area_type_code as string,
+    areaTypeName: (row.area_type_name as string | null) ?? null,
+    isCritical: row.is_critical === true,
+    name: row.name as string,
+    locationNotes: (row.location_notes as string | null) ?? null,
+    isActive: row.is_active as boolean,
+    createdAt: row.created_at as Date,
+  };
+}
+
+function mapAreaTask(row: QueryResultRow): MaintenanceAreaTaskRecord {
+  return {
+    id: row.id as string,
+    areaId: row.area_id as string,
+    label: row.label as string,
+    periodicity: row.periodicity as AreaPeriodicity,
+    estimatedMinutes:
+      row.estimated_minutes === null || row.estimated_minutes === undefined
+        ? null
+        : Number(row.estimated_minutes),
+    isActive: row.is_active as boolean,
+    createdBy: row.created_by as string,
+    createdAt: row.created_at as Date,
+  };
+}
+
+function mapAreaLog(row: QueryResultRow): MaintenanceAreaLogRecord {
+  return {
+    id: row.id as string,
+    taskId: row.task_id as string,
+    performedBy: row.performed_by as string,
+    performedAt: row.performed_at as Date,
+    notes: (row.notes as string | null) ?? null,
+    evidencePath: (row.evidence_path as string | null) ?? null,
+    verifiedBy: (row.verified_by as string | null) ?? null,
+    verifiedAt: (row.verified_at as Date | null) ?? null,
+    signatureId: (row.signature_id as string | null) ?? null,
+    areaId: (row.area_id as string | null) ?? null,
+    taskLabel: (row.task_label as string | null) ?? null,
+    areaName: (row.area_name as string | null) ?? null,
+  };
 }

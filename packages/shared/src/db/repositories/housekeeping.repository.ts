@@ -1,5 +1,6 @@
 import type { Pool, PoolClient, QueryResultRow } from "pg";
 import { getDbPool } from "../pool";
+import type { SupplyAlertStatus } from "../../domain/operations-state";
 
 /**
  * Repositorio de Housekeeping (Suite Administración → Housekeeping y ruta `/housekeeping`,
@@ -102,6 +103,41 @@ export interface SupplyConsumptionResult {
   lowStock: boolean;
 }
 
+/** Tipo de inspección post-limpieza (`housekeeping_inspections.inspection_type`). */
+export type InspectionType = "CHECKOUT" | "DAILY_SERVICE";
+
+/** Resultado de una inspección (`housekeeping_inspections.result`). */
+export type InspectionResult = "APPROVED" | "REJECTED";
+
+export interface HousekeepingInspectionRecord {
+  id: string;
+  roomId: string;
+  /** Asignación inspeccionada, si la inspección cuelga del reparto del día. */
+  assignmentId: string | null;
+  inspectedBy: string;
+  inspectionType: InspectionType;
+  result: InspectionResult;
+  observations: string | null;
+  /** Firma on-chain asociada (D-C21), si el supervisor la estampó. */
+  signatureId: string | null;
+  createdAt: Date;
+}
+
+/**
+ * Estado de una alerta de suministros (`supply_alerts.status`). El vocabulario vive en
+ * `domain/operations-state.ts` (T1.6) y aquí solo se reexporta para quien lo importe del repositorio.
+ */
+export type { SupplyAlertStatus };
+
+export interface SupplyAlertRecord {
+  id: string;
+  supplyItemId: string;
+  status: SupplyAlertStatus;
+  openedAt: Date;
+  lastRemindedAt: Date | null;
+  closedAt: Date | null;
+}
+
 export interface CompleteAssignmentResult {
   assignment: HousekeepingAssignmentRecord;
   roomNumber: number;
@@ -124,7 +160,10 @@ export type HousekeepingErrorCode =
   | "ASSIGNMENT_NOT_FOUND"
   | "ASSIGNMENT_DONE"
   | "ROOM_NOT_FOUND"
-  | "SUPPLY_NOT_FOUND";
+  | "SUPPLY_NOT_FOUND"
+  | "INSPECTION_NOT_FOUND"
+  | "SUPPLY_ITEM_NOT_FOUND"
+  | "SUPPLY_ALERT_NOT_FOUND";
 
 export class HousekeepingError extends Error {
   constructor(
@@ -489,6 +528,166 @@ export class HousekeepingRepository {
   }
 
   // ---------------------------------------------------------------------------
+  // Inspecciones post-limpieza (D-19, D-C33)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Registra una inspección del Ama de llaves. La habitación debe existir y no estar archivada
+   * (misma comprobación que el resto del repositorio). El efecto sobre la habitación se aplica
+   * aparte con `applyInspectionToRoom`, de modo que la firma on-chain puede enlazarse en medio.
+   */
+  async createInspection(input: {
+    roomId: string;
+    assignmentId?: string | null;
+    inspectedBy: string;
+    inspectionType: InspectionType;
+    result: InspectionResult;
+    observations?: string | null;
+    signatureId?: string | null;
+  }): Promise<HousekeepingInspectionRecord> {
+    const room = await this.pool.query(
+      `SELECT id FROM rooms WHERE id = $1 AND archived_at IS NULL`,
+      [input.roomId],
+    );
+    if (room.rows.length === 0) {
+      throw new HousekeepingError("ROOM_NOT_FOUND", "La habitación no existe o está archivada.");
+    }
+    const res = await this.pool.query(
+      `INSERT INTO housekeeping_inspections
+          (room_id, assignment_id, inspected_by, inspection_type, result, observations, signature_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING *`,
+      [
+        input.roomId,
+        input.assignmentId ?? null,
+        input.inspectedBy,
+        input.inspectionType,
+        input.result,
+        input.observations ?? null,
+        input.signatureId ?? null,
+      ],
+    );
+    return mapInspection(res.rows[0]);
+  }
+
+  async findInspection(id: string): Promise<HousekeepingInspectionRecord | null> {
+    const res = await this.pool.query(`SELECT * FROM housekeeping_inspections WHERE id = $1`, [id]);
+    return res.rows.length > 0 ? mapInspection(res.rows[0]) : null;
+  }
+
+  /** Inspecciones filtradas por habitación, resultado y rango de fechas (`created_at`). */
+  async listInspections(
+    filter: {
+      roomId?: string;
+      result?: InspectionResult;
+      from?: Date | string;
+      to?: Date | string;
+    } = {},
+  ): Promise<HousekeepingInspectionRecord[]> {
+    const conditions: string[] = [];
+    const values: unknown[] = [];
+    if (filter.roomId !== undefined) {
+      values.push(filter.roomId);
+      conditions.push(`room_id = $${values.length}`);
+    }
+    if (filter.result !== undefined) {
+      values.push(filter.result);
+      conditions.push(`result = $${values.length}`);
+    }
+    if (filter.from !== undefined) {
+      values.push(filter.from);
+      conditions.push(`created_at >= $${values.length}`);
+    }
+    if (filter.to !== undefined) {
+      values.push(filter.to);
+      conditions.push(`created_at <= $${values.length}`);
+    }
+    const where = conditions.length > 0 ? ` WHERE ${conditions.join(" AND ")}` : "";
+    const res = await this.pool.query(
+      `SELECT * FROM housekeeping_inspections${where} ORDER BY created_at DESC`,
+      values,
+    );
+    return res.rows.map(mapInspection);
+  }
+
+  /** Enlaza la firma on-chain de una inspección ya registrada. */
+  async linkInspectionSignature(
+    inspectionId: string,
+    signatureId: string,
+  ): Promise<HousekeepingInspectionRecord> {
+    const res = await this.pool.query(
+      `UPDATE housekeeping_inspections SET signature_id = $2 WHERE id = $1 RETURNING *`,
+      [inspectionId, signatureId],
+    );
+    if (res.rows.length === 0) {
+      throw new HousekeepingError("INSPECTION_NOT_FOUND", "La inspección no existe.");
+    }
+    return mapInspection(res.rows[0]);
+  }
+
+  /**
+   * Aplica el resultado de una inspección a la habitación dentro de **una transacción**.
+   *
+   * Decisión de negocio (vocabulario canónico, migrador §12):
+   *   - `APPROVED` → `operational_status = 'CLEAN'`: la habitación queda lista para vender.
+   *   - `REJECTED` → `operational_status = 'DIRTY'`: **retrabajo**; si la inspección cuelga de una
+   *     asignación, esa asignación vuelve a `PENDING` (y se limpia `completed_at`) para que la
+   *     camarera la repita. No existe estado `REJECTED` de asignación: el ciclo vuelve a empezar.
+   *
+   * Es idempotente respecto a lo que escribe: no inserta filas nuevas, no duplica trazas y repetir la
+   * misma llamada (con el mismo `inspectedAt`) deja exactamente los mismos valores en `rooms` y en la
+   * asignación. `inspectedAt` por defecto es `NOW()`.
+   */
+  async applyInspectionToRoom(input: {
+    roomId: string;
+    result: InspectionResult;
+    inspectedAt?: Date | string | null;
+    /** Asignación a devolver a `PENDING` cuando el resultado es `REJECTED`. */
+    assignmentId?: string | null;
+  }): Promise<void> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      const room = await client.query(
+        `SELECT id FROM rooms WHERE id = $1 AND archived_at IS NULL FOR UPDATE`,
+        [input.roomId],
+      );
+      if (room.rows.length === 0) {
+        await client.query("ROLLBACK");
+        throw new HousekeepingError("ROOM_NOT_FOUND", "La habitación no existe o está archivada.");
+      }
+
+      const operationalStatus = input.result === "APPROVED" ? "CLEAN" : "DIRTY";
+      await client.query(
+        `UPDATE rooms
+            SET last_inspection_at = COALESCE($2, NOW()),
+                last_inspection_result = $3,
+                operational_status = $4,
+                updated_at = NOW()
+          WHERE id = $1`,
+        [input.roomId, input.inspectedAt ?? null, input.result, operationalStatus],
+      );
+
+      if (input.result === "REJECTED" && input.assignmentId) {
+        await client.query(
+          `UPDATE housekeeping_assignments
+              SET status = 'PENDING', completed_at = NULL
+            WHERE id = $1 AND status <> 'PENDING'`,
+          [input.assignmentId],
+        );
+      }
+
+      await client.query("COMMIT");
+    } catch (error: unknown) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Lencería y suministros (D-51, D-64)
   // ---------------------------------------------------------------------------
 
@@ -566,6 +765,90 @@ export class HousekeepingRepository {
       [itemId, limit],
     );
     return res.rows.map(mapMovement);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Alertas de suministros (D-C33, CU-V-25)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Abre la alerta de un artículo por debajo del umbral. Es **idempotente**: si ya hay una alerta
+   * `OPEN` para ese artículo, se devuelve la existente sin crear duplicados. Solo comprueba/inserta
+   * (sin índice único parcial en el esquema, la unicidad la garantiza este método).
+   */
+  async openSupplyAlert(supplyItemId: string): Promise<SupplyAlertRecord> {
+    const item = await this.pool.query(`SELECT id FROM supply_items WHERE id = $1`, [supplyItemId]);
+    if (item.rows.length === 0) {
+      throw new HousekeepingError("SUPPLY_ITEM_NOT_FOUND", "El artículo de suministro no existe.");
+    }
+    const existing = await this.findOpenSupplyAlert(supplyItemId);
+    if (existing) return existing;
+    const res = await this.pool.query(
+      `INSERT INTO supply_alerts (supply_item_id, status)
+       VALUES ($1, 'OPEN')
+       RETURNING *`,
+      [supplyItemId],
+    );
+    return mapSupplyAlert(res.rows[0]);
+  }
+
+  /** Alerta abierta de un artículo, o `null` si no la hay. */
+  async findOpenSupplyAlert(supplyItemId: string): Promise<SupplyAlertRecord | null> {
+    const res = await this.pool.query(
+      `SELECT * FROM supply_alerts
+        WHERE supply_item_id = $1 AND status = 'OPEN'
+        ORDER BY opened_at DESC
+        LIMIT 1`,
+      [supplyItemId],
+    );
+    return res.rows.length > 0 ? mapSupplyAlert(res.rows[0]) : null;
+  }
+
+  /** Alertas abiertas, de la más antigua a la más reciente (para recordatorios D-C33). */
+  async listOpenAlerts(): Promise<SupplyAlertRecord[]> {
+    const res = await this.pool.query(
+      `SELECT * FROM supply_alerts WHERE status = 'OPEN' ORDER BY opened_at ASC`,
+    );
+    return res.rows.map(mapSupplyAlert);
+  }
+
+  /**
+   * Marca un recordatorio (`last_reminded_at = NOW()`) solo si la alerta sigue `OPEN`; si ya está
+   * cerrada no la toca. Lanza `SUPPLY_ALERT_NOT_FOUND` si la alerta no existe.
+   */
+  async remindSupplyAlert(alertId: string): Promise<SupplyAlertRecord> {
+    const updated = await this.pool.query(
+      `UPDATE supply_alerts SET last_reminded_at = NOW()
+        WHERE id = $1 AND status = 'OPEN'
+        RETURNING *`,
+      [alertId],
+    );
+    if (updated.rows.length > 0) return mapSupplyAlert(updated.rows[0]);
+    const existing = await this.pool.query(`SELECT * FROM supply_alerts WHERE id = $1`, [alertId]);
+    if (existing.rows.length === 0) {
+      throw new HousekeepingError("SUPPLY_ALERT_NOT_FOUND", "La alerta no existe.");
+    }
+    return mapSupplyAlert(existing.rows[0]);
+  }
+
+  /**
+   * Cierra una alerta. Si ya estaba cerrada no la reabre ni le cambia `closed_at` (devuelve la fila
+   * tal cual); si no existe, `SUPPLY_ALERT_NOT_FOUND`.
+   */
+  async closeSupplyAlert(alertId: string): Promise<SupplyAlertRecord> {
+    const updated = await this.pool.query(
+      `UPDATE supply_alerts
+          SET status = 'CLOSED', closed_at = COALESCE(closed_at, NOW())
+        WHERE id = $1 AND status = 'OPEN'
+        RETURNING *`,
+      [alertId],
+    );
+    if (updated.rows.length > 0) return mapSupplyAlert(updated.rows[0]);
+    const existing = await this.pool.query(`SELECT * FROM supply_alerts WHERE id = $1`, [alertId]);
+    if (existing.rows.length === 0) {
+      throw new HousekeepingError("SUPPLY_ALERT_NOT_FOUND", "La alerta no existe.");
+    }
+    return mapSupplyAlert(existing.rows[0]);
   }
 
   /**
@@ -686,6 +969,31 @@ function mapMovement(row: QueryResultRow): SupplyMovementRecord {
     reservationId: (row.reservation_id as string | null) ?? null,
     createdBy: row.created_by as string,
     createdAt: row.created_at as Date,
+  };
+}
+
+function mapInspection(row: QueryResultRow): HousekeepingInspectionRecord {
+  return {
+    id: row.id as string,
+    roomId: row.room_id as string,
+    assignmentId: (row.assignment_id as string | null) ?? null,
+    inspectedBy: row.inspected_by as string,
+    inspectionType: row.inspection_type as InspectionType,
+    result: row.result as InspectionResult,
+    observations: (row.observations as string | null) ?? null,
+    signatureId: (row.signature_id as string | null) ?? null,
+    createdAt: row.created_at as Date,
+  };
+}
+
+function mapSupplyAlert(row: QueryResultRow): SupplyAlertRecord {
+  return {
+    id: row.id as string,
+    supplyItemId: row.supply_item_id as string,
+    status: row.status as SupplyAlertStatus,
+    openedAt: row.opened_at as Date,
+    lastRemindedAt: (row.last_reminded_at as Date | null) ?? null,
+    closedAt: (row.closed_at as Date | null) ?? null,
   };
 }
 

@@ -386,7 +386,7 @@ Semilla: `SIMPLE` (500 bps), `DOBLE` (500 bps), `SUITE` (1000 bps).
 | `decor_materials` | `VARCHAR(200)` | sí | — | Materiales destacados |
 | `decor_notes_es` / `decor_notes_en` / `decor_notes_ru` | `TEXT` | sí | — | Notas de decoración para el huésped, por idioma |
 | `publication_status` | `VARCHAR(20)` | no | `'DRAFT'` | `DRAFT` · `PUBLISHED` · `PAUSED` · `MAINTENANCE` · `OUT_OF_SERVICE` (D-19) |
-| `operational_status` | `VARCHAR(12)` | no | `'CLEAN'` | `CLEAN` · `DIRTY` · `OCCUPIED` · `PENDING_CLEANING`; lo actualiza housekeeping/recepción (D-19, RF-50). `PENDING_CLEANING` se asigna automáticamente tras el check-out y solo recepción puede pasar a `CLEAN` |
+| `operational_status` | `VARCHAR(20)` | no | `'CLEAN'` | `CLEAN` · `DIRTY` · `OCCUPIED` · `PENDING_CLEANING` · `IN_INSPECTION`; lo actualizan housekeeping, mantenimiento y recepción (D-19, RF-50). `PENDING_CLEANING` se asigna automáticamente tras el check-out y solo recepción puede pasar a `CLEAN`. `IN_INSPECTION` (vNext) requiere `VARCHAR(20)`: medía 13 caracteres y la columna era `VARCHAR(12)` |
 | `archived_at` | `TIMESTAMP` | sí | — | `NULL` = vigente; con fecha = archivada, **nunca borrada** (D-8) |
 | `created_at` / `updated_at` | `TIMESTAMP` | no | `NOW()` | — |
 

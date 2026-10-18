@@ -340,7 +340,7 @@ erDiagram
         TEXT decor_notes_en "Notas de decoración EN"
         TEXT decor_notes_ru "Notas de decoración RU"
         VARCHAR(20) publication_status "DRAFT · PUBLISHED · PAUSED · MAINTENANCE · OUT_OF_SERVICE (D-19)"
-        VARCHAR(12) operational_status "CLEAN · DIRTY · OCCUPIED · PENDING_CLEANING (D-19, RF-50)"
+        VARCHAR(20) operational_status "CLEAN · DIRTY · OCCUPIED · PENDING_CLEANING · IN_INSPECTION (D-19, RF-50)"
         TIMESTAMP archived_at "NULL = vigente; con fecha = archivada (D-8)"
         TIMESTAMP created_at "Alta"
         TIMESTAMP updated_at "Última modificación"

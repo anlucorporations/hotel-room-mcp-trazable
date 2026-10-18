@@ -9,12 +9,20 @@
 --               · RepoTecnico/diagrama_er.md        (modelo entidad-relación)
 --               · RepoTecnico/diccionario_datos.md  (diccionario de datos)
 --
--- Versión   : 1.3.0
--- Fecha     : 2026-09-26
+-- Versión   : 1.4.0
+-- Fecha     : 2026-10-12
 -- Motor     : PostgreSQL 14+ (requiere la extensión pgcrypto)
 -- Uso       : psql -f RepoTecnico/base_datos.sql
 --
 -- Changelog
+--   1.4.0 (2026-10-12) · Cierre del ciclo F1 (vNext): bloque de 12 tablas nuevas
+--     (terminal_operators, operator_wallets, on_chain_signatures, maintenance_area_*,
+--     housekeeping_inspections, operator_audit_log, housekeeping_damage_charges,
+--     supply_alerts, damage_charge_guest_notifications), 19 columnas de extensión,
+--     3 CHECK redefinidas, semilla de 10 áreas y trigger append-only. Corrige
+--     `rooms.operational_status`: era VARCHAR(12) y el CHECK canónico admite
+--     `IN_INSPECTION` (13 caracteres) → se ensancha a VARCHAR(20) para bases nuevas
+--     y con ALTER COLUMN TYPE para las ya creadas. Total del esquema: 60 tablas.
 --   1.3.0 (2026-09-26) · Se añade la sección 3.7 «contenido público» (bloque 5,
 --     decisiones D-73/D-74): hotel_images (galería de la home) y hotel_offers
 --     (planes informativos). Sincronizado con packages/shared/src/db/migrator.ts.
@@ -382,7 +390,7 @@ CREATE TABLE IF NOT EXISTS rooms (
     decor_notes_ru TEXT NULL,
     -- Dos estados INDEPENDIENTES (D-19): publicación y operativo.
     publication_status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
-    operational_status VARCHAR(12) NOT NULL DEFAULT 'CLEAN',
+    operational_status VARCHAR(20) NOT NULL DEFAULT 'CLEAN',
     -- Archivar, nunca borrar (D-8): NULL = vigente; con fecha = archivada.
     archived_at TIMESTAMP NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -1279,7 +1287,7 @@ COMMENT ON COLUMN rooms.description_en IS 'Descripción en inglés (opcional; re
 COMMENT ON COLUMN rooms.description_ru IS 'Descripción en ruso (opcional; respaldo al español)';
 COMMENT ON COLUMN rooms.base_rate_wei IS 'Tarifa base en wei (opcional)';
 COMMENT ON COLUMN rooms.publication_status IS 'DRAFT · PUBLISHED · PAUSED · MAINTENANCE · OUT_OF_SERVICE (D-19)';
-COMMENT ON COLUMN rooms.operational_status IS 'CLEAN · DIRTY · OCCUPIED; lo actualiza housekeeping/recepción (D-19)';
+COMMENT ON COLUMN rooms.operational_status IS 'CLEAN · DIRTY · OCCUPIED · PENDING_CLEANING · IN_INSPECTION; lo actualizan housekeeping/recepción (D-19)';
 COMMENT ON COLUMN rooms.archived_at IS 'NULL = vigente; con fecha = archivada, nunca borrada (D-8)';
 
 -- ---- room_images ----
@@ -1738,7 +1746,9 @@ COMMENT ON TABLE operator_audit_log IS 'Auditoría de acciones off-chain de oper
 
 -- rooms.publication_status: se mantiene (DRAFT, PUBLISHED, PAUSED, MAINTENANCE, OUT_OF_SERVICE).
 -- 'AVAILABLE' NO existe: el estado publicable es 'PUBLISHED'.
--- rooms.operational_status: se añade IN_INSPECTION a los ya existentes.
+-- rooms.operational_status: se añade IN_INSPECTION a los ya existentes. La columna era VARCHAR(12) e
+-- IN_INSPECTION mide 13: sin ensancharla, el CHECK admitiría un valor que PostgreSQL no puede guardar.
+ALTER TABLE rooms ALTER COLUMN operational_status TYPE VARCHAR(20);
 ALTER TABLE rooms DROP CONSTRAINT IF EXISTS rooms_operational_status_check;
 ALTER TABLE rooms ADD CONSTRAINT rooms_operational_status_check
     CHECK (operational_status IN ('CLEAN', 'DIRTY', 'OCCUPIED', 'PENDING_CLEANING', 'IN_INSPECTION'));

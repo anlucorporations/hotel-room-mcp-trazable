@@ -61,6 +61,36 @@ jobs:
       - name: Deploy de humo a Anvil (chainId 81234) + verificación de roles
         run: pnpm --filter @hotel/contracts smoke
 
+  # ── Esquema vNext contra PostgreSQL REAL (F1 · gate D11 / hueco A4) ─────────
+  # Las suites del monorepo usan dobles de `pg`: comprueban qué SQL se envía, no que PostgreSQL lo
+  # acepte. Este job aplica `RepoTecnico/base_datos.sql` DOS veces sobre un PostgreSQL 18 y verifica
+  # idempotencia, las 12 tablas vNext, las 19 columnas de extensión, el ensanchado de
+  # `rooms.operational_status` (13 caracteres de `IN_INSPECTION` no cabían en VARCHAR(12)) y que el
+  # trigger append-only revierte UPDATE/DELETE. Es el gate de salida de F1.
+  schema:
+    name: Schema · PostgreSQL 18 (idempotencia + append-only)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: hotel_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/hotel_test
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Verificar el esquema vNext contra PostgreSQL real
+        run: bash scripts/db/verify-vnext-schema.sh
+
   # ── E2E de la web con Playwright (smoke de FASE 0) ──────────────────────────
   e2e:
     name: Web · Playwright E2E

@@ -1,4 +1,8 @@
-import type { RoomTypeDb } from "@hotel/shared/domain";
+import {
+  ROOM_OPERATIONAL_STATUSES,
+  ROOM_PUBLICATION_STATUSES,
+  type RoomTypeDb,
+} from "@hotel/shared/domain";
 
 /**
  * Opciones **de la ficha de habitación** compartidas por el servidor y la interfaz (2026-10-02).
@@ -11,9 +15,9 @@ import type { RoomTypeDb } from "@hotel/shared/domain";
  *
  * Frontera cliente/servidor (2026-10-02): este módulo lo importan componentes de cliente, así que
  * **no puede** usar el barril `@hotel/shared` (arrastra `pg`/`bullmq` al bundle; lo vigila
- * `boundaries.test.ts`). Los tipos vienen del entry isomorfo `@hotel/shared/domain` y las dos listas
- * de estados se declaran aquí con `as const` — el valor es idéntico al de la base de datos y el tipo
- * se deriva de la propia lista, de modo que no se duplica a mano.
+ * `boundaries.test.ts`). Los estados ya **no** se declaran aquí: se toman del vocabulario canónico
+ * isomorfo de `@hotel/shared/domain` (`domain/operations-state.ts`, vNext · F1 · T1.6), de modo que
+ * cliente, servidor y base comparten exactamente los mismos valores — incluido `IN_INSPECTION`.
  */
 
 export const ROOM_TYPES: readonly RoomTypeDb[] = ["SIMPLE", "DOBLE", "SUITE"];
@@ -21,20 +25,12 @@ export const ROOM_TYPES: readonly RoomTypeDb[] = ["SIMPLE", "DOBLE", "SUITE"];
 /** Tipo de habitación (vocabulario de la BD) sin tener que importar el barril de servidor. */
 export type RoomTypeCode = (typeof ROOM_TYPES)[number];
 
-export const PUBLICATION_STATUSES = [
-  "DRAFT",
-  "PUBLISHED",
-  "PAUSED",
-  "MAINTENANCE",
-  "OUT_OF_SERVICE",
-] as const;
-
-/** Estado de publicación de la ficha (mismos valores que el `CHECK` de `rooms`). */
+/** Estados de publicación de la ficha (vocabulario canónico isomorfo, mismos valores que el CHECK). */
+export const PUBLICATION_STATUSES = ROOM_PUBLICATION_STATUSES;
 export type RoomPublicationStatus = (typeof PUBLICATION_STATUSES)[number];
 
-export const OPERATIONAL_STATUSES = ["CLEAN", "DIRTY", "OCCUPIED", "PENDING_CLEANING"] as const;
-
-/** Estado operativo de la ficha (lo mueven housekeeping y recepción). */
+/** Estados operativos de la ficha (incluye `IN_INSPECTION`, vNext). */
+export const OPERATIONAL_STATUSES = ROOM_OPERATIONAL_STATUSES;
 export type RoomOperationalStatus = (typeof OPERATIONAL_STATUSES)[number];
 
 /** Vistas exteriores (ficha ampliada). */

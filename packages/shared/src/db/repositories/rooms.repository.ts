@@ -1,5 +1,6 @@
 import type { Pool, PoolClient, QueryResultRow } from "pg";
 import { getDbPool } from "../pool";
+import type { RoomOperationalStatus, RoomPublicationStatus } from "../../domain/operations-state";
 
 /**
  * Repositorio de habitaciones (Suite Administración → Habitación, D-1…D-26).
@@ -16,16 +17,12 @@ import { getDbPool } from "../pool";
 /** Tipos de habitación admitidos (fijos, D-22). */
 export type RoomTypeCode = "SIMPLE" | "DOBLE" | "SUITE";
 
-/** Estado de publicación (lo decide el administrador, D-19). */
-export type RoomPublicationStatus =
-  | "DRAFT"
-  | "PUBLISHED"
-  | "PAUSED"
-  | "MAINTENANCE"
-  | "OUT_OF_SERVICE";
-
-/** Estado operativo (lo actualizan housekeeping/recepción, D-19; RF-50 añade PENDING_CLEANING). */
-export type RoomOperationalStatus = "CLEAN" | "DIRTY" | "OCCUPIED" | "PENDING_CLEANING";
+/**
+ * Estados de publicación y operativo: vocabulario canónico de `domain/operations-state.ts` (T1.6).
+ * Se reexportan aquí para no romper a los consumidores que los importaban del repositorio; ahora
+ * incluyen `IN_INSPECTION` (vNext), que antes faltaba en la copia local de este fichero.
+ */
+export type { RoomOperationalStatus, RoomPublicationStatus };
 
 /** Vista exterior de la habitación (ficha ampliada, 2026-10-02). */
 export type RoomViewKind = "SEA" | "GARDEN" | "INTERIOR";
