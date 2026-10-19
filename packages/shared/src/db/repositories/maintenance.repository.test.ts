@@ -160,7 +160,7 @@ function fakeTxClient(handlers: {
         ? { rows: [], rowCount: 0 }
         : { rows: [{ id: handlers.nextTaskId ?? "task-next" }], rowCount: 1 };
     }
-    if (s.startsWith("SELECT t.*, p.periodicity, p.active FROM preventive_tasks")) {
+    if (s.startsWith("SELECT t.*, p.periodicity, p.active, COALESCE(at.is_critical, FALSE) AS is_critical FROM preventive_tasks")) {
       return { rows: [handlers.task ?? taskRow()], rowCount: 1 };
     }
     if (s.startsWith("UPDATE preventive_tasks")) {
@@ -319,6 +319,33 @@ describe("MaintenanceRepository (F4 · D-52…D-54)", () => {
     it("no cierra dos veces la misma tarea", async () => {
       mockPool.connect.mockResolvedValueOnce(fakeTxClient({ task: taskRow({ status: "DONE" }) }));
       await expect(repository.completeTask("task-1", "tecnico")).rejects.toMatchObject({ code: "TASK_CLOSED" });
+    });
+
+    it("una tarea de área crítica no se cierra sin firma (F4 · T4.5)", async () => {
+      mockPool.connect.mockResolvedValueOnce(
+        fakeTxClient({ task: taskRow({ is_critical: true, requires_signature: true }) }),
+      );
+      await expect(repository.completeTask("task-1", "jefe")).rejects.toMatchObject({
+        code: "SIGNATURE_REQUIRED",
+      });
+    });
+
+    it("una tarea de área crítica se cierra con firma enlazada (F4 · T4.5)", async () => {
+      const client = fakeTxClient({
+        task: taskRow({ is_critical: true }),
+        updatedTask: taskRow({ status: "DONE", signature_id: "sig-1" }),
+      });
+      mockPool.connect.mockResolvedValueOnce(client);
+      const { task } = await repository.completeTask("task-1", "jefe", "Revisada", {
+        signatureId: "sig-1",
+        evidencePath: "evidencias/foto.jpg",
+      });
+      expect(task.status).toBe("DONE");
+      const updates = client.query.mock.calls.filter(([sql]) => String(sql).includes("UPDATE preventive_tasks"));
+      expect(updates).toHaveLength(1);
+      const values = updates[0]?.[1] as unknown[];
+      expect(values[4]).toBe("sig-1");
+      expect(values[5]).toBe("evidencias/foto.jpg");
     });
   });
 

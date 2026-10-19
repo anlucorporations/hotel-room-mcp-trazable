@@ -34,13 +34,13 @@ describe("accesos a suites por rol (D-76/D-77)", () => {
     expect(byKey.get("maintenance")).toBe("/mantenimiento");
   });
 
-  it("los roles nuevos de la vNext todavía NO tienen suite (decisión explícita, no un olvido)", () => {
-    // F1 (T1.5) añade el vocabulario `HEAD_MAINTENANCE`, `HEAD_KEEPER`, `MAINTENANCE_TECH` y
-    // `HOUSEKEEPER`. Sus suites (`/ama-de-llaves` y la nueva `/mantenimiento` con la matriz de
-    // permisos del plan) llegan en **F6** y **F4**; hasta entonces no se les ofrece ningún enlace:
-    // enseñarles la suite heredada les daría un 403 en su primera llamada. Esta prueba es el
-    // recordatorio: cuando F4/F6 entregan las suites, hay que cambiarla a propósito.
-    for (const role of ["HEAD_MAINTENANCE", "HEAD_KEEPER", "MAINTENANCE_TECH", "HOUSEKEEPER"]) {
+  it("los roles vNext de mantenimiento (F4) entran a su suite; los de ama de llaves aún no", () => {
+    // F4 ya entregó la suite: el jefe (`HEAD_MAINTENANCE`) y el técnico (`MAINTENANCE_TECH`) tienen
+    // su entrada. Las suites de ama de llaves (`HEAD_KEEPER`/`HOUSEKEEPER`) llegan en F6; hasta
+    // entonces no se les ofrece ningún enlace para no darles un 403 en su primera llamada.
+    expect(suiteLinksForRoles(["HEAD_MAINTENANCE"]).map((link) => link.key)).toEqual(["maintenance"]);
+    expect(suiteLinksForRoles(["MAINTENANCE_TECH"]).map((link) => link.key)).toEqual(["maintenance"]);
+    for (const role of ["HEAD_KEEPER", "HOUSEKEEPER"]) {
       expect(suiteLinksForRoles([role]), `${role} no debería tener suite todavía`).toEqual([]);
     }
   });

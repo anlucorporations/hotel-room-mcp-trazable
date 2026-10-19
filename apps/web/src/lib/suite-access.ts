@@ -47,7 +47,12 @@ export function suiteLinksForRoles(roles: readonly string[], isOwner = false): r
   const links: SuiteLink[] = [];
   if (set.has("RECEPTION_ROLE")) links.push(RECEPTION);
   if (set.has("HOUSEKEEPING")) links.push(HOUSEKEEPING);
-  if (set.has("MAINTENANCE")) links.push(MAINTENANCE);
+  // vNext F4: el jefe de mantenimiento (`HEAD_MAINTENANCE`, con wallet) y el técnico vNext
+  // (`MAINTENANCE_TECH`, sin wallet) entran a la suite de mantenimiento; `MAINTENANCE` se conserva
+  // para la suite heredada (D-77).
+  if (set.has("HEAD_MAINTENANCE") || set.has("MAINTENANCE_TECH") || set.has("MAINTENANCE")) {
+    links.push(MAINTENANCE);
+  }
 
   // Un operador de back-office sin suite propia (minter, pauser, burner, tesorería) entra por
   // Administración; sin roles no se ofrece ningún acceso.

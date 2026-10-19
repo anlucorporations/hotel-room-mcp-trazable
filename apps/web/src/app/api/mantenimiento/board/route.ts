@@ -15,7 +15,7 @@ const repo = new MaintenanceRepository();
  * habitaciones bloqueadas por avería (D-53). Rol `MAINTENANCE` (owner incluido).
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const auth = await requireRole(request, "MAINTENANCE");
+  const auth = await requireRole(request, ["MAINTENANCE", "HEAD_MAINTENANCE", "MAINTENANCE_TECH"]);
   if (!auth.ok) return auth.response;
 
   const date = request.nextUrl.searchParams.get("date") ?? defaultBoardDate();

@@ -27,6 +27,10 @@ const SERVER_ONLY_ALLOWLIST = new Set([
   "lib/nights.ts",
   "lib/nonce-store.ts",
   "lib/reception-errors.ts",
+  // Módulos de servidor de la suite de mantenimiento (F4): usan NextResponse y el outbox;
+  // los consume SOLO el código de rutas de API.
+  "lib/mantenimiento/errors.ts",
+  "lib/mantenimiento/signatures.ts",
   "lib/public-content.ts",
   "lib/rooms.ts",
   "lib/server-client.ts",

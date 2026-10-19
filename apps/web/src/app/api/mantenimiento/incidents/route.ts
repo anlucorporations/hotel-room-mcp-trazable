@@ -23,7 +23,7 @@ const repo = new MaintenanceRepository();
  * venta** hasta que se resuelva (D-53).
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const auth = await requireRole(request, "MAINTENANCE");
+  const auth = await requireRole(request, ["MAINTENANCE", "HEAD_MAINTENANCE", "MAINTENANCE_TECH"]);
   if (!auth.ok) return auth.response;
 
   const params = request.nextUrl.searchParams;
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const auth = await requireRole(request, ["RECEPTION_ROLE", "HOUSEKEEPING", "MAINTENANCE"]);
+  const auth = await requireRole(request, ["RECEPTION_ROLE", "HOUSEKEEPING", "MAINTENANCE", "HEAD_MAINTENANCE"]);
   if (!auth.ok) return auth.response;
 
   let body: {

@@ -56,11 +56,11 @@ describe("API de Mantenimiento (F4 · D-52…D-54, D-63)", () => {
   it("las rutas del técnico exigen MAINTENANCE", async () => {
     mockRepo.listIncidents.mockResolvedValue([]);
     await incidentsGet(new NextRequest("http://localhost/api/mantenimiento/incidents"));
-    expect(lastRequiredRole()).toBe("MAINTENANCE");
+    expect(lastRequiredRole()).toEqual(["MAINTENANCE", "HEAD_MAINTENANCE", "MAINTENANCE_TECH"]);
 
     mockRepo.getBoard.mockResolvedValue({ date: "2026-09-27", incidents: [], dueTasks: [], blockedRoomIds: [], generatedAt: "" });
     await boardGet(new NextRequest("http://localhost/api/mantenimiento/board"));
-    expect(lastRequiredRole()).toBe("MAINTENANCE");
+    expect(lastRequiredRole()).toEqual(["MAINTENANCE", "HEAD_MAINTENANCE", "MAINTENANCE_TECH"]);
   });
 
   it("reportar una avería admite recepción, limpieza y técnico (D-52)", async () => {
@@ -69,7 +69,7 @@ describe("API de Mantenimiento (F4 · D-52…D-54, D-63)", () => {
       jsonRequest("http://localhost/api/mantenimiento/incidents", { roomId: "room-1", kind: "FONTANERIA" }),
     );
     expect(res.status).toBe(201);
-    expect(lastRequiredRole()).toEqual(["RECEPTION_ROLE", "HOUSEKEEPING", "MAINTENANCE"]);
+    expect(lastRequiredRole()).toEqual(["RECEPTION_ROLE", "HOUSEKEEPING", "MAINTENANCE", "HEAD_MAINTENANCE"]);
     expect(mockRepo.reportIncident).toHaveBeenCalledWith(expect.objectContaining({ blocksSale: true, reportedBy: "admin@hotel.es" }));
   });
 

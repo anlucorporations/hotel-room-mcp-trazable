@@ -18,7 +18,7 @@ interface RouteParams {
  * siguiente** según la periodicidad y registra **quién y cuándo** (D-54). Rol `MAINTENANCE`.
  */
 export async function PATCH(request: NextRequest, { params }: RouteParams): Promise<NextResponse> {
-  const auth = await requireRole(request, "MAINTENANCE");
+  const auth = await requireRole(request, ["MAINTENANCE", "HEAD_MAINTENANCE", "MAINTENANCE_TECH"]);
   if (!auth.ok) return auth.response;
 
   const { id } = await params;

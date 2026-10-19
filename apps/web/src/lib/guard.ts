@@ -1,6 +1,6 @@
 import "server-only";
 import { NextResponse, type NextRequest } from "next/server";
-import { AuthService, type AuthRole } from "@hotel/shared";
+import { AuthService, BACK_OFFICE_ROLE_NAMES, type AuthRole } from "@hotel/shared";
 
 /**
  * Guard de autorización de las rutas de back-office y recepción (D-04, RNF-13).
@@ -160,7 +160,10 @@ export async function authorize(request: Request, requiredRole?: RequiredRole): 
 
 /** ¿El rol es un rol de operador reconocido (gestión o personal, D-56)? */
 function isKnownOperatorRole(role: string): role is AuthRole {
-  return isManagementRole(role as AuthRole) || role === "HOUSEKEEPING" || role === "MAINTENANCE";
+  // Todos los roles de back-office (gestión + personal vNext): el owner pasa siempre por la rama
+  // de gestión; los roles nuevos (HEAD_MAINTENANCE/HEAD_KEEPER/MAINTENANCE_TECH/HOUSEKEEPER) se
+  // reconocen aquí desde F4 para que su suite pueda exigirlos (D-56).
+  return (BACK_OFFICE_ROLE_NAMES as readonly string[]).includes(role);
 }
 
 /** ¿El rol pertenece a la gestión del back-office (D-04)? */

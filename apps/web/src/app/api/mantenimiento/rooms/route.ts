@@ -15,7 +15,7 @@ const roomsRepo = new RoomsRepository();
  * otra avería: sobre una habitación bloqueada puede reportarse un problema adicional.
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const auth = await requireRole(request, ["RECEPTION_ROLE", "HOUSEKEEPING", "MAINTENANCE"]);
+  const auth = await requireRole(request, ["RECEPTION_ROLE", "HOUSEKEEPING", "MAINTENANCE", "HEAD_MAINTENANCE"]);
   if (!auth.ok) return auth.response;
 
   try {

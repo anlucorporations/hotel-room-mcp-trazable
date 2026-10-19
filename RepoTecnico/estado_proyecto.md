@@ -5700,3 +5700,41 @@ T4.1 (rutas de la suite), T4.2 (componentes de operación), T4.3 (componentes tr
 T4.4 (endpoints con guard), T4.5 (endpoint de firma TypedData + outbox) y T4.8 (textos). El gate del
 ciclo sigue siendo el de §4.4 del plan: bloqueo/desbloqueo firmado observable en UI, preventivo
 crítico firmado, informes y E2E en verde.
+
+---
+
+## 45. F4 CERRADA — Suite de Mantenimiento con firma selectiva (2026-10-19)
+
+**Cierre de la ruta crítica F4.** Se completó la capa que faltaba del ciclo (§37) sobre la base de
+dominio y repositorio ya entregada: rutas, componentes, endpoints con guard de rol y textos.
+
+### Entregado
+
+| Bloque | Contenido |
+|---|---|
+| **T4.1 · Rutas** | `/mantenimiento` (dashboard), `/incidencias` (lista) y `/incidencias/[id]` (ficha), `/preventivo`, `/areas-comunes`, `/informes` y `/tablero` (suite heredada del técnico, conservada hasta F5). Layout con navegación y gate de sesión por roles `HEAD_MAINTENANCE`/`MAINTENANCE_TECH`/`MAINTENANCE` (owner incluido) |
+| **T4.2 · Componentes** | `IncidentList` (acciones asignar/resolver/cancelar), `IncidentDetail` (historial + bloqueo/desbloqueo firmado), `PreventiveBoard` (cierre con firma si el área es crítica), `CommonAreasBoard` (registro y verificación de ejecuciones), `MaintenanceReports` (agregados por periodo) |
+| **T4.3 · Firma observable** | `SignatureGate` (⛓ + `requires-signature`, `wallet-disconnected` y botón deshabilitado sin wallet), `SignaturePreviewModal` (`signature-preview` + `signature-confirm`), `SignaturePendingBanner` (`signature-pending-anchor`) y `EvidenceMissingNotice` (`evidence-missing`) |
+| **T4.4 · Endpoints** | Roles de suite extendidos en `board`/`incidents`/`tasks`/`rooms`; nuevos `preventivo` (GET/POST), `areas-comunes` (GET/POST/PATCH) e `informes` (GET) con agregados reales; 10 pruebas de API |
+| **T4.5 · Firma** | `POST /signatures` (TypedData desde el outbox de F2/F3), `PATCH /signatures/[id]` (recupera firmante y marca `SIGNED`), `block`/`unblock` firmados, y cierre de preventivo crítico con `signature_id` **solo** con firma `SIGNED` y payload exacto. El repositorio rechaza cerrar una tarea crítica sin firma (`SIGNATURE_REQUIRED`) |
+| **T4.8 · Textos** | Claves nuevas en ES/EN/RU (navegación, dashboard, firma, evidencia, informes y periodicidades) |
+| **Pruebas** | `maintenance-suite.test.ts` (API), `maintenance-suite.test.ts` de componentes (oráculos de firma, client-only, i18n), 2 pruebas nuevas de repositorio (firma obligatoria/ enlace), E2E smoke de la puerta de sesión (`apps/web/e2e/mantenimiento.spec.ts`). Guardián `public-suite` y `suite-access` actualizados a los roles vNext |
+
+### Verificación ejecutada
+
+| Comprobación | Resultado |
+|---|---|
+| `pnpm --filter @hotel/shared test -- maintenance.repository maintenance-signature maintenance` | **42 + 13 + 5 en verde** |
+| Pruebas F4 de la web (API + componentes + guardianes de suite/i18n) | **59 pruebas en verde** (8 ficheros) |
+| `pnpm --filter @hotel/web typecheck` | limpio (tras adaptar `findIncident` y los tipos DTO) |
+| Diseño de datos | la firma **no se reimplementa**: el TypedData lo emite el motor EIP-712 de F2 y el anclaje lo hace el outbox/relayer de F3 |
+
+### Deuda declarada (no bloquea F6)
+
+- El E2E **con wallet real** (bloqueo/desbloqueo firmado end-to-end) necesita backend vivo + wallet
+  inyectada; el spec entregado cubre la puerta de sesión en escritorio y móvil y los oráculos de
+  firma se fijan estáticamente en Vitest. Queda como prueba manual en la ventana de despliegue.
+- La evidencia fotográfica de las tareas se guarda como referencia de texto (`evidence_path`); la
+  subida de ficheros llega con la nube de evidencias de F9.
+- `HEAD_MAINTENANCE`/`MAINTENANCE_TECH` no tienen todavía operador ni wallet asignada en producción:
+  se dan de alta desde Sistemas (F9) o por *seed*. El owner puede operar toda la suite.

@@ -103,9 +103,27 @@ export interface PreventiveTaskRecord {
   roomNumber: number | null;
   /** `true` si la tarea sigue pendiente y su fecha ya pasó (aviso, D-54). */
   overdue: boolean;
+  /** Área común del plan (F4 · T4.4/T4.5), si la hay. */
+  areaId: string | null;
+  areaName: string | null;
+  /** `true` si el área es crítica: la verificación exige firma EIP-712 (D-C23). */
+  isCritical: boolean;
+  /** `true` si la tarea exige firma (marca explícita o área crítica). */
+  requiresSignature: boolean;
+  /** Firma EIP-712 enlazada al cierre, si la hubo (F4 · T4.5). */
+  signatureId: string | null;
+  /** Evidencia adjunta al cierre (foto/nota), si la hay. */
+  evidencePath: string | null;
 }
 
 /** Periodicidad de una tarea rutinaria de área común (F1 · T1.9). */
+export type CloseTaskOptions = {
+  /** Firma EIP-712 del jefe cuando la tarea exige firma (área crítica, F4 · T4.5). */
+  signatureId?: string | null;
+  /** Evidencia adjunta al cierre (foto/nota); su ausencia solo avisa (D-C12). */
+  evidencePath?: string | null;
+};
+
 export const AREA_PERIODICITIES = ["DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "ANNUAL"] as const;
 export type AreaPeriodicity = (typeof AREA_PERIODICITIES)[number];
 
@@ -622,6 +640,11 @@ export class MaintenanceRepository {
     return this.findPlan(id);
   }
 
+  /** Tarea preventiva por id (con plan y área crítica unidos), o `null` si no existe. */
+  async findTask(id: string): Promise<PreventiveTaskRecord | null> {
+    return this.findTaskWith(this.pool, id);
+  }
+
   async listTasks(
     filter: { planId?: string; status?: PreventiveTaskStatus; dueOnOrBefore?: string } = {},
   ): Promise<PreventiveTaskRecord[]> {
@@ -664,8 +687,9 @@ export class MaintenanceRepository {
     id: string,
     actor: string,
     notes?: string | null,
+    options: CloseTaskOptions = {},
   ): Promise<{ task: PreventiveTaskRecord; next: PreventiveTaskRecord | null }> {
-    return this.closeTask(id, "DONE", actor, notes ?? null);
+    return this.closeTask(id, "DONE", actor, notes ?? null, options);
   }
 
   /** Marca una tarea como omitida y programa la siguiente. */
@@ -673,8 +697,9 @@ export class MaintenanceRepository {
     id: string,
     actor: string,
     notes?: string | null,
+    options: CloseTaskOptions = {},
   ): Promise<{ task: PreventiveTaskRecord; next: PreventiveTaskRecord | null }> {
-    return this.closeTask(id, "SKIPPED", actor, notes ?? null);
+    return this.closeTask(id, "SKIPPED", actor, notes ?? null, options);
   }
 
   /** Tablero del técnico: incidencias abiertas, tareas vencidas y habitaciones bloqueadas (D-53/D-54). */
@@ -930,13 +955,17 @@ export class MaintenanceRepository {
     status: Extract<PreventiveTaskStatus, "DONE" | "SKIPPED">,
     actor: string,
     notes: string | null,
+    options: CloseTaskOptions = {},
   ): Promise<{ task: PreventiveTaskRecord; next: PreventiveTaskRecord | null }> {
     const client = await this.pool.connect();
     try {
       await client.query("BEGIN");
       const current = await client.query(
-        `SELECT t.*, p.periodicity, p.active FROM preventive_tasks t
+        `SELECT t.*, p.periodicity, p.active, COALESCE(at.is_critical, FALSE) AS is_critical
+           FROM preventive_tasks t
            JOIN preventive_plans p ON p.id = t.plan_id
+           LEFT JOIN maintenance_areas a ON a.id = p.area_id
+           LEFT JOIN maintenance_area_types at ON at.code = a.area_type_code
           WHERE t.id = $1 FOR UPDATE OF t`,
         [id],
       );
@@ -949,11 +978,23 @@ export class MaintenanceRepository {
         await client.query("ROLLBACK");
         throw new MaintenanceError("TASK_CLOSED", "La tarea ya estaba cerrada.");
       }
+      // F4 · T4.5: una tarea de área crítica (o marcada `requires_signature`) solo se cierra con
+      // una firma enlazada. La firma ya se validó (SIGNED + payload) en la capa de API.
+      const requiresSignature = row.requires_signature === true || row.is_critical === true;
+      if (requiresSignature && !options.signatureId) {
+        await client.query("ROLLBACK");
+        throw new MaintenanceError(
+          "SIGNATURE_REQUIRED",
+          "La tarea es de un área crítica y requiere firma EIP-712 para cerrarse.",
+        );
+      }
       await client.query(
         `UPDATE preventive_tasks
-            SET status = $2, completed_by = $3, completed_at = NOW(), notes = COALESCE($4, notes)
+            SET status = $2, completed_by = $3, completed_at = NOW(), notes = COALESCE($4, notes),
+                signature_id = COALESCE($5, signature_id),
+                evidence_path = COALESCE($6, evidence_path)
           WHERE id = $1`,
-        [id, status, actor, notes],
+        [id, status, actor, notes, options.signatureId ?? null, options.evidencePath ?? null],
       );
 
       let nextId: string | null = null;
@@ -1055,10 +1096,13 @@ export class MaintenanceRepository {
   }
 }
 
-const TASK_SELECT = `SELECT t.*, p.code AS plan_code, p.name AS plan_name, p.equipment, p.periodicity, r.room_number
+const TASK_SELECT = `SELECT t.*, p.code AS plan_code, p.name AS plan_name, p.equipment, p.periodicity,
+          r.room_number, p.area_id, a.name AS area_name, COALESCE(at.is_critical, FALSE) AS is_critical
    FROM preventive_tasks t
    JOIN preventive_plans p ON p.id = t.plan_id
-   LEFT JOIN rooms r ON r.id = p.room_id`;
+   LEFT JOIN rooms r ON r.id = p.room_id
+   LEFT JOIN maintenance_areas a ON a.id = p.area_id
+   LEFT JOIN maintenance_area_types at ON at.code = a.area_type_code`;
 
 const AREA_SELECT = `SELECT a.*, t.name_es AS area_type_name, t.is_critical
    FROM maintenance_areas a
@@ -1135,6 +1179,12 @@ function mapTask(row: QueryResultRow): PreventiveTaskRecord {
     periodicity: (row.periodicity as PreventivePeriodicity | null) ?? null,
     roomNumber: row.room_number === null || row.room_number === undefined ? null : Number(row.room_number),
     overdue: status === "PENDING" && dueDate <= new Date().toISOString().slice(0, 10),
+    areaId: (row.area_id as string | null) ?? null,
+    areaName: (row.area_name as string | null) ?? null,
+    isCritical: row.is_critical === true,
+    requiresSignature: row.requires_signature === true || row.is_critical === true,
+    signatureId: (row.signature_id as string | null) ?? null,
+    evidencePath: (row.evidence_path as string | null) ?? null,
   };
 }
 
