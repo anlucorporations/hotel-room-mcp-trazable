@@ -3726,8 +3726,8 @@ da de alta F9; E2E de navegador con wallet inyectada, manual; `/ama-de-llaves/da
 
 | Elemento | Valor |
 |---|---|
-| web | `web:v73` → revisión `hotel-mcp-web-00079-j58` (F7 corregido); `web:v74` → revisión de cierre F10 |
-| MCP | `mcp` con `OPERATIONS_CONTRACT_ADDRESS=0x222d74f3…b9ffe` y herramienta **`getOperationalActions`** (solo lectura) |
+| web | **`hotel-mcp-web-00080-7d4`** (100 %) · imagen **`web:v74`** (cierre F10; rollback `v73`/`00079-j58`) |
+| MCP | **`hotel-mcp-mcp-00022-g94`** · imagen **`mcp:v74`** con `OPERATIONS_CONTRACT_ADDRESS=0x222d74f3…b9ffe` y `OPERATIONS_DEPLOYMENT_BLOCK=5491513`; herramienta **`getOperationalActions`** (solo lectura) |
 | F7 validado | alta sin firma on-chain → reclamo del huésped → resolución aceptada en recepción → check-out que liquida el cargo en el folio (`RESOLVED_ACCEPTED`, cargo `PAID`) |
 | Correcciones | casts en `resolveNotification`; `housekeeping_room_logs` a `VARCHAR(20)` (PENDING_CLEANING) y sincronía triple |
 | F10 validado | reporte de incidencias por recepción, publicación manual de la venta, **D-C40 308** `/housekeeping → /ama-de-llaves`, MCP solo lectura, p95 tablero 426,7 ms |

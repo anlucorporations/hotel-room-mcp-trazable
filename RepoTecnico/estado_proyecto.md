@@ -5807,3 +5807,30 @@ probado ON y restaurado a off (D-C23).
 | Acceso anónimo | sirve el acceso del back-office, sin datos del tablero en el payload |
 
 Evidencia: [`evidencias/f6-ama-de-llaves-2026-10-19.json`](./evidencias/f6-ama-de-llaves-2026-10-19.json).
+
+---
+
+## 47. F7 y F10 CERRADAS — cargos por daños y cierre de la Fase 3 (2026-10-19)
+
+### F7 · Cargos por daños y notificación al huésped
+
+| Pieza | Contenido |
+|---|---|
+| Dominio | `domain/damage-charges.ts`: estados, plazo **24 h** (D-C14), transiciones, resolución aceptada (al folio) / rechazada (cancelado) (D-C11) y retención **90 días** |
+| Repositorio | alta **atómica** sin firma on-chain (D-C27) + traza encadenada; reclamación, resolución, liquidación en check-out y anonimización de evidencias |
+| API/UI | alta de la suite, portal del huésped `/mis-noches/cargos/[id]`, reclamaciones en recepción y formulario con `evidence-missing`; correo `DAMAGE_CHARGE_NOTICE` con fallback al portal |
+| Validado (prod) | alta 201 (`signatureId=null`, 0 firmas on-chain, auditoría enlazada) → reclamación `DISPUTED` → resolución aceptada → **check-out liquida el cargo** (`PAID`, aviso `RESOLVED_ACCEPTED`) |
+| Corregido en la ventana | casts en `resolveNotification` (500 por tipos de `$2`) y `housekeeping_room_logs` a `VARCHAR(20)` (el check-out fallaba al guardar `PENDING_CLEANING`), con sincronía triple del esquema |
+
+### F10 · Recepción vNext y cierre
+
+| Gate | Resultado |
+|---|---|
+| Recepción reporta incidencias (sin firma, D-C37) | panel + API con guard `RECEPTION_ROLE`; validado ticket `OPEN` |
+| Publicar/despublicar venta manualmente (D-C9) | API `/api/reception/rooms/:roomNumber/publication` + panel; validado `PAUSED↔PUBLISHED` |
+| Redirección **D-C40** | `/housekeeping` → **308** `/ama-de-llaves` (y subrutas); enlaces de suite y menú actualizados |
+| MCP solo lectura (DT-AUD-15) | 7 herramientas por transporte real; `getOperationalActions` leyó **7 acciones** de `HotelOperations`; guardián prohíbe APIs de escritura |
+| Rendimiento (RNF-M-05) | tablero p95 **426,7 ms** (<500); listado p95 **334,4 ms** (<800) |
+| Despliegue | web `v74` → `hotel-mcp-web-00080-7d4`; MCP `v74` → `hotel-mcp-mcp-00022-g94`; salud READY/ok |
+
+Evidencia: [`evidencias/f7-f10-cierre-fase3-2026-10-19.json`](./evidencias/f7-f10-cierre-fase3-2026-10-19.json).

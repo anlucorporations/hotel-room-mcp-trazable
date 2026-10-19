@@ -15,7 +15,14 @@
       "resolveNotification fallaba con 500 'inconsistent types deduced for parameter $2' (casts explícitos)",
       "housekeeping_room_logs.from/to_value VARCHAR(12) no admitía PENDING_CLEANING: el check-out fallaba con 'value too long'; ensanchado a VARCHAR(20) en migrador + base de datos + propuesta vNext (guardián de sincronía triple en verde)"
     ],
-    "retencion": "anonymizeExpiredEvidence cableado a purgeExpiredData/retention-scheduler (90 días, T7.6)"
+    "retencion": "anonymizeExpiredEvidence cableado a purgeExpiredData/retention-scheduler (90 días, T7.6)",
+    "evidenciaDb": {
+      "signature_id": "null en los cargos de daños",
+      "on_chain_signatures_entity_DAMAGE_CHARGE": 0,
+      "audit_log": "2 entradas encadenadas con audit_log_id enlazado",
+      "liquidacion": "cargo aceptado PAID + aviso RESOLVED_ACCEPTED (canal EMAIL)",
+      "housekeeping_room_logs": "CLEAN→PENDING_CLEANING guardado tras el ensanche VARCHAR(20)"
+    }
   },
   "f10": {
     "entregado": [
@@ -24,6 +31,14 @@
       "D-C40: /housekeeping → /ama-de-llaves redirección permanente 308 en next.config",
       "MCP: herramienta getOperationalActions solo lectura (eventos OperationalAction de HotelOperations; guardián sin APIs de escritura)",
       "E2E smoke de daños y redirección; performance del tablero ya medida (p95 426,7 ms < 500)"
+    ],
+    "validadoProduccion": [
+      "D-C40: GET /housekeeping → 308 Location /ama-de-llaves; /housekeeping/foo → 308 /ama-de-llaves/foo",
+      "Páginas nuevas 200: /recepcion/incidencias, /recepcion/habitaciones, /recepcion/danos, /ama-de-llaves, /mis-noches/cargos",
+      "Publicación manual sin firma: room 201 unpublish→PAUSED y publish→PUBLISHED (200)",
+      "Incidencia reportada por recepción: 201 ticket OPEN",
+      "MCP por transporte real: 7 herramientas (incluye getOperationalActions) y 7 acciones operativas leídas de la cadena; sin capacidades de escritura",
+      "Rendimiento: listado /api/nfts p95 334,4 ms (<800); tablero p95 426,7 ms (<500)"
     ]
   },
   "pruebas": {
@@ -31,5 +46,10 @@
     "web": "API daños 5 + guardián de estructura 4 + i18n; typecheck limpio",
     "mcp": "tool getOperationalActions + guardián de solo lectura",
     "limitacionDeclarada": "El E2E Playwright con backend vivo y wallet inyectada queda como prueba manual de ventana; los specs de puerta de sesión y redirección son herméticos"
+  },
+  "despliegue": {
+    "web": "web:v74 → hotel-mcp-web-00080-7d4 (100%)",
+    "mcp": "mcp:v74 → hotel-mcp-mcp-00022-g94 con OPERATIONS_CONTRACT_ADDRESS=0x222d74f3…b9ffe y OPERATIONS_DEPLOYMENT_BLOCK=5491513",
+    "health": "web READY · mcp ok (bloque 5747244)"
   }
 }
