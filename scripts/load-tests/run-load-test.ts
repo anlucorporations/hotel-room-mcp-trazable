@@ -102,6 +102,16 @@ const validators = {
     if (status !== 200) return `HTTP ${status}`;
     const parsed = jsonField(body) as Record<string, unknown> | undefined;
     if (!parsed || !Array.isArray(parsed.items)) return 'sin items';
+    // El histórico puede estar vacío y ser correcto (catálogo honesto, sin ventas): lo que se
+    // valida es el contrato de la respuesta, no que haya filas inventadas.
+    return null;
+  },
+  catalog: (status: number, body: string): string | null => {
+    if (status !== 200) return `HTTP ${status}`;
+    const parsed = jsonField(body) as Record<string, unknown> | undefined;
+    if (!parsed || !Array.isArray(parsed.items)) return 'sin items';
+    const items = parsed.items as Array<Record<string, unknown>>;
+    if (items.length > 0 && typeof items[0]?.tokenId !== 'string') return 'entrada sin tokenId';
     return null;
   },
 } as const;
@@ -158,6 +168,7 @@ async function main(): Promise<void> {
     { name: 'worker:/health', url: `${WORKER_URL}/health`, validate: validators.health },
     { name: 'web:/', url: `${WEB_URL}/`, validate: validators.webHome },
     { name: 'web:/api/sales/history', url: `${WEB_URL}/api/sales/history?limit=10`, validate: validators.salesHistory },
+    { name: 'web:/api/nfts', url: `${WEB_URL}/api/nfts`, validate: validators.catalog },
     { name: 'web:/health/ready', url: `${WEB_URL}/health/ready`, validate: validators.health },
   ];
 
