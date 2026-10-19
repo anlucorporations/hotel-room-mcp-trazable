@@ -104,10 +104,21 @@ export interface SupplyConsumptionResult {
 }
 
 /** Tipo de inspección post-limpieza (`housekeeping_inspections.inspection_type`). */
-export type InspectionType = "CHECKOUT" | "DAILY_SERVICE";
+import {
+  INSPECTION_RESULTS,
+  INSPECTION_TYPES,
+  type InspectionResultCode,
+  type InspectionTypeCode,
+} from "../../domain/housekeeping";
 
-/** Resultado de una inspección (`housekeeping_inspections.result`). */
-export type InspectionResult = "APPROVED" | "REJECTED";
+/**
+ * Tipo y resultado de inspección: vocabulario del dominio (F6). Se reexportan con los nombres que ya
+ * usaban los consumidores del repositorio para no romper imports.
+ */
+export type InspectionType = InspectionTypeCode;
+export type InspectionResult = InspectionResultCode;
+export const INSPECTION_TYPE_CODES: readonly InspectionType[] = INSPECTION_TYPES;
+export const INSPECTION_RESULT_CODES: readonly InspectionResult[] = INSPECTION_RESULTS;
 
 export interface HousekeepingInspectionRecord {
   id: string;

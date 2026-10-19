@@ -42,7 +42,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const auth = await requireRole(request, ["RECEPTION_ROLE", "HOUSEKEEPING", "MAINTENANCE", "HEAD_MAINTENANCE"]);
+  const auth = await requireRole(request, ["RECEPTION_ROLE", "HOUSEKEEPING", "HOUSEKEEPER", "HEAD_KEEPER", "MAINTENANCE", "HEAD_MAINTENANCE"]);
   if (!auth.ok) return auth.response;
 
   let body: {
@@ -72,9 +72,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       ? (body.priority as MaintenancePriority)
       : "MEDIUM";
 
+  // T6.7: el rol de quien reporta se persiste para la trazabilidad (`reported_by_role`); solo se
+  // acepta el vocabulario declarado, nunca un valor arbitrario del cuerpo.
+  const REPORTER_ROLES = ["HEAD_KEEPER", "HOUSEKEEPER", "RECEPTION_ROLE"] as const;
+  const reportedByRole = (REPORTER_ROLES as readonly string[]).includes(auth.session.role)
+    ? auth.session.role
+    : null;
+
   try {
     const incident = await repo.reportIncident({
       roomId: body.roomId,
+      reportedByRole,
       kind: body.kind,
       description: typeof body.description === "string" ? body.description : null,
       priority,

@@ -42,6 +42,8 @@ export interface MaintenanceIncidentRecord {
   /** `true` mientras está abierta retira la habitación de la venta (D-53). */
   blocksSale: boolean;
   reportedBy: string;
+  /** Rol del reportero (`HEAD_KEEPER`/`HOUSEKEEPER`/`RECEPTION_ROLE`) cuando consta (F6 · T6.7). */
+  reportedByRole: string | null;
   assignedTo: string | null;
   createdAt: Date;
   resolvedAt: Date | null;
@@ -240,6 +242,8 @@ export class MaintenanceRepository {
     priority?: MaintenancePriority;
     blocksSale?: boolean;
     reportedBy: string;
+    /** Rol del reportero en la plataforma (`HEAD_KEEPER`, `HOUSEKEEPER`, `RECEPTION_ROLE`…, T6.7). */
+    reportedByRole?: string | null;
     areaId?: string | null;
   }): Promise<MaintenanceIncidentRecord> {
     const client = await this.pool.connect();
@@ -254,8 +258,9 @@ export class MaintenanceRepository {
       }
       const inserted = await client.query(
         `INSERT INTO maintenance_incidents
-           (room_id, kind, description, priority, status, blocks_sale, reported_by, area_id)
-         VALUES ($1, $2, $3, $4, 'OPEN', $5, $6, $7)
+           (room_id, kind, description, priority, status, blocks_sale, reported_by, area_id,
+            reported_by_role)
+         VALUES ($1, $2, $3, $4, 'OPEN', $5, $6, $7, $8)
          RETURNING *`,
         [
           input.roomId,
@@ -265,6 +270,7 @@ export class MaintenanceRepository {
           input.blocksSale ?? true,
           input.reportedBy,
           input.areaId ?? null,
+          input.reportedByRole ?? null,
         ],
       );
       await client.query(
@@ -1128,6 +1134,7 @@ function mapIncident(row: QueryResultRow): MaintenanceIncidentRecord {
     status: row.status as MaintenanceStatus,
     blocksSale: row.blocks_sale as boolean,
     reportedBy: row.reported_by as string,
+    reportedByRole: (row.reported_by_role as string | null) ?? null,
     assignedTo: (row.assigned_to as string | null) ?? null,
     createdAt: row.created_at as Date,
     resolvedAt: (row.resolved_at as Date | null) ?? null,

@@ -24,7 +24,7 @@ interface RouteParams {
  * Rol `HOUSEKEEPING` (owner incluido, D-56/D-62). Sin PII: solo nombres de personal y códigos de artículo.
  */
 export async function PATCH(request: NextRequest, { params }: RouteParams): Promise<NextResponse> {
-  const auth = await requireRole(request, "HOUSEKEEPING");
+  const auth = await requireRole(request, ["HOUSEKEEPING", "HOUSEKEEPER", "HEAD_KEEPER"]);
   if (!auth.ok) return auth.response;
 
   const { id } = await params;

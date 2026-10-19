@@ -21,7 +21,7 @@ interface RouteParams {
  * cambio deja traza en `housekeeping_room_logs` con el valor anterior real. Rol `HOUSEKEEPING`.
  */
 export async function POST(request: NextRequest, { params }: RouteParams): Promise<NextResponse> {
-  const auth = await requireRole(request, "HOUSEKEEPING");
+  const auth = await requireRole(request, ["HOUSEKEEPING", "HOUSEKEEPER", "HEAD_KEEPER"]);
   if (!auth.ok) return auth.response;
 
   const { id } = await params;

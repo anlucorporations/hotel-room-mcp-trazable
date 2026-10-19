@@ -15,7 +15,7 @@ const repo = new HousekeepingRepository();
  * responsable desde Administración → Housekeeping → Lencería (`/api/admin/housekeeping/supplies`).
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const auth = await requireRole(request, "HOUSEKEEPING");
+  const auth = await requireRole(request, ["HOUSEKEEPING", "HOUSEKEEPER", "HEAD_KEEPER"]);
   if (!auth.ok) return auth.response;
 
   try {

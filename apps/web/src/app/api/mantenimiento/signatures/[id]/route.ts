@@ -17,7 +17,7 @@ interface RouteParams {
  * asignada al jefe; después marca la fila `SIGNED` (el worker la anclará con el relayer, F3).
  */
 export async function PATCH(request: NextRequest, { params }: RouteParams): Promise<NextResponse> {
-  const auth = await requireRole(request, ["HEAD_MAINTENANCE", "DEFAULT_ADMIN_ROLE"]);
+  const auth = await requireRole(request, ["HEAD_MAINTENANCE", "HEAD_KEEPER", "DEFAULT_ADMIN_ROLE"]);
   if (!auth.ok) return auth.response;
 
   const { id } = await params;

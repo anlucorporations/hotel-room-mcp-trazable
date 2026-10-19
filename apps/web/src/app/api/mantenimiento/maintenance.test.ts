@@ -69,7 +69,7 @@ describe("API de Mantenimiento (F4 · D-52…D-54, D-63)", () => {
       jsonRequest("http://localhost/api/mantenimiento/incidents", { roomId: "room-1", kind: "FONTANERIA" }),
     );
     expect(res.status).toBe(201);
-    expect(lastRequiredRole()).toEqual(["RECEPTION_ROLE", "HOUSEKEEPING", "MAINTENANCE", "HEAD_MAINTENANCE"]);
+    expect(lastRequiredRole()).toEqual(["RECEPTION_ROLE", "HOUSEKEEPING", "HOUSEKEEPER", "HEAD_KEEPER", "MAINTENANCE", "HEAD_MAINTENANCE"]);
     expect(mockRepo.reportIncident).toHaveBeenCalledWith(expect.objectContaining({ blocksSale: true, reportedBy: "admin@hotel.es" }));
   });
 

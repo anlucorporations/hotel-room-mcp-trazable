@@ -31,6 +31,8 @@ const SERVER_ONLY_ALLOWLIST = new Set([
   // los consume SOLO el código de rutas de API.
   "lib/mantenimiento/errors.ts",
   "lib/mantenimiento/signatures.ts",
+  // Tablero de estados de la suite del ama de llaves (F6): solo servidor (repositorios).
+  "lib/housekeeping-state.ts",
   "lib/public-content.ts",
   "lib/rooms.ts",
   "lib/server-client.ts",

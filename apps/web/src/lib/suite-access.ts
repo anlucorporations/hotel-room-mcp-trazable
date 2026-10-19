@@ -13,19 +13,26 @@
  *   - **Sin sesión**: ningún acceso (el menú solo ofrece iniciar sesión).
  */
 
-export type SuiteKey = "admin" | "reception" | "housekeeping" | "maintenance";
+export type SuiteKey = "admin" | "reception" | "housekeeping" | "maintenance" | "keepers";
 
 export interface SuiteLink {
   readonly key: SuiteKey;
   /** Ruta de entrada de la suite. */
   readonly href: string;
   /** Clave i18n de la etiqueta (namespace `walletMenu`). */
-  readonly labelKey: "suiteAdmin" | "suiteReception" | "suiteHousekeeping" | "suiteMaintenance";
+  readonly labelKey:
+    | "suiteAdmin"
+    | "suiteReception"
+    | "suiteHousekeeping"
+    | "suiteMaintenance"
+    | "suiteKeepers";
 }
 
 const ADMIN: SuiteLink = { key: "admin", href: "/admin", labelKey: "suiteAdmin" };
 const RECEPTION: SuiteLink = { key: "reception", href: "/recepcion", labelKey: "suiteReception" };
 const HOUSEKEEPING: SuiteLink = { key: "housekeeping", href: "/housekeeping", labelKey: "suiteHousekeeping" };
+/** Suite vNext del ama de llaves y de la camarera (F6). */
+const KEEPERS: SuiteLink = { key: "keepers", href: "/ama-de-llaves", labelKey: "suiteKeepers" };
 const MAINTENANCE: SuiteLink = { key: "maintenance", href: "/mantenimiento", labelKey: "suiteMaintenance" };
 
 /** Roles on-chain que siguen siendo back-office aunque no tengan una suite propia. */
@@ -41,12 +48,15 @@ export function suiteLinksForRoles(roles: readonly string[], isOwner = false): r
   const set = new Set(roles);
 
   if (isOwner || set.has("DEFAULT_ADMIN_ROLE")) {
-    return [ADMIN, RECEPTION, HOUSEKEEPING, MAINTENANCE];
+    return [ADMIN, RECEPTION, HOUSEKEEPING, MAINTENANCE, KEEPERS];
   }
 
   const links: SuiteLink[] = [];
   if (set.has("RECEPTION_ROLE")) links.push(RECEPTION);
   if (set.has("HOUSEKEEPING")) links.push(HOUSEKEEPING);
+  // F6: ama de llaves (`HEAD_KEEPER`, con wallet para la inspección opcional) y camarera
+  // (`HOUSEKEEPER`, sin wallet) entran a la suite vNext `/ama-de-llaves`.
+  if (set.has("HEAD_KEEPER") || set.has("HOUSEKEEPER")) links.push(KEEPERS);
   // vNext F4: el jefe de mantenimiento (`HEAD_MAINTENANCE`, con wallet) y el técnico vNext
   // (`MAINTENANCE_TECH`, sin wallet) entran a la suite de mantenimiento; `MAINTENANCE` se conserva
   // para la suite heredada (D-77).

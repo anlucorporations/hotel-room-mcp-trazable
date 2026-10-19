@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { HousekeepingRepository } from "@hotel/shared";
 import { requireRole } from "@/lib/guard";
 import { boardSignature, defaultBoardDate, isIsoDate } from "@/lib/housekeeping-board";
+import { fetchRoomStateBoard, roomStateSignature } from "@/lib/housekeeping-state";
 
 export const dynamic = "force-dynamic";
 
@@ -22,10 +23,13 @@ const POLL_INTERVAL_MS = 1500;
  * un bus en memoria no cruzaría procesos. Rol `HOUSEKEEPING` (owner incluido, D-56).
  */
 export async function GET(request: NextRequest): Promise<Response | NextResponse> {
-  const auth = await requireRole(request, "HOUSEKEEPING");
+  const auth = await requireRole(request, ["HOUSEKEEPING", "HOUSEKEEPER", "HEAD_KEEPER"]);
   if (!auth.ok) return auth.response;
 
   const date = request.nextUrl.searchParams.get("date") ?? defaultBoardDate();
+  // `view=rooms` (F6): el tablero de los cinco estados canónicos + marca de mantenimiento, con su
+  // propia firma. El SSE por defecto sigue sirviendo el tablero heredado de limpieza (D-30).
+  const view = request.nextUrl.searchParams.get("view");
   if (!isIsoDate(date)) {
     return NextResponse.json({ error: "BAD_REQUEST", message: "Fecha no válida (AAAA-MM-DD)." }, { status: 400 });
   }
@@ -57,6 +61,17 @@ export async function GET(request: NextRequest): Promise<Response | NextResponse
       const tick = async () => {
         if (closed) return;
         try {
+          if (view === "rooms") {
+            const stateBoard = await fetchRoomStateBoard(date);
+            const signature = roomStateSignature(stateBoard);
+            if (signature !== lastSignature) {
+              lastSignature = signature;
+              write("rooms", stateBoard);
+            } else {
+              write("ping", { at: new Date().toISOString() });
+            }
+            return;
+          }
           const board = await repo.getBoard(date);
           const signature = boardSignature(board);
           if (signature !== lastSignature) {

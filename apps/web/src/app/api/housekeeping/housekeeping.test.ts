@@ -60,12 +60,12 @@ describe("API de Housekeeping (F3 · D-30, D-48…D-51, D-62, D-64)", () => {
     resetGuardState();
   });
 
-  it("todas las rutas exigen HOUSEKEEPING (el owner también entra)", async () => {
+  it("todas las rutas exigen un rol de la suite de limpieza (el owner también entra)", async () => {
     await shiftsGet(new NextRequest("http://localhost/api/housekeeping/shifts"));
-    expect(lastRequiredRole()).toBe("HOUSEKEEPING");
+    expect(lastRequiredRole()).toEqual(["HOUSEKEEPING", "HOUSEKEEPER", "HEAD_KEEPER"]);
 
     await streamGet(new NextRequest("http://localhost/api/housekeeping/stream"));
-    expect(lastRequiredRole()).toBe("HOUSEKEEPING");
+    expect(lastRequiredRole()).toEqual(["HOUSEKEEPING", "HOUSEKEEPER", "HEAD_KEEPER"]);
 
     setGuardState("unauthorized");
     const denied = await shiftsGet(new NextRequest("http://localhost/api/housekeeping/shifts"));

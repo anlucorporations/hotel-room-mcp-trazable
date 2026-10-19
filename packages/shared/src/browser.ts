@@ -54,6 +54,9 @@ export * from "./domain/maintenance";
 // Vocabulario canónico de estados y tipos de entidad (vNext · F1 · T1.6): puro, sin E/S, para que las
 // suites de cliente ofrezcan exactamente los valores que valida el servidor.
 export * from "./domain/operations-state";
+// Suite Ama de llaves (F6): reglas puras de inspección (firma opcional por flag), efectos sobre la
+// habitación/asignación y tablero de los cinco estados canónicos + marca de mantenimiento.
+export * from "./domain/housekeeping";
 
 // Regla única de habitación vendible en el canal público (2026-10-18): pura y compartida por el
 // catálogo, la reserva pública y recepción. Evita que el catálogo ofrezca noches de habitaciones no

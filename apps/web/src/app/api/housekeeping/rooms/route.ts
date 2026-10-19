@@ -15,7 +15,7 @@ const repo = new HousekeepingRepository();
  * `STAYOVER`). Es la entrada del reparto automático y del ajuste manual. Rol `HOUSEKEEPING`.
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const auth = await requireRole(request, "HOUSEKEEPING");
+  const auth = await requireRole(request, ["HOUSEKEEPING", "HOUSEKEEPER", "HEAD_KEEPER"]);
   if (!auth.ok) return auth.response;
 
   const date = request.nextUrl.searchParams.get("date") ?? defaultBoardDate();

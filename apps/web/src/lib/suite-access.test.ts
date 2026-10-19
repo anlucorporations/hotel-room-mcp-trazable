@@ -7,9 +7,9 @@ describe("accesos a suites por rol (D-76/D-77)", () => {
     expect(suiteLinksForRoles([], false)).toEqual([]);
   });
 
-  it("el owner entra a las cuatro suites, en orden", () => {
+  it("el owner entra a las cinco suites, en orden", () => {
     const keys = suiteLinksForRoles(["DEFAULT_ADMIN_ROLE"], true).map((link) => link.key);
-    expect(keys).toEqual(["admin", "reception", "housekeeping", "maintenance"]);
+    expect(keys).toEqual(["admin", "reception", "housekeeping", "maintenance", "keepers"]);
   });
 
   it("recepción solo entra a Front Office", () => {
@@ -34,14 +34,15 @@ describe("accesos a suites por rol (D-76/D-77)", () => {
     expect(byKey.get("maintenance")).toBe("/mantenimiento");
   });
 
-  it("los roles vNext de mantenimiento (F4) entran a su suite; los de ama de llaves aún no", () => {
-    // F4 ya entregó la suite: el jefe (`HEAD_MAINTENANCE`) y el técnico (`MAINTENANCE_TECH`) tienen
-    // su entrada. Las suites de ama de llaves (`HEAD_KEEPER`/`HOUSEKEEPER`) llegan en F6; hasta
-    // entonces no se les ofrece ningún enlace para no darles un 403 en su primera llamada.
+  it("los roles vNext de mantenimiento (F4) y de ama de llaves (F6) entran a su suite", () => {
     expect(suiteLinksForRoles(["HEAD_MAINTENANCE"]).map((link) => link.key)).toEqual(["maintenance"]);
     expect(suiteLinksForRoles(["MAINTENANCE_TECH"]).map((link) => link.key)).toEqual(["maintenance"]);
-    for (const role of ["HEAD_KEEPER", "HOUSEKEEPER"]) {
-      expect(suiteLinksForRoles([role]), `${role} no debería tener suite todavía`).toEqual([]);
-    }
+    expect(suiteLinksForRoles(["HEAD_KEEPER"]).map((link) => link.key)).toEqual(["keepers"]);
+    expect(suiteLinksForRoles(["HOUSEKEEPER"]).map((link) => link.key)).toEqual(["keepers"]);
+  });
+
+  it("la suite del ama de llaves vive en /ama-de-llaves y la heredada sigue en /housekeeping", () => {
+    expect(suiteLinksForRoles(["HEAD_KEEPER"])[0]?.href).toBe("/ama-de-llaves");
+    expect(suiteLinksForRoles(["HOUSEKEEPING"])[0]?.href).toBe("/housekeeping");
   });
 });

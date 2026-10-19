@@ -32,13 +32,32 @@ import { activeChain } from "@/config/chain";
 /** Acciones firmables de la suite de mantenimiento. */
 export type MaintenanceSignatureAction = Extract<
   SignatureEntityType,
-  "ROOM_BLOCK" | "ROOM_UNBLOCK" | "PREVENTIVE_TASK"
+  "ROOM_BLOCK" | "ROOM_UNBLOCK" | "PREVENTIVE_TASK" | "INSPECTION"
 >;
 
 /** Rol de wallet que firma las operaciones de mantenimiento (D-C1/D-C4). */
 export const MAINTENANCE_WALLET_ROLE = "HEAD_MAINTENANCE" as const;
+/** Rol de wallet que firma la certificación de inspección del ama de llaves (F6). */
+export const HOUSEKEEPING_WALLET_ROLE = "HEAD_KEEPER" as const;
 /** Snapshot del rol on-chain asociado a la firma. */
 export const MAINTENANCE_ROLE_SNAPSHOT = "HEAD_MAINTENANCE_ROLE" as const;
+/** Snapshot del rol on-chain de la firma de inspección. */
+export const HOUSEKEEPING_ROLE_SNAPSHOT = "HEAD_KEEPER_ROLE" as const;
+
+/**
+ * Rol de wallet y snapshot on-chain que firma cada acción.
+ *
+ *   · Mantenimiento (`ROOM_BLOCK`/`ROOM_UNBLOCK`/`PREVENTIVE_TASK`) → `HEAD_MAINTENANCE`.
+ *   · Inspección de ama de llaves (`INSPECTION`) → `HEAD_KEEPER` (F6; firma **opcional** por flag).
+ */
+export function signatureRoleForAction(action: MaintenanceSignatureAction): {
+  readonly walletRole: "HEAD_MAINTENANCE" | "HEAD_KEEPER";
+  readonly roleSnapshot: "HEAD_MAINTENANCE_ROLE" | "HEAD_KEEPER_ROLE";
+} {
+  return action === "INSPECTION"
+    ? { walletRole: HOUSEKEEPING_WALLET_ROLE, roleSnapshot: HOUSEKEEPING_ROLE_SNAPSHOT }
+    : { walletRole: MAINTENANCE_WALLET_ROLE, roleSnapshot: MAINTENANCE_ROLE_SNAPSHOT };
+}
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ADDRESS_PATTERN = /^0x[0-9a-fA-F]{40}$/;
@@ -66,6 +85,9 @@ export function buildMaintenancePayload(
     readonly reason?: string | null;
     readonly until?: string | null;
     readonly taskId?: string;
+    readonly inspectionType?: string | null;
+    readonly result?: string | null;
+    readonly observations?: string | null;
   },
 ): Record<string, unknown> {
   switch (action) {
@@ -84,6 +106,13 @@ export function buildMaintenancePayload(
       };
     case "PREVENTIVE_TASK":
       return { taskId: input.taskId ?? null };
+    case "INSPECTION":
+      return {
+        roomId: input.roomId ?? null,
+        inspectionType: input.inspectionType ?? null,
+        result: input.result ?? null,
+        observations: input.observations ?? null,
+      };
   }
 }
 
@@ -93,7 +122,7 @@ export interface PreparedMaintenanceSignature {
   readonly contentHash: string;
   readonly nonce: string;
   readonly deadline: string;
-  readonly roleSnapshot: typeof MAINTENANCE_ROLE_SNAPSHOT;
+  readonly roleSnapshot: "HEAD_MAINTENANCE_ROLE" | "HEAD_KEEPER_ROLE";
   readonly typedData: {
     readonly domain: Record<string, unknown>;
     readonly types: Record<string, unknown>;
@@ -157,24 +186,27 @@ export async function prepareMaintenanceSignature(input: {
     throw new OperationsSignatureError("OPERATIONS_NOT_CONFIGURED", "El contrato de operaciones no está configurado.");
   }
   const operations = input.operations ?? new OperationsRepository();
-  const assigned = await operations.findActiveWallet(MAINTENANCE_WALLET_ROLE);
+  const role = signatureRoleForAction(input.action);
+  const assigned = await operations.findActiveWallet(role.walletRole);
   const isOwner = input.sessionRole === "DEFAULT_ADMIN_ROLE";
   if (!assigned) {
     throw new OperationsSignatureError(
       "SIGNATURE_WALLET_NOT_ASSIGNED",
-      "No hay wallet activa asignada al jefe de mantenimiento.",
+      role.walletRole === "HEAD_KEEPER"
+        ? "No hay wallet activa asignada a la ama de llaves."
+        : "No hay wallet activa asignada al jefe de mantenimiento.",
     );
   }
   if (!isOwner && assigned.username !== input.username) {
     throw new OperationsSignatureError(
       "SIGNATURE_WALLET_NOT_ASSIGNED",
-      "La wallet activa de mantenimiento pertenece a otro operador.",
+      "La wallet activa del rol pertenece a otro operador.",
     );
   }
   if (assigned.walletAddress.toLowerCase() !== input.signerAddress.toLowerCase()) {
     throw new OperationsSignatureError(
       "SIGNATURE_WALLET_NOT_ASSIGNED",
-      "El firmante no es la wallet activa del jefe de mantenimiento.",
+      "El firmante no es la wallet activa del rol.",
     );
   }
 
@@ -211,7 +243,7 @@ export async function prepareMaintenanceSignature(input: {
     contentHash,
     nonce: record.nonce as string,
     deadline: (record.deadline as Date).toISOString(),
-    roleSnapshot: MAINTENANCE_ROLE_SNAPSHOT,
+    roleSnapshot: role.roleSnapshot,
     typedData: {
       domain: { ...domain },
       types: operationalTypedData(domain, message).types as unknown as Record<string, unknown>,
@@ -255,11 +287,12 @@ export async function confirmMaintenanceSignature(input: {
       "La firma recuperada no corresponde a la wallet asignada.",
     );
   }
+  const role = signatureRoleForAction(record.entityType as MaintenanceSignatureAction);
   const signed = await operations.markSigned(record.id, {
     signature: input.signature,
     recoveredSigner: recovered,
     domainHash: operationsDomainSeparator(activeChain.id, contract),
-    roleSnapshot: MAINTENANCE_ROLE_SNAPSHOT,
+    roleSnapshot: role.roleSnapshot,
   });
   if (!signed) throw new OperationsSignatureError("SIGNATURE_NOT_READY", "La firma no se pudo confirmar.");
   return signed;
@@ -300,8 +333,12 @@ export async function assertSignatureAuthorizes(input: {
       "La firma no corresponde a este payload (habitación/motivo/fechas distintos).",
     );
   }
-  if (record.roleSnapshot !== MAINTENANCE_ROLE_SNAPSHOT) {
-    throw new OperationsSignatureError("SIGNATURE_SIGNER_MISMATCH", "La firma no acredita el rol de mantenimiento.");
+  const expectedRole = signatureRoleForAction(input.action);
+  if (record.roleSnapshot !== expectedRole.roleSnapshot) {
+    throw new OperationsSignatureError(
+      "SIGNATURE_SIGNER_MISMATCH",
+      `La firma no acredita el rol ${expectedRole.roleSnapshot}.`,
+    );
   }
   return record;
 }

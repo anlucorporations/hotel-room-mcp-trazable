@@ -16,7 +16,7 @@ const repo = new HousekeepingRepository();
  * tablero del día. Solo hay un turno por día y etiqueta.
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const auth = await requireRole(request, "HOUSEKEEPING");
+  const auth = await requireRole(request, ["HOUSEKEEPING", "HOUSEKEEPER", "HEAD_KEEPER"]);
   if (!auth.ok) return auth.response;
 
   const date = request.nextUrl.searchParams.get("date") ?? defaultBoardDate();
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const auth = await requireRole(request, "HOUSEKEEPING");
+  const auth = await requireRole(request, ["HOUSEKEEPING", "HOUSEKEEPER", "HEAD_KEEPER"]);
   if (!auth.ok) return auth.response;
 
   let body: { date?: unknown; label?: unknown; supervisor?: unknown };

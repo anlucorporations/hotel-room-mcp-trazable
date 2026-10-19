@@ -5756,3 +5756,37 @@ concedido a la cuenta 0 en `HotelOperations` (+ `backupForRole`), wallet del rol
 Hallazgos reales corregidos en la ventana: nonce `bytes32` mal convertido (la firma nunca habría
 funcionado), carrera `SIGNED→MINED` al aplicar, fuga del payload RSC sin sesión y duplicado de firma
 (409 en vez de 500). Evidencia en [`evidencias/f4-mantenimiento-firma-2026-10-19.json`](./evidencias/f4-mantenimiento-firma-2026-10-19.json).
+
+---
+
+## 46. F6 CERRADA — Suite Ama de llaves (2026-10-19)
+
+**Cierre de F6 de la ruta crítica.** Suite `/ama-de-llaves` para `HEAD_KEEPER`/`HOUSEKEEPER` (el
+owner entra a todo), construida sobre la infraestructura de turnos/asignaciones/inspecciones que ya
+existía y sin renombrar columnas ni estados (migración de F1 conservada).
+
+### Entregado
+
+| Bloque | Contenido |
+|---|---|
+| **Dominio** | `domain/housekeeping.ts`: tipos/resultados de inspección, flag `INSPECTION_REQUIRES_SIGNATURE` (por defecto **off**, D-C23), efectos (`APPROVED → CLEAN`; `REJECTED → DIRTY` + retrabajo) y tablero de los **cinco estados canónicos + mantenimiento**. 7 pruebas |
+| **Rutas** | `/ama-de-llaves` (tablero), `/turnos`, `/asignaciones`, `/inspecciones`, `/danos` (entrada reservada a F7) y `/suministros`; layout con gate de roles y revalidación de sesión en cada página (lección M7 · H1 aplicada desde el primer día) |
+| **Componentes** | `RoomStateBoard` (SSE `stream?view=rooms`, 5 estados + marca de mantenimiento), `ShiftPlanner`, `AssignmentBoard`, `InspectionPanel`, `InspectionRejectForm` y `ReportIncidentFromHousekeeping` |
+| **API** | Roles de suite extendidos en rooms/assignments/shifts/stream/supplies; **nuevos** `inspections` (GET con flag + POST), `state-board` y vista `rooms` del SSE. La inspección firmada reutiliza el flujo EIP-712 de F4 (`INSPECTION`, rol `HEAD_KEEPER`) y la previsualización; sin flag no crea firma |
+| **T6.6 Rechazo** | `applyInspectionToRoom(REJECTED)` devuelve la asignación a `PENDING` y la habitación a `DIRTY`; **no** hay estado `REJECTED` de asignación |
+| **T6.7 Reportería** | `maintenance_incidents.reported_by_role` se persiste desde la **sesión** (`HEAD_KEEPER`/`HOUSEKEEPER`/`RECEPTION_ROLE`; nunca del cuerpo) y el formulario del tablero crea el ticket para F4 |
+| **i18n** | Namespace `amaDeLlaves` completo ES/EN/RU + `walletMenu.suiteKeepers`; paridad y claves dinámicas declaradas |
+
+### Verificación
+
+| Comprobación | Resultado |
+|---|---|
+| Dominio + repositorios (shared) | **81 pruebas** F6 en verde (incluye `reported_by_role` y efectos de inspección) |
+| API de la suite | **9 pruebas** (flag on/off, firma obligatoria/opcional, rechazo, tablero, roles) |
+| Componentes/guardianes | **8 pruebas** de estructura (rutas, `data-testid`, client-only, sesión, i18n) |
+| Typecheck web | limpio |
+| Guardián i18n | límite de claves dinámicas revisado a 80 con justificación (vocabularios `state.*`, `inspectionType.*`, `shiftLabel.*`…) |
+
+**Deuda declarada:** el E2E de navegador con wallet inyectada y el flag activo queda como prueba
+manual/ventana; no hay operadores `HEAD_KEEPER`/`HOUSEKEEPER` dados de alta (los crea F9); p95 del
+tablero se mide en la ventana de despliegue.

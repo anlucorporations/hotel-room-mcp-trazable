@@ -110,7 +110,7 @@ describe("API de firmas de mantenimiento (F4 · T4.4/T4.5)", () => {
     expect(body.typedData.domain.name).toBe("HotelOperations");
     expect(body.typedData.primaryType).toBe("OperationalAction");
     expect(body.typedData.message.deadline).toMatch(/^[0-9]+$/);
-    expect(lastRequiredRole()).toEqual(["HEAD_MAINTENANCE", "DEFAULT_ADMIN_ROLE"]);
+    expect(lastRequiredRole()).toEqual(["HEAD_MAINTENANCE", "HEAD_KEEPER", "DEFAULT_ADMIN_ROLE"]);
     expect(mockOps.createSignatureRequest).toHaveBeenCalledWith(
       expect.objectContaining({ entityType: "ROOM_BLOCK", entityId: ROOM_UUID, signerAddress: WALLET }),
     );

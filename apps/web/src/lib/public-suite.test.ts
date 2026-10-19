@@ -90,6 +90,7 @@ describe("Suites no públicas · puerta de sesión en servidor", () => {
   const GATED = [
     { path: "recepcion/layout.tsx", role: "RECEPTION_ROLE" },
     { path: "housekeeping/layout.tsx", role: "HOUSEKEEPING" },
+    { path: "ama-de-llaves/layout.tsx", role: "HEAD_KEEPER" },
     { path: "mantenimiento/layout.tsx", role: "HEAD_MAINTENANCE" },
     { path: "admin/layout.tsx", role: null },
   ] as const;
@@ -125,6 +126,13 @@ describe("Suites no públicas · puerta de sesión en servidor", () => {
     for (const suite of GATED) {
       if (suite.role === null) continue;
       const source = read(join(APP_DIR, suite.path));
+      if (suite.role === "HEAD_KEEPER") {
+        // F6: la suite del ama de llaves acepta ama, camarera y el rol heredado.
+        expect(source, suite.path).toContain("currentAdminSession([...HOUSEKEEPING_SUITE_ROLES])");
+        expect(source, suite.path).toContain("HEAD_KEEPER");
+        expect(source, suite.path).toContain("HOUSEKEEPER");
+        continue;
+      }
       if (suite.role === "HEAD_MAINTENANCE") {
         // F4: la suite de mantenimiento acepta jefe, técnico vNext y el rol heredado (D-77).
         expect(source, suite.path).toContain("currentAdminSession([...MAINTENANCE_SUITE_ROLES])");

@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import { useAccount, useSignTypedData } from "wagmi";
 
 /** Acciones que la Suite de Mantenimiento firma con EIP-712 (F4 · T4.5). */
-export type MaintenanceSignAction = "ROOM_BLOCK" | "ROOM_UNBLOCK" | "PREVENTIVE_TASK";
+export type MaintenanceSignAction = "ROOM_BLOCK" | "ROOM_UNBLOCK" | "PREVENTIVE_TASK" | "INSPECTION";
 
 /** TypedData que devuelve `POST /api/mantenimiento/signatures`. */
 interface PreparedSignature {
@@ -27,6 +27,10 @@ export interface SignAndApplyInput {
   readonly incidentId?: string | null;
   readonly reason?: string | null;
   readonly until?: string | null;
+  /** Solo `INSPECTION`: tipo y resultado que se certifican (van en el payload firmado). */
+  readonly inspectionType?: string | null;
+  readonly result?: string | null;
+  readonly observations?: string | null;
   /**
    * Aplica el cambio off-chain con la firma ya confirmada (`SIGNED`). Debe enviar el `signatureId`
    * a la ruta de la operación; si la cadena falla al anclar, la entidad queda `PENDING_ANCHOR`.
@@ -81,6 +85,9 @@ export function useMaintenanceSignature() {
             incidentId: input.incidentId ?? null,
             reason: input.reason ?? null,
             until: input.until ?? null,
+            inspectionType: input.inspectionType ?? null,
+            result: input.result ?? null,
+            observations: input.observations ?? null,
             signerAddress: address,
           }),
         });

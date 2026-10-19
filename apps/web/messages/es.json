@@ -1230,7 +1230,8 @@
     "roleHeadMaintenance": "JEFE MANTENIMIENTO",
     "roleHeadKeeper": "AMA DE LLAVES",
     "roleMaintenanceTech": "TÉCNICO",
-    "roleHousekeeper": "CAMARERA"
+    "roleHousekeeper": "CAMARERA",
+    "suiteKeepers": "Ama de llaves"
   },
   "rooms": {
     "loading": "Cargando…",
@@ -2016,6 +2017,146 @@
       "revertedHint": "La red rechazó la transacción. Revisa el importe y vuelve a intentarlo.",
       "unverifiable": "No pudimos leer el recibo",
       "unverifiableHint": "La transacción puede estar minada. Actualiza la página para comprobar tu puja."
+    }
+  },
+  "amaDeLlaves": {
+    "title": "Ama de llaves",
+    "dashboardTagline": "Tablero en vivo del estado de las habitaciones, turnos, reparto, inspecciones y suministros.",
+    "dashboardInspectionCount": "{count} inspección(es) registradas.",
+    "actionError": "No se pudo completar la acción.",
+    "nav": {
+      "label": "Secciones del ama de llaves",
+      "dashboard": "Tablero",
+      "shifts": "Turnos",
+      "assignments": "Asignaciones",
+      "inspections": "Inspecciones",
+      "damages": "Daños",
+      "supplies": "Suministros"
+    },
+    "board": {
+      "date": "Día {date}",
+      "live": "En vivo",
+      "polling": "Sondeo",
+      "caption": "Estado operativo de las habitaciones",
+      "room": "Habitación",
+      "type": "Tipo",
+      "state": "Estado",
+      "publication": "Publicación",
+      "empty": "No hay habitaciones que mostrar."
+    },
+    "state": {
+      "CLEAN": "Limpia",
+      "DIRTY": "Sucia",
+      "OCCUPIED": "Ocupada",
+      "PENDING_CLEANING": "Pendiente de limpiar",
+      "IN_INSPECTION": "En inspección",
+      "MAINTENANCE": "Mantenimiento"
+    },
+    "shiftLabel": {
+      "MANANA": "Mañana",
+      "TARDE": "Tarde",
+      "NOCHE": "Noche"
+    },
+    "assignmentStatus": {
+      "PENDING": "Pendiente",
+      "IN_PROGRESS": "En curso",
+      "DONE": "Hecha"
+    },
+    "shifts": {
+      "title": "Turnos",
+      "tagline": "Crea los turnos del día y reparte las habitaciones entre las camareras.",
+      "createTitle": "Nuevo turno",
+      "label": "Turno",
+      "create": "Crear turno",
+      "created": "Turno creado.",
+      "assignees": "Camareras (separadas por comas)",
+      "autoAssign": "Repartir habitaciones",
+      "assigned": "Reparto realizado.",
+      "listTitle": "Turnos del día",
+      "empty": "Todavía no hay turnos para hoy.",
+      "defaultKeeper1": "Camarera 1",
+      "defaultKeeper2": "Camarera 2"
+    },
+    "assignments": {
+      "title": "Asignaciones",
+      "tagline": "Qué habitación limpia cada camarera y en qué punto está.",
+      "assignTitle": "Asignar habitación",
+      "shift": "Turno",
+      "room": "Habitación",
+      "assignee": "Camarera",
+      "assign": "Asignar",
+      "noRooms": "No hay habitaciones pendientes de limpieza.",
+      "listTitle": "Reparto del {date}",
+      "empty": "Todavía no hay asignaciones.",
+      "start": "Empezar",
+      "complete": "Terminar"
+    },
+    "inspections": {
+      "title": "Inspecciones",
+      "tagline": "Certifica la limpieza o devuélvela a retrabajo. Aprobar no libera la venta.",
+      "newTitle": "Nueva inspección",
+      "signatureOn": "La firma de inspección está activada: certificar exige firma de la wallet.",
+      "signatureOff": "La firma de inspección está desactivada: se registra sin firma (D-C23).",
+      "noSaleNote": "La inspección no cambia la publicación de la habitación; la venta se gestiona aparte (D-C9).",
+      "room": "Habitación",
+      "type": "Tipo",
+      "observations": "Observaciones",
+      "approve": "Aprobar",
+      "reject": "Rechazar",
+      "readOnly": "Solo el ama de llaves puede certificar inspecciones.",
+      "listTitle": "Inspecciones registradas",
+      "empty": "Todavía no hay inspecciones.",
+      "signed": "firmada",
+      "rejectReason": "Motivo del rechazo",
+      "rejectHint": "La asignación volverá a pendiente y la habitación a sucia (retrabajo).",
+      "rejectConfirm": "Confirmar rechazo"
+    },
+    "inspectionType": {
+      "CHECKOUT": "Salida",
+      "DAILY_SERVICE": "Servicio diario"
+    },
+    "inspectionResult": {
+      "APPROVED": "Aprobada",
+      "REJECTED": "Rechazada"
+    },
+    "report": {
+      "title": "Reportar avería",
+      "hint": "El ticket llega a Mantenimiento con el rol de quien lo reporta.",
+      "room": "Habitación",
+      "kind": "Tipo",
+      "description": "Descripción",
+      "blocksSale": "Retirar de la venta hasta resolver",
+      "submit": "Reportar",
+      "done": "Avería reportada; Mantenimiento la recibirá para clasificar.",
+      "kindLabel": {
+        "ELECTRICIDAD": "Electricidad",
+        "FONTANERIA": "Fontanería",
+        "CLIMATIZACION": "Climatización",
+        "MOBILIARIO": "Mobiliario",
+        "ELECTRODOMESTICO": "Electrodoméstico",
+        "CERRADURA": "Cerradura",
+        "OTROS": "Otros"
+      }
+    },
+    "damages": {
+      "title": "Daños",
+      "tagline": "Cargos por daños y notificación al huésped.",
+      "comingSoon": "El registro de cargos por daños llega con el ciclo F7.",
+      "reportHint": "Mientras tanto, reporta la avería desde el tablero: Mantenimiento la gestiona y, si procede, se documenta.",
+      "backToBoard": "Volver al tablero"
+    },
+    "supplies": {
+      "title": "Lencería y suministros",
+      "tagline": "Stock disponible y alertas de umbral. La reposición la marca el responsable en Administración.",
+      "catalogTitle": "Catálogo",
+      "empty": "No hay artículos dados de alta.",
+      "item": "Artículo",
+      "stock": "Stock",
+      "threshold": "Umbral",
+      "alertsTitle": "Alertas",
+      "alertsEmpty": "No hay alertas de suministros.",
+      "belowThreshold": "bajo el umbral ({stock} de {threshold})",
+      "openAlert": "Alerta abierta {id}…"
     }
   }
 }

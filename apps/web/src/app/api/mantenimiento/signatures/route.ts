@@ -6,7 +6,7 @@ import { requireRole } from "@/lib/guard";
 
 export const dynamic = "force-dynamic";
 
-const ACTIONS = ["ROOM_BLOCK", "ROOM_UNBLOCK", "PREVENTIVE_TASK"] as const;
+const ACTIONS = ["ROOM_BLOCK", "ROOM_UNBLOCK", "PREVENTIVE_TASK", "INSPECTION"] as const;
 
 /**
  * POST /api/mantenimiento/signatures — prepara una firma EIP-712 de mantenimiento (F4 · T4.5).
@@ -23,7 +23,7 @@ const ACTIONS = ["ROOM_BLOCK", "ROOM_UNBLOCK", "PREVENTIVE_TASK"] as const;
  * asignada al rol. Si falta `HOTEL_OPERATIONS_CONTRACT_ADDRESS` → **503** (no se inventa dominio).
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const auth = await requireRole(request, ["HEAD_MAINTENANCE", "DEFAULT_ADMIN_ROLE"]);
+  const auth = await requireRole(request, ["HEAD_MAINTENANCE", "HEAD_KEEPER", "DEFAULT_ADMIN_ROLE"]);
   if (!auth.ok) return auth.response;
 
   let body: {
@@ -34,6 +34,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     reason?: unknown;
     until?: unknown;
     signerAddress?: unknown;
+    inspectionType?: unknown;
+    result?: unknown;
+    observations?: unknown;
   };
   try {
     body = (await request.json()) as typeof body;
@@ -48,9 +51,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
   const action = body.action as MaintenanceSignatureAction;
+  // Coherencia rol ↔ acción (F6): la inspección la firma el ama (`HEAD_KEEPER`); el resto, el jefe de
+  // mantenimiento. El owner puede preparar ambas cosas por ser respaldo.
+  if (
+    auth.session.role !== "DEFAULT_ADMIN_ROLE" &&
+    ((action === "INSPECTION" && auth.session.role !== "HEAD_KEEPER") ||
+      (action !== "INSPECTION" && auth.session.role !== "HEAD_MAINTENANCE"))
+  ) {
+    return NextResponse.json(
+      { error: "FORBIDDEN", message: "El rol de la sesión no puede firmar esta acción." },
+      { status: 403 },
+    );
+  }
   if (!isAddress(body.signerAddress)) {
     return NextResponse.json({ error: "BAD_REQUEST", message: "signerAddress no es una dirección válida." }, { status: 400 });
   }
+  // La inspección se firma contra la HABITACIÓN (el registro de inspección se crea después y se
+  // enlaza con `signature_id`); preventivo contra la tarea; bloqueo/desbloqueo contra la habitación.
   const entityUuid =
     action === "PREVENTIVE_TASK" ? body.taskId : body.roomId;
   if (!isUuid(entityUuid)) {
@@ -65,6 +82,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
   const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 200) : null;
   const until = typeof body.until === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.until) ? body.until : null;
+  const inspectionType = typeof body.inspectionType === "string" ? body.inspectionType : null;
+  const result = typeof body.result === "string" ? body.result : null;
+  const observations = typeof body.observations === "string" ? body.observations.trim().slice(0, 500) : null;
 
   try {
     const prepared = await prepareMaintenanceSignature({
@@ -76,6 +96,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         reason,
         until,
         taskId: action === "PREVENTIVE_TASK" ? entityUuid : undefined,
+        inspectionType,
+        result,
+        observations,
       }),
       signerAddress: body.signerAddress,
       username: auth.session.username,

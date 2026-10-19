@@ -225,6 +225,20 @@ describe("MaintenanceRepository (F4 · D-52…D-54)", () => {
       expect(sqls.some((sql) => sql.includes("INSERT INTO maintenance_incident_events"))).toBe(true);
     });
 
+    it("persiste el rol de quien reporta (F6 · T6.7)", async () => {
+      const client = fakeTxClient({});
+      mockPool.connect.mockResolvedValueOnce(client);
+      await repository.reportIncident({
+        roomId: "room-1",
+        kind: "FONTANERIA",
+        reportedBy: "ama@hotel.es",
+        reportedByRole: "HEAD_KEEPER",
+      });
+      const insert = client.query.mock.calls.find(([sql]) => String(sql).includes("INSERT INTO maintenance_incidents"));
+      expect(insert?.[0]).toContain("reported_by_role");
+      expect((insert?.[1] as unknown[])[7]).toBe("HEAD_KEEPER");
+    });
+
     it("rechaza una incidencia de una habitación inexistente", async () => {
       mockPool.connect.mockResolvedValueOnce(fakeTxClient({ room: [] }));
       await expect(

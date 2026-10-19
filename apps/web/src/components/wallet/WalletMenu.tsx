@@ -55,6 +55,7 @@ const SUITE_ACTIONS = new Set<WalletMenuAction>([
   "suiteReception",
   "suiteHousekeeping",
   "suiteMaintenance",
+  "suiteKeepers",
 ]);
 
 /**

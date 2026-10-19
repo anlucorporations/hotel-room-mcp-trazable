@@ -33,6 +33,15 @@ describe("Entradas del menú de wallet/usuario (RF-40)", () => {
     expect(actions).not.toContain("suiteAdmin");
   });
 
+  it("ama de llaves y camarera ven la suite vNext; la heredada conserva la suya (F6)", () => {
+    expect(
+      walletMenuItems({ ...base, hasSession: true, roles: ["HEAD_KEEPER"] }).map((i) => i.action),
+    ).toEqual(["connect", "suiteKeepers", "security", "signOut"]);
+    expect(
+      walletMenuItems({ ...base, hasSession: true, roles: ["HOUSEKEEPER"] }).map((i) => i.action),
+    ).toEqual(["connect", "suiteKeepers", "security", "signOut"]);
+  });
+
   it("housekeeping y mantenimiento ven su propia suite (D-77)", () => {
     expect(
       walletMenuItems({ ...base, hasSession: true, roles: ["HOUSEKEEPING"] }).map((i) => i.action),
@@ -42,7 +51,7 @@ describe("Entradas del menú de wallet/usuario (RF-40)", () => {
     ).toEqual(["connect", "suiteMaintenance", "security", "signOut"]);
   });
 
-  it("el owner ve las cuatro suites, Usuarios y Roles además de Seguridad y Salir", () => {
+  it("el owner ve las cinco suites, Usuarios y Roles además de Seguridad y Salir", () => {
     const actions = walletMenuItems({ ...base, hasSession: true, isOwner: true, roles: ["DEFAULT_ADMIN_ROLE"] }).map(
       (i) => i.action,
     );
@@ -52,6 +61,7 @@ describe("Entradas del menú de wallet/usuario (RF-40)", () => {
       "suiteReception",
       "suiteHousekeeping",
       "suiteMaintenance",
+      "suiteKeepers",
       "security",
       "users",
       "roles",
@@ -66,6 +76,7 @@ describe("Entradas del menú de wallet/usuario (RF-40)", () => {
     expect(byAction.get("suiteReception")).toBe("/recepcion");
     expect(byAction.get("suiteHousekeeping")).toBe("/housekeeping");
     expect(byAction.get("suiteMaintenance")).toBe("/mantenimiento");
+    expect(byAction.get("suiteKeepers")).toBe("/ama-de-llaves");
     expect(byAction.get("security")).toBe("/admin/seguridad");
     expect(byAction.get("users")).toBe("/admin/sistemas/usuarios");
     expect(byAction.get("roles")).toBe("/admin/roles");

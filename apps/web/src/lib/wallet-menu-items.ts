@@ -20,6 +20,7 @@ export type WalletMenuAction =
   | "suiteReception"
   | "suiteHousekeeping"
   | "suiteMaintenance"
+  | "suiteKeepers"
   | "security"
   | "users"
   | "roles"
@@ -47,6 +48,7 @@ const SUITE_ACTION: Readonly<Record<SuiteKey, WalletMenuAction>> = {
   reception: "suiteReception",
   housekeeping: "suiteHousekeeping",
   maintenance: "suiteMaintenance",
+  keepers: "suiteKeepers",
 };
 
 export function walletMenuItems(input: WalletMenuInput): readonly WalletMenuItem[] {

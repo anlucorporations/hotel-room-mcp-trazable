@@ -132,10 +132,12 @@ describe("i18n · claves referenciadas por el código", () => {
   it("las claves dinámicas y los traductores heredados quedan declarados como límite", () => {
     // No se exige cero: hay llamadas legítimas con plantilla (`t(\`role.${state}\`)`) y ficheros que
     // heredan el namespace del layout (`getTranslations()` sin argumento). El test fija que los
-    // huecos son **conocidos y acotados** (49 claves dinámicas medidas el 2026-10); si crecen sin
-    // control, salta y obliga a revisar por qué en lugar de dejar que se ensanchen en silencio.
+    // huecos son **conocidos y acotados**. Límite revisado el 2026-10-19 con las suites vNext F4/F6:
+    // los vocabularios de estado (`state.*`, `shiftLabel.*`, `inspectionType.*`, `inspectionResult.*`,
+    // `report.kindLabel.*`) se resuelven con plantilla a propósito para no duplicar ramas de código.
+    // Si vuelve a crecer sin control, salta y obliga a revisar por qué.
     expect(dynamicKeys).toBeGreaterThan(0);
-    expect(dynamicKeys).toBeLessThanOrEqual(60);
+    expect(dynamicKeys).toBeLessThanOrEqual(80);
     // El contador de traductores heredados se **informa** aquí: antes se incrementaba y no se leía,
     // así que el hueco declarado en la cabecera no llegaba a ser visible (lint: variable sin uso).
     expect(inheritedNamespace).toBeGreaterThanOrEqual(0);

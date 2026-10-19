@@ -1230,7 +1230,8 @@
     "roleHeadMaintenance": "HEAD MAINTENANCE",
     "roleHeadKeeper": "HEAD KEEPER",
     "roleMaintenanceTech": "TECHNICIAN",
-    "roleHousekeeper": "HOUSEKEEPER"
+    "roleHousekeeper": "HOUSEKEEPER",
+    "suiteKeepers": "Housekeeping"
   },
   "rooms": {
     "loading": "Loading…",
@@ -2016,6 +2017,146 @@
       "revertedHint": "The network rejected the transaction. Check the amount and try again.",
       "unverifiable": "We could not read the receipt",
       "unverifiableHint": "The transaction may be mined. Refresh the page to check your bid."
+    }
+  },
+  "amaDeLlaves": {
+    "title": "Head housekeeper",
+    "dashboardTagline": "Live room-state board, shifts, assignments, inspections and supplies.",
+    "dashboardInspectionCount": "{count} inspection(s) recorded.",
+    "actionError": "The action could not be completed.",
+    "nav": {
+      "label": "Housekeeping sections",
+      "dashboard": "Board",
+      "shifts": "Shifts",
+      "assignments": "Assignments",
+      "inspections": "Inspections",
+      "damages": "Damages",
+      "supplies": "Supplies"
+    },
+    "board": {
+      "date": "Day {date}",
+      "live": "Live",
+      "polling": "Polling",
+      "caption": "Operational room state",
+      "room": "Room",
+      "type": "Type",
+      "state": "State",
+      "publication": "Publication",
+      "empty": "No rooms to show."
+    },
+    "state": {
+      "CLEAN": "Clean",
+      "DIRTY": "Dirty",
+      "OCCUPIED": "Occupied",
+      "PENDING_CLEANING": "Pending cleaning",
+      "IN_INSPECTION": "In inspection",
+      "MAINTENANCE": "Maintenance"
+    },
+    "shiftLabel": {
+      "MANANA": "Morning",
+      "TARDE": "Afternoon",
+      "NOCHE": "Night"
+    },
+    "assignmentStatus": {
+      "PENDING": "Pending",
+      "IN_PROGRESS": "In progress",
+      "DONE": "Done"
+    },
+    "shifts": {
+      "title": "Shifts",
+      "tagline": "Create the day shifts and split the rooms among the housekeepers.",
+      "createTitle": "New shift",
+      "label": "Shift",
+      "create": "Create shift",
+      "created": "Shift created.",
+      "assignees": "Housekeepers (comma separated)",
+      "autoAssign": "Split rooms",
+      "assigned": "Rooms assigned.",
+      "listTitle": "Shifts of the day",
+      "empty": "No shifts for today yet.",
+      "defaultKeeper1": "Housekeeper 1",
+      "defaultKeeper2": "Housekeeper 2"
+    },
+    "assignments": {
+      "title": "Assignments",
+      "tagline": "Which room each housekeeper cleans and its progress.",
+      "assignTitle": "Assign room",
+      "shift": "Shift",
+      "room": "Room",
+      "assignee": "Housekeeper",
+      "assign": "Assign",
+      "noRooms": "No rooms pending cleaning.",
+      "listTitle": "Assignments for {date}",
+      "empty": "No assignments yet.",
+      "start": "Start",
+      "complete": "Complete"
+    },
+    "inspections": {
+      "title": "Inspections",
+      "tagline": "Certify the cleaning or send it back for rework. Approving does not release the sale.",
+      "newTitle": "New inspection",
+      "signatureOn": "Inspection signature is enabled: certifying requires a wallet signature.",
+      "signatureOff": "Inspection signature is disabled: it is recorded without a signature (D-C23).",
+      "noSaleNote": "The inspection does not change the room publication; the sale is managed separately (D-C9).",
+      "room": "Room",
+      "type": "Type",
+      "observations": "Observations",
+      "approve": "Approve",
+      "reject": "Reject",
+      "readOnly": "Only the head housekeeper can certify inspections.",
+      "listTitle": "Recorded inspections",
+      "empty": "No inspections yet.",
+      "signed": "signed",
+      "rejectReason": "Rejection reason",
+      "rejectHint": "The assignment returns to pending and the room to dirty (rework).",
+      "rejectConfirm": "Confirm rejection"
+    },
+    "inspectionType": {
+      "CHECKOUT": "Checkout",
+      "DAILY_SERVICE": "Daily service"
+    },
+    "inspectionResult": {
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected"
+    },
+    "report": {
+      "title": "Report a fault",
+      "hint": "The ticket reaches Maintenance with the role of whoever reports it.",
+      "room": "Room",
+      "kind": "Type",
+      "description": "Description",
+      "blocksSale": "Remove from sale until resolved",
+      "submit": "Report",
+      "done": "Fault reported; Maintenance will classify it.",
+      "kindLabel": {
+        "ELECTRICIDAD": "Electricity",
+        "FONTANERIA": "Plumbing",
+        "CLIMATIZACION": "HVAC",
+        "MOBILIARIO": "Furniture",
+        "ELECTRODOMESTICO": "Appliance",
+        "CERRADURA": "Lock",
+        "OTROS": "Other"
+      }
+    },
+    "damages": {
+      "title": "Damages",
+      "tagline": "Damage charges and guest notification.",
+      "comingSoon": "Damage charge registration arrives with the F7 cycle.",
+      "reportHint": "Meanwhile, report the fault from the board: Maintenance handles it and documents it when needed.",
+      "backToBoard": "Back to the board"
+    },
+    "supplies": {
+      "title": "Linen and supplies",
+      "tagline": "Available stock and threshold alerts. Replenishment is recorded by the manager in Administration.",
+      "catalogTitle": "Catalogue",
+      "empty": "No items registered.",
+      "item": "Item",
+      "stock": "Stock",
+      "threshold": "Threshold",
+      "alertsTitle": "Alerts",
+      "alertsEmpty": "No supply alerts.",
+      "belowThreshold": "below threshold ({stock} of {threshold})",
+      "openAlert": "Open alert {id}…"
     }
   }
 }
