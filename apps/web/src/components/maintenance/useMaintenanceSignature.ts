@@ -92,7 +92,9 @@ export function useMaintenanceSignature() {
           primaryType: prepared.typedData.primaryType,
           message: {
             ...message,
-            nonce: BigInt(message.nonce as string),
+            // `nonce` es **bytes32** (se queda como hex); solo `deadline` es uint256 y viem exige
+            // BigInt para los enteros. Convertir el nonce a BigInt rompía la firma con
+            // `BytesSizeMismatchError` (detectado en la validación E2E de F4).
             deadline: BigInt(message.deadline as string),
           },
         } as Parameters<typeof signTypedDataAsync>[0]);

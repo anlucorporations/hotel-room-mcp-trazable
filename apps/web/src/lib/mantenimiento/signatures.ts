@@ -131,7 +131,8 @@ export class OperationsSignatureError extends Error {
       | "SIGNATURE_ENTITY_MISMATCH"
       | "SIGNATURE_PAYLOAD_MISMATCH"
       | "SIGNATURE_WALLET_NOT_ASSIGNED"
-      | "SIGNATURE_SIGNER_MISMATCH",
+      | "SIGNATURE_SIGNER_MISMATCH"
+      | "SIGNATURE_DUPLICATE",
     message: string,
   ) {
     super(message);
@@ -180,15 +181,29 @@ export async function prepareMaintenanceSignature(input: {
   const contentHash = payloadHashOf(input.action, input.payload);
   const deadline = new Date(Date.now() + 10 * 60_000);
   const expiresAt = new Date(Date.now() + 24 * 60 * 60_000);
-  const record = await operations.createSignatureRequest({
-    entityType: input.action,
-    entityId: input.entityUuid,
-    eventName: "OperationalAction",
-    contentHash,
-    signerAddress: input.signerAddress,
-    deadline,
-    expiresAt,
-  });
+  let record;
+  try {
+    record = await operations.createSignatureRequest({
+      entityType: input.action,
+      entityId: input.entityUuid,
+      eventName: "OperationalAction",
+      contentHash,
+      signerAddress: input.signerAddress,
+      deadline,
+      expiresAt,
+    });
+  } catch (error: unknown) {
+    // El nonce se deriva de (firmante, contenido): repetir la misma operación mientras la firma
+    // anterior sigue viva choca con el índice único. Se responde 409 (no 500) y se dice qué pasa;
+    // el Soporte revoca/limpia la firma obsoleta o se repite la operación con otro motivo/fechas.
+    if (typeof error === "object" && error !== null && (error as { code?: string }).code === "23505") {
+      throw new OperationsSignatureError(
+        "SIGNATURE_DUPLICATE",
+        "Ya existe una solicitud de firma idéntica para esta operación. Resuélvela o revócala antes de volver a firmar.",
+      );
+    }
+    throw error;
+  }
 
   const { domain, message } = typedDataFor(record);
   return {
@@ -265,10 +280,14 @@ export async function assertSignatureAuthorizes(input: {
   const operations = input.operations ?? new OperationsRepository();
   const record = await operations.findById(input.signatureId);
   if (!record) throw new OperationsSignatureError("SIGNATURE_NOT_FOUND", "La firma no existe.");
-  if (record.status !== "SIGNED") {
+  // `SIGNED` = verificada en servidor y pendiente de anclar; `MINED` = ya anclada en la cadena.
+  // Ambos estados prueban la misma autorización. Aceptar `MINED` cierra la carrera real detectada
+  // en la validación E2E (F4): si el worker ancla entre la confirmación y la aplicación del cambio
+  // off-chain, la operación debe poder aplicarse igualmente (el efecto es idempotente).
+  if (record.status !== "SIGNED" && record.status !== "MINED") {
     throw new OperationsSignatureError(
       "SIGNATURE_NOT_READY",
-      `La firma debe estar SIGNED (estado actual: ${record.status}).`,
+      `La firma debe estar SIGNED o MINED (estado actual: ${record.status}).`,
     );
   }
   if (record.entityType !== input.action || record.entityId.toLowerCase() !== input.entityUuid.toLowerCase()) {
