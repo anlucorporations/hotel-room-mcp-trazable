@@ -757,8 +757,11 @@ CREATE TABLE IF NOT EXISTS housekeeping_room_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
     assignment_id UUID NULL REFERENCES housekeeping_assignments(id) ON DELETE SET NULL,
-    from_value VARCHAR(12) NULL,
-    to_value VARCHAR(12) NOT NULL,
+    -- Los estados operativos canónicos incluyen PENDING_CLEANING (16) e IN_INSPECTION (13): la
+    -- columna nació VARCHAR(12) y el check-out fallaba con «value too long» (detectado en la
+    -- validación E2E de F7, 2026-10-19). Se ensancha a 20 igual que rooms.operational_status.
+    from_value VARCHAR(20) NULL,
+    to_value VARCHAR(20) NOT NULL,
     changed_by VARCHAR(100) NOT NULL,
     changed_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -1302,6 +1305,10 @@ ALTER TABLE rooms ADD CONSTRAINT rooms_operational_status_check
 -- housekeeping_assignments.status: PENDING, IN_PROGRESS, DONE (una inspección
 -- rechazada devuelve la asignación a PENDING para retrabajo; NO existe REJECTED).
 -- preventive_tasks: la validación del jefe se modela con validation_status.
+-- F7 (2026-10-19): estados operativos largos en la traza de limpieza (PENDING_CLEANING/IN_INSPECTION).
+ALTER TABLE housekeeping_room_logs ALTER COLUMN from_value TYPE VARCHAR(20);
+ALTER TABLE housekeeping_room_logs ALTER COLUMN to_value TYPE VARCHAR(20);
+
 ALTER TABLE preventive_tasks
     ADD COLUMN IF NOT EXISTS validation_status VARCHAR(30) NULL;
 

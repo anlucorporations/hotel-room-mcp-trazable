@@ -359,12 +359,16 @@ export class DamageChargesRepository {
         await client.query("ROLLBACK");
         throw new DamageChargeError("NOTIFICATION_ALREADY_RESOLVED", "La reclamación ya estaba resuelta.");
       }
+      // Casts explícitos: sin ellos PostgreSQL deduce tipos distintos para $2 (columna vs CASE
+      // comparado con un literal) y falla con «inconsistent types deduced for parameter $2».
       await client.query(
         `UPDATE additional_charges
-            SET status = $2,
-                cancelled_by = CASE WHEN $2 = 'CANCELLED' THEN $3 ELSE cancelled_by END,
-                cancelled_at = CASE WHEN $2 = 'CANCELLED' THEN NOW() ELSE cancelled_at END,
-                cancel_reason = CASE WHEN $2 = 'CANCELLED' THEN 'Reclamación rechazada en recepción' ELSE cancel_reason END
+            SET status = $2::varchar,
+                cancelled_by = CASE WHEN $2::text = 'CANCELLED' THEN $3 ELSE cancelled_by END,
+                cancelled_at = CASE WHEN $2::text = 'CANCELLED' THEN NOW() ELSE cancelled_at END,
+                cancel_reason = CASE WHEN $2::text = 'CANCELLED'
+                                     THEN 'Reclamación rechazada en recepción'
+                                     ELSE cancel_reason END
           WHERE id = $1 AND status = 'PENDING'`,
         [current.chargeId, resolution.chargeStatus, input.resolvedBy],
       );

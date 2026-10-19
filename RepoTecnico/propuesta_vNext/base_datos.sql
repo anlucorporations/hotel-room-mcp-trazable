@@ -380,6 +380,10 @@ ALTER TABLE rooms ADD CONSTRAINT rooms_operational_status_check
 -- housekeeping_assignments.status: PENDING, IN_PROGRESS, DONE (una inspección
 -- rechazada devuelve la asignación a PENDING para retrabajo; NO existe REJECTED).
 -- preventive_tasks: la validación del jefe se modela con validation_status.
+-- F7 (2026-10-19): estados operativos largos en la traza de limpieza (PENDING_CLEANING/IN_INSPECTION).
+ALTER TABLE housekeeping_room_logs ALTER COLUMN from_value TYPE VARCHAR(20);
+ALTER TABLE housekeeping_room_logs ALTER COLUMN to_value TYPE VARCHAR(20);
+
 ALTER TABLE preventive_tasks
     ADD COLUMN IF NOT EXISTS validation_status VARCHAR(30) NULL;
 

@@ -165,3 +165,18 @@ describe("sincronía triple de los artefactos de datos (P8)", () => {
     );
   });
 });
+
+
+/**
+ * F7 · regresión de anchura: la traza de limpieza recibe los estados operativos canónicos largos.
+ * `housekeeping_room_logs.to_value` nació VARCHAR(12) y el check-out fallaba con «value too long»
+ * al escribir PENDING_CLEANING (16). Se fija el ancho y el ALTER idempotente del migrador.
+ */
+describe("housekeeping_room_logs · anchura de estados operativos (F7)", () => {
+  it("declara VARCHAR(20) y ensancha bases existentes con ALTER", () => {
+    const source = readFileSync(fileURLToPath(new URL("./migrator.ts", import.meta.url)), "utf8");
+    expect(source).toMatch(/CREATE TABLE IF NOT EXISTS housekeeping_room_logs[\s\S]*?from_value VARCHAR\(20\) NULL[\s\S]*?to_value VARCHAR\(20\) NOT NULL/);
+    expect(source).toContain("ALTER TABLE housekeeping_room_logs ALTER COLUMN from_value TYPE VARCHAR(20)");
+    expect(source).toContain("ALTER TABLE housekeeping_room_logs ALTER COLUMN to_value TYPE VARCHAR(20)");
+  });
+});
