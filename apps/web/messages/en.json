@@ -2158,5 +2158,67 @@
       "belowThreshold": "below threshold ({stock} of {threshold})",
       "openAlert": "Open alert {id}…"
     }
+  },
+  "damages": {
+    "pageTitle": "Damage charges",
+    "pageTagline": "Record a damage charge, attach evidence and notify the guest so they can dispute it.",
+    "noSoldNights": "There are no sold nights to attach a charge to.",
+    "actionError": "The action could not be completed.",
+    "loading": "Loading…",
+    "form": {
+      "title": "New charge",
+      "hint": "The charge is linked to the sold night and creates no on-chain signature (D-C27).",
+      "room": "Room",
+      "night": "Sold night",
+      "concept": "Concept",
+      "amount": "Amount (EUR)",
+      "description": "Damage description",
+      "evidence": "Evidence (photo or reference)",
+      "evidenceMissing": "Evidence not attached (does not block the action).",
+      "submit": "Record charge",
+      "created": "Charge created. Guest link: {url}"
+    },
+    "list": {
+      "title": "Recorded charges",
+      "empty": "No charges recorded yet."
+    },
+    "status": {
+      "PENDING": "Pending",
+      "SENT": "Sent",
+      "ACKNOWLEDGED": "Acknowledged",
+      "DISPUTED": "Disputed",
+      "EXPIRED": "Expired",
+      "RESOLVED_ACCEPTED": "Dispute accepted",
+      "RESOLVED_REJECTED": "Dispute rejected"
+    },
+    "claims": {
+      "title": "Disputes",
+      "empty": "No pending disputes.",
+      "due": "due {date}",
+      "accept": "Accept (to folio)",
+      "reject": "Reject (cancel)"
+    },
+    "receptionTitle": "Damage disputes",
+    "receptionTagline": "Resolve guest disputes: accepting adds the charge to the checkout folio; rejecting cancels it.",
+    "guestPageTitle": "Charges for my stay",
+    "guestPageTagline": "Check and respond to damage charges notified by the hotel.",
+    "guestPageHint": "Open the link you received to see the charge detail, amount, claim deadline and evidence.",
+    "backToMyNights": "Back to My nights",
+    "guestDetailTitle": "Charge detail",
+    "guestDetailTagline": "Review the charge and, if needed, dispute it before the deadline.",
+    "guest": {
+      "notFound": "Notice not found.",
+      "concept": "Concept",
+      "amount": "Amount",
+      "description": "Description",
+      "due": "Claim deadline",
+      "status": "Status",
+      "evidenceAvailable": "The hotel attached evidence of the damage.",
+      "notes": "Reason for dispute",
+      "claim": "Dispute",
+      "acknowledge": "I agree",
+      "disputed": "Your dispute is recorded; reception will review it.",
+      "resolvedAccepted": "The dispute was resolved in favour of the charge."
+    }
   }
 }

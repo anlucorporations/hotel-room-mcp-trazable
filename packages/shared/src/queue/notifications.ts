@@ -5,7 +5,7 @@ import { getBlockingRedisClient, getRedisClient } from "../redis/client";
 
 export interface EmailNotificationPayload {
   id?: string;
-  eventType: "NFT_SOLD" | "CHECK_IN_CONFIRMED" | "BURN_EXECUTED" | "DEVOPS_ALERT";
+  eventType: "NFT_SOLD" | "CHECK_IN_CONFIRMED" | "BURN_EXECUTED" | "DEVOPS_ALERT" | "DAMAGE_CHARGE_NOTICE";
   recipientEmail: string;
   payload: Record<string, unknown>;
   status?: "PENDING" | "SENT" | "FAILED";
@@ -59,7 +59,7 @@ export class NotificationQueueService {
    * Persiste la notificación en PostgreSQL (status='PENDING') y la encola en BullMQ con deduplicación por jobId (US-08).
    */
   async enqueueNotification(
-    eventType: "NFT_SOLD" | "CHECK_IN_CONFIRMED" | "BURN_EXECUTED" | "DEVOPS_ALERT",
+    eventType: "NFT_SOLD" | "CHECK_IN_CONFIRMED" | "BURN_EXECUTED" | "DEVOPS_ALERT" | "DAMAGE_CHARGE_NOTICE",
     recipientEmail: string,
     payload: Record<string, unknown>,
   ): Promise<string> {

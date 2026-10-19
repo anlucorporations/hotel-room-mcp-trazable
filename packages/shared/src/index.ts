@@ -29,6 +29,8 @@ export * from "./domain/room-sellability";
 // Reconciliación habitaciones (2026-10-18): plan de siembra, auditoría rooms↔cadena y purga del
 // índice heredado. La usa el script `reconcile-rooms.ts` (job de Cloud Run).
 export * from "./domain/room-reconciliation";
+// Cargos por daños (F7): estados/plazos de notificación, resolución y retención de evidencias.
+export * from "./domain/damage-charges";
 // Suite Ama de llaves (F6): reglas puras de inspección (firma opcional por flag), efectos sobre la
 // habitación/asignación y tablero de los cinco estados canónicos + marca de mantenimiento.
 export * from "./domain/housekeeping";
@@ -46,6 +48,7 @@ export * from "./db/repositories/activities.repository";
 export * from "./db/repositories/audit.repository";
 export * from "./db/repositories/content.repository";
 export * from "./db/repositories/housekeeping.repository";
+export * from "./db/repositories/damage-charges.repository";
 export * from "./db/repositories/maintenance.repository";
 export * from "./db/repositories/nfts.repository";
 export * from "./db/repositories/operations.repository";

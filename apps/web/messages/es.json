@@ -2158,5 +2158,67 @@
       "belowThreshold": "bajo el umbral ({stock} de {threshold})",
       "openAlert": "Alerta abierta {id}…"
     }
+  },
+  "damages": {
+    "pageTitle": "Cargos por daños",
+    "pageTagline": "Registra un cargo por daños, deja constancia de la evidencia y avisa al huésped para que pueda reclamar.",
+    "noSoldNights": "No hay noches vendidas sobre las que registrar un cargo.",
+    "actionError": "No se pudo completar la acción.",
+    "loading": "Cargando…",
+    "form": {
+      "title": "Nuevo cargo",
+      "hint": "El cargo se vincula a la noche vendida y no genera ninguna firma on-chain (D-C27).",
+      "room": "Habitación",
+      "night": "Noche vendida",
+      "concept": "Concepto",
+      "amount": "Importe (EUR)",
+      "description": "Descripción del daño",
+      "evidence": "Evidencia (foto o referencia)",
+      "evidenceMissing": "Evidencia no adjunta (no bloquea la operación).",
+      "submit": "Registrar cargo",
+      "created": "Cargo creado. Enlace para el huésped: {url}"
+    },
+    "list": {
+      "title": "Cargos registrados",
+      "empty": "Todavía no hay cargos registrados."
+    },
+    "status": {
+      "PENDING": "Pendiente",
+      "SENT": "Enviado",
+      "ACKNOWLEDGED": "Conforme",
+      "DISPUTED": "Reclamado",
+      "EXPIRED": "Plazo vencido",
+      "RESOLVED_ACCEPTED": "Reclamación aceptada",
+      "RESOLVED_REJECTED": "Reclamación rechazada"
+    },
+    "claims": {
+      "title": "Reclamaciones",
+      "empty": "No hay reclamaciones pendientes.",
+      "due": "plazo {date}",
+      "accept": "Aceptar (al folio)",
+      "reject": "Rechazar (cancelar)"
+    },
+    "receptionTitle": "Reclamaciones de daños",
+    "receptionTagline": "Resuelve las reclamaciones del huésped: aceptar suma el cargo al folio del check-out; rechazar lo cancela.",
+    "guestPageTitle": "Cargos de mi estancia",
+    "guestPageTagline": "Consulta y responde a los cargos por daños notificados por el hotel.",
+    "guestPageHint": "Abre el enlace que recibiste para ver el detalle del cargo, su importe, el plazo de reclamación y la evidencia.",
+    "backToMyNights": "Volver a Mis noches",
+    "guestDetailTitle": "Detalle del cargo",
+    "guestDetailTagline": "Revisa el cargo y, si procede, reclama antes de que venza el plazo.",
+    "guest": {
+      "notFound": "No se encontró el aviso.",
+      "concept": "Concepto",
+      "amount": "Importe",
+      "description": "Descripción",
+      "due": "Plazo de reclamación",
+      "status": "Estado",
+      "evidenceAvailable": "El hotel adjuntó evidencia del daño.",
+      "notes": "Motivo de la reclamación",
+      "claim": "Reclamar",
+      "acknowledge": "Estoy conforme",
+      "disputed": "Tu reclamación está registrada; recepción la revisará.",
+      "resolvedAccepted": "La reclamación se ha resuelto a favor del cargo."
+    }
   }
 }

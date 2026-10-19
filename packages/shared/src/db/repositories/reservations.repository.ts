@@ -559,6 +559,15 @@ export class ReservationsRepository {
     return (res.rowCount ?? 0) > 0;
   }
 
+  /** Reserva a la que pertenece una noche vendida (`token_id`), o `null` (T7.3). */
+  async findReservationIdByToken(tokenId: string): Promise<string | null> {
+    const res = await this.pool.query(
+      `SELECT reservation_id FROM reservation_nights WHERE token_id = $1 AND active = TRUE LIMIT 1`,
+      [tokenId],
+    );
+    return (res.rows[0]?.reservation_id as string | undefined) ?? null;
+  }
+
   /** Devuelve el contacto **descifrado** (D-55) o `null` si no hay o ya se purgó. */
   async getContact(reservationId: string): Promise<ReservationContactInfo | null> {
     const res = await this.pool.query(

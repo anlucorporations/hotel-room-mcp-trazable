@@ -3,6 +3,7 @@ import { getDbPool } from "../db/pool";
 import { purgeOldNotifications } from "../db/migrator";
 import { DEFAULT_NO_SHOW_HOUR, ReservationsRepository } from "../db/repositories/reservations.repository";
 import { NO_SHOW_HOUR_KEY, SettingsRepository } from "../db/repositories/settings.repository";
+import { DamageChargesRepository } from "../db/repositories/damage-charges.repository";
 
 /**
  * Retención de datos (M9 · ADR-24).
@@ -35,6 +36,8 @@ export interface PurgeResult {
   readonly noShows: number;
   /** Contactos de reservas ya terminadas, purgados (D-55). */
   readonly purgedContacts: number;
+  /** Cargos por daños cuyas evidencias/notas se anonimizaron por retención (F7 · T7.6). */
+  readonly damageEvidenceAnonymized: number;
   /** Instante en que se ejecutó la limpieza. */
   readonly executedAt: string;
 }
@@ -89,6 +92,10 @@ export async function purgeExpiredData(options: RetentionOptions = {}): Promise<
   const expiredHolds = await reservations.expireHolds();
   const noShows = await reservations.markNoShows(new Date(), noShowHour);
   const purgedContacts = await reservations.purgeContacts();
+  // F7 · T7.6: pasados 90 días, las evidencias de daños se anonimizan sin borrar la traza contable.
+  const damageEvidenceAnonymized = await new DamageChargesRepository(pool)
+    .anonymizeExpiredEvidence()
+    .catch(() => 0);
 
   return {
     expiredSessions,
@@ -97,6 +104,7 @@ export async function purgeExpiredData(options: RetentionOptions = {}): Promise<
     expiredHolds,
     noShows,
     purgedContacts,
+    damageEvidenceAnonymized,
     executedAt: new Date().toISOString(),
   };
 }

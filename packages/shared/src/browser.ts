@@ -57,6 +57,8 @@ export * from "./domain/operations-state";
 // Suite Ama de llaves (F6): reglas puras de inspección (firma opcional por flag), efectos sobre la
 // habitación/asignación y tablero de los cinco estados canónicos + marca de mantenimiento.
 export * from "./domain/housekeeping";
+// Cargos por daños (F7): estados/plazos de notificación, resolución y retención de evidencias.
+export * from "./domain/damage-charges";
 
 // Regla única de habitación vendible en el canal público (2026-10-18): pura y compartida por el
 // catálogo, la reserva pública y recepción. Evita que el catálogo ofrezca noches de habitaciones no

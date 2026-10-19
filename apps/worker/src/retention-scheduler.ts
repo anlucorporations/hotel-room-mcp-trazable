@@ -70,6 +70,7 @@ export function startRetentionScheduler(deps: RetentionSchedulerDeps): Retention
           expiredSessions: result.expiredSessions,
           orphanRecoveryCodes: result.orphanRecoveryCodes,
           oldNotifications: result.oldNotifications,
+          damageEvidenceAnonymized: result.damageEvidenceAnonymized,
           executedAt: result.executedAt,
         },
         "retención: limpieza ejecutada",

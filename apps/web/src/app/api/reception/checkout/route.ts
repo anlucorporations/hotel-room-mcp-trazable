@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import {
   CHECKOUT_INCIDENT_KINDS,
   CHECKOUT_ROOM_CONDITIONS,
+  DamageChargesRepository,
   ReceptionRepository,
   type CheckoutIncidentKind,
   type CheckoutRoomCondition,
@@ -13,6 +14,7 @@ import { receptionErrorResponse } from "@/lib/reception-errors";
 export const dynamic = "force-dynamic";
 
 const repo = new ReceptionRepository();
+const damageRepo = new DamageChargesRepository();
 
 function isRoomCondition(value: unknown): value is CheckoutRoomCondition {
   return (
@@ -91,7 +93,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       processedBy: auth.session.username,
     });
 
-    return NextResponse.json(result);
+    // F7 · T7.5: los cargos por daños con reclamación ACEPTADA se cobran en el folio del check-out.
+    // Es idempotente (`WHERE status='PENDING'`); si falla, el check-out ya quedó registrado.
+    let damageCharges: Awaited<ReturnType<DamageChargesRepository["settleAcceptedChargesForToken"]>> = [];
+    try {
+      damageCharges = await damageRepo.settleAcceptedChargesForToken(body.tokenId, auth.session.username);
+    } catch (error: unknown) {
+      console.warn("[API /api/reception/checkout] no se pudieron liquidar los cargos por daños:", error);
+    }
+    return NextResponse.json({ ...result, damageCharges });
   } catch (error: unknown) {
     return receptionErrorResponse("checkout", error);
   }

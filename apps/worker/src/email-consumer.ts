@@ -62,6 +62,19 @@ export function renderNotification(eventType: string, payload: NotificationPaylo
           `Transacción: ${field(payload.txHash) || "—"}`,
         ].join("\n"),
       };
+    case "DAMAGE_CHARGE_NOTICE":
+      return {
+        subject: `Aviso de cargo por daños · habitación ${field(payload.roomNumber)}`.trim(),
+        text: [
+          "Se ha registrado un cargo por daños en la habitación de tu estancia.",
+          "",
+          `Concepto: ${field(payload.concept) || "Daños en la habitación"}`,
+          `Importe: ${field(payload.amountFormatted) || "—"} ${field(payload.currency) || "EUR"}`,
+          `Descripción: ${field(payload.description) || "—"}`,
+          `Puedes revisarlo y reclamar antes del ${field(payload.dueDate) || "—"} en:`,
+          `${field(payload.claimUrl) || "tu área de Mis noches"}`,
+        ].join("\n"),
+      };
     case "BURN_EXECUTED":
       return {
         subject: `Quema programada ejecutada: ${field(payload.burnedCount)} noches`,
