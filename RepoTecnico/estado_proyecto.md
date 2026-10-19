@@ -5790,3 +5790,20 @@ existía y sin renombrar columnas ni estados (migración de F1 conservada).
 **Deuda declarada:** el E2E de navegador con wallet inyectada y el flag activo queda como prueba
 manual/ventana; no hay operadores `HEAD_KEEPER`/`HOUSEKEEPER` dados de alta (los crea F9); p95 del
 tablero se mide en la ventana de despliegue.
+
+### Despliegue y validación en producción (2026-10-19)
+
+`web:v71` → revisión **`hotel-mcp-web-00077-xm6`**. Configuración: `HEAD_KEEPER_ROLE` a la cuenta 3
+(+ backup al owner), wallet `ama@hotel.es → HEAD_KEEPER` en `operator_wallets` y flag de inspección
+probado ON y restaurado a off (D-C23).
+
+| Comprobación | Resultado |
+|---|---|
+| Tablero (50 habitaciones) | p50 **166,9 ms** · p95 **426,7 ms** (< 500 ms, RNF-M-05); SSE `stream?view=rooms` |
+| Inspección sin flag | APPROVED 201 · `signature_id=null` · `CLEAN` · publicación **sin cambios** (D-C9) |
+| Inspección con flag | sin firma **409**; con firma `HEAD_KEEPER` **201** y anclada (`MINED`, tx `0x909699c0…cdbd3`, bloque 5745251) |
+| Rechazo | habitación `DIRTY` y asignación `PENDING` (incluido sin `assignmentId`; corregido) |
+| Reporte de avería | ticket `OPEN` con `reported_by_role`; habitación marcada `MAINTENANCE` |
+| Acceso anónimo | sirve el acceso del back-office, sin datos del tablero en el payload |
+
+Evidencia: [`evidencias/f6-ama-de-llaves-2026-10-19.json`](./evidencias/f6-ama-de-llaves-2026-10-19.json).

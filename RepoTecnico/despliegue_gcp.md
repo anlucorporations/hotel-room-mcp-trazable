@@ -3349,7 +3349,7 @@ y **cuenta 3 `RECEPTION`**.
 
 | Servicio | Revisión (tráfico) | Imagen | URL |
 |---|---|---|---|
-| web | **`hotel-mcp-web-00075-xqt`** (100 %) | **`web:v69`** | https://hotel-mcp-web-475955050238.europe-west1.run.app |
+| web | **`hotel-mcp-web-00077-xm6`** (100 %) | **`web:v71`** | https://hotel-mcp-web-475955050238.europe-west1.run.app |
 | mcp | **`hotel-mcp-mcp-00021-v64`** (100 %) | **`mcp:v63`** | https://hotel-mcp-mcp-475955050238.europe-west1.run.app |
 | worker | **`hotel-mcp-worker-00024-q2h`** (100 %) | **`worker:v66`** | https://hotel-mcp-worker-475955050238.europe-west1.run.app |
 | monitor | worker pool `hotel-mcp-monitor` | `monitor:v66` | — (sondea `/health`) |
@@ -3416,7 +3416,7 @@ Saldos/nonces el 2026-10-18.
 | Claves on-chain | `.env` + Secret Manager `hotel-burner-private-key`, `hotel-reception-private-key`, `hotel-relayer-private-key` |
 | pgAdmin | `PGADMIN_PASSWORD` (Secret Manager); email `anlucorporations@gmail.com` (env del servicio) |
 | Inventario completo en claro | `~/.config/hotel-mcp/DESPLIEGUE-GCP.md` (permisos `600`, fuera de git) |
-| WalletConnect | projectId de build inyectado en la imagen `web:v69` |
+| WalletConnect | projectId de build inyectado en la imagen `web:v71` |
 
 ### 86.6. Estado de los datos de prueba
 
@@ -3680,3 +3680,42 @@ pruebas**; typecheck limpio; `eslint` **0 errores**; guardianes `boundaries`, `c
 **Deuda declarada:** E2E de navegador con wallet inyectada (manual); una firma obsoleta bloquea
 re-preparar el mismo payload hasta que el Soporte la revoque (F9); `HEAD_KEEPER_ROLE` y su wallet se
 configuran en la ventana de F6.
+
+---
+
+## 90. Release v71 — F6 desplegado: Suite Ama de llaves (2026-10-19)
+
+**Qué se desplegó.** El cierre de **F6** (suite del ama de llaves y de la camarera) sobre Besu
+81234: tablero de los cinco estados canónicos + mantenimiento en tiempo real, turnos, asignaciones,
+inspección con firma **opcional por flag** y reporte de averías hacia Mantenimiento.
+
+| Elemento | Valor |
+|---|---|
+| Imagen web | **`web:v71`** (build `024b21c6…`, SUCCESS, *worktree* limpio) |
+| Revisión web | **`hotel-mcp-web-00077-xm6`** al 100 % (rollback: `00076-5xn`/v70 → `00075-xqt`/v69) |
+| Rol on-chain | `HEAD_KEEPER_ROLE` a la cuenta 3 `0x90F7…b906` (tx `0xc285c22e…03a7a`, bloque 5744586) y `backupForRole` a la cuenta 0 (tx `0x9ed8f94c…2a6b6`, bloque 5744588) |
+| Wallet del rol | `operator_wallets`: `ama@hotel.es` → `HEAD_KEEPER` → `0x90F7…b906` (el usuario de acceso lo crea F9) |
+| Flag de inspección | `platform_settings.inspection_requires_signature`: probado ON y **restaurado a off** (ausente = `false`, D-C23) |
+| Worker | `hotel-mcp-worker-00024-q2h`; el outbox ancla las firmas `INSPECTION` con el relayer |
+
+### Verificación en la ventana
+
+| Comprobación | Resultado |
+|---|---|
+| Rutas autenticadas (owner) | `/ama-de-llaves`, `/turnos`, `/asignaciones`, `/inspecciones`, `/suministros` → **200** con sus `data-testid`; anónimo → acceso sin filtrar datos |
+| Tablero | 50 habitaciones · 6 estados · SSE `stream?view=rooms`; `state-board` **p50 166,9 ms / p95 426,7 ms** (RNF-M-05 < 500 ms) |
+| Inspección con flag **off** | APPROVED **201**, `signature_id = null`, habitación `CLEAN` y `publication_status` **sin cambios** (D-C9) |
+| Inspección con flag **on** | sin firma → **409 `SIGNATURE_REQUIRED`**; con firma EIP-712 del rol `HEAD_KEEPER` → **201** y firma enlazada |
+| Anclaje de inspecciones | **3 firmas `INSPECTION` MINED** (ej. tx `0x909699c0…cdbd3` bloque 5745251 y `0xbd83dc93…bdcc` bloque 5745252, `success`) |
+| Rechazo | habitación **DIRTY** y asignación devuelta a **PENDING** (también cuando la UI no envía `assignmentId`: corregido en el repositorio) |
+| Reporte de avería | ticket `OPEN` en Mantenimiento con `reported_by_role`; la habitación queda marcada `MAINTENANCE` en el tablero |
+
+**Hallazgo real corregido en la ventana:** el rechazo dejaba la asignación en `DONE` al no conocer la
+UI el `assignmentId`; el repositorio resuelve ahora la última asignación de la habitación
+(CU-V-22) y la devuelve a `PENDING`. 2 pruebas nuevas (34 en la suite del repositorio).
+
+**Pruebas:** dominio+repositorios F6 **81 dirigidas** en verde; guardianes de suite/i18n/a11y en
+verde; `typecheck` limpio; `eslint` 0 errores. **Deuda:** operadores `HEAD_KEEPER`/`HOUSEKEEPER` los
+da de alta F9; E2E de navegador con wallet inyectada, manual; `/ama-de-llaves/danos` reservada a F7.
+
+**Evidencia:** `RepoTecnico/evidencias/f6-ama-de-llaves-2026-10-19.json`.

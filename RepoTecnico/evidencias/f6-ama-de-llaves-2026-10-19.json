@@ -1,0 +1,70 @@
+{
+  "id": "f6-ama-de-llaves-2026-10-19",
+  "titulo": "F6 cerrada — Suite Ama de llaves desplegada y validada en Besu 81234",
+  "fechaUtc": "2026-10-19T16:20:00Z",
+  "objetivo": "Tablero de los 5 estados canónicos + mantenimiento en tiempo real, turnos/asignaciones, inspección con firma opcional por flag, rechazo con retrabajo y reporte de averías hacia Mantenimiento.",
+  "entorno": {
+    "red": "Besu de Codecrypto · chainId 81234",
+    "hotelOperations": "0x222d74f33b0d07687a769a44399e2272a4cb9ffe",
+    "web": {
+      "imagen": "web:v71",
+      "revision": "hotel-mcp-web-00077-xm6"
+    },
+    "worker": "hotel-mcp-worker-00024-q2h (anchor enabled)"
+  },
+  "configuracion": [
+    {
+      "paso": "Rol on-chain del ama",
+      "detalle": "HEAD_KEEPER_ROLE concedido a la cuenta 3 (0x90F79bf6EB2c4f870365E785982E1f101E93b906) y backupForRole hacia la cuenta 0 (respaldo de emergencia)",
+      "tx": [
+        "0xc285c22e5eae2f56cf09d711e81fb899851c8ec0bd77200e5690c1afcd603a7a (grantRole, bloque 5744586)",
+        "0x9ed8f94c68f5ca20be71f4e42e3218ebdb120d4b6abc7df895aaa52a2fd2a6b6 (setBackupForRole, bloque 5744588)"
+      ]
+    },
+    {
+      "paso": "Wallet del rol (off-chain)",
+      "detalle": "operator_wallets: ama@hotel.es → HEAD_KEEPER → 0x90F79bf6…b906 (activa, sin usuario de acceso todavía; lo crea F9)"
+    },
+    {
+      "paso": "Flag de firma de inspección",
+      "detalle": "platform_settings.inspection_requires_signature: probado ON durante la ventana y restaurado al valor por defecto (ausente = false, D-C23)"
+    }
+  ],
+  "validacionE2E": {
+    "paginas": "owner: /ama-de-llaves, /turnos, /asignaciones, /inspecciones y /suministros → 200 con sus data-testid; anónimo → acceso del back-office sin filtrar room-state-board ni inspection-panel",
+    "tablero": {
+      "habitaciones": 50,
+      "estados": 6,
+      "latencia": "p50 166,9 ms · p95 426,7 ms (20 peticiones a /api/housekeeping/state-board; RNF-M-05 < 500 ms)",
+      "stream": "SSE /api/housekeeping/stream?view=rooms con firma del tablero (emite solo al cambiar)"
+    },
+    "inspeccionSinFirma": {
+      "flag": "off (por defecto)",
+      "resultado": "APPROVED 201 · signatureId=null · habitación CLEAN · publication_status DRAFT → DRAFT (D-C9: no se libera la venta)"
+    },
+    "inspeccionFirmada": {
+      "flag": "on",
+      "sinFirma": "409 SIGNATURE_REQUIRED",
+      "firma": "prepare 201 → firma EIP-712 con la cuenta HEAD_KEEPER → confirm 200 (role_snapshot HEAD_KEEPER_ROLE) → inspección 201 con signatureId",
+      "anclaje": "3 firmas INSPECTION en estado MINED; ej. tx 0x909699c0…cdbd3 (bloque 5745251) y 0xbd83dc93…bdcc (bloque 5745252), success"
+    },
+    "rechazo": {
+      "flag": "on y off probados",
+      "resultado": "REJECTED → habitación DIRTY y asignación devuelta a PENDING sin pasar assignmentId (corregido en el repositorio); con el flag ON el rechazo también exige firma"
+    },
+    "reporteAveria": "POST /api/mantenimiento/incidents desde la suite → ticket OPEN en Mantenimiento; la habitación pasa a MAINTENANCE en el tablero (incidencia que bloquea venta)"
+  },
+  "hallazgoCorregido": "El rechazo dejaba la asignación en DONE cuando la UI no enviaba assignmentId (no lo conoce). El repositorio resuelve la última asignación de la habitación y la devuelve a PENDING (CU-V-22); 2 pruebas nuevas.",
+  "verificacion": {
+    "shared": "suite completa 717 pruebas con 1 fallo intermitente ajeno (web-push; pasa en aislamiento); F6 dirigidas 81 en verde",
+    "web": "suite completa **1.148 pruebas / 122 ficheros en verde**",
+    "typecheck": "limpio",
+    "lint": "0 errores (avisos preexistentes)",
+    "guardianes": "suite-access, public-suite, wallet-menu, boundaries, control-boundary, table-semantics e i18n en verde"
+  },
+  "deudaDeclarada": [
+    "No hay operadores de acceso HEAD_KEEPER/HOUSEKEEPER dados de alta (F9); la ventana se validó con la sesión owner y la wallet del ama.",
+    "El E2E de navegador con wallet inyectada queda como prueba manual; el spec entregado cubre la puerta de sesión.",
+    "La ruta /ama-de-llaves/danos queda reservada a F7 con estado honesto."
+  ]
+}
