@@ -5738,3 +5738,21 @@ dominio y repositorio ya entregada: rutas, componentes, endpoints con guard de r
   subida de ficheros llega con la nube de evidencias de F9.
 - `HEAD_MAINTENANCE`/`MAINTENANCE_TECH` no tienen todavía operador ni wallet asignada en producción:
   se dan de alta desde Sistemas (F9) o por *seed*. El owner puede operar toda la suite.
+
+
+### Despliegue y validación firmada en producción (2026-10-19)
+
+`web:v69` → revisión **`hotel-mcp-web-00075-xqt`**. Configuración de la ventana: `HEAD_MAINTENANCE_ROLE`
+concedido a la cuenta 0 en `HotelOperations` (+ `backupForRole`), wallet del rol sembrada en
+`operator_wallets`, y `HOTEL_OPERATIONS_CONTRACT_ADDRESS`/`_DEPLOYMENT_BLOCK` en la web.
+
+| Comprobación E2E (habitación 201) | Resultado |
+|---|---|
+| Firma `ROOM_BLOCK` → bloqueo | `PUBLISHED → MAINTENANCE`, fuera de `/api/public/rooms`, anclada **MINED** (tx `0xbbc88ac6…d6ed7b37`, bloque 5743796) |
+| Firma `ROOM_UNBLOCK` → desbloqueo | `MAINTENANCE → PUBLISHED`, de vuelta en `/api/public/rooms`; anclaje por el mismo canal (patrón MINED verificado) |
+| Acceso anónimo a `/mantenimiento` | 200 con el acceso del back-office; **sin** datos del dashboard en el payload (fuga RSC corregida) |
+| Acceso owner | dashboard e incidencias/preventivo/áreas/informes/tablero responden 200 |
+
+Hallazgos reales corregidos en la ventana: nonce `bytes32` mal convertido (la firma nunca habría
+funcionado), carrera `SIGNED→MINED` al aplicar, fuga del payload RSC sin sesión y duplicado de firma
+(409 en vez de 500). Evidencia en [`evidencias/f4-mantenimiento-firma-2026-10-19.json`](./evidencias/f4-mantenimiento-firma-2026-10-19.json).

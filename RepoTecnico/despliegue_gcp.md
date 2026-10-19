@@ -3349,7 +3349,7 @@ y **cuenta 3 `RECEPTION`**.
 
 | Servicio | Revisión (tráfico) | Imagen | URL |
 |---|---|---|---|
-| web | **`hotel-mcp-web-00073-9j5`** (100 %) | **`web:v66`** | https://hotel-mcp-web-475955050238.europe-west1.run.app |
+| web | **`hotel-mcp-web-00075-xqt`** (100 %) | **`web:v69`** | https://hotel-mcp-web-475955050238.europe-west1.run.app |
 | mcp | **`hotel-mcp-mcp-00021-v64`** (100 %) | **`mcp:v63`** | https://hotel-mcp-mcp-475955050238.europe-west1.run.app |
 | worker | **`hotel-mcp-worker-00024-q2h`** (100 %) | **`worker:v66`** | https://hotel-mcp-worker-475955050238.europe-west1.run.app |
 | monitor | worker pool `hotel-mcp-monitor` | `monitor:v66` | — (sondea `/health`) |
@@ -3416,7 +3416,7 @@ Saldos/nonces el 2026-10-18.
 | Claves on-chain | `.env` + Secret Manager `hotel-burner-private-key`, `hotel-reception-private-key`, `hotel-relayer-private-key` |
 | pgAdmin | `PGADMIN_PASSWORD` (Secret Manager); email `anlucorporations@gmail.com` (env del servicio) |
 | Inventario completo en claro | `~/.config/hotel-mcp/DESPLIEGUE-GCP.md` (permisos `600`, fuera de git) |
-| WalletConnect | projectId de build inyectado en la imagen `web:v66` |
+| WalletConnect | projectId de build inyectado en la imagen `web:v69` |
 
 ### 86.6. Estado de los datos de prueba
 
@@ -3630,3 +3630,53 @@ el arreglo, la venta se consolidó correctamente.
 **Verificación:** `/health` del worker → `lag=0`, `aggregateLag=0`, `anchor.scheduler=enabled`,
 `burn.scheduler=enabled`; `/api/nfts` 2 noches con los estados de arriba; `/api/public/rooms` 1
 reservable (201). El 503 de `/health` es **solo** el email degradado, no pérdida de indexación.
+
+---
+
+## 89. Release v69 — F4 desplegado: Suite de Mantenimiento y firma EIP-712 operativas (2026-10-19)
+
+**Qué se desplegó.** El cierre de **F4** (suite del jefe de mantenimiento, firma selectiva y
+preventivo con firma obligatoria) sobre Besu 81234, después de commitear el bloque `7b97e04` y sus
+correcciones de la validación real.
+
+| Elemento | Valor |
+|---|---|
+| Imagen web | **`web:v69`** (build `efc1a67d…`, SUCCESS, desde *worktree* limpio) |
+| Revisión web | **`hotel-mcp-web-00075-xqt`** al 100 % (rollback: `00074-vd5`/v67 → `00073-9j5`/v66) |
+| Env nueva web | `HOTEL_OPERATIONS_CONTRACT_ADDRESS=0x222d74f33b0d07687a769a44399e2272a4cb9ffe` · `HOTEL_OPERATIONS_DEPLOYMENT_BLOCK=5491513` |
+| Roles on-chain (`HotelOperations`) | `HEAD_MAINTENANCE_ROLE` concedido a la cuenta operadora 0 `0xf39F…2266` (tx `0xa2d97669…71c8e3`, bloque 5743421) y `backupForRole` del rol a la misma cartera (tx `0x727a2cf4…d82b223`, bloque 5743424) |
+| Wallet del rol (off-chain) | `operator_wallets`: `admin@hotel.es` → `HEAD_MAINTENANCE` → `0xf39F…2266`, activa |
+| Worker | `hotel-mcp-worker-00024-q2h` (anchor `enabled`); ancla las firmas nuevas con el relayer |
+
+### Verificación firmada de extremo a extremo (habitación 201)
+
+| Paso | Resultado |
+|---|---|
+| `POST /api/mantenimiento/signatures` (ROOM_BLOCK) | 201 con TypedData del dominio `HotelOperations` |
+| Firma EIP-712 con la wallet del jefe + `PATCH /signatures/[id]` | 200 · estado `SIGNED` |
+| `POST /rooms/[id]/block` | 200 · `publication_status` **PUBLISHED → MAINTENANCE** · `/api/public/rooms` deja de ofrecerla |
+| Anclaje del worker | **`MINED`** · tx `0xbbc88ac6…d6ed7b37` · bloque **5743796** · `success` |
+| Desbloqueo firmado | 200 · `publication_status` **MAINTENANCE → PUBLISHED** (restaurado) · vuelve a `/api/public/rooms` |
+| Anclaje del desbloqueo | firma confirmada al outbox; patrón `MINED` verificado con la firma previa (tx `0x9c669791…e2161`, bloque 5743841) |
+
+### Hallazgos reales corregidos en la ventana
+
+1. **Nonce EIP-712**: es `bytes32`; el hook de firma lo convertía a `BigInt` y habría fallado
+   siempre con `BytesSizeMismatchError`. Corregido y verificado firmando el TypedData real.
+2. **Carrera anclaje ↔ aplicación**: si el worker ancla entre la confirmación y la aplicación, la
+   firma pasa a `MINED`; `assertSignatureAuthorizes` ahora acepta `SIGNED` **o** `MINED`.
+3. **Fuga del payload RSC**: el layout ocultaba el árbol pero el payload de la página viajaba igual
+   en la respuesta; un anónimo recibía los datos del dashboard. Cada página revalida la sesión
+   (guardián en `maintenance-suite.test.ts`) y ahora el HTML anónimo no contiene esos datos.
+4. **Duplicado de firma**: repetir la misma operación mientras la firma anterior sigue viva responde
+   **409 `SIGNATURE_DUPLICATE`** con mensaje accionable (antes 500).
+
+**Pruebas:** `@hotel/shared` **67 ficheros / 710 pruebas**; `@hotel/web` **120 ficheros / 1.128
+pruebas**; typecheck limpio; `eslint` **0 errores**; guardianes `boundaries`, `control-boundary`,
+`public-suite`, `suite-access` e `i18n` en verde.
+
+**Evidencia:** `RepoTecnico/evidencias/f4-mantenimiento-firma-2026-10-19.json`.
+
+**Deuda declarada:** E2E de navegador con wallet inyectada (manual); una firma obsoleta bloquea
+re-preparar el mismo payload hasta que el Soporte la revoque (F9); `HEAD_KEEPER_ROLE` y su wallet se
+configuran en la ventana de F6.

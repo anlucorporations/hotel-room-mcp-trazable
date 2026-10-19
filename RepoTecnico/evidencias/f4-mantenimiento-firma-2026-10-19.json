@@ -1,0 +1,79 @@
+{
+  "id": "f4-mantenimiento-firma-2026-10-19",
+  "titulo": "F4 cerrada — Suite de Mantenimiento con firma selectiva desplegada y validada en Besu 81234",
+  "fechaUtc": "2026-10-19T15:45:00Z",
+  "objetivo": "Bloqueo/desbloqueo de habitación firmado EIP-712 observable en UI y anclado on-chain; preventivo crítico con firma obligatoria; catálogo excluye habitaciones en mantenimiento.",
+  "entorno": {
+    "red": "Besu de Codecrypto · chainId 81234",
+    "hotelOperations": "0x222d74f33b0d07687a769a44399e2272a4cb9ffe",
+    "hotelNights": "0xF8b1d4d0A2Dd9Dd53200A4C6783a69c15E3a25F4",
+    "web": {
+      "imagen": "web:v69",
+      "revision": "hotel-mcp-web-00075-xqt"
+    },
+    "worker": "hotel-mcp-worker-00024-q2h (burn y anchor enabled)"
+  },
+  "despliegue": [
+    {
+      "paso": "Roles on-chain",
+      "detalle": "HEAD_MAINTENANCE_ROLE concedido a la cuenta operadora 0xf39F…2266 y backup de emergencia del rol apuntando a la misma cartera",
+      "tx": [
+        "0xa2d976699c40a8c326b98a444d424ca5ff9feb18e261c2589053c9b41571c8e3 (grantRole, bloque 5743421)",
+        "0x727a2cf4f6e655f5b8f4df5d542df06132451afb969337445b4ff6071d82b223 (setBackupForRole, bloque 5743424)"
+      ]
+    },
+    {
+      "paso": "Wallet del rol en la base",
+      "detalle": "operator_wallets: admin@hotel.es → rol HEAD_MAINTENANCE → 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 (activa)"
+    },
+    {
+      "paso": "Web",
+      "detalle": "web:v69 con HOTEL_OPERATIONS_CONTRACT_ADDRESS=0x222d74f3…b9ffe y HOTEL_OPERATIONS_DEPLOYMENT_BLOCK=5491513; gate RSC revalidado también en cada página"
+    }
+  ],
+  "validacionE2E": {
+    "habitacion": 201,
+    "roomId": "c03d0ba4-d7e1-4102-beb0-5c3ec3413608",
+    "flujo": [
+      "login owner + TOTP (200)",
+      "POST /api/mantenimiento/signatures (ROOM_BLOCK) → TypedData del dominio HotelOperations",
+      "firma EIP-712 con la cartera del jefe y PATCH /signatures/[id] (SIGNED)",
+      "POST /api/mantenimiento/rooms/[id]/block → publication_status MAINTENANCE y fuera de /api/public/rooms"
+    ],
+    "block": {
+      "signatureId": "1ebabd21-c86e-491a-83ae-e8ddfbe8e0ea",
+      "estadoOffChain": "PUBLISHED → MAINTENANCE",
+      "catalogo": "habitación excluida (public rooms = [])",
+      "anclaje": "MINED · tx 0xbbc88ac62e09bc55de71addaf7fa06934fab2a3fa2fc9d4edd7dade5d6ed7b37 · bloque 5743796 · success"
+    },
+    "unblock": {
+      "signatureId": "1d9b920d-33bb-4fe9-9030-3f5f4b5a53f7",
+      "estadoOffChain": "MAINTENANCE → PUBLISHED (restaurado)",
+      "catalogo": "habitación de nuevo reservable (public rooms = [201])",
+      "anclaje": "firma confirmada y delegada al outbox; el worker la ancla con el relayer (la consulta previa muestra el patrón MINED)"
+    },
+    "hallazgosCorregidos": [
+      "El nonce EIP-712 es bytes32: el hook lo convertía a BigInt y la firma habría fallado siempre (BytesSizeMismatchError). Corregido; verificado firmando el TypedData real.",
+      "Carrera anclaje↔aplicación: si el worker ancla entre la confirmación y la aplicación, la firma pasa a MINED; ahora se acepta SIGNED o MINED al aplicar (antes 409).",
+      "El payload RSC de las páginas viajaba sin sesión (el layout ocultaba el árbol pero no frenaba el render): cada página revalida la sesión y devuelve null; verificado que un anónimo ya no recibe datos del dashboard.",
+      "Solicitud de firma duplicada (mismo firmante+payload) responde 409 SIGNATURE_DUPLICATE en vez de 500."
+    ]
+  },
+  "verificacion": {
+    "anonimoMaintenance": "200 con acceso back-office; sin maintenance-dashboard ni incident-list en el HTML",
+    "autenticado": "/mantenimiento 200 con dashboard; /incidencias, /preventivo, /areas-comunes, /informes y /tablero responden 200",
+    "health": "web READY (postgres/redis/RPC UP)",
+    "pruebas": {
+      "shared": "67 ficheros / 710 pruebas en verde",
+      "web": "120 ficheros / 1122 pruebas en la suite completa + 6 pruebas nuevas de firma ejecutadas por separado (1128 acumuladas)",
+      "typecheck": "limpio",
+      "lint": "0 errores",
+      "guardianes": "boundaries, control-boundary (line-strong), public-suite y suite-access en verde"
+    }
+  },
+  "deudaDeclarada": [
+    "E2E de navegador con wallet inyectada (Playwright) queda como prueba manual: el spec entregado cubre el gate de sesión en escritorio y móvil.",
+    "Una firma PENDING/MINED obsoleta bloquea re-preparar el MISMO payload (nonce derivado de firmante+contenido, índice único); el Soporte debe revocarla (F9). El API ya responde 409 explicativo.",
+    "HEAD_KEEPER_ROLE y su wallet se configurarán en la ventana de F6."
+  ]
+}
