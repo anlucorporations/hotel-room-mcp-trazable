@@ -12,7 +12,9 @@ import {
   type NightState,
   type SaleType,
 } from "@hotel/shared";
-import type { ChainReader, NightSignals } from "../chain/chain-reader";
+import { keccak256, toHex } from "viem";
+import { HOTEL_OPERATIONS_ACTION_TYPES } from "@hotel/shared";
+import type { ChainReader, NightSignals, OperationalActionRecord } from "../chain/chain-reader";
 import { searchKnowledge, type KnowledgeHit } from "../knowledge/search";
 import { ToolError } from "./errors";
 import type {
@@ -36,6 +38,32 @@ import type {
 export interface ToolConfig {
   readonly contractAddress: Address;
   readonly chainId: number;
+}
+
+/** Nombres legibles de las acciones operativas (hash → nombre) para la herramienta del MCP. */
+const ACTION_NAME_BY_HASH = new Map(
+  HOTEL_OPERATIONS_ACTION_TYPES.map((name) => [keccak256(toHex(name)).toLowerCase(), name]),
+);
+
+/** Fila legible de una acción operativa anclada (solo lectura, sin claves ni transacciones). */
+export interface OperationalActionView extends OperationalActionRecord {
+  readonly actionName: string;
+}
+
+/**
+ * Lee las acciones operativas ancladas en `HotelOperations` (F10 · T10.4). Es **solo lectura**:
+ * el MCP nunca firma, no custodia claves y no envía transacciones (DT-AUD-15). Si el despliegue no
+ * tiene configurado el contrato de operaciones, devuelve una lista vacía honesta.
+ */
+export async function getOperationalActions(reader: ChainReader): Promise<OperationalActionView[]> {
+  const records = (await reader.getOperationalActions?.()) ?? [];
+  return records
+    .map((record) => ({
+      ...record,
+      actionName: ACTION_NAME_BY_HASH.get(record.actionType.toLowerCase()) ?? record.actionType,
+    }))
+    .sort((a, b) => b.blockNumber - a.blockNumber)
+    .slice(0, 100);
 }
 
 const SALE_TYPE_BY_STATE: Partial<Record<NightState, SaleType>> = {

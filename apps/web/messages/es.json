@@ -1172,7 +1172,39 @@
     "resChildren": "Niños",
     "resBabies": "Bebés",
     "resPets": "Mascotas",
-    "resAccessibility": "Acceso PMR"
+    "resAccessibility": "Acceso PMR",
+    "navIncidents": "Incidencias",
+    "navRooms": "Ventas",
+    "navDamages": "Daños",
+    "actionError": "No se pudo completar la acción.",
+    "incidents": {
+      "pageTitle": "Reportar incidencia",
+      "pageTagline": "Abre un ticket para Mantenimiento; la habitación queda fuera de la venta hasta resolverlo.",
+      "title": "Nueva incidencia",
+      "hint": "El ticket no exige firma on-chain (D-C37); queda identificado con tu rol de recepción.",
+      "room": "Habitación",
+      "kind": "Tipo",
+      "description": "Descripción",
+      "submit": "Reportar",
+      "done": "Incidencia reportada; Mantenimiento la recibirá."
+    },
+    "publication": {
+      "pageTitle": "Ventas de habitaciones",
+      "pageTagline": "Activa o desactiva manualmente la venta tras una inspección o un mantenimiento (D-C9).",
+      "title": "Publicación",
+      "hint": "Publicar o despublicar no exige firma on-chain (D-C37).",
+      "publish": "Publicar",
+      "unpublish": "Despublicar"
+    },
+    "maintenanceKind": {
+      "ELECTRICIDAD": "Electricidad",
+      "FONTANERIA": "Fontanería",
+      "CLIMATIZACION": "Climatización",
+      "MOBILIARIO": "Mobiliario",
+      "ELECTRODOMESTICO": "Electrodoméstico",
+      "CERRADURA": "Cerradura",
+      "OTROS": "Otros"
+    }
   },
   "myResales": {
     "title": "Mis reventas",

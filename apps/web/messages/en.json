@@ -1172,7 +1172,39 @@
     "resChildren": "Children",
     "resBabies": "Babies",
     "resPets": "Pets",
-    "resAccessibility": "Accessible access"
+    "resAccessibility": "Accessible access",
+    "navIncidents": "Incidents",
+    "navRooms": "Sales",
+    "navDamages": "Damages",
+    "actionError": "The action could not be completed.",
+    "incidents": {
+      "pageTitle": "Report incident",
+      "pageTagline": "Open a ticket for Maintenance; the room stays out of sale until resolved.",
+      "title": "New incident",
+      "hint": "The ticket needs no on-chain signature (D-C37); it is tagged with your reception role.",
+      "room": "Room",
+      "kind": "Type",
+      "description": "Description",
+      "submit": "Report",
+      "done": "Incident reported; Maintenance will receive it."
+    },
+    "publication": {
+      "pageTitle": "Room sales",
+      "pageTagline": "Manually enable or disable the sale after an inspection or maintenance (D-C9).",
+      "title": "Publication",
+      "hint": "Publishing or unpublishing needs no on-chain signature (D-C37).",
+      "publish": "Publish",
+      "unpublish": "Unpublish"
+    },
+    "maintenanceKind": {
+      "ELECTRICIDAD": "Electricity",
+      "FONTANERIA": "Plumbing",
+      "CLIMATIZACION": "HVAC",
+      "MOBILIARIO": "Furniture",
+      "ELECTRODOMESTICO": "Appliance",
+      "CERRADURA": "Lock",
+      "OTROS": "Other"
+    }
   },
   "myResales": {
     "title": "My resales",

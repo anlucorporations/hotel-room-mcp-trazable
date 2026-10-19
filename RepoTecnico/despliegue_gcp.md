@@ -3719,3 +3719,19 @@ verde; `typecheck` limpio; `eslint` 0 errores. **Deuda:** operadores `HEAD_KEEPE
 da de alta F9; E2E de navegador con wallet inyectada, manual; `/ama-de-llaves/danos` reservada a F7.
 
 **Evidencia:** `RepoTecnico/evidencias/f6-ama-de-llaves-2026-10-19.json`.
+
+---
+
+## 91. Releases v73/v74 — F7 (daños) y F10 (Recepción vNext y cierre) (2026-10-19)
+
+| Elemento | Valor |
+|---|---|
+| web | `web:v73` → revisión `hotel-mcp-web-00079-j58` (F7 corregido); `web:v74` → revisión de cierre F10 |
+| MCP | `mcp` con `OPERATIONS_CONTRACT_ADDRESS=0x222d74f3…b9ffe` y herramienta **`getOperationalActions`** (solo lectura) |
+| F7 validado | alta sin firma on-chain → reclamo del huésped → resolución aceptada en recepción → check-out que liquida el cargo en el folio (`RESOLVED_ACCEPTED`, cargo `PAID`) |
+| Correcciones | casts en `resolveNotification`; `housekeeping_room_logs` a `VARCHAR(20)` (PENDING_CLEANING) y sincronía triple |
+| F10 validado | reporte de incidencias por recepción, publicación manual de la venta, **D-C40 308** `/housekeeping → /ama-de-llaves`, MCP solo lectura, p95 tablero 426,7 ms |
+| Evidencia | `RepoTecnico/evidencias/f7-f10-cierre-fase3-2026-10-19.json` |
+
+**Gates de la ruta crítica:** F4/F6/F7 desplegadas y validadas; F10 entregado. El E2E Playwright con
+wallet inyectada se mantiene como prueba manual de ventana (el resto de suites y guardianes en verde).

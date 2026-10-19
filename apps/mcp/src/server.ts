@@ -8,6 +8,7 @@ import {
   getOwnedNightsShape,
   listAvailableNightsShape,
   prepareStayTxShape,
+  getOperationalActionsShape,
   searchHotelManualsShape,
 } from "./tools/schemas";
 import {
@@ -16,6 +17,7 @@ import {
   getOwnedNights,
   listAvailableNights,
   prepareStayTx,
+  getOperationalActions,
   searchHotelManuals,
   type ToolConfig,
 } from "./tools/tools";
@@ -118,6 +120,16 @@ export function createMcpServer(deps: McpServerDeps): McpServer {
       inputSchema: searchHotelManualsShape,
     },
     async (input) => ok(searchHotelManuals(input)),
+  );
+
+  server.registerTool(
+    "getOperationalActions",
+    {
+      description:
+        "Lee (solo lectura) las acciones operativas ancladas en el contrato HotelOperations: tipo, entidad, huella del payload, firmante, fecha y transacción. El MCP no firma, no custodia claves y no envía transacciones.",
+      inputSchema: getOperationalActionsShape,
+    },
+    async () => ok(await getOperationalActions(reader)),
   );
 
   return server;

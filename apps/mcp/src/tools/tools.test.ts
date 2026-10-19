@@ -375,3 +375,24 @@ describe("prepareStayTx (TC-MCP-010) · reserva en rango de fechas", () => {
     ).rejects.toMatchObject({ code: "INVALID_INPUT" });
   });
 });
+
+
+describe("getOperationalActions (F10 · T10.4, solo lectura)", () => {
+  it("mapea el hash de acción a nombre legible y ordena por bloque", async () => {
+    const { keccak256, toHex } = await import("viem");
+    const reader = {
+      getOperationalActions: async () => [
+        { actionType: keccak256(toHex("ROOM_BLOCK")), entityId: "0x" + "11".repeat(16), payloadHash: "0x" + "22".repeat(32), signer: "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC", timestamp: 1, txHash: "0xabc", blockNumber: 10 },
+        { actionType: keccak256(toHex("INSPECTION")), entityId: "0x" + "33".repeat(16), payloadHash: "0x" + "44".repeat(32), signer: "0x90F79bf6EB2c4f870365E785982E1f101E93b906", timestamp: 2, txHash: "0xdef", blockNumber: 20 },
+      ],
+    } as never;
+    const { getOperationalActions } = await import("./tools");
+    const rows = await getOperationalActions(reader);
+    expect(rows.map((row) => row.actionName)).toEqual(["INSPECTION", "ROOM_BLOCK"]);
+  });
+
+  it("sin lector de operaciones devuelve una lista vacía (no inventa)", async () => {
+    const { getOperationalActions } = await import("./tools");
+    expect(await getOperationalActions({} as never)).toEqual([]);
+  });
+});

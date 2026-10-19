@@ -1,0 +1,35 @@
+{
+  "id": "f7-f10-cierre-fase3-2026-10-19",
+  "titulo": "F7 (cargos por daños) y F10 (Recepción vNext y cierre) — validación en producción",
+  "fechaUtc": "2026-10-19T17:15:00Z",
+  "red": "Besu 81234 · web:v73/v74 · HotelOperations 0x222d74f3…b9ffe",
+  "f7": {
+    "flujoValidado": [
+      "Alta de cargo sobre la noche vendida 20120261116: 201, signatureId=null (D-C27), canal WEB",
+      "Portal del huésped GET: 200 con importe/plazo/estado; reclamación (claim): 200 DISPUTED",
+      "Recepción resuelve aceptando: 200 chargeStatus=PENDING (se suma al folio)",
+      "Check-out: 200 con damageCharges=[{concept, amountCents:4500, currency:EUR}] liquidados (PAID)",
+      "Estado final del aviso: RESOLVED_ACCEPTED"
+    ],
+    "bugsCorregidosEnLaVentana": [
+      "resolveNotification fallaba con 500 'inconsistent types deduced for parameter $2' (casts explícitos)",
+      "housekeeping_room_logs.from/to_value VARCHAR(12) no admitía PENDING_CLEANING: el check-out fallaba con 'value too long'; ensanchado a VARCHAR(20) en migrador + base de datos + propuesta vNext (guardián de sincronía triple en verde)"
+    ],
+    "retencion": "anonymizeExpiredEvidence cableado a purgeExpiredData/retention-scheduler (90 días, T7.6)"
+  },
+  "f10": {
+    "entregado": [
+      "Recepción reporta incidencias con guard RECEPTION_ROLE (sin firma, D-C37) y reported_by_role",
+      "Publicar/despublicar venta manualmente desde recepción (API + panel; D-C9, sin firma)",
+      "D-C40: /housekeeping → /ama-de-llaves redirección permanente 308 en next.config",
+      "MCP: herramienta getOperationalActions solo lectura (eventos OperationalAction de HotelOperations; guardián sin APIs de escritura)",
+      "E2E smoke de daños y redirección; performance del tablero ya medida (p95 426,7 ms < 500)"
+    ]
+  },
+  "pruebas": {
+    "shared": "dominio+repo daños 16 en verde; migrador/sincronía triple en verde",
+    "web": "API daños 5 + guardián de estructura 4 + i18n; typecheck limpio",
+    "mcp": "tool getOperationalActions + guardián de solo lectura",
+    "limitacionDeclarada": "El E2E Playwright con backend vivo y wallet inyectada queda como prueba manual de ventana; los specs de puerta de sesión y redirección son herméticos"
+  }
+}

@@ -37,6 +37,9 @@ const mcpEnvSchema = z.object({
   MCP_ALLOWED_ORIGINS: csvList,
   /** Bloque de despliegue del contrato; si falta, se resuelve del registro o se usa 0. */
   DEPLOYMENT_BLOCK: emptyAsUndefined(z.coerce.number().int().nonnegative()),
+  /** `HotelOperations` para leer acciones firmadas (F10 · T10.4). Opcional en despliegues sin F2. */
+  OPERATIONS_CONTRACT_ADDRESS: emptyAsUndefined(env.ethAddress),
+  OPERATIONS_DEPLOYMENT_BLOCK: emptyAsUndefined(z.coerce.number().int().nonnegative()),
 });
 
 export type McpConfig = z.infer<typeof mcpEnvSchema>;

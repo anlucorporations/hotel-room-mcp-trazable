@@ -10,13 +10,16 @@ import {
 } from "viem";
 import { GETLOGS_MAX_RANGE } from "@hotel/shared";
 import { hotelNightsAbi } from "@hotel/shared/abi";
-import type { ChainReader, MintRecord, NightSignals } from "./chain-reader";
+import type { ChainReader, MintRecord, NightSignals, OperationalActionRecord } from "./chain-reader";
 
 export interface ViemChainReaderOptions {
   readonly rpcUrl: string;
   readonly chain: Chain;
   readonly contractAddress: Address;
   readonly deploymentBlock: bigint;
+  /** `HotelOperations` (F10 · T10.4). Sin dirección, la lectura de acciones devuelve []. */
+  readonly operationsAddress?: Address;
+  readonly operationsDeploymentBlock?: bigint;
 }
 
 const MINT_EVENT = parseAbiItem(
@@ -45,11 +48,50 @@ export class ViemChainReader implements ChainReader {
   private readonly client: PublicClient;
   private readonly address: Address;
   private readonly deploymentBlock: bigint;
+  private readonly operationsAddress: Address | null;
+  private readonly operationsDeploymentBlock: bigint;
 
   constructor(options: ViemChainReaderOptions) {
     this.client = createPublicClient({ chain: options.chain, transport: http(options.rpcUrl) });
     this.address = options.contractAddress;
     this.deploymentBlock = options.deploymentBlock;
+    this.operationsAddress = options.operationsAddress ?? null;
+    this.operationsDeploymentBlock = options.operationsDeploymentBlock ?? options.deploymentBlock;
+  }
+
+  /**
+   * Acciones `OperationalAction` de `HotelOperations` desde su bloque de despliegue (T10.4).
+   * Devuelve `[]` si el MCP no tiene configurada la dirección del contrato de operaciones.
+   */
+  async getOperationalActions(): Promise<OperationalActionRecord[]> {
+    if (this.operationsAddress === null) return [];
+    const event = parseAbiItem(
+      "event OperationalAction(bytes32 indexed actionType, bytes32 indexed entityId, bytes32 payloadHash, address indexed signer, uint256 timestamp)",
+    );
+    const head = await this.client.getBlockNumber();
+    const actions: OperationalActionRecord[] = [];
+    const range = BigInt(GETLOGS_MAX_RANGE);
+    for (let from = this.operationsDeploymentBlock; from <= head; from += range) {
+      const to = from + range - 1n > head ? head : from + range - 1n;
+      const logs = await this.client.getLogs({
+        address: this.operationsAddress,
+        event,
+        fromBlock: from,
+        toBlock: to,
+      });
+      for (const log of logs) {
+        actions.push({
+          actionType: log.args.actionType ?? "",
+          entityId: log.args.entityId ?? "",
+          payloadHash: log.args.payloadHash ?? "",
+          signer: log.args.signer ?? "",
+          timestamp: Number(log.args.timestamp ?? 0n),
+          txHash: log.transactionHash,
+          blockNumber: Number(log.blockNumber),
+        });
+      }
+    }
+    return actions;
   }
 
   getHeadBlock(): Promise<bigint> {

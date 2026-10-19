@@ -80,6 +80,17 @@ const nextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
+  /**
+   * D-C40 (F10): `/housekeeping` se redirige de forma **permanente** a la suite vNext
+   * `/ama-de-llaves`, sin romper enlaces ni marcadores (308). La suite heredada deja de tener
+   * entrada propia; sus datos y API siguen vivos para las páginas que los consumen.
+   */
+  async redirects() {
+    return [
+      { source: "/housekeeping", destination: "/ama-de-llaves", permanent: true },
+      { source: "/housekeeping/:path*", destination: "/ama-de-llaves/:path*", permanent: true },
+    ];
+  },
 };
 
 export default withNextIntl(nextConfig);

@@ -26,6 +26,18 @@ export interface NightSignals {
   readonly listingPriceWei: bigint;
 }
 
+/** Acción operativa anclada en `HotelOperations` (evento `OperationalAction`), solo lectura. */
+export interface OperationalActionRecord {
+  /** `keccak256` del tipo de acción (`ROOM_BLOCK`, `INSPECTION`…), tal cual on-chain. */
+  readonly actionType: string;
+  readonly entityId: string;
+  readonly payloadHash: string;
+  readonly signer: string;
+  readonly timestamp: number;
+  readonly txHash: string;
+  readonly blockNumber: number;
+}
+
 export interface ChainReader {
   /** Bloque cabeza actual; sondea la conectividad con el RPC (para `/health`). */
   getHeadBlock(): Promise<bigint>;
@@ -41,4 +53,10 @@ export interface ChainReader {
   getNightSignals(tokenId: bigint): Promise<NightSignals>;
   /** ¿`wallet` es la propietaria actual de `tokenId`? Tolera el revert por quemado. */
   isOwnedBy(tokenId: bigint, wallet: Address): Promise<boolean>;
+  /**
+   * Eventos `OperationalAction` anclados en `HotelOperations` (F10 · T10.4). **Solo lectura**: el
+   * MCP no firma, no custodia claves y no envía transacciones (DT-AUD-15). Opcional para no romper
+   * dobles de prueba que no lo necesitan.
+   */
+  getOperationalActions?(): Promise<OperationalActionRecord[]>;
 }

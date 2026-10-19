@@ -74,3 +74,6 @@ export type GetOwnedNightsInput = z.infer<typeof getOwnedNightsInput>;
 export type BuildPurchaseTxInput = z.infer<typeof buildPurchaseTxInput>;
 export type PrepareStayTxInput = z.infer<typeof prepareStayTxInput>;
 export type SearchHotelManualsInput = z.infer<typeof searchHotelManualsInput>;
+
+/** Sin argumentos: las acciones operativas se leen de la cadena (solo lectura, T10.4). */
+export const getOperationalActionsShape = z.object({});

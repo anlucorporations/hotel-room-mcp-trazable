@@ -47,7 +47,12 @@ async function main(): Promise<void> {
     chain,
     contractAddress,
     deploymentBlock: BigInt(deploymentBlock),
-  });
+    operationsAddress: config.OPERATIONS_CONTRACT_ADDRESS as Address | undefined,
+    operationsDeploymentBlock:
+      config.OPERATIONS_DEPLOYMENT_BLOCK === undefined
+        ? undefined
+        : BigInt(config.OPERATIONS_DEPLOYMENT_BLOCK),
+});
 
   // Binding seguro por defecto (MINOR#14): loopback salvo configuración explícita. Exponer en una
   // interfaz pública sin allowlist habilita DNS-rebinding; avisamos para forzar reverse proxy/allowlist.

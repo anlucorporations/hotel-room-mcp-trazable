@@ -13,6 +13,9 @@ import { useTranslations } from "next-intl";
 const ITEMS = [
   { href: "/recepcion", labelKey: "navOperations" },
   { href: "/recepcion/reservas", labelKey: "navReservations" },
+  { href: "/recepcion/incidencias", labelKey: "navIncidents" },
+  { href: "/recepcion/habitaciones", labelKey: "navRooms" },
+  { href: "/recepcion/danos", labelKey: "navDamages" },
 ] as const;
 
 export function FrontOfficeShell({ children }: { children: ReactNode }) {

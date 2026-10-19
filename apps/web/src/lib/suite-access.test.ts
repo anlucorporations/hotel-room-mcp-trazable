@@ -16,8 +16,9 @@ describe("accesos a suites por rol (D-76/D-77)", () => {
     expect(suiteLinksForRoles(["RECEPTION_ROLE"]).map((link) => link.key)).toEqual(["reception"]);
   });
 
-  it("housekeeping y mantenimiento entran a su propia ruta", () => {
-    expect(suiteLinksForRoles(["HOUSEKEEPING"]).map((link) => link.key)).toEqual(["housekeeping"]);
+  it("housekeeping (D-C40) y mantenimiento entran a su ruta", () => {
+    // `/housekeeping` redirige de forma permanente a la suite vNext: el enlace va al destino final.
+    expect(suiteLinksForRoles(["HOUSEKEEPING"]).map((link) => link.key)).toEqual(["keepers"]);
     expect(suiteLinksForRoles(["MAINTENANCE"]).map((link) => link.key)).toEqual(["maintenance"]);
   });
 
@@ -41,8 +42,10 @@ describe("accesos a suites por rol (D-76/D-77)", () => {
     expect(suiteLinksForRoles(["HOUSEKEEPER"]).map((link) => link.key)).toEqual(["keepers"]);
   });
 
-  it("la suite del ama de llaves vive en /ama-de-llaves y la heredada sigue en /housekeeping", () => {
+  it("D-C40: el rol heredado y los vNext entran a /ama-de-llaves", () => {
     expect(suiteLinksForRoles(["HEAD_KEEPER"])[0]?.href).toBe("/ama-de-llaves");
-    expect(suiteLinksForRoles(["HOUSEKEEPING"])[0]?.href).toBe("/housekeeping");
+    // `/housekeeping` redirige de forma permanente a `/ama-de-llaves`: el enlace va al destino final.
+    expect(suiteLinksForRoles(["HOUSEKEEPING"]).map((link) => link.key)).toEqual(["keepers"]);
+    expect(suiteLinksForRoles(["HOUSEKEEPING"])[0]?.href).toBe("/ama-de-llaves");
   });
 });

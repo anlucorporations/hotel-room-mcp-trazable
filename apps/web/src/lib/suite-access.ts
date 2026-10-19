@@ -31,8 +31,9 @@ export interface SuiteLink {
 const ADMIN: SuiteLink = { key: "admin", href: "/admin", labelKey: "suiteAdmin" };
 const RECEPTION: SuiteLink = { key: "reception", href: "/recepcion", labelKey: "suiteReception" };
 const HOUSEKEEPING: SuiteLink = { key: "housekeeping", href: "/housekeeping", labelKey: "suiteHousekeeping" };
-/** Suite vNext del ama de llaves y de la camarera (F6). */
+/** Suite vNext del ama de llaves y de la camarera (F6); destino de la redirección D-C40. */
 const KEEPERS: SuiteLink = { key: "keepers", href: "/ama-de-llaves", labelKey: "suiteKeepers" };
+
 const MAINTENANCE: SuiteLink = { key: "maintenance", href: "/mantenimiento", labelKey: "suiteMaintenance" };
 
 /** Roles on-chain que siguen siendo back-office aunque no tengan una suite propia. */
@@ -53,7 +54,9 @@ export function suiteLinksForRoles(roles: readonly string[], isOwner = false): r
 
   const links: SuiteLink[] = [];
   if (set.has("RECEPTION_ROLE")) links.push(RECEPTION);
-  if (set.has("HOUSEKEEPING")) links.push(HOUSEKEEPING);
+  // D-C40: la suite heredada `/housekeeping` redirige a `/ama-de-llaves`, así que el rol heredado
+  // entra directamente a la suite vNext (mismo destino tras la redirección, sin salto extra).
+  if (set.has("HOUSEKEEPING")) links.push(KEEPERS);
   // F6: ama de llaves (`HEAD_KEEPER`, con wallet para la inspección opcional) y camarera
   // (`HOUSEKEEPER`, sin wallet) entran a la suite vNext `/ama-de-llaves`.
   if (set.has("HEAD_KEEPER") || set.has("HOUSEKEEPER")) links.push(KEEPERS);
