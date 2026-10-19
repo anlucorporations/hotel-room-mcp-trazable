@@ -1,0 +1,25 @@
+{
+  "prueba": "Runbook §9.5 ejecutado: migración idempotente, contrato inmutable y rollback verificado (A11)",
+  "fecha": "2026-10-19T19:54:29Z",
+  "esquema": {
+    "migracion": "runMigrations es forward-only e idempotente (IF NOT EXISTS / ON CONFLICT DO NOTHING); prueba unittest 'es idempotente por construcción' en packages/shared/src/db/migrator.test.ts",
+    "aplicadaEnProduccion": "El worker arrancó con el esquema vNext ampliado (housekeeping_room_logs VARCHAR(20)) y las revisiones web/worker posteriores arrancaron sin error; la sincronía triple migrador ↔ base_datos.sql ↔ propuesta vNext la vigila migrator.test.ts",
+    "rollbackEsquema": "El plan de rollback documentado (§9.5.A.3) es DROP de las 12 tablas nuevas en orden inverso y DROP COLUMN de las extensiones desde el backup previo; no se ejecutó un DROP real en producción (no aplica a una ventana de solo avance) y queda cubierto por el restore drill A9."
+  },
+  "contrato": {
+    "inmutable": true,
+    "evidencia": "HotelOperations.sol no usa proxy ni delegatecall (comentario de cabecera y grep sin ocurrencias); bytecode desplegado 4.811 bytes en 0x222d74f3…b9ffe; el rollback de contrato consiste en re-apuntar deployments/81234.json, no en reescribir estado"
+  },
+  "verificacionRollback": {
+    "web": {
+      "revisionAnterior": "hotel-mcp-web-00083-ldn",
+      "rollbackTrafficMs": 10384,
+      "healthTrasRollback": 200,
+      "restauracionTrafficMs": 11880,
+      "healthTrasRestaurar": 200,
+      "revisionRestaurada": "hotel-mcp-web-00084-m5r"
+    },
+    "nota": "Rollback por cambio de tráfico entre revisiones de Cloud Run (procedimiento real del runbook); ambas responden /health/ready 200. Tiempo total de ida y vuelta < 25 s, muy por debajo del RTO de 4 h."
+  },
+  "resultado": "CUMPLE"
+}

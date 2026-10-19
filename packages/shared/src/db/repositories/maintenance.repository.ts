@@ -116,6 +116,10 @@ export interface PreventiveTaskRecord {
   signatureId: string | null;
   /** Evidencia adjunta al cierre (foto/nota), si la hay. */
   evidencePath: string | null;
+  /** Operario de terminal al que está asignada la tarea (F5 · solo lo asignado). */
+  assignedTo: string | null;
+  /** Estado de validación del jefe (F8): `PENDING_VERIFICATION` al cerrar desde terminal. */
+  validationStatus: "PENDING_VERIFICATION" | "VALIDATED" | "PENDING_VERIFICATION_EXPIRED" | null;
 }
 
 /** Periodicidad de una tarea rutinaria de área común (F1 · T1.9). */
@@ -124,6 +128,11 @@ export type CloseTaskOptions = {
   signatureId?: string | null;
   /** Evidencia adjunta al cierre (foto/nota); su ausencia solo avisa (D-C12). */
   evidencePath?: string | null;
+  /**
+   * F5 · CU-V-14: un técnico/limpieza cierra desde el terminal y el jefe debe validar en 24 h.
+   * El cierre desde la suite del jefe (F4) no marca validación pendiente.
+   */
+  validationStatus?: "PENDING_VERIFICATION" | "VALIDATED" | null;
 };
 
 export const AREA_PERIODICITIES = ["DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "ANNUAL"] as const;
@@ -652,7 +661,12 @@ export class MaintenanceRepository {
   }
 
   async listTasks(
-    filter: { planId?: string; status?: PreventiveTaskStatus; dueOnOrBefore?: string } = {},
+    filter: {
+      planId?: string;
+      status?: PreventiveTaskStatus;
+      dueOnOrBefore?: string;
+      assignedTo?: string;
+    } = {},
   ): Promise<PreventiveTaskRecord[]> {
     const where: string[] = [];
     const values: unknown[] = [];
@@ -667,6 +681,10 @@ export class MaintenanceRepository {
     if (filter.dueOnOrBefore) {
       values.push(filter.dueOnOrBefore);
       where.push(`t.due_date <= $${values.length}`);
+    }
+    if (filter.assignedTo) {
+      values.push(filter.assignedTo);
+      where.push(`t.assigned_to = $${values.length}`);
     }
     const res = await this.pool.query(
       `${TASK_SELECT} ${where.length > 0 ? `WHERE ${where.join(" AND ")}` : ""} ORDER BY t.due_date ASC`,
@@ -686,6 +704,33 @@ export class MaintenanceRepository {
       [date],
     );
     return res.rows.map(mapTask);
+  }
+
+  /**
+   * Tablero del **terminal del técnico** (F5 · T5.5, D-C35): solo lo asignado a ese operario.
+   * Combina incidencias asignadas (abiertas/en curso) y tareas preventivas asignadas y no cerradas.
+   */
+  async listTerminalTasks(
+    operatorUsername: string,
+    date: string,
+  ): Promise<{ incidents: MaintenanceIncidentRecord[]; tasks: PreventiveTaskRecord[] }> {
+    const [incidents, tasks] = await Promise.all([
+      this.listIncidents({ openOnly: true }).then((rows) => rows.filter((row) => row.assignedTo === operatorUsername)),
+      this.listTasks({ assignedTo: operatorUsername, dueOnOrBefore: date }).then((rows) =>
+        rows.filter((row) => row.status === "PENDING"),
+      ),
+    ]);
+    return { incidents, tasks };
+  }
+
+  /** Asigna una tarea preventiva a un operario de terminal (jefe/administración, F5/F9). */
+  async assignTask(id: string, operatorUsername: string | null): Promise<PreventiveTaskRecord | null> {
+    const res = await this.pool.query(
+      `UPDATE preventive_tasks SET assigned_to = $2 WHERE id = $1 AND status = 'PENDING' RETURNING id`,
+      [id, operatorUsername],
+    );
+    if (res.rows.length === 0) return null;
+    return this.findTask(id);
   }
 
   /** Cierra una tarea como hecha y **programa la siguiente** según la periodicidad (D-54). */
@@ -998,9 +1043,18 @@ export class MaintenanceRepository {
         `UPDATE preventive_tasks
             SET status = $2, completed_by = $3, completed_at = NOW(), notes = COALESCE($4, notes),
                 signature_id = COALESCE($5, signature_id),
-                evidence_path = COALESCE($6, evidence_path)
+                evidence_path = COALESCE($6, evidence_path),
+                validation_status = COALESCE($7, validation_status)
           WHERE id = $1`,
-        [id, status, actor, notes, options.signatureId ?? null, options.evidencePath ?? null],
+        [
+          id,
+          status,
+          actor,
+          notes,
+          options.signatureId ?? null,
+          options.evidencePath ?? null,
+          options.validationStatus ?? null,
+        ],
       );
 
       let nextId: string | null = null;
@@ -1192,6 +1246,9 @@ function mapTask(row: QueryResultRow): PreventiveTaskRecord {
     requiresSignature: row.requires_signature === true || row.is_critical === true,
     signatureId: (row.signature_id as string | null) ?? null,
     evidencePath: (row.evidence_path as string | null) ?? null,
+    assignedTo: (row.assigned_to as string | null) ?? null,
+    validationStatus:
+      (row.validation_status as PreventiveTaskRecord["validationStatus"] | null) ?? null,
   };
 }
 

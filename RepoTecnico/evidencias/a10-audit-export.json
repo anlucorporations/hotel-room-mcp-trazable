@@ -1,0 +1,81 @@
+{
+  "httpStatus": 200,
+  "schema": "hotel-audit-export/v1",
+  "generatedAt": "2026-10-19T19:53:52.138Z",
+  "algorithm": "HMAC-SHA256",
+  "keyId": "jwt-derived",
+  "chainVerified": true,
+  "entries": [
+    {
+      "id": "35a78fc1-a819-40c4-b7dd-50620cf19c6c",
+      "actorUsername": "admin@hotel.es",
+      "actorRole": "RECEPTION_ROLE",
+      "entityType": "DAMAGE_CHARGE_SETTLEMENT",
+      "entityId": null,
+      "action": "SETTLE_CHECKOUT",
+      "oldValue": null,
+      "newValue": {
+        "charges": [
+          "314587b9-5ed7-4c2b-af12-4887aff251f6"
+        ],
+        "tokenId": "20120261116"
+      },
+      "terminalId": null,
+      "prevHash": "0xec0ebd4c4db00209a7c33e9c87be7a02d9e6e147be58cff064a2c90889e3c42e",
+      "integrityHash": "0x904183d3a15d93c2d25de88ccb77a3fd12f40b5d0d63a79e8516683e0c7c0ec3",
+      "createdAt": "2026-10-19T16:55:26.018Z"
+    },
+    {
+      "id": "dc1ddcba-5d85-4080-bbe5-0b3837a087fc",
+      "actorUsername": "admin@hotel.es",
+      "actorRole": "DEFAULT_ADMIN_ROLE",
+      "entityType": "DAMAGE_CHARGE",
+      "entityId": "5961d41a-b92e-4b56-aebe-171a886d9ea4",
+      "action": "CREATE",
+      "oldValue": null,
+      "newValue": {
+        "roomId": "c03d0ba4-d7e1-4102-beb0-5c3ec3413608",
+        "tokenId": "20120261116",
+        "chargeId": "314587b9-5ed7-4c2b-af12-4887aff251f6",
+        "amountCents": 4500,
+        "signatureId": null
+      },
+      "terminalId": null,
+      "prevHash": "0x9f6564a2efbe2d0c025d18d209806bbb0d0d0beaf16d0aba26b374edac0f594d",
+      "integrityHash": "0xec0ebd4c4db00209a7c33e9c87be7a02d9e6e147be58cff064a2c90889e3c42e",
+      "createdAt": "2026-10-19T16:55:25.077Z"
+    },
+    {
+      "id": "6a26efab-d024-4908-9f2a-a6ae9f7bff26",
+      "actorUsername": "admin@hotel.es",
+      "actorRole": "DEFAULT_ADMIN_ROLE",
+      "entityType": "DAMAGE_CHARGE",
+      "entityId": "df8d8241-05bc-4cc3-9058-8d703fc79abe",
+      "action": "CREATE",
+      "oldValue": null,
+      "newValue": {
+        "roomId": "c03d0ba4-d7e1-4102-beb0-5c3ec3413608",
+        "tokenId": "20120261116",
+        "chargeId": "a284691b-240f-4ae3-a4ad-86896844b1a4",
+        "amountCents": 4500,
+        "signatureId": null
+      },
+      "terminalId": null,
+      "prevHash": null,
+      "integrityHash": "0x9f6564a2efbe2d0c025d18d209806bbb0d0d0beaf16d0aba26b374edac0f594d",
+      "createdAt": "2026-10-19T16:42:36.629Z"
+    }
+  ],
+  "digest": "sha256:57444eefaa124dd73fac42ee775885fe9445bf59540303b96bffbf1885013724",
+  "signature": "hmac-sha256:d35e0783c6c3a8a3fe908d78e74e3181bdee252c8d0a593d279ce860f34476e8",
+  "format": "json",
+  "verificacion": {
+    "httpStatus": 200,
+    "entries": 3,
+    "chainVerified": true,
+    "algoritmo": "HMAC-SHA256",
+    "keyId": "jwt-derived",
+    "reproducible": "HMAC-SHA256 sobre canonicalJson (misma entrada+clave ⇒ misma firma); pruebas unitarias en packages/shared/src/maintenance/audit-export.test.ts",
+    "nota": "El documento se firma con AUDIT_EXPORT_SECRET si existe; en este despliegue se derivó de JWT_SECRET (keyId jwt-derived). La verificación externa recomputa digest y firma con la misma clave."
+  }
+}

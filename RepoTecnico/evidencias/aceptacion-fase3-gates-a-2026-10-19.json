@@ -1,0 +1,27 @@
+{
+  "id": "aceptacion-fase3-gates-a-2026-10-19",
+  "titulo": "Cierre de los criterios de aceptación globales A1–A14 de la Fase 3 (alcanzables sin F5/F8/F9)",
+  "fecha": "2026-10-19",
+  "metodo": "Verificación directa contra el sistema en producción (Besu 81234 · hotelería GCP) y contra el workspace; cada criterio referencia su evidencia reproducible.",
+  "criterios": [
+    { "id": "A1", "estado": "BLOQUEADO", "detalle": "El cierre exige los 10 ciclos; están cerrados F1, F2, F3, F4, F6, F7 y F10. Faltan F5 (terminal PIN), F8 (suministros/SLA) y F9 (administración/gobernanza/soporte).", "evidencia": "RepoTecnico/propuesta_vNext/plan_desarrollo.md" },
+    { "id": "A2", "estado": "BLOQUEADO (parcial)", "detalle": "La matriz RF/RNF ↔ CU-V ↔ ciclo no puede cerrarse sin huérfanos: F5 (CU-V-12…15), F8 (CU-V-25,30,09,39) y F9 (CU-V-35…40,43,44,45) siguen sin ciclo implementado.", "evidencia": "plan_desarrollo.md §4.5/§4.8/§4.9" },
+    { "id": "A3", "estado": "CUMPLE", "detalle": "forge test: 20 suites, 202 pruebas, 0 fallos; incluye invariantes de HotelOperations (256 runs / 8.192 llamadas) y no regresión de HotelNights.", "evidencia": "salida forge test 2026-10-19" },
+    { "id": "A4", "estado": "CUMPLE", "detalle": "pnpm typecheck, pnpm lint (0 errores), pnpm test y pnpm build de todo el workspace en verde; suites shared/web/worker/mcp/monitor y contratos.", "evidencia": "salida pnpm (ver estado_proyecto §48)" },
+    { "id": "A5", "estado": "BLOQUEADO (manual)", "detalle": "Los flujos completos con wallet inyectada en navegador (escritorio y móvil) no se ejecutan de forma automática: hay specs Playwright de puertas y los flujos con firma se validaron manualmente contra producción (F4/F6/F7).", "evidencia": "RepoTecnico/evidencias/f4-…, f6-…, f7-f10-…" },
+    { "id": "A6", "estado": "CUMPLE", "detalle": "Firma selectiva verificada: bloqueo/desbloqueo y preventivo crítico firmados (contrato + outbox), inspección opcional por flag, daños sin firma (0 firmas DAMAGE_CHARGE en producción), CONFIG solo admin, OWNER_BACKUP aceptado en contrato. Pruebas negativas de nonce/deadline/firma vacía/64 bytes.", "evidencia": "packages/contracts/test/HotelOperations.t.sol · f4/f6/f7 evidencias" },
+    { "id": "A7", "estado": "CUMPLE", "detalle": "Sin PII on-chain: OperationalAction solo emite bytes32 (actionType, entityId, payloadHash), address y timestamp; el payload canónico va hasheado. Evidencias de daños con retención de 90 días y anonimización cableada al scheduler (T7.6).", "evidencia": "packages/shared/src/domain/damage-charges.ts · HotelOperations.sol · f7-f10" },
+    { "id": "A8", "estado": "CUMPLE", "detalle": "Carga real en la misma región con 20 usuarios concurrentes, 50 habitaciones y ventana de 90 días: tablero p95 72,6 ms (<500) y listados p95 76,5 ms (<800), 0 errores (3.613+3.613 peticiones).", "evidencia": "RepoTecnico/evidencias/a8-load-gate.json" },
+    { "id": "A9", "estado": "CUMPLE", "detalle": "RPO: backups + PITR activados (retención de logs 7 días, backup diario 02:00). RTO medido con dump+restore real en base nueva: 2,76 s total, 0 errores, checksums idénticos en 6 tablas (incluido on_chain_signatures: el outbox sobrevive al restore). Limitación: el restore a instancia nueva vía API fue 403 por IAM (documentado).", "evidencia": "RepoTecnico/evidencias/a9-dr-rpo-rto.json" },
+    { "id": "A10", "estado": "CUMPLE", "detalle": "Exportación del expediente de auditoría firmada (HMAC-SHA256 sobre JSON canónico) verificable y reproducible; endpoint owner GET /api/admin/system/export (JSON/CSV) con verificación de cadena. Export real en producción: 3 entradas, chainVerified=true.", "evidencia": "RepoTecnico/evidencias/a10-audit-export.json · apps/web/src/app/api/admin/system/export/route.ts" },
+    { "id": "A11", "estado": "CUMPLE", "detalle": "Runbook §9.5 ejecutado: migración forward-only idempotente (prueba + arranques reales), contrato inmutable (sin proxy/delegatecall, bytecode desplegado) y rollback verificado por tráfico entre revisiones Cloud Run (10,4 s ida, 11,9 s vuelta, health 200; total < RTO).", "evidencia": "RepoTecnico/evidencias/a11-runbook-rollback.json" },
+    { "id": "A12", "estado": "CUMPLE (con matiz)", "detalle": "Sincronía triple migrador ↔ base_datos.sql ↔ propuesta vNext en verde (migrator.test.ts). El diccionario de datos y el diagrama ER describen el vocabulario canónico y no tienen diff automatizado propio: matiz declarado.", "evidencia": "packages/shared/src/db/migrator.test.ts" },
+    { "id": "A13", "estado": "CUMPLE", "detalle": "Guardián de arquitectura (sin secretos embebidos ni respaldos de variables secretas) y env-guardian en verde; escaneo de claves privadas en el árbol sin hallazgos; cada componente valida su entorno fail-fast.", "evidencia": "packages/shared/src/architecture-guardian.test.ts · env-guardian.test.ts" },
+    { "id": "A14", "estado": "CUMPLE", "detalle": "MCP solo lectura: guardián que prohíbe APIs de escritura y herramienta getOperationalActions validada por transporte real en producción (7 acciones operativas leídas), 86 pruebas verdes.", "evidencia": "apps/mcp/src/read-only-guardian.test.ts · f7-f10-cierre" }
+  ],
+  "resumen": {
+    "cumplen": ["A3", "A4", "A6", "A7", "A8", "A9", "A10", "A11", "A12", "A13", "A14"],
+    "bloqueados": ["A1", "A2", "A5"],
+    "motivoBloqueo": "A1/A2 dependen de completar F5, F8 y F9; A5 requiere E2E Playwright con wallet inyectada en escritorio y móvil."
+  }
+}

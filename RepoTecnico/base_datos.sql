@@ -1760,6 +1760,10 @@ ALTER TABLE rooms ADD CONSTRAINT rooms_operational_status_check
 ALTER TABLE housekeeping_room_logs ALTER COLUMN from_value TYPE VARCHAR(20);
 ALTER TABLE housekeeping_room_logs ALTER COLUMN to_value TYPE VARCHAR(20);
 
+-- F5 (2026-10-19): asignación de tareas preventivas al técnico de terminal (solo lo asignado).
+ALTER TABLE preventive_tasks
+    ADD COLUMN IF NOT EXISTS assigned_to VARCHAR(100) NULL;
+
 ALTER TABLE preventive_tasks
     ADD COLUMN IF NOT EXISTS validation_status VARCHAR(30) NULL;
 

@@ -1,0 +1,30 @@
+{
+  "prueba": "criterio A8 (RNF-M-05) con carga real concurrente contra el sistema en marcha",
+  "fecha": "2026-10-19T19:46:09.464Z",
+  "escenario": {
+    "usuariosConcurrentes": 20,
+    "habitaciones": 50,
+    "ventanaDias": 90,
+    "duracionSegundos": 20,
+    "generador": "Cloud Run job europe-west1 (node:22, misma región que la web)"
+  },
+  "sla": { "tableroP95Ms": 500, "listadoP95Ms": 800, "tasaErrorMaxima": 0.01 },
+  "tablero": { "requests": 3613, "rps": 180.1, "p50Ms": 52.2, "p95Ms": 72.6, "p99Ms": 87.2, "errors": 0 },
+  "listado": { "requests": 3613, "rps": 180.1, "p50Ms": 54.1, "p95Ms": 76.5, "p99Ms": 97.8, "errors": 0 },
+  "errorRate": 0,
+  "checks": {
+    "tableroP95WithinSla": true,
+    "listadoP95WithinSla": true,
+    "errorRateWithinSla": true,
+    "inventoryDeclared": true,
+    "windowDeclared": true
+  },
+  "resultado": "CUMPLE",
+  "notaMedicionCliente": "La misma prueba lanzada desde fuera de GCP marcó cero errores pero p95 ~500 ms por el RTT WAN del generador (~125 ms) y su contención en un único proceso Node; el criterio se certifica con el generador en la misma región, que es como se ejecutaría en CI/producto.",
+  "cambiosAplicadosParaCumplir": [
+    "DATABASE_POOL_MAX=8 en web y worker + Cloud SQL max_connections=100 (antes 25) para eliminar los HTTP 500 por agotamiento de conexiones",
+    "caché de 1 s con deduplicación en vuelo del tablero (STATE_BOARD_CACHE_MS)",
+    "web con 4 vCPU / 2 GiB y min-instances=1"
+  ],
+  "evidencia": "RepoTecnico/evidencias/a8-load-gate.json"
+}

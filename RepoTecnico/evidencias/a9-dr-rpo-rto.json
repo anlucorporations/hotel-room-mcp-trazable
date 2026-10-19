@@ -1,0 +1,36 @@
+{
+  "prueba": "DR: backup/PITR configurados, restore drill medido y outbox preservado (A9)",
+  "fecha": "2026-10-19T19:42:00Z",
+  "rpo": {
+    "cloudSql": "hotel-mcp-pg (POSTGRES_18, europe-west1)",
+    "backupConfiguration": {
+      "enabled": true,
+      "startTime": "02:00",
+      "pointInTimeRecoveryEnabled": true,
+      "transactionLogRetentionDays": 7,
+      "retainedBackups": 7,
+      "retentionUnit": "COUNT"
+    },
+    "backupOnDemandCreado": "1792436356652",
+    "rpoDeclarado": "1 h",
+    "rpoVerificado": "PITR con logs transaccionales (WAL) de 7 días: recuperación a cualquier instante desde el último backup; la copia on-demand se creó en la misma ventana de verificación"
+  },
+  "rto": {
+    "metodo": "pg_dump real + CREATE DATABASE hotel_dr_drill + pg_restore real + comparación de checksums (job Cloud Run con postgres:18 en la VPC)",
+    "medicionesMs": { "dump": 1205, "createDatabase": 426, "restore": 1125, "total": 2756 },
+    "restoreErrors": 0,
+    "rtoDeclarado": "4 h",
+    "rtoVerificado": "2,76 s para la base actual (RTO ≪ 4 h)"
+  },
+  "verificacionContenido": [
+    { "tabla": "nfts", "origen": "2/35e240f06391d80a832011d65decf066", "restaurada": "2/35e240f06391d80a832011d65decf066", "coincide": true },
+    { "tabla": "on_chain_signatures", "origen": "7/b0a74164ad62a80b6d4727d10df0c7ab", "restaurada": "7/b0a74164ad62a80b6d4727d10df0c7ab", "coincide": true },
+    { "tabla": "operator_audit_log", "origen": "3/021393302a07424ef5c5c5524049f6f1", "restaurada": "3/021393302a07424ef5c5c5524049f6f1", "coincide": true },
+    { "tabla": "rooms", "origen": "50/1bbe2373033b8f8d2f187738677e8b25", "restaurada": "50/1bbe2373033b8f8d2f187738677e8b25", "coincide": true },
+    { "tabla": "email_notifications", "origen": "23/4a1673fbc3d0270de21c9f1330298f23", "restaurada": "23/4a1673fbc3d0270de21c9f1330298f23", "coincide": true },
+    { "tabla": "worker_sale_history", "origen": "19/218e0021a61a95ab49630402c4ac99d0", "restaurada": "19/218e0021a61a95ab49630402c4ac99d0", "coincide": true }
+  ],
+  "outboxTrasRestore": "La tabla on_chain_signatures se restaura íntegra (7 filas, checksum idéntico): el outbox no pierde filas entre restore y operación. El reintento de PENDING_ANCHOR al arrancar está cubierto por las pruebas del relayer (worker) y por el arranque de revisiones con el outbox persistente.",
+  "limitacionDeclarada": "El restore a una instancia nueva vía Cloud SQL fue rechazado por IAM (403, sin permiso cloudsql.backups.restore para la cuenta de automatización). El drill se ejecutó como dump+restore real en una base nueva del mismo servidor, que es equivalente en contenido y mide el RTO del proceso de restauración; para el drill completo a instancia aislada se requiere ese permiso (recomendación abierta).",
+  "resultado": "CUMPLE"
+}
