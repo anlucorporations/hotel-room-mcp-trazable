@@ -3339,10 +3339,11 @@ firma opaca hasta la próxima ventana de contrato (ADR-30).
 > Los `deployments/latest*.json` guardan el `block.number` previo al broadcast (2–8 bloques por
 > debajo del real). Los servicios usan `DEPLOYMENT_BLOCK=5655378` y la subasta `5655388`.
 
-**Roles on-chain (verificados por RPC):** la **cuenta 0** tiene los 7 roles
+**Roles on-chain (verificados por RPC, 2026-10-19):** la **cuenta 0** conserva los 7 roles
 (`DEFAULT_ADMIN`, `MINTER`, `BURNER`, `TREASURER`, `RECEPTION`, `PAUSER`, `ROYALTY_ADMIN`) y es
-`treasury()`; `AUCTION_ROLE` lo tiene el **contrato `NightAuction`** (no el owner). Las cuentas
-1–9 **no tienen ningún rol** en C2.
+`treasury()`; `AUCTION_ROLE` lo tiene el **contrato `NightAuction`** (no el owner). Desde 2026-10-19
+las hot-wallets tienen además su rol dedicado (aditivo): **cuenta 1 `MINTER`**, **cuenta 2 `BURNER`**
+y **cuenta 3 `RECEPTION`**.
 
 ### 86.2. Servicios y revisiones vigentes
 
@@ -3350,15 +3351,15 @@ firma opaca hasta la próxima ventana de contrato (ADR-30).
 |---|---|---|---|
 | web | **`hotel-mcp-web-00073-9j5`** (100 %) | **`web:v66`** | https://hotel-mcp-web-475955050238.europe-west1.run.app |
 | mcp | **`hotel-mcp-mcp-00021-v64`** (100 %) | **`mcp:v63`** | https://hotel-mcp-mcp-475955050238.europe-west1.run.app |
-| worker | **`hotel-mcp-worker-00021-cwq`** (100 %) | **`worker:v63`** | https://hotel-mcp-worker-475955050238.europe-west1.run.app |
-| monitor | worker pool `hotel-mcp-monitor` | `monitor:v58` | — (sondea `/health`) |
+| worker | **`hotel-mcp-worker-00024-q2h`** (100 %) | **`worker:v66`** | https://hotel-mcp-worker-475955050238.europe-west1.run.app |
+| monitor | worker pool `hotel-mcp-monitor` | `monitor:v66` | — (sondea `/health`) |
 | pgAdmin | `hotel-pgadmin-00004-jjf` (100 %) | `dpage/pgadmin4:latest` | https://hotel-pgadmin-d6jlzeq5yq-ew.a.run.app |
 
-- Jobs: `hotel-mcp-inject-data` (imagen `mcp:f8`, **entorno obsoleto**: Anvil `31337`),
-  `hotel-mcp-reset-all` (imagen `mcp:v58`, apunta al contrato **C1**: actualizar antes de usarlo) y
-  **`hotel-mcp-reconcile-rooms`** (imagen `worker:v66`, red privada + Cloud SQL: audita
+- Jobs: **`hotel-mcp-reconcile-rooms`** (imagen `worker:v66`, red privada + Cloud SQL: audita
   `rooms`↔cadena, siembra el maestro que falte y purga del índice lo que no exista en la cadena
-  vigente; modo seco por defecto, `--apply` para ejecutar; ver §88).
+  vigente; modo seco por defecto, `--apply` para ejecutar; ver §88) y `hotel-mcp-reset-all`
+  (actualizado a C2: `CONTRACT_ADDRESS=0xF8b1…25F4`, `DEPLOYMENT_BLOCK=5655378`). El antiguo
+  `hotel-mcp-inject-data` (Anvil 31337) **se retiró** el 2026-10-19.
 - Servicios globales: Cloud SQL `hotel-mcp-pg` (PostgreSQL 18, IP privada `10.104.0.3`, base
   `hotel_nft`, usuario `hotel_admin`), VM Redis `hotel-mcp-redis` (`10.10.0.10:6379`),
   VPC `hotel-mcp-vpc`/`hotel-mcp-euw1` + NAT `hotel-mcp-router`.
@@ -3371,10 +3372,10 @@ Saldos/nonces el 2026-10-18.
 | # | Dirección | Roles en C2 | Uso |
 |---|---|---|---|
 | 0 | `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` | los 7 + `treasury()` | desplegador, **cartera operadora del panel**, tesorería |
-| 1 | `0x70997970C51812dc3A010C7d01b50e0d17dc79C8` | — | pujador actual de la subasta (0,12 CC) |
-| 2 | `0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC` | — | huésped/pujador de pruebas (100 CC) |
-| 3 | `0x90F79bf6EB2c4f870365E785982E1f101E93b906` | — | huésped/pujador de pruebas (100 CC) |
-| 4 | `0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65` | — | cuenta del **relayer** (sin fondos/roles; no cableado) |
+| 1 | `0x70997970C51812dc3A010C7d01b50e0d17dc79C8` | `MINTER` (desde 2026-10-19) | hot-wallet de acuñación; pujador actual de la subasta |
+| 2 | `0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC` | `BURNER` (desde 2026-10-19) | hot-wallet de quema; comprador de la noche de demo |
+| 3 | `0x90F79bf6EB2c4f870365E785982E1f101E93b906` | `RECEPTION` (desde 2026-10-19) | hot-wallet de recepción |
+| 4 | `0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65` | — | cuenta del **relayer** (financiada con 5 CC; sin roles en `HotelOperations` por diseño) |
 | 5–8 | `0x9965…A4dc`, `0x976E…0aa9`, `0x14dC…9955`, `0x2361…1E8f` | — | huéspedes simulados (0 CC) |
 | 9 | `0xa0Ee7A142d267C1f36714E4a8F75612F20a79720` | — | huésped/pujador de pruebas (100 CC) |
 
@@ -3382,9 +3383,10 @@ Saldos/nonces el 2026-10-18.
   `RECEPTION_WALLET_`) y en Secret Manager (`hotel-burner-private-key`,
   `hotel-reception-private-key`, `hotel-relayer-private-key`). El inventario completo está en
   `~/.config/hotel-mcp/DESPLIEGUE-GCP.md` §3.
-- **Consecuencia práctica**: al no tener roles las cuentas 1–3, **todo lo privilegiado debe
-  firmarse con la cuenta 0** (mint, pausa, fondos, check-in). Recepción también: es la única con
-  `RECEPTION_ROLE`.
+- **Consecuencia práctica**: la cuenta 0 sigue siendo la cartera con la que firma el panel; desde el
+  2026-10-19 las hot-wallets 1–3 ya tienen su rol dedicado para mint/quema/check-in sin depender del
+  owner (el mínimo privilegio estricto —retirar roles de la cuenta 0— exige relayer o ventana de
+  contrato y sigue pendiente).
 
 ### 86.4. Usuarios de la plataforma (off-chain, `admin_users`)
 
@@ -3420,51 +3422,57 @@ Saldos/nonces el 2026-10-18.
 
 | Elemento | Estado |
 |---|---|
-| Noches en el contrato C2 | **1**: `20120261115` (habitación 201, `SUITE`, 0,2 CC), dueño = tesorería |
-| Room master on-chain | solo la habitación **201** (registrada y con `publishRoom` en la ventana C2) |
-| Habitaciones en BD (`/api/admin/rooms`) | **50**, todas `DRAFT`: 15 `SIMPLE` (101–115), 15 `DOBLE` (116–130), 20 `SUITE` (201–220) — sembradas del maestro canónico el 2026-10-18 (§88) |
-| Índice off-chain `/api/nfts` | **1** noche real de C2: `20120261115` (el resto de filas C1 se purgó el 2026-10-18, §88) |
-| Catálogo `/catalogo` | **vacío y honesto**: «Sin noches · Aún no hay noches publicadas» (0 habitaciones `PUBLISHED`) |
+| Noches en el contrato C2 | **2**: `20120261115` (habitación 201, `SUITE`, 0,2 CC, en subasta) y `20120261116` (habitación 201, 0,2 CC, **vendida** y con check-in anclado) |
+| Room master on-chain | habitación **201** (registrada); en BD, la 201 está **`PUBLISHED`** (publicada el 2026-10-19 con firma TOTP; anclaje on-chain pendiente) |
+| Habitaciones en BD (`/api/admin/rooms`) | **50**, 49 `DRAFT` + 201 `PUBLISHED`: 15 `SIMPLE` (101–115), 15 `DOBLE` (116–130), 20 `SUITE` (201–220) — sembradas del maestro canónico el 2026-10-18 (§88) |
+| Índice off-chain `/api/nfts` | **2** noches reales de C2: `20120261115` (`AVAILABLE`, subasta) y `20120261116` (`CHECKED_IN`) — reindexado el 2026-10-19 (§89) |
+| Catálogo `/catalogo` | **vacío y honesto**: «Sin noches» (la subastada se excluye y la vendida ya no es oferta primaria) |
 | Reservas de hoy | 0 |
-| Métricas | `mintedCount=1`, `soldCount=0` |
+| Métricas | `mintedCount=2`, `soldCount=1` |
 | **Subasta viva** | noche `20120261115` · reserva 0,1 CC · puja actual 0,12 CC (cuenta 1) · **mínima 0,126 CC** · `OPEN` · cierra **2026-10-24 14:21:47 UTC** · `settle` permissionless tras el cierre |
-| Salud | web **READY**; mcp **ok**; worker con `lag=0` (el 503 es por `emailDegraded` con `SMTP_HOST=smtp.invalid`) |
+| **Quema** | `burn.scheduler=enabled` (cuenta 2 con `BURNER_ROLE`; diaria a las 12:00 Europe/Madrid) |
+| **Anclaje** | `anchor.scheduler=enabled` (relayer cuenta 4; último ciclo sin pendientes) |
+| Salud | web **READY**; mcp **ok**; worker con `lag=0`/`aggregateLag=0` (el 503 es solo por `emailDegraded` con `SMTP_HOST=smtp.invalid`) |
 
 ### 86.7. Limitaciones conocidas (leer antes de probar)
 
-1. **No hay compra/check-in end-to-end posible hoy**: la única noche de C2 está en subasta y no hay
-   inventario libre ni noches vendidas. Requiere re-sembrar (registrar + publicar una habitación y
-   acuñar su ventana) o abrir ventana de contrato. El catálogo **ya no ofrece inventario falso**.
-2. **Catálogo vacío hasta que se publique**: el catálogo se restringe al maestro administrado
-   (`rooms.publication_status = 'PUBLISHED'`). Las 50 habitaciones están en `DRAFT` a propósito
-   (D-14: la siembra crea inventario administrable; publicar es un acto del administrador), así que
-   «Sin noches» es el estado **correcto**. **Resuelto el desfase C1→C2 del 2026-10-18**: el índice
-   heredado se purgó y el catálogo verifica además la existencia del token en la cadena.
-3. **Roles centralizados en la cuenta 0** (las hot-wallets 1–3 no tienen rol en Besu).
-4. **Sin relayer**: la web no tiene `RELAYER_WALLET_PRIVATE_KEY`; firma siempre la cartera conectada.
-5. **Quema automática desactivada** (`burn.scheduler=disabled` en `/health`).
-6. **Emails no operativos** (SMTP `smtp.invalid`); `/api/admin/system/operations` responde **503**.
+1. **Compra y check-in ya demostrados en C2** (§89): noche `20120261116` minteada, comprada por la
+   cuenta 2 y con check-in anclado. Para una demo de catálogo pública sigue haciendo falta que el
+   resto de habitaciones se publique y se acuñe su ventana (solo la 201 está `PUBLISHED`).
+2. **Catálogo restringido al maestro administrado**: solo se ofertan noches de habitaciones
+   `PUBLISHED`, vigentes y sin avería. Las otras 49 están en `DRAFT` a propósito (D-14). **Resuelto
+   el desfase C1→C2 del 2026-10-18**: el índice heredado se purgó y el catálogo verifica además la
+   existencia del token en la cadena.
+3. **Roles**: desde el 2026-10-19 las hot-wallets 1–3 tienen su rol dedicado, pero la cuenta 0
+   conserva los 7 (mínimo privilegio estricto pendiente de relayer o ventana de contrato).
+4. **Sin relayer en la web**: la web no tiene `RELAYER_WALLET_PRIVATE_KEY`; firma siempre la cartera
+   conectada. El anclaje de operaciones sí usa el relayer del worker (F3).
+5. **Quema automática activada** el 2026-10-19 (diaria 12:00 Europe/Madrid, cuenta 2); sin noches
+   caducadas pendientes hoy.
+6. **Emails no operativos** (SMTP `smtp.invalid`, **pendiente de credenciales reales**);
+   `/api/admin/system/operations` responde **503** y el worker figura `down` por `emailDegraded`.
 7. **Deuda on-chain**: `buy()` sigue permitiendo comprar una noche en subasta (mitigado solo en el
    catálogo; ADR-28).
 8. **Nodo Besu**: timeouts intermitentes; `getLogs` máx. 5.000; `eth_estimateGas` revierte
    `PastDate` en `mint()` ⇒ `--gas-limit` explícito.
 9. **Faucet**: el de Codecrypto (externo, no hay URL documentada en el repo); la web se despliega
    con `NEXT_PUBLIC_FAUCET_ADDRESS` vacío.
-10. **Jobs obsoletos** (`inject-data` → Anvil 31337; `reset-all` → contrato C1). El nuevo
-    `hotel-mcp-reconcile-rooms` sí apunta a C2 (§88).
+10. **Jobs**: `inject-data` retirado; `reset-all` actualizado a C2; `reconcile-rooms` operativo (§88).
 
-### 86.8. Verificación realizada (2026-10-18)
+### 86.8. Verificación realizada (2026-10-18 y 2026-10-19)
 
 | Comprobación | Resultado |
 |---|---|
-| `/health/ready` web · `/health` mcp · `/health` worker | **200 READY** · **200 ok** · **503** `down` por email, `lag=0` |
+| `/health/ready` web · `/health` mcp · `/health` worker | **200 READY** · **200 ok** · **503** `down` solo por email, `lag=0` |
 | Login + TOTP de `admin@hotel.es` y `recepcion@hotel.es` | **200/200** ambos, sesiones `DEFAULT_ADMIN_ROLE` y `RECEPTION_ROLE` |
 | `/api/admin/system/users` (owner / recepción) | **200** (2 operadores) / **403** |
-| `cast chain-id` · roles · `auctionOf` · `nextMinBid` | 81234 · 7 roles en cuenta 0 · reserva 0,1/puja 0,12 · mínima **0,126** |
-| `/subastas` · `/catalogo` · `/api/nfts` · `/api/admin/metrics` | subasta viva · **catálogo vacío honesto** · **1 registro** (`20120261115`) · `mintedCount=1`/`soldCount=0` |
-| `/api/public/rooms` | **0** reservables (ninguna habitación `PUBLISHED`; las 50 están `DRAFT`) |
+| `cast chain-id` · roles · `auctionOf` · `nextMinBid` | 81234 · 7 roles en cuenta 0 + MINTER/BURNER/RECEPTION en 1/2/3 · reserva 0,1/puja 0,12 · mínima **0,126** |
+| `/subastas` · `/catalogo` · `/api/nfts` · `/api/admin/metrics` | subasta viva · **catálogo vacío honesto** · **2 registros** (`20120261115` AVAILABLE, `20120261116` CHECKED_IN) · `mintedCount=2`/`soldCount=1` |
+| `/api/public/rooms` | **1** reservable (habitación 201 `PUBLISHED`; las otras 49 siguen `DRAFT`) |
 | `/api/admin/rooms` (owner, MFA) | **50** habitaciones administradas: 15 `SIMPLE`, 15 `DOBLE`, 20 `SUITE` |
 | `hotel-mcp-reconcile-rooms` (modo seco) | `pendingSeedRooms=[]`, `stale=[]`, `roomIssues=[]` (ver §88) |
+| Compra + check-in de demo (§89) | mint `0x5f95bb57…` · compra `0x17fcc9e6…` · check-in `0x68185e7d…` · estados `SOLD`→`CHECKED_IN` |
+| Anclaje F3 (smoke, §87) | tx `0x1856106c…` · bloque 5715738 · `OperationalAction` con firmante owner |
 | pgAdmin | **200** en `/login` (login no automatizado; credenciales fuera de git) |
 
 ### 86.9. Rollback
@@ -3473,12 +3481,12 @@ Saldos/nonces el 2026-10-18.
 |---|---|---|
 | web | `00073-9j5` (v66) | `00124-gav` (v65) → `00122-lal` (v64) |
 | mcp | `00021-v64` (v63) | `00020-6rn` (v61) |
-| worker | `00022-pv9` (v66) | `00021-cwq` (v63) |
+| worker | `00024-q2h` (v66, anclaje + quema) | `00023-w9c` (v66, anclaje) → `00022-pv9` (v66, F3) → `00021-cwq` (v63) |
 
 ```bash
 gcloud run services update-traffic hotel-mcp-web --region=europe-west1 --to-revisions=hotel-mcp-web-00124-gav=100
 gcloud run services update-traffic hotel-mcp-mcp --region=europe-west1 --to-revisions=hotel-mcp-mcp-00020-6rn=100
-gcloud run services update-traffic hotel-mcp-worker --region=europe-west1 --to-revisions=hotel-mcp-worker-00021-cwq=100
+gcloud run services update-traffic hotel-mcp-worker --region=europe-west1 --to-revisions=hotel-mcp-worker-00023-w9c=100
 ```
 
 > Los datos no se revierten con la imagen: el estado posterior a §88 es el correcto. El backup previo
@@ -3582,3 +3590,43 @@ de contrato. Queda fuera de este ciclo: publicar habitaciones y acuñar ventanas
 `room_images` y la firma del owner) y actualizar los jobs obsoletos `inject-data`/`reset-all`.
 
 **Evidencia:** `RepoTecnico/evidencias/c3-catalogo-habitaciones-2026-10-18.json`.
+
+---
+
+## 89. Compra y check-in demostrables en C2 + operación (2026-10-19)
+
+**Qué se hizo.** Cierre del paso 3–4 del plan de puesta en producción: una **compra primaria real** y
+su **check-in anclado** sobre Besu, más la activación de la quema, la asignación de roles a las
+hot-wallets y la limpieza de jobs obsoletos.
+
+### Demo de compra y check-in (producción, Besu 81234)
+
+| Paso | Detalle |
+|---|---|
+| Habitación publicada | **201** (`SUITE`) → `PUBLISHED` vía `POST /api/admin/rooms/<id>/publish` con sesión owner + re-confirmación TOTP (huella `0x9abaa182…25f7`); se sembró su fila en `room_images` para cumplir D-20 |
+| Noche acuñada | **`20120261116`** (2026-11-16, 0,2 CC) por la cuenta 0 (`MINTER`) · tx `0x5f95bb578de58f33ed635dbab45a4d01425a68fa72d02ad03893320bb27c3af5` · bloque 5716449 |
+| Compra primaria | cuenta 2 `0x3C44…93BC` paga 0,2 CC · tx `0x17fcc9e66c1a1e3bb71e982d720278ac3bd32a02de23116b43bb4315cbe64a0b` · bloque 5716469 · `ownerOf` = cuenta 2 |
+| Check-in anclado | cuenta 0 (`RECEPTION_ROLE`) · tx `0x68185e7dccbac572ad56a774c8be1d941156890db8d6ed6142d10624ed4c64ff` · bloque 5716613 · `isCheckedIn=true` |
+| Estado final | `/api/nfts`: `20120261115` `AVAILABLE` (subasta) y `20120261116` **`CHECKED_IN`**; catálogo vacío honesto |
+| Evidencia | `RepoTecnico/evidencias/paso3-4-demo-operacion-2026-10-19.json` |
+
+### Defecto detectado y corregido en la ventana
+
+El worker **no tenía inyectados `CHECKIN_SECRET_KEY` ni `AES_SECRET_KEY`**: al consolidar el primer
+`NFTSold` fallaba con «Secreto obligatorio no configurado», la noche se quedaba en `CONFIRMING` y la
+venta no llegaba a `SOLD`. Se añadieron ambos secretos al worker (revisión `00023-w9c`) y se
+**reindexó** el índice off-chain desde `DEPLOYMENT_BLOCK` (reset-index aplicado; ver evidencia). Tras
+el arreglo, la venta se consolidó correctamente.
+
+### Operación
+
+| Elemento | Valor |
+|---|---|
+| Roles hot-wallets | `MINTER` → cuenta 1 (tx `0x566504c9…`), `BURNER` → cuenta 2 (tx `0x6ad35155…`), `RECEPTION` → cuenta 3 (tx `0xddf2ff34…`) · **aditivo**: la cuenta 0 conserva los 7 |
+| Quema | worker `00024-q2h` con `BURNER_WALLET_PRIVATE_KEY` (secreto) · `BURN_HOUR_LOCAL=12` · `BURN_TIMEZONE=Europe/Madrid` · `BURNER_MIN_BALANCE_NATIVE=1` → `/health` `burn.scheduler=enabled`, `lastRun=null` |
+| Jobs | `hotel-mcp-inject-data` **eliminado**; `hotel-mcp-reset-all` actualizado a C2 (`0xF8b1…25F4`, bloque `5655378`); `hotel-mcp-reconcile-rooms` se conserva |
+| SMTP | **pendiente de credenciales reales** (el worker sigue `down` por `emailDegraded`; web/mcp/worker procesan con normalidad) |
+
+**Verificación:** `/health` del worker → `lag=0`, `aggregateLag=0`, `anchor.scheduler=enabled`,
+`burn.scheduler=enabled`; `/api/nfts` 2 noches con los estados de arriba; `/api/public/rooms` 1
+reservable (201). El 503 de `/health` es **solo** el email degradado, no pérdida de indexación.

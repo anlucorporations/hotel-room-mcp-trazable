@@ -1,0 +1,42 @@
+{
+  "hito": "Paso 3–4 — compra y check-in demostrables en Besu + operación (quema, roles, jobs)",
+  "fecha": "2026-10-19",
+  "red": "Besu 81234 · HotelNights 0xF8b1d4d0A2Dd9Dd53200A4C6783a69c15E3a25F4",
+  "demo_compra_checkin": {
+    "habitacion_publicada": { "room": 201, "roomType": "SUITE", "publicationStatus": "PUBLISHED", "contentHash": "0x9abaa1821f4134bb960d3b5a5aaf1d868f328759b4eb3f19733b109b7af325f7", "via": "POST /api/admin/rooms/<id>/publish (owner + TOTP)" },
+    "mint": { "tokenId": "20120261116", "date": "2026-11-16", "priceWei": "200000000000000000", "tx": "0x5f95bb578de58f33ed635dbab45a4d01425a68fa72d02ad03893320bb27c3af5", "block": 5716449 },
+    "compra_primaria": { "buyer": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC (cuenta 2)", "tx": "0x17fcc9e66c1a1e3bb71e982d720278ac3bd32a02de23116b43bb4315cbe64a0b", "block": 5716469 },
+    "checkin": { "firmante": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 (cuenta 0, RECEPTION_ROLE)", "tx": "0x68185e7dccbac572ad56a774c8be1d941156890db8d6ed6142d10624ed4c64ff", "block": 5716613 },
+    "resultado": "nfts: 20120261115 AVAILABLE (en subasta) · 20120261116 SOLD → CHECKED_IN · catálogo «Sin noches» (correcto)"
+  },
+  "defecto_detectado_y_corregido": {
+    "sintoma": "el worker consolidaba NFTSold y fallaba con «Secreto obligatorio no configurado: CHECKIN_SECRET_KEY»; la noche quedaba en CONFIRMING y la venta no llegaba a SOLD",
+    "causa": "el worker no tenía inyectados CHECKIN_SECRET_KEY ni AES_SECRET_KEY (sí la web y el mcp)",
+    "arreglo": "se añadieron ambos secretos al worker (revisión 00023-w9c); reset-index + reindexado desde el bloque 5655378",
+    "evidencia": "reset-index: antes {nfts:2, ventas:0, historico:1, checkpoints:4} → despues {nfts:0,...}; reindex: 2 noches, venta consolidada"
+  },
+  "operacion": {
+    "roles_hotel_nights": {
+      "MINTER_ROLE": { "account": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", "tx": "0x566504c9a7f25237de1fb42f24f61f927e9681232015de37e5139ce496598a77", "block": 5716654 },
+      "BURNER_ROLE": { "account": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC", "tx": "0x6ad35155e8c5e87b57156e5c1a4a0d2ca1d11849d933a9c07ca7fd29600f959b", "block": 5716655 },
+      "RECEPTION_ROLE": { "account": "0x90F79bf6EB2c4f870365E785982E1f101E93b906", "tx": "0xddf2ff345432f66df0759bdd4491ef012a113af1db26252ff26a966da4874b61", "block": 5716657 },
+      "nota": "aditivo: la cuenta 0 conserva los 7 roles (el panel firma con la cartera conectada)"
+    },
+    "quema": {
+      "worker_revision": "hotel-mcp-worker-00024-q2h",
+      "env": "BURNER_WALLET_PRIVATE_KEY (secreto) · BURN_HOUR_LOCAL=12 · BURN_TIMEZONE=Europe/Madrid · BURNER_MIN_BALANCE_NATIVE=1",
+      "health": "burn.scheduler=enabled · lastRun=null (sin caducadas pendientes)"
+    },
+    "jobs": {
+      "hotel-mcp-inject-data": "eliminado (apuntaba a Anvil 31337 y ya no aplica)",
+      "hotel-mcp-reset-all": "actualizado a C2: CONTRACT_ADDRESS=0xf8b1…25F4 · DEPLOYMENT_BLOCK=5655378",
+      "hotel-mcp-reconcile-rooms": "se conserva como herramienta operativa"
+    },
+    "smtp": "DECLARADO FUERA DE ALCANCE: no hay credenciales reales; el worker sigue down por emailDegraded (web/mcp/worker operativos)"
+  },
+  "health_final": {
+    "web": "READY",
+    "mcp": "ok",
+    "worker": "down solo por emailDegraded (lag=0, aggregateLag=0, anchor enabled, burn enabled)"
+  }
+}

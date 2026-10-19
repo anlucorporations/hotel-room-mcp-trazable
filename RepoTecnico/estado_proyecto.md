@@ -5628,3 +5628,43 @@ roles/mínimo privilegio y jobs `inject-data`/`reset-all` obsoletos.
 **Pruebas:** `@hotel/shared` **66 ficheros / 695 pruebas** en verde; `@hotel/web` typecheck limpio y
 build de Next OK (`web:v66`); guardián del catálogo actualizado con la nueva capa maestro→cadena
 (21 pruebas en `nights-sold-guardian.test.ts`).
+
+---
+
+## 36. Compra y check-in demostrables en C2 + operación (2026-10-19) · `@asistenteProyecto`
+
+**Qué se hizo.** Se completó el paso 3–4 del plan de puesta en producción: una **compra primaria real**
+con su **check-in anclado** en Besu 81234, la **activación de la quema**, la asignación de roles a las
+hot-wallets y la limpieza de los jobs obsoletos.
+
+### Demo de compra y check-in
+
+| Paso | Detalle |
+|---|---|
+| Habitación publicada | **201** (`SUITE`) → `PUBLISHED` con sesión owner + re-confirmación TOTP (huella `0x9abaa182…25f7`); se sembró su fila en `room_images` (D-20) |
+| Noche acuñada | **`20120261116`** (2026-11-16, 0,2 CC) por cuenta 0 (`MINTER`) · tx `0x5f95bb57…c3af5` · bloque `5716449` |
+| Compra primaria | cuenta 2 `0x3C44…93BC` paga 0,2 CC · tx `0x17fcc9e6…64a0b` · bloque `5716469` · `ownerOf` = cuenta 2 |
+| Check-in | cuenta 0 (`RECEPTION_ROLE`) · tx `0x68185e7d…c64ff` · bloque `5716613` · `isCheckedIn=true` |
+| Estado final | `/api/nfts`: `20120261115` `AVAILABLE` (en subasta) · `20120261116` **`CHECKED_IN`** · catálogo vacío honesto |
+| Evidencia | [`evidencias/paso3-4-demo-operacion-2026-10-19.json`](./evidencias/paso3-4-demo-operacion-2026-10-19.json) |
+
+### Defecto real cazado por la ventana
+
+El worker **no tenía `CHECKIN_SECRET_KEY` ni `AES_SECRET_KEY`**: al consolidar el primer `NFTSold`
+fallaba con «Secreto obligatorio no configurado», la noche quedaba en `CONFIRMING` y la venta no
+llegaba a `SOLD`. Se añadieron ambos secretos (revisión **`00023-w9c`**), se **reindexó** el índice
+off-chain desde `DEPLOYMENT_BLOCK` (reset-index) y la venta se consolidó. Sin esta prueba la quema
+habría funcionado con el índice roto.
+
+### Operación
+
+| Elemento | Resultado |
+|---|---|
+| Roles hot-wallets | `MINTER` → cuenta 1 · `BURNER` → cuenta 2 · `RECEPTION` → cuenta 3 (aditivo; la cuenta 0 conserva los 7) |
+| Quema | worker **`00024-q2h`** con `BURNER_WALLET_PRIVATE_KEY` (secreto) + `BURN_HOUR_LOCAL=12`/`BURN_TIMEZONE=Europe/Madrid`/`BURNER_MIN_BALANCE_NATIVE=1` → `/health` `burn.scheduler="enabled"` |
+| Anclaje | sigue `enabled` con el relayer; último ciclo sin pendientes |
+| Jobs | `inject-data` **eliminado**; `reset-all` actualizado a C2 (`0xF8b1…`, bloque `5655378`); `reconcile-rooms` se conserva |
+| SMTP | **fuera de alcance hasta tener credenciales reales**: el worker sigue `down` por `emailDegraded`, pero web/mcp/worker indexan con `lag=0` |
+
+**Pruebas de la ventana:** las suites de `@hotel/shared` (695) y el typecheck de `@hotel/web` quedaron
+en verde antes de desplegar; la verificación de la demo es on-chain (tx y recibos en la evidencia).
