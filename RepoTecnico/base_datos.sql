@@ -1764,6 +1764,10 @@ ALTER TABLE housekeeping_room_logs ALTER COLUMN to_value TYPE VARCHAR(20);
 ALTER TABLE preventive_tasks
     ADD COLUMN IF NOT EXISTS assigned_to VARCHAR(100) NULL;
 
+-- F5 (2026-10-19): bloqueo optimista del cierre desde el terminal (T5.5).
+ALTER TABLE preventive_tasks
+    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT NOW();
+
 ALTER TABLE preventive_tasks
     ADD COLUMN IF NOT EXISTS validation_status VARCHAR(30) NULL;
 

@@ -120,6 +120,8 @@ export interface PreventiveTaskRecord {
   assignedTo: string | null;
   /** Estado de validación del jefe (F8): `PENDING_VERIFICATION` al cerrar desde terminal. */
   validationStatus: "PENDING_VERIFICATION" | "VALIDATED" | "PENDING_VERIFICATION_EXPIRED" | null;
+  /** Marca de actualización para el bloqueo optimista del terminal (F5 · T5.5). */
+  updatedAt: Date | null;
 }
 
 /** Periodicidad de una tarea rutinaria de área común (F1 · T1.9). */
@@ -133,6 +135,8 @@ export type CloseTaskOptions = {
    * El cierre desde la suite del jefe (F4) no marca validación pendiente.
    */
   validationStatus?: "PENDING_VERIFICATION" | "VALIDATED" | null;
+  /** Bloqueo optimista del terminal: instante leído por el cliente (T5.5). */
+  expectedUpdatedAt?: Date | null;
 };
 
 export const AREA_PERIODICITIES = ["DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "ANNUAL"] as const;
@@ -204,6 +208,7 @@ export type MaintenanceErrorCode =
   | "PLAN_NOT_FOUND"
   | "TASK_NOT_FOUND"
   | "TASK_CLOSED"
+  | "OPTIMISTIC_LOCK_CONFLICT"
   | "AREA_TYPE_NOT_FOUND"
   | "AREA_NOT_FOUND"
   | "AREA_TASK_NOT_FOUND"
@@ -726,7 +731,8 @@ export class MaintenanceRepository {
   /** Asigna una tarea preventiva a un operario de terminal (jefe/administración, F5/F9). */
   async assignTask(id: string, operatorUsername: string | null): Promise<PreventiveTaskRecord | null> {
     const res = await this.pool.query(
-      `UPDATE preventive_tasks SET assigned_to = $2 WHERE id = $1 AND status = 'PENDING' RETURNING id`,
+      `UPDATE preventive_tasks SET assigned_to = $2, updated_at = NOW()
+        WHERE id = $1 AND status = 'PENDING' RETURNING id`,
       [id, operatorUsername],
     );
     if (res.rows.length === 0) return null;
@@ -1029,6 +1035,19 @@ export class MaintenanceRepository {
         await client.query("ROLLBACK");
         throw new MaintenanceError("TASK_CLOSED", "La tarea ya estaba cerrada.");
       }
+      // F5 · T5.5: el terminal envía el `updated_at` que leyó. Si otro operario cambió la tarea
+      // mientras tanto, el cierre se rechaza en vez de pisar su trabajo (bloqueo optimista).
+      if (options.expectedUpdatedAt !== undefined && options.expectedUpdatedAt !== null) {
+        const expected = new Date(options.expectedUpdatedAt).getTime();
+        const actual = row.updated_at instanceof Date ? row.updated_at.getTime() : new Date(row.updated_at as string).getTime();
+        if (expected !== actual) {
+          await client.query("ROLLBACK");
+          throw new MaintenanceError(
+            "OPTIMISTIC_LOCK_CONFLICT",
+            "La tarea cambió desde que se abrió; recarga antes de cerrarla.",
+          );
+        }
+      }
       // F4 · T4.5: una tarea de área crítica (o marcada `requires_signature`) solo se cierra con
       // una firma enlazada. La firma ya se validó (SIGNED + payload) en la capa de API.
       const requiresSignature = row.requires_signature === true || row.is_critical === true;
@@ -1044,7 +1063,8 @@ export class MaintenanceRepository {
             SET status = $2, completed_by = $3, completed_at = NOW(), notes = COALESCE($4, notes),
                 signature_id = COALESCE($5, signature_id),
                 evidence_path = COALESCE($6, evidence_path),
-                validation_status = COALESCE($7, validation_status)
+                validation_status = COALESCE($7, validation_status),
+                updated_at = NOW()
           WHERE id = $1`,
         [
           id,
@@ -1249,6 +1269,7 @@ function mapTask(row: QueryResultRow): PreventiveTaskRecord {
     assignedTo: (row.assigned_to as string | null) ?? null,
     validationStatus:
       (row.validation_status as PreventiveTaskRecord["validationStatus"] | null) ?? null,
+    updatedAt: (row.updated_at as Date | null) ?? null,
   };
 }
 

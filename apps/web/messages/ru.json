@@ -2252,5 +2252,64 @@
       "disputed": "Ваш спор записан; ресепшн рассмотрит его.",
       "resolvedAccepted": "Спор решён в пользу начисления."
     }
+  },
+  "terminal": {
+    "loginTitle": "Терминал обслуживания",
+    "loginHint": "Войдите по имени оператора и PIN-коду.",
+    "operator": "Оператор",
+    "pinLabel": "PIN",
+    "clear": "Очистить",
+    "backspace": "⌫",
+    "enter": "Войти",
+    "loginError": "Не удалось войти.",
+    "changePinTitle": "Смените PIN",
+    "changePinHint": "Задайте новый PIN из 4–6 цифр (не повторяющихся).",
+    "changePinSubmit": "Сохранить PIN",
+    "changePinError": "Не удалось сменить PIN.",
+    "boardTitle": "Мои задачи",
+    "reportCta": "Сообщить о поломке",
+    "offline": "Нет сети: терминал не сохраняет изменения до восстановления связи.",
+    "loading": "Загрузка…",
+    "actionError": "Не удалось выполнить действие.",
+    "tasksTitle": "Профилактические задачи",
+    "tasksEmpty": "У вас нет назначенных профилактических задач.",
+    "task": "Задача",
+    "room": "Ном.",
+    "due": "Срок",
+    "overdue": "просрочено",
+    "critical": "нужна подпись руководителя",
+    "notesPlaceholder": "Заметка или доказательство (необязательно)",
+    "closeTask": "Закрыть задачу",
+    "incidentsTitle": "Назначенные инциденты",
+    "incidentsEmpty": "У вас нет назначенных инцидентов.",
+    "startIncident": "Начать",
+    "resolveIncident": "Решить",
+    "reportTitle": "Сообщить о поломке",
+    "reportHint": "Инцидент создаётся открытым, чтобы руководитель его классифицировал.",
+    "reportRoom": "Номер",
+    "reportKind": "Тип",
+    "reportDescription": "Описание",
+    "reportSubmit": "Отправить",
+    "reportDone": "Поломка сообщена. Руководитель увидит её на табло.",
+    "reportError": "Не удалось сообщить о поломке.",
+    "back": "Назад",
+    "role": {
+      "MAINTENANCE_TECH": "Обслуживание",
+      "HOUSEKEEPER": "Горничная"
+    },
+    "kind": {
+      "ELECTRICIDAD": "Электрика",
+      "FONTANERIA": "Сантехника",
+      "CLIMATIZACION": "Климат",
+      "MOBILIARIO": "Мебель",
+      "ELECTRODOMESTICO": "Техника",
+      "CERRADURA": "Замок",
+      "OTROS": "Другое"
+    },
+    "priority": {
+      "LOW": "Низкий",
+      "MEDIUM": "Средний",
+      "HIGH": "Высокий"
+    }
   }
 }

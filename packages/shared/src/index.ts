@@ -92,3 +92,6 @@ export * from "./maintenance/mint-window-watch";
 // Mensajes de firma/autorización que muestra la wallet (ADR-30): catálogo, formateadores
 // deterministas y estructura EIP-712 legible. Lo usan el cliente (firma) y el servidor (verifica).
 export * from "./domain/wallet-messages";
+
+export * from "./auth/terminal-pin";
+export * from "./auth/terminal-pin-hash";

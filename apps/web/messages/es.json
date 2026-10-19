@@ -2252,5 +2252,64 @@
       "disputed": "Tu reclamación está registrada; recepción la revisará.",
       "resolvedAccepted": "La reclamación se ha resuelto a favor del cargo."
     }
+  },
+  "terminal": {
+    "loginTitle": "Terminal de mantenimiento",
+    "loginHint": "Identifícate con tu usuario y PIN de operario.",
+    "operator": "Operario",
+    "pinLabel": "PIN",
+    "clear": "Borrar",
+    "backspace": "⌫",
+    "enter": "Entrar",
+    "loginError": "No se pudo iniciar sesión.",
+    "changePinTitle": "Cambia tu PIN",
+    "changePinHint": "Debes fijar un PIN nuevo de 4 a 6 dígitos (no repetidos).",
+    "changePinSubmit": "Guardar PIN",
+    "changePinError": "No se pudo cambiar el PIN.",
+    "boardTitle": "Mis tareas",
+    "reportCta": "Reportar avería",
+    "offline": "Sin conexión: el terminal no permite registrar cambios hasta recuperar la red.",
+    "loading": "Cargando…",
+    "actionError": "No se pudo completar la acción.",
+    "tasksTitle": "Tareas preventivas",
+    "tasksEmpty": "No tienes tareas preventivas asignadas.",
+    "task": "Tarea",
+    "room": "Hab.",
+    "due": "Vence",
+    "overdue": "vencida",
+    "critical": "requiere firma del jefe",
+    "notesPlaceholder": "Nota o evidencia (opcional)",
+    "closeTask": "Cerrar tarea",
+    "incidentsTitle": "Incidencias asignadas",
+    "incidentsEmpty": "No tienes incidencias asignadas.",
+    "startIncident": "Empezar",
+    "resolveIncident": "Resolver",
+    "reportTitle": "Reportar avería",
+    "reportHint": "La incidencia nace abierta para que el jefe la clasifique y asigne.",
+    "reportRoom": "Habitación",
+    "reportKind": "Tipo",
+    "reportDescription": "Descripción",
+    "reportSubmit": "Enviar",
+    "reportDone": "Avería reportada. El jefe la verá en su tablero.",
+    "reportError": "No se pudo reportar la avería.",
+    "back": "Volver",
+    "role": {
+      "MAINTENANCE_TECH": "Mantenimiento",
+      "HOUSEKEEPER": "Camarera/o"
+    },
+    "kind": {
+      "ELECTRICIDAD": "Electricidad",
+      "FONTANERIA": "Fontanería",
+      "CLIMATIZACION": "Climatización",
+      "MOBILIARIO": "Mobiliario",
+      "ELECTRODOMESTICO": "Electrodoméstico",
+      "CERRADURA": "Cerradura",
+      "OTROS": "Otros"
+    },
+    "priority": {
+      "LOW": "Baja",
+      "MEDIUM": "Media",
+      "HIGH": "Alta"
+    }
   }
 }

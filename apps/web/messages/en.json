@@ -2252,5 +2252,64 @@
       "disputed": "Your dispute is recorded; reception will review it.",
       "resolvedAccepted": "The dispute was resolved in favour of the charge."
     }
+  },
+  "terminal": {
+    "loginTitle": "Maintenance terminal",
+    "loginHint": "Sign in with your operator username and PIN.",
+    "operator": "Operator",
+    "pinLabel": "PIN",
+    "clear": "Clear",
+    "backspace": "⌫",
+    "enter": "Sign in",
+    "loginError": "Could not sign in.",
+    "changePinTitle": "Change your PIN",
+    "changePinHint": "Set a new 4–6 digit PIN (not repeated digits).",
+    "changePinSubmit": "Save PIN",
+    "changePinError": "Could not change the PIN.",
+    "boardTitle": "My tasks",
+    "reportCta": "Report failure",
+    "offline": "Offline: the terminal will not save changes until the network is back.",
+    "loading": "Loading…",
+    "actionError": "The action could not be completed.",
+    "tasksTitle": "Preventive tasks",
+    "tasksEmpty": "You have no assigned preventive tasks.",
+    "task": "Task",
+    "room": "Room",
+    "due": "Due",
+    "overdue": "overdue",
+    "critical": "needs manager signature",
+    "notesPlaceholder": "Note or evidence (optional)",
+    "closeTask": "Close task",
+    "incidentsTitle": "Assigned incidents",
+    "incidentsEmpty": "You have no assigned incidents.",
+    "startIncident": "Start",
+    "resolveIncident": "Resolve",
+    "reportTitle": "Report failure",
+    "reportHint": "The incident opens for the manager to classify and assign.",
+    "reportRoom": "Room",
+    "reportKind": "Type",
+    "reportDescription": "Description",
+    "reportSubmit": "Send",
+    "reportDone": "Failure reported. The manager will see it on the board.",
+    "reportError": "Could not report the failure.",
+    "back": "Back",
+    "role": {
+      "MAINTENANCE_TECH": "Maintenance",
+      "HOUSEKEEPER": "Housekeeper"
+    },
+    "kind": {
+      "ELECTRICIDAD": "Electricity",
+      "FONTANERIA": "Plumbing",
+      "CLIMATIZACION": "HVAC",
+      "MOBILIARIO": "Furniture",
+      "ELECTRODOMESTICO": "Appliance",
+      "CERRADURA": "Lock",
+      "OTROS": "Other"
+    },
+    "priority": {
+      "LOW": "Low",
+      "MEDIUM": "Medium",
+      "HIGH": "High"
+    }
   }
 }
