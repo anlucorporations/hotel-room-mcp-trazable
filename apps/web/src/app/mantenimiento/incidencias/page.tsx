@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { currentMaintenanceSession } from "@/lib/mantenimiento/session";
 import { MaintenanceRepository, type MaintenanceStatus } from "@hotel/shared";
 import { IncidentList } from "@/components/maintenance/IncidentList";
 import type { IncidentDto } from "@/lib/mantenimiento/types";
@@ -13,6 +14,9 @@ export default async function MaintenanceIncidentsPage({
 }: {
   searchParams?: Promise<{ status?: string }>;
 }) {
+  // Defensa en profundidad (M7 · H1): el payload RSC de la página no debe generarse sin sesión.
+  const session = await currentMaintenanceSession();
+  if (!session.ok) return null;
   const t = await getTranslations("maintenance");
   const params = (await searchParams) ?? {};
   const status = STATUSES.includes(params.status as MaintenanceStatus)

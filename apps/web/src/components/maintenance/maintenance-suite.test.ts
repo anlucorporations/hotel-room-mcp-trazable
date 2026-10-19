@@ -57,6 +57,24 @@ describe("Suite de Mantenimiento · rutas (F4 · T4.1)", () => {
     expect(layout).toContain("MAINTENANCE_SUITE_ROLES");
     expect(layout).toContain("AdminSignInScreen");
   });
+
+  it("cada página RSC vuelve a exigir sesión antes de leer datos (M7 · H1)", () => {
+    // El layout decide si pinta a sus hijos, pero el payload RSC de la página viaja igualmente en la
+    // respuesta; sin esta segunda comprobación un anónimo recibía los datos del dashboard (F4).
+    for (const page of [
+      "page.tsx",
+      "incidencias/page.tsx",
+      "incidencias/[id]/page.tsx",
+      "preventivo/page.tsx",
+      "areas-comunes/page.tsx",
+      "informes/page.tsx",
+      "tablero/page.tsx",
+    ]) {
+      const source = read(`${APP}/${page}`);
+      expect(source, `${page} debe revalidar la sesión`).toContain("currentMaintenanceSession");
+      expect(source, `${page} debe devolver null sin sesión`).toContain("if (!session.ok) return null;");
+    }
+  });
 });
 
 describe("Suite de Mantenimiento · oráculos de firma (F4 · T4.3)", () => {

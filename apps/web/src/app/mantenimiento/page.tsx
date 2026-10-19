@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { currentMaintenanceSession } from "@/lib/mantenimiento/session";
 import { MaintenanceRepository } from "@hotel/shared";
 import { defaultBoardDate } from "@/lib/housekeeping-board";
 import { IncidentList } from "@/components/maintenance/IncidentList";
@@ -16,6 +17,9 @@ const CARD = "rounded-brand border border-line px-4 py-3";
  * Lee los repositorios en servidor (la sesión ya la valida el layout) y pasa DTO planos al cliente.
  */
 export default async function MaintenanceDashboardPage() {
+  // Defensa en profundidad (M7 · H1): el payload RSC de la página no debe generarse sin sesión.
+  const session = await currentMaintenanceSession();
+  if (!session.ok) return null;
   const t = await getTranslations("maintenance");
   const repo = new MaintenanceRepository();
   const date = defaultBoardDate();

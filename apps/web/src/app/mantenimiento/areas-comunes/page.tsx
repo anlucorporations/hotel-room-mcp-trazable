@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { currentMaintenanceSession } from "@/lib/mantenimiento/session";
 import { MaintenanceRepository } from "@hotel/shared";
 import { CommonAreasBoard } from "@/components/maintenance/CommonAreasBoard";
 import type { AreaDto, AreaLogDto } from "@/lib/mantenimiento/types";
@@ -7,6 +8,9 @@ export const dynamic = "force-dynamic";
 
 /** Áreas comunes de la suite (F4 · T4.1/T4.4): tareas rutinarias y verificación de ejecuciones. */
 export default async function MaintenanceCommonAreasPage() {
+  // Defensa en profundidad (M7 · H1): el payload RSC de la página no debe generarse sin sesión.
+  const session = await currentMaintenanceSession();
+  if (!session.ok) return null;
   const t = await getTranslations("maintenance");
   const repo = new MaintenanceRepository();
   const [areas, pendingLogs] = await Promise.all([

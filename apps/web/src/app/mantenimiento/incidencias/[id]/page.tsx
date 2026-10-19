@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { currentMaintenanceSession } from "@/lib/mantenimiento/session";
 import { MaintenanceRepository, RoomsRepository } from "@hotel/shared";
 import { IncidentDetail } from "@/components/maintenance/IncidentDetail";
 import type { IncidentEventDto } from "@/lib/mantenimiento/types";
@@ -14,6 +15,9 @@ export default async function MaintenanceIncidentDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  // Defensa en profundidad (M7 · H1): el payload RSC de la página no debe generarse sin sesión.
+  const session = await currentMaintenanceSession();
+  if (!session.ok) return null;
   const t = await getTranslations("maintenance");
   const { id } = await params;
   if (!UUID.test(id)) notFound();

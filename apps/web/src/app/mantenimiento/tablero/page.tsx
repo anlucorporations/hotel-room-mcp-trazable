@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { currentMaintenanceSession } from "@/lib/mantenimiento/session";
 import { MaintenanceBoard } from "@/components/maintenance/MaintenanceBoard";
 
 export const dynamic = "force-dynamic";
@@ -10,6 +11,9 @@ export const dynamic = "force-dynamic";
  * el rol `MAINTENANCE` y para no romper los flujos existentes hasta que llegue el terminal de F5.
  */
 export default async function MaintenanceBoardPage() {
+  // Defensa en profundidad (M7 · H1): el payload RSC de la página no debe generarse sin sesión.
+  const session = await currentMaintenanceSession();
+  if (!session.ok) return null;
   const t = await getTranslations("maintenance");
   return (
     <>
