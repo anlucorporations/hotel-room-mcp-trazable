@@ -5668,3 +5668,35 @@ habría funcionado con el índice roto.
 
 **Pruebas de la ventana:** las suites de `@hotel/shared` (695) y el typecheck de `@hotel/web` quedaron
 en verde antes de desplegar; la verificación de la demo es on-chain (tx y recibos en la evidencia).
+
+---
+
+## 37. F4 ARRANCADO — bloqueo/desbloqueo firmado de habitación (T4.6/T4.7) · 2026-10-19
+
+**Qué se hizo.** Arranque del ciclo **F4 (Suite de Mantenimiento)** con su base de dominio y
+repositorio: la regla de **firma on-chain selectiva** y el **bloqueo/desbloqueo firmado** de una
+habitación, que es lo que después consumirán la API (T4.4/T4.5) y la UI (T4.1–T4.3). No se ha
+desplegado nada: es código nuevo con pruebas, listo para el resto del ciclo.
+
+### Entregado
+
+| Pieza | Contenido |
+|---|---|
+| **Reglas puras** (`domain/maintenance.ts`) | `requiresSignatureForMaintenanceAction` (bloqueo/desbloqueo **siempre** firmados; preventivo solo si el área es **crítica**; inspección según flag), `preventiveTaskRequiresSignature`, `publicationStatusAfterUnblock` (restaura el estado previo real y cae a `DRAFT` sin historial) e `isRoomBlockedByMaintenance` (D-V7/D-53) |
+| **Repositorio** (`MaintenanceRepository`) | `blockRoomWithSignature` y `unblockRoomWithSignature`: transacción con `SELECT … FOR UPDATE`, `publication_status='MAINTENANCE'` + `maintenance_blocked_*`, traza en `room_status_history` (D-19) y enlace `block_signature_id`/`unblock_signature_id` en la incidencia. **Rechazan la llamada sin `signatureId`** (`SIGNATURE_REQUIRED`), y validan que la incidencia existe y está abierta |
+| **Catálogo (T4.7)** | cubierto por la regla única `isRoomSellable` ya existente: una habitación en `MAINTENANCE` (o con incidencia que bloquea) desaparece del catálogo, reserva pública y recepción sin código nuevo |
+| **Pruebas** | **13 nuevas** (6 de reglas puras + 7 de repositorio con transacción simulada); `@hotel/shared` **67 ficheros / 708 pruebas** en verde y `tsc` limpio |
+
+### Por qué así
+
+La auditoría V1 exigía que el bloqueo de una habitación **no** pudiera ocurrir sin firma del jefe
+(D-C23) y que el catálogo dejara de ofrecerla (D-V7). Poner la regla en el dominio y exigir el
+`signatureId` **en el repositorio** evita que una ruta futura se salte la firma por descuido: el
+compilador y las pruebas la bloquean antes de que exista la UI.
+
+### Siguiente en F4
+
+T4.1 (rutas de la suite), T4.2 (componentes de operación), T4.3 (componentes transversales de firma),
+T4.4 (endpoints con guard), T4.5 (endpoint de firma TypedData + outbox) y T4.8 (textos). El gate del
+ciclo sigue siendo el de §4.4 del plan: bloqueo/desbloqueo firmado observable en UI, preventivo
+crítico firmado, informes y E2E en verde.

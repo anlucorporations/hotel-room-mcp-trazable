@@ -651,3 +651,152 @@ describe("MaintenanceRepository · áreas comunes (F1 · T1.9)", () => {
     });
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// F4 · T4.6 — bloqueo/desbloqueo firmado de habitación
+// ─────────────────────────────────────────────────────────────────────────────
+
+function blockTxClient(options: {
+  room?: QueryResultRow;
+  history?: QueryResultRow[];
+  incident?: QueryResultRow | null;
+}): PoolClient & { query: Mock; release: Mock } {
+  const query = vi.fn(async (sql: string) => {
+    const s = String(sql).replace(/\s+/g, " ").trim();
+    if (["BEGIN", "COMMIT", "ROLLBACK"].includes(s)) return { rows: [], rowCount: 0 };
+    if (s.startsWith("SELECT id, room_number, publication_status, archived_at FROM rooms")) {
+      return {
+        rows: [
+          options.room ?? {
+            id: "room-1",
+            room_number: 201,
+            publication_status: "PUBLISHED",
+            archived_at: null,
+          },
+        ],
+        rowCount: 1,
+      };
+    }
+    if (s.startsWith("SELECT id, room_id, status FROM maintenance_incidents")) {
+      if (options.incident === null) return { rows: [], rowCount: 0 };
+      return {
+        rows: [options.incident ?? { id: "inc-1", room_id: "room-1", status: "OPEN" }],
+        rowCount: 1,
+      };
+    }
+    if (s.startsWith("SELECT from_value FROM room_status_history")) {
+      return { rows: options.history ?? [{ from_value: "PUBLISHED" }], rowCount: 1 };
+    }
+    if (s.startsWith("UPDATE rooms")) return { rows: [], rowCount: 1 };
+    if (s.startsWith("INSERT INTO room_status_history")) return { rows: [], rowCount: 1 };
+    if (s.startsWith("UPDATE maintenance_incidents")) return { rows: [], rowCount: 1 };
+    return { rows: [], rowCount: 0 };
+  });
+  return { query, release: vi.fn() } as unknown as PoolClient & { query: Mock; release: Mock };
+}
+
+describe("MaintenanceRepository · bloqueo firmado (F4 · T4.6)", () => {
+  let repository: MaintenanceRepository;
+  let mockPool: Pool & { query: Mock; connect: Mock };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockPool = { query: vi.fn(), connect: vi.fn() } as unknown as Pool & { query: Mock; connect: Mock };
+    repository = new MaintenanceRepository(mockPool);
+  });
+
+  it("bloquear exige firma y deja la habitación en MAINTENANCE con historial", async () => {
+    const client = blockTxClient({});
+    mockPool.connect.mockResolvedValueOnce(client);
+    const result = await repository.blockRoomWithSignature({
+      roomId: "room-1",
+      signatureId: "sig-1",
+      actor: "jefe@hotel.es",
+      incidentId: "inc-1",
+      reason: "Fuga de agua",
+      until: "2026-10-25",
+    });
+
+    expect(result.publicationStatus).toBe("MAINTENANCE");
+    expect(result.previousPublicationStatus).toBe("PUBLISHED");
+    expect(result.blockedUntil).toBe("2026-10-25");
+    const sqls = client.query.mock.calls.map(([sql]) => String(sql));
+    expect(sqls.some((sql) => sql.includes("maintenance_blocked_until = $3::date"))).toBe(true);
+    expect(sqls.some((sql) => sql.includes("INSERT INTO room_status_history"))).toBe(true);
+    expect(
+      sqls.some((sql) => sql.includes("UPDATE maintenance_incidents SET block_signature_id")),
+    ).toBe(true);
+  });
+
+  it("sin signatureId lanza SIGNATURE_REQUIRED sin abrir transacción", async () => {
+    await expect(
+      repository.blockRoomWithSignature({ roomId: "room-1", signatureId: "  ", actor: "x" }),
+    ).rejects.toMatchObject({ code: "SIGNATURE_REQUIRED" });
+    expect(mockPool.connect).not.toHaveBeenCalled();
+  });
+
+  it("una habitación ya bloqueada lanza ROOM_ALREADY_BLOCKED", async () => {
+    mockPool.connect.mockResolvedValueOnce(
+      blockTxClient({ room: { id: "room-1", room_number: 201, publication_status: "MAINTENANCE", archived_at: null } }),
+    );
+    await expect(
+      repository.blockRoomWithSignature({ roomId: "room-1", signatureId: "sig-1", actor: "x" }),
+    ).rejects.toMatchObject({ code: "ROOM_ALREADY_BLOCKED" });
+  });
+
+  it("una incidencia cerrada no se puede firmar (INCIDENT_CLOSED)", async () => {
+    mockPool.connect.mockResolvedValueOnce(
+      blockTxClient({ incident: { id: "inc-1", room_id: "room-1", status: "RESOLVED" } }),
+    );
+    await expect(
+      repository.blockRoomWithSignature({
+        roomId: "room-1",
+        signatureId: "sig-1",
+        actor: "x",
+        incidentId: "inc-1",
+      }),
+    ).rejects.toMatchObject({ code: "INCIDENT_CLOSED" });
+  });
+
+  it("desbloquear restaura el estado previo (PUBLISHED) y limpia el bloqueo", async () => {
+    const client = blockTxClient({
+      room: { id: "room-1", room_number: 201, publication_status: "MAINTENANCE", archived_at: null },
+      history: [{ from_value: "PUBLISHED" }],
+    });
+    mockPool.connect.mockResolvedValueOnce(client);
+    const result = await repository.unblockRoomWithSignature({
+      roomId: "room-1",
+      signatureId: "sig-2",
+      actor: "jefe@hotel.es",
+      incidentId: "inc-1",
+    });
+    expect(result.publicationStatus).toBe("PUBLISHED");
+    const sqls = client.query.mock.calls.map(([sql]) => String(sql));
+    expect(sqls.some((sql) => sql.includes("maintenance_blocked_until = NULL"))).toBe(true);
+    expect(
+      sqls.some((sql) => sql.includes("UPDATE maintenance_incidents SET unblock_signature_id")),
+    ).toBe(true);
+  });
+
+  it("sin historial, el desbloqueo deja la habitación en DRAFT (no inventa PUBLISHED)", async () => {
+    mockPool.connect.mockResolvedValueOnce(
+      blockTxClient({
+        room: { id: "room-1", room_number: 201, publication_status: "MAINTENANCE", archived_at: null },
+        history: [],
+      }),
+    );
+    const result = await repository.unblockRoomWithSignature({
+      roomId: "room-1",
+      signatureId: "sig-2",
+      actor: "jefe@hotel.es",
+    });
+    expect(result.publicationStatus).toBe("DRAFT");
+  });
+
+  it("desbloquear una habitación no bloqueada lanza ROOM_NOT_BLOCKED", async () => {
+    mockPool.connect.mockResolvedValueOnce(blockTxClient({}));
+    await expect(
+      repository.unblockRoomWithSignature({ roomId: "room-1", signatureId: "sig-2", actor: "x" }),
+    ).rejects.toMatchObject({ code: "ROOM_NOT_BLOCKED" });
+  });
+});

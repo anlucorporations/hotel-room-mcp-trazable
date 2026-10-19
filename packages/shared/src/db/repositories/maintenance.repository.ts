@@ -1,11 +1,14 @@
 import type { Pool, PoolClient, QueryResultRow } from "pg";
 import { getDbPool } from "../pool";
 import {
+  MAINTENANCE_PUBLICATION_STATUS,
   PREVENTIVE_PERIOD_DAYS,
+  publicationStatusAfterUnblock,
   type MaintenancePriority,
   type MaintenanceStatus,
   type PreventivePeriodicity,
 } from "../../domain/maintenance";
+import type { RoomPublicationStatus } from "../../domain/operations-state";
 
 /**
  * Repositorio de Mantenimiento y Servicios Técnicos (Suite Administración → Mantenimiento y ruta
@@ -54,6 +57,20 @@ export interface MaintenanceIncidentEventRecord {
   notes: string | null;
   actor: string;
   createdAt: Date;
+}
+
+/** Resultado de un bloqueo/desbloqueo firmado de habitación (F4 · T4.6). */
+export interface MaintenanceRoomBlockRecord {
+  readonly roomId: string;
+  readonly roomNumber: number;
+  /** Estado de publicación antes de la operación (en el desbloqueo, `MAINTENANCE`). */
+  readonly previousPublicationStatus: RoomPublicationStatus;
+  /** Estado de publicación resultante (`MAINTENANCE` al bloquear; el restaurado al desbloquear). */
+  readonly publicationStatus: RoomPublicationStatus;
+  readonly blockedUntil: string | null;
+  readonly reason: string | null;
+  readonly incidentId: string | null;
+  readonly signatureId: string;
 }
 
 export interface PreventivePlanRecord {
@@ -162,7 +179,10 @@ export type MaintenanceErrorCode =
   | "AREA_NOT_FOUND"
   | "AREA_TASK_NOT_FOUND"
   | "AREA_TASK_INVALID_PERIODICITY"
-  | "AREA_LOG_NOT_FOUND";
+  | "AREA_LOG_NOT_FOUND"
+  | "SIGNATURE_REQUIRED"
+  | "ROOM_ALREADY_BLOCKED"
+  | "ROOM_NOT_BLOCKED";
 
 export class MaintenanceError extends Error {
   constructor(
@@ -268,6 +288,188 @@ export class MaintenanceRepository {
   /** Cancela una incidencia (p. ej. reportada por error); también libera el bloqueo. */
   async cancelIncident(id: string, actor: string, notes?: string | null): Promise<MaintenanceIncidentRecord | null> {
     return this.transitionIncident(id, "CANCELLED", "CANCELLED", actor, notes ?? null, {});
+  }
+
+  // ── Bloqueo/desbloqueo firmado de habitación (F4 · T4.6, D-C23/D-C34, D-V7) ──────────────
+
+  /**
+   * **Bloquea una habitación para la venta con firma EIP-712 obligatoria** (D-C23).
+   *
+   * Efectos en una sola transacción:
+   *   1. `rooms.publication_status = 'MAINTENANCE'` (D-V7: el catálogo deja de ofrecerla).
+   *   2. Guarda `maintenance_blocked_until`/`maintenance_blocked_reason`.
+   *   3. Deja traza en `room_status_history` (D-19) con el estado previo.
+   *   4. Enlaza la firma en `maintenance_incidents.block_signature_id` si se pasa una incidencia.
+   *
+   * La firma se **exige como parámetro**: la API la valida antes (F2/F3) y este repositorio rechaza
+   * cualquier llamada sin `signatureId` — así ninguna ruta puede saltarse la firma por descuido.
+   */
+  async blockRoomWithSignature(input: {
+    readonly roomId: string;
+    readonly signatureId: string;
+    readonly actor: string;
+    readonly incidentId?: string | null;
+    readonly reason?: string | null;
+    readonly until?: string | null;
+  }): Promise<MaintenanceRoomBlockRecord> {
+    if (typeof input.signatureId !== "string" || input.signatureId.trim() === "") {
+      throw new MaintenanceError("SIGNATURE_REQUIRED", "Bloquear una habitación exige una firma EIP-712.");
+    }
+    const reason = input.reason?.trim() ? input.reason.trim().slice(0, 200) : null;
+    const until = input.until?.trim() ? input.until.trim() : null;
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const room = await client.query<QueryResultRow>(
+        `SELECT id, room_number, publication_status, archived_at FROM rooms WHERE id = $1 FOR UPDATE`,
+        [input.roomId],
+      );
+      const roomRow = room.rows[0];
+      if (!roomRow || roomRow.archived_at !== null) {
+        throw new MaintenanceError("ROOM_NOT_FOUND", "La habitación no existe o está archivada.");
+      }
+      const previous = roomRow.publication_status as RoomPublicationStatus;
+      if (previous === MAINTENANCE_PUBLICATION_STATUS) {
+        throw new MaintenanceError("ROOM_ALREADY_BLOCKED", "La habitación ya está bloqueada por mantenimiento.");
+      }
+      await this.assertIncidentCanBeSigned(client, input.incidentId, input.roomId);
+      await client.query(
+        `UPDATE rooms
+            SET publication_status = $2,
+                maintenance_blocked_until = $3::date,
+                maintenance_blocked_reason = $4,
+                updated_at = NOW()
+          WHERE id = $1`,
+        [input.roomId, MAINTENANCE_PUBLICATION_STATUS, until, reason],
+      );
+      await client.query(
+        `INSERT INTO room_status_history
+           (room_id, status_kind, from_value, to_value, changed_by, reason)
+         VALUES ($1, 'PUBLICATION', $2, $3, $4, $5)`,
+        [input.roomId, previous, MAINTENANCE_PUBLICATION_STATUS, input.actor, reason],
+      );
+      if (input.incidentId) {
+        await client.query(
+          `UPDATE maintenance_incidents SET block_signature_id = $2 WHERE id = $1`,
+          [input.incidentId, input.signatureId],
+        );
+      }
+      await client.query("COMMIT");
+      return {
+        roomId: input.roomId,
+        roomNumber: Number(roomRow.room_number),
+        previousPublicationStatus: previous,
+        publicationStatus: MAINTENANCE_PUBLICATION_STATUS,
+        blockedUntil: until,
+        reason,
+        incidentId: input.incidentId ?? null,
+        signatureId: input.signatureId,
+      };
+    } catch (error: unknown) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * **Desbloquea una habitación con firma EIP-712 obligatoria** y restaura el estado de publicación
+   * que tenía **antes** del bloqueo (de `room_status_history`; si no hay historial, `DRAFT`).
+   */
+  async unblockRoomWithSignature(input: {
+    readonly roomId: string;
+    readonly signatureId: string;
+    readonly actor: string;
+    readonly incidentId?: string | null;
+    readonly reason?: string | null;
+  }): Promise<MaintenanceRoomBlockRecord> {
+    if (typeof input.signatureId !== "string" || input.signatureId.trim() === "") {
+      throw new MaintenanceError("SIGNATURE_REQUIRED", "Desbloquear una habitación exige una firma EIP-712.");
+    }
+    const reason = input.reason?.trim() ? input.reason.trim().slice(0, 200) : null;
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const room = await client.query<QueryResultRow>(
+        `SELECT id, room_number, publication_status, archived_at FROM rooms WHERE id = $1 FOR UPDATE`,
+        [input.roomId],
+      );
+      const roomRow = room.rows[0];
+      if (!roomRow || roomRow.archived_at !== null) {
+        throw new MaintenanceError("ROOM_NOT_FOUND", "La habitación no existe o está archivada.");
+      }
+      if (roomRow.publication_status !== MAINTENANCE_PUBLICATION_STATUS) {
+        throw new MaintenanceError("ROOM_NOT_BLOCKED", "La habitación no está bloqueada por mantenimiento.");
+      }
+      const history = await client.query<QueryResultRow>(
+        `SELECT from_value FROM room_status_history
+          WHERE room_id = $1 AND status_kind = 'PUBLICATION' AND to_value = $2
+          ORDER BY changed_at DESC LIMIT 1`,
+        [input.roomId, MAINTENANCE_PUBLICATION_STATUS],
+      );
+      const restored = publicationStatusAfterUnblock(
+        (history.rows[0]?.from_value as string | null | undefined) ?? null,
+      );
+      await this.assertIncidentCanBeSigned(client, input.incidentId, input.roomId);
+      await client.query(
+        `UPDATE rooms
+            SET publication_status = $2,
+                maintenance_blocked_until = NULL,
+                maintenance_blocked_reason = NULL,
+                updated_at = NOW()
+          WHERE id = $1`,
+        [input.roomId, restored],
+      );
+      await client.query(
+        `INSERT INTO room_status_history
+           (room_id, status_kind, from_value, to_value, changed_by, reason)
+         VALUES ($1, 'PUBLICATION', $2, $3, $4, $5)`,
+        [input.roomId, MAINTENANCE_PUBLICATION_STATUS, restored, input.actor, reason],
+      );
+      if (input.incidentId) {
+        await client.query(
+          `UPDATE maintenance_incidents SET unblock_signature_id = $2 WHERE id = $1`,
+          [input.incidentId, input.signatureId],
+        );
+      }
+      await client.query("COMMIT");
+      return {
+        roomId: input.roomId,
+        roomNumber: Number(roomRow.room_number),
+        previousPublicationStatus: MAINTENANCE_PUBLICATION_STATUS,
+        publicationStatus: restored,
+        blockedUntil: null,
+        reason,
+        incidentId: input.incidentId ?? null,
+        signatureId: input.signatureId,
+      };
+    } catch (error: unknown) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /** Valida que la incidencia existe, pertenece a la habitación y sigue abierta (si se aporta). */
+  private async assertIncidentCanBeSigned(
+    client: PoolClient,
+    incidentId: string | null | undefined,
+    roomId: string,
+  ): Promise<void> {
+    if (!incidentId) return;
+    const incident = await client.query<QueryResultRow>(
+      `SELECT id, room_id, status FROM maintenance_incidents WHERE id = $1 FOR UPDATE`,
+      [incidentId],
+    );
+    const incidentRow = incident.rows[0];
+    if (!incidentRow || incidentRow.room_id !== roomId) {
+      throw new MaintenanceError("INCIDENT_NOT_FOUND", "La incidencia no existe o no pertenece a esa habitación.");
+    }
+    if (["RESOLVED", "CANCELLED"].includes(String(incidentRow.status))) {
+      throw new MaintenanceError("INCIDENT_CLOSED", "La incidencia ya está cerrada.");
+    }
   }
 
   async listIncidents(
