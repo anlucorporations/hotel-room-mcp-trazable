@@ -22,11 +22,11 @@ export function RoomPublicationPanel({
   const [error, setError] = useState<string | null>(null);
   const [rows, setRows] = useState(rooms);
 
-  async function toggle(id: string, action: "publish" | "unpublish"): Promise<void> {
+  async function toggle(id: string, roomNumber: number, action: "publish" | "unpublish"): Promise<void> {
     setBusyId(id);
     setError(null);
     try {
-      const response = await fetch(`/api/reception/rooms/${id}/publication`, {
+      const response = await fetch(`/api/reception/rooms/${roomNumber}/publication`, {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
@@ -59,11 +59,11 @@ export function RoomPublicationPanel({
               {room.roomNumber} · {room.roomType} · <strong>{room.publicationStatus}</strong>
             </span>
             {room.publicationStatus === "PUBLISHED" ? (
-              <button type="button" className={BUTTON} disabled={busyId === room.id} onClick={() => void toggle(room.id, "unpublish")}>
+              <button type="button" className={BUTTON} disabled={busyId === room.id} onClick={() => void toggle(room.id, room.roomNumber, "unpublish")}>
                 {t("publication.unpublish")}
               </button>
             ) : (
-              <button type="button" className={BUTTON} disabled={busyId === room.id} onClick={() => void toggle(room.id, "publish")}>
+              <button type="button" className={BUTTON} disabled={busyId === room.id} onClick={() => void toggle(room.id, room.roomNumber, "publish")}>
                 {t("publication.publish")}
               </button>
             )}

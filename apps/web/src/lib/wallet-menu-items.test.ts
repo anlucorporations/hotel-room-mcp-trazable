@@ -45,7 +45,7 @@ describe("Entradas del menú de wallet/usuario (RF-40)", () => {
   it("housekeeping y mantenimiento ven su propia suite (D-77)", () => {
     expect(
       walletMenuItems({ ...base, hasSession: true, roles: ["HOUSEKEEPING"] }).map((i) => i.action),
-    ).toEqual(["connect", "suiteHousekeeping", "security", "signOut"]);
+    ).toEqual(["connect", "suiteKeepers", "security", "signOut"]);
     expect(
       walletMenuItems({ ...base, hasSession: true, roles: ["MAINTENANCE"] }).map((i) => i.action),
     ).toEqual(["connect", "suiteMaintenance", "security", "signOut"]);

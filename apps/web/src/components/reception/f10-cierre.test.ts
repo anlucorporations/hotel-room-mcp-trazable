@@ -20,7 +20,7 @@ describe("F10 · Recepción vNext y cierre", () => {
   it("recepción reporta incidencias y cambia la publicación sin firma on-chain", () => {
     const incident = read(`${ROOT}src/app/api/mantenimiento/incidents/route.ts`);
     expect(incident).toContain("RECEPTION_ROLE");
-    const publication = read(`${ROOT}src/app/api/reception/rooms/[id]/publication/route.ts`);
+    const publication = read(`${ROOT}src/app/api/reception/rooms/[roomNumber]/publication/route.ts`);
     expect(publication).toContain("setPublicationStatus");
     expect(publication).not.toContain("signature");
     expect(read(`${ROOT}src/components/reception/ReceptionIncidentPanel.tsx`)).toContain(
