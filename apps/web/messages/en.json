@@ -2247,6 +2247,16 @@
       "suggested": "restock {qty} {unit}",
       "lastReminded": "reminded on {date}",
       "pendingReminder": "reminder pending"
+    },
+    "reports": {
+      "title": "Productivity report",
+      "tagline": "Assignments and inspections from {from} to {to} per housekeeper.",
+      "empty": "No activity in the period.",
+      "assignee": "Housekeeper",
+      "assignments": "Assignments",
+      "completed": "Completed",
+      "approved": "Inspections OK",
+      "rejected": "Rejected"
     }
   },
   "damages": {

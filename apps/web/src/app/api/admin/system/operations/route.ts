@@ -20,12 +20,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   if (!auth.ok) return auth.response;
 
   try {
+    // T9.5: la cola de anclajes debe verse incluso si el worker está degradado (503 no debe ocultarla).
     const [health, signatures] = await Promise.all([
-      fetchWorkerHealth(),
+      fetchWorkerHealth().catch(() => null),
       operationsRepo.listSignatures({ limit: 50 }),
     ]);
     return NextResponse.json({
       health,
+      workerAvailable: health !== null,
       anchorQueue: signatures.map((signature) => ({
         id: signature.id,
         entityType: signature.entityType,

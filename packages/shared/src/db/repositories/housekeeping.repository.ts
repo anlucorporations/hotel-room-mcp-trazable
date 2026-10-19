@@ -821,6 +821,40 @@ export class HousekeepingRepository {
     }
   }
 
+  /**
+   * Informe de **productividad e inspecciones** por camarera/camarero (F6 · CU-V-26): asignaciones
+   * completadas, habitaciones limpiadas e inspecciones aprobadas/rechazadas en el rango de fechas.
+   */
+  async productivityReport(from: string, to: string): Promise<Array<{
+    assignee: string;
+    assignments: number;
+    completed: number;
+    inspectedApproved: number;
+    inspectedRejected: number;
+  }>> {
+    const res = await this.pool.query(
+      `SELECT a.assignee,
+              COUNT(a.id)::int AS assignments,
+              COUNT(a.id) FILTER (WHERE a.status = 'DONE')::int AS completed,
+              COUNT(i.id) FILTER (WHERE i.result = 'APPROVED')::int AS inspected_approved,
+              COUNT(i.id) FILTER (WHERE i.result = 'REJECTED')::int AS inspected_rejected
+         FROM housekeeping_assignments a
+         JOIN housekeeping_shifts s ON s.id = a.shift_id
+         LEFT JOIN housekeeping_inspections i ON i.assignment_id = a.id
+        WHERE s.shift_date BETWEEN $1::date AND $2::date
+        GROUP BY a.assignee
+        ORDER BY completed DESC, a.assignee ASC`,
+      [from, to],
+    );
+    return res.rows.map((row) => ({
+      assignee: row.assignee as string,
+      assignments: Number(row.assignments),
+      completed: Number(row.completed),
+      inspectedApproved: Number(row.inspected_approved),
+      inspectedRejected: Number(row.inspected_rejected),
+    }));
+  }
+
   // ---------------------------------------------------------------------------
   // Alertas de suministros (D-C33, CU-V-25)
   // ---------------------------------------------------------------------------

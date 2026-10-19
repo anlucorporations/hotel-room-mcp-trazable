@@ -2247,6 +2247,16 @@
       "suggested": "reponer {qty} {unit}",
       "lastReminded": "recordado el {date}",
       "pendingReminder": "recordatorio pendiente"
+    },
+    "reports": {
+      "title": "Informe de productividad",
+      "tagline": "Asignaciones e inspecciones del {from} al {to} por camarera/camarero.",
+      "empty": "No hay actividad en el periodo.",
+      "assignee": "Camarera/o",
+      "assignments": "Asignaciones",
+      "completed": "Completadas",
+      "approved": "Inspecciones OK",
+      "rejected": "Rechazadas"
     }
   },
   "damages": {

@@ -2247,6 +2247,16 @@
       "suggested": "пополнить {qty} {unit}",
       "lastReminded": "напомнено {date}",
       "pendingReminder": "напоминание ожидает"
+    },
+    "reports": {
+      "title": "Отчёт по продуктивности",
+      "tagline": "Назначения и проверки с {from} по {to} по горничным.",
+      "empty": "Нет активности за период.",
+      "assignee": "Горничная",
+      "assignments": "Назначения",
+      "completed": "Завершено",
+      "approved": "Проверки OK",
+      "rejected": "Отклонено"
     }
   },
   "damages": {
