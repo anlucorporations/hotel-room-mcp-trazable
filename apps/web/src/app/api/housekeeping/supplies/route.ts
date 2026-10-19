@@ -1,11 +1,12 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { HousekeepingRepository } from "@hotel/shared";
+import { HousekeepingRepository, SupplyAlertsRepository } from "@hotel/shared";
 import { requireRole } from "@/lib/guard";
 
 export const dynamic = "force-dynamic";
 
 const repo = new HousekeepingRepository();
+const alertsRepo = new SupplyAlertsRepository();
 
 /**
  * GET /api/housekeeping/supplies — lencería y suministros con su estado (D-51, D-64).
@@ -19,8 +20,17 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   if (!auth.ok) return auth.response;
 
   try {
-    const [items, lowStock] = await Promise.all([repo.listSupplyItems(), repo.listLowStock()]);
-    return NextResponse.json({ items, lowStock });
+    const [items, lowStock, openAlerts] = await Promise.all([
+      repo.listSupplyItems(),
+      repo.listLowStock(),
+      alertsRepo.listOpen(),
+    ]);
+    return NextResponse.json({
+      items,
+      lowStock,
+      openAlerts,
+      reminderIntervalHours: 24,
+    });
   } catch (error: unknown) {
     console.error("[API /api/housekeeping/supplies] GET:", error);
     return NextResponse.json({ error: "INTERNAL_SERVER_ERROR", message: "No se pudo leer la lencería." }, { status: 500 });

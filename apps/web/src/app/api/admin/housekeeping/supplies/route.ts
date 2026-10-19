@@ -1,12 +1,13 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { HousekeepingError, HousekeepingRepository, type SupplyMovementReason } from "@hotel/shared";
+import { HousekeepingError, HousekeepingRepository, SupplyAlertsRepository, type SupplyMovementReason } from "@hotel/shared";
 import { requireRole } from "@/lib/guard";
 import { notifyLowStock } from "@/lib/low-stock";
 
 export const dynamic = "force-dynamic";
 
 const repo = new HousekeepingRepository();
+const alertsRepo = new SupplyAlertsRepository();
 
 const MOVEMENT_REASONS: readonly SupplyMovementReason[] = ["ROOM_CLEANED", "GUEST_CHECKIN", "RESTOCK", "ADJUSTMENT"];
 
@@ -75,5 +76,32 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
     console.error("[API /api/admin/housekeeping/supplies] POST:", error);
     return NextResponse.json({ error: "INTERNAL_SERVER_ERROR", message: "No se pudo actualizar la lencería." }, { status: 500 });
+  }
+}
+
+
+/**
+ * PATCH /api/admin/housekeeping/supplies — configura el **umbral** de un artículo (F8 · T8.6, D-C33).
+ * Cuerpo `{ itemId, thresholdQty >= 0 }`. Tras cambiarlo concilia la alerta del artículo.
+ */
+export async function PATCH(request: NextRequest): Promise<NextResponse> {
+  const auth = await requireRole(request, "DEFAULT_ADMIN_ROLE");
+  if (!auth.ok) return auth.response;
+  let body: { itemId?: unknown; thresholdQty?: unknown };
+  try {
+    body = (await request.json()) as typeof body;
+  } catch {
+    return NextResponse.json({ error: "BAD_REQUEST", message: "Cuerpo JSON no válido." }, { status: 400 });
+  }
+  if (typeof body.itemId !== "string" || typeof body.thresholdQty !== "number" || body.thresholdQty < 0) {
+    return NextResponse.json({ error: "BAD_REQUEST", message: "itemId y thresholdQty (>=0) son obligatorios." }, { status: 400 });
+  }
+  try {
+    const item = await repo.setSupplyThreshold(body.itemId, body.thresholdQty, auth.session.username);
+    const sync = await alertsRepo.syncForItem(body.itemId);
+    return NextResponse.json({ item, alertAction: sync.action });
+  } catch (error: unknown) {
+    console.error("[API /api/admin/housekeeping/supplies] PATCH:", error);
+    return NextResponse.json({ error: "INTERNAL_SERVER_ERROR", message: "No se pudo actualizar el umbral." }, { status: 500 });
   }
 }

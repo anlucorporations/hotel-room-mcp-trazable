@@ -733,6 +733,19 @@ export class HousekeepingRepository {
     return res.rows.map(mapSupplyItem);
   }
 
+  /** Configura el umbral de alerta de un artículo (F8 · T8.6, D-C33). */
+  async setSupplyThreshold(itemId: string, thresholdQty: number, actor: string): Promise<SupplyItemRecord> {
+    const res = await this.pool.query(
+      `UPDATE supply_items SET threshold_qty = $2, updated_at = NOW() WHERE id = $1 RETURNING *`,
+      [itemId, thresholdQty],
+    );
+    if (res.rows.length === 0) {
+      throw new HousekeepingError("SUPPLY_ITEM_NOT_FOUND", "El artículo de suministro no existe.");
+    }
+    void actor;
+    return mapSupplyItem(res.rows[0]);
+  }
+
   /** Reposición marcada por el responsable: suma stock y deja movimiento (D-51). */
   async restock(itemId: string, quantity: number, actor: string): Promise<SupplyItemRecord> {
     if (quantity <= 0) {
@@ -756,6 +769,8 @@ export class HousekeepingRepository {
         [itemId, quantity, actor],
       );
       await client.query("COMMIT");
+      // F8 · T8.1: conciliar la alerta con el stock repuesto (cierra si ya supera el umbral).
+      await this.syncSupplyAlert(itemId);
       return mapSupplyItem(updated.rows[0]);
     } catch (error: unknown) {
       await client.query("ROLLBACK").catch(() => undefined);
@@ -777,6 +792,8 @@ export class HousekeepingRepository {
       await client.query("BEGIN");
       const results = await applyConsumption(client, roomId ?? null, lines, actor, reason);
       await client.query("COMMIT");
+      // F8 · T8.1: tras el consumo, abrir/cerrar la alerta de cada artículo afectado.
+      await Promise.all(results.map((result) => this.syncSupplyAlert(result.item.id)));
       return results;
     } catch (error: unknown) {
       await client.query("ROLLBACK").catch(() => undefined);
@@ -792,6 +809,16 @@ export class HousekeepingRepository {
       [itemId, limit],
     );
     return res.rows.map(mapMovement);
+  }
+
+  /** Concilia la alerta de suministros con el stock actual (F8 · T8.1), best-effort. */
+  private async syncSupplyAlert(itemId: string): Promise<void> {
+    try {
+      const { SupplyAlertsRepository } = await import("./supply-alerts.repository");
+      await new SupplyAlertsRepository(this.pool).syncForItem(itemId);
+    } catch (error: unknown) {
+      console.warn("[housekeeping] no se pudo conciliar la alerta de suministros:", error);
+    }
   }
 
   // ---------------------------------------------------------------------------

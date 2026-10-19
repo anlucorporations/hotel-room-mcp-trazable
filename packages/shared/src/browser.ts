@@ -59,6 +59,8 @@ export * from "./domain/operations-state";
 export * from "./domain/housekeeping";
 // Cargos por daños (F7): estados/plazos de notificación, resolución y retención de evidencias.
 export * from "./domain/damage-charges";
+export * from "./domain/validation-sla";
+export * from "./domain/supplies";
 
 // Regla única de habitación vendible en el canal público (2026-10-18): pura y compartida por el
 // catálogo, la reserva pública y recepción. Evita que el catálogo ofrezca noches de habitaciones no

@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { HousekeepingRepository } from "@hotel/shared";
+import { HousekeepingRepository, SupplyAlertsRepository, suggestedRestockQty } from "@hotel/shared";
 import { currentHousekeepingSession } from "@/lib/housekeeping-suite/session";
 
 export const dynamic = "force-dynamic";
@@ -10,10 +10,11 @@ export default async function AmaDeLlavesSuppliesPage() {
   if (!session.ok) return null;
   const t = await getTranslations("amaDeLlaves");
   const repo = new HousekeepingRepository();
-  const [items, lowStock, alerts] = await Promise.all([
+  const [items, lowStock, alerts, openAlerts] = await Promise.all([
     repo.listSupplyItems().catch(() => []),
     repo.listLowStock().catch(() => []),
     repo.listOpenAlerts().catch(() => []),
+    new SupplyAlertsRepository().listOpen().catch(() => []),
   ]);
 
   return (
@@ -54,11 +55,23 @@ export default async function AmaDeLlavesSuppliesPage() {
           <p data-testid="empty-state" className="mt-1 text-small text-ink-soft">{t("supplies.alertsEmpty")}</p>
         ) : (
           <ul className="mt-1 flex flex-col gap-1 text-small text-ink-soft">
-            {lowStock.map((item) => (
-              <li key={item.code} data-testid="supply-alert">
-                {item.nameEs}: {t("supplies.belowThreshold", { stock: item.stockQty, threshold: item.thresholdQty })}
-              </li>
-            ))}
+            {lowStock.map((item) => {
+              const alert = openAlerts.find((row) => row.supplyItemId === item.id);
+              return (
+                <li key={item.code} data-testid="supply-alert">
+                  {item.nameEs}: {t("supplies.belowThreshold", { stock: item.stockQty, threshold: item.thresholdQty })}
+                  {" · "}
+                  {t("supplies.suggested", {
+                    qty: suggestedRestockQty({ stockQty: item.stockQty, thresholdQty: item.thresholdQty }),
+                    unit: item.unit,
+                  })}
+                  {" · "}
+                  {alert?.lastRemindedAt
+                    ? t("supplies.lastReminded", { date: alert.lastRemindedAt.toLocaleDateString() })
+                    : t("supplies.pendingReminder")}
+                </li>
+              );
+            })}
             {alerts.map((alert) => (
               <li key={alert.id} data-testid="supply-alert">
                 {t("supplies.openAlert", { id: alert.id.slice(0, 8) })}

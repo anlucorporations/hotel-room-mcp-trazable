@@ -2188,7 +2188,10 @@
       "alertsTitle": "Alerts",
       "alertsEmpty": "No supply alerts.",
       "belowThreshold": "below threshold ({stock} of {threshold})",
-      "openAlert": "Open alert {id}…"
+      "openAlert": "Open alert {id}…",
+      "suggested": "restock {qty} {unit}",
+      "lastReminded": "reminded on {date}",
+      "pendingReminder": "reminder pending"
     }
   },
   "damages": {
@@ -2311,5 +2314,18 @@
       "MEDIUM": "Medium",
       "HIGH": "High"
     }
+  },
+  "validaciones": {
+    "title": "Task validation",
+    "tagline": "Tasks closed from the terminal that you must validate within 24 h; expired ones escalate to the Administrator.",
+    "task": "Task",
+    "room": "Room",
+    "closedBy": "Closed by {name}",
+    "remaining": "{hours} h {minutes} min left",
+    "expired": "SLA expired · escalated to the Administrator",
+    "validate": "Validate",
+    "empty": "No tasks pending validation.",
+    "loading": "Loading…",
+    "error": "Could not load the validation queue."
   }
 }

@@ -2188,7 +2188,10 @@
       "alertsTitle": "Alertas",
       "alertsEmpty": "No hay alertas de suministros.",
       "belowThreshold": "bajo el umbral ({stock} de {threshold})",
-      "openAlert": "Alerta abierta {id}…"
+      "openAlert": "Alerta abierta {id}…",
+      "suggested": "reponer {qty} {unit}",
+      "lastReminded": "recordado el {date}",
+      "pendingReminder": "recordatorio pendiente"
     }
   },
   "damages": {
@@ -2311,5 +2314,18 @@
       "MEDIUM": "Media",
       "HIGH": "Alta"
     }
+  },
+  "validaciones": {
+    "title": "Validación de tareas",
+    "tagline": "Tareas cerradas por el terminal que debes validar en 24 h; las vencidas escalan al Administrador.",
+    "task": "Tarea",
+    "room": "Hab.",
+    "closedBy": "Cerrada por {name}",
+    "remaining": "Quedan {hours} h {minutes} min",
+    "expired": "SLA vencido · escalado al Administrador",
+    "validate": "Validar",
+    "empty": "No hay tareas pendientes de validación.",
+    "loading": "Cargando…",
+    "error": "No se pudo cargar la cola de validación."
   }
 }

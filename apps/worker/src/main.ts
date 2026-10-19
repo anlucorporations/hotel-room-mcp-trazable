@@ -40,6 +40,8 @@ import { startWorkerHttpServer } from "./http-server";
 import { runWorker } from "./run-worker";
 import { startBurnScheduler, type BurnScheduler } from "./burn-scheduler";
 import { startRetentionScheduler } from "./retention-scheduler";
+import { startSupplyReminderScheduler } from "./supply-reminder-scheduler";
+import { startSlaScheduler } from "./sla-scheduler";
 import { startPreventiveScheduler } from "./preventive-scheduler";
 import { startMintWindowScheduler } from "./mint-window-scheduler";
 import { startListenerRuntime } from "./listener-runtime";
@@ -273,6 +275,20 @@ async function main(): Promise<void> {
     recipient: config.MINT_WINDOW_ALERT_EMAIL ?? config.ADMIN_EMAIL ?? config.DEVOPS_ALERT_EMAIL,
   });
 
+  // Suministros (F8 · D-C33): concilia alertas con el stock y recuerda una vez al día las abiertas.
+  const supplyReminderScheduler = startSupplyReminderScheduler({
+    logger,
+    signal: controller.signal,
+    intervalMs: Number(process.env.SUPPLY_REMINDER_INTERVAL_MS ?? 60 * 60_000),
+  });
+
+  // SLA de validación del jefe (F8 · RNF-M-21): vencidas a 24 h → escalation al Administrador.
+  const slaScheduler = startSlaScheduler({
+    logger,
+    signal: controller.signal,
+    intervalMs: Number(process.env.VALIDATION_SLA_CHECK_INTERVAL_MS ?? 15 * 60_000),
+  });
+
   // Listener de eventos (D-12): heartbeat, alerta de silencio y alimentación del índice off-chain
   // desde los eventos del contrato canónico (antes nadie lo instanciaba).
   const listenerRuntime = startListenerRuntime({
@@ -317,6 +333,8 @@ async function main(): Promise<void> {
     anchorRuntime?.stop();
     retentionScheduler.stop();
     preventiveScheduler.stop();
+    supplyReminderScheduler.stop();
+    slaScheduler.stop();
     mintWindowScheduler.stop();
     listenerRuntime.stop();
     clearInterval(reconcileTimer);

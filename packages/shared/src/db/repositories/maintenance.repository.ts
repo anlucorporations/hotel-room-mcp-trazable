@@ -209,6 +209,7 @@ export type MaintenanceErrorCode =
   | "TASK_NOT_FOUND"
   | "TASK_CLOSED"
   | "OPTIMISTIC_LOCK_CONFLICT"
+  | "VALIDATION_NOT_PENDING"
   | "AREA_TYPE_NOT_FOUND"
   | "AREA_NOT_FOUND"
   | "AREA_TASK_NOT_FOUND"
@@ -737,6 +738,66 @@ export class MaintenanceRepository {
     );
     if (res.rows.length === 0) return null;
     return this.findTask(id);
+  }
+
+  /**
+   * Cola de **validación del jefe** (F8 · T8.3): tareas cerradas por el terminal que esperan
+   * validación (`PENDING_VERIFICATION`) o que superaron el SLA de 24 h (`PENDING_VERIFICATION_EXPIRED`).
+   */
+  async listValidationQueue(
+    statuses: readonly ("PENDING_VERIFICATION" | "PENDING_VERIFICATION_EXPIRED")[] = [
+      "PENDING_VERIFICATION",
+      "PENDING_VERIFICATION_EXPIRED",
+    ],
+  ): Promise<PreventiveTaskRecord[]> {
+    if (statuses.length === 0) return [];
+    const res = await this.pool.query(
+      `${TASK_SELECT} WHERE t.validation_status = ANY($1::text[]) ORDER BY t.completed_at ASC`,
+      [statuses],
+    );
+    return res.rows.map(mapTask);
+  }
+
+  /** El jefe valida una tarea cerrada (24 h). Deja `validation_status = VALIDATED` y verifica. */
+  async validateTask(id: string, actor: string): Promise<PreventiveTaskRecord> {
+    const res = await this.pool.query(
+      `UPDATE preventive_tasks
+          SET validation_status = 'VALIDATED', verified_by = $2, verified_at = NOW(), updated_at = NOW()
+        WHERE id = $1 AND validation_status IN ('PENDING_VERIFICATION', 'PENDING_VERIFICATION_EXPIRED')
+        RETURNING id`,
+      [id, actor],
+    );
+    if (res.rows.length === 0) {
+      throw new MaintenanceError(
+        "VALIDATION_NOT_PENDING",
+        "La tarea no está pendiente de validación (¿ya validada o sin cerrar?).",
+      );
+    }
+    const task = await this.findTask(id);
+    if (!task) throw new MaintenanceError("TASK_NOT_FOUND", "La tarea preventiva no existe.");
+    return task;
+  }
+
+  /**
+   * Marca `PENDING_VERIFICATION_EXPIRED` las tareas cerradas hace más de `hours` (24) sin validar.
+   * Devuelve las tareas vencidas para que el worker escale al Administrador (RNF-M-21).
+   */
+  async expireValidations(hours = 24, now: Date = new Date()): Promise<PreventiveTaskRecord[]> {
+    const res = await this.pool.query(
+      `UPDATE preventive_tasks
+          SET validation_status = 'PENDING_VERIFICATION_EXPIRED', updated_at = NOW()
+        WHERE validation_status = 'PENDING_VERIFICATION'
+          AND completed_at IS NOT NULL
+          AND completed_at <= $1::timestamptz - ($2 || ' hours')::interval
+        RETURNING id`,
+      [now, hours],
+    );
+    const expired: PreventiveTaskRecord[] = [];
+    for (const row of res.rows) {
+      const task = await this.findTask(row.id as string);
+      if (task) expired.push(task);
+    }
+    return expired;
   }
 
   /** Cierra una tarea como hecha y **programa la siguiente** según la periodicidad (D-54). */
