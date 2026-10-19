@@ -680,13 +680,29 @@ export class HousekeepingRepository {
         [input.roomId, input.inspectedAt ?? null, input.result, operationalStatus],
       );
 
-      if (input.result === "REJECTED" && input.assignmentId) {
-        await client.query(
-          `UPDATE housekeeping_assignments
-              SET status = 'PENDING', completed_at = NULL
-            WHERE id = $1 AND status <> 'PENDING'`,
-          [input.assignmentId],
-        );
+      if (input.result === "REJECTED") {
+        // CU-V-22: rechazar la limpieza devuelve el trabajo a la camarera. Si el llamante no trae la
+        // asignación (la UI de inspección no la conoce), se resuelve la última asignación de la
+        // habitación: el retrabajo no puede perderse por no pasar un id opcional.
+        const assignmentId =
+          input.assignmentId ??
+          (
+            await client.query(
+              `SELECT id FROM housekeeping_assignments
+                WHERE room_id = $1
+                ORDER BY assigned_at DESC
+                LIMIT 1`,
+              [input.roomId],
+            )
+          ).rows[0]?.id as string | undefined;
+        if (assignmentId) {
+          await client.query(
+            `UPDATE housekeeping_assignments
+                SET status = 'PENDING', completed_at = NULL
+              WHERE id = $1 AND status <> 'PENDING'`,
+            [assignmentId],
+          );
+        }
       }
 
       await client.query("COMMIT");

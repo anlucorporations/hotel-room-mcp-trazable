@@ -82,6 +82,7 @@ function fakeTxClient(handlers: {
   supplyItems?: QueryResultRow[];
   updatedSupply?: QueryResultRow;
   roomLock?: QueryResultRow | null;
+  latestAssignmentId?: string | null;
 }): PoolClient & { query: Mock; release: Mock } {
   const query = vi.fn(async (sql: string, values?: unknown[]) => {
     const s = String(sql).replace(/\s+/g, " ").trim();
@@ -98,6 +99,10 @@ function fakeTxClient(handlers: {
     if (s.startsWith("SELECT id FROM rooms WHERE id = $1 AND archived_at IS NULL")) {
       const room = handlers.roomLock;
       return { rows: room ? [room] : [], rowCount: room ? 1 : 0 };
+    }
+    if (s.startsWith("SELECT id FROM housekeeping_assignments")) {
+      const id = handlers.latestAssignmentId === undefined ? "asg-last" : handlers.latestAssignmentId;
+      return { rows: id === null ? [] : [{ id }], rowCount: id === null ? 0 : 1 };
     }
     if (s.startsWith("UPDATE housekeeping_assignments")) {
       return {
@@ -411,6 +416,28 @@ describe("HousekeepingRepository (F3 · D-48…D-51, D-62, D-64)", () => {
       expect(String(assignmentUpdate?.[0])).toContain("status = 'PENDING'");
       expect(assignmentUpdate?.[1]).toEqual(["asg-1"]);
       expect(calls.map(([sql]) => String(sql)).at(-1)).toBe("COMMIT");
+    });
+
+    it("REJECTED sin assignmentId devuelve a PENDING la última asignación de la habitación (CU-V-22)", async () => {
+      const client = fakeTxClient({ roomLock: { id: "room-1" }, latestAssignmentId: "asg-last" });
+      mockPool.connect.mockResolvedValueOnce(client);
+
+      await repository.applyInspectionToRoom({ roomId: "room-1", result: "REJECTED" });
+
+      const assignmentUpdate = client.query.mock.calls.find(([sql]) =>
+        String(sql).startsWith("UPDATE housekeeping_assignments"),
+      );
+      expect(assignmentUpdate).toBeDefined();
+      expect(assignmentUpdate?.[1]).toEqual(["asg-last"]);
+    });
+
+    it("un REJECTED sin asignaciones no rompe la transacción", async () => {
+      const client = fakeTxClient({ roomLock: { id: "room-1" }, latestAssignmentId: null });
+      mockPool.connect.mockResolvedValueOnce(client);
+      await expect(
+        repository.applyInspectionToRoom({ roomId: "room-1", result: "REJECTED" }),
+      ).resolves.toBeUndefined();
+      expect(client.query.mock.calls.map(([sql]) => String(sql)).at(-1)).toBe("COMMIT");
     });
 
     it("no aplica la inspección si la habitación no existe", async () => {
