@@ -3749,3 +3749,16 @@ wallet inyectada se mantiene como prueba manual de ventana (el resto de suites y
 | Validación | login PIN 200; sin sesión `/terminal` sirve solo el login y la API responde 401; cierre de tarea → `PENDING_VERIFICATION`; incidencia `IN_PROGRESS→RESOLVED`; reporte de avería 201 con `reported_by_role=MAINTENANCE_TECH`; 5 intentos fallidos → **423** con 900 s de bloqueo |
 | Hallazgo corregido | el reporte desde recepción escribía `RECEPTION_ROLE` en `reported_by_role`, que el CHECK no admite; ahora se mapea a `RECEPTION` |
 | Evidencia | `RepoTecnico/evidencias/f5-terminal-pin-2026-10-19.json` |
+
+
+---
+
+## 93. Releases v78 — F8 desplegado: suministros con recordatorio y SLA de validación (2026-10-19)
+
+| Elemento | Valor |
+|---|---|
+| web | **`web:v78`** → **`hotel-mcp-web-00086-m62`** |
+| worker | **`worker:v78`** → **`hotel-mcp-worker-00027-qfn`** (planificadores de suministros y SLA) |
+| Suministros | 4 alertas abiertas con `last_reminded_at` persistido; umbral por artículo (cerrar/abrir alerta conciliada) |
+| SLA | Tarea a 25 h → `PENDING_VERIFICATION_EXPIRED` y cola del jefe con `sla-countdown`; validación → `VALIDATED` |
+| Evidencia | `RepoTecnico/evidencias/f8-suministros-sla-2026-10-19.json` |

@@ -1,0 +1,27 @@
+{
+  "id": "f8-suministros-sla-2026-10-19",
+  "titulo": "F8 cerrada — suministros con recordatorio diario y SLA de validación (24 h) desplegados",
+  "fechaUtc": "2026-10-19T22:25:00Z",
+  "despliegue": {
+    "web": "web:v78 → hotel-mcp-web-00086-m62 (100%)",
+    "worker": "worker:v78 → hotel-mcp-worker-00027-qfn (planificadores activos)",
+    "esquema": "sin cambios (supply_alerts y preventive_tasks.validation_status ya existían)"
+  },
+  "validacionE2E": {
+    "recordatorioDiario": "El worker al arrancar concilió el stock y abrió/recordó las alertas: 4 supply_alerts OPEN con last_reminded_at=2026-10-19T22:17:56Z (el recordatorio es persistente en BD, no en memoria)",
+    "sla24h": "La tarea cerrada hace 25 h pasó de PENDING_VERIFICATION a PENDING_VERIFICATION_EXPIRED en el arranque del worker (escalado al Administrador)",
+    "colaValidacion": "GET /api/mantenimiento/validaciones → 2 tareas, la vencida con expired=true y remainingMs=0",
+    "validacion": "PATCH /api/mantenimiento/validaciones → 200, validation_status=VALIDATED",
+    "alertasUI": "GET /api/housekeeping/supplies → 4 alertas abiertas con lastRemindedAt; la lencería muestra alerta, reposición sugerida y último recordatorio",
+    "umbralConfigurable": "PATCH /api/admin/housekeeping/supplies {thresholdQty:0} → alertAction=CLOSED; restaurar a 5 → alertAction=OPENED (umbral configurable por artículo, D-C33)"
+  },
+  "pruebas": {
+    "dominio": "supplies 4 pruebas + validation-sla 4 pruebas",
+    "worker": "supply-reminder-scheduler 3 + sla-scheduler 3 (reloj y repositorio inyectados; un fallo no tumba al worker)",
+    "web": "guardián F8 4 pruebas e i18n ES/EN/RU en paridad; typecheck limpio"
+  },
+  "deudaDeclarada": [
+    "El envío real del recordatorio/escalado por correo puede conectarse a la cola única; en esta ventana se registra en el log y queda marcado en BD.",
+    "El umbral se configura por API/administración; la pantalla de edición dedicada llega con F9."
+  ]
+}

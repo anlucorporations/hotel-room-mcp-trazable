@@ -447,12 +447,12 @@ flowchart LR
 
 | # | Tarea | Archivos afectados | Verificación |
 |---|---|---|---|
-| T8.1 | Motor de suministros y alertas | `packages/shared/src/db/repositories/supply-alerts.repository.ts` (nuevo) + `.test.ts`; extender `packages/shared/src/db/repositories/housekeeping.repository.ts` | Vitest |
-| T8.2 | Planificador de recordatorio diario y cierre automático | `apps/worker/src/supply-reminder-scheduler.ts` (nuevo) + `.test.ts`; `apps/worker/src/run-worker.ts` | Test con reloj inyectado |
-| T8.3 | Motor de SLA de validación (24 h, expiración y escalado) | `apps/worker/src/sla-scheduler.ts` (nuevo) + `.test.ts`; `packages/shared/src/domain/validation-sla.ts` (nuevo) | Vitest |
-| T8.4 | UI de suministros y alertas | `apps/web/src/app/ama-de-llaves/suministros/page.tsx`, `apps/web/src/app/api/housekeeping/supplies/route.ts` (extender) | E2E |
-| T8.5 | UI de validación y de tareas vencidas escaladas | `apps/web/src/app/mantenimiento/incidencias/page.tsx`, `apps/web/src/app/api/mantenimiento/validaciones/route.ts` (nuevo), `apps/web/src/app/admin/...` (vista de vencidas) | E2E |
-| T8.6 | Umbral configurable y textos | `packages/shared/src/domain/supplies.ts`, `apps/web/messages/{es,en,ru}.json` | Vitest + i18n |
+| ✅ T8.1 | **2026-10-19**: dominio `supplies` + `SupplyAlertsRepository` (conciliación stock/alerta, cierre automático) y hooks en reposición/consumo | Motor de suministros y alertas | `packages/shared/src/db/repositories/supply-alerts.repository.ts` (nuevo) + `.test.ts`; extender `packages/shared/src/db/repositories/housekeeping.repository.ts` | Vitest |
+| ✅ T8.2 | **2026-10-19**: `supply-reminder-scheduler` con recordatorio diario persistente (`last_reminded_at`) + conciliación periódica, cableado en el worker | Planificador de recordatorio diario y cierre automático | `apps/worker/src/supply-reminder-scheduler.ts` (nuevo) + `.test.ts`; `apps/worker/src/run-worker.ts` | Test con reloj inyectado |
+| ✅ T8.3 | **2026-10-19**: dominio `validation-sla` + `sla-scheduler`; `expireValidations` marca `PENDING_VERIFICATION_EXPIRED` a las 24 h y escala al Administrador | Motor de SLA de validación (24 h, expiración y escalado) | `apps/worker/src/sla-scheduler.ts` (nuevo) + `.test.ts`; `packages/shared/src/domain/validation-sla.ts` (nuevo) | Vitest |
+| ✅ T8.4 | **2026-10-19**: lencería con alertas abiertas, recordatorio y reposición sugerida; umbral configurable y alerta conciliada | UI de suministros y alertas | `apps/web/src/app/ama-de-llaves/suministros/page.tsx`, `apps/web/src/app/api/housekeeping/supplies/route.ts` (extender) | E2E |
+| ✅ T8.5 | **2026-10-19**: página `/mantenimiento/validaciones` con testids `pending-verification` y `sla-countdown`; validación del jefe vía API | UI de validación y de tareas vencidas escaladas | `apps/web/src/app/mantenimiento/incidencias/page.tsx`, `apps/web/src/app/api/mantenimiento/validaciones/route.ts` (nuevo), `apps/web/src/app/admin/...` (vista de vencidas) | E2E |
+| ✅ T8.6 | **2026-10-19**: umbral por artículo (PATCH admin) y textos ES/EN/RU; paridad i18n en verde | Umbral configurable y textos | `packages/shared/src/domain/supplies.ts`, `apps/web/messages/{es,en,ru}.json` | Vitest + i18n |
 
 **Requisitos y casos de uso cubiertos:** RF-K-09; RF-S-06; RNF-M-21; D-C33, D-C38. CU-V-25, CU-V-30, CU-V-09, CU-V-39.
 

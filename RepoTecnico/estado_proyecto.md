@@ -5854,3 +5854,19 @@ el jefe valida en 24 h y reporte de averías.
 | Hallazgo | Corregido el vocabulario de `reported_by_role` al reportar desde recepción (`RECEPTION`, no `RECEPTION_ROLE`) |
 
 Evidencia: [`evidencias/f5-terminal-pin-2026-10-19.json`](./evidencias/f5-terminal-pin-2026-10-19.json).
+
+
+---
+
+## 49. F8 CERRADA — Suministros y SLA de validación (2026-10-19)
+
+| Pieza | Contenido |
+|---|---|
+| Suministros | `domain/supplies` + `SupplyAlertsRepository`: alerta en/por debajo del umbral, cierre automático al reponer, **recordatorio diario persistente** y umbral configurable por artículo (D-C33) |
+| Worker | `supply-reminder-scheduler` (conciliación + recordatorio) y `sla-scheduler` (vencimiento 24 h y escalado) |
+| SLA validación | `domain/validation-sla` + `listValidationQueue`/`validateTask`/`expireValidations`; la tarea vencida no bloquea la habitación pero no cuenta como completada (RNF-M-21) |
+| UI/API | Cola del jefe `/mantenimiento/validaciones` (`sla-countdown`, `pending-verification`), lencería con reposición sugerida y último recordatorio; umbral por API de administración |
+| Producción | `web:v78` (`00086-m62`) y `worker:v78` (`00027-qfn`); E2E: 4 alertas recordadas, tarea vencida escalada, validación `VALIDATED`, umbral CLOSED↔OPENED |
+| Pruebas | Dominios 8, planificadores 6, guardián F8 4; i18n paridad; typecheck limpio |
+
+Evidencia: [`evidencias/f8-suministros-sla-2026-10-19.json`](./evidencias/f8-suministros-sla-2026-10-19.json).
