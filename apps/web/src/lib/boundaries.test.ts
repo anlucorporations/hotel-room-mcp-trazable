@@ -21,6 +21,10 @@ const SRC = resolve(here, "..");
 
 /** Módulos de servidor que SÍ pueden usar el barril (todos declaran `server-only`). */
 const SERVER_ONLY_ALLOWLIST = new Set([
+  "lib/chain-admin.ts",
+  "lib/terminal-auth.ts",
+  "lib/terminal-session.ts",
+  "lib/terminal-session-server.ts",
   "lib/guard.ts",
   "lib/home-content.ts",
   "lib/low-stock.ts",

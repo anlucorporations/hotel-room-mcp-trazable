@@ -15,7 +15,7 @@ import { INITIAL_SCHEMA_SQL, resetDatabase, runMigrations } from "./migrator";
  *   2. **Idempotencia por construcción**: todo `CREATE TABLE`/`CREATE INDEX` del esquema es
  *      `IF NOT EXISTS` y la semilla de áreas usa `ON CONFLICT DO NOTHING`; sin esto, la segunda
  *      pasada que exige el gate de F1 fallaría.
- *   3. **El bloque vNext está completo**: 12 tablas, 20 columnas de extensión (la 20.ª la añade F5), 3 CHECK redefinidas,
+ *   3. **El bloque vNext está completo**: 12 tablas, 21 columnas de extensión (las 20.ª y 21.ª las añade F5), 3 CHECK redefinidas,
  *      semilla de 10 áreas (4 críticas) y el trigger append-only.
  *   4. **Sincronía triple (P8)**: el bloque vNext es el MISMO texto en los tres artefactos
  *      (`db/migrator.ts`, `RepoTecnico/base_datos.sql` y el aprobado
@@ -77,7 +77,7 @@ describe("runMigrations · esquema vNext", () => {
     expect(INITIAL_SCHEMA_SQL).toContain("ON CONFLICT (code) DO NOTHING");
   });
 
-  it("incluye las 12 tablas, las 20 columnas (F5 añade assigned_to), las 3 CHECK, la semilla y el trigger", () => {
+  it("incluye las 12 tablas, las 21 columnas (F5 añade assigned_to y updated_at), las 3 CHECK, la semilla y el trigger", () => {
     // El esquema completo trae además las migraciones incrementales anteriores (21 columnas más):
     // lo específico del ciclo F1 se comprueba sobre el bloque vNext.
     const bloque = vnextBlock("packages/shared/src/db/migrator.ts");
@@ -100,7 +100,7 @@ describe("runMigrations · esquema vNext", () => {
     }
 
     const columnas = [...bloque.matchAll(/ADD COLUMN IF NOT EXISTS [a-z_]+/g)];
-    expect(columnas).toHaveLength(20);
+    expect(columnas).toHaveLength(21);
 
     for (const check of [
       "maintenance_incidents_reported_by_role_check",

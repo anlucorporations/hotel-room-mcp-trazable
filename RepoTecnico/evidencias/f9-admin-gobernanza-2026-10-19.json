@@ -1,0 +1,32 @@
+{
+  "id": "f9-admin-gobernanza-2026-10-19",
+  "titulo": "F9 cerrada — administración, gobernanza y soporte desplegados y validados",
+  "fechaUtc": "2026-10-19T23:20:00Z",
+  "despliegue": {
+    "web": "web:v80 → hotel-mcp-web-00088-gcw (100%)",
+    "worker": "worker:v78 sin cambios (F9 no necesita migración)",
+    "esquema": "sin cambios"
+  },
+  "validacionE2E": {
+    "operariosTerminal": "Alta 201 con PIN de un solo uso (sin pinHash en la respuesta), rotación 200 con PIN nuevo, baja lógica 200 (active=false), reactivación 200, listado 200 (3 operarios)",
+    "flags": "GET 200 (3 flags); flag no obligatorio con TOTP 200 (true→false→true); flag obligatorio sin firma → 409 CONFIG_SIGNATURE_REQUIRED; prepare 200 → firma EIP-712 con la wallet owner → confirm 200 SIGNED → PATCH con signatureId 200 (valor false); restauración a true 200",
+    "walletsOrdenOnChain": "grantRole HEAD_KEEPER a wallet nueva (tx 0xdde5c6fa…ec9) → POST asignar 201; DELETE con rol aún activo → 409 ROLE_STILL_ACTIVE; revokeRole (tx 0x9a47ed9d…c6ed) → DELETE 200 (isActive=false). Ninguna baja deja rol activo en cadena (RNF-M-15)",
+    "walletsNegativo": "POST con txHash inexistente → 409 TX_NOT_MINED; GET 200 con 2 wallets y respaldos leídos de la cadena",
+    "colaAnclajes": "GET /api/admin/system/operations → 200 con workerAvailable=false (worker degradado) y anchorQueue=8 firmas visibles; la cola no se oculta cuando el worker falla (T9.5)",
+    "informeCU_V_26": "GET /api/housekeeping/reports → 200 con 3 filas de productividad; página /ama-de-llaves/informes con data-testid productivity-report"
+  },
+  "pruebas": {
+    "web": "API F9 6 pruebas + guardián F9 3 + informe CU-V-26 2; i18n ES/EN/RU en paridad; typecheck limpio",
+    "shared": "dominio flags 3 pruebas",
+    "contrato": "forge test 202 pruebas / 20 suites / 0 fallos (incluye setBackupForRole, CONFIG solo admin y respaldo)",
+    "suitesCompletas": "web, shared, worker, mcp y monitor en verde (ver estado_proyecto §50)"
+  },
+  "hallazgosCorregidos": [
+    "La cola de anclajes devolvía 503 si el worker estaba degradado (health 503): ahora devuelve la cola con workerAvailable=false.",
+    "El alta de wallet con una dirección ya asignada choca con el UNIQUE de wallet_address (correcto por diseño): la ventana usa una wallet nueva con rol concedido on-chain."
+  ],
+  "deudaDeclarada": [
+    "El envío real de recordatorios/escalados por correo puede conectarse a la cola única; en la ventana queda en log + BD.",
+    "El E2E Playwright con wallet inyectada sigue documentado como prueba manual (A5)."
+  ]
+}

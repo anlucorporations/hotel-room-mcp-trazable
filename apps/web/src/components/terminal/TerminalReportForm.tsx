@@ -53,7 +53,6 @@ export function TerminalReportForm() {
 
   return (
     <section className="mx-auto flex w-full max-w-md flex-col gap-3" data-testid="terminal-report">
-      <h1 className="font-display text-h3 font-semibold text-ink">{t("reportTitle")}</h1>
       <p className="text-small text-ink-soft">{t("reportHint")}</p>
       <label className="flex flex-col gap-1 text-small text-ink">
         {t("reportRoom")}

@@ -5870,3 +5870,28 @@ Evidencia: [`evidencias/f5-terminal-pin-2026-10-19.json`](./evidencias/f5-termin
 | Pruebas | Dominios 8, planificadores 6, guardián F8 4; i18n paridad; typecheck limpio |
 
 Evidencia: [`evidencias/f8-suministros-sla-2026-10-19.json`](./evidencias/f8-suministros-sla-2026-10-19.json).
+
+
+---
+
+## 50. F9 CERRADA y cierre de A1/A2 — los 10 ciclos de la Fase 3 (2026-10-19)
+
+**F9 · Administración, gobernanza y soporte**
+
+| Pieza | Contenido |
+|---|---|
+| Wallets y roles | API de wallets con **on-chain primero** (tx minada + `hasRole` comprobado antes de marcar BD) y baja solo cuando el rol ya no está activo; respaldos `OWNER_BACKUP` leídos de la cadena |
+| Flags | Dominio `flags` (obligatorios) y API con TOTP: desactivar un flag obligatorio exige firma `CONFIG` (`prepare → sign → confirm → apply`); sin firma → 409 |
+| Operarios de terminal | Alta con PIN de un solo uso, rotación, baja lógica y desbloqueo desde Sistemas → Usuarios |
+| Cola de anclajes | `anchor-queue` visible con 8 firmas incluso con el worker degradado |
+| Soporte | Exportación firmada (A10), backups/PITR y restore drill (A9) y runbook §9.5 (A11) ya cerrados |
+| Producción | `web:v80` → `hotel-mcp-web-00088-gcw`; E2E: grant→assign→409→revoke→baja 200, flags con firma CONFIG, operarios y cola de anclajes |
+
+**Cierre de la aceptación global**
+
+- **A1 · los 10 ciclos cerrados**: F1, F2, F3, F4, F5, F6, F7, F8, F9 y F10, con sus gates de pruebas, typecheck y despliegue verificado.
+- **A2 · sin huérfanos**: matriz de trazabilidad en [`propuesta_vNext/matriz_trazabilidad.md`](./propuesta_vNext/matriz_trazabilidad.md): **51/51 requisitos** y **45/45 CU-V** con ciclo asignado (se cerraron los huecos RF-K-10 y CU-V-26…29 con informes F6 y terminal F5).
+- **A5** sigue documentado como **E2E manual con wallet inyectada** en escritorio/móvil (los flujos con datos se validaron contra producción y los specs de puerta están automatizados).
+- Estado del resto de criterios: A3, A4, A6–A14 cerrados con evidencia (`aceptacion_fase3.md`).
+
+Evidencia: [`evidencias/f9-admin-gobernanza-2026-10-19.json`](./evidencias/f9-admin-gobernanza-2026-10-19.json).

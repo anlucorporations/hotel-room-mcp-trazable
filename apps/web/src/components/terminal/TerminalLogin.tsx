@@ -70,7 +70,7 @@ export function ChangePinForm({ onDone }: { readonly onDone: () => void }) {
 
   return (
     <section className="mx-auto flex w-full max-w-sm flex-col gap-2 rounded-brand border border-line px-4 py-5" data-testid="terminal-change-pin">
-      <h1 className="text-h3 font-semibold text-ink">{t("changePinTitle")}</h1>
+      <h2 className="text-h3 font-semibold text-ink">{t("changePinTitle")}</h2>
       <p className="text-small text-ink-soft">{t("changePinHint")}</p>
       <input
         className="min-h-touch rounded-brand-sm border border-line-strong bg-shell px-3 text-small tracking-[0.3em] text-ink"

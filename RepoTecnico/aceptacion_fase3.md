@@ -5,8 +5,8 @@
 
 | # | Criterio | Estado | Evidencia |
 |---|---|---|---|
-| A1 | 10 ciclos cerrados | **BLOQUEADO** (7/10: faltan F5, F8, F9) | plan vNext |
-| A2 | 51 requisitos y 45 CU-V sin huérfanos | **BLOQUEADO** (F5/F8/F9 sin ciclo) | plan vNext §4.5/§4.8/§4.9 |
+| A1 | 10 ciclos cerrados | **CUMPLE** — F1–F10 con gates y despliegue verificado | `f5-…`, `f8-…`, `f9-…` |
+| A2 | 51 requisitos y 45 CU-V sin huérfanos | **CUMPLE** — 51/51 y 45/45 | `propuesta_vNext/matriz_trazabilidad.md` |
 | A3 | `forge test` completo | **CUMPLE** — 202 pruebas, 20 suites, invariantes 256 runs | salida forge |
 | A4 | Workspace verde (typecheck, lint, test, build) | **CUMPLE** | estado_proyecto §48 |
 | A5 | E2E con wallet real escritorio/móvil | **BLOQUEADO (manual)** | evidencias F4/F6/F7 |
@@ -22,7 +22,6 @@
 
 ## Qué falta para cerrar la Fase 3 completa
 
-1. **F5** (terminal PIN), **F8** (suministros/SLA) y **F9** (administración/gobernanza): desbloquean A1 y A2.
-2. **A5**: E2E Playwright con wallet inyectada en escritorio y móvil (hoy validado manualmente en producción).
-3. **A9**: permiso IAM `cloudsql.backups.restore` para repetir el drill de restauración a una instancia aislada (el drill lógico ya está medido).
-4. **A12**: si se quiere eliminar el matiz, añadir diff automatizado para `diccionario_datos.md` y `diagrama_er.md`.
+1. **A5**: E2E Playwright con wallet inyectada en escritorio y móvil (hoy validado manualmente en producción; único criterio no automatizado).
+2. **A9**: permiso IAM `cloudsql.backups.restore` para repetir el drill de restauración a una instancia aislada (el drill lógico ya está medido y documentado).
+3. **A12**: si se quiere eliminar el matiz, añadir diff automatizado para `diccionario_datos.md` y `diagrama_er.md`.

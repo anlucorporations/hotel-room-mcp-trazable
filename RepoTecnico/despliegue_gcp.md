@@ -3762,3 +3762,18 @@ wallet inyectada se mantiene como prueba manual de ventana (el resto de suites y
 | Suministros | 4 alertas abiertas con `last_reminded_at` persistido; umbral por artículo (cerrar/abrir alerta conciliada) |
 | SLA | Tarea a 25 h → `PENDING_VERIFICATION_EXPIRED` y cola del jefe con `sla-countdown`; validación → `VALIDATED` |
 | Evidencia | `RepoTecnico/evidencias/f8-suministros-sla-2026-10-19.json` |
+
+
+---
+
+## 94. Releases v79/v80 — F9 desplegado: administración, gobernanza y soporte (2026-10-19)
+
+| Elemento | Valor |
+|---|---|
+| web | `web:v79` → `00087-zbk` (F9) y **`web:v80`** → **`hotel-mcp-web-00088-gcw`** (informe CU-V-26 y cola resiliente) |
+| Wallets | Grant on-chain `0xdde5c6fa…` → asignación 201; baja con rol activo → **409**; revoke `0x9a47ed9d…` → baja 200 (orden on-chain primero) |
+| Flags | TOTP + firma `CONFIG` (prepare → sign → confirm `SIGNED` → apply); flag obligatorio sin firma → 409 |
+| Operarios | Alta con PIN de un solo uso, rotación, baja y reactivación validadas |
+| Anclajes | 8 firmas visibles en la cola con el worker degradado (`workerAvailable=false`) |
+| Informe | `/ama-de-llaves/informes` con 3 filas de productividad (RF-K-10/CU-V-26) |
+| Evidencia | `RepoTecnico/evidencias/f9-admin-gobernanza-2026-10-19.json` |

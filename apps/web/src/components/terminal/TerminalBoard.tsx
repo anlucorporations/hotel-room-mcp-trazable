@@ -123,7 +123,7 @@ export function TerminalBoard() {
     <div className="flex flex-col gap-4" data-testid="terminal-board">
       <header className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
-          <h1 className="font-display text-h3 font-semibold text-ink">{t("boardTitle")}</h1>
+          <h2 className="font-display text-h3 font-semibold text-ink">{t("boardTitle")}</h2>
           <p className="text-small text-ink-soft">{operator?.fullName ?? ""} · {t(`role.${operator?.role ?? "MAINTENANCE_TECH"}`)}</p>
         </div>
         <a href="/terminal/reportar" className="min-h-touch rounded-pill bg-azure px-4 text-small font-semibold text-shell">
