@@ -313,12 +313,12 @@ flowchart LR
 
 | # | Tarea | Archivos afectados | Verificación |
 |---|---|---|---|
-| T5.1 | Rutas del terminal (landing por rol + tareas + reporte) | `apps/web/src/app/terminal/page.tsx`, `.../terminal/tareas/page.tsx`, `.../terminal/reportar/page.tsx` (nuevos) | Playwright móvil |
-| T5.2 | Componentes táctiles | `apps/web/src/components/terminal/PinPad.tsx`, `TaskList.tsx`, `TaskProgressForm.tsx`, `OfflineNotice.tsx` (nuevos) | `data-testid` + a11y básica |
-| T5.3 | Política de PIN (4–6 dígitos, bcrypt coste ≥ 12, 5 intentos, 90 días, un solo uso inicial, timeout 5 min) | `packages/shared/src/auth/terminal-pin.ts` (nuevo) + `.test.ts` | Vitest de política |
-| T5.4 | Endpoints de terminal con sesión de operario (no wallet) | `apps/web/src/app/api/terminal/auth/route.ts`, `.../terminal/tasks/route.ts`, `.../terminal/incidents/route.ts` (nuevos) | Tests de API |
-| T5.5 | Permisos del técnico (solo lo asignado) y bloqueo optimista `updated_at` | `packages/shared/src/db/repositories/maintenance.repository.ts`, `apps/web/src/app/api/terminal/tasks/route.ts` | Test de `OptimisticLockConflict` |
-| T5.6 | Textos ES/EN/RU sin jerga técnica | `apps/web/messages/{es,en,ru}.json` | Guardián de i18n |
+| ✅ T5.1 | **2026-10-19**: rutas `/terminal`, `/terminal/reportar` y `/terminal/cambiar-pin` con puerta de sesión RSC; login por PIN y tablero del técnico | Rutas del terminal (landing por rol + tareas + reporte) | `apps/web/src/app/terminal/page.tsx`, `.../terminal/tareas/page.tsx`, `.../terminal/reportar/page.tsx` (nuevos) | Playwright móvil |
+| ✅ T5.2 | **2026-10-19**: `PinPad` (teclado táctil), `TerminalBoard`, `TerminalReportForm` y `OfflineNotice` con los `data-testid` del plan | Componentes táctiles | `apps/web/src/components/terminal/PinPad.tsx`, `TaskList.tsx`, `TaskProgressForm.tsx`, `OfflineNotice.tsx` (nuevos) | `data-testid` + a11y básica |
+| ✅ T5.3 | **2026-10-19**: política de PIN en `auth/terminal-pin.ts` (4–6 dígitos, bcrypt ≥12, 5 intentos/15 min, 90 días, inactividad 5 min, tope 8 h) con 5 pruebas | Política de PIN (4–6 dígitos, bcrypt coste ≥ 12, 5 intentos, 90 días, un solo uso inicial, timeout 5 min) | `packages/shared/src/auth/terminal-pin.ts` (nuevo) + `.test.ts` | Vitest de política |
+| ✅ T5.4 | **2026-10-19**: APIs `/api/terminal/{auth,auth/change-pin,tasks,incidents}` con sesión propia (JWT corto) y 6 pruebas | Endpoints de terminal con sesión de operario (no wallet) | `apps/web/src/app/api/terminal/auth/route.ts`, `.../terminal/tasks/route.ts`, `.../terminal/incidents/route.ts` (nuevos) | Tests de API |
+| ✅ T5.5 | **2026-10-19**: solo lo asignado (incidencias `assigned_to` + tareas preventivas `assigned_to`) y bloqueo optimista por `updated_at` (`OPTIMISTIC_LOCK_CONFLICT`) | Permisos del técnico (solo lo asignado) y bloqueo optimista `updated_at` | `packages/shared/src/db/repositories/maintenance.repository.ts`, `apps/web/src/app/api/terminal/tasks/route.ts` | Test de `OptimisticLockConflict` |
+| ✅ T5.6 | **2026-10-19**: textos ES/EN/RU del terminal sin jerga técnica; paridad i18n y guardián en verde | Textos ES/EN/RU sin jerga técnica | `apps/web/messages/{es,en,ru}.json` | Guardián de i18n |
 
 **Requisitos y casos de uso cubiertos:** RF-M-08 (ejecución), RF-M-09, RF-S-06; RNF-M-09, RNF-M-17, RNF-M-18, RNF-M-20; D-C2, D-C10, D-C17, D-C29, D-C30, D-C35, D-C36. CU-V-08 (ejecución), CU-V-12…CU-V-15.
 

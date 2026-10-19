@@ -1,0 +1,35 @@
+{
+  "id": "f5-terminal-pin-2026-10-19",
+  "titulo": "F5 cerrada — Terminal de mantenimiento con PIN desplegado y validado en producción",
+  "fechaUtc": "2026-10-19T21:45:00Z",
+  "despliegue": {
+    "web": "web:v77 → hotel-mcp-web-00085-742 (100%)",
+    "worker": "worker:v77 → hotel-mcp-worker-00026-5m2 (aplica migración assigned_to/updated_at)",
+    "esquema": "preventive_tasks.assigned_to y updated_at (21 columnas de extensión)"
+  },
+  "configuracion": [
+    "terminal_operators: tecnico1 y tecnico2 (MAINTENANCE_TECH), PIN bcrypt coste 12, must_change_pin=false, pin_changed_at=NOW()",
+    "Tarea preventiva F5-E2E 'Revisión de extintores' asignada a tecnico1",
+    "Incidencia asignada a tecnico1 para validar avance/resolución"
+  ],
+  "validacionE2E": {
+    "sinSesion": "GET /terminal sirve solo el login por PIN (terminal-pin) sin filtrar el tablero; GET /api/terminal/tasks → 401",
+    "loginPin": "POST /api/terminal/auth con tecnico1/PIN → 200, cookie HttpOnly, mustChangePin=false",
+    "tableroSoloAsignado": "GET /api/terminal/tasks → 1 incidencia asignada, 0 tareas (ya cerrada), 50 habitaciones para el reporte; sin importes ni huéspedes (D-C35)",
+    "cierreTarea": "PATCH kind=task action=close → 200; en BD: status=DONE, validation_status=PENDING_VERIFICATION, completed_by='Técnico Uno' (CU-V-14)",
+    "avanceIncidencia": "PATCH kind=incident action=start → IN_PROGRESS; action=resolve → RESOLVED, resolved_by='Técnico Uno'",
+    "reporteAveria": "POST /api/terminal/incidents → 201 OPEN con reported_by_role=MAINTENANCE_TECH (D-C36)",
+    "bloqueo": "5 intentos fallidos con tecnico2 → 423 TERMINAL_LOCKED retryAfterSeconds=900; el PIN correcto mientras está bloqueado también responde 423",
+    "resetIntentos": "4 fallos y después PIN correcto → 200 (el contador se limpia); operario desbloqueado al final de la ventana"
+  },
+  "hallazgoCorregido": "El reporte de incidencias desde recepción escribía 'RECEPTION_ROLE' en maintenance_incidents.reported_by_role, valor que el CHECK del esquema no admite (vocabulario: 'RECEPTION'). Se mapea el rol de sesión al vocabulario de BD al persistir; detectado al sembrar datos de la ventana.",
+  "pruebas": {
+    "shared": "política de PIN 5 pruebas; migrador (sincronía triple y 21 columnas) y repositorio de mantenimiento en verde",
+    "web": "API del terminal 6 pruebas (login 401/423/200, tablero sin importes, cierre PENDING_VERIFICATION, 403 no asignada), guardián de estructura 4, i18n ES/EN/RU en paridad",
+    "typecheck": "web limpio"
+  },
+  "deudaDeclarada": [
+    "No hay alta de operarios de terminal en la UI todavía: llega con F9 (T9.4); en esta ventana se sembraron por SQL.",
+    "La subida real de fotos de evidencia depende de la nube de evidencias (F9)."
+  ]
+}

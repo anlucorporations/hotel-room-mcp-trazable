@@ -5834,3 +5834,23 @@ Evidencia: [`evidencias/f6-ama-de-llaves-2026-10-19.json`](./evidencias/f6-ama-d
 | Despliegue | web `v74` → `hotel-mcp-web-00080-7d4`; MCP `v74` → `hotel-mcp-mcp-00022-g94`; salud READY/ok |
 
 Evidencia: [`evidencias/f7-f10-cierre-fase3-2026-10-19.json`](./evidencias/f7-f10-cierre-fase3-2026-10-19.json).
+
+
+---
+
+## 48. F5 CERRADA — Terminal de mantenimiento con PIN (2026-10-19)
+
+**Ruta del técnico sin wallet**: PIN en terminal fijo, tablero de lo asignado, cierre con evidencia que
+el jefe valida en 24 h y reporte de averías.
+
+| Pieza | Contenido |
+|---|---|
+| Política | `auth/terminal-pin.ts`: 4–6 dígitos sin repetidos, bcrypt ≥12, bloqueo atómico a los 5 intentos (15 min), caducidad 90 días, inactividad 5 min y tope absoluto 8 h |
+| Sesión | JWT corto en cookie HttpOnly, independiente del back-office, renovado por petición y limitado por `startedAt`; el layout RSC solo sirve el login sin sesión |
+| APIs | `/api/terminal/auth`, `/auth/change-pin`, `/tasks` (solo lo asignado, cierre → `PENDING_VERIFICATION`, bloqueo optimista) e `/incidents` (avería `OPEN`) |
+| UI | `PinPad`, `TerminalBoard`, `TerminalReportForm` y `OfflineNotice`; páginas `/terminal`, `/terminal/reportar`, `/terminal/cambiar-pin` |
+| Esquema | `preventive_tasks.assigned_to` + `updated_at` (21 columnas de extensión), triple sincronía en verde |
+| Producción | `web:v77` (`00085-742`) y `worker:v77` (`00026-5m2`); E2E: login, cierre `PENDING_VERIFICATION`, incidencia resuelta, reporte 201 y bloqueo 423 |
+| Hallazgo | Corregido el vocabulario de `reported_by_role` al reportar desde recepción (`RECEPTION`, no `RECEPTION_ROLE`) |
+
+Evidencia: [`evidencias/f5-terminal-pin-2026-10-19.json`](./evidencias/f5-terminal-pin-2026-10-19.json).

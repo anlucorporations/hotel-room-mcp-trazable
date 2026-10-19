@@ -3735,3 +3735,17 @@ da de alta F9; E2E de navegador con wallet inyectada, manual; `/ama-de-llaves/da
 
 **Gates de la ruta crítica:** F4/F6/F7 desplegadas y validadas; F10 entregado. El E2E Playwright con
 wallet inyectada se mantiene como prueba manual de ventana (el resto de suites y guardianes en verde).
+
+
+---
+
+## 92. Release v77 — F5 desplegado: terminal de mantenimiento con PIN (2026-10-19)
+
+| Elemento | Valor |
+|---|---|
+| web | **`web:v77`** → revisión **`hotel-mcp-web-00085-742`** (100 %) |
+| worker | **`worker:v77`** → revisión **`hotel-mcp-worker-00026-5m2`** (aplica `preventive_tasks.assigned_to/updated_at`) |
+| Configuración | `terminal_operators`: `tecnico1`/`tecnico2` (MAINTENANCE_TECH), PIN bcrypt coste 12; tarea preventiva e incidencia asignadas para la demo |
+| Validación | login PIN 200; sin sesión `/terminal` sirve solo el login y la API responde 401; cierre de tarea → `PENDING_VERIFICATION`; incidencia `IN_PROGRESS→RESOLVED`; reporte de avería 201 con `reported_by_role=MAINTENANCE_TECH`; 5 intentos fallidos → **423** con 900 s de bloqueo |
+| Hallazgo corregido | el reporte desde recepción escribía `RECEPTION_ROLE` en `reported_by_role`, que el CHECK no admite; ahora se mapea a `RECEPTION` |
+| Evidencia | `RepoTecnico/evidencias/f5-terminal-pin-2026-10-19.json` |

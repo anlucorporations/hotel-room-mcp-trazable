@@ -74,10 +74,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   // T6.7: el rol de quien reporta se persiste para la trazabilidad (`reported_by_role`); solo se
   // acepta el vocabulario declarado, nunca un valor arbitrario del cuerpo.
+  // El vocabulario de la columna usa RECEPTION (sin sufijo _ROLE): mapear evita violar el CHECK
+  // mantenimiento_incidents_reported_by_role_check (detectado en la validación F5).
   const REPORTER_ROLES = ["HEAD_KEEPER", "HOUSEKEEPER", "RECEPTION_ROLE"] as const;
-  const reportedByRole = (REPORTER_ROLES as readonly string[]).includes(auth.session.role)
-    ? auth.session.role
-    : null;
+  const reportedByRole =
+    auth.session.role === "RECEPTION_ROLE"
+      ? "RECEPTION"
+      : (REPORTER_ROLES as readonly string[]).includes(auth.session.role)
+        ? auth.session.role
+        : null;
 
   try {
     const incident = await repo.reportIncident({
