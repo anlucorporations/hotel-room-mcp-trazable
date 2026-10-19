@@ -489,6 +489,29 @@ export class OperationsRepository {
    * Devuelve las más antiguas primero — el orden importa: una firma vieja bloqueando una habitación no
    * puede quedarse detrás de las nuevas.
    */
+  /**
+   * Cola de anclajes para Soporte (F9 · T9.5): últimas firmas del outbox, opcionalmente filtradas por
+   * estado. Solo metadatos (sin payload ni secretos).
+   */
+  async listSignatures(
+    filter: { statuses?: readonly SignatureStatus[]; limit?: number } = {},
+  ): Promise<SignatureRecord[]> {
+    const values: unknown[] = [];
+    let where = "";
+    if (filter.statuses && filter.statuses.length > 0) {
+      values.push(filter.statuses);
+      where = `WHERE status = ANY($${values.length}::text[])`;
+    }
+    const limit = Math.min(200, Math.max(1, filter.limit ?? 50));
+    values.push(limit);
+    const { rows } = await this.pool.query<SignatureRow>(
+      `SELECT * FROM on_chain_signatures ${where}
+        ORDER BY created_at DESC, id DESC LIMIT $${values.length}`,
+      values,
+    );
+    return rows.map(mapSignature);
+  }
+
   async findPendingForRetry(now: Date, limit = 50): Promise<SignatureRecord[]> {
     const { rows } = await this.pool.query<SignatureRow>(
       `SELECT * FROM on_chain_signatures

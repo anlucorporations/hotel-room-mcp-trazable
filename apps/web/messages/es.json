@@ -877,6 +877,61 @@
       "INVALID_RESERVE": "La reserva no es un importe válido.",
       "TOO_SHORT": "La duración mínima es 1 hora.",
       "TOO_LONG": "La duración máxima es 14 días (336 horas)."
+    },
+    "terminalOperators": {
+      "title": "Operarios de terminal",
+      "hint": "Alta con PIN generado (se muestra una sola vez), rotación, baja y desbloqueo (CU-V-44).",
+      "username": "Usuario",
+      "fullName": "Nombre",
+      "role": "Rol",
+      "create": "Crear operario",
+      "oneTimePin": "PIN generado (guárdalo, no se vuelve a mostrar): {pin}",
+      "active": "activo",
+      "inactive": "de baja",
+      "locked": "bloqueado",
+      "rotatePin": "Rotar PIN",
+      "unlock": "Desbloquear",
+      "deactivate": "Dar de baja",
+      "activate": "Reactivar",
+      "error": "No se pudo completar la operación."
+    },
+    "flags": {
+      "title": "Flags operativos",
+      "hint": "Solo el Owner con TOTP. Desactivar un flag obligatorio exige firma on-chain CONFIG (D-C22).",
+      "totp": "Código TOTP",
+      "signatureId": "Firma CONFIG (id)",
+      "on": "activo",
+      "off": "inactivo",
+      "mandatory": "obligatorio",
+      "disable": "Desactivar",
+      "enable": "Activar",
+      "saved": "Flag {key} actualizado.",
+      "error": "No se pudo actualizar el flag."
+    },
+    "anchorQueue": {
+      "title": "Cola de anclajes",
+      "hint": "Firmas del outbox y su estado de anclaje en la cadena.",
+      "loading": "Cargando…",
+      "empty": "No hay firmas en la cola.",
+      "retries": "{count} reintentos",
+      "error": "No se pudo leer la cola."
+    },
+    "wallets": {
+      "title": "Wallets y roles on-chain",
+      "hint": "Asignar o revocar exige el txHash de la operación on-chain; en BD solo se marca tras verificar la cadena (RNF-M-15).",
+      "username": "Usuario",
+      "role": "Rol",
+      "address": "Dirección",
+      "txHash": "txHash on-chain",
+      "assign": "Asignar",
+      "revoke": "Revocar",
+      "active": "activa",
+      "revokedState": "revocada",
+      "roleOnChain": "rol activo on-chain",
+      "assigned": "Wallet asignada.",
+      "revoked": "Wallet revocada.",
+      "backups": "Respaldos: {value}",
+      "error": "No se pudo completar la operación."
     }
   },
   "legal": {

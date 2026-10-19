@@ -877,6 +877,61 @@
       "INVALID_RESERVE": "The reserve is not a valid amount.",
       "TOO_SHORT": "The minimum duration is 1 hour.",
       "TOO_LONG": "The maximum duration is 14 days (336 hours)."
+    },
+    "terminalOperators": {
+      "title": "Terminal operators",
+      "hint": "Create with a generated PIN (shown once), rotate, deactivate and unlock (CU-V-44).",
+      "username": "Username",
+      "fullName": "Full name",
+      "role": "Role",
+      "create": "Create operator",
+      "oneTimePin": "Generated PIN (save it, it will not be shown again): {pin}",
+      "active": "active",
+      "inactive": "inactive",
+      "locked": "locked",
+      "rotatePin": "Rotate PIN",
+      "unlock": "Unlock",
+      "deactivate": "Deactivate",
+      "activate": "Reactivate",
+      "error": "The operation could not be completed."
+    },
+    "flags": {
+      "title": "Operational flags",
+      "hint": "Owner + TOTP only. Disabling a mandatory flag requires an on-chain CONFIG signature (D-C22).",
+      "totp": "TOTP code",
+      "signatureId": "CONFIG signature (id)",
+      "on": "on",
+      "off": "off",
+      "mandatory": "mandatory",
+      "disable": "Disable",
+      "enable": "Enable",
+      "saved": "Flag {key} updated.",
+      "error": "Could not update the flag."
+    },
+    "anchorQueue": {
+      "title": "Anchor queue",
+      "hint": "Outbox signatures and their on-chain anchoring status.",
+      "loading": "Loading…",
+      "empty": "No signatures in the queue.",
+      "retries": "{count} retries",
+      "error": "Could not read the queue."
+    },
+    "wallets": {
+      "title": "Wallets and on-chain roles",
+      "hint": "Assigning or revoking requires the on-chain txHash; DB is updated only after checking the chain (RNF-M-15).",
+      "username": "Username",
+      "role": "Role",
+      "address": "Address",
+      "txHash": "on-chain txHash",
+      "assign": "Assign",
+      "revoke": "Revoke",
+      "active": "active",
+      "revokedState": "revoked",
+      "roleOnChain": "role active on-chain",
+      "assigned": "Wallet assigned.",
+      "revoked": "Wallet revoked.",
+      "backups": "Backups: {value}",
+      "error": "The operation could not be completed."
     }
   },
   "legal": {

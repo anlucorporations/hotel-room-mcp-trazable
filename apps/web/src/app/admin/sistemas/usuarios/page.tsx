@@ -1,5 +1,6 @@
 import { AdminPanel } from "@/components/admin/AdminPanel";
 import { SystemUsers } from "@/components/admin/system/SystemUsers";
+import { TerminalOperatorsPanel } from "@/components/admin/system/TerminalOperatorsPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,7 @@ export default function SystemUsersPage() {
       requiredRole="DEFAULT_ADMIN_ROLE"
     >
       <SystemUsers />
+      <TerminalOperatorsPanel />
     </AdminPanel>
   );
 }

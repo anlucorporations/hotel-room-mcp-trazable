@@ -1,6 +1,7 @@
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AdminPanel } from "@/components/admin/AdminPanel";
 import { AdminRoles } from "@/components/admin/AdminRoles";
+import { WalletsPanel } from "@/components/admin/system/WalletsPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,7 @@ export default function AdminRolesPage() {
     <AdminLayout>
       <AdminPanel titleKey="rolesTitle" descriptionKey="rolesTagline" requiredRole="DEFAULT_ADMIN_ROLE">
         <AdminRoles />
+        <WalletsPanel />
       </AdminPanel>
     </AdminLayout>
   );

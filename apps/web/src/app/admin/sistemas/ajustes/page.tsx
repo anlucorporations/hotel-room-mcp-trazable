@@ -1,5 +1,6 @@
 import { AdminPanel } from "@/components/admin/AdminPanel";
 import { SettingsAdmin } from "@/components/admin/system/SettingsAdmin";
+import { FlagsPanel } from "@/components/admin/system/FlagsPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -8,6 +9,7 @@ export default function SystemSettingsPage() {
   return (
     <AdminPanel titleKey="settingsTitle" descriptionKey="settingsTagline" requiredRole="DEFAULT_ADMIN_ROLE">
       <SettingsAdmin />
+      <FlagsPanel />
     </AdminPanel>
   );
 }

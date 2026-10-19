@@ -1,9 +1,12 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { OperationsRepository } from "@hotel/shared";
 import { requireRole } from "@/lib/guard";
 import { fetchWorkerHealth } from "@/lib/worker-api";
 
 export const dynamic = "force-dynamic";
+
+const operationsRepo = new OperationsRepository();
 
 /**
  * GET /api/admin/system/operations
@@ -17,8 +20,23 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   if (!auth.ok) return auth.response;
 
   try {
-    const health = await fetchWorkerHealth();
-    return NextResponse.json({ health, checkedAt: new Date().toISOString() });
+    const [health, signatures] = await Promise.all([
+      fetchWorkerHealth(),
+      operationsRepo.listSignatures({ limit: 50 }),
+    ]);
+    return NextResponse.json({
+      health,
+      anchorQueue: signatures.map((signature) => ({
+        id: signature.id,
+        entityType: signature.entityType,
+        entityId: signature.entityId,
+        status: signature.status,
+        txHash: signature.txHash,
+        createdAt: signature.createdAt,
+        retryCount: signature.retryCount ?? 0,
+      })),
+      checkedAt: new Date().toISOString(),
+    });
   } catch {
     return NextResponse.json(
       {

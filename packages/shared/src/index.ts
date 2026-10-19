@@ -34,6 +34,7 @@ export * from "./domain/damage-charges";
 export * from "./db/repositories/supply-alerts.repository";
 export * from "./domain/validation-sla";
 export * from "./domain/supplies";
+export * from "./domain/flags";
 // Suite Ama de llaves (F6): reglas puras de inspección (firma opcional por flag), efectos sobre la
 // habitación/asignación y tablero de los cinco estados canónicos + marca de mantenimiento.
 export * from "./domain/housekeeping";

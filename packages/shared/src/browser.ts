@@ -61,6 +61,7 @@ export * from "./domain/housekeeping";
 export * from "./domain/damage-charges";
 export * from "./domain/validation-sla";
 export * from "./domain/supplies";
+export * from "./domain/flags";
 
 // Regla única de habitación vendible en el canal público (2026-10-18): pura y compartida por el
 // catálogo, la reserva pública y recepción. Evita que el catálogo ofrezca noches de habitaciones no

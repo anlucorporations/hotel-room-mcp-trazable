@@ -1,5 +1,6 @@
 import { AdminPanel } from "@/components/admin/AdminPanel";
 import { SystemOperations } from "@/components/admin/system/SystemOperations";
+import { AnchorQueue } from "@/components/admin/system/AnchorQueue";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,7 @@ export default function SystemOperationsPage() {
       requiredRole="DEFAULT_ADMIN_ROLE"
     >
       <SystemOperations />
+      <AnchorQueue />
     </AdminPanel>
   );
 }
