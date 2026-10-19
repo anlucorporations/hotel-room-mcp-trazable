@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { MaintenanceRepository, RoomsRepository } from "@hotel/shared";
+import { MaintenanceRepository, RoomsRepository, isRoomSellable } from "@hotel/shared";
 import { requireRole } from "@/lib/guard";
 
 export const dynamic = "force-dynamic";
@@ -27,8 +27,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       maintenanceRepo.listBlockedRoomIds(),
     ]);
     const blockedIds = new Set(blocked);
+    // La regla vive en `@hotel/shared` (misma que el catálogo y la reserva pública): publicada,
+    // vigente (no archivada) y sin avería abierta (D-53).
     const published = rooms
-      .filter((room) => room.publicationStatus === "PUBLISHED" && !blockedIds.has(room.id))
+      .filter((room) => isRoomSellable(room, blockedIds))
       .map((room) => ({ id: room.id, roomNumber: room.roomNumber, roomType: room.roomType }));
     return NextResponse.json({ rooms: published });
   } catch (error: unknown) {

@@ -51,7 +51,8 @@
     "backfill:session-traces": "node --env-file=../../.env --import tsx scripts/backfill-session-traces.ts",
     "reset:index": "node --env-file=../../.env --import tsx scripts/reset-index.ts",
     "clean": "rm -rf dist .turbo coverage *.tsbuildinfo",
-    "reset:all": "node --env-file=../../.env --import tsx scripts/reset-all.ts"
+    "reset:all": "node --env-file=../../.env --import tsx scripts/reset-all.ts",
+    "reconcile:rooms": "node --import tsx scripts/reconcile-rooms.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

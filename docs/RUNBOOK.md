@@ -290,9 +290,31 @@ gateways solo sirven de su caché. La web NO depende de esto en runtime (sirve p
 | Back-office no carga paneles | Sin sesión SIWE válida | Login SIWE; el layout RSC gatea en servidor (no es bug) |
 | Asistente «no disponible» | RPC/MCP/LLM inalcanzables | Revisa MCP `/health`, `MCP_BASE_URL`, `ANTHROPIC_API_KEY` |
 | Cambio de red falla (4902) | La red no está añadida en la wallet | La web pide aprobar añadir la red; si falla, añadir manualmente (CU-17/RF-04) |
+| Catálogo ofrece noches que no existen en la cadena (o `rooms` no coincide con el registro on-chain) | Índice heredado de un redeploy/red anterior, o maestro sin sembrar | Ejecuta el job **`hotel-mcp-reconcile-rooms`** (modo seco; revisa `pendingSeedRooms`/`stale`/`roomIssues` y luego repite con `--apply`). Guía: `RepoTecnico/despliegue_gcp.md` §88 |
 
 ### 5.1 Emergencia (CU-14)
 - `pause()` (rol `PAUSER_ROLE`) detiene las operaciones mutables; **las lecturas siguen** (catálogo/histórico/claim de pull payments). `unpause()` para reanudar.
+
+### 5.2 Reconciliación habitaciones ↔ cadena (2026-10-18)
+El job `hotel-mcp-reconcile-rooms` (Cloud Run, VPC + Cloud SQL, imagen `worker:v66`) audita y alinea:
+
+1. **Maestro**: siembra en `rooms` las habitaciones del maestro canónico que falten, en `DRAFT`.
+2. **Índice**: purga de `nfts`/`listings`/`sale_events`/`worker_sale_history` las filas cuyo `tokenId`
+   no exista en el contrato vigente (filas heredadas de otra cadena/contrato).
+3. **Auditoría** (no corrige): habitación registrada on-chain ↔ fila en `rooms` y tipo; habitación
+   publicada sin registro; archivada que siga registrada.
+
+```bash
+# Modo seco (informe REPORT en los logs) y ejecución
+gcloud run jobs execute hotel-mcp-reconcile-rooms --region=europe-west1 --wait
+gcloud run jobs update hotel-mcp-reconcile-rooms --region=europe-west1 \
+  --args='--filter,@hotel/shared,exec,node,--import,tsx,scripts/reconcile-rooms.ts,--apply'
+gcloud run jobs execute hotel-mcp-reconcile-rooms --region=europe-west1 --wait
+```
+
+> Hacer siempre un **export SQL previo** (`gcloud sql export sql hotel-mcp-pg
+> gs://hotel-mcp-backups/<nombre>.sql --database=hotel_nft`). El modo seco es el defecto: la purga
+> solo ocurre con `--apply`.
 
 ---
 

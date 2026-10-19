@@ -238,7 +238,7 @@
     "emptyHint": "Try different dates, room types, or higher price ceiling.",
     "emptyNoListings": "No nights published yet",
     "emptyNoListingsHint": "Check back soon: we are preparing new rooms by the sea.",
-    "syncingNotice": "We removed {count} night that is already sold. The calendar is syncing: new availability may appear within minutes.",
+    "syncingNotice": "We removed {count} night that is no longer available on-chain. The calendar is syncing: new availability may appear within minutes.",
     "clearFilters": "Clear filters",
     "assistantNotice": "Results of your query to the assistant: {filters}.",
     "assistantNoticeDates": "from {from} to {to}",

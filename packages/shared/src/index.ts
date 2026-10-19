@@ -23,6 +23,12 @@ export * from "./domain/faucet";
 export * from "./domain/maintenance";
 // Vocabulario canónico de estados y tipos de entidad (vNext · F1 · T1.6).
 export * from "./domain/operations-state";
+// Regla única de habitación vendible en el canal público (2026-10-18): la comparten catálogo,
+// reserva pública y recepción para no ofrecer noches de habitaciones no administradas.
+export * from "./domain/room-sellability";
+// Reconciliación habitaciones (2026-10-18): plan de siembra, auditoría rooms↔cadena y purga del
+// índice heredado. La usa el script `reconcile-rooms.ts` (job de Cloud Run).
+export * from "./domain/room-reconciliation";
 // Motor EIP-712 de operaciones (vNext · F2 · T2.6/T2.9): isomorfo (solo `viem`), para que la app y el
 // worker firmen/verifiquen exactamente el mensaje que valida el contrato.
 export * from "./operations/index";

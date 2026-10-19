@@ -10,7 +10,9 @@ import {
   GETLOGS_MAX_RANGE,
   decodeTokenId,
   roomTypeOf,
+  sellableRoomNumbers,
   toNightType,
+  MaintenanceRepository,
   NFTsRepository,
   RoomsRepository,
   type NightType,
@@ -25,6 +27,7 @@ import { roomCoverUrl } from "@/lib/room-image-url";
 
 const nftsRepo = new NFTsRepository();
 const roomsRepo = new RoomsRepository();
+const maintenanceRepo = new MaintenanceRepository();
 
 /**
  * Lectura de la tienda, en **dos fuentes separadas** (D-07):
@@ -152,23 +155,45 @@ export async function fetchContractPaused(): Promise<boolean> {
 }
 
 /**
- * Estado on-chain de venta de una noche (§35 · defensa contra «fantasmas» del índice).
- * Tres estados, sin colapsar el tercero en los otros dos (mismo patrón que `onchain-ownership`):
+ * Estado on-chain de una noche (§35 · defensa contra «fantasmas» del índice y del redeploy C1→C2).
+ *
+ * Tres estados útiles, sin colapsar el tercero en los otros dos (mismo patrón que
+ * `onchain-ownership`):
  *   - `"sold"`     → el contrato confirmó `soldOnce == true`: NO es comprable como primaria.
- *   - `"free"`     → el contrato respondió `soldOnce == false`: libre (el índice decía bien).
+ *   - `"missing"`  → el contrato NO conoce el token (`priceOf == 0`): es una fila **heredada** de
+ *     otra cadena/contrato (el desfase real tras el redeploy C2 de 2026-10-17: 74 noches C1 en el
+ *     índice que no existían en `0xF8b1…`). Comprarla revertiría con `ERC721NonexistentToken`.
+ *   - `"free"`     → el contrato tiene el token y no está vendido: libre.
  *   - `"unknown"`  → no se pudo leer (RPC caído/revert): **se conserva** la noche —fallar en
  *     abierto aquí sería peor: ocultaría inventario sano ante un pico de red— y la re-verificación
  *     del paso «Revisar» sigue siendo la garantía final antes de firmar.
  */
-export type OnChainSoldState = "sold" | "free" | "unknown";
+export type OnChainSoldState = "sold" | "missing" | "free" | "unknown";
 
 /** Lector inyectable (DIP): los tests no necesitan red. */
 export interface SoldOnceReader {
   soldOnce(tokenId: bigint): Promise<boolean>;
 }
 
-/** Lector real: `soldOnce` del contrato canónico por RPC (una lectura barata por noche). */
-export const viemSoldOnceReader: SoldOnceReader = {
+/**
+ * Lector de la **existencia** del token en el contrato canónico. `priceOf` es una lectura barata
+ * que devuelve `0` para un `tokenId` que nunca se acuñó en ESTA cadena (el precio se fija en
+ * `mint` y no puede ser 0), así que distingue «fila fantasma heredada» de «noche vendida» sin
+ * depender de que `ownerOf` revierta.
+ */
+export interface NightChainReader extends SoldOnceReader {
+  priceOf?(tokenId: bigint): Promise<bigint>;
+}
+
+/** Lector real: `priceOf` + `soldOnce` del contrato canónico por RPC (lecturas baratas). */
+export const viemNightChainReader: NightChainReader = {
+  priceOf: (tokenId) =>
+    serverPublicClient().readContract({
+      address: contractAddress,
+      abi: hotelNightsAbi,
+      functionName: "priceOf",
+      args: [tokenId],
+    }) as Promise<bigint>,
   soldOnce: (tokenId) =>
     serverPublicClient().readContract({
       address: contractAddress,
@@ -176,6 +201,14 @@ export const viemSoldOnceReader: SoldOnceReader = {
       functionName: "soldOnce",
       args: [tokenId],
     }) as Promise<boolean>,
+};
+
+/**
+ * Compatibilidad: lector de solo `soldOnce` que usaban las suites del guardián §35. Se mantiene
+ * exportado porque es el contrato mínimo del filtro; el lector por defecto ya incluye `priceOf`.
+ */
+export const viemSoldOnceReader: SoldOnceReader = {
+  soldOnce: viemNightChainReader.soldOnce,
 };
 
 /** Clasifica el resultado: solo `true` explícito retira la noche; todo lo demás se conserva. */
@@ -186,27 +219,69 @@ export function classifySoldOnce(read: boolean | null): OnChainSoldState {
 }
 
 /**
- * Retira del catálogo las noches que el CONTRATO ya dio por vendidas (`soldOnce == true`), aunque
- * el índice PostgreSQL siga anunciándolas como `AVAILABLE` (§35: worker desactualizado → noches
- * fantasma → el huésped recibía «No pudimos verificar el precio on-chain» al reservarlas).
+ * Retira del catálogo las noches que el CONTRATO no considera vendibles, aunque el índice
+ * PostgreSQL siga anunciándolas como `AVAILABLE`:
+ *   1. `priceOf == 0` → el token no existe en la cadena vigente (fila heredada de C1 u otra red).
+ *   2. `soldOnce == true` → ya se vendió (§35: worker desactualizado → noches fantasma → el huésped
+ *      recibía «No pudimos verificar el precio on-chain» al reservarlas).
  *
  * Cada lectura se aísla: un revert o timeout puntual degrada a `unknown` y **conserva** la noche
  * (misma resiliencia que `fetchResaleMarket`). Concurrencia acotada con `RPC_CONCURRENCY`.
  */
 export async function filterSoldOnChain(
   nights: readonly NightView[],
-  reader: SoldOnceReader = viemSoldOnceReader,
+  reader: NightChainReader = viemNightChainReader,
 ): Promise<NightView[]> {
   const states = await mapWithConcurrency(nights, RPC_CONCURRENCY, async (night) => {
+    const tokenId = BigInt(night.tokenId);
+    if (reader.priceOf) {
+      try {
+        if ((await reader.priceOf(tokenId)) === 0n) return "missing";
+      } catch {
+        // Sin precio no se puede afirmar que no exista: se sigue con `soldOnce` y, si tampoco se
+        // puede leer, la noche se conserva (fail-open).
+      }
+    }
     let read: boolean | null = null;
     try {
-      read = await reader.soldOnce(BigInt(night.tokenId));
+      read = await reader.soldOnce(tokenId);
     } catch {
       read = null;
     }
     return classifySoldOnce(read);
   });
-  return nights.filter((_, index) => states[index] !== "sold");
+  return nights.filter((_, index) => states[index] !== "sold" && states[index] !== "missing");
+}
+
+/**
+ * Números de habitación **administrados y vendibles** en el canal público.
+ *
+ * Devuelve `null` si el maestro (`rooms`) no se pudo leer: en ese caso el catálogo no inventa una
+ * lista vacía (sería un catálogo caído) ni ofrece a ciegas; el camino de RPC decide con la cadena.
+ */
+export async function loadSellableRoomNumbers(): Promise<Set<number> | null> {
+  try {
+    const [rooms, blocked] = await Promise.all([
+      roomsRepo.listRooms(),
+      maintenanceRepo.listBlockedRoomIds(),
+    ]);
+    return sellableRoomNumbers(rooms, new Set(blocked));
+  } catch (error) {
+    console.warn("[nights] no se pudo leer el maestro de habitaciones:", error);
+    return null;
+  }
+}
+
+/**
+ * Intersección pura «noches del índice ∩ habitaciones vendibles». `null` = sin dato del maestro, no
+ * se filtra (decisión del llamante, documentada arriba). Expuesta para pruebas sin BD/RPC.
+ */
+export function restrictToSellableRooms(
+  nights: readonly NightView[],
+  sellableNumbers: ReadonlySet<number> | null,
+): NightView[] {
+  if (sellableNumbers === null) return [...nights];
+  return nights.filter((night) => sellableNumbers.has(night.room));
 }
 
 /**
@@ -217,8 +292,10 @@ export async function filterSoldOnChain(
  */
 export interface CatalogResult {
   readonly nights: NightView[];
-  /** Noches retiradas del catálogo por estar ya vendidas (0 = catálogo limpio). */
+  /** Noches retiradas del catálogo porque la cadena no las considera vendibles (0 = limpio). */
   readonly hiddenSoldCount: number;
+  /** Noches retiradas porque su habitación no está administrada/publicada en `rooms`. */
+  readonly hiddenUnlistedCount: number;
 }
 
 /** Noche confirmada como vendida por el registro de eventos (F9). */
@@ -322,6 +399,20 @@ export async function fetchCatalog(): Promise<CatalogResult> {
         .filter((night) => inWindow(night.dateYYYYMMDD, today, end))
         .sort((a, b) => a.dateYYYYMMDD - b.dateYYYYMMDD);
 
+      // «Lo administrado» es el maestro `rooms`, no el índice on-chain: una noche solo se oferta
+      // si su habitación está publicada, vigente y sin avería (misma regla que /api/public/rooms).
+      // Sin esto, el catálogo vendía 68 noches de la habitación 101 mientras el maestro llevaba
+      // vacío desde el redeploy C2 (2026-10-18).
+      const sellableNumbers = await loadSellableRoomNumbers();
+      const administered = restrictToSellableRooms(fromDb, sellableNumbers);
+      const hiddenUnlistedCount = Math.max(0, fromDb.length - administered.length);
+      if (hiddenUnlistedCount > 0) {
+        console.warn(
+          `[fetchCatalog] ${hiddenUnlistedCount} noche(s) del índice no pertenecen a una habitación ` +
+            `publicada del maestro: no se ofertan`,
+        );
+      }
+
       // F9 · capa estructural: el registro de ventas (eventos on-chain ya consolidados) es la
       // autoridad sobre si una noche primaria sigue siendo inventario del hotel. Si el índice dice
       // `AVAILABLE`, existe venta primaria y NO hay reventa activa, esa noche se retira **sin
@@ -336,10 +427,11 @@ export async function fetchCatalog(): Promise<CatalogResult> {
             `tokens ${ghosts.map((ghost) => ghost.tokenId).join(", ")}`,
         );
       }
-      const withoutGhosts = excludeGhosts(fromDb, ghosts);
+      const withoutGhosts = excludeGhosts(administered, ghosts);
 
       // §35 · segunda capa, on-chain: aunque ambas fuentes de BD cuadren, la verdad es del contrato.
-      // Se conserva lo que no se pudo leer (un pico de red no debe ocultar inventario sano).
+      // `priceOf == 0` retira las filas heredadas de otra cadena/contrato; `soldOnce` retira las
+      // vendidas. Se conserva lo que no se pudo leer (un pico de red no debe ocultar inventario).
       const nights = await filterSoldOnChain(withoutGhosts);
       // C2 (RF-13): una noche con subasta viva no está en venta directa (si se comprara por `buy`,
       // la liquidación ya no podría entregarla al ganador).
@@ -347,7 +439,11 @@ export async function fetchCatalog(): Promise<CatalogResult> {
         await attachRoomCovers(nights),
         await fetchAuctionedTokenIds(),
       );
-      return { nights: visible, hiddenSoldCount: Math.max(0, fromDb.length - nights.length) };
+      return {
+        nights: visible,
+        hiddenSoldCount: Math.max(0, withoutGhosts.length - nights.length),
+        hiddenUnlistedCount,
+      };
     }
   } catch (dbErr) {
     // Si la BD no está disponible, degradación elegante al RPC on-chain
@@ -384,12 +480,20 @@ export async function fetchCatalog(): Promise<CatalogResult> {
   // En el camino on-chain no hay nada que «ocultar»: `sold` sale de los propios logs, así que no
   // existe desfase entre dos fuentes y avisar de sincronización sería mentira.
   const fallbackNights = [...byToken.values()].sort((a, b) => a.dateYYYYMMDD - b.dateYYYYMMDD);
+  // Misma intersección con el maestro administrado que en el camino de BD: si el maestro dice que
+  // no hay habitaciones publicadas, la cadena tampoco puede ofrecerlas en el catálogo público.
+  const sellableNumbers = await loadSellableRoomNumbers();
+  const administered = restrictToSellableRooms(fallbackNights, sellableNumbers);
   // C2 (RF-13): mismo filtro que en el camino de BD: fuera las noches con subasta viva.
   const visible = excludeAuctionedNights(
-    await attachRoomCovers(fallbackNights),
+    await attachRoomCovers(administered),
     await fetchAuctionedTokenIds(),
   );
-  return { nights: visible, hiddenSoldCount: 0 };
+  return {
+    nights: visible,
+    hiddenSoldCount: 0,
+    hiddenUnlistedCount: Math.max(0, fallbackNights.length - administered.length),
+  };
 }
 
 /**

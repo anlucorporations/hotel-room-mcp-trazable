@@ -4,6 +4,7 @@ import {
   ExchangeRateService,
   MaintenanceRepository,
   RoomsRepository,
+  isRoomSellable,
   weiToEurCents,
 } from "@hotel/shared";
 
@@ -41,7 +42,8 @@ export async function GET(_request: NextRequest): Promise<NextResponse> {
     }
 
     const reservable = rooms
-      .filter((room) => room.publicationStatus === "PUBLISHED" && !blockedIds.has(room.id))
+      // Regla única (publicada + vigente + sin avería): la misma que usa el catálogo de noches.
+      .filter((room) => isRoomSellable(room, blockedIds))
       .map((room) => ({
         id: room.id,
         roomNumber: room.roomNumber,

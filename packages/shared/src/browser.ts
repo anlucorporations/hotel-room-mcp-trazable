@@ -55,6 +55,16 @@ export * from "./domain/maintenance";
 // suites de cliente ofrezcan exactamente los valores que valida el servidor.
 export * from "./domain/operations-state";
 
+// Regla única de habitación vendible en el canal público (2026-10-18): pura y compartida por el
+// catálogo, la reserva pública y recepción. Evita que el catálogo ofrezca noches de habitaciones no
+// administradas (el desfase C1→C2 que limpió la reconciliación).
+export * from "./domain/room-sellability";
+
+// Reconciliación habitaciones (2026-10-18): plan de siembra del maestro, auditoría
+// `rooms`↔registro on-chain y separación índice/cadena. Puro: lo usan el script de limpieza y sus
+// pruebas, y puede reutilizarse en la UI de administración.
+export * from "./domain/room-reconciliation";
+
 // Plan de inyección de datos para redes no locales (2026-10-15): topología de cuentas desde el
 // entorno, overrides de gas de Besu (legacy + explícitos) y detección de cuentas repetidas.
 // Puro: solo `viem` (tipos) y constantes del proyecto.

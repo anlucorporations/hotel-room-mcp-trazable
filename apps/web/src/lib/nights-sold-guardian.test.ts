@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
-import { classifySoldOnce, excludeGhosts, filterSoldOnChain, type NightView } from "./nights";
+import { classifySoldOnce, excludeGhosts, filterSoldOnChain, restrictToSellableRooms, type NightView } from "./nights";
 
 /**
  * Guardián §35 — **el catálogo no ofrece noches que la cadena ya vendió**.
@@ -69,8 +69,20 @@ describe("fetchCatalog: las dos capas del camino de BD (estructural)", () => {
     // La llamada tiene que estar EN EL BLOQUE DE BD y su resultado consumido: basta con definirla
     // o con invocarla sin usar lo que devuelve para que el guardián quede decorativo.
     expect(source).toMatch(/const ghosts = await nftsRepo\.listGhostPrimarySales\(\)/);
-    expect(source).toMatch(/excludeGhosts\(fromDb, ghosts\)/);
+    // Desde 2026-10-18 la exclusión se aplica sobre lo ya intersectado con el maestro administrado.
+    expect(source).toMatch(/excludeGhosts\(administered, ghosts\)/);
     expect(source).toMatch(/withoutGhosts/);
+  });
+
+  it("2026-10-18 · el catálogo se restringe al maestro administrado ANTES de la cadena", () => {
+    // El desfase real: 68 noches C1 ofertadas con `rooms` vacío. La intersección por número de
+    // habitación tiene que estar en el camino de BD y aplicarse antes de la lectura on-chain.
+    const roomsGate = source.indexOf("restrictToSellableRooms(fromDb, sellableNumbers)");
+    const chainGate = source.indexOf("filterSoldOnChain(withoutGhosts)");
+    expect(roomsGate).toBeGreaterThan(-1);
+    expect(chainGate).toBeGreaterThan(roomsGate);
+    // Y el fallback on-chain usa la MISMA puerta (si el maestro dice que no hay nada, no se vende).
+    expect(source).toMatch(/restrictToSellableRooms\(fallbackNights, sellableNumbers\)/);
   });
 
   it("§35 · capa 2: lo que sobrevive a la capa 1 pasa además por la lectura on-chain", () => {
@@ -121,5 +133,64 @@ describe("excludeGhosts (F9: proyección mecánica de la exclusión resuelta en 
     expect(excludeGhosts(nights, [{ tokenId: "10120261015" }]).map((n) => n.tokenId)).toEqual([
       "99920261015",
     ]);
+  });
+});
+
+describe("filterSoldOnChain · existencia en la cadena vigente (redeploy C1→C2)", () => {
+  const token = (s: string): bigint => BigInt(s);
+
+  it("retira las filas heredadas: `priceOf == 0` significa que el token no existe aquí", async () => {
+    const reader = {
+      priceOf: async (id: bigint) => (id === token("10120261027") ? 0n : 10n ** 17n),
+      soldOnce: async () => false,
+    };
+    const kept = await filterSoldOnChain([night("10120261027"), night("20120261115")], reader);
+    expect(kept.map((n) => n.tokenId)).toEqual(["20120261115"]);
+  });
+
+  it("un token existente y vendido sigue retirándose por `soldOnce`", async () => {
+    const reader = {
+      priceOf: async () => 10n ** 17n,
+      soldOnce: async (id: bigint) => id === token("10120261027"),
+    };
+    const kept = await filterSoldOnChain([night("10120261027"), night("20120261115")], reader);
+    expect(kept.map((n) => n.tokenId)).toEqual(["20120261115"]);
+  });
+
+  it("si `priceOf` falla se conserva la noche (falla en abierto, igual que §35)", async () => {
+    const reader = {
+      priceOf: async () => {
+        throw new Error("RPC timeout");
+      },
+      soldOnce: async () => false,
+    };
+    const kept = await filterSoldOnChain([night("10120261027")], reader);
+    expect(kept).toHaveLength(1);
+  });
+
+  it("un lector sin `priceOf` mantiene el comportamiento §35 (solo ventas)", async () => {
+    const kept = await filterSoldOnChain([night("10120261027"), night("10120261028")], {
+      soldOnce: async (id: bigint) => id === token("10120261027"),
+    });
+    expect(kept.map((n) => n.tokenId)).toEqual(["10120261028"]);
+  });
+});
+
+describe("restrictToSellableRooms (el catálogo cruza el maestro administrado)", () => {
+  it("retira las noches cuya habitación no está publicada/administrada", () => {
+    const nights = [night("10120261015"), { ...night("20120261115"), room: 201 }];
+    const kept = restrictToSellableRooms(nights, new Set([101]));
+    expect(kept.map((n) => n.tokenId)).toEqual(["10120261015"]);
+  });
+
+  it("un maestro sin habitaciones vendibles deja el catálogo vacío (honestidad)", () => {
+    expect(restrictToSellableRooms([night("10120261015")], new Set())).toEqual([]);
+  });
+
+  it("sin dato del maestro no filtra (la cadena sigue siendo autoridad)", () => {
+    const nights = [night("10120261015")];
+    const kept = restrictToSellableRooms(nights, null);
+    expect(kept).toEqual(nights);
+    expect(kept).not.toBe(nights);
   });
 });

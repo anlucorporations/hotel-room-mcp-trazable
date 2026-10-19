@@ -3348,14 +3348,17 @@ firma opaca hasta la próxima ventana de contrato (ADR-30).
 
 | Servicio | Revisión (tráfico) | Imagen | URL |
 |---|---|---|---|
-| web | **`hotel-mcp-web-00124-gav`** (100 %) | **`web:v65`** | https://hotel-mcp-web-475955050238.europe-west1.run.app |
+| web | **`hotel-mcp-web-00073-9j5`** (100 %) | **`web:v66`** | https://hotel-mcp-web-475955050238.europe-west1.run.app |
 | mcp | **`hotel-mcp-mcp-00021-v64`** (100 %) | **`mcp:v63`** | https://hotel-mcp-mcp-475955050238.europe-west1.run.app |
 | worker | **`hotel-mcp-worker-00021-cwq`** (100 %) | **`worker:v63`** | https://hotel-mcp-worker-475955050238.europe-west1.run.app |
 | monitor | worker pool `hotel-mcp-monitor` | `monitor:v58` | — (sondea `/health`) |
 | pgAdmin | `hotel-pgadmin-00004-jjf` (100 %) | `dpage/pgadmin4:latest` | https://hotel-pgadmin-d6jlzeq5yq-ew.a.run.app |
 
-- Jobs: `hotel-mcp-inject-data` (imagen `mcp:f8`, **entorno obsoleto**: Anvil `31337`) y
-  `hotel-mcp-reset-all` (imagen `mcp:v58`, apunta al contrato **C1**: actualizar antes de usarlo).
+- Jobs: `hotel-mcp-inject-data` (imagen `mcp:f8`, **entorno obsoleto**: Anvil `31337`),
+  `hotel-mcp-reset-all` (imagen `mcp:v58`, apunta al contrato **C1**: actualizar antes de usarlo) y
+  **`hotel-mcp-reconcile-rooms`** (imagen `worker:v66`, red privada + Cloud SQL: audita
+  `rooms`↔cadena, siembra el maestro que falte y purga del índice lo que no exista en la cadena
+  vigente; modo seco por defecto, `--apply` para ejecutar; ver §88).
 - Servicios globales: Cloud SQL `hotel-mcp-pg` (PostgreSQL 18, IP privada `10.104.0.3`, base
   `hotel_nft`, usuario `hotel_admin`), VM Redis `hotel-mcp-redis` (`10.10.0.10:6379`),
   VPC `hotel-mcp-vpc`/`hotel-mcp-euw1` + NAT `hotel-mcp-router`.
@@ -3411,30 +3414,32 @@ Saldos/nonces el 2026-10-18.
 | Claves on-chain | `.env` + Secret Manager `hotel-burner-private-key`, `hotel-reception-private-key`, `hotel-relayer-private-key` |
 | pgAdmin | `PGADMIN_PASSWORD` (Secret Manager); email `anlucorporations@gmail.com` (env del servicio) |
 | Inventario completo en claro | `~/.config/hotel-mcp/DESPLIEGUE-GCP.md` (permisos `600`, fuera de git) |
-| WalletConnect | projectId de build inyectado en la imagen `web:v65` |
+| WalletConnect | projectId de build inyectado en la imagen `web:v66` |
 
 ### 86.6. Estado de los datos de prueba
 
 | Elemento | Estado |
 |---|---|
 | Noches en el contrato C2 | **1**: `20120261115` (habitación 201, `SUITE`, 0,2 CC), dueño = tesorería |
-| Room master on-chain | solo la habitación **201** |
-| Habitaciones en BD (`/api/admin/rooms`) | **0**; el panel de recepción usa las **50** estáticas del maestro |
-| Índice off-chain `/api/nfts` | **98 noches heredadas de C1** (75 `AVAILABLE`, 15 `SOLD`, 7 `BURNED`, 1 `CHECKED_IN`) |
-| Catálogo `/catalogo` | ofrece **74 noches heredadas que no existen en C2** (ver §86.7.2) |
+| Room master on-chain | solo la habitación **201** (registrada y con `publishRoom` en la ventana C2) |
+| Habitaciones en BD (`/api/admin/rooms`) | **50**, todas `DRAFT`: 15 `SIMPLE` (101–115), 15 `DOBLE` (116–130), 20 `SUITE` (201–220) — sembradas del maestro canónico el 2026-10-18 (§88) |
+| Índice off-chain `/api/nfts` | **1** noche real de C2: `20120261115` (el resto de filas C1 se purgó el 2026-10-18, §88) |
+| Catálogo `/catalogo` | **vacío y honesto**: «Sin noches · Aún no hay noches publicadas» (0 habitaciones `PUBLISHED`) |
 | Reservas de hoy | 0 |
 | Métricas | `mintedCount=1`, `soldCount=0` |
 | **Subasta viva** | noche `20120261115` · reserva 0,1 CC · puja actual 0,12 CC (cuenta 1) · **mínima 0,126 CC** · `OPEN` · cierra **2026-10-24 14:21:47 UTC** · `settle` permissionless tras el cierre |
-| Salud | web **READY**; mcp **ok**; worker **down** por `emailDegraded` (SMTP `smtp.invalid`) aunque indexa con `lag=0` |
+| Salud | web **READY**; mcp **ok**; worker con `lag=0` (el 503 es por `emailDegraded` con `SMTP_HOST=smtp.invalid`) |
 
 ### 86.7. Limitaciones conocidas (leer antes de probar)
 
 1. **No hay compra/check-in end-to-end posible hoy**: la única noche de C2 está en subasta y no hay
-   inventario libre ni noches vendidas. Requiere re-sembrar o abrir ventana de contrato.
-2. **Catálogo inconsistente**: el índice off-chain no se reseteó tras el redeploy C2; las 75 noches
-   `AVAILABLE` heredadas **no existen** en `0xF8b1…25F4` (`ownerOf` revierte
-   `ERC721NonexistentToken`) ⇒ una compra contra el contrato vigente fallaría. Antes de una demo de
-   compra hay que resetear el índice o alinear el catálogo.
+   inventario libre ni noches vendidas. Requiere re-sembrar (registrar + publicar una habitación y
+   acuñar su ventana) o abrir ventana de contrato. El catálogo **ya no ofrece inventario falso**.
+2. **Catálogo vacío hasta que se publique**: el catálogo se restringe al maestro administrado
+   (`rooms.publication_status = 'PUBLISHED'`). Las 50 habitaciones están en `DRAFT` a propósito
+   (D-14: la siembra crea inventario administrable; publicar es un acto del administrador), así que
+   «Sin noches» es el estado **correcto**. **Resuelto el desfase C1→C2 del 2026-10-18**: el índice
+   heredado se purgó y el catálogo verifica además la existencia del token en la cadena.
 3. **Roles centralizados en la cuenta 0** (las hot-wallets 1–3 no tienen rol en Besu).
 4. **Sin relayer**: la web no tiene `RELAYER_WALLET_PRIVATE_KEY`; firma siempre la cartera conectada.
 5. **Quema automática desactivada** (`burn.scheduler=disabled` en `/health`).
@@ -3445,7 +3450,8 @@ Saldos/nonces el 2026-10-18.
    `PastDate` en `mint()` ⇒ `--gas-limit` explícito.
 9. **Faucet**: el de Codecrypto (externo, no hay URL documentada en el repo); la web se despliega
    con `NEXT_PUBLIC_FAUCET_ADDRESS` vacío.
-10. **Jobs obsoletos** (`inject-data` → Anvil 31337; `reset-all` → contrato C1).
+10. **Jobs obsoletos** (`inject-data` → Anvil 31337; `reset-all` → contrato C1). El nuevo
+    `hotel-mcp-reconcile-rooms` sí apunta a C2 (§88).
 
 ### 86.8. Verificación realizada (2026-10-18)
 
@@ -3455,22 +3461,28 @@ Saldos/nonces el 2026-10-18.
 | Login + TOTP de `admin@hotel.es` y `recepcion@hotel.es` | **200/200** ambos, sesiones `DEFAULT_ADMIN_ROLE` y `RECEPTION_ROLE` |
 | `/api/admin/system/users` (owner / recepción) | **200** (2 operadores) / **403** |
 | `cast chain-id` · roles · `auctionOf` · `nextMinBid` | 81234 · 7 roles en cuenta 0 · reserva 0,1/puja 0,12 · mínima **0,126** |
-| `/subastas` · `/catalogo` · `/api/nfts` · `/api/admin/metrics` | subasta viva · 74 noches heredadas · 98 registros · `mintedCount=1`/`soldCount=0` |
+| `/subastas` · `/catalogo` · `/api/nfts` · `/api/admin/metrics` | subasta viva · **catálogo vacío honesto** · **1 registro** (`20120261115`) · `mintedCount=1`/`soldCount=0` |
+| `/api/public/rooms` | **0** reservables (ninguna habitación `PUBLISHED`; las 50 están `DRAFT`) |
+| `/api/admin/rooms` (owner, MFA) | **50** habitaciones administradas: 15 `SIMPLE`, 15 `DOBLE`, 20 `SUITE` |
+| `hotel-mcp-reconcile-rooms` (modo seco) | `pendingSeedRooms=[]`, `stale=[]`, `roomIssues=[]` (ver §88) |
 | pgAdmin | **200** en `/login` (login no automatizado; credenciales fuera de git) |
 
 ### 86.9. Rollback
 
 | Servicio | Actual | Rollback |
 |---|---|---|
-| web | `00124-gav` (v65) | `00122-lal` (v64) → `00120-nag` (v63) |
+| web | `00073-9j5` (v66) | `00124-gav` (v65) → `00122-lal` (v64) |
 | mcp | `00021-v64` (v63) | `00020-6rn` (v61) |
-| worker | `00021-cwq` (v63) | `00020-qpr` (v57) |
+| worker | `00022-pv9` (v66) | `00021-cwq` (v63) |
 
 ```bash
-gcloud run services update-traffic hotel-mcp-web --region=europe-west1 --to-revisions=hotel-mcp-web-00122-lal=100
+gcloud run services update-traffic hotel-mcp-web --region=europe-west1 --to-revisions=hotel-mcp-web-00124-gav=100
 gcloud run services update-traffic hotel-mcp-mcp --region=europe-west1 --to-revisions=hotel-mcp-mcp-00020-6rn=100
-gcloud run services update-traffic hotel-mcp-worker --region=europe-west1 --to-revisions=hotel-mcp-worker-00020-qpr=100
+gcloud run services update-traffic hotel-mcp-worker --region=europe-west1 --to-revisions=hotel-mcp-worker-00021-cwq=100
 ```
+
+> Los datos no se revierten con la imagen: el estado posterior a §88 es el correcto. El backup previo
+> completo está en `gs://hotel-mcp-backups/pre-catalog-cleanup-20261018.sql`.
 
 ### 86.10. Referencias
 
@@ -3479,8 +3491,9 @@ gcloud run services update-traffic hotel-mcp-worker --region=europe-west1 --to-r
 - Red Besu: [`entornos_globales.md`](./entornos_globales.md) §2.bis; runbook: [`RUNBOOK.md`](../docs/RUNBOOK.md).
 - Subasta: [ADR-28](../docs/adr/ADR-28-subastas-on-chain-con-pull-payments.md); mensajes de firma:
   [ADR-30](../docs/adr/ADR-30-mensajes-firmados-legibles-en-la-wallet.md).
-- Evidencias: `RepoTecnico/evidencias/aceptacion-besu-81234-2026-10-13.json` y
-  `RepoTecnico/evidencias/c2-redeploy-besu-81234-2026-10-17.json`.
+- Evidencias: `RepoTecnico/evidencias/aceptacion-besu-81234-2026-10-13.json`,
+  `RepoTecnico/evidencias/c2-redeploy-besu-81234-2026-10-17.json` y
+  `RepoTecnico/evidencias/c3-catalogo-habitaciones-2026-10-18.json`.
 
 ---
 
@@ -3513,3 +3526,59 @@ gcloud run services update-traffic hotel-mcp-worker --region=europe-west1 --to-r
 **Pendiente de este bloque (paso siguiente):** SMTP real (el worker sigue en 503 por
 `emailDegraded`), reactivar la quema, decidir roles/mínimo privilegio y actualizar los jobs
 obsoletos. El anclaje queda operativo a la espera de que F4 emita firmas desde la UI.
+
+---
+
+## 88. C3 — limpieza de la interfaz pública y reconciliación habitaciones on-chain/off-chain (2026-10-19)
+
+**Encargo:** «limpia la interfaz pública para que el catálogo refleje la realidad de lo administrado;
+verifica que lo on-chain y lo off-chain estén correctos en materia de habitaciones».
+
+**Punto de partida (el defecto documentado en §86.7.2).** Tras el redeploy C2 el índice off-chain no
+se había reseteado: `nfts` conservaba **98 filas de C1** (75 `AVAILABLE`), la base `rooms` estaba
+**vacía** y el catálogo público ofrecía **68 noches** de la habitación 101 que **no existían** en
+`0xF8b1…25F4`. El panel, mientras tanto, pintaba 50 habitaciones estáticas del maestro del código que
+no eran filas administradas.
+
+### Qué se hizo
+
+| Paso | Detalle |
+|---|---|
+| **Backup** | Export SQL completo previo: `gs://hotel-mcp-backups/pre-catalog-cleanup-20261018.sql` |
+| **Reconciliación** | Script nuevo `packages/shared/scripts/reconcile-rooms.ts` + job `hotel-mcp-reconcile-rooms` (imagen `worker:v66`, VPC + Cloud SQL). Modo seco por defecto; `--apply` ejecuta. Lógica pura en `@hotel/shared/domain` (`room-reconciliation.ts`) con 12 pruebas |
+| **Maestro off-chain** | Sembradas las **50 habitaciones del maestro canónico** en `DRAFT` (D-14): 15 `SIMPLE` (101–115), 15 `DOBLE` (116–130), 20 `SUITE` (201–220), con tarifa base del maestro. Ahora `/api/admin/rooms` lista 50 filas reales |
+| **Índice** | Purgadas las **97 filas heredadas de C1** que no existen en C2 (cascada a `listings`/`sale_events`; `worker_sale_history` explícito). Queda **1** fila: `20120261115`, la única noche real |
+| **Código (web v66)** | El catálogo **intersecta el índice con el maestro administrado** (publicada + vigente + sin avería de mantenimiento, regla única en `@hotel/shared` `isRoomSellable`, compartida con `/api/public/rooms` y recepción) y **verifica la existencia del token** (`priceOf == 0` ⇒ fila heredada, se retira) antes de ofrecerlo. El fallback RPC usa la misma puerta. Mensaje de sincronización actualizado en es/en/ru |
+| **Regla única** | `isRoomSellable`/`sellableRoomNumbers` acaban con las tres copias de la condición «PUBLISHED y no bloqueada» que había en el catálogo, la reserva pública y recepción |
+
+### Verificación en producción (2026-10-18 23:55–00:10 UTC)
+
+| Comprobación | Resultado |
+|---|---|
+| `/catalogo` | **200** · «Sin noches · Aún no hay noches publicadas» · **0 ofertas** (antes 68 fantasma) |
+| `/api/nfts?status=AVAILABLE` | **1** registro (`20120261115`) · antes **98** |
+| `/api/public/rooms` | **0** reservables (ninguna `PUBLISHED`; correcto) |
+| `/api/admin/rooms` (owner + MFA) | **50** habitaciones `DRAFT` (15/15/20) |
+| `/subastas` | sigue operativa: Noche 201 · Suite · 15 nov 2026 · Abierta · mejor puja 0,12 · mínima 0,126 |
+| `/health/ready` | **READY** (postgres/redis/RPC UP) |
+| Job de reconciliación, modo seco final | `db.rooms=50`, `db.nfts=1`, `pendingSeedRooms=[]`, `stale=[]`, `roomIssues=[]`, worker `contract_address=0xF8b1…`/`minted_count=1` |
+
+**Coherencia habitaciones on-chain ↔ off-chain (auditada por el script):**
+
+- La única habitación registrada on-chain (**201**, tipo `suite`) existe en `rooms` con tipo `SUITE`.
+  Cero `MISSING_IN_DB`, cero `TYPE_MISMATCH`, cero `ARCHIVED_BUT_REGISTERED`.
+- Ninguna habitación `PUBLISHED` queda sin registro on-chain (no hay publicadas todavía: el catálogo
+  vacío es la consecuencia correcta, no un fallo).
+- Toda fila del índice tiene token existente en el contrato vigente (1/1).
+- Worker alineado con el contrato vigente (`contract_address`, `minted_count=1`, `sold_count=0`).
+
+**Imagen y revisión:** `web:v66` → revisión **`hotel-mcp-web-00073-9j5`** (100 %). Rollback:
+`hotel-mcp-web-00124-gav` (v65).
+
+**Deuda declarada que sigue abierta:** el registro on-chain de la habitación 201 existe aunque la
+fila esté `DRAFT` (se registró para la subasta de C2); no es incoherente para la auditoría (la regla
+exige registro para lo publicado, no al revés), pero si se archiva habría que resolverlo en ventana
+de contrato. Queda fuera de este ciclo: publicar habitaciones y acuñar ventanas (haría falta
+`room_images` y la firma del owner) y actualizar los jobs obsoletos `inject-data`/`reset-all`.
+
+**Evidencia:** `RepoTecnico/evidencias/c3-catalogo-habitaciones-2026-10-18.json`.

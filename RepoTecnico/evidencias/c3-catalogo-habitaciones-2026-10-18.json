@@ -1,0 +1,68 @@
+{
+  "id": "c3-catalogo-habitaciones-2026-10-18",
+  "titulo": "Limpieza de la interfaz pública y reconciliación habitaciones on-chain/off-chain (C2 → C3)",
+  "fechaUtc": "2026-10-18T23:59:00Z",
+  "objetivo": "Que el catálogo público refleje la realidad de lo administrado y verificar que el registro de habitaciones on-chain y el maestro off-chain estén correctos.",
+  "contexto": {
+    "red": "Besu de Codecrypto · chainId 81234",
+    "hotelNights": "0xF8b1d4d0A2Dd9Dd53200A4C6783a69c15E3a25F4",
+    "deploymentBlock": 5655378,
+    "nightAuction": "0x934A389CaBFB84cdB3f0260B2a4FD575b8B345A3",
+    "documento": "RepoTecnico/despliegue_gcp.md §86.7 (limitaciones conocidas)"
+  },
+  "estadoAntes": {
+    "catalogoPublico": "68 noches ofertadas (habitación 101, SIMPLE, 0,05 ETH) heredadas de C1",
+    "indiceOffChain": { "nfts": 98, "AVAILABLE": 75, "SOLD": 15, "BURNED": 7, "CHECKED_IN": 1, "listingsActivos": 2 },
+    "maestroRooms": { "total": 0 },
+    "onChain": { "habitacionesRegistradas": [[201, "suite"]], "nochesMinteadas": ["20120261115"] },
+    "desfase": "97 filas del índice no existían en el contrato C2; el catálogo ofrecía 68 de ellas y `rooms` estaba vacío, así que no había ninguna habitación administrada."
+  },
+  "acciones": [
+    {
+      "paso": "backup",
+      "detalle": "Export SQL completo antes de tocar datos",
+      "destino": "gs://hotel-mcp-backups/pre-catalog-cleanup-20261018.sql"
+    },
+    {
+      "paso": "reconciliacion",
+      "herramienta": "packages/shared/scripts/reconcile-rooms.ts (job Cloud Run hotel-mcp-reconcile-rooms, imagen worker:v66)",
+      "seco": "REPORT rooms=0 nfts=98 pendingSeedRooms=50 stale=97 roomIssues=[MISSING_IN_DB 201]",
+      "aplicado": "sembradas 50 habitaciones del maestro canónico en DRAFT (15 SIMPLE 101-115, 15 DOBLE 116-130, 20 SUITE 201-220); purgadas 97 filas heredadas de C1 (cascada a listings/sale_events) y worker_sale_history"
+    },
+    {
+      "paso": "despliegue",
+      "imagen": "web:v66",
+      "revision": "hotel-mcp-web-00073-9j5",
+      "cambio": "el catálogo intersecta el índice con el maestro administrado (publicada + vigente + sin avería) y verifica la existencia del token en la cadena (`priceOf`); el fallback RPC usa la misma puerta"
+    }
+  ],
+  "estadoDespues": {
+    "reporteReconciliacion": {
+      "chain": { "registeredRooms": [[201, "suite"]], "mintedTokenIds": ["20120261115"], "mintedByRoom": [[201, 1]] },
+      "db": { "rooms": 50, "nfts": 1, "nftsByStatus": { "AVAILABLE": 1 } },
+      "pendingSeedRooms": [],
+      "index": { "keep": ["20120261115"], "stale": [] },
+      "roomIssues": [],
+      "worker": { "contract_address": "0xf8b1d4d0a2dd9dd53200a4c6783a69c15e3a25f4", "minted_count": 1, "sold_count": 0 }
+    },
+    "db": { "rooms": 50, "nfts": 1, "listings": 0, "sale_events": 0, "worker_sale_history": 0 },
+    "catalogoPublico": "«Sin noches · Aún no hay noches publicadas» (0 ofertas; correcto: no hay habitaciones PUBLICADAS)",
+    "apiNfts": "1 registro (20120261115, la única noche real de C2, en subasta)",
+    "apiPublicRooms": "0 habitaciones reservables (ninguna PUBLICADA)",
+    "adminRooms": "50 habitaciones administradas, todas DRAFT (101-115 SIMPLE, 116-130 DOBLE, 201-220 SUITE)",
+    "subastas": "sigue operativa: Noche 201 · Suite · 15 nov 2026 · Abierta · mejor puja 0,12 ETH · mínima 0,126 ETH",
+    "saludWeb": "READY · postgres UP · redis UP · RPC UP"
+  },
+  "verificacionOnChainOffChain": [
+    "Toda habitación registrada on-chain (201) existe en `rooms` y su tipo coincide: on-chain «suite» = BD SUITE.",
+    "Toda fila del índice (`nfts`) tiene token existente en el contrato vigente: 20120261115.",
+    "Ninguna habitación archivada está registrada; ninguna PUBLICADA queda sin registro (no hay publicadas).",
+    "El maestro canónico (50 habitaciones) está completo en la base y coincide por tipo con `roomTypeOf` del contrato para la registrada.",
+    "El worker está alineado con el contrato vigente (contract_address = 0xF8b1…, minted_count=1, sold_count=0)."
+  ],
+  "rollback": {
+    "web": "gcloud run services update-traffic hotel-mcp-web --region=europe-west1 --to-revisions=hotel-mcp-web-00124-gav=100",
+    "datos": "gs://hotel-mcp-backups/pre-catalog-cleanup-20261018.sql (export completo previo)",
+    "nota": "El estado posterior es el correcto: no revertir la purga sin restaurar también la cadena C1."
+  }
+}

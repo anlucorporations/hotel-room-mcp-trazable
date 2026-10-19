@@ -5579,3 +5579,52 @@ worker la reclamó en el siguiente ciclo y la ancló con el relayer:
 **Deuda heredada que sigue abierta (paso 4):** el worker continúa `down` por `emailDegraded`
 (SMTP `smtp.invalid`), la quema automática sigue desactivada y aún no hay UI que emita firmas
 operativas (llega con F4). El anclaje ya está operativo para cuando existan firmas.
+
+---
+
+## 44. C3 — limpieza de la interfaz pública y reconciliación de habitaciones (2026-10-19) · Goal «catálogo honesto»
+
+**Encargo:** «limpia la interfaz pública para que el catálogo refleje la realidad de lo administrado;
+verifica que lo on-chain y lo off-chain estén correctos en materia de habitaciones».
+
+**El defecto (cierre de §86.7.2 de `despliegue_gcp.md`).** El catálogo ofrecía **68 noches de la
+habitación 101** que no existían en el contrato C2: eran **97 filas heredadas de C1** del índice
+`nfts` (75 `AVAILABLE`), mientras `rooms` estaba **vacío** y el panel pintaba las 50 habitaciones
+estáticas del maestro. Es decir: la interfaz pública vendía inventario que no estaba administrado ni
+existía on-chain.
+
+### Entregado
+
+| Pieza | Contenido |
+|---|---|
+| **Regla única de venta** | `@hotel/shared` `domain/room-sellability.ts` (`isRoomSellable`/`sellableRoomNumbers`): publicada + vigente + sin avería. Sustituye tres copias de la condición en catálogo, reserva pública y recepción. 7 pruebas |
+| **Catálogo honesto** | `apps/web/src/lib/nights.ts`: intersección del índice con el maestro administrado **antes** de la lectura on-chain; nueva comprobación de **existencia del token** (`priceOf == 0` ⇒ fila heredada de otra cadena, se retira); el fallback RPC aplica la misma puerta. `CatalogResult.hiddenUnlistedCount` para diagnóstico. Mensaje «sincronizando» actualizado es/en/ru |
+| **Script de reconciliación** | `packages/shared/scripts/reconcile-rooms.ts` + lógica pura `domain/room-reconciliation.ts`: plan de siembra del maestro (D-14), auditoría `rooms`↔registro on-chain (existencia, tipo, archivada, publicada sin registrar) y separación índice↔cadena. 12 pruebas |
+| **Job operativo** | `hotel-mcp-reconcile-rooms` (imagen `worker:v66`, VPC + Cloud SQL): modo seco por defecto, `--apply` ejecuta. Reutilizable en cada redeploy |
+| **Datos de producción** | Backup previo en `gs://hotel-mcp-backups/pre-catalog-cleanup-20261018.sql`; sembradas **50 habitaciones** `DRAFT` (15/15/20) del maestro; purgadas **97 filas heredadas** (quedan `nfts=1`, `listings=0`, `sale_events=0`) |
+| **Web** | `web:v66` → revisión **`hotel-mcp-web-00073-9j5`** (100 %); rollback `00124-gav` (v65) |
+
+### Verificación (producción, 2026-10-18 23:55–00:10 UTC)
+
+| Comprobación | Resultado |
+|---|---|
+| `/catalogo` | «Sin noches · Aún no hay noches publicadas» · **0 ofertas** (antes 68) |
+| `/api/nfts?status=AVAILABLE` | **1** registro (`20120261115`) · antes 98 |
+| `/api/public/rooms` | **0** reservables (ninguna `PUBLISHED`) |
+| `/api/admin/rooms` (owner+MFA) | **50** habitaciones `DRAFT` |
+| `/subastas` | operativa (Noche 201, suite, 15-nov-2026, mejor puja 0,12 CC, mínima 0,126 CC) |
+| `/health/ready` | READY (postgres/redis/RPC UP) |
+| Reconciliación (seco final) | `pendingSeedRooms=[]`, `stale=[]`, `roomIssues=[]`; worker `contract_address=0xF8b1…`, `minted_count=1` |
+
+**Coherencia on-chain ↔ off-chain en habitaciones:** la única registrada on-chain (201, `suite`)
+existe en `rooms` con tipo `SUITE`; ninguna `PUBLISHED` sin registro; toda fila del índice existe en
+el contrato; worker alineado. Auditoría completa en el reporte del job y en
+[`evidencias/c3-catalogo-habitaciones-2026-10-18.json`](./evidencias/c3-catalogo-habitaciones-2026-10-18.json).
+
+**Estado:** catálogo vacío **a propósito** hasta que el administrador publique habitaciones y acuñe
+su ventana (D-14/D-17). Deuda heredada fuera de este ciclo: publicar + acuñar, SMTP real, quema,
+roles/mínimo privilegio y jobs `inject-data`/`reset-all` obsoletos.
+
+**Pruebas:** `@hotel/shared` **66 ficheros / 695 pruebas** en verde; `@hotel/web` typecheck limpio y
+build de Next OK (`web:v66`); guardián del catálogo actualizado con la nueva capa maestro→cadena
+(21 pruebas en `nights-sold-guardian.test.ts`).

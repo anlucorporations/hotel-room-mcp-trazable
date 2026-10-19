@@ -14,7 +14,11 @@ export const dynamic = "force-dynamic";
  * siga siendo inventario del hotel, futura, no vendida y sin check-in.
  */
 export default async function AdminAuctionsPage() {
-  const catalog = await fetchCatalog().catch(() => ({ nights: [], hiddenSoldCount: 0 }));
+  const catalog = await fetchCatalog().catch(() => ({
+    nights: [],
+    hiddenSoldCount: 0,
+    hiddenUnlistedCount: 0,
+  }));
   const candidates: AdminAuctionCandidate[] = catalog.nights
     .filter((night) => night.type === "suite")
     .map((night) => ({
