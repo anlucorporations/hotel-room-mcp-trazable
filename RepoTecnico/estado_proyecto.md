@@ -6054,3 +6054,34 @@ informe).
 
 **Estado de cierre:** A5 y A12 **CUMPLE**; el único pendiente de la Fase 3 es **A9**, con guía de
 ejecución lista ([`F9-a9-drill-restauracion-iam.md`](./F9-a9-drill-restauracion-iam.md)).
+
+
+---
+
+## 54. Casos de uso de la WEB y de la APK (2026-10-20) · `@asistenteProyecto`
+
+**Encargo:** «genera los casos de uso de la WEB y la APK». Se actúa como analista funcional (Fase 2) y se
+producen dos artefactos nuevos, sin tocar código, contratos ni BD:
+
+| Documento | Contenido | Alcance |
+|---|---|---|
+| [`casos_uso_web.md`](./casos_uso_web.md) | **24 CU-W** detallados (Gherkin/EARS, trazabilidad, oráculos) + consolidación de **17 CU del MVP**, **21 CU del SRS** y **45 CU-V** con su estado de implementación + matriz RF/RNF→CU + criterios de aceptación web | Web **implementada** (F1–F10) |
+| [`casos_uso_apk.md`](./casos_uso_apk.md) | **24 CU-A** detallados para una **APK Android del huésped** definida desde cero + decisiones de producto asumidas + paridad web/APK + criterios técnicos de aceptación | App **nueva** (v1 propuesta; no existe aún en el repo) |
+
+**Cobertura:** 109 objetivos de actor en la web (24 CU-W + 83 heredados/PR) y 24 en la APK; ningún
+requisito del alcance queda huérfano (§6 de cada documento, con la deuda de RF-30…RF-55 y las
+exclusiones v1 justificadas).
+
+**Decisiones asumidas para la APK (pendientes de aprobación):** Android nativo (Kotlin/Compose,
+`minSdk 26`), wallet **no custodial** con WalletConnect v2 + deep link, sin login por contraseña,
+offline para el **resguardo QR**, push FCM, ES/EN/RU, v1 solo huésped (sin back-office ni terminal) y
+endurecimiento (Play Integrity/biometría) configurable.
+
+**Preguntas abiertas (bloque de 3)** — al final de cada documento:
+1. Web: ¿CU-W-23 se mantiene como paraguas o se desglosa por panel? ¿Se incorporan al PRD las
+   capacidades hoy citadas desde la propuesta v3? ¿Se acepta la consolidación por referencia de los CU-V?
+2. APK: ¿WalletConnect v2 + deep link (recomendado) o SDK de MetaMask? ¿Compra en v1 o lanzamiento
+   visor+resguardo primero? ¿Play Integrity/biometría obligatorios o configurables?
+
+**Estado:** propuesta para aprobación del responsable. No se han generado aún los diagramas UML de casos
+de uso ni las secuencias (siguiente paso de la Fase 2 si se aprueban).
