@@ -3777,3 +3777,40 @@ wallet inyectada se mantiene como prueba manual de ventana (el resto de suites y
 | Anclajes | 8 firmas visibles en la cola con el worker degradado (`workerAvailable=false`) |
 | Informe | `/ama-de-llaves/informes` con 3 filas de productividad (RF-K-10/CU-V-26) |
 | Evidencia | `RepoTecnico/evidencias/f9-admin-gobernanza-2026-10-19.json` |
+
+---
+
+## 95. Release v82 — manuales de las suites y Ayuda ampliada desplegados en producción (2026-10-20)
+
+**Qué se desplegó.** El commit `2361774` (cierre documental: manuales técnicos/literales de las suites
+F4–F10, PDFs, nueva sección «Manuales de las suites (personal)» en `/ayuda` y ADR-31/plan de la APK).
+**Solo web**: worker y MCP no cambiaron.
+
+| Componente | Imagen | Build | Revisión sirviendo | Tráfico |
+|---|---|---|---|---|
+| web | `…/hotel-mcp/web:v82` | ✅ SUCCESS `57285393-16ab-4b15-9ac2-8e7007f52820` (3m56s) | `hotel-mcp-web-00146-not` | **100 %** |
+| worker | `worker:v78` (sin cambios) | — | vigente | 100 % |
+| mcp | `mcp:v74` (sin cambios) | — | vigente | 100 % |
+
+**Método.** `gcloud builds submit` con las variables públicas del registro local
+(`NEXT_PUBLIC_RPC_URL` Besu, `CHAIN_ID=81234`, contrato `0xf8b1…25f4`, bloque `5655378`, subasta
+`0x934A…45A3` y bloque `5655388`, WalletConnect `de05…` y `NEXT_PUBLIC_SITE_URL` de producción).
+Despliegue **canario** con `--image --no-traffic --tag=v82`, verificación por URL etiquetada y promoción
+con `update-traffic --to-latest`. Se desplegó **solo con `--image`**, conservando la configuración.
+
+| Comprobación | Resultado |
+|---|---|
+| Configuración conservada | **32 variables y 9 secretos** (idénticos a la revisión anterior) |
+| Canario `/health/ready` | 200 `{"status":"READY","dependencies":{"postgres":"UP","redis":"UP","polygonRPC":"UP"}}` |
+| Canario `/`, `/ayuda`, `/catalogo` | **200** |
+| Canario `/ayuda/01-mantenimiento` | **200** (157 KB) |
+| Canario `/manual/manual-01-mantenimiento.pdf` | **200** (156 KB, PDF descargable) |
+| Contenido nuevo en `/ayuda` | «Manuales de las suites (personal)» presente |
+| Promoción a producción | `hotel-mcp-web-00146-not` sirve **100 %**; imagen `web:v82` |
+| Producción tras promover | `/`, `/catalogo`, `/ayuda`, `/ayuda/01-mantenimiento`, PDF y `/health/ready` → **200** |
+
+**Rollback.** `gcloud run services update-traffic hotel-mcp-web --region=europe-west1
+--to-revisions=hotel-mcp-web-00089-9gm=100` (v81).
+
+**Nota.** La ayuda existente y las 3 guías generales no cambian; se añaden 7 guías de suites con su PDF e
+infografía. Los manuales de la APK se generarán cuando exista build de la app (ADR-31).

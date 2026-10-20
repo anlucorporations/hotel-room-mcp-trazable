@@ -6291,3 +6291,21 @@ Se prepara la **siguiente versión** (app móvil) sin construir código todavía
 
 **Estado:** propuesta para aprobación. El plan cubre los 24 CU-A y mantiene la app sin reimplementar
 dominio (consume las APIs existentes y firma en la wallet).
+
+
+---
+
+## 64. RELEASE v82 DESPLEGADA en producción (2026-10-20)
+
+| Elemento | Valor |
+|---|---|
+| Commit | `2361774` |
+| Imagen | `web:v82` (Cloud Build `57285393-16ab-4b15-9ac2-8e7007f52820`, 3m56s) |
+| Revisión sirviendo | `hotel-mcp-web-00146-not` (100 % de tráfico) |
+| Configuración | conservada: 32 variables + 9 secretos |
+| Rollback | `hotel-mcp-web-00089-9gm` (v81) |
+| Verificación | `/health/ready` READY (postgres/redis/RPC UP); `/`, `/catalogo`, `/ayuda`, `/ayuda/01-mantenimiento` y `/manual/manual-01-mantenimiento.pdf` → 200; nueva sección «Manuales de las suites (personal)» visible |
+
+Solo se desplegó **web**; worker (v78) y MCP (v74) no cambiaron. Documentado en
+[`despliegue_gcp.md`](./despliegue_gcp.md) §95 y evidencia
+[`evidencias/release-v82-2026-10-20.json`](./evidencias/release-v82-2026-10-20.json).

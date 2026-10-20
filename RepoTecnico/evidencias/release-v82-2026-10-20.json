@@ -1,0 +1,39 @@
+{
+  "id": "release-v82-2026-10-20",
+  "titulo": "Release v82 — manuales de suites y Ayuda ampliada en producción",
+  "fechaUtc": "2026-10-20T19:50:00Z",
+  "commit": "2361774",
+  "alcance": "web (worker y mcp sin cambios)",
+  "build": {
+    "id": "57285393-16ab-4b15-9ac2-8e7007f52820",
+    "imagen": "europe-west1-docker.pkg.dev/hotel-mcp/hotel-mcp/web:v82",
+    "duracion": "3m56s",
+    "resultado": "SUCCESS"
+  },
+  "despliegue": {
+    "metodo": "canario --no-traffic --tag=v82 + verificación + update-traffic --to-latest",
+    "revision": "hotel-mcp-web-00146-not",
+    "trafico": "100%",
+    "configuracionConservada": { "variables": 32, "secretos": 9 },
+    "rollback": "hotel-mcp-web-00089-9gm (v81)"
+  },
+  "verificacion": {
+    "healthReady": { "http": 200, "body": "{\"status\":\"READY\",\"dependencies\":{\"postgres\":\"UP\",\"redis\":\"UP\",\"polygonRPC\":\"UP\"}}" },
+    "rutasProduccion": {
+      "/": 200,
+      "/catalogo": 200,
+      "/ayuda": 200,
+      "/ayuda/01-mantenimiento": 200,
+      "/manual/manual-01-mantenimiento.pdf": 200
+    },
+    "contenidoNuevo": [
+      "sección «Manuales de las suites (personal)» en /ayuda",
+      "guía /ayuda/05-gobernanza-y-firmas visible",
+      "PDF de manual-01-mantenimiento descargable"
+    ]
+  },
+  "notas": [
+    "El contenido nuevo son manuales y su presentación; no cambia la lógica de negocio.",
+    "Los manuales de la APK se generarán cuando exista build (ADR-31)."
+  ]
+}

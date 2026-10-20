@@ -2,7 +2,7 @@
 
 > **Proyecto:** `hotel-room-mcp-trazable` — plataforma de noches de hotel tokenizadas (web + contratos + worker + MCP).
 > **Cliente:** Hotel Marina del Sol · **Entrega:** **2026-10-20** · **Estado:** **PROYECTO CERRADO** (fases 1–5).
-> **Release:** web `v81` en producción · **Rama:** `Hotel-DSH-GCP-v3` · **Etiqueta:** `entrega-final-2026-10-20`.
+> **Release:** web `v82` en producción · **Rama:** `Hotel-DSH-GCP-v3` · **Etiqueta:** `entrega-final-2026-10-20`.
 > **Repositorio:** [GitLab `anlucorporations/hotel-room-mcp-trazable`](https://gitlab.com/anlucorporations/hotel-room-mcp-trazable) — `main` en `3fc64a2` (entrega) + notas post-entrega.
 
 ---
@@ -26,7 +26,7 @@ Una plataforma operativa para vender, revender, usar y operar **noches de hotel 
 
 | Servicio | URL / identificador |
 |---|---|
-| Web (Cloud Run) | `https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app` |
+| Web (Cloud Run) | `https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app` (revisión `hotel-mcp-web-00146-not`, `web:v82`) |
 | MCP (Cloud Run) | `https://hotel-mcp-mcp-d6jlzeq5yq-ew.a.run.app` |
 | Worker (Cloud Run) | `https://hotel-mcp-worker-d6jlzeq5yq-ew.a.run.app` |
 | PostgreSQL | Cloud SQL `hotel-mcp-pg` (PostgreSQL 18, IP privada, base `hotel_nft`) |
