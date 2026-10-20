@@ -436,7 +436,7 @@ trazabilidad. Estos son, con su motivo y su condición para activarse:
 | **RF-21** (subastas de la suite) | **FASE POSTERIOR** | Diferido por decisión (D-11); no hay diseño ni código |
 | **RF-22** (metadatos en Arweave) | **PAR** | El camino `ipfs://` con gateway propio está implementado (ADR-12); Arweave y el *pinning* automático son fase posterior |
 | **RF-23** (MiCA y fiscalidad) | **FASE POSTERIOR** | Lo firma un asesor externo; es gate de la venta al público, no del MVP |
-| **RF-30…RF-55** (incrementos de operación hotelera: recepción, cuenta/wallet, Sistemas y ficha de habitación) | **PAR** | El catálogo §9 y los manuales los citan (CU-30…CU-39, CU-40…CU-46), pero el PRD v2.0.0 solo declara RF-01…RF-23: son requisitos de negocio pendientes de incorporar al PRD. Mientras tanto, la trazabilidad de esos casos de uso se apoya en los manuales y en las pruebas citadas en §9 |
+| **RF-30…RF-55** (incrementos de operación hotelera: recepción, cuenta/wallet, Sistemas y ficha de habitación) | **PAR** | El catálogo §9 y los manuales los citan (CU-30…CU-39, CU-40…CU-46), pero el PRD v2.0.0 solo declara RF-01…RF-23 (y, desde 2026-10-20, RF-61…RF-65): son requisitos de negocio pendientes de incorporar al PRD. Mientras tanto, la trazabilidad de esos casos de uso se apoya en los manuales y en las pruebas citadas en §9 |
 
 ---
 

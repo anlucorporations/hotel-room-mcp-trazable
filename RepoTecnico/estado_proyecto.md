@@ -6072,16 +6072,21 @@ producen dos artefactos nuevos, sin tocar código, contratos ni BD:
 requisito del alcance queda huérfano (§6 de cada documento, con la deuda de RF-30…RF-55 y las
 exclusiones v1 justificadas).
 
-**Decisiones asumidas para la APK (pendientes de aprobación):** Android nativo (Kotlin/Compose,
-`minSdk 26`), wallet **no custodial** con WalletConnect v2 + deep link, sin login por contraseña,
-offline para el **resguardo QR**, push FCM, ES/EN/RU, v1 solo huésped (sin back-office ni terminal) y
-endurecimiento (Play Integrity/biometría) configurable.
+**Decisiones de producto de la APK (ratificadas):** Android nativo (Kotlin/Compose, `minSdk 26`),
+wallet **no custodial** con WalletConnect v2 + deep link, sin login por contraseña, offline para el
+**resguardo QR**, push FCM, ES/EN/RU y v1 solo huésped (sin back-office ni terminal).
 
-**Preguntas abiertas (bloque de 3)** — al final de cada documento:
-1. Web: ¿CU-W-23 se mantiene como paraguas o se desglosa por panel? ¿Se incorporan al PRD las
-   capacidades hoy citadas desde la propuesta v3? ¿Se acepta la consolidación por referencia de los CU-V?
-2. APK: ¿WalletConnect v2 + deep link (recomendado) o SDK de MetaMask? ¿Compra en v1 o lanzamiento
-   visor+resguardo primero? ¿Play Integrity/biometría obligatorios o configurables?
+**Decisiones ratificadas (2026-10-20):**
 
-**Estado:** propuesta para aprobación del responsable. No se han generado aún los diagramas UML de casos
-de uso ni las secuencias (siguiente paso de la Fase 2 si se aprueban).
+| # | Decisión | Resolución |
+|---|---|---|
+| W-1 | Gobernanza de plataforma | **CU-W-23 paraguas** + subcasos enumerados 23.1–23.6 |
+| W-2 | RF del PRD | **RF-61…RF-65** incorporados a `docs/PRD.md` (reseñas, contenido, actividades, portal de cargos, asistente con manuales) y trazados |
+| W-3 | CU-V | **Consolidación por referencia** al documento fuente auditado |
+| A-1 | Wallet de la APK | **WalletConnect v2 + deep link MetaMask** |
+| A-2 | Compra en APK v1 | **Compra completa en v1** (primaria, reventa y subastas) |
+| A-3 | Endurecimiento | **Biometría obligatoria + Play Integrity opcional** |
+
+**Próximo paso de Fase 2:** diagramas UML de casos de uso y secuencias de los flujos clave (web:
+CU-W-05/10/20/23; APK: CU-A-07/10/16/18) y auditoría `@audita` de los dos documentos. No se han generado
+aún los diagramas.

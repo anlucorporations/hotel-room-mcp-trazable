@@ -1,7 +1,7 @@
 # Casos de uso y criterios de aceptación — APK Android del huésped (v1)
 
 > **Tipo:** análisis funcional de una **app nueva** · **Fase:** 2 (artefacto de casos de uso) · **Fecha:** 2026-10-20.
-> **Autor:** @asistenteProyecto (analista funcional senior). **Estado: propuesta para aprobación.**
+> **Autor:** @asistenteProyecto (analista funcional senior). **Estado:** decisiones de producto **ratificadas (2026-10-20)**; pendiente la aprobación de alcance y planificación.
 >
 > **Alcance:** app **Android nativa** para el **huésped** de Hotel Marina del Sol: descubrir noches,
 > comprar (primaria y reventa), participar en subastas, guardar el resguardo **offline**, hacer check-in,
@@ -48,14 +48,14 @@
 |---|---|---|
 | A-1 | **App nativa Android** (Kotlin + Compose), no PWA/TWA | UX de campo, biometría, Keystore y notificaciones fiables; el requisito RNF-18 ya exige flujo móvil |
 | A-2 | **No custodial**: la app nunca ve ni guarda claves privadas | Coherente con RF-04, RNF-13 y ADR-11; la wallet vive en MetaMask/WalletConnect |
-| A-3 | **WalletConnect v2** como vía principal + **deep link** a MetaMask | Cubre wallets Android; el QR se escanea con otra pantalla (no se puede escanear el propio móvil) |
+| A-3 | **WalletConnect v2 + deep link a MetaMask** (ratificado 2026-10-20) | Cubre cualquier wallet Android; el QR se escanea desde otro dispositivo |
 | A-4 | **Sin login por contraseña**: la identidad es la wallet; el backend no crea cuentas de huésped | Minimización de datos (RNF-05) y simplicidad; el huésped no es un operador |
 | A-5 | **Offline parcial**: catálogo cacheado y **resguardo QR siempre disponible**; las compras exigen red | El resguardo es lo único crítico sin cobertura (hotel, playa, sótano) |
 | A-6 | **Push con FCM** + email; preferencias y baja del huésped | RF-16/RF-37 y RNF-M-10 |
 | A-7 | **Sin PII en el dispositivo** salvo lo imprescindible; caché cifrada y borrable | RGPD/RNF-05; datos de estancia mínimos |
 | A-8 | **ES/EN/RU** desde v1 y accesibilidad TalkBack | RNF-06/RNF-20 y paridad con la web |
 | A-9 | **v1 = huésped**; back-office y terminal fuera de alcance | El personal trabaja en web (D-49/D-50) |
-| A-10 | **Play Integrity + bloqueo biométrico** como opción configurable (decisión abierta §8) | Endurece el acceso al resguardo sin bloquear la compra |
+| A-10 | **Bloqueo biométrico obligatorio** + **Play Integrity opcional** (ratificado 2026-10-20) | Protege el resguardo sin bloquear la compra; Integrity se activa con la ficha de Play estable |
 
 **Fuera de alcance v1:** administración de habitaciones/contenido, suites de mantenimiento/ama de llaves,
 terminal PIN, exportación de auditoría, gestión de roles on-chain, PMS y finanzas.
@@ -576,8 +576,18 @@ Cuando vuelve a abrir la app
 Entonces la wallet está desconectada y los datos locales sensibles se han borrado
 ```
 
+```gherkin
+Dado un build con Play Integrity activado y un dispositivo no aprobado
+Cuando el huésped intenta mostrar el resguardo
+Entonces la app lo limita a modo de solo lectura con un aviso
+Y no permite operaciones de compra/venta desde ese dispositivo
+```
+
 - **EARS:** El sistema deberá almacenar el resguardo y tokens en almacenamiento cifrado (Android Keystore).
-  El sistema deberá borrar los datos locales al cerrar sesión/desconectar la wallet.
+  El sistema deberá exigir autenticación biométrica/del dispositivo para abrir la app y mostrar el
+  resguardo (obligatorio en v1). Si Play Integrity está activo y el dispositivo no es aprobado,
+  entonces el sistema deberá restringir las operaciones sensibles a solo lectura. El sistema deberá
+  borrar los datos locales al cerrar sesión/desconectar la wallet.
 - **Trazabilidad:** RNF-13, RNF-05, RNF-18; nuevo (sin paridad web).
 - **Oráculos:** biometría solicitada, Keystore/EncryptedFile, limpieza de caché al desconectar.
 
@@ -814,15 +824,15 @@ Entonces puede copiar/exportar un diagnóstico con versión y estado de red
 
 ---
 
-## 8. Decisiones abiertas (bloque de 3, para aprobación)
+## 8. Decisiones ratificadas (2026-10-20)
 
-1. **Conexión de wallet:** ¿WalletConnect v2 como vía principal + deep link a MetaMask (recomendado para
-   cubrir cualquier wallet Android) o integración directa del SDK de MetaMask?
-2. **Alcance de compra en v1:** ¿la APK permite **comprar** desde el primer lanzamiento o se lanza primero
-   como visor + resguardo offline + check-in (compras en web) para reducir riesgo?
-3. **Endurecimiento:** ¿se exige **Play Integrity** y bloqueo biométrico **obligatorio** en v1, o quedan
-   como opción configurable por el huésped?
+| # | Decisión | Resolución |
+|---|---|---|
+| A-1 | Estrategia de wallet | **Ratificado**: WalletConnect v2 como vía principal + **deep link a MetaMask** (decisión A-3). |
+| A-2 | Alcance de compra en v1 | **Ratificado**: **compra completa en v1** (primaria, reventa y subastas), además de resguardo offline y check-in. |
+| A-3 | Endurecimiento | **Ratificado**: **bloqueo biométrico obligatorio**; **Play Integrity opcional** (se activa cuando la ficha de Play esté estable). |
 
-> **Nota:** este documento es Fase 2 (casos de uso) y no compromete fechas ni presupuesto. Al aprobarse
-> las decisiones de §8, se actualizará `estado_proyecto.md` y se generarán los diagramas de casos de uso
-> y de secuencia de los flujos clave (CU-A-07, CU-A-10, CU-A-16).
+**Siguiente paso de Fase 2:** diagramas UML de casos de uso y secuencias de CU-A-07 (compra), CU-A-10
+(resguardo offline), CU-A-16 (push) y CU-A-18 (protección), y auditoría `@audita` del documento.
+
+> **Nota:** este documento es Fase 2 (casos de uso) y no compromete fechas ni presupuesto.

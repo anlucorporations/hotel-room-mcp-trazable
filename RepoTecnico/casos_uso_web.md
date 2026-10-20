@@ -72,16 +72,16 @@
 | CU-W-09 | Consultar y usar mis noches (resguardo QR + pase) | Portador | RF-20, RF-33, RF-37, ADR-30 | `/mis-noches`, `TicketView`, `passes/jws` |
 | CU-W-10 | Hacer check-in / check-out en recepción | Recepcionista | RF-31–RF-35, RF-50 | `/recepcion`, `/api/reception/checkin|checkout` |
 | CU-W-11 | Operar el día en recepción (reservas, habitaciones, incidencias, PMS) | Recepcionista | RF-31, RF-32, RF-47–RF-55 | `/recepcion/reservas`, `/recepcion/habitaciones`, `/recepcion/incidencias` |
-| CU-W-12 | Consultar y reclamar un cargo por daños (portal huésped) | Huésped | RF-K-08, RF-S-04, RNF-M-10 | `/mis-noches/cargos`, `/api/damage-charges*` |
+| CU-W-12 | Consultar y reclamar un cargo por daños (portal huésped) | Huésped | RF-K-08, RF-S-04, RF-64, RNF-M-10 | `/mis-noches/cargos`, `/api/damage-charges*` |
 | CU-W-13 | Consultar el histórico público de ventas | Visitante | RF-15, RNF-05 | `/historico`, `/api/sales/history` |
 | CU-W-14 | Participar en una subasta (ver, pujar, liquidar) | Comprador | RF-13, ADR-28 | `/subastas`, `NightAuction.bid/settle` |
-| CU-W-15 | Escribir y consultar reseñas verificadas | Huésped | RF-57–RF-60 (v3), D-C… | `/resenas`, `/api/reviews` |
-| CU-W-16 | Pedir ayuda al asistente IA (hotel y compra) | Visitante/Comprador | RF-12, RF-56–RF-60, RNF-22–RNF-27 | `/asistente`, `/api/assistant`, MCP |
-| CU-W-17 | Consultar manuales y ayuda | Visitante/Huésped | RF-56, RF-59 | `/ayuda`, `/ayuda/{cliente,comprador,recepcion,huesped}` |
+| CU-W-15 | Escribir y consultar reseñas verificadas | Huésped | RF-61, D-C… | `/resenas`, `/api/reviews` |
+| CU-W-16 | Pedir ayuda al asistente IA (hotel y compra) | Visitante/Comprador | RF-12, RF-56–RF-60, RF-65, RNF-22–RNF-27 | `/asistente`, `/api/assistant`, MCP |
+| CU-W-17 | Consultar manuales y ayuda | Visitante/Huésped | RF-56, RF-59, RF-65 | `/ayuda`, `/ayuda/{cliente,comprador,recepcion,huesped}` |
 | CU-W-18 | Recibir avisos por email y push (alta/baja) | Huésped | RF-09, RF-16, RF-37 | `/api/push/subscribe`, worker, `sw.js` |
 | CU-W-19 | Acceder al back-office (password + TOTP), gestionar mi seguridad y salir | Operador | RNF-06, RNF-13, CU-01/CU-46 | `/api/auth/*`, `CredentialForm`, `AdminSecurity` |
 | CU-W-20 | Administrar habitaciones, publicar ficha firmada y acuñar la ventana | Owner | RF-05, RF-18a/b, RF-19, D-1…D-26 | `/admin/habitacion`, `/api/admin/rooms*` |
-| CU-W-21 | Administrar contenido público y actividades | Owner | RF-18a, D-66/D-69/D-73/D-74 | `/admin/contenido`, `/admin/actividades` |
+| CU-W-21 | Administrar contenido público y actividades | Owner | RF-18a, RF-62, RF-63, D-66/D-69/D-73/D-74 | `/admin/contenido`, `/admin/actividades` |
 | CU-W-22 | Moderar reseñas | Owner | RF-57–RF-60 (v3) | `/admin/resenas`, `/api/admin/reviews` |
 | CU-W-23 | Gobernar la plataforma (roles, wallets, flags, operarios, auditoría, backups) | Owner/Soporte | RF-06, RF-41–RF-46, RNF-M-11/15/19 | `/admin/sistemas/**`, `/admin/roles`, `/admin/royalty` |
 | CU-W-24 | Supervisar la operación (salud, métricas, cola de anclajes, MCP read-only) | Owner/Sistema | RF-10, RF-45, RNF-17, DT-AUD-15 | `/admin/dashboard`, `/admin/sistemas/operaciones`, `/health/*`, MCP |
@@ -508,7 +508,7 @@ Y el hotel puede resolverla con RESOLVED_ACCEPTED o RESOLVED_REJECTED
 
 - **Restricciones (EARS):** El sistema deberá notificar con datos mínimos y no incluir PII completa en
   el enlace. Si la reclamación está fuera de plazo, entonces el sistema deberá rechazarla.
-- **Trazabilidad:** RF-K-08, RF-S-04, RNF-M-10, D-C14, CU-V-33/CU-V-41/CU-V-42.
+- **Trazabilidad:** RF-K-08, RF-S-04, RF-64, RNF-M-10, D-C14, CU-V-33/CU-V-41/CU-V-42.
 - **Oráculos:** tabla `damage_charge_guest_notifications` y sus estados, `/mis-noches/cargos`,
   `e2e/danos.spec.ts`; evidencia F7/F10.
 
@@ -602,7 +602,7 @@ Cuando aprueba una reseña
 Entonces la reseña aparece en "/resenas" y actualiza la media
 ```
 
-- **Trazabilidad:** RF-57–RF-60 (v3), D-C… reseñas F6, RNF-05.
+- **Trazabilidad:** RF-61, D-C… reseñas F6, RNF-05.
 - **Oráculos:** tabla `reviews` (`status`, `UNIQUE(token_id)`), `/api/reviews`, `/admin/resenas`;
   tests de moderación y E2E de reseñas.
 
@@ -637,7 +637,7 @@ Entonces la web muestra la tx decodificada (to/value/tokenId) y exige confirmaci
 
 - **Restricciones (EARS):** El MCP no deberá tener herramientas de escritura ni acceso a BD. El sistema
   no deberá firmar transacciones desde el servidor.
-- **Trazabilidad:** RF-12, RF-56–RF-60, RNF-22–RNF-27, ADR-30, DT-AUD-15, CU-16/CU-47.
+- **Trazabilidad:** RF-12, RF-56–RF-60, RF-65, RNF-22–RNF-27, ADR-30, DT-AUD-15, CU-16/CU-47.
 - **Oráculos:** `/api/assistant` 503 sin backend, `data-testid` del mensaje y handoff, herramientas MCP
   (`verify:mcp-tools`), `prompt-leak-filter` y `e2e/asistente*.spec.ts`.
 
@@ -662,7 +662,7 @@ Entonces ve el índice de manuales y puede abrir cada guía
 Y cada página tiene un H1 único y enlace de salto al contenido
 ```
 
-- **Trazabilidad:** RF-56, RF-59, RNF-20.
+- **Trazabilidad:** RF-56, RF-59, RF-65, RNF-20.
 - **Oráculos:** `/ayuda/**`, axe de `/ayuda*` en `a11y.spec.ts`, `manuals.generated.ts`.
 
 ---
@@ -799,7 +799,7 @@ Cuando crea una actividad con aforo 10 y fecha
 Entonces la actividad y su horario se publican en "/actividades"
 ```
 
-- **Trazabilidad:** RF-18a, D-66/D-69/D-73/D-74, RNF-05, CU-… (contenido F5/F10).
+- **Trazabilidad:** RF-18a, RF-62, RF-63, D-66/D-69/D-73/D-74, RNF-05, CU-… (contenido F5/F10).
 - **Oráculos:** `hotel_images`, `hotel_offers`, `activity_schedules`, `/admin/contenido`,
   `/admin/actividades`, `/api/admin/content*`, `/api/admin/actividades*`.
 
@@ -848,6 +848,16 @@ Entonces queda REJECTED con la nota de moderación y no se publica
   6. **Subastas**: abre/cancela subastas de noches premium (CU-48).
 - **Alternativos:** `A1` Tx no minada o `hasRole` falso: 409 y sin cambio en BD; `A2` flag obligatorio
   sin firma: 409 `CONFIG_SIGNATURE_REQUIRED`; `A3` sin permiso: 403.
+- **Subcasos enumerados (decisión 2026-10-20: el CU-W-23 se mantiene como paraguas):**
+
+| Subcaso | Acción del owner | Oráculo |
+|---|---|---|
+| 23.1 Usuarios/roles del back-office | listar/crear/rotar/activar operadores | `/api/admin/system/users`, `admin_users`, `operator_audit_log` |
+| 23.2 Wallets y roles on-chain | asignar/baja de rol con tx + `hasRole` | `operator_wallets`, tx minada, 409 si no mina |
+| 23.3 Flags de firma | prepare → sign `CONFIG` → confirm → apply | `/api/admin/settings/flags`, `on_chain_signatures`, 409 sin firma |
+| 23.4 Operarios de terminal | alta con PIN de un uso, rotación, baja, desbloqueo | `terminal_operators`, PIN bcrypt, bloqueo a los 5 intentos |
+| 23.5 Auditoría y backups | export firmado (A10), restore drill (A9) | export verificable, evidencia A9/A10 |
+| 23.6 Subastas (administración) | abrir/cancelar subasta | `NightAuction.createAuction/cancel`, `/admin/subastas` |
 - **Criterios:**
 
 ```gherkin
@@ -1025,6 +1035,11 @@ para que no haya dos verdades con criterios divergentes.
 
 ## 6. Matriz de trazabilidad requisito → caso(s) de uso
 
+> **Numeración:** las filas `RF-01…RF-23` y `RF-M/K/S` siguen la numeración de `docs/REQUISITOS.md` y
+> `docs/SRS.md` (la que usan los CU del catálogo). El `docs/PRD.md` v2.0.0 renumera su propio `RF-01…RF-23`
+> (deuda de unificación declarada); los `RF-61…RF-65` aprobados el 2026-10-20 están definidos en el PRD y
+> se trazan aquí.
+
 | Requisito | Casos que lo cubren |
 |---|---|
 | RF-01, RF-02, RF-14 | CU-W-01, CU-W-02, CU-04 |
@@ -1048,7 +1063,12 @@ para que no haya dos verdades con criterios divergentes.
 | RF-41…RF-46 | CU-W-23, CU-W-24 |
 | RF-47…RF-55 | CU-W-11 |
 | RF-30–RF-46 | CU-W-11, CU-W-19, CU-W-23, CU-W-24 |
-| RF-56–RF-60 | CU-W-01, CU-W-16, CU-W-17 |
+| RF-56, RF-57, RF-58, RF-59, RF-60 | CU-W-01, CU-W-16, CU-W-17 |
+| RF-61 (reseñas) | CU-W-15, CU-W-22 |
+| RF-62 (contenido público) | CU-W-21 |
+| RF-63 (actividades) | CU-W-21 |
+| RF-64 (portal de cargos) | CU-W-12 |
+| RF-65 (asistente con manuales) | CU-W-16, CU-W-17 |
 | RF-M-01, RF-M-02, RF-M-03, RF-M-04, RF-M-05, RF-M-06, RF-M-07, RF-M-08, RF-M-09, RF-M-10, RF-M-11, RF-M-12 | CU-V-02…CU-V-10, CU-V-13…CU-V-15, CU-V-19, CU-V-23, CU-V-25, CU-V-31 |
 | RF-K-01, RF-K-02, RF-K-03, RF-K-04, RF-K-05, RF-K-06, RF-K-07, RF-K-08, RF-K-09, RF-K-10 | CU-V-16…CU-V-26, CU-V-28…CU-V-30, CU-V-33, CU-V-34, CU-W-12 |
 | RF-S-01, RF-S-02, RF-S-03, RF-S-04, RF-S-05, RF-S-06, RF-S-07, RF-S-08 | CU-V-01…CU-V-45 (firma selectiva), CU-W-20, CU-W-23 |
@@ -1099,15 +1119,16 @@ para que no haya dos verdades con criterios divergentes.
 
 ---
 
-## 8. Decisiones abiertas (bloque de 3, para aprobación)
+## 8. Decisiones ratificadas (2026-10-20)
 
-1. **¿CU-W-23 se mantiene como caso paraguas** (gobernanza de plataforma) o se desglosa en un CU por
-   panel (usuarios, wallets, flags, operarios, auditoría, backups, subastas) para trazabilidad más fina?
-2. **¿Se incorporan al PRD como RF propios** las capacidades hoy citadas desde la propuesta v3
-   (reseñas, contenido público, actividades, portal de cargos, asistente con manuales)? Hoy se trazan a
-   RF-56–RF-60 y a decisiones D-C/D-66…, no a un RF del PRD.
-3. **¿Se acepta la consolidación por referencia de los 45 CU-V** (criterios en su documento fuente
-   auditado) o se quieren sus Gherkin/EARS duplicados también en este documento?
+| # | Decisión | Resolución |
+|---|---|---|
+| W-1 | Modelado de la gobernanza de plataforma | **Ratificado**: CU-W-23 se mantiene como caso **paraguas** y se enumeran sus subcasos 23.1–23.6 (tabla en CU-W-23). |
+| W-2 | RF propios para capacidades de la propuesta v3 | **Ratificado**: se incorporan al PRD **RF-61** (reseñas), **RF-62** (contenido público), **RF-63** (actividades), **RF-64** (portal de cargos) y **RF-65** (asistente con manuales), trazados en §4/§6. |
+| W-3 | Consolidación de los 45 CU-V | **Ratificado**: consolidación **por referencia** al documento fuente auditado; este documento fija estado y evidencia. |
+
+**Siguiente paso de Fase 2:** diagramas UML de casos de uso y secuencias de los flujos clave
+(CU-W-05, CU-W-10, CU-W-20, CU-W-23) y auditoría `@audita` de ambos documentos.
 
 > **Nota de alcance:** este documento describe la **web implementada**; la app Android del huésped se
-> especifica en `RepoTecnico/casos_uso_apk.md` (v1 propuesta, con sus propias decisiones abiertas).
+> especifica en `RepoTecnico/casos_uso_apk.md` (decisiones de producto también ratificadas).

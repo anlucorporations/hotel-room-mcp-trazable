@@ -115,6 +115,16 @@ Origen y estado según las convenciones de §0. La columna **Verificación** cit
 | **RF-21** | Subastas para la suite | CLI (deseo) | **Fase posterior** | Diferido por decisión (D-11): fuera del alcance entregado. |
 | **RF-22** | Metadatos en IPFS/Arweave | CLI (deseo) | **PAR** | `ipfs://` con CIDs reales y gateway/CDN propio (ADR-12); el *pinning* es manual. Arweave, fase posterior. |
 | **RF-23** | Cumplimiento MiCA y fiscalidad antes de mainnet | EXT | **Fase posterior** | Gate de la fase pública: lo firma un abogado, no el equipo (D-11). |
+| **RF-61** | Reseñas verificadas por noche consumida (puntuación 1–5, comentario, moderación y media pública) | CLI | **OK** | Tabla `reviews` (`UNIQUE(token_id)`), `/api/reviews` y `/admin/resenas`; moderación con `moderation_notes`. Casos: CU-W-15 y CU-W-22. |
+| **RF-62** | Contenido público editable de la home: galería (`hotel_images`) y planes informativos (`hotel_offers`) | CLI | **OK** | `/admin/contenido` y `/api/admin/content*`; JPG ≤ 2 MB y una sola portada por sección. Caso: CU-W-21. |
+| **RF-63** | Actividades y horarios del hotel, con reservas y aforo | CLI | **OK** | `activities`/`activity_schedules`/`activity_bookings` y `/admin/actividades`. Caso: CU-W-21. |
+| **RF-64** | Portal del huésped para consultar y reclamar cargos por daños dentro de plazo | CLI | **OK** | `damage_charge_guest_notifications`, `/mis-noches/cargos`, estados ACK/DISPUTED/RESOLVED_*. Caso: CU-W-12. |
+| **RF-65** | Asistente IA con manuales del hotel: búsqueda en índice, citas `manual §sección` y sin inventar | CLI | **OK** | MCP `searchHotelManuals` + prompt v3 (citas y saneador de PII); amplía RF-56–RF-60. Casos: CU-W-16 y CU-W-17. |
+
+> **Nota (2026-10-20):** `RF-61…RF-65` se incorporan al PRD al ratificar las decisiones abiertas de
+> `RepoTecnico/casos_uso_web.md` §8; recogen capacidades ya implementadas en F6–F10 que antes solo se
+> citaban desde la propuesta v3. La numeración `RF-01…RF-23` del PRD no coincide con la de
+> `docs/REQUISITOS.md`/`docs/SRS.md` (deuda de unificación declarada en SRS §10).
 
 ## 5. Requisitos no funcionales (ISO 25010)
 
