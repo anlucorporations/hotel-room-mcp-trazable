@@ -65,5 +65,5 @@ flowchart TD
 - **¿Cuánto dura el resguardo?** 7 días desde que lo generas, y solo se puede usar una vez.
 - **¿Sirve una foto del código QR?** No en la versión actual: hace falta el texto del token.
 - **¿Puedo usarlo desde el móvil de otra persona?** Sí: la pantalla del resguardo no pide cartera, así que puedes abrir el enlace en otro dispositivo.
-- **¿A qué hora puedo entrar en la habitación?** <!-- PENDIENTE DEL CLIENTE: hora oficial de entrada del hotel -->
+- **¿A qué hora puedo entrar en la habitación?** La entrada es a partir de las **15:00**. Si llegas antes, recepción puede guardarte el equipaje.
 - **¿Caduca la firma que me pide?** Sí: dura unos dos minutos. Si tardas, te pedirá firmar otra vez; no has perdido nada.

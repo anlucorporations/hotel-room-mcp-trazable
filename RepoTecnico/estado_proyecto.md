@@ -6309,3 +6309,26 @@ dominio (consume las APIs existentes y firma en la wallet).
 Solo se desplegó **web**; worker (v78) y MCP (v74) no cambiaron. Documentado en
 [`despliegue_gcp.md`](./despliegue_gcp.md) §95 y evidencia
 [`evidencias/release-v82-2026-10-20.json`](./evidencias/release-v82-2026-10-20.json).
+
+
+---
+
+## 65. Manual del huésped completado y publicado en el asistente (2026-10-20)
+
+El manual del huésped estaba completo en lo que depende del sistema; faltaban los datos del hotel. Se
+han redactado como **propuesta del equipo** (pendiente de confirmación del cliente) y se han incluido en
+`docs/manual-huesped.md` y en las guías del huésped afectadas (01, 10, 11, 12 y 17):
+
+- Ubicación y llegada (dirección, parking, transporte, distancias, accesibilidad).
+- Entrada/salida (15:00 / 12:00, salida tardía, consigna, registro).
+- Servicios con precios (desayuno, restaurante, bar, piscina, wifi, A/A, ascensor, mascotas, room service).
+- Normas de la casa (silencio, tabaco, visitas, llaves, daños, olvidados).
+- Recepción 24 h, teléfono y urgencias.
+- FAQ del hotel (entrada anticipada, fianza, efectivo, bicicletas, cuna, toallas).
+
+Índice de conocimiento regenerado (**313 fragmentos**) y **MCP `v78` desplegado** (revisión
+`hotel-mcp-mcp-00035-sok`, 100 %), verificado con consultas reales a `searchHotelManuals`
+(dirección, check-in, recepción, wifi, mascotas). Rollback: `hotel-mcp-mcp-00022-g94` (mcp:v74).
+
+**Pendiente:** confirmación/corrección del hotel sobre la propuesta (tabla en
+`solicitud-contenidos-cliente.md`); cualquier cambio solo requiere editar el manual y regenerar el índice.

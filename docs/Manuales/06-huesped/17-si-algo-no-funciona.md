@@ -88,6 +88,6 @@ flowchart TD
 - **¿Pierdo dinero si algo falla a mitad de una compra?** No. Si cancelas la firma o la operación no se completa, no se te cobra nada.
 - **¿Necesito saber de tecnología?** No. Solo tienes que pulsar los botones y aprobar en tu cartera cuando te lo pida.
 - **¿Con quién hablo si sigo atascado?** Con recepción. En la página **Contacto** tienes el teléfono y el correo del hotel.
-- **¿A qué hora puedo pasar por recepción?** <!-- PENDIENTE DEL CLIENTE: horario de atención de recepción -->
+- **¿A qué hora puedo pasar por recepción?** Recepción está abierta **24 horas**. Teléfono **+34 965 000 000**; urgencias **112**.
 - **¿Por qué no aparece el botón del dinero de prueba?** Porque este entorno no lo tiene configurado, o porque tu cartera no está conectada en la red correcta.
 - **¿Puedo usar el hotel sin cartera?** Puedes mirar el catálogo y el histórico; para comprar, revender o enseñar tu resguardo necesitas la cartera.

@@ -26,7 +26,7 @@ Una plataforma operativa para vender, revender, usar y operar **noches de hotel 
 
 | Servicio | URL / identificador |
 |---|---|
-| Web (Cloud Run) | `https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app` (revisión `hotel-mcp-web-00146-not`, `web:v82`) |
+| Web (Cloud Run) | `https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app` (revisión `hotel-mcp-web-00146-not`, `web:v82`; MCP `mcp:v78`, revisión `hotel-mcp-mcp-00035-sok`) |
 | MCP (Cloud Run) | `https://hotel-mcp-mcp-d6jlzeq5yq-ew.a.run.app` |
 | Worker (Cloud Run) | `https://hotel-mcp-worker-d6jlzeq5yq-ew.a.run.app` |
 | PostgreSQL | Cloud SQL `hotel-mcp-pg` (PostgreSQL 18, IP privada, base `hotel_nft`) |
@@ -88,7 +88,7 @@ Una plataforma operativa para vender, revender, usar y operar **noches de hotel 
 | 1 | **A9** — drill de restauración a instancia aislada (falta permiso IAM `cloudsql.backups.restore`) | Infraestructura/GCP | [`F9-a9-drill-restauracion-iam.md`](./F9-a9-drill-restauracion-iam.md) |
 | 2 | **H-02** — dictamen legal de Play/MiCA/consumo antes de publicar una APK | Asesoría legal | [`legal/play-billing-apk-v1.md`](./legal/play-billing-apk-v1.md) |
 | 3 | **H-03** — aprobación de la DPIA (wallet como dato personal) | DPO/asesoría | [`legal/DPIA-apk-huesped-v1.md`](./legal/DPIA-apk-huesped-v1.md) |
-| 4 | Contenido definitivo del manual del huésped (dirección/datos del hotel, RF-56) | Cliente | `docs/manual-huesped.md` |
+| 4 | Confirmar/corregir la **propuesta de datos del hotel** del manual del huésped (RF-56) | Cliente | `docs/manual-huesped.md` · `solicitud-contenidos-cliente.md` |
 | 5 | CI canónico (GitLab falla sin jobs; GitHub no tiene el commit): decidir y reparar | Responsable técnico | [`ci-post-entrega-2026-10-20.md`](./ci-post-entrega-2026-10-20.md) |
 | 6 | APK Android del huésped (especificada y planificada, no construida) | Producto/desarrollo | [`casos_uso_apk.md`](./casos_uso_apk.md) · [`plan_desarrollo_apk.md`](./plan_desarrollo_apk.md) · [`ADR-31`](../docs/adr/ADR-31-app-android-huesped.md) |
 

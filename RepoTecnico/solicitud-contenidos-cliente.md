@@ -1,5 +1,36 @@
 # Contenidos que faltan del hotel — solicitud al cliente
 
+
+> **ESTADO (2026-10-20): propuesta completada, pendiente de confirmación del cliente.** Los 8 bloques
+> se han redactado con una propuesta coherente para desbloquear el manual y el asistente. Está publicado
+> en producción (MCP `v78`, índice con **313 fragmentos**). Si el hotel corrige algún dato, basta editar
+> `docs/manual-huesped.md` y regenerar con `corepack pnpm knowledge`.
+
+## Propuesta de datos ya redactada (para confirmar o corregir)
+
+| Dato | Propuesta |
+|---|---|
+| Dirección | Paseo del Puerto, 12 · 03001 Alicante (playa del Postiguet a 150 m) |
+| Parking | Propio, 24 plazas, 15 €/día (12 €/día clientes), altura 2,10 m; parking público a 200 m |
+| Transporte | TRAM L1/L3 «Puerta del Mar» a 5 min; buses 21 y 22; taxi a 2 min; aeropuerto a 12 km |
+| Accesibilidad | Entrada a cota cero, ascensor y habitaciones adaptadas 101 y 201 |
+| Entrada / salida | Check-in desde las 15:00; check-out antes de las 12:00; salida tardía hasta 15:00 por 25 € |
+| Equipaje / registro | Consigna gratuita; DNI/pasaporte del titular y datos de acompañantes |
+| Desayuno | Buffet 7:30–10:30 (verano 7:30–11:00), 12 €/persona, gratis menores de 6 |
+| Restaurante / bar | Marea: 13:30–15:30 y 20:00–22:30; bar terraza 10:00–00:00 |
+| Piscina | Exterior, 1 jun–30 sep, 10:00–20:00; toalla con depósito de 10 €; menores acompañados |
+| Wifi / A/A / ascensor | Red MarinaSol_Guest gratis (clave en tarjeta y recepción); A/A en todas; ascensor |
+| Mascotas | Hasta 10 kg, 15 €/noche; no en piscina ni restaurante; perros guía siempre |
+| Servicio de habitaciones | 12:00–23:00, recargo de 8 € |
+| Normas | Silencio 22:00–08:00; no fumar salvo terraza; visitas hasta 23:00 registradas; llave perdida 15 €; daños con tope 3× la noche; olvidados 90 días |
+| Recepción | 24 horas · teléfono +34 965 000 000 · urgencias 112 |
+| FAQ | Entrada anticipada 20 € (hasta 3 h); sin fianza salvo grupos; efectivo y tarjeta en mostrador; aparcamiento de bicis gratis; cuna gratis; toalla de playa con depósito de 10 € |
+
+> **Pendiente:** confirmación del hotel (o corrección) de esta tabla. El asistente ya responde con
+> estos datos y cita el manual del huésped.
+
+---
+
 **Para**: Hotel Marina del Sol · **De**: equipo del proyecto · **Fecha**: 2026-10-08
 
 El asistente de la web y el manual del huésped ya están **en producción**, pero solo pueden responder

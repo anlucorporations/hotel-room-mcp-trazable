@@ -24,7 +24,7 @@ Esta parte no tiene botones: es la explicación de lo que verás en pantalla cua
 5. El hotel tiene 50 habitaciones, numeradas de la 101 a la 130 (planta baja) y de la 201 a la 220 (primera planta).
 6. Hay tres tipos de habitación: **simple**, **doble** y **suite**. El tipo se sabe por el número de habitación.
 
-<!-- PENDIENTE DEL CLIENTE: el reparto real de tipos por habitación (qué números son simples, dobles y suites) -->
+El reparto actual es: **101 a 115 simples**, **116 a 130 dobles** y **201 a 220 suites**.
 
 7. El catálogo solo enseña las noches de los próximos **90 días**. Más allá de esa fecha no hay nada que comprar.
 8. Las fechas se guardan siempre en **UTC** (la hora del meridiano de Greenwich). Gracias a eso, la ficha de una noche es la misma aunque la mires desde otro país.

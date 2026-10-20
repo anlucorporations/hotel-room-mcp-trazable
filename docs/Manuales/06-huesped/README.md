@@ -4,10 +4,11 @@ Estos manuales explican, en lenguaje llano, **cada cosa que un huésped puede pe
 plataforma del Hotel Marina del Sol. Son la versión literal (para personas) de los manuales técnicos
 que están en `RepoTecnico/Manuales/06-huesped/`, con los mismos nombres de fichero.
 
-> **Aviso sobre los datos del hotel.** Aquí solo hay procedimientos del producto, verificados contra el
-> código real. La **dirección, los horarios, los precios de los servicios y las normas de la casa** no
-> están en el repositorio: donde harían falta aparece `<!-- PENDIENTE DEL CLIENTE: … -->`. Ese contenido
-> lo tiene que aportar el hotel en [`docs/manual-huesped.md`](../../manual-huesped.md).
+> **Aviso sobre los datos del hotel.** Los procedimientos están verificados contra el código real. Los
+> datos del hotel (dirección, horarios, precios y normas) son la **propuesta del equipo** (2026-10-20)
+> recogida en [`docs/manual-huesped.md`](../../manual-huesped.md), pendiente de la confirmación final
+> del cliente; las preguntas exactas están en
+> [`RepoTecnico/solicitud-contenidos-cliente.md`](../../../RepoTecnico/solicitud-contenidos-cliente.md).
 
 ## Antes de llegar
 

@@ -1,0 +1,40 @@
+{
+  "id": "release-mcp-v78-manual-huesped-2026-10-20",
+  "titulo": "Manual del huésped completo (propuesta) y MCP v78 con el nuevo índice de conocimiento",
+  "fechaUtc": "2026-10-20T22:15:00Z",
+  "alcance": "mcp (índice de conocimiento); web y worker sin cambios",
+  "manual": {
+    "fichero": "docs/manual-huesped.md",
+    "guiasActualizadas": [
+      "docs/Manuales/06-huesped/01-que-es-una-noche.md",
+      "docs/Manuales/06-huesped/10-entrar-con-tu-qr.md",
+      "docs/Manuales/06-huesped/11-extras-durante-la-estancia.md",
+      "docs/Manuales/06-huesped/12-salir-y-cerrar-la-cuenta.md",
+      "docs/Manuales/06-huesped/17-si-algo-no-funciona.md"
+    ],
+    "datosDelHotel": {
+      "estado": "propuesta del equipo pendiente de confirmación del cliente",
+      "detalle": "RepoTecnico/solicitud-contenidos-cliente.md"
+    }
+  },
+  "indiceConocimiento": { "fragmentos": 313, "manuales": 21, "comando": "corepack pnpm knowledge" },
+  "despliegue": {
+    "imagen": "europe-west1-docker.pkg.dev/hotel-mcp/hotel-mcp/mcp:v78",
+    "build": "c27026aa-0421-46a5-95fa-12547eb5b888",
+    "duracion": "2m31s",
+    "revision": "hotel-mcp-mcp-00035-sok",
+    "trafico": "100%",
+    "rollback": "hotel-mcp-mcp-00022-g94 (mcp:v74)"
+  },
+  "verificacion": {
+    "health": 200,
+    "herramientas": 7,
+    "consultas": {
+      "direccion": "Paseo del Puerto, 12 (03001) Alicante",
+      "checkIn": "a partir de las 15:00",
+      "recepcion": "24 horas · +34 965 000 000 · urgencias 112",
+      "wifi": "red MarinaSol_Guest gratis",
+      "mascotas": "hasta 10 kg, 15 €/noche"
+    }
+  }
+}

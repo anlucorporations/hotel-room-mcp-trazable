@@ -57,5 +57,5 @@ Lo que hace recepción delante de ti:
 - **¿Tengo que hacer algo para que me cobren el extra?** No: lo apunta recepción cuando lo consumes.
 - **¿Puedo apuntar un extra yo mismo?** No. Solo recepción puede darlo de alta.
 - **¿Puedo ver mis cargos en la web?** No; hoy solo se ven en la pantalla de recepción.
-- **¿Qué precios tienen los extras?** <!-- PENDIENTE DEL CLIENTE: catálogo de extras del hotel y sus precios -->
+- **¿Qué precios tienen los extras?** Los más habituales: desayuno **12 €**, servicio de habitaciones con **8 €** de recargo, mascota **15 €/noche** y toalla de piscina con **10 €** de depósito. El resto se apunta en recepción.
 - **¿Se puede borrar un cargo equivocado?** No se edita ni se borra: se cancela al cerrar la cuenta.

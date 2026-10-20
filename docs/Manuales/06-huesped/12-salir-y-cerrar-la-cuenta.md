@@ -29,7 +29,7 @@ Lo que hace recepción delante de ti:
 11. También se pueden añadir **Notas (opcional)**.
 12. Al confirmar, aparece el recibo verde **Check-out registrado** y la línea con los cargos cancelados. Si otro puesto se adelantó, se lee «Esta estancia ya tenía el check-out registrado.»
 13. Después, tu habitación queda **Pendiente de limpieza** hasta que recepción la libere. Es lo normal: la habitación no vuelve a estar disponible hasta que se limpia.
-14. Cosas que conviene saber: la salida no se anota en la red del hotel (solo la entrada), no hay pasarela de pago y el sistema no cobra. El cobro se resuelve aparte, en el mostrador (pendiente de confirmar cómo).
+14. Cosas que conviene saber: la salida no se anota en la red del hotel (solo la entrada), no hay pasarela de pago y el sistema no cobra. El cobro se resuelve aparte, en el mostrador, en efectivo o con tarjeta. La salida es antes de las **12:00**; hasta las 15:00 cuesta **25 €** si la habitación está libre.
 15. El cierre no se puede deshacer. Si se elige la estancia equivocada, hay que avisar a administración antes de tocar nada más.
 16. Si no hay ningún cargo, en la lista se lee «Esta estancia no tiene cargos.» y el recibo indicará cero cancelaciones.
 
@@ -57,8 +57,8 @@ flowchart TD
 - **La cuenta se cerró con la estancia equivocada.** No hay forma de deshacerlo desde el sistema. Hay que avisar a administración, sin tocar nada más.
 - **La habitación no se puede liberar.** Si no está pendiente de limpieza, el sistema responde «La habitación está en estado X; no se puede liberar.» Es una tarea de recepción: espera a que la limpien.
 - **No aparece el cobro por ninguna parte.** Es lo previsto: el sistema apunta y cancela cargos, pero no cobra ni genera un recibo de pago. No te pedirá ninguna firma ni ningún dato de tarjeta.
-- **Quieres saber a qué hora tienes que dejar la habitación.** El sistema no fija ninguna hora de salida. <!-- PENDIENTE DEL CLIENTE: hora oficial de salida del hotel -->
-- **Quieres saber cómo se devuelven las llaves o cómo se paga.** Eso tampoco está en el sistema. <!-- PENDIENTE DEL CLIENTE: procedimiento de devolución de llaves y de cobro en el mostrador -->
+- **Quieres saber a qué hora tienes que dejar la habitación.** La salida es antes de las **12:00**; si necesitas más tiempo, hasta las 15:00 cuesta **25 €** y depende de que la habitación esté libre.
+- **Quieres saber cómo se devuelven las llaves o cómo se paga.** La tarjeta-llave se entrega en recepción al salir; el pago se hace allí, en efectivo o con tarjeta.
 - **La cuenta ya está cerrada y falta cancelar un cargo.** Una vez cerrada la estancia, el sistema no permite corregir cargos: hay que avisar a administración.
 - **No hay cargos que revisar.** Si la estancia no tiene ninguno, la lista lo dice con «Esta estancia no tiene cargos.» y el recibo marca cero cancelaciones.
 
@@ -67,5 +67,5 @@ flowchart TD
 - **¿Tengo que firmar algo para salir?** No: la salida no pide firma ni cartera.
 - **¿Me cobra el sistema al salir?** No; solo apunta y cancela cargos. El cobro se hace aparte, en el mostrador.
 - **¿Puedo volver atrás si cierran mi cuenta por error?** No hay forma de deshacerlo; hay que avisar a administración.
-- **¿A qué hora tengo que dejar la habitación?** <!-- PENDIENTE DEL CLIENTE: hora oficial de salida del hotel -->
+- **¿A qué hora tengo que dejar la habitación?** Antes de las **12:00**; hasta las 15:00 cuesta **25 €** si hay disponibilidad.
 - **¿Qué pasa con la habitación después?** Queda como **Pendiente de limpieza** hasta que recepción la libere.

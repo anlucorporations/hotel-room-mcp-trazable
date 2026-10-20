@@ -3814,3 +3814,39 @@ con `update-traffic --to-latest`. Se desplegó **solo con `--image`**, conservan
 
 **Nota.** La ayuda existente y las 3 guías generales no cambian; se añaden 7 guías de suites con su PDF e
 infografía. Los manuales de la APK se generarán cuando exista build de la app (ADR-31).
+
+
+---
+
+## 96. Release MCP v78 — manual del huésped completo en el conocimiento del asistente (2026-10-20)
+
+**Qué se desplegó.** El manual del huésped completado con los datos del hotel (propuesta del equipo):
+ubicación, horarios de entrada/salida, servicios con precios, normas, recepción y FAQ. Se regeneró el
+índice de conocimiento (**313 fragmentos de 21 manuales**) y se desplegó **solo el MCP** (la web recibe
+las respuestas del asistente por MCP en tiempo de ejecución; no requiere rebuild).
+
+| Componente | Imagen | Build | Revisión sirviendo | Tráfico |
+|---|---|---|---|---|
+| mcp | `…/hotel-mcp/mcp:v78` | ✅ SUCCESS `c27026aa-0421-46a5-95fa-12547eb5b888` (2m31s) | `hotel-mcp-mcp-00035-sok` | **100 %** |
+| web | `web:v82` (sin cambios) | — | `hotel-mcp-web-00146-not` | 100 % |
+| worker | `worker:v78` (sin cambios) | — | vigente | 100 % |
+
+**Método.** Canario con `--no-traffic --tag=v78`, verificación con el cliente MCP real (7 herramientas)
+y consultas a `searchHotelManuals`, y promoción con `update-traffic --to-latest`.
+
+| Comprobación | Resultado |
+|---|---|
+| Canario `/health` | **200** |
+| `tools/list` (canario y producción) | **7 herramientas** |
+| «¿Cuál es la dirección del hotel?» | devuelve el fragmento del manual con «Paseo del Puerto, 12 (03001) Alicante» |
+| «¿A qué hora es el check-in?» | «a partir de las 15:00» |
+| «¿Hasta qué hora está abierta la recepción?» | «24 horas · +34 965 000 000 · urgencias 112» |
+| «¿Se admiten mascotas?» / «¿Hay wifi?» | fragmento de servicios con mascotas (15 €/noche) y wifi `MarinaSol_Guest` |
+| Promoción | `hotel-mcp-mcp-00035-sok` con `mcp:v78` al 100 % |
+| Producción `/health` | **200** |
+
+**Rollback.** `gcloud run services update-traffic hotel-mcp-mcp --region=europe-west1
+--to-revisions=hotel-mcp-mcp-00022-g94=100` (mcp:v74).
+
+**Nota.** Los datos del hotel son una **propuesta pendiente de confirmación** del cliente; quedan
+documentados en `solicitud-contenidos-cliente.md`. El manual está en `docs/manual-huesped.md`.
