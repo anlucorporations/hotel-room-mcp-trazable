@@ -3,7 +3,7 @@
   "titulo": "F9 cerrada — administración, gobernanza y soporte desplegados y validados",
   "fechaUtc": "2026-10-19T23:20:00Z",
   "despliegue": {
-    "web": "web:v80 → hotel-mcp-web-00088-gcw (100%)",
+    "web": "web:v81 → hotel-mcp-web-00089-9gm (100%; v80 00088-gcw sirvió la validación funcional)",
     "worker": "worker:v78 sin cambios (F9 no necesita migración)",
     "esquema": "sin cambios"
   },
@@ -19,7 +19,7 @@
     "web": "API F9 6 pruebas + guardián F9 3 + informe CU-V-26 2; i18n ES/EN/RU en paridad; typecheck limpio",
     "shared": "dominio flags 3 pruebas",
     "contrato": "forge test 202 pruebas / 20 suites / 0 fallos (incluye setBackupForRole, CONFIG solo admin y respaldo)",
-    "suitesCompletas": "web, shared, worker, mcp y monitor en verde (ver estado_proyecto §50)"
+    "suitesCompletas": "web 1188/1188 · shared 753/753 · worker 189/189 · mcp 86/86 · monitor 42/42; typecheck y lint del workspace en verde"
   },
   "hallazgosCorregidos": [
     "La cola de anclajes devolvía 503 si el worker estaba degradado (health 503): ahora devuelve la cola con workerAvailable=false.",

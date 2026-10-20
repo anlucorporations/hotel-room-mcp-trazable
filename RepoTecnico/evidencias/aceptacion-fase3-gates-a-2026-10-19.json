@@ -25,7 +25,7 @@
     {
       "id": "A4",
       "estado": "CUMPLE",
-      "detalle": "`pnpm typecheck`, `pnpm lint` (0 errores), suites completas de shared/web/worker/mcp/monitor y `forge test` (202 pruebas) en verde; build de imágenes web/worker/mcp verificado.",
+      "detalle": "`pnpm typecheck` y `pnpm lint` (0 errores) verdes; suites completas web 1188/1188, shared 753/753, worker 189/189, mcp 86/86 y monitor 42/42; `forge test` 202/202; build de imágenes web/worker/mcp verificado.",
       "evidencia": "salida pnpm (ver estado_proyecto §48)"
     },
     {
