@@ -6028,3 +6028,29 @@ requiere acceso al proyecto GCP. Se deja lista la guía de ejecución
 restore/clon PITR, verificación de contenido y outbox, limpieza y plantilla de evidencia.
 
 Evidencia: [`evidencias/fase4-a12-sincronizacion-documental-2026-10-20.json`](./evidencias/fase4-a12-sincronizacion-documental-2026-10-20.json).
+
+
+---
+
+## 53. FASE 4 — informe global de pruebas (2026-10-20)
+
+Informe consolidado: [`informe_pruebas_fase4.md`](./informe_pruebas_fase4.md).
+
+**Resultado:** **2.465 pruebas de código + 126 E2E, 0 fallos.**
+
+| Suite | Resultado |
+|---|---|
+| Contratos (forge) | 202/202 · 20 suites · invariantes 256 runs |
+| `@hotel/shared` | 758/758 (76 ficheros; incluye el guardián documental A12) |
+| `@hotel/web` | 1188/1188 (134 ficheros) |
+| `@hotel/worker` | 189/189 |
+| `@hotel/mcp` | 86/86 |
+| `@hotel/monitor` | 42/42 |
+| E2E Playwright | 126/126 (chromium + mobile), incluido A5 y a11y de 34 rutas |
+
+`typecheck` (6/6) y `lint` (0 errores) en verde. No ejecutados aquí por depender del entorno de CI:
+job de esquema con PostgreSQL, `slither`, perf nightly y E2E con PostgreSQL real (declarado en el
+informe).
+
+**Estado de cierre:** A5 y A12 **CUMPLE**; el único pendiente de la Fase 3 es **A9**, con guía de
+ejecución lista ([`F9-a9-drill-restauracion-iam.md`](./F9-a9-drill-restauracion-iam.md)).
