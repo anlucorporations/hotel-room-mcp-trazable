@@ -6228,7 +6228,7 @@ Documento: [`ci-post-entrega-2026-10-20.md`](./ci-post-entrega-2026-10-20.md).
 | `origin/main` | `3fc64a2` (fast-forward de 41 commits) |
 | Etiqueta de entrega | **`entrega-final-2026-10-20`** publicada en `origin` |
 | CI GitLab (origin) | pipelines **fallan sin jobs** desde antes de la entrega (`jobs: []`, `duration: null`, `yaml_errors: null`) → infraestructura/CI del proyecto, no los tests |
-| CI GitHub | el remoto **no tiene** el commit de la entrega; su último run es del commit anterior y falla |
+| CI GitHub | `main` publicado (`6180c8f`); el run del push (`39476902319`) **falla sin runner** (jobs en ~2 s, `steps: []`) → infraestructura de Actions, no los tests |
 | Gates del commit entregado | verdes en local: 2.465 pruebas + 126 E2E, typecheck/lint/build y manuales (18/18) |
 
 **Acción requerida (externa):** elegir el CI canónico y repararlo — recomendación: usar **GitHub Actions**

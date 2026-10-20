@@ -32,17 +32,25 @@ registrar uno); no se puede resolver desde el repositorio.
 
 ## 3. CI de GitHub (remoto alternativo)
 
-**Hallazgo:** el repositorio de GitHub **no contiene** el commit de la entrega (solo se publicó a
-`origin`, GitLab). El último run de `main` corresponde al commit anterior `9ce34b9` y los cuatro jobs
-fallan (`Build`, `Web E2E`, `slither`, `perf nightly`). No es atribuible a esta entrega porque ese commit
-no es el entregado.
+**Actualización (2026-10-20 18:43 UTC):** `main` se publicó también en `github` (`9ce34b9 → 6180c8f`).
+GitHub Actions lanzó el pipeline del commit entregado (`run 39476902319`, evento `push`) y **los cuatro
+jobs fallan en ~2 s sin ejecutar ningún paso**:
 
-**Recomendación:** decidir cuál es el CI canónico:
+| Job | Resultado | Evidencia |
+|---|---|---|
+| Build · typecheck · lint · test · smoke | failure | sin `runner_name`, `steps: []` |
+| Web · Playwright E2E | failure | sin `runner_name`, `steps: []` |
+| Schema · PostgreSQL 18 | failure | sin `runner_name`, `steps: []` |
+| Contract · slither | failure | sin `runner_name`, `steps: []` |
+| Web · perf nightly | skipped | — |
 
-- **Opción A (recomendada):** GitHub Actions como CI canónico (`.github/workflows/ci.yml` está más
-  actualizado y ejecuta los gates reales); publicar `main` también en `github` y usar ese pipeline.
-- **Opción B:** reparar los runners de GitLab y usar `.gitlab-ci.yml`.
-- **Opción C:** usar ambos con un único remoto canónico para no duplicar señales.
+Es el mismo patrón que en GitLab: **no hay runner disponible** (o Actions está deshabilitado/sin cuota);
+no es un fallo de los tests. Requiere acción en la configuración de GitHub (Actions → runners/billing o
+límite de gasto de la organización) y después relanzar el pipeline.
+
+**Recomendación:** mantener **GitHub Actions como CI canónico** (`.github/workflows/ci.yml` es el más
+completo), habilitar un runner y relanzar. Mientras tanto, la calidad del commit entregado está
+respaldada por los gates locales (§4).
 
 ## 4. Gates del commit entregado (`3fc64a2`)
 
