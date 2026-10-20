@@ -2,9 +2,9 @@
  * GENERADO por `apps/web/scripts/build-manuals.mjs` — NO EDITAR A MANO.
  *
  * Regenerar con: `pnpm --filter @hotel/web run manuals` (o `pnpm build:manuals`).
- * Última generación: 2 de octubre de 2026
+ * Última generación: 20 de octubre de 2026
  *
- * Fuentes: 35 manuales — 3 generales (docs/manual-*.md) + 32 casos de uso (docs/Manuales/05-casos-de-uso/**)
+ * Fuentes: 44 manuales — 3 generales (docs/manual-*.md) + 34 casos de uso (docs/Manuales/05-casos-de-uso/**) + 7 de suites vNext (docs/Manuales/07-suites-vnext/**)
  */
 /* eslint-disable */
 
@@ -20,7 +20,7 @@ export interface ManualDoc {
   readonly title: string;     // el H1 del manual
   readonly lead: string;      // el blockquote inicial, ya convertido a HTML
   readonly pdf: string;       // "/manual/manual-<slug>.pdf"
-  readonly group: "general" | "casos-de-uso";
+  readonly group: "general" | "casos-de-uso" | "suites-vnext";
   readonly block: string | null; // p. ej. "Bloque 1 · Iniciación y aprovisionamiento"
   readonly sections: readonly ManualSection[];
 }
@@ -457,7 +457,7 @@ export const MANUALS: readonly ManualDoc[] = [
   {
     slug: "cu-12-royalty",
     title: "CU-12 · Decidir cuánto se queda el hotel en cada reventa",
-    lead: "<blockquote><p>En una frase: el hotel se queda un pellizco fijo en cada reventa, y aquí puedes consultar de cuánto es.</p></blockquote>\n<figure><img src=\"/manual/imagenes/doc-cu-12-royalty.svg\" alt=\"Infografía del CU-12: el porcentaje que el hotel se queda según el tipo de habitación\" /><figcaption>Infografía del CU-12: el porcentaje que el hotel se queda según el tipo de habitación</figcaption></figure>",
+    lead: "<blockquote><p>En una frase: el hotel se queda un pellizco en cada reventa; aquí puedes consultarlo <strong>y</strong> ajustarlo por tipo de habitación.</p></blockquote>\n<figure><img src=\"/manual/imagenes/doc-cu-12-royalty.svg\" alt=\"Infografía del CU-12: el porcentaje que el hotel se queda según el tipo de habitación\" /><figcaption>Infografía del CU-12: el porcentaje que el hotel se queda según el tipo de habitación</figcaption></figure>",
     pdf: "/manual/manual-cu-12-royalty.pdf",
     group: "casos-de-uso",
     block: "Bloque 1 · Iniciación y aprovisionamiento",
@@ -466,43 +466,43 @@ export const MANUALS: readonly ManualDoc[] = [
         id: "1-para-que-sirve",
         title: "1. Para qué sirve",
         level: 2,
-        html: "<p>Cuando alguien compra una noche y luego la revende, el hotel se queda una parte del precio. Esa parte se llama <em>royalty</em> (la comisión del hotel en la reventa).</p>\n<p>Aquí conviene ser claro desde el principio: ese porcentaje <strong>no se puede cambiar</strong>. No hay ningún botón para subirlo ni bajarlo.</p>\n<p>El porcentaje se decide al dar de alta la noche y depende del tipo de habitación. Después se queda fijo para siempre.</p>\n<p>Este caso de uso sirve para <strong>consultarlo</strong>. Es una pantalla informativa: te dice cuánto cobra el hotel en cada tipo de habitación.</p>\n<p>Que no haya botón es una decisión a propósito. Así nadie puede cambiar las reglas de una reventa después de haberla anunciado.</p>\n<p>Piensa en ello como el precio de una etiqueta ya impresa. Se decide al principio y se queda tal cual. Si cambiara a mitad de camino, el que revende no sabría con qué cuenta.</p>",
+        html: "<p>Cuando alguien compra una noche y luego la revende, el hotel se queda una parte del precio. Esa parte se llama <em>royalty</em> (la comisión del hotel en la reventa).</p>\n<p>El porcentaje se fija <strong>por tipo de habitación</strong> y, desde el incremento <strong>C1</strong> (2026-10-13, ADR-27), quien tenga el rol <code>ROYALTY_ADMIN</code> <strong>puede cambiarlo</strong> dentro del margen permitido: entre el 0 % y el 20 %. Los valores de partida son el 5 % para simple y doble, y el 10 % para suite.</p>\n<p>Cada cambio queda firmado en la cartera y anotado en el registro del contrato, así que no es una cifra que baile sin dejar rastro: hay una traza de quién lo cambió y a qué valor.</p>\n<p>Si el contrato desplegado todavía es de la versión anterior (<strong>D-06</strong>), el porcentaje es fijo y el panel lo avisa: te enseña los valores vigentes pero no ofrece el formulario. La posibilidad de cambiarlo llega con el despliegue de C1.</p>",
       },
       {
         id: "2-quien-puede-hacerlo",
         title: "2. Quién puede hacerlo",
         level: 2,
-        html: "<p>La pantalla está pensada para el propietario (el rol de super-admin, <code>DEFAULT_ADMIN_ROLE</code>).</p>\n<p>En el catálogo antiguo este caso de uso hablaba de un rol de royalty. Ese rol <strong>no existe</strong> hoy: no está en el contrato y no se puede asignar.</p>\n<p>Cualquiera puede preguntar el porcentaje de una noche concreta al contrato. El panel del hotel, en cambio, pide sesión de super-admin.</p>\n<p>Y nadie puede modificarlo. Ni el propietario. No hay función que lo permita.</p>",
+        html: "<p>Consultar el porcentaje puede hacerlo cualquiera: el dato es público.</p>\n<p>Cambiarlo requiere el rol de <strong>administrador de royalty</strong> (<code>ROYALTY_ADMIN</code>). En este piloto lo ejerce el propietario (la misma cuenta que gobierna el resto de roles).</p>\n<p>No hace falta ser el propietario para <em>leer</em>; sí para <em>escribir</em>. Y aunque el panel te muestre el formulario, quien manda es el contrato: si tu cuenta no tiene el rol, la operación se rechaza.</p>",
       },
       {
         id: "3-antes-de-empezar",
         title: "3. Antes de empezar",
         level: 2,
-        html: "<ul><li>Ten una sesión abierta en el panel con el rol de super-admin.</li><li>Ten claro que es una pantalla de solo lectura: no vas a firmar nada.</li><li>Si lo que quieres es cambiar quién cobra, eso es otra operación distinta y no toca el porcentaje.</li><li>Si buscas un formulario para escribir un número nuevo, no lo vas a encontrar. Es normal.</li></ul>",
+        html: "<ul><li>Ten una sesión abierta en el panel del hotel.</li><li>Para cambiar el porcentaje, conecta la cartera que tiene el rol <code>ROYALTY_ADMIN</code>.</li><li>Piensa qué tipo de habitación quieres tocar: simple, doble o suite. El cambio se aplica <strong>a ese tipo</strong>, no a una noche concreta.</li><li>Ten a mano la cifra en <em>basis points</em>: 100 bps = 1 %. Por ejemplo, 1500 bps = 15 %.</li></ul>",
       },
       {
         id: "4-paso-a-paso",
         title: "4. Paso a paso",
         level: 2,
-        html: "<ol><li>Abre el panel del hotel y entra en la sección <strong>Royalty</strong> (la dirección es <code>/admin/royalty</code>).</li><li>Lee el primer aviso: dice que el porcentaje se fija al crear la noche y que no se puede modificar.</li><li>Mira la tabla de tipos. Tiene tres filas: <strong>Simple</strong> (habitaciones 101–130) al <strong>5 %</strong>, <strong>Doble</strong> (101–130) al <strong>5 %</strong> y <strong>Suite</strong> (201–220) al <strong>10 %</strong>.</li><li>Lee la nota del final: el contrato es la fuente única del dato. El panel solo lo enseña.</li><li>Si quieres comprobar una noche concreta, ese cálculo lo hace el contrato cuando alguien revende.</li><li>Cierra la pantalla cuando termines. No hay nada que guardar.</li></ol>",
+        html: "<ol><li>Abre el panel del hotel y entra en la sección <strong>Royalty</strong> (la dirección es <code>/admin/royalty</code>).</li><li>Lee la tabla de tipos. Tiene tres filas con su porcentaje vigente: <strong>Simple</strong> (101–115), <strong>Doble</strong> (116–130) y <strong>Suite</strong> (201–220).</li><li>Si solo querías consultar, ya está: esa tabla sale del contrato y se actualiza sola.</li><li>Para cambiarlo, elige el <strong>tipo de habitación</strong> en el desplegable.</li><li>Escribe el <strong>royalty en basis points</strong> (de 0 a 2000). El panel te avisa si el valor no vale.</li><li>Pulsa <strong>Revisar y firmar</strong>. Verás un resumen con el tipo y el porcentaje nuevos.</li><li>Confirma y firma en tu cartera. Cuando la red lo acepte, la tabla se actualiza con el nuevo valor.</li></ol>\n<p>Si tu cuenta no tiene el rol, el panel te lo dice y deja el botón apagado: no se firma nada.</p>",
       },
       {
         id: "5-que-ves-cuando-sale-bien",
         title: "5. Qué ves cuando sale bien",
         level: 2,
-        html: "<ul><li>El aviso de que el royalty es inmutable, bien visible arriba.</li><li>La tabla con los tres tipos y su porcentaje: 5 %, 5 % y 10 %.</li><li>La nota que dice que el dato sale del contrato y no de este panel.</li><li>Ningún botón de guardar, ningún formulario y ninguna transacción que firmar.</li></ul>",
+        html: "<ul><li>La tabla con los tres tipos y su porcentaje vigente (5 %, 5 % y 10 % de partida).</li><li>Un formulario para cambiar el porcentaje, si tu cuenta puede hacerlo.</li><li>El resumen antes de firmar, con el tipo y el porcentaje que vas a fijar.</li><li>La tabla ya actualizada después de firmar.</li><li>Un registro on-chain del cambio, con la cuenta que lo hizo y el valor nuevo.</li></ul>",
       },
       {
         id: "6-si-algo-va-mal",
         title: "6. Si algo va mal",
         level: 2,
-        html: "<table>\n<thead><tr><th>Lo que ves</th><th>Qué significa</th><th>Qué hacer</th></tr></thead>\n<tbody>\n<tr><td>No hay ningún botón para cambiar el porcentaje</td><td>El royalty es inmutable por diseño</td><td>No hay nada que arreglar: es así</td></tr>\n<tr><td>No encuentras un rol de royalty</td><td>Ese rol no existe hoy</td><td>Usa una cuenta de super-admin</td></tr>\n<tr><td>El panel te avisa de que falta el rol</td><td>Tu sesión no es de super-admin</td><td>Entra con la cuenta del propietario</td></tr>\n<tr><td>Una noche concreta devuelve 0 %</td><td>Esa habitación no está dada de alta</td><td>Revisa el alta de la habitación</td></tr>\n<tr><td>El importe de la reventa no sale redondo</td><td>El reparto redondea hacia abajo</td><td>Usa un precio que reparta bien si te importa el céntimo</td></tr>\n<tr><td>Crees que el porcentaje ha cambiado solo</td><td>No cambia nunca</td><td>Comprueba que miras el tipo de habitación correcto</td></tr>\n</tbody></table>",
+        html: "<table>\n<thead><tr><th>Lo que ves</th><th>Qué significa</th><th>Qué hacer</th></tr></thead>\n<tbody>\n<tr><td>El panel avisa de que el contrato aún no permite editar</td><td>El contrato desplegado es la versión anterior (D-06)</td><td>Espera al despliegue de C1; mientras, los valores vigentes se consultan igual</td></tr>\n<tr><td>El botón de firmar está apagado y dice que falta el rol</td><td>Tu cuenta no tiene <code>ROYALTY_ADMIN</code></td><td>Entra con la cuenta que sí lo tiene</td></tr>\n<tr><td>«Introduce un número entero entre 0 y 2000 bps»</td><td>El valor no es válido</td><td>Corrige la cifra: 100 bps = 1 %</td></tr>\n<tr><td>La transacción se rechaza al firmar</td><td>El contrato ha rechazado la operación (falta el rol o el valor)</td><td>Revisa el rol y el rango, y vuelve a intentarlo</td></tr>\n<tr><td>Una noche concreta devuelve 0 %</td><td>Esa habitación no está dada de alta</td><td>Revisa el alta de la habitación</td></tr>\n<tr><td>El importe de la reventa no sale redondo</td><td>El reparto redondea hacia abajo</td><td>Usa un precio que reparta bien si te importa el céntimo</td></tr>\n<tr><td>Cambié el porcentaje y las reventas ya publicadas no cambian</td><td>El listado ya creado conserva su precio; el royalty se calcula al comprar</td><td>El cambio aplica a las reventas que se cierren después</td></tr>\n</tbody></table>",
       },
       {
         id: "7-un-ejemplo-de-verdad",
         title: "7. Un ejemplo de verdad",
         level: 2,
-        html: "<p>El Hotel Marina del Sol tiene una suite, la 201. Al dar de alta esa noche, el sistema le pone el 10 % de royalty.</p>\n<p>Un cliente compra la noche por 200 €. Más adelante la revende por los mismos 200 €.</p>\n<p>En esa reventa, el hotel se queda 20 € y el vendedor recibe 180 €. El dinero del hotel no se manda al instante: queda apuntado y se retira más tarde.</p>\n<p>Un mes después, el dueño entra en la sección <strong>Royalty</strong> para comprobar la cifra. Ve la fila de la suite con su 10 % y se queda tranquilo.</p>\n<p>Intenta buscar un botón para subirlo al 15 % en temporada alta. No lo encuentra, y es correcto: el porcentaje se decidió el día que se creó la noche.</p>",
+        html: "<p>El Hotel Marina del Sol tiene una suite, la 201. Al dar de alta esa noche, el sistema le pone el 10 % de royalty.</p>\n<p>Llega la temporada alta y el dueño quiere que el hotel se quede algo más en las reventas de suite. Entra en <strong>Royalty</strong>, elige «suite», escribe 1500 bps (15 %) y firma con su cartera. La tabla pasa a mostrar 15 %.</p>\n<p>Un cliente compra la noche por 200 € y más adelante la revende por los mismos 200 €. En esa reventa el hotel se queda 30 € y el vendedor recibe 170 €. El dinero del hotel queda apuntado y se retira más tarde.</p>\n<p>Las suites que ya estaban revendidas no se tocan: el porcentaje se aplica a la reventa en el momento de comprarla.</p>",
       },
       {
         id: "8-preguntas-frecuentes",
@@ -514,37 +514,37 @@ export const MANUALS: readonly ManualDoc[] = [
         id: "puedo-subir-el-royalty-a-un-15",
         title: "¿Puedo subir el royalty a un 15 %?",
         level: 3,
-        html: "<p>No. El porcentaje se fija al dar de alta la noche y ya no se cambia. No existe ninguna opción para tocarlo.</p>",
+        html: "<p>Sí, si tu cuenta tiene el rol <code>ROYALTY_ADMIN</code>. Fija el tipo de habitación, escribe 1500 bps y firma. El tope es el 20 % (2000 bps). Si el contrato desplegado aún es la versión anterior (D-06), el panel te avisa y no ofrece el formulario.</p>",
       },
       {
         id: "donde-se-decide-entonces-el-porcentaje",
         title: "¿Dónde se decide entonces el porcentaje?",
         level: 3,
-        html: "<p>Al crear cada noche, según el tipo de habitación: 5 % para simple y doble, y 10 % para suite.</p>",
+        html: "<p>Con la versión C1, en el contrato, por tipo de habitación: simple, doble y suite. Los valores de partida son 5 %, 5 % y 10 %. En la versión anterior (D-06) el porcentaje quedaba fijado al dar de alta la noche.</p>",
       },
       {
         id: "quien-cobra-esa-comision",
         title: "¿Quién cobra esa comisión?",
         level: 3,
-        html: "<p>El hotel, a través de su cuenta de tesorería. Esa cuenta sí se puede cambiar sin tocar el porcentaje.</p>",
+        html: "<p>El hotel, a través de su cuenta de tesorería. Esa cuenta se cambia en otra operación y no toca el porcentaje.</p>",
       },
       {
         id: "por-que-no-hay-un-formulario-en-esta-pantalla",
         title: "¿Por qué no hay un formulario en esta pantalla?",
         level: 3,
-        html: "<p>Porque no hay nada que configurar. La pantalla solo enseña lo que el contrato tiene fijado. Cualquier cambio aquí sería un espejismo.</p>",
+        html: "<p>Puede haber dos motivos: que tu cuenta no tenga el rol <code>ROYALTY_ADMIN</code> (el panel lo dice y deja el botón apagado) o que el contrato desplegado todavía sea la versión D-06, en la que el royalty era fijo.</p>",
       },
       {
         id: "el-porcentaje-es-el-mismo-para-todos-los-hoteles",
         title: "¿El porcentaje es el mismo para todos los hoteles?",
         level: 3,
-        html: "<p>En este sistema el porcentaje sale del código del contrato, no de una casilla que se rellene a gusto. Por eso todas las noches del mismo tipo se comportan igual.</p>",
+        html: "<p>No: cada hotel despliega su propio contrato y decide sus porcentajes. Dentro de un mismo hotel, todas las noches de un tipo comparten el porcentaje vigente de ese tipo.</p>",
       },
       {
         id: "y-si-quiero-una-excepcion-para-una-habitacion-concreta",
         title: "¿Y si quiero una excepción para una habitación concreta?",
         level: 3,
-        html: "<p>Hoy no existe. No hay ninguna opción por noche ni por habitación dentro de este caso de uso.</p>",
+        html: "<p>Hoy no existe: la unidad de configuración es el <strong>tipo de habitación</strong>, no la habitación ni la noche concreta.</p>",
       },
     ],
   },
@@ -888,7 +888,7 @@ export const MANUALS: readonly ManualDoc[] = [
         id: "1-para-que-sirve",
         title: "1. Para qué sirve",
         level: 2,
-        html: "<p>El asistente es un chat. Le escribes como le hablarías a un amigo. Por ejemplo: «quiero la 102 para el 15 de junio».</p>\n<p>Él busca esa noche en el sistema y te dice si está libre, cuánto cuesta y de qué tipo es. Si no la hay, te propone otras del mismo tipo.</p>\n<p>Lo importante: el asistente <strong>no firma nada y no mueve dinero</strong>. Solo prepara los datos de la compra. La firma la das tú en tu cartera, cuando tú quieras.</p>\n<p>Antes de enseñarte el botón de firmar, el sistema comprueba el precio por su cuenta. Si alguien ha tocado el precio por el camino, la compra no se ofrece.</p>\n<p>Ese doble control existe para que no te cobren de más. Primero valida el servidor. Después, la propia ventana de compra lo vuelve a comprobar delante de ti.</p>\n<p>Si al final firmas, la compra sigue su curso normal. Ese trozo ya es el manual de comprar una noche.</p>",
+        html: "<p>El asistente es un chat. Le escribes como le hablarías a un amigo. Por ejemplo: «quiero la 102 para el 15 de junio».</p>\n<p>Él busca esa noche en el sistema y te dice si está libre, cuánto cuesta y de qué tipo es. Si no la hay, te propone otras del mismo tipo.</p>\n<p>Lo importante: el asistente <strong>no firma nada y no mueve dinero</strong>. Solo prepara los datos de la compra. La firma la das tú en tu cartera, cuando tú quieras.</p>\n<p>También puedes pedirle una <strong>estancia de varias noches</strong> («la 102 del 15 al 18 de junio»). En ese caso comprueba las noches del rango, te dice el total y te deja <strong>una compra preparada por noche, en un solo panel</strong>, porque cada noche es una ficha distinta y se firma aparte. Si alguna noche del rango no está libre, no prepara media estancia: te lo dice y te propone alternativas.</p>\n<p>Antes de enseñarte el botón de firmar, el sistema comprueba el precio por su cuenta. Si alguien ha tocado el precio por el camino, la compra no se ofrece.</p>\n<p>Ese doble control existe para que no te cobren de más. Primero valida el servidor. Después, la propia ventana de compra lo vuelve a comprobar delante de ti.</p>\n<p>Si al final firmas, la compra sigue su curso normal. Ese trozo ya es el manual de comprar una noche.</p>",
       },
       {
         id: "2-quien-puede-hacerlo",
@@ -906,13 +906,13 @@ export const MANUALS: readonly ManualDoc[] = [
         id: "4-paso-a-paso",
         title: "4. Paso a paso",
         level: 2,
-        html: "<ol><li>Abre <code>/asistente</code>.</li><li>Escribe tu petición en el cuadro de abajo. Por ejemplo: «¿está libre la 102 el 15 de junio?».</li><li>Si no sabes qué pedir, pulsa una de las sugerencias que aparecen al principio.</li><li>Pulsa enviar. El asistente consulta el sistema.</li><li>Lee la respuesta: te dirá si la noche existe, si se puede comprar y su precio.</li><li>Si no existe, mira las alternativas que te ofrece del mismo tipo.</li><li>Cuando tengas clara la noche, contéstale que sí. Puede pedirte que confirmes noche y precio.</li><li>El asistente prepara la compra. Verás una tarjeta con el resumen.</li><li>La tarjeta pone <strong>Verificando</strong> y luego <strong>Verificado</strong>. Eso significa que el precio cuadra.</li><li>Pulsa el botón de firmar. Se abre tu cartera.</li><li>Revisa la operación y fírmala. A partir de aquí manda CU-05.</li></ol>\n<p>Si la verificación falla, no verás el botón. El sistema prefiere no ofrecerte una compra dudosa.</p>",
+        html: "<ol><li>Abre <code>/asistente</code>.</li><li>Escribe tu petición en el cuadro de abajo. Por ejemplo: «¿está libre la 102 el 15 de junio?».</li><li>Si no sabes qué pedir, pulsa una de las sugerencias que aparecen al principio.</li><li>Pulsa enviar. El asistente consulta el sistema.</li><li>Lee la respuesta: te dirá si la noche existe, si se puede comprar y su precio.</li><li>Si no existe, mira las alternativas que te ofrece del mismo tipo.</li><li>Cuando tengas clara la noche, contéstale que sí. Puede pedirte que confirmes noche y precio.</li><li>El asistente prepara la compra. Verás una tarjeta con el resumen.</li><li>La tarjeta pone <strong>Verificando</strong> y luego <strong>Verificado</strong>. Eso significa que el precio cuadra.</li><li>Pulsa el botón de firmar. Se abre tu cartera.</li><li>Revisa la operación y fírmala. A partir de aquí manda CU-05.</li></ol>\n<p>Si la verificación falla, no verás el botón. El sistema prefiere no ofrecerte una compra dudosa.</p>\n<p><strong>Si pides varias noches seguidas</strong>, el paso 8 cambia un poco: en vez de una tarjeta, verás un panel de estancia con <strong>una tarjeta por noche, numeradas y por orden de fecha</strong>, y el importe total. Se firma igual, pero una vez por noche; cuando termines con una, sigue con la siguiente.</p>",
       },
       {
         id: "5-que-ves-cuando-sale-bien",
         title: "5. Qué ves cuando sale bien",
         level: 2,
-        html: "<ul><li>Una respuesta en español, corta y clara.</li><li>El precio real de esa noche, leído de la red en ese momento.</li><li>Si la noche no está, una lista de alternativas parecidas.</li><li>Una tarjeta de compra preparada con la habitación, la fecha y el precio.</li><li>El sello <strong>Verificado</strong> antes de dejarte firmar.</li><li>Tu cartera pidiendo la firma, con el importe a la vista.</li><li>Si preguntas por tus noches, la lista de las que ya son tuyas.</li></ul>",
+        html: "<ul><li>Una respuesta en español, corta y clara.</li><li>El precio real de esa noche, leído de la red en ese momento.</li><li>Si la noche no está, una lista de alternativas parecidas.</li><li>Una tarjeta de compra preparada con la habitación, la fecha y el precio.</li><li>El sello <strong>Verificado</strong> antes de dejarte firmar.</li><li>Tu cartera pidiendo la firma, con el importe a la vista.</li><li>Si preguntas por tus noches, la lista de las que ya son tuyas.</li><li>Si pides una <strong>estancia de varias noches</strong>, un panel con una tarjeta por noche y el importe total. Cada noche se firma aparte, porque cada noche es una ficha distinta.</li></ul>",
       },
       {
         id: "6-si-algo-va-mal",
@@ -954,7 +954,7 @@ export const MANUALS: readonly ManualDoc[] = [
         id: "que-pasa-si-le-pido-cosas-que-no-son-del-hotel",
         title: "¿Qué pasa si le pido cosas que no son del hotel?",
         level: 3,
-        html: "<p>Te dirá que no puede ayudarte con eso y volverá al tema de las noches. Está acotado a propósito.</p>",
+        html: "<p>Te dirá que no puede ayudarte con eso y volverá al tema de las noches. Está acotado a propósito.</p>\n<p>Sobre las estancias de varias noches: dile el rango («del 15 al 18»), teniendo en cuenta que la fecha de salida es la del último día de estancia y esa noche no se compra. Él comprueba las noches y te deja una tarjeta por noche para que las firmes por separado. Si el rango no está completo, te lo dice y te ofrece otras fechas u otra habitación en lugar de preparar solo una parte.</p>",
       },
     ],
   },
@@ -1808,7 +1808,7 @@ export const MANUALS: readonly ManualDoc[] = [
         id: "1-para-que-sirve",
         title: "1. Para qué sirve",
         level: 2,
-        html: "<p>En el mostrador necesitas saber qué pasa hoy, y no dentro de tres pantallas distintas. Esta pantalla junta todo en una sola vista.</p>\n<p>Arriba eliges la fecha. Debajo ves cinco cifras del día: habitaciones totales, reservadas, ocupadas, salidas y libres.</p>\n<p>Después viene una tabla con las reservas de ese día. Cada fila trae la habitación, el tipo, el estado, el código de recuperación y el titular.</p>\n<p>Y al final está la rejilla: las 50 habitaciones del hotel con un color por estado. De un vistazo sabes cuáles están libres y cuáles no.</p>\n<p>La pantalla <strong>solo mira</strong>. No cambia nada de la reserva ni firma nada en la red. Para dar entrada o salida usa las otras pestañas.</p>\n<p>Los estados que verás son seis: libre, pendiente, reservada, ocupada, salida y bloqueada. Los explicamos en el paso a paso.</p>",
+        html: "<p>En el mostrador necesitas saber qué pasa hoy, y no dentro de tres pantallas distintas. Esta pantalla junta todo en una sola vista.</p>\n<p>Arriba eliges la fecha. Debajo ves cinco cifras del día: habitaciones totales, reservadas, ocupadas, salidas y libres.</p>\n<p>Después viene una tabla con las reservas de ese día. Cada fila trae la habitación, el tipo, el estado, el código de recuperación y el titular.</p>\n<p>Y al final está la rejilla: las 50 habitaciones del hotel con un color por estado. De un vistazo sabes cuáles están libres y cuáles no.</p>\n<p>La pantalla <strong>solo mira</strong>. No cambia nada de la reserva ni firma nada en la red. Para dar entrada o salida usa las otras pestañas.</p>\n<p>Los estados que verás son siete: libre, pendiente, reservada, ocupada, salida, pendiente de limpieza y bloqueada. Los explicamos en el paso a paso.</p>\n<p>Al tocar una habitación se abre una <strong>ficha detalle</strong> con dos zonas: Habitación y Huésped. La información cambia según el estado (RF-51..RF-55).</p>",
       },
       {
         id: "2-quien-puede-hacerlo",
@@ -2072,13 +2072,13 @@ export const MANUALS: readonly ManualDoc[] = [
         id: "4-paso-a-paso",
         title: "4. Paso a paso",
         level: 2,
-        html: "<ol><li>Entra al panel de recepción y pulsa la pestaña <strong>Check-out</strong>.</li><li>En esa pestaña solo salen las estancias con la entrada ya hecha.</li><li>Elige la estancia en el desplegable. Al cambiarla, se recargan sus cargos.</li><li>Revisa la lista de cargos: verás el concepto, el importe y la moneda.</li><li>Si falta un extra, apúntalo aquí mismo. Eso es el caso de uso CU-35.</li><li>Marca <strong>Sin incidencias</strong> si la habitación está bien.</li><li>Si hay algún problema, marca <strong>Con incidencia</strong>. Entonces elige el tipo y escribe la descripción.</li><li>Los tipos de incidencia son: daños, falta de limpieza, objeto olvidado, minibar consumido, avería u otro.</li><li>Marca con la casilla los cargos que se cancelan.</li><li>El contador te dice cuántos cargos se van a cancelar antes de que pulses nada.</li><li>Pulsa <strong>Confirmar check-out</strong>.</li><li>Espera el recibo verde con la habitación y la fecha.</li><li>Vuelve a la pestaña del día y refresca. La habitación aparece como <strong>Salida</strong>.</li></ol>\n<p>El recorrido, de un vistazo:</p>\n<p>``<code>mermaid flowchart LR A[Pestaña Check-out] --&gt; B[Elegir estancia] B --&gt; C[Revisar cargos] C --&gt; D{Habitacion bien?} D -- Si --&gt; E[Sin incidencias] D -- No --&gt; F[Tipo y descripcion] E --&gt; G[Marcar cargos a cancelar] F --&gt; G G --&gt; H[Confirmar check-out] H --&gt; I[Recibo verde y habitacion libre] </code>``</p>",
+        html: "<ol><li>Entra al panel de recepción y pulsa la pestaña <strong>Check-out</strong>.</li><li>En esa pestaña solo salen las estancias con la entrada ya hecha.</li><li>Elige la estancia en el desplegable. Al cambiarla, se recargan sus cargos.</li><li>Revisa la lista de cargos: verás el concepto, el importe y la moneda.</li><li>Si falta un extra, apúntalo aquí mismo. Eso es el caso de uso CU-35.</li><li>Marca <strong>Sin incidencias</strong> si la habitación está bien.</li><li>Si hay algún problema, marca <strong>Con incidencia</strong>. Entonces elige el tipo y escribe la descripción.</li><li>Los tipos de incidencia son: daños, falta de limpieza, objeto olvidado, minibar consumido, avería u otro.</li><li>Marca con la casilla los cargos que se cancelan.</li><li>El contador te dice cuántos cargos se van a cancelar antes de que pulses nada.</li><li>Pulsa <strong>Confirmar check-out</strong>.</li><li>Espera el recibo verde con la habitación y la fecha.</li><li>Vuelve a la pestaña del día y refresca. La habitación aparece como <strong>Pendiente de limpieza</strong>.</li></ol>\n<p>El recorrido, de un vistazo:</p>\n<p>``<code>mermaid flowchart LR A[Pestaña Check-out] --&gt; B[Elegir estancia] B --&gt; C[Revisar cargos] C --&gt; D{Habitacion bien?} D -- Si --&gt; E[Sin incidencias] D -- No --&gt; F[Tipo y descripcion] E --&gt; G[Marcar cargos a cancelar] F --&gt; G G --&gt; H[Confirmar check-out] H --&gt; I[Recibo verde y habitacion libre] </code>``</p>",
       },
       {
         id: "5-que-ves-cuando-sale-bien",
         title: "5. Qué ves cuando sale bien",
         level: 2,
-        html: "<ul><li>Un recibo verde con la habitación y la fecha.</li><li>El recibo distingue si acabas de registrar la salida o si ya estaba hecha.</li><li>Los cargos marcados aparecen como cancelados, con quién los canceló y cuándo.</li><li>En el panel del día, la habitación cambia a <strong>Salida</strong> después de refrescar.</li><li>La habitación pasa a la lista de limpieza como pendiente de limpiar.</li><li>La cuenta de esa estancia queda cerrada y no vuelve a la lista de salidas.</li></ul>",
+        html: "<ul><li>Un recibo verde con la habitación y la fecha.</li><li>El recibo distingue si acabas de registrar la salida o si ya estaba hecha.</li><li>Los cargos marcados aparecen como cancelados, con quién los canceló y cuándo.</li><li>En el panel del día, la habitación cambia a <strong>Salida</strong> después de refrescar.</li><li>La habitación queda bloqueada para limpieza y cambio de lencería hasta que recepción la libere.</li><li>La cuenta de esa estancia queda cerrada y no vuelve a la lista de salidas.</li></ul>",
       },
       {
         id: "6-si-algo-va-mal",
@@ -2367,6 +2367,134 @@ export const MANUALS: readonly ManualDoc[] = [
         title: "¿Se entera el hotel de la venta?",
         level: 3,
         html: "<p>Sí. El hotel recibe su propio correo cada vez que hay una venta. Ese canal es el que tiene garantía.</p>",
+      },
+    ],
+  },
+  {
+    slug: "cu-38-liberar-habitacion",
+    title: "CU-38 · Liberar una habitación tras la limpieza",
+    lead: "<blockquote><p>En una frase: cuando la habitación ya está limpia y con la lencería cambiada, recepción la libera para que vuelva a estar disponible.</p></blockquote>\n<figure><img src=\"/manual/imagenes/doc-cu-38-liberar-habitacion.svg\" alt=\"Infografía del CU-38: del check-out a la habitación disponible\" /><figcaption>Infografía del CU-38: del check-out a la habitación disponible</figcaption></figure>",
+    pdf: "/manual/manual-cu-38-liberar-habitacion.pdf",
+    group: "casos-de-uso",
+    block: "Bloque 8 · Operación hotelera (v2)",
+    sections: [
+      {
+        id: "1-para-que-sirve",
+        title: "1. Para qué sirve",
+        level: 2,
+        html: "<p>Después del check-out, la habitación pasa automáticamente a <strong>Pendiente de limpieza</strong>. Mientras esté en ese estado, no se puede ofertar ni asignar a una nueva reserva.</p>\n<p>Este caso de uso permite a recepción marcar la habitación como libre una vez que el personal de pisos ha completado el checklist de limpieza, desodorización, cambio de lencería, climatización, suministros y las solicitudes especiales que correspondan.</p>",
+      },
+      {
+        id: "2-quien-puede-hacerlo",
+        title: "2. Quién puede hacerlo",
+        level: 2,
+        html: "<p>El personal de <strong>recepción</strong>. Es el único rol que puede liberar una habitación.</p>\n<p>El <strong>dueño</strong> del hotel también puede, porque su permiso vale por todos.</p>",
+      },
+      {
+        id: "3-antes-de-empezar",
+        title: "3. Antes de empezar",
+        level: 2,
+        html: "<ul><li>Ten la sesión de recepción abierta.</li><li>Confirma que la habitación está en estado <strong>Pendiente de limpieza</strong>.</li><li>Asegúrate de que el checklist de preparación está completo.</li></ul>",
+      },
+      {
+        id: "4-paso-a-paso",
+        title: "4. Paso a paso",
+        level: 2,
+        html: "<ol><li>Abre la pestaña <strong>Hoy</strong> del panel de recepción.</li><li>Localiza la habitación en la rejilla: estará marcada como <strong>Pendiente de limpieza</strong>.</li><li>Toca la casilla de la habitación para abrir su ficha detalle.</li><li>Revisa la zona Habitación: el checklist debe estar completo.</li><li>Pulsa el botón <strong>Liberar habitación</strong>.</li><li>Confirma si el sistema te lo pide.</li><li>La habitación cambia a estado <strong>Libre</strong> y la ficha se cierra.</li></ol>",
+      },
+      {
+        id: "5-que-ves-cuando-sale-bien",
+        title: "5. Qué ves cuando sale bien",
+        level: 2,
+        html: "<ul><li>El botón de liberación desaparece.</li><li>La habitación cambia de color en la rejilla y pasa a <strong>Libre</strong>.</li><li>En el historial queda constancia de quién liberó la habitación y cuándo.</li></ul>",
+      },
+      {
+        id: "6-si-algo-va-mal",
+        title: "6. Si algo va mal",
+        level: 2,
+        html: "<table>\n<thead><tr><th>Lo que ves</th><th>Qué significa</th><th>Qué hacer</th></tr></thead>\n<tbody>\n<tr><td>No aparece el botón de liberar</td><td>La habitación no está en Pendiente de limpieza</td><td>Comprueba el estado en la rejilla</td></tr>\n<tr><td>Error al liberar</td><td>La habitación ya fue liberada por otro compañero</td><td>Refresca el panel y verifica el estado</td></tr>\n<tr><td>Checklist incompleto</td><td>Faltan ítems obligatorios por marcar</td><td>Revisa con el personal de pisos antes de liberar</td></tr>\n</tbody></table>",
+      },
+      {
+        id: "7-preguntas-frecuentes",
+        title: "7. Preguntas frecuentes",
+        level: 2,
+        html: "",
+      },
+      {
+        id: "puede-housekeeping-liberar-la-habitacion",
+        title: "¿Puede housekeeping liberar la habitación?",
+        level: 3,
+        html: "<p>No. Aunque housekeeping marque el checklist, la liberación final la hace recepción.</p>",
+      },
+      {
+        id: "se-puede-deshacer-una-liberacion",
+        title: "¿Se puede deshacer una liberación?",
+        level: 3,
+        html: "<p>No. Si se liberó por error, hay que reportar una incidencia o cambiar el estado operativo desde administración.</p>",
+      },
+    ],
+  },
+  {
+    slug: "cu-39-ficha-detalle-habitacion",
+    title: "CU-39 · Ficha detalle de una habitación",
+    lead: "<blockquote><p>En una frase: tocas una habitación del resumen y ves toda la información relevante de la habitación y del huésped, organizada en dos zonas.</p></blockquote>\n<p>La ficha detalle solo la ven los usuarios con rol de recepción o el dueño. La wallet del huésped se muestra de forma recortada y no sale en ningún sitio público.</p>\n<figure><img src=\"/manual/imagenes/doc-cu-39-ficha-detalle-habitacion.svg\" alt=\"Infografía del CU-39: la ficha detalle en dos zonas\" /><figcaption>Infografía del CU-39: la ficha detalle en dos zonas</figcaption></figure>",
+    pdf: "/manual/manual-cu-39-ficha-detalle-habitacion.pdf",
+    group: "casos-de-uso",
+    block: "Bloque 8 · Operación hotelera (v2)",
+    sections: [
+      {
+        id: "1-para-que-sirve",
+        title: "1. Para qué sirve",
+        level: 2,
+        html: "<p>La rejilla de <strong>Estado de las habitaciones</strong> da una foto rápida, pero a veces necesitas saber más: si la habitación está preparada, qué huésped la tiene, si hay mantenimiento en curso o qué pasó cada día de la estancia. La ficha detalle agrupa toda esa información sin salir del panel de recepción.</p>",
+      },
+      {
+        id: "2-quien-puede-hacerlo",
+        title: "2. Quién puede hacerlo",
+        level: 2,
+        html: "<p>El personal de <strong>recepción</strong> y el <strong>dueño</strong>.</p>",
+      },
+      {
+        id: "3-antes-de-empezar",
+        title: "3. Antes de empezar",
+        level: 2,
+        html: "<ul><li>Ten la sesión de recepción abierta.</li><li>Localiza la habitación en la rejilla de <strong>Estado de las habitaciones</strong>.</li></ul>",
+      },
+      {
+        id: "4-paso-a-paso",
+        title: "4. Paso a paso",
+        level: 2,
+        html: "<ol><li>Abre la pestaña <strong>Hoy</strong> del panel de recepción.</li><li>Busca la habitación en la rejilla.</li><li>Toca la casilla de la habitación.</li><li>Se abre la ficha detalle con dos zonas: <strong>Habitación</strong> y <strong>Huésped</strong>.</li><li>La cabecera muestra el número, el tipo y el <strong>estado</strong> de la habitación. Ese estado decide qué enseña la zona Habitación:<ul><li><strong>Reservada</strong>: el checklist de preparación previo a la llegada (limpieza, climatización, suministros, solicitudes especiales…).</li><li><strong>Ocupada</strong>: un calendario del rango de la estancia. Cada día lleva cuatro iconos —limpieza, mantenimiento, cargos y novedades— que se ven <strong>siempre</strong>: en color si la acción se hizo y apagados si no.</li><li><strong>Mantenimiento</strong>: la descripción del mantenimiento en curso.</li><li><strong>Libre</strong>: el resumen del estado de la habitación (el mismo checklist).</li><li><strong>Pendiente de limpieza</strong>: el checklist y el botón para liberar la habitación.</li></ul></li><li>La zona Huésped aparece cuando hay estancia en curso o reserva vigente.</li><li>Cierra la ficha tocando <strong>Cerrar</strong> o seleccionando otra habitación.</li></ol>",
+      },
+      {
+        id: "5-que-ves-cuando-sale-bien",
+        title: "5. Qué ves cuando sale bien",
+        level: 2,
+        html: "<ul><li>El resumen de la habitación (número, tipo y estado).</li><li>La zona Habitación con la información específica del estado.</li><li>La zona Huésped con adultos, niños, bebés, mascotas, acceso PMR y la wallet del titular (recortada).</li><li>En estado pendiente de limpieza, el botón para liberar.</li></ul>",
+      },
+      {
+        id: "6-si-algo-va-mal",
+        title: "6. Si algo va mal",
+        level: 2,
+        html: "<table>\n<thead><tr><th>Lo que ves</th><th>Qué significa</th><th>Qué hacer</th></tr></thead>\n<tbody>\n<tr><td>La ficha no carga</td><td>Error de red o base de datos</td><td>Cierra y vuelve a tocar la habitación</td></tr>\n<tr><td>No aparece la zona Huésped</td><td>La habitación no tiene reserva activa</td><td>Es normal; la zona solo se muestra con reserva</td></tr>\n<tr><td>Wallet vacía</td><td>La reserva aún no tiene token acuñado</td><td>Espera a que el huésped complete el pago</td></tr>\n<tr><td>Checklist incompleto</td><td>Aún no se ha registrado la limpieza</td><td>Revisa con housekeeping</td></tr>\n</tbody></table>",
+      },
+      {
+        id: "7-preguntas-frecuentes",
+        title: "7. Preguntas frecuentes",
+        level: 2,
+        html: "",
+      },
+      {
+        id: "por-que-no-se-ve-el-nombre-del-huesped",
+        title: "¿Por qué no se ve el nombre del huésped?",
+        level: 3,
+        html: "<p>Por diseño, la plataforma no almacena nombres ni datos personales. El titular se identifica por su wallet.</p>",
+      },
+      {
+        id: "la-wallet-del-huesped-es-confidencial",
+        title: "¿La wallet del huésped es confidencial?",
+        level: 3,
+        html: "<p>Sí. Solo se muestra en la ficha detalle de recepción y de forma recortada. No aparece en pantallas públicas ni en reportes.</p>",
       },
     ],
   },
@@ -2941,6 +3069,304 @@ export const MANUALS: readonly ManualDoc[] = [
         title: "¿Me pide la contraseña para rotar el MFA?",
         level: 3,
         html: "<p>No. Basta con tener la sesión abierta. Por eso conviene no dejar el panel abierto en un ordenador compartido.</p>",
+      },
+    ],
+  },
+  {
+    slug: "01-mantenimiento",
+    title: "Mantenimiento: guía del jefe y del técnico",
+    lead: "<blockquote><p><strong>Para quién es esta guía:</strong> jefe de mantenimiento (usa el ordenador) y técnico de mantenimiento (usa el</p></blockquote>\n<p><img src=\"/manual/imagenes/doc-portada-hotel.svg\" alt=\"Portada: manuales del hotel Marina del Sol\" /> terminal fijo del taller).</p>",
+    pdf: "/manual/manual-01-mantenimiento.pdf",
+    group: "suites-vnext",
+    block: null,
+    sections: [
+      {
+        id: "empezar-en-5-minutos",
+        title: "Empezar en 5 minutos",
+        level: 2,
+        html: "<ol><li><strong>Jefe:</strong> entra en el ordenador con tu usuario, contraseña y el código de 6 dígitos de tu aplicación de autenticación. Abre <strong>Mantenimiento</strong> en el menú.</li><li><strong>Jefe:</strong> conecta tu cartera desde el bloque «Sesión» del menú lateral. La cartera solo se usa para <strong>firmar</strong> acciones críticas; tu contraseña y el código siguen siendo el acceso.</li><li><strong>Técnico:</strong> en el terminal del taller, pulsa tu nombre, teclea tu PIN y elige una tarea de tu lista.</li><li>Haz tu trabajo y ciérralo con una nota y, si puedes, una foto.</li><li>El jefe revisa y valida el cierre en menos de 24 horas.</li></ol>\n<p>&lt;!-- GENERAR_IMAGEN: suite-mantenimiento.svg --&gt; <img src=\"/manual/imagenes/suite-mantenimiento.svg\" alt=\"Esquema: de la incidencia al cierre validado\" /> ``<code>mermaid flowchart LR A[Incidencia o tarea] --&gt; B{¿Hace falta bloquear la habitación?} B -- Sí --&gt; C[Firmar con la cartera ⛓] B -- No --&gt; D[Técnico trabaja] C --&gt; D D --&gt; E[Cierre con evidencia] E --&gt; F[Validación del jefe en 24 h] </code>``</p>",
+      },
+      {
+        id: "1-ver-el-dia",
+        title: "1. Ver el día",
+        level: 2,
+        html: "<ul><li><strong>Tablero</strong>: incidencias abiertas, preventivo vencido, habitaciones bloqueadas y áreas críticas.</li><li><strong>Incidencias</strong>: lista con prioridad y estado. Pulsa una para ver el historial y el detalle.</li><li><strong>Preventivo</strong>: tareas por fecha; las de áreas críticas (piscina, bomba, ascensor, generador) exigen firma.</li></ul>",
+      },
+      {
+        id: "2-bloquear-una-habitacion-accion-con-firma",
+        title: "2. Bloquear una habitación (acción con firma ⛓)",
+        level: 2,
+        html: "<ol><li>Abre la incidencia de la habitación averiada.</li><li>Pulsa <strong>Bloquear para venta</strong>.</li><li>Revisa la ventana que aparece: acción, habitación y motivo.</li><li>Confirma y firma en tu cartera.</li><li>La habitación deja de venderse hasta que se desbloquee.</li></ol>\n<blockquote><p><strong>Qué significa ⛓</strong>: la acción queda registrada en la cadena con tu dirección y la hora. Solo quien tiene el rol puede firmarla; la web nunca firma por ti.</p></blockquote>",
+      },
+      {
+        id: "3-cerrar-una-tarea",
+        title: "3. Cerrar una tarea",
+        level: 2,
+        html: "<ol><li>Escribe qué has hecho (y repuestos, si aplica).</li><li>Si la tarea es de un área crítica, firma el cierre.</li><li>Si no hay foto, la app te avisa (<code>evidence-missing</code>) pero te deja continuar.</li><li>El jefe verá el cierre como <strong>pendiente de validación</strong>.</li></ol>",
+      },
+      {
+        id: "4-usar-el-terminal-con-pin",
+        title: "4. Usar el terminal con PIN",
+        level: 2,
+        html: "<ul><li>El PIN tiene 4–6 dígitos, no se repiten y caduca cada 90 días.</li><li>Si fallas 5 veces, el terminal se bloquea 15 minutos; el jefe puede desbloquearte.</li><li>El terminal <strong>no funciona sin conexión</strong>: si se cae la red, avisa y no deja escribir.</li><li>Cierra sesión al terminar (se cierra sola a los 5 minutos de inactividad).</li></ul>",
+      },
+      {
+        id: "5-si-algo-no-funciona",
+        title: "5. Si algo no funciona",
+        level: 2,
+        html: "<table>\n<thead><tr><th>Síntoma</th><th>Qué hacer</th></tr></thead>\n<tbody>\n<tr><td>«Requiere firma» y el botón no responde</td><td>Conecta la cartera y comprueba que estás en la red del hotel</td></tr>\n<tr><td>«No autorizado»</td><td>Tu sesión caducó: vuelve a entrar con contraseña + código</td></tr>\n<tr><td>El cierre se queda «pendiente de validación»</td><td>Es normal: el jefe tiene 24 h; si vence, escala al administrador</td></tr>\n<tr><td>El terminal no me deja entrar</td><td>PIN caducado o bloqueado: pide al jefe que lo renueve o desbloquee</td></tr>\n</tbody></table>",
+      },
+    ],
+  },
+  {
+    slug: "02-ama-de-llaves",
+    title: "Ama de llaves: guía de turnos, limpieza e inspecciones",
+    lead: "<blockquote><p><strong>Para quién es esta guía:</strong> jefa de ama de llaves (ordenador) y camareras (terminal del office).</p></blockquote>\n<figure><img src=\"/manual/imagenes/doc-portada-hotel.svg\" alt=\"Portada: manuales del hotel Marina del Sol\" /><figcaption>Portada: manuales del hotel Marina del Sol</figcaption></figure>",
+    pdf: "/manual/manual-02-ama-de-llaves.pdf",
+    group: "suites-vnext",
+    block: null,
+    sections: [
+      {
+        id: "empezar-en-5-minutos",
+        title: "Empezar en 5 minutos",
+        level: 2,
+        html: "<ol><li><strong>Jefa:</strong> entra en el ordenador con tu usuario, contraseña y código de 6 dígitos. Abre <strong>Ama de llaves</strong>.</li><li>Crea el turno del día y asigna habitaciones a cada camarera.</li><li><strong>Camarera:</strong> en el terminal del office, entra con tu PIN y verás solo tus habitaciones.</li><li>Marca cada habitación como limpia al terminar; si algo está roto, repórtalo.</li><li>La jefa inspecciona y certifica (o devuelve la limpieza).</li></ol>\n<p>&lt;!-- GENERAR_IMAGEN: ama-de-llaves.svg --&gt; <img src=\"/manual/imagenes/ama-de-llaves.svg\" alt=\"Esquema: turnos, limpieza e inspección\" /> ``<code>mermaid flowchart LR A[Check-out o tarea] --&gt; B[Habitación pendiente de limpieza] B --&gt; C[Camarera limpia y marca] C --&gt; D{¿Inspección correcta?} D -- Sí --&gt; E[Certificada y lista] D -- No --&gt; F[Devuelta con observaciones] F --&gt; C </code>``</p>",
+      },
+      {
+        id: "1-turnos-y-asignaciones",
+        title: "1. Turnos y asignaciones",
+        level: 2,
+        html: "<ul><li>Un turno tiene fecha y etiqueta: <strong>mañana</strong>, <strong>tarde</strong> o <strong>noche</strong>.</li><li>Cada habitación se asigna a una camarera; no se puede repetir la misma habitación en el mismo turno.</li><li>El tablero muestra el estado de cada habitación (limpia, sucia, ocupada, pendiente, en inspección).</li></ul>",
+      },
+      {
+        id: "2-para-la-camarera-terminal",
+        title: "2. Para la camarera (terminal)",
+        level: 2,
+        html: "<ol><li>Entra con tu PIN y abre <strong>Mis habitaciones</strong>.</li><li>Elige una y marca el avance: <strong>empezar</strong> y <strong>terminar</strong>.</li><li>Registra el consumo de suministros si lo hubo.</li><li>Si ves una avería, usa <strong>Reportar avería</strong>; no necesitas cartera.</li><li>Al terminar, cierra sesión (o se cierra sola a los 5 minutos).</li></ol>",
+      },
+      {
+        id: "3-para-la-jefa-inspeccionar",
+        title: "3. Para la jefa: inspeccionar",
+        level: 2,
+        html: "<ol><li>Abre <strong>Inspecciones</strong> y la habitación pendiente.</li><li>Elige el tipo: <strong>check-out</strong> o <strong>servicio diario</strong>.</li><li>Resultado: <strong>aprobada</strong> o <strong>rechazada</strong> con observaciones.</li><li>Si quieres, firma la certificación con tu cartera (es opcional).</li><li>Rechazar devuelve la limpieza a la camarera con tus notas.</li></ol>",
+      },
+      {
+        id: "4-suministros",
+        title: "4. Suministros",
+        level: 2,
+        html: "<ul><li>Si un producto baja del umbral, aparece una <strong>alerta</strong>.</li><li>La alerta se recuerda cada día hasta que repongas; al superar el umbral se cierra sola.</li><li>La jefa puede cambiar el umbral de cada producto en administración.</li></ul>",
+      },
+      {
+        id: "5-si-algo-no-funciona",
+        title: "5. Si algo no funciona",
+        level: 2,
+        html: "<table>\n<thead><tr><th>Síntoma</th><th>Qué hacer</th></tr></thead>\n<tbody>\n<tr><td>No veo mis habitaciones</td><td>Comprueba que estás en el turno correcto; pide a la jefa que revise la asignación</td></tr>\n<tr><td>El PIN no funciona</td><td>Puede estar bloqueado o caducado: la jefa lo renueva desde Sistemas → Usuarios</td></tr>\n<tr><td>«Sin conexión» en el terminal</td><td>El terminal necesita red; avisa a la jefa y usa el parte en papel</td></tr>\n<tr><td>Una inspección rechazada no me llega</td><td>La habitación vuelve a tu lista con las observaciones</td></tr>\n</tbody></table>",
+      },
+    ],
+  },
+  {
+    slug: "03-suministros-y-sla",
+    title: "Suministros y plazos de validación",
+    lead: "<blockquote><p><strong>Para quién es esta guía:</strong> jefa de ama de llaves y administración.</p></blockquote>\n<figure><img src=\"/manual/imagenes/doc-portada-hotel.svg\" alt=\"Portada: manuales del hotel Marina del Sol\" /><figcaption>Portada: manuales del hotel Marina del Sol</figcaption></figure>",
+    pdf: "/manual/manual-03-suministros-y-sla.pdf",
+    group: "suites-vnext",
+    block: null,
+    sections: [
+      {
+        id: "empezar-en-5-minutos",
+        title: "Empezar en 5 minutos",
+        level: 2,
+        html: "<ol><li>Entra en <strong>Ama de llaves → Suministros</strong>.</li><li>Revisa las alertas abiertas: son productos en o por debajo del umbral.</li><li>Repón el producto y vuelve a iniciar sesión; la alerta se cierra sola al superar el umbral.</li><li>Revisa la cola <strong>Mantenimiento → Validaciones</strong>: ahí esperan los cierres de tus técnicos.</li><li>Valida antes de 24 horas.</li></ol>\n<p>``<code>mermaid flowchart LR A[Stock bajo] --&gt; B[Alerta abierta] B --&gt; C[Recordatorio diario] C --&gt; D{¿Se repone?} D -- Sí --&gt; E[Alerta cerrada] D -- No --&gt; C </code>``</p>",
+      },
+      {
+        id: "1-como-funcionan-las-alertas",
+        title: "1. Cómo funcionan las alertas",
+        level: 2,
+        html: "<ul><li>Cada producto tiene un <strong>umbral</strong> configurable.</li><li>Cuando el stock queda <strong>en o por debajo</strong>, se abre una alerta.</li><li>Mientras siga abierta, el sistema recuerda cada día al responsable.</li><li>Al reponer por encima del umbral, la alerta se cierra automáticamente.</li></ul>",
+      },
+      {
+        id: "2-plazo-de-validacion-de-tareas-24-horas",
+        title: "2. Plazo de validación de tareas (24 horas)",
+        level: 2,
+        html: "<ul><li>Cuando un técnico cierra una tarea, queda <strong>pendiente de validación</strong> de su jefe.</li><li>Si pasan <strong>24 horas</strong>, la tarea se marca como vencida y <strong>escala al administrador</strong>.</li><li>Una tarea vencida <strong>no bloquea la habitación</strong>, pero <strong>no cuenta como completada</strong> hasta que se valide.</li><li>En la cola verás el tiempo restante de cada tarea.</li></ul>",
+      },
+      {
+        id: "3-si-algo-no-funciona",
+        title: "3. Si algo no funciona",
+        level: 2,
+        html: "<table>\n<thead><tr><th>Síntoma</th><th>Qué hacer</th></tr></thead>\n<tbody>\n<tr><td>No aparece una alerta aunque el stock es bajo</td><td>Comprueba el umbral del producto y que el worker esté activo</td></tr>\n<tr><td>La alerta no se cierra al reponer</td><td>Verifica que el stock superó el umbral (no basta con igualarlo)</td></tr>\n<tr><td>Una tarea venció y no la veo</td><td>Está en la vista del administrador; pídele que la reabra o valide</td></tr>\n</tbody></table>",
+      },
+    ],
+  },
+  {
+    slug: "04-danos-y-reclamaciones",
+    title: "Cargos por daños: registrar, reclamar y resolver",
+    lead: "<blockquote><p><strong>Para quién es esta guía:</strong> recepción, ama de llaves (quien registra el daño) y huésped (quien recibe el</p></blockquote>\n<p><img src=\"/manual/imagenes/doc-portada-hotel.svg\" alt=\"Portada: manuales del hotel Marina del Sol\" /> aviso).</p>",
+    pdf: "/manual/manual-04-danos-y-reclamaciones.pdf",
+    group: "suites-vnext",
+    block: null,
+    sections: [
+      {
+        id: "empezar-en-5-minutos",
+        title: "Empezar en 5 minutos",
+        level: 2,
+        html: "<ol><li><strong>Recepción/ama de llaves:</strong> abre la estancia y pulsa <strong>Registrar cargo por daños</strong>.</li><li>Describe el daño, adjunta una foto e indica el importe.</li><li>El huésped recibe un aviso con el plazo para aceptar o reclamar.</li><li>Si acepta, el cargo se cobra en el check-out; si reclama, recepción resuelve.</li><li>La habitación queda libre de cargos pendientes al cerrar la estancia.</li></ol>\n<p>&lt;!-- GENERAR_IMAGEN: danos-ciclo.svg --&gt; <img src=\"/manual/imagenes/danos-ciclo.svg\" alt=\"Esquema: ciclo del cargo por daños\" /> ``<code>mermaid flowchart LR A[Daño detectado] --&gt; B[Registro + foto + importe] B --&gt; C[Aviso al huésped] C --&gt; D{¿Acepta?} D -- Sí --&gt; E[Cargo aceptado] D -- No --&gt; F[Reclamación] F --&gt; G[Resolución de recepción] G --&gt; H{¿Aceptada?} H -- Sí --&gt; E H -- No --&gt; I[Cargo cancelado] E --&gt; J[Se liquida en el check-out] </code>``</p>",
+      },
+      {
+        id: "1-registrar-el-cargo",
+        title: "1. Registrar el cargo",
+        level: 2,
+        html: "<ul><li>Describe el daño con claridad y adjunta una <strong>foto</strong> (solo JPG, máximo 2 MB).</li><li>El importe <strong>no puede superar 3 veces la tarifa de la noche</strong>; por encima debe aprobarlo el administrador.</li><li>El aviso al huésped se envía por su canal preferido con el plazo de reclamación.</li></ul>",
+      },
+      {
+        id: "2-aviso-y-reclamacion-del-huesped",
+        title: "2. Aviso y reclamación del huésped",
+        level: 2,
+        html: "<ul><li>El huésped abre el enlace y ve la descripción, el importe y el plazo.</li><li>Puede <strong>aceptar</strong> o <strong>reclamar</strong> con una nota.</li><li>Si deja pasar el plazo, el cargo queda como vencido y no admite reclamación.</li><li>No se muestran datos internos ni de otros huéspedes.</li></ul>",
+      },
+      {
+        id: "3-resolver-recepcion",
+        title: "3. Resolver (recepción)",
+        level: 2,
+        html: "<ol><li>Abre <strong>Recepción → Daños</strong> y la reclamación.</li><li>Revisa la evidencia y las notas.</li><li>Resuelve: <strong>aceptada</strong> (se cobra) o <strong>rechazada</strong> (se cancela).</li><li>Al hacer el check-out, el sistema liquida los cargos aceptados.</li></ol>",
+      },
+      {
+        id: "4-si-algo-no-funciona",
+        title: "4. Si algo no funciona",
+        level: 2,
+        html: "<table>\n<thead><tr><th>Síntoma</th><th>Qué hacer</th></tr></thead>\n<tbody>\n<tr><td>El huésped no recibió el aviso</td><td>Comprueba su canal preferido y reenvía el aviso</td></tr>\n<tr><td>No puedo registrar el importe</td><td>Supera el tope de 3× la noche: pide aprobación al administrador</td></tr>\n<tr><td>El cargo no aparece en el check-out</td><td>Revisa que esté aceptado y dentro del plazo</td></tr>\n<tr><td>El enlace del aviso da error</td><td>Pide al huésped que entre en «Mis noches → Cargos»</td></tr>\n</tbody></table>",
+      },
+    ],
+  },
+  {
+    slug: "05-gobernanza-y-firmas",
+    title: "Gobiernos de la plataforma: wallets, permisos y firmas",
+    lead: "<blockquote><p><strong>Para quién es esta guía:</strong> propietario/administrador y soporte.</p></blockquote>\n<figure><img src=\"/manual/imagenes/doc-portada-hotel.svg\" alt=\"Portada: manuales del hotel Marina del Sol\" /><figcaption>Portada: manuales del hotel Marina del Sol</figcaption></figure>",
+    pdf: "/manual/manual-05-gobernanza-y-firmas.pdf",
+    group: "suites-vnext",
+    block: null,
+    sections: [
+      {
+        id: "empezar-en-5-minutos",
+        title: "Empezar en 5 minutos",
+        level: 2,
+        html: "<ol><li>Entra en <strong>Sistemas</strong> con tu cuenta de propietario.</li><li>Revisa <strong>Usuarios</strong> y <strong>Wallets</strong>: cada jefe debe tener su rol on-chain asignado.</li><li>Si cambias un permiso obligatorio, el sistema te pedirá firmar con la cartera.</li><li>Revisa la <strong>cola de anclajes</strong>: ahí ves las firmas pendientes de registrarse en la cadena.</li><li>Descarga el <strong>expediente de auditoría</strong> cuando lo necesites.</li></ol>\n<p>&lt;!-- GENERAR_IMAGEN: gobernanza-firmas.svg --&gt; <img src=\"/manual/imagenes/gobernanza-firmas.svg\" alt=\"Esquema: permisos, firma y cola de anclajes\" /> ``<code>mermaid flowchart LR A[Cambio de permiso o flag] --&gt; B{¿Es obligatorio?} B -- No --&gt; C[Aplicar y auditar] B -- Sí --&gt; D[Preparar firma CONFIG] D --&gt; E[Firmar con cartera ⛓] E --&gt; F[Confirmar y aplicar] F --&gt; G[Registrar en cola de anclajes] G --&gt; H[Minar en cadena] </code>``</p>",
+      },
+      {
+        id: "1-wallets-y-roles-de-los-jefes",
+        title: "1. Wallets y roles de los jefes",
+        level: 2,
+        html: "<ul><li>Cada jefe tiene una <strong>dirección de wallet</strong> y un rol: jefe de mantenimiento, jefa de ama de llaves o respaldo del propietario.</li><li>El sistema <strong>concede el rol en la cadena y comprueba que se aplicó</strong> antes de guardarlo.</li><li>Para dar de baja a alguien, primero se retira el rol en la cadena; si aún está activo, no deja.</li><li>El respaldo del propietario sirve para firmar en una emergencia.</li></ul>",
+      },
+      {
+        id: "2-permisos-y-flags",
+        title: "2. Permisos y flags",
+        level: 2,
+        html: "<ul><li>Algunos permisos son <strong>obligatorios</strong> para operar con seguridad.</li><li>Si intentas desactivar uno obligatorio, el sistema te pide <strong>firmar</strong> el cambio con la cartera.</li><li>Todo cambio queda registrado con quién, cuándo y qué cambió.</li></ul>",
+      },
+      {
+        id: "3-operarios-del-terminal",
+        title: "3. Operarios del terminal",
+        level: 2,
+        html: "<ul><li>Se dan de alta con un <strong>PIN de un solo uso</strong> que deben cambiar al entrar.</li><li>Puedes rotar el PIN, darlos de baja y desbloquearlos si fallan 5 veces.</li><li>Cada alta queda vinculada a la persona que la hizo.</li></ul>",
+      },
+      {
+        id: "4-cola-de-anclajes-auditoria-y-copias",
+        title: "4. Cola de anclajes, auditoría y copias",
+        level: 2,
+        html: "<ul><li><strong>Cola de anclajes:</strong> lista de firmas pendientes; si el servicio que las envía a la cadena se cae, la cola sigue visible y se reintenta.</li><li><strong>Auditoría:</strong> descarga un expediente firmado y verificable de las acciones.</li><li><strong>Copias de seguridad:</strong> el sistema tiene copia diaria y recuperación a un instante; el drill de restauración a una instancia aislada está documentado aparte.</li></ul>",
+      },
+      {
+        id: "5-si-algo-no-funciona",
+        title: "5. Si algo no funciona",
+        level: 2,
+        html: "<table>\n<thead><tr><th>Síntoma</th><th>Qué hacer</th></tr></thead>\n<tbody>\n<tr><td>«Esta operación requiere firma»</td><td>Conecta la cartera del propietario y firma; sin firma no se aplica</td></tr>\n<tr><td>No puedo dar de baja una wallet</td><td>El rol sigue activo en la cadena: retíralo primero</td></tr>\n<tr><td>La cola de anclajes crece</td><td>Revisa el estado del worker; las firmas se reintentan solas</td></tr>\n<tr><td>El expediente de auditoría no descarga</td><td>Comprueba tu sesión y vuelve a intentarlo; queda registrado el error</td></tr>\n</tbody></table>",
+      },
+    ],
+  },
+  {
+    slug: "06-recepcion-vnext",
+    title: "Recepción vNext: el día en el mostrador",
+    lead: "<blockquote><p><strong>Para quién es esta guía:</strong> recepcionista del hotel.</p></blockquote>\n<figure><img src=\"/manual/imagenes/doc-portada-hotel.svg\" alt=\"Portada: manuales del hotel Marina del Sol\" /><figcaption>Portada: manuales del hotel Marina del Sol</figcaption></figure>",
+    pdf: "/manual/manual-06-recepcion-vnext.pdf",
+    group: "suites-vnext",
+    block: null,
+    sections: [
+      {
+        id: "empezar-en-5-minutos",
+        title: "Empezar en 5 minutos",
+        level: 2,
+        html: "<ol><li>Entra en el ordenador con tu usuario, contraseña y código de 6 dígitos.</li><li>Abre <strong>Recepción</strong>: verás las reservas del día y las 50 habitaciones.</li><li>Para un check-in, escanea el QR del huésped o busca la reserva por su código.</li><li>Para un check-out, verifica la habitación y confirma; los cargos aceptados se liquidan.</li><li>Si necesitas publicar o retirar una habitación de la venta, usa el botón de publicación.</li></ol>\n<p>``<code>mermaid flowchart LR A[Llega el huésped] --&gt; B{¿Tiene QR?} B -- Sí --&gt; C[Escanear y registrar check-in] B -- No --&gt; D[Buscar por código de reserva] D --&gt; C C --&gt; E[Estancia activa] E --&gt; F[Check-out: verificar y liquidar] F --&gt; G[Habitación pendiente de limpieza] </code>``</p>",
+      },
+      {
+        id: "1-el-panel-del-dia",
+        title: "1. El panel del día",
+        level: 2,
+        html: "<ul><li><strong>Reservas:</strong> llegadas, estancias activas y salidas.</li><li><strong>Habitaciones:</strong> estado de venta y estado operativo de cada una.</li><li><strong>Incidencias:</strong> puedes reportar una avería sin firma.</li><li><strong>Daños:</strong> consulta y resuelve reclamaciones de cargos.</li></ul>",
+      },
+      {
+        id: "2-check-in",
+        title: "2. Check-in",
+        level: 2,
+        html: "<ol><li>Escanea el QR con el lector o introduce el código del resguardo.</li><li>El sistema comprueba que es válido y que no se ha usado.</li><li>Si el QR falla, usa el <strong>check-in de contingencia</strong> (queda registrado y auditado).</li><li>La estancia pasa a activa y la habitación a ocupada.</li></ol>",
+      },
+      {
+        id: "3-check-out",
+        title: "3. Check-out",
+        level: 2,
+        html: "<ol><li>Abre la estancia y verifica la habitación.</li><li>Si hay daños, registra el cargo; si hay cargos pendientes, resuélvelos.</li><li>Confirma la salida: se liquidan los cargos aceptados.</li><li>La habitación pasa a <strong>pendiente de limpieza</strong> y aparece en la lista del ama de llaves.</li></ol>",
+      },
+      {
+        id: "4-publicar-o-retirar-la-venta",
+        title: "4. Publicar o retirar la venta",
+        level: 2,
+        html: "<ul><li>Puedes <strong>pausar</strong> o <strong>volver a publicar</strong> la venta de una habitación desde la ficha.</li><li>La acción queda registrada y no exige cartera (es operación de recepción).</li><li>Si el sistema de reservas externo (PMS) no responde, la operación manual sigue disponible y la web lo avisa.</li></ul>",
+      },
+      {
+        id: "5-si-algo-no-funciona",
+        title: "5. Si algo no funciona",
+        level: 2,
+        html: "<table>\n<thead><tr><th>Síntoma</th><th>Qué hacer</th></tr></thead>\n<tbody>\n<tr><td>El QR no se lee</td><td>Introduce el código del resguardo o usa contingencia</td></tr>\n<tr><td>«Este resguardo ya se usó»</td><td>No se puede repetir; revisa con el huésped y abre una incidencia</td></tr>\n<tr><td>No veo una reserva</td><td>Búscala por código; si no aparece, comprueba la sincronización con el PMS</td></tr>\n<tr><td>No puedo publicar la habitación</td><td>La ficha puede estar incompleta o bloqueada por mantenimiento</td></tr>\n</tbody></table>",
+      },
+    ],
+  },
+  {
+    slug: "07-terminal-pin",
+    title: "El terminal con PIN: guía rápida",
+    lead: "<blockquote><p><strong>Para quién es esta guía:</strong> técnicos de mantenimiento y camareras que trabajan con el terminal fijo.</p></blockquote>\n<figure><img src=\"/manual/imagenes/doc-portada-hotel.svg\" alt=\"Portada: manuales del hotel Marina del Sol\" /><figcaption>Portada: manuales del hotel Marina del Sol</figcaption></figure>",
+    pdf: "/manual/manual-07-terminal-pin.pdf",
+    group: "suites-vnext",
+    block: null,
+    sections: [
+      {
+        id: "empezar-en-5-minutos",
+        title: "Empezar en 5 minutos",
+        level: 2,
+        html: "<ol><li>Enciende el terminal y pulsa tu nombre.</li><li>Teclea tu <strong>PIN</strong> (4–6 dígitos, sin repetir).</li><li>Verás <strong>solo tus tareas y habitaciones</strong> del turno.</li><li>Abre una tarea, trabaja y ciérrala con una nota (y foto si puedes).</li><li>Cierra sesión al terminar.</li></ol>\n<p>&lt;!-- GENERAR_IMAGEN: terminal-pin.svg --&gt; <img src=\"/manual/imagenes/terminal-pin.svg\" alt=\"Esquema: entrada y trabajo en el terminal\" /> ``<code>mermaid flowchart LR A[Elegir operario] --&gt; B[Teclear PIN] B --&gt; C{¿Correcto?} C -- No --&gt; D[Reintentar / bloqueo a los 5 fallos] C -- Sí --&gt; E[Mis tareas del turno] E --&gt; F[Avanzar y cerrar] F --&gt; G[Validación del jefe] </code>``</p>",
+      },
+      {
+        id: "1-entrar-y-salir",
+        title: "1. Entrar y salir",
+        level: 2,
+        html: "<ul><li>El PIN es personal; no lo compartas.</li><li>Si fallas <strong>5 veces</strong>, el terminal se bloquea 15 minutos. Tu jefe puede desbloquearte.</li><li>La sesión se cierra sola a los <strong>5 minutos</strong> sin actividad y, como máximo, a las 8 horas.</li><li>El PIN caduca cada <strong>90 días</strong>; el sistema te pedirá cambiarlo.</li></ul>",
+      },
+      {
+        id: "2-trabajar-con-tareas",
+        title: "2. Trabajar con tareas",
+        level: 2,
+        html: "<ol><li>Elige una tarea de tu lista (solo ves las asignadas a ti).</li><li>Pulsa <strong>Empezar</strong> cuando llegues.</li><li>Al terminar, escribe qué has hecho y adjunta evidencia si es posible.</li><li>Pulsa <strong>Cerrar</strong>: la tarea queda pendiente de validación de tu jefe.</li><li>Si ves una avería, usa <strong>Reportar avería</strong>.</li></ol>",
+      },
+      {
+        id: "3-cosas-importantes",
+        title: "3. Cosas importantes",
+        level: 2,
+        html: "<ul><li>El terminal <strong>necesita conexión</strong>: si se cae la red, avisa y no intentes escribir.</li><li>No puedes ver importes, huéspedes ni configuración: es intencionado.</li><li>Si otra persona cambió la tarea mientras la tenías abierta, el sistema te avisa del conflicto.</li><li>La camarera usa el mismo terminal para marcar la limpieza y el consumo de suministros.</li></ul>",
+      },
+      {
+        id: "4-si-algo-no-funciona",
+        title: "4. Si algo no funciona",
+        level: 2,
+        html: "<table>\n<thead><tr><th>Síntoma</th><th>Qué hacer</th></tr></thead>\n<tbody>\n<tr><td>«PIN incorrecto»</td><td>Revisa mayúsculas/teclado; al quinto intento se bloquea</td></tr>\n<tr><td>«PIN caducado»</td><td>Pide a tu jefe que lo renueve</td></tr>\n<tr><td>No aparecen tareas</td><td>Puede que no tengas asignaciones en este turno; avisa a tu jefe</td></tr>\n<tr><td>«Sin conexión»</td><td>Espera a que vuelva la red; el terminal no guarda cambios offline</td></tr>\n</tbody></table>",
       },
     ],
   },

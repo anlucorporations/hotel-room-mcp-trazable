@@ -1,0 +1,66 @@
+{
+  "id": "fase5-manuales-2026-10-20",
+  "titulo": "Fase 5 — manuales técnicos, literales, imágenes, PDF y Ayuda actualizados a la release F1–F10",
+  "fechaUtc": "2026-10-20T14:30:00Z",
+  "alcance": "Completar la Fase 5 (@manuales) sobre la release actual: suites de personal F4–F10 y corrección de la deriva del pipeline de manuales.",
+  "nuevos": {
+    "tecnicos": [
+      "RepoTecnico/Manuales/07-suites-vnext/01-mantenimiento-y-terminal.md",
+      "RepoTecnico/Manuales/07-suites-vnext/02-ama-de-llaves-y-suministros.md",
+      "RepoTecnico/Manuales/07-suites-vnext/03-danos-cargos-y-reclamaciones.md",
+      "RepoTecnico/Manuales/07-suites-vnext/04-gobernanza-firmas-y-soporte.md",
+      "RepoTecnico/Manuales/07-suites-vnext/05-recepcion-vnext-y-publicacion.md"
+    ],
+    "literales": [
+      "docs/Manuales/07-suites-vnext/01-mantenimiento.md",
+      "docs/Manuales/07-suites-vnext/02-ama-de-llaves.md",
+      "docs/Manuales/07-suites-vnext/03-suministros-y-sla.md",
+      "docs/Manuales/07-suites-vnext/04-danos-y-reclamaciones.md",
+      "docs/Manuales/07-suites-vnext/05-gobernanza-y-firmas.md",
+      "docs/Manuales/07-suites-vnext/06-recepcion-vnext.md",
+      "docs/Manuales/07-suites-vnext/07-terminal-pin.md"
+    ],
+    "imagenes": [
+      "docs/imagenes/manuales/suite-mantenimiento.svg",
+      "docs/imagenes/manuales/ama-de-llaves.svg",
+      "docs/imagenes/manuales/danos-ciclo.svg",
+      "docs/imagenes/manuales/gobernanza-firmas.svg",
+      "docs/imagenes/manuales/terminal-pin.svg",
+      "docs/imagenes/doc-cu-38-liberar-habitacion.svg",
+      "docs/imagenes/doc-cu-39-ficha-detalle-habitacion.svg"
+    ],
+    "indices": [
+      "RepoTecnico/Manuales/07-suites-vnext/README.md",
+      "docs/Manuales/07-suites-vnext/README.md"
+    ]
+  },
+  "pipeline": {
+    "comando": "pnpm build:manuals",
+    "resultado": "44 manuales · 484 secciones · PDF y HTML generados",
+    "salidaPdf": "44 PDF en docs/pdf/ y copias en apps/web/public/manual/",
+    "cambios": [
+      "Nuevo grupo de manuales suites-vnext en apps/web/scripts/build-manuals.mjs",
+      "Tipo de grupo en manuals.generated.ts ampliado a general | casos-de-uso | suites-vnext",
+      "Sección «Manuales de las suites (personal)» en /ayuda (ES/EN/RU)",
+      "CU-38 y CU-39 registrados en CU_ORDER (existían sin orden declarado: el generador fallaba)",
+      "Portadas doc-cu-38/39 y portada general en los manuales de suites"
+    ]
+  },
+  "gates": {
+    "buildManuals": "✅ 44 manuales · 484 secciones",
+    "vitestHelp": "18/18 (manuals-sync 8/8 + huesped-sync 10/10)",
+    "typecheckWeb": "verde",
+    "lintWeb": "0 errores (avisos preexistentes)",
+    "nextBuild": "verde"
+  },
+  "cobertura": {
+    "suites": "Mantenimiento (F4), terminal PIN (F5), ama de llaves (F6), daños (F7), suministros/SLA (F8), gobernanza y soporte (F9), recepción vNext y publicación (F10)",
+    "web": "/ayuda muestra 3 manuales generales + 7 de suites + 34 casos de uso; cada uno con lectura, infografía y PDF",
+    "huésped": "manual del huésped y sus 17 guías sin cambios (ya cubiertos)"
+  },
+  "deudaDeclarada": [
+    "Manuales de la APK pendientes: la app Android aún no existe (solo está especificada en casos_uso_apk.md).",
+    "Manual del huésped: el apartado de dirección/datos del hotel sigue pendiente del cliente (RF-56).",
+    "El contenido de las suites debe ser validado por el responsable del hotel antes del cierre del proyecto."
+  ]
+}

@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 320" width="960" height="320" role="img" aria-labelledby="t d">
+  <title id="t">Ama de llaves</title>
+  <desc id="d">Turnos, limpieza e inspección</desc>
+  <rect width="960" height="320" rx="18" fill="#f4f9fc"/>
+  <rect x="0" y="0" width="960" height="8" rx="4" fill="#276e4c"/>
+  <text x="40" y="56" font-family="Playfair Display, Georgia, serif" font-size="26" font-weight="700" fill="#0e2a3f">Ama de llaves</text>
+  <text x="40" y="84" font-family="Manrope, Arial, sans-serif" font-size="14" fill="#41566a">Turnos, limpieza e inspección</text>
+
+  <g>
+    <rect x="40" y="120" width="150" height="86" rx="14" fill="#ffffff" stroke="#dbe7ef" stroke-width="2"/>
+    <rect x="40" y="120" width="150" height="8" rx="4" fill="#276e4c"/>
+    <text x="115" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#101f2c">Turno</text>
+    <text x="115" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#41566a">mañana / tarde / noche</text>
+  </g>
+  <g>
+    <line x1="196" y1="163" x2="214" y2="163" stroke="#6b8296" stroke-width="2"/>
+    <polygon points="214,163 206,158 206,168" fill="#6b8296"/>
+  </g>
+  <g>
+    <rect x="222" y="120" width="150" height="86" rx="14" fill="#ffffff" stroke="#dbe7ef" stroke-width="2"/>
+    <rect x="222" y="120" width="150" height="8" rx="4" fill="#276e4c"/>
+    <text x="298" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#101f2c">Asignación</text>
+    <text x="298" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#41566a">habitaciones por camarera</text>
+  </g>
+  <g>
+    <line x1="378" y1="163" x2="397" y2="163" stroke="#6b8296" stroke-width="2"/>
+    <polygon points="397,163 388,158 388,168" fill="#6b8296"/>
+  </g>
+  <g>
+    <rect x="405" y="120" width="150" height="86" rx="14" fill="#ffffff" stroke="#dbe7ef" stroke-width="2"/>
+    <rect x="405" y="120" width="150" height="8" rx="4" fill="#276e4c"/>
+    <text x="480" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#101f2c">Limpieza</text>
+    <text x="480" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#41566a">terminal con PIN</text>
+  </g>
+  <g>
+    <line x1="561" y1="163" x2="580" y2="163" stroke="#6b8296" stroke-width="2"/>
+    <polygon points="580,163 570,158 570,168" fill="#6b8296"/>
+  </g>
+  <g>
+    <rect x="588" y="120" width="150" height="86" rx="14" fill="#ffffff" stroke="#dbe7ef" stroke-width="2"/>
+    <rect x="588" y="120" width="150" height="8" rx="4" fill="#276e4c"/>
+    <text x="662" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#101f2c">Inspección</text>
+    <text x="662" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#41566a">aprobar o rechazar</text>
+  </g>
+  <g>
+    <line x1="744" y1="163" x2="762" y2="163" stroke="#6b8296" stroke-width="2"/>
+    <polygon points="762,163 753,158 753,168" fill="#6b8296"/>
+  </g>
+  <g>
+    <rect x="770" y="120" width="150" height="86" rx="14" fill="#ffffff" stroke="#dbe7ef" stroke-width="2"/>
+    <rect x="770" y="120" width="150" height="8" rx="4" fill="#276e4c"/>
+    <text x="845" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#101f2c">Lista</text>
+    <text x="845" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#41566a">certificada</text>
+  </g>
+  <text x="920" y="298" text-anchor="end" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#6b8296">Hotel Marina del Sol · manuales</text>
+</svg>

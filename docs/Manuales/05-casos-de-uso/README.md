@@ -9,7 +9,7 @@
 > Versión técnica de cada uno:
 > [`RepoTecnico/Manuales/05-casos-de-uso/`](../../../RepoTecnico/Manuales/05-casos-de-uso/README.md).
 
-Son **32 manuales** en 9 bloques, más la infografía del mapa de iniciación
+Son **34 manuales** en 9 bloques, más la infografía del mapa de iniciación
 ([`doc-mapa-iniciacion-sistema.svg`](../../imagenes/doc-mapa-iniciacion-sistema.svg)).
 
 ### Bloque 1 · Iniciación y aprovisionamiento
@@ -92,6 +92,8 @@ _Recepción y estancia: el día a día del mostrador._
 | [CU-35 · Apuntar los extras del huésped (minibar, desayuno…)](08-operacion-hotelera-v2/CU-35-cargos-adicionales.md) |
 | [CU-36 · Que el huésped publique, cambie o retire su reventa](08-operacion-hotelera-v2/CU-36-reventa-huesped.md) |
 | [CU-37 · Avisar al huésped cuando su reventa se mueve](08-operacion-hotelera-v2/CU-37-avisos-reventa.md) |
+| [CU-38 · Liberar una habitación tras la limpieza](08-operacion-hotelera-v2/CU-38-liberar-habitacion.md) |
+| [CU-39 · Ver la ficha detalle de una habitación](08-operacion-hotelera-v2/CU-39-ficha-detalle-habitacion.md) |
 
 ### Bloque 9 · Back-office y gobierno (incremento v3)
 
@@ -109,4 +111,4 @@ _Panel del dueño, usuarios, contrato y finanzas._
 
 ---
 
-*Manuales literales · Hotel Marina del Sol · 32 casos de uso en 9 bloques.*
+*Manuales literales · Hotel Marina del Sol · 34 casos de uso en 9 bloques.*

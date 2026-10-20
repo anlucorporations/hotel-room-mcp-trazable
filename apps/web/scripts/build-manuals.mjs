@@ -96,6 +96,8 @@ const CU_ORDER = [
   "cu-35-cargos-adicionales",
   "cu-36-reventa-huesped",
   "cu-37-avisos-reventa",
+  "cu-38-liberar-habitacion",
+  "cu-39-ficha-detalle-habitacion",
   "cu-40-menu-wallet",
   "cu-41-seccion-sistemas",
   "cu-42-gestion-usuarios",
@@ -150,8 +152,35 @@ function listCuSources() {
   return ordered;
 }
 
-/** Todos los manuales: primero los generales y después los 32 casos de uso en orden de iniciación. */
-const ALL_SOURCES = [...SOURCES, ...listCuSources()];
+/**
+ * Manuales de las suites vNext (`docs/Manuales/07-suites-vnext/*.md`).
+ *
+ * Son los manuales de rol de F4–F10 (mantenimiento, ama de llaves, suministros, daños, gobernanza,
+ * recepción y terminal). Se descubren por glob y se ordenan por nombre de fichero: el prefijo numérico
+ * (`01-`, `02-`…) fija el orden de lectura y es el contrato de la sección Ayuda.
+ */
+const SUITE_ROOT = join(DOCS_DIR, "Manuales", "07-suites-vnext");
+const SUITE_GROUP = "suites-vnext";
+
+function listSuiteSources() {
+  if (!existsSync(SUITE_ROOT)) return [];
+  return readdirSync(SUITE_ROOT)
+    .filter((name) => /^\d{2}-.+\.md$/.test(name))
+    .sort()
+    .map((name) => ({
+      slug: name
+        .replace(/\.md$/, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, ""),
+      file: `Manuales/07-suites-vnext/${name}`,
+      group: SUITE_GROUP,
+      block: null,
+    }));
+}
+
+/** Todos los manuales: generales, casos de uso en orden de iniciación y suites vNext. */
+const ALL_SOURCES = [...SOURCES, ...listCuSources(), ...listSuiteSources()];
 
 const SUBTITLE = "Hotel Marina del Sol · plataforma de noches tokenizadas";
 const IMAGE_EXTENSIONS = [".svg", ".png"];
@@ -906,9 +935,11 @@ function buildGeneratedModule(docs, generatedAt) {
   chunks.push(" * Regenerar con: `pnpm --filter @hotel/web run manuals` (o `pnpm build:manuals`).");
   chunks.push(` * Última generación: ${generatedAt}`);
   chunks.push(" *");
+  const suiteCount = docs.filter((doc) => doc.group === "suites-vnext").length;
   chunks.push(
     ` * Fuentes: ${docs.length} manuales — 3 generales (docs/manual-*.md) + ` +
-      `${docs.length - 3} casos de uso (docs/Manuales/05-casos-de-uso/**)`,
+      `${docs.length - 3 - suiteCount} casos de uso (docs/Manuales/05-casos-de-uso/**) + ` +
+      `${suiteCount} de suites vNext (docs/Manuales/07-suites-vnext/**)`,
   );
   chunks.push(" */");
   chunks.push("/* eslint-disable */");
@@ -925,7 +956,7 @@ function buildGeneratedModule(docs, generatedAt) {
   chunks.push("  readonly title: string;     // el H1 del manual");
   chunks.push("  readonly lead: string;      // el blockquote inicial, ya convertido a HTML");
   chunks.push('  readonly pdf: string;       // "/manual/manual-<slug>.pdf"');
-  chunks.push('  readonly group: "general" | "casos-de-uso";');
+  chunks.push('  readonly group: "general" | "casos-de-uso" | "suites-vnext";');
   chunks.push('  readonly block: string | null; // p. ej. "Bloque 1 · Iniciación y aprovisionamiento"');
   chunks.push("  readonly sections: readonly ManualSection[];");
   chunks.push("}");

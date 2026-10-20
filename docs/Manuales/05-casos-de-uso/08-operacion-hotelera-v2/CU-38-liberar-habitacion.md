@@ -3,6 +3,8 @@
 > En una frase: cuando la habitación ya está limpia y con la lencería cambiada, recepción la libera para
 > que vuelva a estar disponible.
 
+![Infografía del CU-38: del check-out a la habitación disponible](imagenes/doc-cu-38-liberar-habitacion.svg)
+
 ## 1. Para qué sirve
 
 Después del check-out, la habitación pasa automáticamente a **Pendiente de limpieza**. Mientras esté en

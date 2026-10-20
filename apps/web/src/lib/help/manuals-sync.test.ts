@@ -16,7 +16,7 @@ import { findListProblems } from "./list-structure.mjs";
  * sección de Ayuda sigue reflejando los ficheros `.md` reales.
  *
  * Qué comprueba (sin Playwright ni red: solo lectura de ficheros):
- *   1. Los 35 manuales fuente existen (3 generales + 32 casos de uso).
+ *   1. Los 44 manuales fuente existen (3 generales + 7 de suites vNext + 34 casos de uso).
  *   2. `MANUALS` cubre todos los slugs, en orden, con `slug`/`title`/`lead`/`pdf`/`group`/`block`.
  *   3. TODOS los títulos `##` del markdown aparecen en `MANUALS`, en orden y con el mismo número
  *      de secciones `##` y `###`.
@@ -58,6 +58,8 @@ const CU_ORDER = [
   "cu-35-cargos-adicionales",
   "cu-36-reventa-huesped",
   "cu-37-avisos-reventa",
+  "cu-38-liberar-habitacion",
+  "cu-39-ficha-detalle-habitacion",
   "cu-40-menu-wallet",
   "cu-41-seccion-sistemas",
   "cu-42-gestion-usuarios",
@@ -95,12 +97,32 @@ function listCuSources(): Array<{ slug: string; file: string; group: string; blo
   );
 }
 
-/** Espejo de `SOURCES` + `listCuSources()` de `apps/web/scripts/build-manuals.mjs`. */
+/** Espejo de `listSuiteSources()` del generador: manuales de rol de las suites vNext. */
+function listSuiteSources(): Array<{ slug: string; file: string; group: string; block: string | null }> {
+  const root = join(DOCS, "Manuales", "07-suites-vnext");
+  if (!existsSync(root)) return [];
+  return readdirSync(root)
+    .filter((name) => /^\d{2}-.+\.md$/.test(name))
+    .sort()
+    .map((name) => ({
+      slug: name
+        .replace(/\.md$/, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, ""),
+      file: `Manuales/07-suites-vnext/${name}`,
+      group: "suites-vnext",
+      block: null,
+    }));
+}
+
+/** Espejo de `SOURCES` + `listCuSources()` + `listSuiteSources()` de `apps/web/scripts/build-manuals.mjs`. */
 const SOURCES = [
   { slug: "cliente", file: "manual-cliente.md", group: "general", block: null },
   { slug: "comprador", file: "manual-comprador.md", group: "general", block: null },
   { slug: "recepcion", file: "manual-recepcion.md", group: "general", block: null },
   ...listCuSources(),
+  ...listSuiteSources(),
 ];
 
 /** Títulos de encabezado del manual, con su nivel y su texto (sin el prefijo `#`). */
@@ -130,10 +152,10 @@ const manuals = SOURCES.map((source) => ({
 }));
 
 describe("guardián de manuales generados (Ayuda)", () => {
-  it("los manuales fuente (3 generales + 32 casos de uso) existen en docs/", () => {
+  it("los manuales fuente (3 generales + 7 suites + 34 casos de uso) existen en docs/", () => {
     const missing = manuals.filter((manual) => !existsSync(manual.path)).map((manual) => manual.file);
     expect(missing, `faltan manuales literales en docs/: ${missing.join(", ")}`).toEqual([]);
-    expect(manuals.length, "se esperaban 35 manuales fuente").toBe(35);
+    expect(manuals.length, "se esperaban 44 manuales fuente").toBe(44);
   });
 
   it("MANUALS cubre todos los slugs con sus campos obligatorios", () => {
@@ -146,16 +168,17 @@ describe("guardián de manuales generados (Ayuda)", () => {
       expect(doc.sections.length, `${doc.slug}: sin secciones`).toBeGreaterThan(0);
     }
 
-    // Agrupación: 3 generales + 32 casos de uso, y cada caso de uso declara su bloque.
+    // Agrupación: 3 generales + 7 suites vNext + 34 casos de uso; solo los CU declaran bloque.
     const source = new Map(SOURCES.map((item) => [item.slug, item]));
     expect(MANUALS.filter((doc) => doc.group === "general").length).toBe(3);
-    expect(MANUALS.filter((doc) => doc.group === "casos-de-uso").length).toBe(32);
+    expect(MANUALS.filter((doc) => doc.group === "suites-vnext").length).toBe(7);
+    expect(MANUALS.filter((doc) => doc.group === "casos-de-uso").length).toBe(34);
     for (const doc of MANUALS) {
       expect(doc.group, `${doc.slug}: grupo inesperado`).toBe(source.get(doc.slug)?.group);
       if (doc.group === "casos-de-uso") {
         expect(doc.block ?? "", `${doc.slug}: caso de uso sin bloque`).not.toBe("");
       } else {
-        expect(doc.block, `${doc.slug}: un manual general no debería tener bloque`).toBeNull();
+        expect(doc.block, `${doc.slug}: solo los casos de uso declaran bloque`).toBeNull();
       }
     }
 

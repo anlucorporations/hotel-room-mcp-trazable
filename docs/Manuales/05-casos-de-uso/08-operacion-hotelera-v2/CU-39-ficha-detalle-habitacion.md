@@ -3,8 +3,10 @@
 > En una frase: tocas una habitación del resumen y ves toda la información relevante de la habitación y
 > del huésped, organizada en dos zonas.
 
-> La ficha detalle solo la ven los usuarios con rol de recepción o el dueño. La wallet del huésped se
-> muestra de forma recortada y no sale en ningún sitio público.
+La ficha detalle solo la ven los usuarios con rol de recepción o el dueño. La wallet del huésped se
+muestra de forma recortada y no sale en ningún sitio público.
+
+![Infografía del CU-39: la ficha detalle en dos zonas](imagenes/doc-cu-39-ficha-detalle-habitacion.svg)
 
 ## 1. Para qué sirve
 

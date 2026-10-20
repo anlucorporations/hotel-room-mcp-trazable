@@ -12,10 +12,11 @@ import styles from "./manual.module.css";
  * ellos. Así la ayuda que ve el usuario, el PDF descargable y el manual del repositorio no pueden
  * divergir; el invariante lo comprueba `manuals-sync.test.ts`.
  *
- * El índice tiene dos partes: los **tres manuales generales** (cliente, comprador, recepción) y los
- * **32 manuales por caso de uso**, agrupados por el bloque de iniciación del sistema (CU-16 roles →
- * CU-46 seguridad). La agrupación la aporta `ManualDoc.group`/`ManualDoc.block`, generados desde el
- * orden de `docs/Manuales/05-casos-de-uso/**`.
+ * El índice tiene tres partes: los **tres manuales generales** (cliente, comprador, recepción), los
+ * **manuales de las suites vNext** (F4–F10: mantenimiento, ama de llaves, suministros, daños,
+ * gobernanza, recepción y terminal) y los **32 manuales por caso de uso**, agrupados por el bloque de
+ * iniciación del sistema (CU-16 roles → CU-46 seguridad). La agrupación la aporta
+ * `ManualDoc.group`/`ManualDoc.block`, generados desde `docs/Manuales/**`.
  *
  * Los manuales están en español (el idioma en que se escribieron y se entregan al hotel); los
  * rótulos de la interfaz sí se traducen con el resto de la web.
@@ -68,6 +69,7 @@ export default async function AyudaPage() {
   const t = await getTranslations("help");
 
   const general = MANUALS.filter((manual) => manual.group === "general");
+  const suites = MANUALS.filter((manual) => manual.group === "suites-vnext");
   const cases = MANUALS.filter((manual) => manual.group === "casos-de-uso");
 
   // Agrupa los casos de uso por bloque conservando el orden de iniciación de `MANUALS`.
@@ -114,6 +116,25 @@ export default async function AyudaPage() {
           <nav aria-label={t("generalTitle")}>
             <ul className="grid gap-5 tablet:grid-cols-3">
               {general.map((manual) => (
+                <ManualCard
+                  key={manual.slug}
+                  manual={manual}
+                  read={t("read")}
+                  downloadPdf={t("downloadPdf")}
+                />
+              ))}
+            </ul>
+          </nav>
+        </section>
+
+        <section className="flex flex-col gap-5">
+          <div>
+            <h2 className="font-display text-h3 font-semibold tracking-tight">{t("suitesTitle")}</h2>
+            <p className="mt-1 text-small text-ink-soft">{t("suitesTagline")}</p>
+          </div>
+          <nav aria-label={t("suitesTitle")}>
+            <ul className="grid gap-5 tablet:grid-cols-3">
+              {suites.map((manual) => (
                 <ManualCard
                   key={manual.slug}
                   manual={manual}

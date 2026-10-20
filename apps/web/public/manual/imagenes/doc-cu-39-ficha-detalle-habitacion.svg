@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 320" width="960" height="320" role="img" aria-labelledby="t d">
+  <title id="t">CU-39 · Ficha detalle de habitación</title>
+  <desc id="d">Toda la información de la habitación en dos zonas</desc>
+  <rect width="960" height="320" rx="18" fill="#f4f9fc"/>
+  <rect width="960" height="8" rx="4" fill="#0f6c9c"/>
+  <text x="40" y="56" font-family="Playfair Display, Georgia, serif" font-size="26" font-weight="700" fill="#0e2a3f">CU-39 · Ficha detalle de habitación</text>
+  <text x="40" y="84" font-family="Manrope, Arial, sans-serif" font-size="14" fill="#41566a">Toda la información de la habitación en dos zonas</text>
+  <g>
+    <rect x="40" y="120" width="170" height="86" rx="14" fill="#ffffff" stroke="#dbe7ef" stroke-width="2"/>
+    <rect x="40" y="120" width="170" height="8" rx="4" fill="#0f6c9c"/>
+    <text x="125" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#101f2c">Seleccionar</text>
+    <text x="125" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#41566a">fila del resumen</text>
+  </g>  <line x1="216" y1="163" x2="269" y2="163" stroke="#6b8296" stroke-width="2"/>
+  <polygon points="269,163 260,158 260,168" fill="#6b8296"/>  <g>
+    <rect x="277" y="120" width="170" height="86" rx="14" fill="#ffffff" stroke="#dbe7ef" stroke-width="2"/>
+    <rect x="277" y="120" width="170" height="8" rx="4" fill="#0f6c9c"/>
+    <text x="362" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#101f2c">Ficha</text>
+    <text x="362" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#41566a">datos y estado</text>
+  </g>  <line x1="453" y1="163" x2="505" y2="163" stroke="#6b8296" stroke-width="2"/>
+  <polygon points="505,163 496,158 496,168" fill="#6b8296"/>  <g>
+    <rect x="513" y="120" width="170" height="86" rx="14" fill="#ffffff" stroke="#dbe7ef" stroke-width="2"/>
+    <rect x="513" y="120" width="170" height="8" rx="4" fill="#0f6c9c"/>
+    <text x="598" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#101f2c">Huésped</text>
+    <text x="598" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#41566a">wallet recortada</text>
+  </g>  <line x1="689" y1="163" x2="742" y2="163" stroke="#6b8296" stroke-width="2"/>
+  <polygon points="742,163 733,158 733,168" fill="#6b8296"/>  <g>
+    <rect x="750" y="120" width="170" height="86" rx="14" fill="#ffffff" stroke="#dbe7ef" stroke-width="2"/>
+    <rect x="750" y="120" width="170" height="8" rx="4" fill="#0f6c9c"/>
+    <text x="835" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#101f2c">Acciones</text>
+    <text x="835" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#41566a">según estado</text>
+  </g>
+  <text x="920" y="298" text-anchor="end" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#6b8296">Hotel Marina del Sol · CU-38/CU-39</text>
+</svg>

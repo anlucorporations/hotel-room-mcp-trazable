@@ -178,7 +178,9 @@
     "huespedBackToIndex": "Manual del huésped",
     "huespedSourceNote": "Fuente de este manual:",
     "huespedCaseCount": "{count, plural, =0 {Sin casos} one {# caso} other {# casos}}",
-    "huespedOpen": "Ver el manual del huésped"
+    "huespedOpen": "Ver el manual del huésped",
+    "suitesTitle": "Manuales de las suites (personal)",
+    "suitesTagline": "Mantenimiento, ama de llaves, suministros, daños, gobernanza, recepción y terminal: lo que usa el personal del hotel."
   },
   "howItWorks": {
     "title": "Cómo funciona",

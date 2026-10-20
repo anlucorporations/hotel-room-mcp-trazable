@@ -6130,3 +6130,44 @@ guarda el resguardo y hace check-in) y **reventa/subastas fuera de la app v1**, 
 legal. Reduce el riesgo de la política de Play y acelera la publicación.
 
 **Siguiente:** aprobación del cliente/DPO sobre H-02/H-03, y después continuar con la Fase 4/5 del proyecto.
+
+
+---
+
+## 57. FASE 4 CERRADA — Pruebas (2026-10-20)
+
+Cierre formal de la Fase 4 con la evidencia de [`informe_pruebas_fase4.md`](./informe_pruebas_fase4.md):
+**2.465 pruebas de código + 126 E2E, 0 fallos**; `typecheck` 6/6 y `lint` 0 errores. Incluye A5 (E2E con
+wallet inyectada en escritorio/móvil) y A12 (guardián documental) cerrados, y la deriva E2E corregida.
+
+Aceptación de fase: [`aceptacion_fase4.md`](./aceptacion_fase4.md). Lo no ejecutado en local (PostgreSQL,
+slither, perf nightly, E2E con BD real) queda delegado a CI y declarado en el informe.
+
+**Pendiente ajeno a la fase:** A9 (drill a instancia aislada) por IAM, con guía lista.
+
+
+---
+
+## 58. FASE 5 — Manuales actualizados a la release F1–F10 (2026-10-20)
+
+Ejecutado el proceso `@manuales` adaptado a los manuales existentes del proyecto (no se reescribió el
+árbol histórico; se **completó** con las suites que faltaban y se corrigió la tubería):
+
+| Pieza | Resultado |
+|---|---|
+| Técnicos | 5 manuales nuevos en [`Manuales/07-suites-vnext/`](./Manuales/07-suites-vnext/README.md): mantenimiento+terminal, ama de llaves+suministros, daños/reclamaciones, gobernanza/firmas y recepción vNext+publicación |
+| Literales | 7 manuales nuevos en [`docs/Manuales/07-suites-vnext/`](../docs/Manuales/07-suites-vnext/README.md) con «Empezar en 5 minutos», mermaid, infografía y «si algo falla» |
+| Imágenes | 5 infografías SVG propias + 2 portadas para CU-38/CU-39 |
+| PDF/HTML | **44 manuales · 484 secciones** regenerados con Chromium (`docs/pdf/` y `apps/web/public/manual/`) |
+| Ayuda web | Nueva sección **«Manuales de las suites (personal)»** en `/ayuda` (ES/EN/RU), dentro de las 3 + 7 + 34 entradas |
+| Deriva corregida | CU-38 y CU-39 existían en `docs/` pero **no** en `CU_ORDER`: el generador fallaba; ya están registrados |
+
+**Gates:** `pnpm build:manuals` ✅ · `vitest run src/lib/help` **18/18** · `typecheck` y `lint` de la web
+en verde · `next build` verde.
+
+Aceptación de fase: [`aceptacion_fase5.md`](./aceptacion_fase5.md). Evidencia:
+[`evidencias/fase5-manuales-2026-10-20.json`](./evidencias/fase5-manuales-2026-10-20.json).
+
+**Pendiente para dar por terminado el proyecto:** confirmación del responsable de que los manuales
+reflejan la operación real (y validación del contenido del manual del huésped, pendiente del cliente).
+Los manuales de la APK se generarán cuando exista build de la app.

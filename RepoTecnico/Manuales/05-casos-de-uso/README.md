@@ -5,7 +5,7 @@
 > luego se publica inventario, después llegan los clientes y al final la operación y el gobierno.
 > Reglas, plantilla y catálogo completo: [`00-BRIEF-equipo-manuales.md`](00-BRIEF-equipo-manuales.md).
 
-Son **32 casos de uso** en 9 bloques. No existe CU-03: el antiguo faucet se reclasificó como CU-PR-01.
+Son **34 casos de uso** en 9 bloques. No existe CU-03: el antiguo faucet se reclasificó como CU-PR-01.
 
 ### Bloque 1 · Iniciación y aprovisionamiento
 
@@ -87,6 +87,8 @@ _Recepción y estancia: el día a día del mostrador._
 | [CU-35 · Apuntar los extras del huésped (minibar, desayuno…) — Manual técnico](08-operacion-hotelera-v2/CU-35-cargos-adicionales.md) |
 | [CU-36 · Que el huésped publique, cambie o retire su reventa — Manual técnico](08-operacion-hotelera-v2/CU-36-reventa-huesped.md) |
 | [CU-37 · Avisar al huésped cuando su reventa se mueve — Manual técnico](08-operacion-hotelera-v2/CU-37-avisos-reventa.md) |
+| [CU-38 · Liberar una habitación tras la limpieza — Manual técnico](08-operacion-hotelera-v2/CU-38-liberar-habitacion.md) |
+| [CU-39 · Ver la ficha detalle de una habitación — Manual técnico](08-operacion-hotelera-v2/CU-39-ficha-detalle-habitacion.md) |
 
 ### Bloque 9 · Back-office y gobierno (incremento v3)
 
@@ -104,4 +106,4 @@ _Panel del dueño, usuarios, contrato y finanzas._
 
 ---
 
-*Manuales técnicos · Hotel Marina del Sol · 32 casos de uso en 9 bloques.*
+*Manuales técnicos · Hotel Marina del Sol · 34 casos de uso en 9 bloques.*

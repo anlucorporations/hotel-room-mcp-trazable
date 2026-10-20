@@ -22,8 +22,9 @@
 | [04 · Mantenimiento](04-mantenimiento/README.md) | Ingeniería | Dónde se toca cada cosa, cómo se añade migración/ruta/prueba y qué guardianes hay |
 | [04 · Seguridad](04-mantenimiento/01-seguridad.md) | Ingeniería, seguridad | Autenticación, roles, firma EIP-712, secretos y respuesta a una filtración |
 | [04 · Rendimiento y cobertura](04-mantenimiento/02-rendimiento-y-cobertura.md) | Ingeniería, dirección técnica | Cómo se mide, qué se ha medido de verdad y qué huecos están declarados |
-| [05 · Casos de uso](05-casos-de-uso/README.md) | Ingeniería, producto, auditoría | Los **32 casos de uso** uno a uno, en orden de iniciación, contra el código real (32 manuales en 9 bloques) |
-| [05 · Brief del equipo](05-casos-de-uso/00-BRIEF-equipo-manuales.md) | Quien escriba o revise un manual | Reglas de estilo, plantillas, paleta de infografías y catálogo canónico de los 32 CU |
+| [05 · Casos de uso](05-casos-de-uso/README.md) | Ingeniería, producto, auditoría | Los **34 casos de uso** uno a uno, en orden de iniciación, contra el código real (34 manuales en 9 bloques) |
+| [05 · Brief del equipo](05-casos-de-uso/00-BRIEF-equipo-manuales.md) | Quien escriba o revise un manual | Reglas de estilo, plantillas, paleta de infografías y catálogo canónico de los 34 CU |
+| [07 · Suites vNext](07-suites-vnext/README.md) | Personal del hotel, soporte e ingeniería | Mantenimiento y terminal, ama de llaves y suministros, daños y reclamaciones, gobernanza/firmas y recepción vNext (F4–F10) |
 
 ## Requisitos previos (para cualquier manual)
 
