@@ -56,6 +56,7 @@ fuente única de las decisiones; el código, el PRD y el SRS apuntan a él.
 | [ADR-28](ADR-28-subastas-on-chain-con-pull-payments.md) | Subastas on-chain con *pull payments* y liquidación en `HotelNights` | RF-13 · C2 (B4/B5/B6) | vigente |
 | [ADR-29](ADR-29-walletconnect-v2-activacion-por-projectid.md) | WalletConnect v2 activado por `projectId` por entorno | RF-11 · C0 | vigente |
 | [ADR-30](ADR-30-mensajes-firmados-legibles-en-la-wallet.md) | Mensajes firmados legibles en la wallet: catálogo, EIP-712 v2 y texto de publicación | RNF-19 · C0 | vigente |
+| [ADR-31](ADR-31-app-android-huesped.md) | App Android del huésped: nativa, no custodial, pago en checkout web hasta dictamen legal | A-1/A-2/A-3 (2026-10-20) | propuesta |
 
 ## Trazabilidad con las decisiones de la auditoría V5
 

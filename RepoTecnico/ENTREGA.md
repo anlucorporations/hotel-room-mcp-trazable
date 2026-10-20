@@ -90,7 +90,7 @@ Una plataforma operativa para vender, revender, usar y operar **noches de hotel 
 | 3 | **H-03** — aprobación de la DPIA (wallet como dato personal) | DPO/asesoría | [`legal/DPIA-apk-huesped-v1.md`](./legal/DPIA-apk-huesped-v1.md) |
 | 4 | Contenido definitivo del manual del huésped (dirección/datos del hotel, RF-56) | Cliente | `docs/manual-huesped.md` |
 | 5 | CI canónico (GitLab falla sin jobs; GitHub no tiene el commit): decidir y reparar | Responsable técnico | [`ci-post-entrega-2026-10-20.md`](./ci-post-entrega-2026-10-20.md) |
-| 6 | APK Android del huésped (especificada, no construida) | Producto/desarrollo | [`casos_uso_apk.md`](./casos_uso_apk.md) |
+| 6 | APK Android del huésped (especificada y planificada, no construida) | Producto/desarrollo | [`casos_uso_apk.md`](./casos_uso_apk.md) · [`plan_desarrollo_apk.md`](./plan_desarrollo_apk.md) · [`ADR-31`](../docs/adr/ADR-31-app-android-huesped.md) |
 
 ## 7. Checklist de aceptación y firma
 

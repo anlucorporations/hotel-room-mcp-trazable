@@ -6273,3 +6273,21 @@ guardián `images-naming.test.ts` no admite subcarpetas en `docs/imagenes/` y ex
 Se corrigió aplanando las 5 infografías como `doc-suite-*.svg`, actualizando las referencias y el catálogo
 `docs/imagenes/README.md`, y ampliando el guardián para validar también los manuales de las suites.
 Resultado: guardián de imágenes y de manuales en verde y suite web completa sin fallos.
+
+
+---
+
+## 63. APK Android del huésped — decisión y plan de desarrollo (2026-10-20)
+
+Se prepara la **siguiente versión** (app móvil) sin construir código todavía:
+
+| Artefacto | Contenido |
+|---|---|
+| [`docs/adr/ADR-31-app-android-huesped.md`](../docs/adr/ADR-31-app-android-huesped.md) | Decisión: Android nativo (Kotlin/Compose), no custodial con WalletConnect v2 + deep link, v1 solo huésped, **pago en checkout web** hasta dictamen legal, biometría obligatoria + Integrity opcional, offline del resguardo |
+| [`plan_desarrollo_apk.md`](./plan_desarrollo_apk.md) | Plan vertical **A1–A6** con tareas, gates, dependencias, estimación (≈46–58 días-persona) y criterios de aceptación |
+
+**Dependencias declaradas:** toolchain Android + CI, WalletConnect projectId, FCM y Play Console
+(pendientes); H-02 (legal) y H-03 (DPIA/RAT) son **gate de publicación**, no de desarrollo.
+
+**Estado:** propuesta para aprobación. El plan cubre los 24 CU-A y mantiene la app sin reimplementar
+dominio (consume las APIs existentes y firma en la wallet).
