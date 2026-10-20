@@ -6332,3 +6332,22 @@ han redactado como **propuesta del equipo** (pendiente de confirmación del clie
 
 **Pendiente:** confirmación/corrección del hotel sobre la propuesta (tabla en
 `solicitud-contenidos-cliente.md`); cualquier cambio solo requiere editar el manual y regenerar el índice.
+
+
+---
+
+## 66. RELEASE v83 — guías del huésped con datos del hotel en la web (2026-10-20)
+
+| Elemento | Valor |
+|---|---|
+| Módulo | `huesped.generated.ts` regenerado: **17 casos · 73 secciones · 7 ilustraciones** |
+| Guardián | `huesped-sync.test.ts` **10/10** |
+| Imagen | `web:v83` (Cloud Build `8a620f50…`, 4m49s) |
+| Revisión sirviendo | `hotel-mcp-web-00148-wuf` (100 %) |
+| Configuración | conservada: 32 variables + 9 secretos |
+| Rollback | `hotel-mcp-web-00146-not` (v82) |
+| Verificación | `/ayuda/huesped` y guías 10/11/12/17 → 200 con «15:00», «12 €», «25 €», «24 horas» y teléfono |
+
+Con esto el manual del huésped es coherente en **las tres superficies**: MCP (`mcp:v78`, asistente),
+web (`web:v83`, guías navegables) y repositorio (`docs/manual-huesped.md`). Documentado en
+`despliegue_gcp.md` §97 y evidencia `evidencias/release-v83-2026-10-20.json`.

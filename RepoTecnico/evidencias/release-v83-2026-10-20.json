@@ -1,0 +1,32 @@
+{
+  "id": "release-v83-2026-10-20",
+  "titulo": "Release v83 — guías del huésped con los datos del hotel en la web",
+  "fechaUtc": "2026-10-20T22:45:00Z",
+  "alcance": "web (mcp v78 y worker v78 sin cambios)",
+  "build": {
+    "id": "8a620f50-0491-411b-aad3-09a47730002a",
+    "imagen": "europe-west1-docker.pkg.dev/hotel-mcp/hotel-mcp/web:v83",
+    "duracion": "4m49s",
+    "resultado": "SUCCESS"
+  },
+  "despliegue": {
+    "metodo": "canario --no-traffic --tag=v83 + verificación + update-traffic --to-latest",
+    "revision": "hotel-mcp-web-00148-wuf",
+    "trafico": "100%",
+    "configuracionConservada": { "variables": 32, "secretos": 9 },
+    "rollback": "hotel-mcp-web-00146-not (v82)"
+  },
+  "generacion": { "comando": "pnpm --filter @hotel/web run huesped", "casos": 17, "secciones": 73, "guardian": "huesped-sync 10/10" },
+  "verificacion": {
+    "healthReady": 200,
+    "rutasProduccion": {
+      "/ayuda/huesped": 200,
+      "/ayuda/huesped/10-entrar-con-tu-qr": 200,
+      "/ayuda/huesped/11-extras-durante-la-estancia": 200,
+      "/ayuda/huesped/12-salir-y-cerrar-la-cuenta": 200,
+      "/ayuda/huesped/17-si-algo-no-funciona": 200
+    },
+    "datosVisibles": ["15:00 (check-in)", "12 € (desayuno)", "25 € (salida tardía)", "24 horas y +34 965 000 000 (recepción)"]
+  },
+  "notas": ["Los datos del hotel son una propuesta pendiente de confirmación del cliente."]
+}

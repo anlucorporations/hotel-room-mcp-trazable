@@ -26,7 +26,7 @@ Una plataforma operativa para vender, revender, usar y operar **noches de hotel 
 
 | Servicio | URL / identificador |
 |---|---|
-| Web (Cloud Run) | `https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app` (revisión `hotel-mcp-web-00146-not`, `web:v82`; MCP `mcp:v78`, revisión `hotel-mcp-mcp-00035-sok`) |
+| Web (Cloud Run) | `https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app` (revisión `hotel-mcp-web-00148-wuf`, `web:v83`; MCP `mcp:v78`, revisión `hotel-mcp-mcp-00035-sok`) |
 | MCP (Cloud Run) | `https://hotel-mcp-mcp-d6jlzeq5yq-ew.a.run.app` |
 | Worker (Cloud Run) | `https://hotel-mcp-worker-d6jlzeq5yq-ew.a.run.app` |
 | PostgreSQL | Cloud SQL `hotel-mcp-pg` (PostgreSQL 18, IP privada, base `hotel_nft`) |

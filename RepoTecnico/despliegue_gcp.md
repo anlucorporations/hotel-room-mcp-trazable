@@ -3850,3 +3850,36 @@ y consultas a `searchHotelManuals`, y promoción con `update-traffic --to-latest
 
 **Nota.** Los datos del hotel son una **propuesta pendiente de confirmación** del cliente; quedan
 documentados en `solicitud-contenidos-cliente.md`. El manual está en `docs/manual-huesped.md`.
+
+---
+
+## 97. Release v83 — guías del huésped con los datos del hotel en la web (2026-10-20)
+
+**Qué se desplegó.** El módulo `huesped.generated.ts` regenerado tras completar los datos del hotel en
+las guías del huésped (01, 10, 11, 12 y 17). La web `/ayuda/huesped` ya muestra horarios, servicios con
+precios, normas y recepción. El MCP ya respondía con esos datos desde `mcp:v78`; con esta release queda
+también visible en la web.
+
+| Componente | Imagen | Build | Revisión sirviendo | Tráfico |
+|---|---|---|---|---|
+| web | `…/hotel-mcp/web:v83` | ✅ SUCCESS `8a620f50-0491-411b-aad3-09a47730002a` (4m49s) | `hotel-mcp-web-00148-wuf` | **100 %** |
+| mcp | `mcp:v78` (sin cambios) | — | `hotel-mcp-mcp-00035-sok` | 100 % |
+| worker | `worker:v78` (sin cambios) | — | vigente | 100 % |
+
+**Método.** Regeneración con `corepack pnpm --filter @hotel/web run huesped` (**17 casos · 73
+secciones · 7 ilustraciones**) y guardián `huesped-sync.test.ts` en verde (10/10). Canario
+`--no-traffic --tag=v83`, verificación por URL etiquetada y promoción.
+
+| Comprobación | Resultado |
+|---|---|
+| Configuración conservada | **32 variables y 9 secretos** |
+| Canario `/health/ready` | **200** |
+| Canario `/ayuda/huesped` y guías 10/11/12/17 | **200** |
+| Guía 10 (entrada) | muestra «15:00» |
+| Guía 11 (extras) | muestra «12 €» |
+| Guía 12 (salida) | muestra «15:00» y «25 €» |
+| Guía 17 (recepción) | muestra «24 horas» y «+34 965 000 000» |
+| Producción tras promover | `/ayuda/huesped` y guías → **200**; datos nuevos visibles |
+
+**Rollback.** `gcloud run services update-traffic hotel-mcp-web --region=europe-west1
+--to-revisions=hotel-mcp-web-00146-not=100` (v82).
