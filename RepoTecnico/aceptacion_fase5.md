@@ -6,7 +6,7 @@
 
 ## Resultado
 
-**CUMPLE (a falta de la confirmación del responsable para dar por terminado el proyecto).**
+**CUMPLE — aprobada por el responsable (2026-10-20).**
 
 | Criterio | Resultado |
 |---|---|
@@ -50,9 +50,8 @@
 - Manuales de dependencias/diccionario/diagrama: el diccionario y el ER viven en `RepoTecnico/` con su
   guardián (`documentation-sync-guardian.test.ts`); los técnicos nuevos enlazan a ellos.
 
-## Pendiente para el cierre del proyecto
+## Cierre
 
-1. **Confirmación del responsable** de que los manuales reflejan la operación real del hotel.
-2. (Opcional) Revisión del contenido del **manual del huésped** pendiente del cliente (dirección y datos
-   del hotel, RF-56).
-3. `push` de los cambios (a petición).
+La Fase 5 se declara **terminada** el **2026-10-20** con la aprobación del responsable. Quedan como
+**tareas post-entrega** (no bloquean el cierre): la validación del contenido del manual del huésped por
+parte del cliente (RF-56), los manuales de la APK cuando exista build y el `push` de esta entrega.

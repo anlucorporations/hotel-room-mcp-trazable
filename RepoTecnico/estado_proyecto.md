@@ -6171,3 +6171,47 @@ Aceptación de fase: [`aceptacion_fase5.md`](./aceptacion_fase5.md). Evidencia:
 **Pendiente para dar por terminado el proyecto:** confirmación del responsable de que los manuales
 reflejan la operación real (y validación del contenido del manual del huésped, pendiente del cliente).
 Los manuales de la APK se generarán cuando exista build de la app.
+
+
+---
+
+## 59. PROYECTO CERRADO — entrega final (2026-10-20)
+
+Tras recorrer las **5 fases** del proceso `@asistenteProyecto`, el proyecto se declara **cerrado** con
+fecha 2026-10-20.
+
+### 59.1 Recorrido de las fases
+
+| Fase | Estado | Evidencia |
+|---|---|---|
+| 1 · Concepto | Cerrada (fases previas) | `requerimientos.md`, `diccionario_datos.md`, `diagrama_er.md`, `base_datos.sql`, `entornos_globales.md` |
+| 2 · Auditoría y casos de uso | Cerrada | `docs/CASOS-DE-USO.md`, `propuesta_vNext/casos_uso.md` (45 CU-V), `casos_uso_web.md` (24 CU-W), `casos_uso_apk.md` (24 CU-A), diagramas en `casos_uso/` y auditoría `INFORME_AUDITORIA_CASOS_USO_V1.md` |
+| 3 · Desarrollo | Cerrada (F1–F10 desplegados) | `aceptacion_fase3.md` (A1–A14; pendiente externo A9) |
+| 4 · Pruebas | **Cerrada** | `aceptacion_fase4.md` + `informe_pruebas_fase4.md` (2.465 pruebas + 126 E2E, 0 fallos) |
+| 5 · Manuales | **Cerrada y aprobada** | `aceptacion_fase5.md`: 44 manuales · 484 secciones, imágenes, PDF y Ayuda |
+
+### 59.2 Qué se entrega
+
+- **Web en producción** (`v81`): pública, compra/reventa/subasta, recepción vNext, back-office, suites de
+  mantenimiento y ama de llaves, terminal con PIN, gobernanza y soporte; MCP read-only y worker.
+- **Contratos** `HotelNights` y `HotelOperations` (inmutables) + subasta, desplegados y verificados en Besu.
+- **Documentación**: SRS/PRD, ADR, diccionario/ER/SQL coherentes con guardián, casos de uso web/APK y su
+  auditoría, manuales técnicos y literales, runbooks de operación y recuperación.
+- **Pruebas**: 2.465 de código + 126 E2E, guardianes de arquitectura/seguridad/documentación, informe de
+  fase 4 y evidencias por ciclo en `RepoTecnico/evidencias/`.
+- **Propuesta de valor futura**: APK Android del huésped especificada (casos de uso, DPIA y revisión
+  legal) a falta de build.
+
+### 59.3 Pendientes externos (post-entrega, no bloquean el cierre)
+
+1. **A9** — drill de restauración a instancia aislada: permiso IAM `cloudsql.backups.restore`; guía en
+   [`F9-a9-drill-restauracion-iam.md`](./F9-a9-drill-restauracion-iam.md).
+2. **H-02/H-03 de la auditoría** — dictamen legal de Play/MiCA y aprobación de la DPIA; borradores en
+   [`legal/`](./legal/).
+3. **Contenido del manual del huésped** (dirección y datos del hotel, RF-56), dependiente del cliente.
+4. **Manuales de la APK** cuando exista build de la aplicación.
+
+### 59.4 Cierre
+
+El responsable aprueba la entrega el **2026-10-20**. El repositorio queda en la rama
+`Hotel-DSH-GCP-v3`, con el histórico completo y los commits de cierre.
