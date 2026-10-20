@@ -33,7 +33,6 @@ const PATHS = [
   "/mis-noches",
   "/checkin",
   "/admin/dashboard",
-  "/admin/mint",
   "/admin/habitacion",
   "/admin/actividades",
   "/admin/resenas",
@@ -55,7 +54,10 @@ const PATHS = [
 
 for (const path of PATHS) {
   test(`a11y: ${path} sin violaciones critical/serious`, async ({ page }) => {
-    // Movimiento reducido (RNF-20): el catálogo revela sus tarjetas con una transición de opacidad
+    // El escaneo de axe sobre la home (imágenes + fuentes de marca) roza los 30 s por defecto en
+    // runners lentos (2 vCPU): con 90 s se evita un falso negativo **por timeout**, sin relajar
+    // ninguna aserción de accesibilidad.
+    test.setTimeout(90_000);    // Movimiento reducido (RNF-20): el catálogo revela sus tarjetas con una transición de opacidad
     // (`opacity-0 → opacity-100`). Sin esto, axe mide el texto **a mitad de la animación** y
     // reporta contrastes que no son los finales (medido el 24-09-2026 en `/`: 4,37:1 y 1,26:1
     // sobre tarjetas que ya estaban apareciendo). Con la preferencia activada, `globals.css` deja

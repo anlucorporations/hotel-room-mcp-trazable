@@ -14,7 +14,9 @@ test("el histórico muestra estado degradado si el worker no responde", async ({
 test("el dashboard del back-office exige iniciar sesión (RF-10/CU-01)", async ({ page }) => {
   await page.goto("/admin/dashboard");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Back-office");
-  // Sin sesión no se muestran métricas: se solicita conectar/firmar (mismo gate que el mint).
-  await expect(page.getByRole("button")).toBeVisible();
+  // Sin sesión no se muestran métricas: se sirve el formulario de acceso (mismo gate que el resto
+  // del back-office). Se apunta al control concreto: en móvil la hamburguesa también es un botón y
+  // un `getByRole("button")` genérico es ambiguo (falló en la pasada de Fase 4).
+  await expect(page.getByTestId("admin-sign-in")).toBeVisible();
   await expect(page.getByTestId("degraded-state")).toHaveCount(0);
 });
