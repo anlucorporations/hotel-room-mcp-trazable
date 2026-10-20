@@ -6215,3 +6215,22 @@ fecha 2026-10-20.
 
 El responsable aprueba la entrega el **2026-10-20**. El repositorio queda en la rama
 `Hotel-DSH-GCP-v3`, con el histórico completo y los commits de cierre.
+
+
+---
+
+## 60. Verificación post-entrega — remotos y CI (2026-10-20)
+
+Documento: [`ci-post-entrega-2026-10-20.md`](./ci-post-entrega-2026-10-20.md).
+
+| Elemento | Estado |
+|---|---|
+| `origin/main` | `3fc64a2` (fast-forward de 41 commits) |
+| Etiqueta de entrega | **`entrega-final-2026-10-20`** publicada en `origin` |
+| CI GitLab (origin) | pipelines **fallan sin jobs** desde antes de la entrega (`jobs: []`, `duration: null`, `yaml_errors: null`) → infraestructura/CI del proyecto, no los tests |
+| CI GitHub | el remoto **no tiene** el commit de la entrega; su último run es del commit anterior y falla |
+| Gates del commit entregado | verdes en local: 2.465 pruebas + 126 E2E, typecheck/lint/build y manuales (18/18) |
+
+**Acción requerida (externa):** elegir el CI canónico y repararlo — recomendación: usar **GitHub Actions**
+(`.github/workflows/ci.yml`) y publicar `main` también en `github`, o habilitar runners en GitLab. Mientras
+tanto, el estado de GitLab no debe interpretarse como fallo de la entrega.
