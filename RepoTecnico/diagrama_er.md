@@ -10,13 +10,13 @@
 > - `RepoTecnico/base_datos.sql` — esquema físico ejecutable (`psql -f`).
 > - `RepoTecnico/diccionario_datos.md` — diccionario de datos con descripción de cada campo.
 >
-> **Cobertura**: **16 tablas base** (nfts, listings, sale_events, admin_sessions, admin_users,
-> mfa_recovery_codes, email_notifications, push_subscriptions, checkin_contingency_logs,
-> additional_charges, stay_checkouts, checkout_incidents, worker_checkpoints,
-> worker_processed_logs, worker_aggregate_counters, worker_sale_history) **+ 11 tablas de la sección
-> Habitación, checklist y reseñas** (§6) **+ 2 de contenido público** (`hotel_images`, `hotel_offers`, §6.2) **+ 17
-> del bloque 2** — reservas, actividades, housekeeping y mantenimiento (§7). **Total: 46 tablas**, todas
-> sincronizadas con `migrator.ts`, `base_datos.sql` y `diccionario_datos.md`.
+> **Cobertura**: **60 tablas** sincronizadas con `migrator.ts`, `base_datos.sql` y
+> `diccionario_datos.md`: **16 base** (inventario, ventas, operadores, recepción y comunicaciones),
+> **13 de habitaciones, reseñas y contenido público** (§6), **17 del bloque 2** (reservas, actividades,
+> housekeeping, mantenimiento y suministros, §7) y **14 de las extensiones vNext F4–F9** (§8): firmas
+> on-chain, operadores de terminal, auditoría, áreas comunes, inspecciones, cargos por daños y alertas de
+> suministros. **Total: 60 tablas**; el guardián `documentation-sync-guardian.test.ts` impide que se
+> desincronicen de nuevo.
 >
 > **Convenciones de notación**
 > - Entidades = nombre real de tabla (snake_case, plural).
@@ -344,6 +344,10 @@ erDiagram
         TIMESTAMP archived_at "NULL = vigente; con fecha = archivada (D-8)"
         TIMESTAMP created_at "Alta"
         TIMESTAMP updated_at "Última modificación"
+        DATE maintenance_blocked_until "Bloqueo por mantenimiento hasta (D-52)"
+        VARCHAR(200) maintenance_blocked_reason "Motivo del bloqueo (visible al personal)"
+        TIMESTAMP last_inspection_at "Última inspección post-limpieza"
+        VARCHAR(12) last_inspection_result "APPROVED / REJECTED"
     }
 
     room_images {
@@ -660,8 +664,8 @@ erDiagram
         UUID id PK
         UUID room_id FK "FK a rooms"
         UUID assignment_id FK "Asignación (opcional)"
-        VARCHAR(12) from_value "Estado operativo anterior"
-        VARCHAR(12) to_value "Estado operativo nuevo"
+        VARCHAR(20) from_value "Estado operativo anterior"
+        VARCHAR(20) to_value "Estado operativo nuevo"
         VARCHAR(100) changed_by "Quién cambia"
         TIMESTAMP changed_at "Momento"
     }
@@ -702,6 +706,15 @@ erDiagram
         TIMESTAMP created_at "Reporte"
         TIMESTAMP resolved_at "Resolución"
         VARCHAR(100) resolved_by "Quién resuelve"
+        BOOLEAN blocks_sale "TRUE mientras la incidencia bloquea la venta"
+        UUID area_id FK "Área común afectada (mantenimiento de áreas)"
+        VARCHAR(30) reported_by_role "Rol que reporta (vocabulario cerrado)"
+        TEXT resolution_notes "Notas de resolución"
+        BIGINT damage_charge_cents "Cargo por daños asociado (F7)"
+        VARCHAR(3) damage_charge_currency "Moneda del cargo (EUR)"
+        VARCHAR(100) damage_charge_approved_by "Quién aprueba el cargo por encima del tope"
+        UUID block_signature_id FK "Firma on-chain del bloqueo (F4)"
+        UUID unblock_signature_id FK "Firma on-chain del desbloqueo (F4)"
     }
 
     maintenance_incident_events {
@@ -722,6 +735,7 @@ erDiagram
         VARCHAR(12) periodicity "WEEKLY · MONTHLY · QUARTERLY"
         BOOLEAN active "Activo"
         TIMESTAMP created_at "Alta"
+        UUID area_id FK "Área común del plan (NULL = plan por habitación)"
     }
 
     preventive_tasks {
@@ -732,6 +746,14 @@ erDiagram
         VARCHAR(100) completed_by "Quién la completa"
         TIMESTAMP completed_at "Momento"
         VARCHAR(200) notes "Notas"
+        VARCHAR(100) verified_by "Jefe que valida el cierre (F8)"
+        TIMESTAMP verified_at "Momento de la validación"
+        BOOLEAN requires_signature "Crítico: exige firma EIP-712"
+        UUID signature_id FK "Firma on-chain del cierre"
+        TEXT evidence_path "Evidencia fotográfica del trabajo"
+        VARCHAR(100) assigned_to "Técnico de terminal asignado (F5)"
+        TIMESTAMP updated_at "Bloqueo optimista del cierre (F5)"
+        VARCHAR(30) validation_status "PENDING_VERIFICATION / VALIDATED / EXPIRED"
     }
 
     rooms ||--o{ reservations : "se reserva en"
@@ -759,9 +781,221 @@ erDiagram
 - **Bloqueo por avería (D-53):** `maintenance_incidents.blocks_sale` retira la habitación de la venta.
 - `additional_charges.folio_id` (columna añadida) liga los cargos al folio de la reserva.
 
+
 ---
 
-## 8. Matriz de relaciones (restricciones reales)
+## 8. Extensiones vNext F4–F9 — firmas, operadores, mantenimiento, housekeeping y suministros
+
+Estas tablas entran con los ciclos **F4 (mantenimiento), F5 (terminal), F7/F10 (daños), F8 (suministros)
+y F9 (gobernanza y firmas on-chain)**. Se mantienen alineadas con `base_datos.sql`, `migrator.ts` y
+`diccionario_datos.md`; el guardián `packages/shared/src/documentation-sync-guardian.test.ts` falla si
+alguna tabla o columna se queda fuera de los tres artefactos.
+
+### 8.1 Firmas on-chain, operadores de terminal y auditoría (F4/F5/F9)
+
+```mermaid
+erDiagram
+    admin_users ||--o{ operator_wallets : "asigna"
+    terminal_operators ||--o{ operator_audit_log : "actúa"
+    operator_wallets ||--o{ on_chain_signatures : "firma"
+    operator_audit_log ||--o{ on_chain_signatures : "audita"
+
+    on_chain_signatures {
+        UUID id PK "Registro unificado de firmas"
+        VARCHAR(40) entity_type "ROOM_BLOCK · ROOM_UNBLOCK · INSPECTION · DAMAGE_CHARGE · PREVENTIVE_TASK · AREA_LOG · CONFIG"
+        UUID entity_id "Entidad firmada"
+        VARCHAR(60) event_name "Evento anclado en HotelOperations"
+        VARCHAR(66) content_hash "Huella del contenido"
+        TEXT signature "Firma EIP-712 (NULL mientras no se firma)"
+        VARCHAR(42) signer_address "Firmante"
+        VARCHAR(66) tx_hash "Transacción de anclaje (NULL = pendiente)"
+        VARCHAR(20) status "PENDING · SIGNED · MINED · FAILED · REVOKED"
+        TEXT error_message "Último error del anclaje"
+        VARCHAR(66) nonce "Nonce anti-replay (UK por firmante)"
+        VARCHAR(66) domain_hash "Dominio EIP-712"
+        VARCHAR(42) recovered_signer "Firmante recuperado al verificar"
+        TIMESTAMP verified_at "Verificación de la firma"
+        VARCHAR(30) role_snapshot "Rol on-chain en el momento de firmar"
+        INT retry_count "Reintentos de anclaje"
+        TIMESTAMP next_attempt_at "Próximo reintento (cola resiliente)"
+        TIMESTAMP expires_at "Caducidad de la firma"
+        TIMESTAMP deadline "Deadline firmado (EIP-712)"
+        TIMESTAMP consumed_at "Nonce consumido"
+        TIMESTAMP created_at "Alta"
+        TIMESTAMP mined_at "Minado en cadena"
+    }
+
+    operator_wallets {
+        UUID id PK "Wallets de operadores con rol on-chain"
+        UUID admin_user_id FK "Operador de back-office (NULL = wallet suelta)"
+        VARCHAR(100) username UK "Usuario asociado"
+        VARCHAR(30) role "HEAD_MAINTENANCE · HEAD_KEEPER · OWNER_BACKUP"
+        VARCHAR(42) wallet_address UK "Dirección on-chain (única)"
+        BOOLEAN is_active "Alta/baja lógica"
+        VARCHAR(100) assigned_by "Quién la asigna"
+        TIMESTAMP assigned_at "Alta"
+        TIMESTAMP revoked_at "Baja"
+        VARCHAR(30) backup_for_role "Rol respaldado (solo OWNER_BACKUP)"
+    }
+
+    operator_audit_log {
+        UUID id PK "Auditoría append-only de acciones off-chain"
+        VARCHAR(100) actor_username "Operador"
+        VARCHAR(30) actor_role "Rol en el momento de la acción"
+        VARCHAR(40) entity_type "Entidad afectada"
+        UUID entity_id "Id de la entidad"
+        VARCHAR(40) action "Acción registrada"
+        JSONB old_value "Valor anterior"
+        JSONB new_value "Valor nuevo"
+        VARCHAR(100) terminal_id "Terminal fijo (si aplica)"
+        VARCHAR(66) prev_hash "Hash de la fila anterior (cadena de integridad)"
+        VARCHAR(66) integrity_hash "Hash de esta fila"
+        TIMESTAMP created_at "Alta"
+    }
+
+    terminal_operators {
+        UUID id PK "Operarios de terminales fijos sin wallet"
+        VARCHAR(100) username UK "Usuario de terminal"
+        VARCHAR(100) full_name "Nombre completo"
+        VARCHAR(30) role "MAINTENANCE_TECH · HOUSEKEEPER"
+        TEXT pin_hash "PIN con bcrypt (nunca en claro)"
+        TIMESTAMP pin_changed_at "Último cambio de PIN"
+        BOOLEAN must_change_pin "PIN de un solo uso pendiente de rotar"
+        INT failed_attempts "Intentos fallidos acumulados"
+        TIMESTAMP locked_until "Bloqueo temporal por intentos"
+        BOOLEAN active "Alta/baja lógica"
+        VARCHAR(100) created_by "Quién lo crea"
+        TIMESTAMP created_at "Alta"
+        TIMESTAMP updated_at "Última actualización"
+    }
+```
+
+### 8.2 Áreas comunes de mantenimiento (F4)
+
+```mermaid
+erDiagram
+    maintenance_area_types ||--o{ maintenance_areas : "clasifica"
+    maintenance_areas ||--o{ maintenance_area_tasks : "programa"
+    maintenance_area_tasks ||--o{ maintenance_area_logs : "ejecuta"
+    maintenance_area_logs ||--o{ on_chain_signatures : "firma"
+
+    maintenance_area_types {
+        VARCHAR(40) code PK "Código del tipo"
+        VARCHAR(80) name_es "Nombre ES"
+        VARCHAR(80) name_en "Nombre EN"
+        VARCHAR(80) name_ru "Nombre RU"
+        BOOLEAN is_critical "Área crítica: su tarea exige firma"
+        INT sort_order "Orden de presentación"
+    }
+
+    maintenance_areas {
+        UUID id PK "Área concreta del hotel"
+        VARCHAR(40) area_type_code FK "Tipo de área"
+        VARCHAR(120) name "Nombre"
+        TEXT location_notes "Ubicación / notas"
+        BOOLEAN is_active "Alta/baja lógica"
+        TIMESTAMP created_at "Alta"
+    }
+
+    maintenance_area_tasks {
+        UUID id PK "Tarea rutinaria del área"
+        UUID area_id FK "Área"
+        VARCHAR(200) label "Descripción de la tarea"
+        VARCHAR(20) periodicity "DAILY · WEEKLY · MONTHLY · QUARTERLY · ANNUAL"
+        INT estimated_minutes "Duración estimada"
+        BOOLEAN is_active "Alta/baja lógica"
+        VARCHAR(100) created_by "Quién la crea"
+        TIMESTAMP created_at "Alta"
+    }
+
+    maintenance_area_logs {
+        UUID id PK "Ejecución de una tarea de área"
+        UUID task_id FK "Tarea ejecutada"
+        VARCHAR(100) performed_by "Quién la ejecuta"
+        TIMESTAMP performed_at "Cuándo"
+        TEXT notes "Notas"
+        TEXT evidence_path "Evidencia"
+        VARCHAR(100) verified_by "Jefe que valida"
+        TIMESTAMP verified_at "Validación"
+        UUID signature_id FK "Firma on-chain (áreas críticas)"
+    }
+```
+
+### 8.3 Housekeeping: inspecciones, cargos por daños y aviso al huésped (F6/F7/F10)
+
+```mermaid
+erDiagram
+    housekeeping_inspections ||--o{ housekeeping_damage_charges : "origina"
+    housekeeping_damage_charges ||--o{ damage_charge_guest_notifications : "notifica"
+    housekeeping_inspections ||--o{ on_chain_signatures : "firma"
+    housekeeping_damage_charges ||--o{ operator_audit_log : "audita"
+
+    housekeeping_inspections {
+        UUID id PK "Inspección post-limpieza"
+        UUID room_id FK "Habitación"
+        UUID assignment_id FK "Asignación de housekeeping"
+        VARCHAR(100) inspected_by "Ama de llaves"
+        VARCHAR(20) inspection_type "CHECKOUT · DAILY_SERVICE"
+        VARCHAR(12) result "APPROVED · REJECTED"
+        TEXT observations "Observaciones"
+        UUID signature_id FK "Firma on-chain (si el flag la exige)"
+        TIMESTAMP created_at "Alta"
+    }
+
+    housekeeping_damage_charges {
+        UUID id PK "Cargo por daños"
+        UUID charge_id FK "Cargo adicional asociado"
+        UUID room_id FK "Habitación"
+        VARCHAR(66) token_id FK "Noche afectada"
+        UUID inspection_id FK "Inspección que lo origina"
+        VARCHAR(100) reported_by "Quién lo reporta"
+        TEXT damage_description "Descripción del daño"
+        TEXT evidence_path "Evidencia"
+        VARCHAR(100) approved_by "Quién lo aprueba"
+        UUID signature_id FK "Firma on-chain (opcional por política)"
+        UUID audit_log_id FK "Traza de auditoría"
+        TIMESTAMP created_at "Alta"
+    }
+
+    damage_charge_guest_notifications {
+        UUID id PK "Aviso al huésped por cargo"
+        UUID damage_charge_id FK "Cargo notificado"
+        VARCHAR(20) channel "EMAIL · TELEGRAM · WEB"
+        TIMESTAMP sent_at "Envío"
+        TIMESTAMP due_date "Plazo de reclamación"
+        VARCHAR(20) status "PENDING · SENT · ACKNOWLEDGED · DISPUTED · EXPIRED · RESOLVED_ACCEPTED · RESOLVED_REJECTED"
+        TEXT dispute_notes "Notas de la reclamación"
+        TIMESTAMP disputed_at "Reclamación"
+        VARCHAR(100) resolved_by "Quién resuelve"
+        TIMESTAMP resolved_at "Resolución"
+    }
+```
+
+### 8.4 Suministros: alertas de umbral (F8)
+
+```mermaid
+erDiagram
+    supply_items ||--o{ supply_alerts : "genera"
+
+    supply_alerts {
+        UUID id PK "Alerta de stock bajo"
+        UUID supply_item_id FK "Insumo"
+        VARCHAR(12) status "OPEN · CLOSED"
+        TIMESTAMP opened_at "Apertura"
+        TIMESTAMP last_reminded_at "Último recordatorio diario"
+        TIMESTAMP closed_at "Cierre al reponer"
+    }
+```
+
+> **Relaciones con tablas de otros dominios**: `operator_wallets.admin_user_id` → `admin_users(id)`,
+> `maintenance_area_tasks.area_id` → `maintenance_areas(id)` (definida en §8.2),
+> `housekeeping_inspections.room_id`/`housekeeping_damage_charges.room_id` → `rooms(id)` (§6) y
+> `supply_alerts.supply_item_id` → `supply_items(id)` (§7).
+
+
+---
+
+## 9. Matriz de relaciones (restricciones reales)
 
 | # | Tabla hija | Columna | Tabla padre | Cardinalidad | `ON DELETE` |
 |---|---|---|---|---|---|
@@ -821,12 +1055,12 @@ impone la ausencia de sobreventa (D-41) a nivel de base de datos.
 
 ---
 
-## 9. Trazabilidad
+## 10. Trazabilidad
 
 | Artefacto | Contenido | Relación |
 |---|---|---|
-| `packages/shared/src/db/migrator.ts` | `INITIAL_SCHEMA_SQL` (SQL idempotente de runtime) | **Fuente de verdad** (44 tablas) |
-| `RepoTecnico/base_datos.sql` | Esquema físico ejecutable con `psql -f` | Réplica del migrator (44 tablas) |
+| `packages/shared/src/db/migrator.ts` | `INITIAL_SCHEMA_SQL` (SQL idempotente de runtime) | **Fuente de verdad** (60 tablas) |
+| `RepoTecnico/base_datos.sql` | Esquema físico ejecutable con `psql -f` | Réplica del migrator (60 tablas) |
 | `RepoTecnico/diccionario_datos.md` | Descripción funcional campo a campo | Deriva del migrator |
 | `RepoTecnico/diagrama_er.md` (este documento) | Modelo entidad-relación | Deriva del migrator |
 

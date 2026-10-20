@@ -1,0 +1,39 @@
+{
+  "id": "fase4-a12-sincronizacion-documental-2026-10-20",
+  "titulo": "A12 cerrado — guardián automatizado de sincronización base_datos.sql ↔ diccionario_datos.md ↔ diagrama_er.md",
+  "fechaUtc": "2026-10-20T03:30:00Z",
+  "contexto": "La Fase 3 cerró A12 con matiz: los tres artefactos SQL estaban sincronizados por guardián, pero `diccionario_datos.md` y `diagrama_er.md` se mantenían a mano. El diagnóstico confirmó deriva real: los documentos declaraban 46 tablas y el esquema tiene 60; 12 tablas de F4–F9 no estaban en ninguno de los dos, y faltaban columnas en 17 tablas del diccionario y 4 del ER.",
+  "diagnostico": {
+    "esquema": "60 tablas y 561 columnas (561 instancias; 279 nombres únicos) leídas de RepoTecnico/base_datos.sql con CREATE TABLE y ALTER TABLE ADD COLUMN",
+    "diccionario": "46 tablas declaradas en cabecera; 12 tablas sin documentar y 27 columnas sin documentar (además de la deriva de prosa que el guardián resuelve por contexto)",
+    "er": "46 tablas declaradas en cabecera (48 bloques reales); 12 entidades sin bloque, 21 columnas sin documentar en 4 tablas (rooms, maintenance_incidents, preventive_plans, preventive_tasks) y 2 tipos desalineados (housekeeping_room_logs.from_value/to_value VARCHAR(12) vs VARCHAR(20))"
+  },
+  "guia": {
+    "fichero": "packages/shared/src/documentation-sync-guardian.test.ts",
+    "lectura": "El esquema se deriva de `RepoTecnico/base_datos.sql` (CREATE TABLE + ALTER TABLE … ADD COLUMN IF NOT EXISTS); la paridad de tablas con `migrator.ts` ya la vigila architecture-guardian.test.ts",
+    "diccionario": "Se resuelve por contextos: secciones ###/#### que nombran tablas y líneas «`tabla`: …»; las columnas se aceptan en celdas de tabla y en prosa con backticks, solo si son columnas de la tabla del contexto",
+    "er": "Se parsean los bloques Mermaid erDiagram; se comparan columnas y tipos normalizados",
+    "aserciones": [
+      "El parser ve el esquema real (60 tablas, >250 nombres de columna únicos).",
+      "Tablas: esquema ⊆ diccionario, esquema ⊆ ER, sin tablas fantasma en ninguno.",
+      "Columnas: toda columna del esquema documentada en el diccionario.",
+      "Columnas y tipos: toda columna del esquema en el ER con el mismo tipo.",
+      "Cabeceras: ambos documentos declaran el número real de tablas (60)."
+    ],
+    "pruebaDeMutacion": "Renombrar una entidad en el ER (supply_alerts → supply_alerts_renamed) hace fallar el guardián con «tablas sin entidad en diagrama_er.md: supply_alerts»; restaurado y en verde."
+  },
+  "documentosActualizados": {
+    "RepoTecnico/diagrama_er.md": "Nueva §8 «Extensiones vNext F4–F9» con 4 bloques Mermaid (firmas/operadores, áreas de mantenimiento, housekeeping/daños, suministros) y las columnas añadidas a las entidades existentes; §8/§9 renumeradas; cobertura y trazabilidad actualizadas a 60 tablas.",
+    "RepoTecnico/diccionario_datos.md": "Nueva §3.12 con las 12 tablas de F4–F9 y §3.12.2 con las columnas añadidas a tablas de ciclos anteriores; cabecera actualizada a 60 tablas."
+  },
+  "resultado": {
+    "guardian": "5/5 pruebas del guardián en verde",
+    "suiteShared": "@hotel/shared 758/758 pruebas (76 ficheros), incluidas las 5 del guardián; 0 regresiones",
+    "migrator": "sin cambios de código de producto: solo documentación y el guardián nuevo"
+  },
+  "deudaDeclarada": [
+    "El guardián cubre los artefactos de `RepoTecnico/`; las copias de `RepoTecnico/propuesta_vNext/` (documento de propuesta) no se comparan.",
+    "La comparación de tipos se aplica al ER (estructura machine-readable); el diccionario se valida por presencia de columnas, porque su prosa es deliberadamente flexible.",
+    "A9 sigue pendiente del permiso IAM `cloudsql.backups.restore`, que requiere acceso al proyecto GCP."
+  ]
+}

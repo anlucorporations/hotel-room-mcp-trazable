@@ -229,6 +229,7 @@ Riesgo a vigilar: uptime de la red (estuvo ~9,5 días caída) → RNF-17.
 | TC-E2E-072 | **WalletConnect sin `projectId`** | E2E | el selector **no** ofrece WalletConnect (solo inyectadas + Coinbase); la app no falla | Anvil |
 | TC-E2E-073 | **WalletConnect con `projectId`** | E2E | el selector ofrece WalletConnect y el modal pinta el **QR**; los metadatos anuncian `NEXT_PUBLIC_SITE_URL` | Anvil |
 | TC-E2E-074 | **Catálogo y determinismo de los mensajes de firma** | unit | toda interacción que firma la wallet está catalogada; el texto de publicación y los EIP-712 v2 se reconstruyen byte a byte (ADR-30) | Anvil |
+| TC-E2E-075 | **Wallet inyectada con sesión real (A5)** | E2E (Playwright, escritorio y móvil) | cartera EIP-6963 → menú de sesión → TOTP → `personal_sign` cuya firma **se recupera** sobre el mensaje de publicación (huella + hora + dominio) y POST con `signature`/`signerAddress`/`txHash`; `apps/web/e2e/wallet-publicacion.spec.ts` | Anvil (RPC interceptado) |
 | TC-ACC-004 | **Revisión de la firma en la wallet real** | aceptación | MetaMask desktop y móvil muestran el motivo legible, la habitación y la noche del resguardo/reseña (ADR-30) | Besu |
 | TC-ACC-002 | Add-network + firma reales | aceptación | MetaMask añade red 81234 y firma primaria/secundaria | Besu |
 | TC-ACC-003 | **Conexión móvil por WalletConnect** | aceptación | un móvil empareja por QR, añade la red 81234 y firma una compra de prueba en Besu | Besu |

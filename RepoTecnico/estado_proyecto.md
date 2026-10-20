@@ -5895,3 +5895,136 @@ Evidencia: [`evidencias/f8-suministros-sla-2026-10-19.json`](./evidencias/f8-sum
 - Estado del resto de criterios: A3, A4, A6–A14 cerrados con evidencia (`aceptacion_fase3.md`).
 
 Evidencia: [`evidencias/f9-admin-gobernanza-2026-10-19.json`](./evidencias/f9-admin-gobernanza-2026-10-19.json).
+
+
+---
+
+## 51. FASE 4 ARRANCADA — A5 deja de ser manual: wallet inyectada en escritorio y móvil (2026-10-20)
+
+**Encargo:** «siguiente» → avanzar a la **Fase 4 (Pruebas)**. Se ejecuta el baseline de todos los
+gates y se cierra el único criterio de la Fase 3 que seguía sin automatizar (**A5**).
+
+### 51.1 Baseline de pruebas (sin cambios de producto)
+
+| Gate | Resultado |
+|---|---|
+| `forge test` | **202 pruebas / 20 suites / 0 fallos**; invariantes 256 runs → 8.192 llamadas, 0 contraejemplos |
+| `pnpm test` | **7/7 tareas turbo**; `@hotel/web` **1188/1188** pruebas (134 ficheros) |
+| `pnpm typecheck` | 6/6 paquetes en verde (incluye los specs E2E nuevos) |
+| `pnpm lint` | 0 errores (solo avisos preexistentes de consola e `<img>`) |
+| Playwright (antes) | 122 pasan / **6 fallan** de 128: **deriva de los propios tests**, no regresiones |
+| Playwright (después) | **126/126 pasan** en escritorio y móvil (ver §51.4) |
+
+### 51.2 A5 · E2E con wallet inyectada (nuevo, automatizado)
+
+`e2e/wallet-publicacion.spec.ts` ejecuta un navegador real en **chromium** y **mobile (Pixel 5)**:
+
+1. Una cartera **EIP-6963** se inyecta con `addInitScript` (no está autorizada al arrancar, así que
+   wagmi no reconecta sola) y firma con una **cuenta viem real** (`addInitScript` + `exposeFunction`;
+   el spec recupera la firma y comprueba el firmante).
+2. La sesión del back-office es un **JWT real** verificado por el guard, contra un **Redis mínimo en
+   memoria** (`e2e/support/fake-redis.mjs`) que arranca el `webServer` (`e2e/support/start-web.mjs`).
+3. Flujo: menú de sesión → `wallet_requestPermissions`/`eth_requestAccounts` → `eth_chainId` (81234)
+   → publicar con TOTP → `isRoomRegistered` (`eth_call`) → `publishRoom` (`eth_sendTransaction`) →
+   recibo → `personal_sign` → POST con `signature`, `signerAddress`, `txHash` e `issuedAt`.
+4. **Oráculo criptográfico:** `recoverMessageAddress` sobre el mensaje de publicación (ficha + huella
+   + hora UTC + dominio) devuelve la dirección de la cartera. No basta con «hay un string»: la firma
+   ECDSA es válida y del mensaje correcto (ADR-30).
+
+Fronteras dobladas (y por qué es hermético): Redis (servidor RESP del repo), API del back-office y RPC
+(8545) interceptados con `page.route`. La cartera **no** se dobla.
+
+### 51.3 Piezas nuevas
+
+| Fichero | Contenido |
+|---|---|
+| `apps/web/e2e/wallet-publicacion.spec.ts` | El test A5 (escritorio + móvil) |
+| `apps/web/e2e/support/fake-redis.mjs` | Redis mínimo en memoria (RESP) para el guard y su blocklist |
+| `apps/web/e2e/support/start-web.mjs` | `command` del `webServer`: Redis falso + `next start` |
+| `apps/web/e2e/support/e2e-env.ts` | Constantes compartidas (JWT de test, Redis, cookie, RPC, baseURL) |
+| `apps/web/playwright.config.ts` | `JWT_SECRET`/`REDIS_URL` al servidor de pruebas y `RPC_URL=8545` para la CSP |
+
+### 51.4 Deriva de la suite E2E corregida (encontrada por la Fase 4)
+
+| Fichero | Hallazgo | Corrección |
+|---|---|---|
+| `e2e/home.spec.ts` | El H1 y el estado del catálogo eran de la home anterior (rediseño «Brisa Marina»); `/admin/mint` ya no existe | Aserciones al hero actual; el gate del back-office se prueba en `/admin/habitacion` |
+| `e2e/observabilidad.spec.ts` | `getByRole("button")` ambiguo en móvil (hamburguesa + acceso) | Se apunta a `data-testid="admin-sign-in"` |
+| `e2e/a11y.spec.ts` | `/admin/mint` en la lista (ruta retirada) y escaneo de `/` rozando el timeout por defecto | Ruta retirada; timeout del escaneo a 90 s (sin relajar la aserción) |
+
+### 51.5 Entorno de ejecución (para reproducir)
+
+- `next build` necesita `NODE_OPTIONS=--max-old-space-size=1536` en runners de ~2 GB de RAM.
+- Chromium headless necesita `libnspr4`/`libnss3`/…; en este sandbox se instalaron **sin root**
+  extrayendo los `.deb` en una ruta local y con `LD_LIBRARY_PATH` (workaround del entorno, no del
+  repositorio; en CI `playwright install --with-deps chromium` lo hace solo).
+- Node local v22 (el proyecto pide ≥24): aviso de engine, sin efecto en los gates ejecutados.
+
+### 51.6 Estado de la Fase 4
+
+- **A5: CUMPLE** (automatizado). `aceptacion_fase3.md` actualizado.
+- Pendiente para el cierre completo de la Fase 3: **A9** (permiso IAM para el drill de restauración
+  aislado) y el **matiz de A12** (diff automatizado de diccionario/ER).
+- Siguiente en Fase 4: ampliar la cobertura E2E de los flujos EIP-712 (mantenimiento / ama de llaves)
+  cuando el entorno de pruebas tenga PostgreSQL servible; hoy están cubiertos por pruebas estáticas y
+  evidencia de producción.
+
+Evidencia: [`evidencias/fase4-e2e-a5-wallet-2026-10-20.json`](./evidencias/fase4-e2e-a5-wallet-2026-10-20.json).
+
+
+---
+
+## 52. A12 CERRADO — guardián de sincronización documental (2026-10-20)
+
+**Encargo:** continuar con lo pendiente para cerrar la Fase 3 al 100%. Se aborda **A12** (el matiz de
+`diccionario_datos.md`/`diagrama_er.md` sin diff automatizado). **A9** no es ejecutable desde este
+entorno: exige el permiso IAM `cloudsql.backups.restore` en el proyecto GCP (no hay `gcloud`/credenciales
+de proyecto aquí); queda documentado como el único pendiente externo.
+
+### 52.1 Diagnóstico (deriva real, no teórica)
+
+| Artefacto | Estado antes | Deriva |
+|---|---|---|
+| `base_datos.sql` | esquema físico | **60 tablas / 561 columnas** (incluye `ALTER TABLE … ADD COLUMN`) |
+| `diccionario_datos.md` | declaraba 46 tablas | 12 tablas de F4–F9 sin documentar + 27 columnas sin documentar |
+| `diagrama_er.md` | declaraba 46 tablas (48 bloques) | 12 entidades sin bloque + 21 columnas en 4 tablas + 2 tipos desalineados |
+
+### 52.2 Guardián nuevo
+
+`packages/shared/src/documentation-sync-guardian.test.ts` (5 pruebas). Lee el esquema de
+`RepoTecnico/base_datos.sql` (`CREATE TABLE` + `ALTER TABLE … ADD COLUMN IF NOT EXISTS`), el diccionario
+por **contextos** (secciones y líneas «`tabla`: …»; acepta columnas en celdas y en prosa con backticks) y
+el ER por bloques Mermaid. Comprueba:
+
+1. el parser ve el esquema real (60 tablas, >250 columnas únicas);
+2. tablas: esquema ⊆ diccionario y esquema ⊆ ER, sin tablas fantasma;
+3. columnas: todas documentadas en el diccionario;
+4. columnas y **tipos**: todas en el ER con el tipo del esquema;
+5. cabeceras: ambos documentos declaran las 60 tablas reales.
+
+**Prueba de mutación:** renombrar una entidad del ER hace fallar el guardián con la tabla exacta que
+falta (verificado y restaurado).
+
+### 52.3 Documentación puesta al día
+
+- `diagrama_er.md`: nueva **§8 «Extensiones vNext F4–F9»** (4 bloques Mermaid: firmas/operadores, áreas
+  de mantenimiento, housekeeping/daños, suministros) + columnas añadidas a `rooms`,
+  `maintenance_incidents`, `preventive_plans` y `preventive_tasks`; §8/§9 renumeradas; cobertura y
+  trazabilidad a 60 tablas.
+- `diccionario_datos.md`: nueva **§3.12** con las 12 tablas de F4–F9 y **§3.12.2** con las columnas
+  añadidas a tablas de ciclos anteriores; cabecera a 60 tablas.
+
+### 52.4 Gates
+
+| Gate | Resultado |
+|---|---|
+| `@hotel/shared` test | **758/758** (76 ficheros; +5 del guardián), 0 regresiones |
+| Guardián documental | 5/5 (y falla de verdad ante una mutación) |
+| `pnpm typecheck` | verde |
+
+`aceptacion_fase3.md` pasa **A12 a CUMPLE**. Único pendiente para el 100% de la Fase 3: **A9** (IAM), que
+requiere acceso al proyecto GCP. Se deja lista la guía de ejecución
+([`F9-a9-drill-restauracion-iam.md`](./F9-a9-drill-restauracion-iam.md)): permisos exactos, comandos de
+restore/clon PITR, verificación de contenido y outbox, limpieza y plantilla de evidencia.
+
+Evidencia: [`evidencias/fase4-a12-sincronizacion-documental-2026-10-20.json`](./evidencias/fase4-a12-sincronizacion-documental-2026-10-20.json).

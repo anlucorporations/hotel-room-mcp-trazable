@@ -4,7 +4,7 @@
 > **Fuente de verdad**: `packages/shared/src/db/migrator.ts` (migraciones incrementales, **44 tablas**) · `packages/shared/src/db/schema.sql` se conserva como referencia histórica y su paridad la comprueba un guardián (`packages/shared/src/architecture-guardian.test.ts`)
 > **Artefactos sincronizados**: `RepoTecnico/base_datos.sql` (esquema físico ejecutable) y `RepoTecnico/diagrama_er.md` (modelo entidad-relación); los tres derivan del migrator y se actualizan en el mismo cambio.
 > **Decisiones normativas**: `docs/adr/` · **Especificación**: `docs/SRS.md` §5
-> **Estado**: las **16 tablas** de los apartados §2–§3.7 están **implementadas** y en producción. Las **11 tablas de §3.8–§3.9** (sección Habitación + checklist operativo RF-52/RF-55, D-1…D-28), las **17 de §3.10** (bloque 2, D-34…D-55) y las **2 de §3.11** (contenido público, D-73/D-74) están **sincronizadas con el runtime** (`migrator.ts`) y con `base_datos.sql` y `diagrama_er.md`. Total: **46 tablas**. Lo que queda abierto en lo implementado se marca **HUECO ABIERTO** o **DEUDA**.
+> **Estado**: las **16 tablas** de los apartados §2–§3.7 están **implementadas** y en producción. Las **11 tablas de §3.8–§3.9** (sección Habitación + checklist operativo RF-52/RF-55, D-1…D-28), las **17 de §3.10** (bloque 2, D-34…D-55) y las **2 de §3.11** (contenido público, D-73/D-74) están **sincronizadas con el runtime** (`migrator.ts`) y con `base_datos.sql` y `diagrama_er.md`. Total: **60 tablas** (las 12 de la extensión vNext F4–F9 y sus columnas están en §3.12). Lo que queda abierto en lo implementado se marca **HUECO ABIERTO** o **DEUDA**.
 
 ---
 
@@ -615,6 +615,276 @@ home.
 
 Índices: `hotel_images(section, position)`, único parcial de portada por sección,
 `hotel_offers(active, sort_order)`, `hotel_offers(valid_from, valid_to)`, `hotel_offers(image_id)`.
+
+---
+
+### 3.12 Extensiones vNext F4–F9: firmas on-chain, operadores, mantenimiento, housekeeping y suministros
+
+Estas tablas y columnas entran con los ciclos **F4** (suite de mantenimiento y bloqueo firmado),
+**F5** (terminal de mantenimiento con PIN), **F6/F7/F10** (ama de llaves, cargos por daños y cierre),
+**F8** (suministros y SLA) y **F9** (gobernanza, wallets on-chain y auditoría). Los tres artefactos
+(`base_datos.sql`, este diccionario y `diagrama_er.md`) se mantienen sincronizados; el guardián
+`packages/shared/src/documentation-sync-guardian.test.ts` falla si una tabla o columna se queda fuera de
+alguno.
+
+#### `on_chain_signatures` — registro unificado de firmas on-chain (F4/F9)
+
+Una fila por firma selectiva: la huella, el `TypedData` preparado, la firma, su verificación y el estado
+del anclaje. Estado `PENDING`/`SIGNED`/`MINED`/`FAILED`/`REVOKED`; `nonce` es único por firmante
+(anti-replay, DT-AUD-04) y `tx_hash` NULL significa pendiente de anclaje (`PENDING_ANCHOR`).
+
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `id` | `UUID` | PK | `gen_random_uuid()` | — |
+| `entity_type` | `VARCHAR(40)` | no | — | `ROOM_BLOCK` · `ROOM_UNBLOCK` · `INSPECTION` · `DAMAGE_CHARGE` · `PREVENTIVE_TASK` · `AREA_LOG` · `CONFIG` |
+| `entity_id` | `UUID` | no | — | Entidad firmada |
+| `event_name` | `VARCHAR(60)` | no | — | Evento de `HotelOperations` que se ancla |
+| `content_hash` | `VARCHAR(66)` | no | — | Huella del contenido firmado |
+| `signature` | `TEXT` | sí | — | Firma EIP-712; NULL hasta que la wallet firma |
+| `signer_address` | `VARCHAR(42)` | no | — | Dirección del firmante |
+| `tx_hash` | `VARCHAR(66)` | sí | — | Transacción de anclaje; NULL = pendiente |
+| `status` | `VARCHAR(20)` | no | `'PENDING'` | Estado del ciclo de firma/anclaje |
+| `error_message` | `TEXT` | sí | — | Último error de anclaje |
+| `nonce` | `VARCHAR(66)` | sí | — | Nonce anti-replay (UK por `signer_address`) |
+| `domain_hash` | `VARCHAR(66)` | sí | — | Hash del dominio EIP-712 |
+| `recovered_signer` | `VARCHAR(42)` | sí | — | Firmante recuperado al verificar |
+| `verified_at` | `TIMESTAMP` | sí | — | Fecha de verificación |
+| `role_snapshot` | `VARCHAR(30)` | sí | — | Rol on-chain al firmar |
+| `retry_count` | `INT` | no | `0` | Reintentos de anclaje (cola resiliente) |
+| `next_attempt_at` | `TIMESTAMP` | sí | — | Próximo intento programado |
+| `expires_at` | `TIMESTAMP` | sí | — | Caducidad de la firma |
+| `deadline` | `TIMESTAMP` | sí | — | Deadline incluido en el `TypedData` |
+| `consumed_at` | `TIMESTAMP` | sí | — | Momento en que se consumió el nonce |
+| `created_at` | `TIMESTAMP` | no | `NOW()` | Alta |
+| `mined_at` | `TIMESTAMP` | sí | — | Minado en cadena |
+
+#### `operator_wallets` — wallets de operadores con rol on-chain (F9)
+
+Relaciona un operador del back-office con su dirección y el rol que ostenta en `HotelOperations`. La baja
+solo se marca cuando el rol ya no está activo en cadena; `OWNER_BACKUP` guarda la wallet de respaldo del
+owner (`backup_for_role`).
+
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `id` | `UUID` | PK | `gen_random_uuid()` | — |
+| `admin_user_id` | `UUID` | sí | — | FK a `admin_users(id)` `ON DELETE CASCADE`; NULL = wallet sin operador |
+| `username` | `VARCHAR(100)` | no, único | — | Usuario asociado |
+| `role` | `VARCHAR(30)` | no | — | `HEAD_MAINTENANCE` · `HEAD_KEEPER` · `OWNER_BACKUP` |
+| `wallet_address` | `VARCHAR(42)` | no, único | — | Dirección on-chain |
+| `is_active` | `BOOLEAN` | no | `TRUE` | Alta/baja lógica |
+| `assigned_by` | `VARCHAR(100)` | no | — | Quién la asigna |
+| `assigned_at` | `TIMESTAMP` | no | `NOW()` | Alta |
+| `revoked_at` | `TIMESTAMP` | sí | — | Baja |
+| `backup_for_role` | `VARCHAR(30)` | sí | — | Rol respaldado (obligatorio solo para `OWNER_BACKUP`) |
+
+#### `operator_audit_log` — auditoría append-only de acciones off-chain (F7/F9)
+
+Traza de acciones de operadores con cadena de integridad (`prev_hash` → `integrity_hash`). Un trigger
+prohíbe `UPDATE` y `DELETE` (D-C31).
+
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `id` | `UUID` | PK | `gen_random_uuid()` | — |
+| `actor_username` | `VARCHAR(100)` | no | — | Operador que actúa |
+| `actor_role` | `VARCHAR(30)` | no | — | Rol en el momento de la acción |
+| `entity_type` | `VARCHAR(40)` | no | — | Entidad afectada |
+| `entity_id` | `UUID` | sí | — | Id de la entidad |
+| `action` | `VARCHAR(40)` | no | — | Acción registrada |
+| `old_value` | `JSONB` | sí | — | Valor anterior |
+| `new_value` | `JSONB` | sí | — | Valor nuevo |
+| `terminal_id` | `VARCHAR(100)` | sí | — | Terminal fijo (si aplica) |
+| `prev_hash` | `VARCHAR(66)` | sí | — | Hash de la fila anterior |
+| `integrity_hash` | `VARCHAR(66)` | no | — | Hash de esta fila |
+| `created_at` | `TIMESTAMP` | no | `NOW()` | Alta |
+
+#### `terminal_operators` — operarios de terminales fijos sin wallet (F5)
+
+Técnicos y camareras que operan por PIN (bcrypt ≥12), con bloqueo a los 5 intentos y caducidad del PIN.
+
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `id` | `UUID` | PK | `gen_random_uuid()` | — |
+| `username` | `VARCHAR(100)` | no, único | — | Usuario de terminal |
+| `full_name` | `VARCHAR(100)` | no | — | Nombre completo |
+| `role` | `VARCHAR(30)` | no | — | `MAINTENANCE_TECH` · `HOUSEKEEPER` |
+| `pin_hash` | `TEXT` | no | — | PIN con bcrypt; nunca en claro |
+| `pin_changed_at` | `TIMESTAMP` | sí | — | Último cambio de PIN |
+| `must_change_pin` | `BOOLEAN` | no | `TRUE` | PIN de un solo uso pendiente de rotar |
+| `failed_attempts` | `INT` | no | `0` | Intentos fallidos acumulados |
+| `locked_until` | `TIMESTAMP` | sí | — | Bloqueo temporal |
+| `active` | `BOOLEAN` | no | `TRUE` | Alta/baja lógica |
+| `created_by` | `VARCHAR(100)` | no | — | Quién lo crea |
+| `created_at` | `TIMESTAMP` | no | `NOW()` | Alta |
+| `updated_at` | `TIMESTAMP` | no | `NOW()` | Última actualización |
+
+#### `maintenance_area_types` — catálogo de tipos de área común (F4)
+
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `code` | `VARCHAR(40)` | PK | — | Código (`POOL_FILTER`, `GARDEN`, …) |
+| `name_es` | `VARCHAR(80)` | no | — | Nombre en español |
+| `name_en` | `VARCHAR(80)` | no | — | Nombre en inglés |
+| `name_ru` | `VARCHAR(80)` | no | — | Nombre en ruso |
+| `is_critical` | `BOOLEAN` | no | `FALSE` | Área crítica: su cierre exige firma |
+| `sort_order` | `INT` | no | `0` | Orden de presentación |
+
+#### `maintenance_areas` — áreas comunes concretas del hotel (F4)
+
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `id` | `UUID` | PK | `gen_random_uuid()` | — |
+| `area_type_code` | `VARCHAR(40)` | no | — | FK a `maintenance_area_types(code)` `ON UPDATE CASCADE` |
+| `name` | `VARCHAR(120)` | no | — | Nombre del área |
+| `location_notes` | `TEXT` | sí | — | Ubicación y notas |
+| `is_active` | `BOOLEAN` | no | `TRUE` | Alta/baja lógica |
+| `created_at` | `TIMESTAMP` | no | `NOW()` | Alta |
+
+#### `maintenance_area_tasks` — tareas rutinarias del área (F4)
+
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `id` | `UUID` | PK | `gen_random_uuid()` | — |
+| `area_id` | `UUID` | no | — | FK a `maintenance_areas(id)` `ON DELETE CASCADE` |
+| `label` | `VARCHAR(200)` | no | — | Descripción de la tarea |
+| `periodicity` | `VARCHAR(20)` | no | — | `DAILY` · `WEEKLY` · `MONTHLY` · `QUARTERLY` · `ANNUAL` |
+| `estimated_minutes` | `INT` | sí | — | Duración estimada (`CHECK > 0`) |
+| `is_active` | `BOOLEAN` | no | `TRUE` | Alta/baja lógica |
+| `created_by` | `VARCHAR(100)` | no | — | Quién la crea |
+| `created_at` | `TIMESTAMP` | no | `NOW()` | Alta |
+
+#### `maintenance_area_logs` — ejecución y verificación de tareas de área (F4)
+
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `id` | `UUID` | PK | `gen_random_uuid()` | — |
+| `task_id` | `UUID` | no | — | FK a `maintenance_area_tasks(id)` `ON DELETE CASCADE` |
+| `performed_by` | `VARCHAR(100)` | no | — | Quién la ejecuta |
+| `performed_at` | `TIMESTAMP` | no | `NOW()` | Cuándo |
+| `notes` | `TEXT` | sí | — | Notas |
+| `evidence_path` | `TEXT` | sí | — | Evidencia |
+| `verified_by` | `VARCHAR(100)` | sí | — | Jefe que valida |
+| `verified_at` | `TIMESTAMP` | sí | — | Fecha de validación |
+| `signature_id` | `UUID` | sí | — | FK a `on_chain_signatures(id)` `ON DELETE SET NULL` |
+
+#### `housekeeping_inspections` — inspecciones post-limpieza del Ama de llaves (F6)
+
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `id` | `UUID` | PK | `gen_random_uuid()` | — |
+| `room_id` | `UUID` | no | — | FK a `rooms(id)` `ON DELETE CASCADE` |
+| `assignment_id` | `UUID` | sí | — | FK a `housekeeping_assignments(id)` `ON DELETE SET NULL` |
+| `inspected_by` | `VARCHAR(100)` | no | — | Ama de llaves |
+| `inspection_type` | `VARCHAR(20)` | no | — | `CHECKOUT` · `DAILY_SERVICE` |
+| `result` | `VARCHAR(12)` | no | — | `APPROVED` · `REJECTED` |
+| `observations` | `TEXT` | sí | — | Observaciones |
+| `signature_id` | `UUID` | sí | — | FK a `on_chain_signatures(id)` `ON DELETE SET NULL` |
+| `created_at` | `TIMESTAMP` | no | `NOW()` | Alta |
+
+#### `housekeeping_damage_charges` — cargos por daños (F7/F10)
+
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `id` | `UUID` | PK | `gen_random_uuid()` | — |
+| `charge_id` | `UUID` | no | — | FK a `additional_charges(id)` `ON DELETE CASCADE` |
+| `room_id` | `UUID` | no | — | FK a `rooms(id)` `ON DELETE CASCADE` |
+| `token_id` | `VARCHAR(66)` | sí | — | FK a `nfts(token_id)` `ON DELETE SET NULL` |
+| `inspection_id` | `UUID` | sí | — | FK a `housekeeping_inspections(id)` `ON DELETE SET NULL` |
+| `reported_by` | `VARCHAR(100)` | no | — | Quién lo reporta |
+| `damage_description` | `TEXT` | no | — | Descripción del daño |
+| `evidence_path` | `TEXT` | sí | — | Evidencia |
+| `approved_by` | `VARCHAR(100)` | no | — | Quién lo aprueba |
+| `signature_id` | `UUID` | sí | — | FK a `on_chain_signatures(id)` (opcional por política) |
+| `audit_log_id` | `UUID` | sí | — | FK a `operator_audit_log(id)` `ON DELETE SET NULL` |
+| `created_at` | `TIMESTAMP` | no | `NOW()` | Alta |
+
+#### `damage_charge_guest_notifications` — aviso al huésped por cargo (F7/F10)
+
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `id` | `UUID` | PK | `gen_random_uuid()` | — |
+| `damage_charge_id` | `UUID` | no | — | FK a `housekeeping_damage_charges(id)` `ON DELETE CASCADE` |
+| `channel` | `VARCHAR(20)` | no | — | `EMAIL` · `TELEGRAM` · `WEB` |
+| `sent_at` | `TIMESTAMP` | sí | — | Envío |
+| `due_date` | `TIMESTAMP` | no | — | Plazo de reclamación |
+| `status` | `VARCHAR(20)` | no | `'PENDING'` | `PENDING` · `SENT` · `ACKNOWLEDGED` · `DISPUTED` · `EXPIRED` · `RESOLVED_ACCEPTED` · `RESOLVED_REJECTED` |
+| `dispute_notes` | `TEXT` | sí | — | Notas de la reclamación |
+| `disputed_at` | `TIMESTAMP` | sí | — | Fecha de la reclamación |
+| `resolved_by` | `VARCHAR(100)` | sí | — | Quién resuelve |
+| `resolved_at` | `TIMESTAMP` | sí | — | Fecha de resolución |
+
+#### `supply_alerts` — alertas de stock por debajo del umbral (F8)
+
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `id` | `UUID` | PK | `gen_random_uuid()` | — |
+| `supply_item_id` | `UUID` | no | — | FK a `supply_items(id)` `ON DELETE CASCADE` |
+| `status` | `VARCHAR(12)` | no | `'OPEN'` | `OPEN` · `CLOSED` |
+| `opened_at` | `TIMESTAMP` | no | `NOW()` | Apertura de la alerta |
+| `last_reminded_at` | `TIMESTAMP` | sí | — | Último recordatorio diario |
+| `closed_at` | `TIMESTAMP` | sí | — | Cierre al reponer |
+
+### 3.12.2 Columnas añadidas a tablas de ciclos anteriores
+
+Estas columnas se añadieron con `ALTER TABLE … ADD COLUMN IF NOT EXISTS` y también están reflejadas en
+`base_datos.sql` y en el ER.
+
+#### Extensión de `rooms` — bloqueo por mantenimiento e inspección (F4/F7)
+
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `maintenance_blocked_until` | `DATE` | sí | — | Bloqueo por mantenimiento hasta la fecha |
+| `maintenance_blocked_reason` | `VARCHAR(200)` | sí | — | Motivo del bloqueo (visible al personal) |
+| `last_inspection_at` | `TIMESTAMP` | sí | — | Última inspección post-limpieza |
+| `last_inspection_result` | `VARCHAR(12)` | sí | — | `APPROVED` · `REJECTED` (`CHECK`) |
+
+#### Extensión de `maintenance_incidents` — áreas, roles y cargos (F4/F7)
+
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `blocks_sale` | `BOOLEAN` | no | `TRUE` | La incidencia bloquea la venta mientras está abierta |
+| `area_id` | `UUID` | sí | — | FK a `maintenance_areas(id)` `ON DELETE SET NULL` |
+| `reported_by_role` | `VARCHAR(30)` | sí | — | `RECEPTION` · `HEAD_KEEPER` · `HOUSEKEEPER` · `HEAD_MAINTENANCE` · `MAINTENANCE_TECH` (`CHECK`) |
+| `resolution_notes` | `TEXT` | sí | — | Notas de resolución |
+| `damage_charge_cents` | `BIGINT` | sí | — | Cargo por daños derivado (`CHECK > 0`) |
+| `damage_charge_currency` | `VARCHAR(3)` | sí | — | Moneda (EUR) |
+| `damage_charge_approved_by` | `VARCHAR(100)` | sí | — | Aprobador por encima del tope |
+| `block_signature_id` | `UUID` | sí | — | FK a `on_chain_signatures(id)`; firma del bloqueo |
+| `unblock_signature_id` | `UUID` | sí | — | FK a `on_chain_signatures(id)`; firma del desbloqueo |
+
+#### Extensión de `preventive_plans` — planes de áreas comunes (F4)
+
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `area_id` | `UUID` | sí | — | FK a `maintenance_areas(id)` `ON DELETE SET NULL`; NULL = plan por habitación |
+
+#### Extensión de `preventive_tasks` — cierre firmado, evidencia y SLA de validación (F4/F5/F8)
+
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `verified_by` | `VARCHAR(100)` | sí | — | Jefe que valida el cierre |
+| `verified_at` | `TIMESTAMP` | sí | — | Fecha de validación |
+| `requires_signature` | `BOOLEAN` | no | `FALSE` | Área crítica: exige firma EIP-712 |
+| `signature_id` | `UUID` | sí | — | FK a `on_chain_signatures(id)` `ON DELETE SET NULL` |
+| `evidence_path` | `TEXT` | sí | — | Evidencia del trabajo (opcional, con aviso) |
+| `assigned_to` | `VARCHAR(100)` | sí | — | Técnico de terminal asignado (solo ve lo suyo) |
+| `updated_at` | `TIMESTAMP` | no | `NOW()` | Bloqueo optimista del cierre |
+| `validation_status` | `VARCHAR(30)` | sí | — | `PENDING_VERIFICATION` · `VALIDATED` · `PENDING_VERIFICATION_EXPIRED` (`CHECK`) |
+
+#### Extensión de `activities` — descripciones por idioma (F5/F10)
+
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `description_es` | `TEXT` | sí | — | Descripción en español |
+| `description_en` | `TEXT` | sí | — | Descripción en inglés |
+| `description_ru` | `TEXT` | sí | — | Descripción en ruso |
+
+#### Extensión de `supply_items` — nombres por idioma (F8)
+
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `name_es` | `VARCHAR(80)` | no | — | Nombre en español |
+| `name_en` | `VARCHAR(80)` | sí | — | Nombre en inglés |
+| `name_ru` | `VARCHAR(80)` | sí | — | Nombre en ruso |
 
 ## 4. Diccionario on-chain (`HotelNights.sol`)
 
