@@ -18,10 +18,11 @@ quedan mitigados o declarados). **La APK no debe publicarse** sin cerrar dos req
 dirección de wallet.
 
 - **16 hallazgos** verificados: **0 críticos**, **4 altos**, **8 medios**, **4 bajos**.
-- **Corregidos en esta pasada:** 11 (redacción no medible, RNF/stakeholders ausentes, riesgos técnicos,
-  diagrama con actor equivocado, cobertura contada, presupuestos móviles).
-- **Pendientes:** 3 requieren decisión/acción externa (numeración RF unificada, legal de Play, DPIA) y 2
-  son verificaciones de API/estado que se cierran en pruebas.
+- **Corregidos o mitigados en esta pasada:** 13 (redacción no medible, RNF/stakeholders ausentes, riesgos
+  técnicos, diagrama con actor equivocado, cobertura contada, presupuestos móviles, vocabulario canónico
+  y verificación de cookies CSRF).
+- **Pendientes:** 3 requieren decisión/acción externa (H-01 numeración RF unificada, H-02 dictamen legal
+  de Play, H-03 aprobación de la DPIA por el DPO). Los borradores para H-02/H-03 ya están preparados.
 
 ---
 
@@ -49,9 +50,9 @@ dirección de wallet.
 
 | ID | Sev. | Área / lente | Hallazgo | Evidencia | Estado |
 |---|---|---|---|---|---|
-| H-01 | **ALTA** | Trazabilidad (R5/R2) | **Numeración RF divergente**: `PRD` renumera `RF-01…RF-23` y `REQUISITOS/SRS` usan otro significado para los mismos IDs; un RF citado puede leerse al revés | `docs/PRD.md:94` (RF-01 = catálogo) vs `docs/REQUISITOS.md:81` (RF-01 = tokenizar); `casos_uso_web.md:126` | **Mitigado** con «Anexo A» de correspondencia; **deuda abierta**: unificar numeración |
-| H-02 | **ALTA** | Legal (R7) | **APK: política de facturación de Play** para bienes digitales/NFT y **desistimiento** (servicios de ocio) no evaluados antes de publicar | `casos_uso_apk.md` §3, §7 | **Abierto** (revisión legal); criterio añadido en §7.9 |
-| H-03 | **ALTA** | Privacidad (R7) | **Dirección de wallet = dato personal vinculable** (RGPD Cons. 26): falta **DPIA**, base legal y retención explícitas | `casos_uso_apk.md` §3/A-7; `casos_uso_web.md` §7 | **Abierto**; DPIA añadida como criterio (web §7.11, APK §7.10) |
+| H-01 | **ALTA** | Trazabilidad (R5/R2) | **Numeración RF divergente**: `PRD` renumera `RF-01…RF-23` y `REQUISITOS/SRS` usan otro significado para los mismos IDs; un RF citado puede leerse al revés | `docs/PRD.md:94` (RF-01 = catálogo) vs `docs/REQUISITOS.md:81` (RF-01 = tokenizar); `casos_uso_web.md:126` | **Mitigado** con «Anexo A» de correspondencia; **deuda abierta**: renumerar el PRD |
+| H-02 | **ALTA** | Legal (R7) | **APK: política de facturación de Play** para bienes digitales/NFT y **desistimiento** (servicios de ocio) no evaluados antes de publicar | `casos_uso_apk.md` §3, §7 | **Abierto** (dictamen externo). Borrador con decisiones L-1…L-5 para el cliente en `legal/play-billing-apk-v1.md`; criterio en §7.9 |
+| H-03 | **ALTA** | Privacidad (R7) | **Dirección de wallet = dato personal vinculable** (RGPD Cons. 26): falta **DPIA**, base legal y retención explícitas | `casos_uso_apk.md` §3/A-7; `casos_uso_web.md` §7 | **Abierto** (aprobación DPO). **DPIA pre-rellenada** en `legal/DPIA-apk-huesped-v1.md`; criterios en web §7.11 y APK §7.10 |
 | H-04 | **ALTA** | Consistencia (R2) | El catálogo `SRS` no recogía los **RF-61…RF-65** aprobados, dejando sus CU (CU-W-12/15/16/17/21/22) sin anclaje en el catálogo canónico | `docs/SRS.md` §9/§10; `docs/PRD.md:118-122` | **Corregido**: nota en SRS §9 con la correspondencia |
 | H-05 | MEDIA | Testabilidad (R1) | Criterios con lenguaje **no medible** («mensaje claro», «página honesta», «error claro») sin oráculo concreto | `casos_uso_web.md:260,332,655,897`; `casos_uso_apk.md:461,483,536,603` | **Corregido**: `data-testid`/códigos (`tx-error`, `not-found`, `REVIEW_DUPLICATED`, `deeplink-not-found`, …) |
 | H-06 | MEDIA | Completitud RNF (R3) | Matriz web **omitía** RNF-03/04/07/08/09/15/16 (gas, seguridad, escalabilidad, plazos, coste, pausa/fondos, pruebas) | `casos_uso_web.md` §6 | **Corregido**: filas añadidas con justificación de alcance |
@@ -63,8 +64,8 @@ dirección de wallet.
 | H-12 | BAJA | Trazabilidad (R5) | La cobertura «109 objetivos» contaba **CU-V-11 fusionado** en CU-V-19 | `casos_uso_web.md:1032` | **Corregido**: «108 únicos + 1 fusionado» |
 | H-13 | BAJA | Testabilidad (R1) | APK CU-A-01: «carrusel breve» no medible | `casos_uso_apk.md:107` | **Corregido**: 3 pantallas máximo y omitible |
 | H-14 | BAJA | RNF (R3) | APK sin presupuestos de **tamaño**, **batería** y **crash-free** | `casos_uso_apk.md` §7 | **Corregido**: APK ≤ 25 MB, crash-free ≥ 99,5 %, < 3 %/h |
-| H-15 | BAJA | Seguridad (R7) | Web: mitigaciones **CSRF/rate-limit** en rutas mutantes con cookies no verificadas en la suite | `casos_uso_web.md` §7.11 | **Abierto** («necesita verificación»): criterio registrado |
-| H-16 | BAJA | Consistencia (R2) | APK usa estados (`PENDING`, `SIGNED`, `MINED`, `DISPUTED`, …) sin contraste formal contra el diccionario canónico en ese documento | `casos_uso_apk.md` §5 (CU-A-15 y vocabulario) | **Abierto** («necesita verificación»): remisión al diccionario en §7 |
+| H-15 | BAJA | Seguridad (R7) | Web: mitigaciones **CSRF/rate-limit** en rutas mutantes con cookies no verificadas | `guard.ts:231-243` (HttpOnly + SameSite=Lax); `middleware.ts:59` (rate limit solo admin/recepción) | **Verificado con residual**: CSRF mitigado por SameSite=Lax; falta rate limit en escrituras de huésped (`/api/push`, `/api/damage-charges`, `/api/reviews`). Documentado en web §7.1 |
+| H-16 | BAJA | Consistencia (R2) | APK usa estados (`PENDING`, `SIGNED`, `MINED`, `DISPUTED`, …) sin contraste formal contra el diccionario canónico en ese documento | `casos_uso_apk.md` §1 (nuevo vocabulario canónico) | **Corregido**: tabla de estados/códigos + remisión al guardián documental |
 
 **Resumen de verificación adversarial:** se descartaron 2 candidatos por no poder confirmarse con evidencia
 («falta de RNF de usabilidad en la web» — sí está en RNF-20/§7; «CU-A sin actor de soporte» — el soporte
@@ -133,6 +134,15 @@ es externo y está declarado). El resto de la lista son hallazgos confirmados co
   riesgos y operación.
 
 ---
+
+## 6.1 Acciones de cierre aplicadas (2026-10-20, tras la auditoría)
+
+| Hallazgo | Artefacto de cierre |
+|---|---|
+| H-02 | `RepoTecnico/legal/play-billing-apk-v1.md`: marco Play/MiCA/consumo, decisiones L-1…L-5, checklist para la asesoría y criterio de cierre. |
+| H-03 | `RepoTecnico/legal/DPIA-apk-huesped-v1.md`: DPIA pre-rellenada (flujos, bases legales, retención, 10 riesgos con mitigación y residual MEDIO) para aprobación del DPO. |
+| H-15 | Verificación de cookies `HttpOnly` + `SameSite=Lax` (`apps/web/src/lib/guard.ts:231-243`) y del alcance del rate limit (`apps/web/src/middleware.ts:59`); residual documentado en `casos_uso_web.md` §7.1. |
+| H-16 | Vocabulario canónico de estados/códigos añadido a `casos_uso_apk.md` §1, con remisión al diccionario y al guardián documental. |
 
 ## 7. Plan de acción
 

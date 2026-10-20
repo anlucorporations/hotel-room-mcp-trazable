@@ -27,6 +27,14 @@
 | **Trazabilidad** | Cada CU declara RF/RNF/ADR y su paridad con la web (CU-W). |
 | **Plataforma** | Android nativo (Kotlin + Jetpack Compose), `minSdk 26`, `targetSdk 35`; ES/EN/RU; TalkBack. |
 
+**Vocabulario de estados y códigos (auditoría H-16).** La app **no acuña estados**: muestra los del
+diccionario canónico (`damage_charge_guest_notifications.status`: `PENDING`, `SENT`, `ACKNOWLEDGED`,
+`DISPUTED`, `EXPIRED`, `RESOLVED_ACCEPTED`, `RESOLVED_REJECTED`; `on_chain_signatures.status`: `PENDING`,
+`SIGNED`, `MINED`, `FAILED`, `REVOKED`; `reviews.status`: `PENDING`, `APPROVED`, `REJECTED`).
+`REVIEW_DUPLICATED` es un **código de error de API**, no un estado. Cualquier valor nuevo debe entrar
+primero en `base_datos.sql` + `diccionario_datos.md` + `diagrama_er.md` (guardián
+`documentation-sync-guardian.test.ts`).
+
 ---
 
 ## 2. Actores

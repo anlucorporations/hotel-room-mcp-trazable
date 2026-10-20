@@ -6109,3 +6109,24 @@ Generados los diagramas Mermaid de Fase 2 para los dos catálogos de casos de us
 flujos enlazan a las rutas/API/pruebas citadas en los CU. La auditoría de los documentos y diagramas se
 ejecuta con `@audita` (3 fases, 7 lentes) y su informe queda en
 [`INFORME_AUDITORIA_CASOS_USO_V1.md`](./INFORME_AUDITORIA_CASOS_USO_V1.md).
+
+
+---
+
+## 56. Cierre de hallazgos de la auditoría de casos de uso (2026-10-20)
+
+Continuación del informe [`INFORME_AUDITORIA_CASOS_USO_V1.md`](./INFORME_AUDITORIA_CASOS_USO_V1.md):
+
+| Hallazgo | Estado | Evidencia / artefacto |
+|---|---|---|
+| H-15 · CSRF/rate-limit | **Verificado con residual** | cookies `HttpOnly` + `SameSite=Lax` (`apps/web/src/lib/guard.ts:231-243`); el rate limit perimetral solo cubre `/api/admin` y `/api/reception` (`apps/web/src/middleware.ts:59`) → residual en escrituras de huésped, documentado en `casos_uso_web.md` §7.1 |
+| H-16 · vocabulario de estados | **Cerrado** | `casos_uso_apk.md` §1 con los estados canónicos por tabla y remisión al guardián documental |
+| H-02 · legal Play/NFT/consumo | **Borrador listo, pendiente de dictamen** | [`legal/play-billing-apk-v1.md`](./legal/play-billing-apk-v1.md): políticas de Play, consumo UE/ES, MiCA/fiscalidad, decisiones L-1…L-5 y checklist para la asesoría |
+| H-03 · DPIA wallet/PII | **Borrador listo, pendiente del DPO** | [`legal/DPIA-apk-huesped-v1.md`](./legal/DPIA-apk-huesped-v1.md): flujos, bases legales, retención, 10 riesgos con mitigación y residual **MEDIO** |
+| H-01 · numeración RF | **Mitigado, deuda abierta** | Anexo A de correspondence en `casos_uso_web.md` §9; pendiente renumerar el PRD |
+
+**Recomendación de producto para H-02:** pago en **checkout web** en la v1 de la APK (la app descubre,
+guarda el resguardo y hace check-in) y **reventa/subastas fuera de la app v1**, hasta que exista dictamen
+legal. Reduce el riesgo de la política de Play y acelera la publicación.
+
+**Siguiente:** aprobación del cliente/DPO sobre H-02/H-03, y después continuar con la Fase 4/5 del proyecto.

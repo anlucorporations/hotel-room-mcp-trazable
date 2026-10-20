@@ -1141,7 +1141,7 @@ huérfanos respecto de los RF/RNF catalogados (ver §6).
 | Wallet no disponible o red incorrecta | no se puede firmar | onboarding + bloqueo de firma con guía (CU-W-04/19/20) |
 | Publicación firmada con anclaje fallido | ficha publicada sin tx | `PENDING_ANCHOR` visible + reintento idempotente (CU-W-20) |
 | Pico de tráfico de temporada | degradación de p95 | gate A8 (p95 < 500/800 ms) y caché de tablero (CU-W-24) |
-| CSRF/abuso de endpoints con cookies | acciones no deseadas | cookies HttpOnly + SameSite y rate limit perimetral (verificar en pruebas de API) |
+| CSRF/abuso de endpoints con cookies | acciones no deseadas | **Verificado (H-15):** cookies `HttpOnly` + `SameSite=Lax` en `/api/auth/*`, guard y terminal (`apps/web/src/lib/guard.ts:231-243`); **residual**: el rate limit perimetral solo cubre `/api/admin` y `/api/reception` (`apps/web/src/middleware.ts:59`) — añadir límite a escrituras de huésped (`/api/push`, `/api/damage-charges`, `/api/reviews`) antes de la entrega pública |
 
 ## 8. Decisiones ratificadas (2026-10-20)
 
