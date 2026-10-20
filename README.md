@@ -1,9 +1,13 @@
 # Hotel Marina del Sol — Plataforma NFT de Reservas
 
-Sistema Web3 que tokeniza cada **noche de habitación** como un NFT ERC-721 sobre **Polygon PoS** (mainnet) / **Polygon Amoy** (testnet), con compra primaria anónima, marketplace de reventa con royalties forzados (EIP-2981), check-in seguro on-chain, panel de Back-office con MFA y observabilidad centralizada.
+Sistema Web3 que tokeniza cada **noche de habitación** como un NFT ERC-721 sobre la **red Besu del proyecto**
+(`chainId 81234`; Anvil como espejo local), con compra primaria, reventa con royalties forzados
+(EIP-2981), subastas, check-in con resguardo QR/JWS, back-office con MFA/TOTP, suites de mantenimiento y
+ama de llaves, terminal con PIN, y observabilidad con worker/monitor/MCP.
 
-> **Estado**: Sprint 0 completado · Sprint 1 (Smart Contracts) en preparación.  
-> Documentación técnica completa en [`docs/`](./docs).
+> **Estado**: **PROYECTO CERRADO — entrega 2026-10-20** (fases 1–5). Web `v81` en producción.
+> **Empieza por el paquete de entrega: [`RepoTecnico/ENTREGA.md`](./RepoTecnico/ENTREGA.md)**.
+> Documentación técnica en [`docs/`](./docs) y manuales en [`RepoTecnico/Manuales/`](./RepoTecnico/Manuales/).
 
 ---
 
@@ -11,6 +15,7 @@ Sistema Web3 que tokeniza cada **noche de habitación** como un NFT ERC-721 sobr
 
 | Documento | Descripción |
 |-----------|-------------|
+| [`RepoTecnico/ENTREGA.md`](./RepoTecnico/ENTREGA.md) | **Paquete de entrega**: qué se entrega, accesos, inventario, operación y pendientes |
 | [`docs/PRD.md`](./docs/PRD.md) | Requisitos funcionales y de negocio (v1.1.0) |
 | [`docs/SRS.md`](./docs/SRS.md) | Especificación técnica de software (v1.3.0) |
 | [`docs/PLAN-CONSTRUCCION.md`](./docs/PLAN-CONSTRUCCION.md) | Plan de construcción y fases (v1.2.0) |

@@ -6234,3 +6234,17 @@ Documento: [`ci-post-entrega-2026-10-20.md`](./ci-post-entrega-2026-10-20.md).
 **Acción requerida (externa):** elegir el CI canónico y repararlo — recomendación: usar **GitHub Actions**
 (`.github/workflows/ci.yml`) y publicar `main` también en `github`, o habilitar runners en GitLab. Mientras
 tanto, el estado de GitLab no debe interpretarse como fallo de la entrega.
+
+
+---
+
+## 61. Paquete de entrega y traspaso (2026-10-20)
+
+Creado [`ENTREGA.md`](./ENTREGA.md) como **documento único de traspaso** para el cliente y el equipo
+técnico: resumen ejecutivo de lo entregado, URLs y accesos (sin secretos), inventario de documentación,
+cómo operar (salud, despliegue/rollback, backups, anclajes, incidentes, soporte), gates de calidad,
+**pendientes post-entrega** (A9, legal/DPIA, manual del huésped, CI canónico y APK) y **checklist de
+aceptación y firma**.
+
+El `README.md` raíz se actualizó (estado cerrado, red Besu y enlace a la entrega) porque seguía indicando
+«Sprint 0 / Polygon», información obsoleta.
