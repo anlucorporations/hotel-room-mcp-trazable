@@ -6248,3 +6248,28 @@ aceptación y firma**.
 
 El `README.md` raíz se actualizó (estado cerrado, red Besu y enlace a la entrega) porque seguía indicando
 «Sprint 0 / Polygon», información obsoleta.
+
+
+---
+
+## 62. Privacidad: DPIA + registro de actividades de tratamiento (2026-10-20)
+
+Para facilitar el cierre de **H-03** (privacidad) se añadió al bloque legal:
+
+| Documento | Contenido |
+|---|---|
+| [`legal/DPIA-apk-huesped-v1.md`](./legal/DPIA-apk-huesped-v1.md) | DPIA pre-rellenada: flujos, bases legales, retención, 10 riesgos con mitigación y residual MEDIO |
+| [`legal/registro-actividades-tratamiento.md`](./legal/registro-actividades-tratamiento.md) | **Registro de actividades (art. 30 RGPD)**: 10 tratamientos (reserva, wallet, resguardo, avisos, reseñas, daños, derechos, seguridad, telemetría, fiscalidad) con finalidad, base legal, datos, destinatarios, transferencias, plazos y medidas |
+
+**Verificación adicional:** las páginas de Ayuda (índice + manuales generales + 7 manuales de suites) pasan
+axe sin violaciones critical/serious en escritorio y móvil (se añadieron las 7 rutas nuevas al escaneo de
+accesibilidad).
+
+**Pendiente para cerrar H-03:** validación del DPO, contratos de encargado/transferencias (FCM,
+WalletConnect) y publicación de la política de privacidad actualizada.
+
+**Nota de calidad:** al añadir las infografías de las suites se detectó (regresión del test completo) que el
+guardián `images-naming.test.ts` no admite subcarpetas en `docs/imagenes/` y exige el prefijo `doc-`.
+Se corrigió aplanando las 5 infografías como `doc-suite-*.svg`, actualizando las referencias y el catálogo
+`docs/imagenes/README.md`, y ampliando el guardián para validar también los manuales de las suites.
+Resultado: guardián de imágenes y de manuales en verde y suite web completa sin fallos.

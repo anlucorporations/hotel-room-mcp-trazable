@@ -12,8 +12,8 @@
 4. Marca cada habitación como limpia al terminar; si algo está roto, repórtalo.
 5. La jefa inspecciona y certifica (o devuelve la limpieza).
 
-<!-- GENERAR_IMAGEN: ama-de-llaves.svg -->
-![Esquema: turnos, limpieza e inspección](imagenes/manuales/ama-de-llaves.svg)
+<!-- GENERAR_IMAGEN: doc-suite-ama-de-llaves.svg -->
+![Esquema: turnos, limpieza e inspección](imagenes/doc-suite-ama-de-llaves.svg)
 ```mermaid
 flowchart LR
     A[Check-out o tarea] --> B[Habitación pendiente de limpieza]

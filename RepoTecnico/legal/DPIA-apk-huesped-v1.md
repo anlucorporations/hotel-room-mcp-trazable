@@ -1,6 +1,7 @@
 # DPIA — APK Android del huésped (H-03)
 
 > **Tipo:** Evaluación de Impacto relativa a la Protección de Datos (art. 35 RGPD), **borrador pre-rellenado**
+> (acompañado del [registro de actividades de tratamiento](./registro-actividades-tratamiento.md), art. 30)
 > para cierre del hallazgo **H-03** de [`INFORME_AUDITORIA_CASOS_USO_V1.md`](./INFORME_AUDITORIA_CASOS_USO_V1.md).
 > **Estado:** propuesta para revisión del DPO/asesoría. No es un dictamen.
 > **Fecha:** 2026-10-20 · **Responsable de tratamiento:** Hotel Marina del Sol (a confirmar la entidad

@@ -50,6 +50,13 @@ const PATHS = [
   "/ayuda/cliente",
   "/ayuda/comprador",
   "/ayuda/recepcion",
+  "/ayuda/01-mantenimiento",
+  "/ayuda/02-ama-de-llaves",
+  "/ayuda/03-suministros-y-sla",
+  "/ayuda/04-danos-y-reclamaciones",
+  "/ayuda/05-gobernanza-y-firmas",
+  "/ayuda/06-recepcion-vnext",
+  "/ayuda/07-terminal-pin",
 ] as const;
 
 for (const path of PATHS) {

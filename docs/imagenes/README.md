@@ -224,6 +224,8 @@ franja inferior con **Quién · Qué consigues · Si falla**.
 | `doc-cu-35-cargos-adicionales.svg` | CU-35 · Apuntar los extras del huésped (minibar, desayuno…) | Bloque 8 · Hotelera (v2) |
 | `doc-cu-36-reventa-huesped.svg` | CU-36 · Que el huésped publique, cambie o retire su reventa | Bloque 8 · Hotelera (v2) |
 | `doc-cu-37-avisos-reventa.svg` | CU-37 · Avisar al huésped cuando su reventa se mueve | Bloque 8 · Hotelera (v2) |
+| `doc-cu-38-liberar-habitacion.svg` | CU-38 · Liberar una habitación tras la limpieza | Bloque 8 · Hotelera (v2) |
+| `doc-cu-39-ficha-detalle-habitacion.svg` | CU-39 · Ver la ficha detalle de una habitación | Bloque 8 · Hotelera (v2) |
 | `doc-cu-40-menu-wallet.svg` | CU-40 · El menú de la cartera y del usuario | Bloque 9 · Back-office (v3) |
 | `doc-cu-41-seccion-sistemas.svg` | CU-41 · La sección «Sistemas» (solo para el dueño) | Bloque 9 · Back-office (v3) |
 | `doc-cu-42-gestion-usuarios.svg` | CU-42 · Dar de alta, cambiar y quitar usuarios de la plataforma | Bloque 9 · Back-office (v3) |
@@ -232,6 +234,22 @@ franja inferior con **Quién · Qué consigues · Si falla**.
 | `doc-cu-45-operaciones.svg` | CU-45 · Ver qué está pasando ahora mismo (operaciones) | Bloque 9 · Back-office (v3) |
 | `doc-cu-46-seguridad-operador.svg` | CU-46 · Proteger la cuenta del que manda | Bloque 9 · Back-office (v3) |
 | `doc-mapa-iniciacion-sistema.svg` | Mapa de la iniciación del sistema: las 9 fases y sus 32 casos de uso | Portada de los índices |
+
+---
+
+*Índice de imágenes · Hotel Marina del Sol · cualquier imagen nueva, con el mismo estilo y la
+misma paleta, evita que los manuales parezcan de proyectos distintos. El cumplimiento de los
+nombres lo comprueba `apps/web/src/lib/images-naming.test.ts`.*
+
+## Infografías de las suites del personal (F4–F10)
+
+| Fichero | Manual | Contenido |
+|---|---|---|
+| `doc-suite-mantenimiento.svg` | 01 · Mantenimiento | De la incidencia al cierre validado |
+| `doc-suite-ama-de-llaves.svg` | 02 · Ama de llaves | Turnos, limpieza e inspección |
+| `doc-suite-danos-ciclo.svg` | 04 · Daños y reclamaciones | Ciclo del cargo por daños |
+| `doc-suite-gobernanza.svg` | 05 · Gobernanza y firmas | Permisos, firma y cola de anclajes |
+| `doc-suite-terminal-pin.svg` | 07 · Terminal con PIN | Entrada y trabajo en el terminal |
 
 ---
 

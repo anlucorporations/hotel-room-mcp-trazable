@@ -24,7 +24,7 @@ import { describe, expect, it } from "vitest";
 const REPO_ROOT = fileURLToPath(new URL("../../../../", import.meta.url));
 const IMAGES_DIR = join(REPO_ROOT, "docs", "imagenes");
 
-/** Manuales literales: los 3 generales + los 32 de caso de uso (los mismos que sirve `/ayuda`). */
+/** Manuales literales: los 3 generales + los de caso de uso + los de suites (los mismos que `/ayuda`). */
 const CU_MANUALS_ROOT = join(REPO_ROOT, "docs", "Manuales", "05-casos-de-uso");
 const CU_MANUALS = existsSync(CU_MANUALS_ROOT)
   ? readdirSync(CU_MANUALS_ROOT, { withFileTypes: true })
@@ -36,11 +36,19 @@ const CU_MANUALS = existsSync(CU_MANUALS_ROOT)
       )
       .sort()
   : [];
+const SUITE_MANUALS_ROOT = join(REPO_ROOT, "docs", "Manuales", "07-suites-vnext");
+const SUITE_MANUALS = existsSync(SUITE_MANUALS_ROOT)
+  ? readdirSync(SUITE_MANUALS_ROOT)
+      .filter((name) => /^\d{2}-.+\.md$/.test(name))
+      .sort()
+      .map((name) => join("docs", "Manuales", "07-suites-vnext", name))
+  : [];
 const MANUALS = [
   "docs/manual-cliente.md",
   "docs/manual-comprador.md",
   "docs/manual-recepcion.md",
   ...CU_MANUALS,
+  ...SUITE_MANUALS,
 ];
 
 const CONTENT_IMAGE = /^hotel-(hero|services|experience|activities|contact|other)-\d{4}-\d{2}-\d{2}-\d{1,2}\.jpg$/;

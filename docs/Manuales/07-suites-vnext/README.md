@@ -15,4 +15,4 @@ algo falla.
 | [07 · Terminal con PIN](07-terminal-pin.md) | Técnicos y camareras |
 
 **Descarga:** cada manual tiene su PDF en `docs/pdf/manual-<slug>.pdf` y en la web (`/ayuda`). Las
-infografías se generan desde `docs/imagenes/manuales/*.svg` y se muestran también dentro del manual.
+infografías se generan desde `docs/imagenes/doc-suite-*.svg` y se muestran también dentro del manual.

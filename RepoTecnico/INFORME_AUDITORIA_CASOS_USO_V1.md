@@ -52,7 +52,7 @@ dirección de wallet.
 |---|---|---|---|---|---|
 | H-01 | **ALTA** | Trazabilidad (R5/R2) | **Numeración RF divergente**: `PRD` renumera `RF-01…RF-23` y `REQUISITOS/SRS` usan otro significado para los mismos IDs; un RF citado puede leerse al revés | `docs/PRD.md:94` (RF-01 = catálogo) vs `docs/REQUISITOS.md:81` (RF-01 = tokenizar); `casos_uso_web.md:126` | **Mitigado** con «Anexo A» de correspondencia; **deuda abierta**: renumerar el PRD |
 | H-02 | **ALTA** | Legal (R7) | **APK: política de facturación de Play** para bienes digitales/NFT y **desistimiento** (servicios de ocio) no evaluados antes de publicar | `casos_uso_apk.md` §3, §7 | **Abierto** (dictamen externo). Borrador con decisiones L-1…L-5 para el cliente en `legal/play-billing-apk-v1.md`; criterio en §7.9 |
-| H-03 | **ALTA** | Privacidad (R7) | **Dirección de wallet = dato personal vinculable** (RGPD Cons. 26): falta **DPIA**, base legal y retención explícitas | `casos_uso_apk.md` §3/A-7; `casos_uso_web.md` §7 | **Abierto** (aprobación DPO). **DPIA pre-rellenada** en `legal/DPIA-apk-huesped-v1.md`; criterios en web §7.11 y APK §7.10 |
+| H-03 | **ALTA** | Privacidad (R7) | **Dirección de wallet = dato personal vinculable** (RGPD Cons. 26): falta **DPIA**, base legal y retención explícitas | `casos_uso_apk.md` §3/A-7; `casos_uso_web.md` §7 | **Abierto** (aprobación DPO). **DPIA pre-rellenada** en `legal/DPIA-apk-huesped-v1.md` + **registro de actividades** (art. 30) en `legal/registro-actividades-tratamiento.md`; criterios en web §7.11 y APK §7.10 |
 | H-04 | **ALTA** | Consistencia (R2) | El catálogo `SRS` no recogía los **RF-61…RF-65** aprobados, dejando sus CU (CU-W-12/15/16/17/21/22) sin anclaje en el catálogo canónico | `docs/SRS.md` §9/§10; `docs/PRD.md:118-122` | **Corregido**: nota en SRS §9 con la correspondencia |
 | H-05 | MEDIA | Testabilidad (R1) | Criterios con lenguaje **no medible** («mensaje claro», «página honesta», «error claro») sin oráculo concreto | `casos_uso_web.md:260,332,655,897`; `casos_uso_apk.md:461,483,536,603` | **Corregido**: `data-testid`/códigos (`tx-error`, `not-found`, `REVIEW_DUPLICATED`, `deeplink-not-found`, …) |
 | H-06 | MEDIA | Completitud RNF (R3) | Matriz web **omitía** RNF-03/04/07/08/09/15/16 (gas, seguridad, escalabilidad, plazos, coste, pausa/fondos, pruebas) | `casos_uso_web.md` §6 | **Corregido**: filas añadidas con justificación de alcance |
@@ -140,7 +140,7 @@ es externo y está declarado). El resto de la lista son hallazgos confirmados co
 | Hallazgo | Artefacto de cierre |
 |---|---|
 | H-02 | `RepoTecnico/legal/play-billing-apk-v1.md`: marco Play/MiCA/consumo, decisiones L-1…L-5, checklist para la asesoría y criterio de cierre. |
-| H-03 | `RepoTecnico/legal/DPIA-apk-huesped-v1.md`: DPIA pre-rellenada (flujos, bases legales, retención, 10 riesgos con mitigación y residual MEDIO) para aprobación del DPO. |
+| H-03 | `RepoTecnico/legal/DPIA-apk-huesped-v1.md` (DPIA) + `RepoTecnico/legal/registro-actividades-tratamiento.md` (RAT art. 30, 10 actividades) para aprobación del DPO. |
 | H-15 | Verificación de cookies `HttpOnly` + `SameSite=Lax` (`apps/web/src/lib/guard.ts:231-243`) y del alcance del rate limit (`apps/web/src/middleware.ts:59`); residual documentado en `casos_uso_web.md` §7.1. |
 | H-16 | Vocabulario canónico de estados/códigos añadido a `casos_uso_apk.md` §1, con remisión al diccionario y al guardián documental. |
 

@@ -13,8 +13,8 @@ aviso).
 4. Si acepta, el cargo se cobra en el check-out; si reclama, recepción resuelve.
 5. La habitación queda libre de cargos pendientes al cerrar la estancia.
 
-<!-- GENERAR_IMAGEN: danos-ciclo.svg -->
-![Esquema: ciclo del cargo por daños](imagenes/manuales/danos-ciclo.svg)
+<!-- GENERAR_IMAGEN: doc-suite-danos-ciclo.svg -->
+![Esquema: ciclo del cargo por daños](imagenes/doc-suite-danos-ciclo.svg)
 ```mermaid
 flowchart LR
     A[Daño detectado] --> B[Registro + foto + importe]

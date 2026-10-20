@@ -15,8 +15,8 @@ terminal fijo del taller).
 4. Haz tu trabajo y ciérralo con una nota y, si puedes, una foto.
 5. El jefe revisa y valida el cierre en menos de 24 horas.
 
-<!-- GENERAR_IMAGEN: suite-mantenimiento.svg -->
-![Esquema: de la incidencia al cierre validado](imagenes/manuales/suite-mantenimiento.svg)
+<!-- GENERAR_IMAGEN: doc-suite-mantenimiento.svg -->
+![Esquema: de la incidencia al cierre validado](imagenes/doc-suite-mantenimiento.svg)
 ```mermaid
 flowchart LR
     A[Incidencia o tarea] --> B{¿Hace falta bloquear la habitación?}

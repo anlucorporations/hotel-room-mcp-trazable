@@ -12,8 +12,8 @@
 4. Abre una tarea, trabaja y ciérrala con una nota (y foto si puedes).
 5. Cierra sesión al terminar.
 
-<!-- GENERAR_IMAGEN: terminal-pin.svg -->
-![Esquema: entrada y trabajo en el terminal](imagenes/manuales/terminal-pin.svg)
+<!-- GENERAR_IMAGEN: doc-suite-terminal-pin.svg -->
+![Esquema: entrada y trabajo en el terminal](imagenes/doc-suite-terminal-pin.svg)
 ```mermaid
 flowchart LR
     A[Elegir operario] --> B[Teclear PIN]

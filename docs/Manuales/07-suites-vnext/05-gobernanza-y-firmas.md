@@ -12,8 +12,8 @@
 4. Revisa la **cola de anclajes**: ahí ves las firmas pendientes de registrarse en la cadena.
 5. Descarga el **expediente de auditoría** cuando lo necesites.
 
-<!-- GENERAR_IMAGEN: gobernanza-firmas.svg -->
-![Esquema: permisos, firma y cola de anclajes](imagenes/manuales/gobernanza-firmas.svg)
+<!-- GENERAR_IMAGEN: doc-suite-gobernanza.svg -->
+![Esquema: permisos, firma y cola de anclajes](imagenes/doc-suite-gobernanza.svg)
 ```mermaid
 flowchart LR
     A[Cambio de permiso o flag] --> B{¿Es obligatorio?}
