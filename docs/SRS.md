@@ -390,6 +390,11 @@ huérfanas: la decisión D-15 los trae a este catálogo). `CU-PR-*` son casos de
 | **CU-PR-01** | Aprovisionar operadores (comando, no ruta) | Responsable técnico | RNF-06 | §4.6 |
 | **CU-PR-02** | Desplegar en la red local con roles, faucet opcional y registro sincronizado | Responsable técnico | RT-02 | ADR-06, ADR-13 |
 
+> **Añadido 2026-10-20:** los `RF-61…RF-65` declarados en `docs/PRD.md` (reseñas, contenido público,
+> actividades, portal de cargos y asistente con manuales) tienen sus casos de uso en
+> `RepoTecnico/casos_uso_web.md` (**CU-W-12, CU-W-15, CU-W-16, CU-W-17, CU-W-21, CU-W-22**); este catálogo
+> no los duplica.
+
 ---
 
 ## 10. Trazabilidad

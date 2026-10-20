@@ -54,6 +54,10 @@
 | **Soporte (= Owner)** | `DEFAULT_ADMIN_ROLE` | Back-office → Sistemas | `/admin/sistemas/**`, exportación de auditoría |
 | **Sistema (procesos)** | Worker, MCP, monitor, schedulers | Sin UI | colas, anclaje, emails/push, health, MCP read-only |
 | **Máquina / IA (MCP)** | `searchHotelManuals`, `buildPurchaseTx`, `prepareStayTx`, `getOperationalActions` | API MCP | read-only, nunca firma (RF-12, DT-AUD-15) |
+| **Hotel (negocio)** | Titular de inventario, royalties y política de precios | Back-office + contrato | decide publicación, royalty, subastas y cargos |
+| **Proveedor PMS** | Sistema externo del hotel | API de recepción (`pms-sync`) | conciliación de reservas; su caída degrada sin bloquear |
+| **Proveedor de wallet** | MetaMask/WalletConnect | Navegador/móvil | firma y red; su indisponibilidad bloquea escrituras, no lecturas |
+| **Auditor externo** | Revisión de evidencias y contratos | Export A10 + `docs/` | no opera el sistema; consume expediente firmado |
 
 ---
 
@@ -106,7 +110,7 @@
      `/experiencias`, `/actividades`, `/planes`, `/resenas`, `/contacto`).
   3. La cabecera conserva el menú, el selector de idioma y el estado de wallet («Wallet no conectada»).
 - **Alternativos:**
-  - `A1` La BD no responde: la home sirve la parte de marca y declara el estado degradado honesto.
+  - `A1` La BD no responde: la home sirve la parte de marca con `data-testid="degraded-state"` y un texto ES concreto («no se pudo cargar el catálogo ahora mismo»).
   - `A2` Imagen remota caída: se usa el respaldo local sin romper el layout (RNF-12).
 - **Postcondición:** el visitante ha visto el contenido público; no se ha escrito nada.
 - **Criterios de aceptación (Gherkin):**
@@ -257,7 +261,7 @@ Y la compra permanece deshabilitada hasta cambiar
   4. El NFT aparece en `/mis-noches`.
 - **Alternativos:**
   - `A1` Contrato en pausa: compra deshabilitada antes de firmar (`Paused`) y mensaje de pausa.
-  - `A2` Revert: mensaje claro con el motivo (p. ej. `NotListed`, `Sold`), sin perder el estado.
+  - `A2` Revert: `data-testid="tx-error"` con el selector canónico del revert (p. ej. `NotListed`, `Sold`) sin perder el estado.
   - `A3` Error de red: reintento con UI de error y opción de reintentar.
   - `A4` Aprobación pendiente del asistente: la web exige confirmación explícita antes de firmar.
 - **Postcondición:** `nfts.current_owner` = comprador; evento `Sale(PRIMARY)`; email al admin en cola.
@@ -329,7 +333,7 @@ Y la noche aparece en "Mis noches" del comprador
 - **Alternativos:**
   - `A1` Precio 0 o negativo: rechazo antes de firmar.
   - `A2` Noche caducada: no se permite listar.
-  - `A3` Error de firma: estado sin cambios y mensaje claro.
+  - `A3` Error de firma: estado sin cambios y `data-testid="tx-error"` con el motivo devuelto por la wallet.
 - **Criterios:**
 
 ```gherkin
@@ -490,7 +494,7 @@ Entonces la web declara el fallo y mantiene la operación manual disponible
      check-out liquida o cancela el cargo.
 - **Alternativos:**
   - `A1` Plazo vencido: el cargo pasa a `EXPIRED` y la reclamación se rechaza.
-  - `A2` Enlace inválido: página honesta sin datos.
+  - `A2` Enlace inválido: HTTP 404 con `data-testid="charge-not-found"` y sin datos del cargo.
   - `A3` Resolución aceptada sin pago: el cargo se liquida en el check-out (`PAID`) con aviso.
 - **Criterios:**
 
@@ -652,7 +656,7 @@ Entonces la web muestra la tx decodificada (to/value/tokenId) y exige confirmaci
   1. La web indexa los manuales generados (cliente, comprador, recepción, huésped).
   2. El usuario navega por secciones o busca.
   3. Cada página respeta `lang`, jerarquía de títulos y contraste (RNF-20).
-- **Alternativos:** `A1` sección inexistente: 404 honesto; `A2` idioma sin traducción: fallback ES.
+- **Alternativos:** `A1` sección inexistente: HTTP 404 con `data-testid="not-found"`; `A2` idioma sin traducción: fallback ES.
 - **Criterios:**
 
 ```gherkin
@@ -894,7 +898,7 @@ Entonces descarga un archivo verificable con su firma
   3. `/health/live` y `/health/ready` responden estado de dependencias.
   4. El MCP expone solo lectura para el asistente (sin escrituras).
 - **Alternativos:** `A1` Worker caído: la cola se muestra con `workerAvailable=false`, no 503;
-  `A2` Redis/PostgreSQL caídos: `ready` 503 con dependencia concreta; `A3` export fallido: error claro.
+  `A2` Redis/PostgreSQL caídos: `ready` 503 con la dependencia concreta; `A3` export fallido: HTTP 500 `{error:"EXPORT_FAILED"}` con `data-testid="export-error"`.
 - **Criterios:**
 
 ```gherkin
@@ -1029,7 +1033,8 @@ para que no haya dos verdades con criterios divergentes.
 | CU-V-45 | Restaurar y verificar copias de seguridad | Soporte · F9 | **CUMPLE (drill lógico)**; drill aislado: A9 pendiente de IAM |
 
 **Cobertura consolidada:** 24 CU-W + 17 CU del MVP + 21 CU del SRS + 45 CU-V + 2 CU-PR =
-**109 objetivos de actor**, con 0 huérfanos respecto de los RF/RNF catalogados (ver §6).
+**109 identificadores**, de los cuales **108 objetivos únicos** + **1 fusionado** (CU-V-11 → CU-V-19), con 0
+huérfanos respecto de los RF/RNF catalogados (ver §6).
 
 ---
 
@@ -1073,6 +1078,11 @@ para que no haya dos verdades con criterios divergentes.
 | RF-K-01, RF-K-02, RF-K-03, RF-K-04, RF-K-05, RF-K-06, RF-K-07, RF-K-08, RF-K-09, RF-K-10 | CU-V-16…CU-V-26, CU-V-28…CU-V-30, CU-V-33, CU-V-34, CU-W-12 |
 | RF-S-01, RF-S-02, RF-S-03, RF-S-04, RF-S-05, RF-S-06, RF-S-07, RF-S-08 | CU-V-01…CU-V-45 (firma selectiva), CU-W-20, CU-W-23 |
 | RNF-01, RNF-02, RNF-11, RNF-12, RNF-20 | CU-W-01, CU-W-02, CU-W-09, CU-W-13, CU-W-24 |
+| RNF-03 (gas mínimo), RNF-04 (seguridad del sistema) | CU-W-05, CU-W-06, CU-W-19 |
+| RNF-07 (escalabilidad europea de temporada) | CU-W-02, CU-W-24 |
+| RNF-08 (plazo por hitos), RNF-09 (coste del MVP) | Fuera del alcance de los CU: son restricciones de proyecto |
+| RNF-15 (pausa de emergencia y retirada) | CU-W-23 |
+| RNF-16 (estrategia de pruebas) | Todos los CU: §7 y `informe_pruebas_fase4.md` |
 | RNF-05, RNF-13, RNF-14, RNF-18, RNF-19 | CU-W-04, CU-W-05, CU-W-06, CU-W-19, CU-50 |
 | RNF-06, RNF-17, RNF-21, RNF-22 | CU-W-19, CU-W-23, CU-W-24 |
 | RNF-M-01, RNF-M-02, RNF-M-03, RNF-M-04, RNF-M-05, RNF-M-06, RNF-M-07, RNF-M-08, RNF-M-09, RNF-M-10, RNF-M-11, RNF-M-12, RNF-M-13, RNF-M-14, RNF-M-15, RNF-M-16, RNF-M-17, RNF-M-18, RNF-M-19, RNF-M-20, RNF-M-21 | CU-V-01…CU-V-45; RNF-M-05 en CU-W-11/24; RNF-M-10 en CU-W-12; RNF-M-11/15/19 en CU-W-23; RNF-M-17/18 en CU-V-12/27 |
@@ -1116,8 +1126,22 @@ para que no haya dos verdades con criterios divergentes.
 9. **Gates de calidad**: `pnpm test`, `pnpm typecheck`, `pnpm lint`, `forge test`, E2E y guardianes en
    verde (informe `RepoTecnico/informe_pruebas_fase4.md`).
 10. **Operación**: `/health/live` y `/health/ready` responden; MCP estrictamente read-only.
+11. **Privacidad y superficie de API**: DPIA por la linkabilidad de la dirección de wallet (RGPD Cons. 26)
+    y verificación de mitigaciones CSRF/rate-limit en las rutas mutantes con cookies (estado: **necesita
+    verificación** en la suite de API antes de la entrega pública).
 
 ---
+
+## 7.1 Riesgos técnicos y mitigaciones (web)
+
+| Riesgo | Impacto | Mitigación en los CU / sistema |
+|---|---|---|
+| RPC o indexador caídos | catálogo/histórico no verificables | estado degradado honesto (CU-W-01/02/13/24), sin ofrecer compras que revertirían |
+| Worker caído | no hay anclaje/avisos al día | cola visible con `workerAvailable=false` (CU-W-24), outbox persistente y reintentos |
+| Wallet no disponible o red incorrecta | no se puede firmar | onboarding + bloqueo de firma con guía (CU-W-04/19/20) |
+| Publicación firmada con anclaje fallido | ficha publicada sin tx | `PENDING_ANCHOR` visible + reintento idempotente (CU-W-20) |
+| Pico de tráfico de temporada | degradación de p95 | gate A8 (p95 < 500/800 ms) y caché de tablero (CU-W-24) |
+| CSRF/abuso de endpoints con cookies | acciones no deseadas | cookies HttpOnly + SameSite y rate limit perimetral (verificar en pruebas de API) |
 
 ## 8. Decisiones ratificadas (2026-10-20)
 
@@ -1132,3 +1156,41 @@ para que no haya dos verdades con criterios divergentes.
 
 > **Nota de alcance:** este documento describe la **web implementada**; la app Android del huésped se
 > especifica en `RepoTecnico/casos_uso_apk.md` (decisiones de producto también ratificadas).
+
+---
+
+## 9. Anexo A — Correspondencia de numeración RF (PRD ↔ REQUISITOS/SRS)
+
+El `docs/PRD.md` v2.0.0 **renumeró** su propio `RF-01…RF-23`; `docs/REQUISITOS.md` y `docs/SRS.md` usan
+otra numeración (la que citan los CU del catálogo y este documento). Esta tabla evita leer un RF con el
+significado equivocado; la numeración canónica para los CU es la de **REQUISITOS/SRS**.
+
+| PRD | Significado en PRD | Equivalente en REQUISITOS/SRS |
+|---|---|---|
+| RF-01 | Catálogo público con foto/tipo/fecha/precio | RF-02 (catálogo), RF-18a |
+| RF-02 | Filtros de catálogo | RF-14 |
+| RF-03 | Back-office de alta de inventario y precio | RF-05, RF-18b |
+| RF-04 | Compra anónima con wallet | RF-03, RF-04 |
+| RF-05 | Aviso por correo tras venta/reventa | RF-09 |
+| RF-06 | Reventa con royalties | RF-07, RF-08 |
+| RF-07 | Resguardo QR de check-in | RF-20 (check-in/identidad) |
+| RF-08 | Validación del resguardo sin doble uso | RF-20 |
+| RF-09 | Dashboard con métricas y CSV | RF-10 |
+| RF-10 | Histórico público paginado | RF-15 |
+| RF-11 | Quema automática de no vendidas | RF-17 |
+| RF-12 | Push a navegadores (opt-in/out) | RF-16 |
+| RF-13 | Verificación de disponibilidad antes de cobrar | RF-03/RF-14 (parcial) |
+| RF-14 | Re-confirmación de doble factor | RF-06 (TOTP del back-office) |
+| RF-15 | Retiro de fondos del vendedor (`claim`) | Sin equivalente directo en REQUISITOS (SRS CU-07) |
+| RF-16 | Venta primaria vs reventa en vistas separadas | RF-02, RF-07 |
+| RF-17 | Registro de viajeros (RD 933/2021) | RF-20 (GDPR/registro; fuera de la plataforma) |
+| RF-18 | Multisig de custodios | RNF-13 (fase posterior) |
+| RF-18a | Maestro de habitaciones | RF-18a (mismo ID, mismo significado) |
+| RF-19 | Faucet de pruebas | RF-21 |
+| RF-20 | Chat/asistente que guía la compra | RF-12 |
+| RF-21 | Subastas de la suite | RF-13 |
+| RF-22 | Metadatos IPFS/Arweave | RF-22 (mismo) |
+| RF-23 | MiCA y fiscalidad | RF-23 (mismo) |
+
+> **Deuda declarada:** unificar la numeración en una sola fuente (propuesta: conservar la de
+> REQUISITOS/SRS y mapear el PRD en este anexo) o renumerar el PRD en su próxima versión.

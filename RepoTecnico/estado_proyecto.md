@@ -6090,3 +6090,22 @@ wallet **no custodial** con WalletConnect v2 + deep link, sin login por contrase
 **Próximo paso de Fase 2:** diagramas UML de casos de uso y secuencias de los flujos clave (web:
 CU-W-05/10/20/23; APK: CU-A-07/10/16/18) y auditoría `@audita` de los dos documentos. No se han generado
 aún los diagramas.
+
+
+---
+
+## 55. Diagramas de casos de uso y secuencia — WEB y APK (2026-10-20)
+
+Generados los diagramas Mermaid de Fase 2 para los dos catálogos de casos de uso:
+
+| Fichero | Contenido |
+|---|---|
+| [`casos_uso/diagrama_casos_uso_web.md`](./casos_uso/diagrama_casos_uso_web.md) | 3 diagramas de casos de uso web: público/huésped, recepción+back-office+operación y suites de personal (referencia CU-V); tabla de «include»/«extend». |
+| [`casos_uso/diagrama_casos_uso_apk.md`](./casos_uso/diagrama_casos_uso_apk.md) | 2 diagramas de la APK: viaje del huésped y protección/privacidad/plataforma; convenciones ⛓/📴/🔒. |
+| [`casos_uso/diagramas_secuencia_web.md`](./casos_uso/diagramas_secuencia_web.md) | Secuencias de CU-W-05 (compra primaria), CU-W-10 (check-in JWS), CU-W-20 (publicación firmada + acuñado) y CU-W-23 (flag CONFIG). |
+| [`casos_uso/diagramas_secuencia_apk.md`](./casos_uso/diagramas_secuencia_apk.md) | Secuencias de CU-A-07 (compra), CU-A-10 (resguardo QR offline), CU-A-16 (push/deep link) y CU-A-18 (biometría + Play Integrity). |
+
+**Coherencia:** mismos actores, IDs y estados canónicos que `casos_uso_web.md` / `casos_uso_apk.md`; los
+flujos enlazan a las rutas/API/pruebas citadas en los CU. La auditoría de los documentos y diagramas se
+ejecuta con `@audita` (3 fases, 7 lentes) y su informe queda en
+[`INFORME_AUDITORIA_CASOS_USO_V1.md`](./INFORME_AUDITORIA_CASOS_USO_V1.md).

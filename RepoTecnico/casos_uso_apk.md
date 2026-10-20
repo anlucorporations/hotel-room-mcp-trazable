@@ -39,6 +39,11 @@
 | **Sistema de notificaciones** | FCM + worker del backend | Servidor |
 | **Recepción (externo)** | Valida el pase QR del huésped en la web de recepción | Fuera de la app |
 | **Soporte** | Atiende incidencias del huésped (canal web/email) | Fuera de la app |
+| **Hotel (negocio)** | Titular de inventario, precios y cargos | Back-office web |
+| **Proveedor de wallet** | WalletConnect relay / MetaMask | SDK/deep link; su caída bloquea escrituras, no lecturas |
+| **Play Store / App Store** | Distribución, políticas y reseñas | Play Console |
+| **Regulador (consumo/MiCA)** | Información precontractual, desistimiento y fiscalidad | Fase posterior (RF-23) |
+| **Comité de privacidad** | DPIA, base legal y retención | Aprobación previa al lanzamiento |
 
 ---
 
@@ -99,8 +104,8 @@ terminal PIN, exportación de auditoría, gestión de roles on-chain, PMS y fina
 
 - **Actor:** Visitante. **Precondición:** dispositivo Android ≥ 8.0 (`minSdk 26`).
 - **Disparador:** primer arranque.
-- **Flujo principal:** 1) splash + versión mínima comprobada; 2) carrusel breve (qué es una noche NFT,
-  qué se puede hacer, aviso de que la app **no custodia claves**); 3) aceptación de términos y política de
+- **Flujo principal:** 1) splash + versión mínima comprobada; 2) onboarding de **3 pantallas máximo** (qué es una noche NFT, qué se puede hacer, aviso de que la
+  app **no custodia claves**), omitible con «Saltar»; 3) aceptación de términos y política de
   privacidad; 4) elección de idioma (ES/EN/RU); 5) se ofrece conectar wallet o explorar como visitante.
 - **Alternativos:** `A1` versión por debajo del mínimo → pantalla de actualización obligatoria;
   `A2` sin red → onboarding con contenido local y conexión diferida.
@@ -458,7 +463,7 @@ Entonces recibe exactamente su importe en la wallet
 - **Disparador:** desde la noche consumida → «Escribir reseña».
 - **Flujo principal:** 1) puntuación 1–5 + comentario; 2) envío; 3) la reseña queda `PENDING` hasta
   moderación; 4) cuando se aprueba, el huésped ve su reseña publicada.
-- **Alternativos:** `A1` noche no consumida → acción no disponible; `A2` reseña duplicada → error claro;
+- **Alternativos:** `A1` noche no consumida → acción no disponible; `A2` reseña duplicada → error con código `REVIEW_DUPLICATED`;
   `A3` rechazada → se muestra el estado sin exponer motivos internos.
 - **Criterios:**
 
@@ -480,7 +485,7 @@ Y no permite enviar otra reseña para la misma noche
 - **Disparador:** notificación push/email o pestaña «Cargos».
 - **Flujo principal:** 1) ve descripción, importe y plazo; 2) acepta o reclama con notas; 3) recibe la
   resolución del hotel.
-- **Alternativos:** `A1` fuera de plazo → no permite reclamar; `A2` enlace inválido → estado honesto;
+- **Alternativos:** `A1` fuera de plazo → no permite reclamar; `A2` enlace inválido → pantalla `charge-not-found` sin datos;
   `A3` resuelto aceptado → se liquida en el check-out.
 - **Criterios:**
 
@@ -533,7 +538,7 @@ Entonces no se envía push a ese dispositivo
   `/cargos/<id>`).
 - **Flujo principal:** 1) Android abre la app (App Links); 2) la app resuelve el destino; 3) si requiere
   wallet y no está conectada, conecta primero y continúa.
-- **Alternativos:** `A1` app no instalada → Play Store; `A2` enlace inválido → pantalla honesta; `A3`
+- **Alternativos:** `A1` app no instalada → Play Store; `A2` enlace inválido → pantalla `deeplink-not-found`; `A3`
   versión antigua sin ruta → actualización y reintento.
 - **Criterios:**
 
@@ -600,7 +605,7 @@ Y no permite operaciones de compra/venta desde ese dispositivo
 - **Flujo principal:** 1) la app muestra un indicador global «sin conexión»; 2) permite ver catálogo
   cacheado y resguardos guardados; 3) al volver la red, sincroniza y retira el aviso.
 - **Alternativos:** `A1` compra intentada sin red → se bloquea con mensaje y se puede reintentar; `A2`
-  resguardo no descargado antes → no disponible offline, aviso claro; `A3` datos obsoletos → marca
+  resguardo no descargado antes → no disponible offline, aviso `pass-not-cached`; `A3` datos obsoletos → marca
   «puede no estar actualizado».
 - **Criterios:**
 
@@ -788,12 +793,14 @@ Entonces puede copiar/exportar un diagnóstico con versión y estado de red
 | Requisito(s) | Decisión | Motivo |
 |---|---|---|
 | RF-05, RF-06, RF-10, RF-30…RF-55 | **Fuera de alcance** | Back-office, recepción y suites de personal se operan en la web (D-49/D-50) |
-| RF-M-01…RF-M-12, RF-K-01…RF-K-10, RF-S-01…RF-S-08, RNF-M-* | **Fuera de alcance** | Solo personal; el huésped no firma operaciones internas |
+| RF-M-01…RF-M-12, RF-K-01…RF-K-10, RF-S-01…RF-S-08, RNF-M-01…RNF-M-21 | **Fuera de alcance** | Solo personal; el huésped no firma operaciones internas |
 | RF-09 | **Fuera de alcance de la app** | El email al admin es un proceso del worker (sin UI de huésped) |
 | RF-12 (asistente IA) | **v1.1** | La app v1 prioriza compra, resguardo offline y check-in; el asistente queda para la siguiente entrega |
 | RF-15 (histórico público) | **v1.1** | No es crítico para el viaje del huésped en v1 |
 | RF-21 (faucet) | **No aplica** | Solo entorno de desarrollo/CI |
 | RF-22, RF-23 | **Fase posterior** | Arweave y MiCA son gates de fases posteriores según el PRD |
+| RNF-03, RNF-04, RNF-07, RNF-08, RNF-09, RNF-15, RNF-16 | **Fuera de alcance de la app** | Gas, seguridad de plataforma, escalabilidad, plazos, coste, pausa/fondos y estrategia de pruebas son requisitos del sistema/contrato, no de la UI móvil |
+| RNF-01, RNF-02, RNF-05, RNF-06, RNF-11, RNF-12, RNF-13, RNF-17, RNF-18, RNF-20, RNF-21, RNF-22, RNF-23, RNF-24…RNF-27 | **Cubiertos** | Ver matriz §6 y criterios §7 |
 
 > La matriz §6 cubre **todos los requisitos aplicables** a la APK v1; los no aplicables quedan aquí
 > justificados (ningún RF del alcance sin CU).
@@ -814,15 +821,33 @@ Entonces puede copiar/exportar un diagnóstico con versión y estado de red
 5. **Accesibilidad**: TalkBack recorre todas las acciones; contenido con `contentDescription`; tamaños
    táctiles ≥ 48 dp; contraste AA; fuentes escalables sin cortes.
 6. **i18n**: ES/EN/RU completos (sin cadenas hardcodeadas) y cambio de idioma sin reinicio.
-7. **Rendimiento**: arranque en frío < 2 s (P75 en dispositivo de gama media); catálogo de 50×90 < 1 s tras
-   respuesta; navegación entre pestañas < 300 ms.
+7. **Rendimiento y eficiencia**: arranque en frío < 2 s (P75 en gama media); catálogo de 50×90 < 1 s tras
+   respuesta; navegación entre pestañas < 300 ms; **APK ≤ 25 MB**, **crash-free sessions ≥ 99,5 %** y
+   consumo en uso < 3 %/h de batería en el flujo de resguardo.
 8. **Compatibilidad**: `minSdk 26`, `targetSdk 35`; probado en Android 8/10/13/15 y pantallas 5"–6,7".
 9. **Distribución**: Play Console con ficha ES/EN; política de privacidad; versión mínima remota; sin
-   permisos innecesarios.
-10. **Trazabilidad**: cada CU-A con su prueba (unitaria/UI/integración) y su RF/RNF en §6; ningún
+   permisos innecesarios; **revisión legal previa** de la política de facturación de Play para bienes
+   digitales/NFT y de la información precontractual (desistimiento en servicios de ocio).
+10. **Privacidad reforzada**: **DPIA** por la linkabilidad de la dirección de wallet (RGPD Cons. 26);
+    base legal y retención documentadas; consentimiento explícito para biometría (si aplica) y telemetría
+    opt-in.
+11. **Trazabilidad**: cada CU-A con su prueba (unitaria/UI/integración) y su RF/RNF en §6; ningún
     criterio sin oráculo.
 
 ---
+
+## 7.1 Riesgos técnicos y mitigaciones (APK)
+
+| Riesgo | Impacto | Mitigación |
+|---|---|---|
+| Caída del relay de WalletConnect | no se puede firmar | deep link a MetaMask como vía alternativa; mensaje accionable y reintento |
+| FCM no entrega la push | aviso perdido | email como respaldo + estado in-app; reintento del worker |
+| Play Integrity con falso negativo | bloqueo indebido | modo **solo lectura** reversible y canal de soporte; no bloquea el resguardo |
+| Secuestro de deep links | phishing/robo de sesión | App Links verificados (host propio) y rechazo de dominios ajenos |
+| Reloj del dispositivo desviado | QR fuera de vigencia | vigencia validada en servidor con tolerancia; el QR no depende del reloj local para mostrarse |
+| Fragmentación Android (8–15, 5"–6,7") | fallos de layout/a11y | matriz de dispositivos en §7 y pruebas de Compose/TalkBack |
+| Dependencia de RPC para leer | catálogo vacío | caché offline con marca de frescura y reintentos |
+| Tamaño/batería/red | mala adopción | presupuestos de arranque en frío, tamaño de APK y consumo en §7 |
 
 ## 8. Decisiones ratificadas (2026-10-20)
 
