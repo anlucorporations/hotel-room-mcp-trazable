@@ -427,6 +427,30 @@ describe("isRevertError — revert de contrato frente a error de transporte", ()
     expect(isRevertError(genericRevertError())).toBe(true);
   });
 
+  it("reconoce el revert cuando el error viene de OTRA copia de viem (instanceof no cruza copias)", () => {
+    // En la imagen Docker conviven dos copias de viem (worker y shared por peers de zod distintos):
+    // el error del cliente del worker no es `instanceof` las clases que importa shared. Se reconoce
+    // por nombre + cadena de `cause`, que es la señal real (falló el primer intento del arreglo).
+    const foreignInner = Object.assign(new Error("Execution reverted"), {
+      name: "ExecutionRevertedError",
+    });
+    const foreign = Object.assign(
+      new Error("Execution reverted with reason: Execution reverted."),
+      { name: "ContractFunctionExecutionError", cause: foreignInner },
+    );
+    expect(foreign instanceof BaseError).toBe(false);
+    expect(isRevertError(foreign)).toBe(true);
+  });
+
+  it("NO confunde una cadena de causas de red con un revert", () => {
+    const inner = Object.assign(new Error("getaddrinfo ENOTFOUND besu"), { name: "HttpRequestError" });
+    const outer = Object.assign(new Error("fetch failed"), {
+      name: "CallExecutionError",
+      cause: inner,
+    });
+    expect(isRevertError(outer)).toBe(false);
+  });
+
   it("NO confunde un error de red con un revert (esa confusión era el defecto)", () => {
     expect(isRevertError(new Error("fetch failed: ECONNREFUSED"))).toBe(false);
     expect(isRevertError(new BaseError("timeout"))).toBe(false);

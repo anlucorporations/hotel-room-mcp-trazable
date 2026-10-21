@@ -65,18 +65,40 @@ export interface BurnCycleResult {
  * que no existían on-chain; el ciclo falló con `ERROR` cada 5 min toda la hora de quema, sin llegar
  * al reintento token-a-token ni a la reconciliación del índice). Reconocer ambas es lo que permite
  * que el diseño degradado (simular lote → token a token → reconciliar) haga su trabajo.
+ *
+ * **Sin `instanceof` como única señal (2026-10-21, segunda iteración).** En la imagen Docker conviven
+ * **dos copias físicas de `viem`** en el store de pnpm (una para `@hotel/worker` y otra para
+ * `@hotel/shared`, por peers de `zod` distintos), así que el error que lanza el cliente del worker
+ * **no es `instanceof`** las clases importadas por `shared`: el `instanceof BaseError` da `false` y el
+ * revert se volvía a clasificar como red. Por eso se aceptan también las **clases por nombre** y se
+ * recorre la cadena de `cause` a mano; un error de transporte (ECONNREFUSED, timeout, DNS) no lleva
+ * ninguno de esos nombres.
  */
 export function isRevertError(error: unknown): boolean {
-  if (error instanceof BaseError) {
-    const isRevert = (candidate: unknown): boolean =>
-      candidate instanceof ContractFunctionRevertedError || candidate instanceof ExecutionRevertedError;
-    if (error.walk(isRevert) !== null) {
+  const isRevertNode = (candidate: unknown): boolean => {
+    if (candidate instanceof ContractFunctionRevertedError || candidate instanceof ExecutionRevertedError) {
       return true;
     }
+    // Normalizado por nombre (otra copia de viem en el mismo proceso, dobles de prueba o
+    // clientes EIP-1193 que ya traducen el revert).
+    const name = (candidate as { name?: unknown } | null)?.name;
+    return name === "ContractFunctionRevertedError" || name === "ExecutionRevertedError";
+  };
+
+  // 1) `BaseError.walk` recorre la cadena de causas de viem (camino rápido, misma copia).
+  if (error instanceof BaseError && error.walk(isRevertNode) !== null) {
+    return true;
   }
-  // Dobles de prueba y errores ya normalizados por otros clientes EIP-1193.
-  const name = (error as { name?: unknown } | null)?.name;
-  return name === "ContractFunctionRevertedError" || name === "ExecutionRevertedError";
+
+  // 2) Recorrido propio por `cause`: no depende de la identidad de las clases entre copias de viem.
+  const seen = new Set<unknown>();
+  let node: unknown = error;
+  while (node && typeof node === "object" && !seen.has(node)) {
+    seen.add(node);
+    if (isRevertNode(node)) return true;
+    node = (node as { cause?: unknown }).cause;
+  }
+  return false;
 }
 
 export interface BurnerServiceOptions {
