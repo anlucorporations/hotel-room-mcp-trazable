@@ -1,12 +1,14 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { RoomsRepository, RoomRepositoryError } from "@hotel/shared";
+import { RoomMintJobsRepository, RoomsRepository, RoomRepositoryError } from "@hotel/shared";
 import { requireRole } from "@/lib/guard";
+import { isMintOnPublishEnabled } from "@/lib/mint-on-publish";
 import { parseAmenityCodes, parseRoomFields, parseRoomSpaces } from "@/lib/rooms";
 
 export const dynamic = "force-dynamic";
 
 const roomsRepo = new RoomsRepository();
+const mintJobsRepo = new RoomMintJobsRepository();
 
 /**
  * GET /api/admin/rooms — lista las habitaciones (D-1, D-3).
@@ -40,7 +42,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // (reservas vivas PENDING/CONFIRMED/COMPLETED + tokens vendidos). Ausente = 0.
     const from = isoDateFromToday(0);
     const to = isoDateFromToday(RESERVED_WINDOW_DAYS);
-    const [counts, roomsWithImages] = await Promise.all([
+    const [counts, roomsWithImages, mintJobs] = await Promise.all([
       roomsRepo.countReservedNightsByRooms(
         rooms.map((room) => room.id),
         from,
@@ -49,16 +51,25 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       // `hasImage` (2026-10-21): publicar exige al menos una foto (D-20); el listado lo expone para
       // que los clientes (tablero y scripts de siembra) no tengan que consultar la galería una a una.
       roomsRepo.listRoomIdsWithImages(),
+      // D-85: estado del outbox de publicación para marcar «publicación en curso» o el fallo del
+      // minteo on-chain (la habitación sigue en DRAFT hasta que la primera noche está minteada).
+      mintJobsRepo.listLatestByRooms(rooms.map((room) => room.id)),
     ]);
     const withImage = new Set(roomsWithImages);
 
     return NextResponse.json({
       reservedWindow: { from, to },
-      rooms: rooms.map((room) => ({
-        ...room,
-        reservedNights: counts.get(room.id) ?? 0,
-        hasImage: withImage.has(room.id),
-      })),
+      mintOnPublish: isMintOnPublishEnabled(),
+      rooms: rooms.map((room) => {
+        const mintJob = mintJobs.get(room.id);
+        return {
+          ...room,
+          reservedNights: counts.get(room.id) ?? 0,
+          hasImage: withImage.has(room.id),
+          mintPending: mintJob?.status === "PENDING" || mintJob?.status === "RUNNING",
+          mintError: mintJob?.status === "FAILED" ? mintJob.lastError : null,
+        };
+      }),
     });
   } catch (error: unknown) {
     console.error("[API /api/admin/rooms] GET:", error);

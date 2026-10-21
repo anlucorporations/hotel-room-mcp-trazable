@@ -135,6 +135,7 @@ export function BoardDayDialog({
           onActionChange={onActionChange}
           canPublish={canPublish}
           canMint={canMint}
+          mintOnPublish={day?.mintOnPublish === true}
           onNotice={onNotice}
           onReload={onReload}
           onNestedModalChange={setNestedOpen}

@@ -5,7 +5,7 @@ import type * as Shared from "@hotel/shared";
 
 vi.mock("@/lib/guard", () => guardMock);
 
-const { mockRooms, mockAuth, mockReservations } = vi.hoisted(() => ({
+const { mockRooms, mockAuth, mockReservations, mockMintJobs } = vi.hoisted(() => ({
   mockRooms: {
     findById: vi.fn(),
     listImages: vi.fn(),
@@ -20,6 +20,9 @@ const { mockRooms, mockAuth, mockReservations } = vi.hoisted(() => ({
   mockReservations: {
     cancelReservation: vi.fn(),
   },
+  mockMintJobs: {
+    enqueue: vi.fn(),
+  },
 }));
 
 vi.mock("@hotel/shared", async (importOriginal) => {
@@ -29,6 +32,7 @@ vi.mock("@hotel/shared", async (importOriginal) => {
     RoomsRepository: vi.fn(() => mockRooms),
     AuthService: vi.fn(() => mockAuth),
     ReservationsRepository: vi.fn(() => mockReservations),
+    RoomMintJobsRepository: vi.fn(() => mockMintJobs),
   };
 });
 
@@ -106,6 +110,7 @@ beforeEach(() => {
   mockRooms.recordPublication.mockResolvedValue(publication);
   mockRooms.setPublicationStatus.mockImplementation(async (_id, status) => ({ ...room, publicationStatus: status }));
   mockReservations.cancelReservation.mockResolvedValue({ id: "res-1", status: "CANCELLED" });
+  mockMintJobs.enqueue.mockResolvedValue({ id: "job-1", status: "PENDING" });
 });
 
 describe("POST /api/admin/rooms/bulk/publish (2026-10-04, tablero Admin)", () => {
@@ -181,8 +186,36 @@ describe("POST /api/admin/rooms/bulk/publish (2026-10-04, tablero Admin)", () =>
     expect(data.message).toContain("No se pudo publicar ninguna habitación");
     expect(data.message).toContain("inexistentes");
   });
-});
 
+  it("con MINT_ON_PUBLISH_ENABLED encola TODO el lote y no publica off-chain (D-82)", async () => {
+    vi.stubEnv("MINT_ON_PUBLISH_ENABLED", "true");
+    mockRooms.findById.mockResolvedValue(room);
+    const res = await bulkPublishPOST(
+      request(`${BASE}/bulk/publish`, { roomIds: ["room-1", "room-2"], confirmTotpCode: "123456" }),
+    );
+    expect(res.status).toBe(202);
+    const data = await res.json();
+    expect(data).toMatchObject({ queued: 2, published: 0 });
+    expect(data.results).toHaveLength(2);
+    expect(data.results[0]).toMatchObject({ roomId: "room-1", ok: true, queued: true, jobId: "job-1" });
+    expect(mockMintJobs.enqueue).toHaveBeenCalledTimes(2);
+    // Nada se publica en la base: lo hará el worker tras el minteo de cada primera noche.
+    expect(mockRooms.recordPublication).not.toHaveBeenCalled();
+    expect(mockRooms.setPublicationStatus).not.toHaveBeenCalled();
+    vi.unstubAllEnvs();
+  });
+
+  it("en modo encolado, un lote sin habitaciones válidas sigue devolviendo 400 con motivo", async () => {
+    vi.stubEnv("MINT_ON_PUBLISH_ENABLED", "true");
+    mockRooms.findById.mockResolvedValue({ ...room, publicationStatus: "PUBLISHED" });
+    const res = await bulkPublishPOST(
+      request(`${BASE}/bulk/publish`, { roomIds: ["room-1"], confirmTotpCode: "123456" }),
+    );
+    expect(res.status).toBe(400);
+    expect((await res.json()).results[0].error).toBe("ALREADY_PUBLISHED");
+    vi.unstubAllEnvs();
+  });
+});
 describe("POST /api/admin/rooms/bulk/release (2026-10-04, acción «Liberar»)", () => {
   it("rechaza un lote vacío (400)", async () => {
     const res = await bulkReleasePOST(request(`${BASE}/bulk/release`, { roomIds: [] }));

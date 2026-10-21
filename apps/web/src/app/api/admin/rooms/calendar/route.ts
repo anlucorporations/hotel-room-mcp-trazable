@@ -1,12 +1,14 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { RoomsRepository, type RoomDayStateRecord } from "@hotel/shared";
+import { RoomMintJobsRepository, RoomsRepository, type RoomDayStateRecord } from "@hotel/shared";
 import { requireRole } from "@/lib/guard";
+import { isMintOnPublishEnabled } from "@/lib/mint-on-publish";
 import { BOARD_MAX_DAYS, aggregateBoardDays, enumerateDates, type BoardRange } from "@/lib/room-board-calendar";
 
 export const dynamic = "force-dynamic";
 
 const roomsRepo = new RoomsRepository();
+const mintJobsRepo = new RoomMintJobsRepository();
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -24,6 +26,10 @@ interface RoomDayEntry {
   maintenance: boolean;
   /** `true` si la ficha tiene al menos una foto: sin ella la API rechaza publicar (D-20). */
   hasImage: boolean;
+  /** D-85: publicación encolada esperando el minteo on-chain de la primera noche. */
+  mintPending: boolean;
+  /** D-85: motivo del último fallo de publicación+minteo (la habitación sigue en DRAFT). */
+  mintError: string | null;
 }
 
 /**
@@ -105,6 +111,7 @@ async function dayDetail(date: string): Promise<{
   date: string;
   rooms: RoomDayEntry[];
   summary: { published: number; reserved: number; occupied: number; maintenance: number };
+  mintOnPublish: boolean;
 }> {
   const [rooms, states, maintenanceRoomIds, roomsWithImages] = await Promise.all([
     roomsRepo.listRooms(),
@@ -112,6 +119,7 @@ async function dayDetail(date: string): Promise<{
     roomsRepo.listRoomIdsInMaintenance(),
     roomsRepo.listRoomIdsWithImages(),
   ]);
+  const mintJobs = await mintJobsRepo.listLatestByRooms(rooms.map((room) => room.id));
 
   const byRoom = new Map<string, RoomDayStateRecord>();
   for (const state of states) byRoom.set(state.roomId, state);
@@ -120,6 +128,7 @@ async function dayDetail(date: string): Promise<{
 
   const entries: RoomDayEntry[] = rooms.map((room) => {
     const state = byRoom.get(room.id);
+    const mintJob = mintJobs.get(room.id);
     return {
       id: room.id,
       roomNumber: room.roomNumber,
@@ -132,6 +141,8 @@ async function dayDetail(date: string): Promise<{
       occupied: state?.occupied === true,
       maintenance: maintenance.has(room.id),
       hasImage: withImage.has(room.id),
+      mintPending: mintJob?.status === "PENDING" || mintJob?.status === "RUNNING",
+      mintError: mintJob?.status === "FAILED" ? mintJob.lastError : null,
     };
   });
 
@@ -144,5 +155,6 @@ async function dayDetail(date: string): Promise<{
       occupied: entries.filter((entry) => entry.occupied).length,
       maintenance: entries.filter((entry) => entry.maintenance).length,
     },
+    mintOnPublish: isMintOnPublishEnabled(),
   };
 }

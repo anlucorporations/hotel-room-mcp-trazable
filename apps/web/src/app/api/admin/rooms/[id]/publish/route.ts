@@ -1,13 +1,15 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { AuthService, RoomsRepository, type RoomRecord } from "@hotel/shared";
+import { AuthService, RoomMintJobsRepository, RoomsRepository, type RoomRecord } from "@hotel/shared";
 import { requireRole } from "@/lib/guard";
+import { isMintOnPublishEnabled } from "@/lib/mint-on-publish";
 import { roomContentHash, verifyRoomPublicationSignature } from "@/lib/rooms";
 
 export const dynamic = "force-dynamic";
 
 const roomsRepo = new RoomsRepository();
 const authService = new AuthService();
+const mintJobsRepo = new RoomMintJobsRepository();
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -198,6 +200,37 @@ export async function POST(request: NextRequest, { params }: RouteParams): Promi
     }
 
     const txHash = readTxHash(body?.txHash);
+
+    // D-85: con el flag activo, publicar encola el registro+anclaje+minteo on-chain y responde 202.
+    // La habitación NO se marca PUBLISHED aquí: lo hará el worker cuando la primera noche esté
+    // minteada (si falla, se queda en DRAFT).
+    if (isMintOnPublishEnabled()) {
+      if (prepared.room.publicationStatus === "PUBLISHED") {
+        return NextResponse.json(
+          { error: "ALREADY_PUBLISHED", message: "La habitación ya está publicada." },
+          { status: 409 },
+        );
+      }
+      const job = await mintJobsRepo.enqueue({
+        roomId: id,
+        contentHash: prepared.contentHash,
+        signature,
+        signerAddress,
+        publishedBy: auth.session.username,
+      });
+      return NextResponse.json(
+        {
+          status: "PENDING_ONCHAIN",
+          queued: true,
+          jobId: job.id,
+          contentHash: prepared.contentHash,
+          onChainAnchored: false,
+          signed: signature !== null,
+        },
+        { status: 202 },
+      );
+    }
+
     const publication = await roomsRepo.recordPublication({
       roomId: id,
       contentHash: prepared.contentHash,

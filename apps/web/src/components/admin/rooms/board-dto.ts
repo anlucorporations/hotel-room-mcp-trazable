@@ -19,6 +19,10 @@ export interface DayRoom {
   maintenance: boolean;
   /** `true` si la ficha tiene al menos una foto: sin ella la API rechaza publicar (D-20). */
   hasImage: boolean;
+  /** D-85: publicación encolada esperando el minteo on-chain de la primera noche. */
+  mintPending?: boolean;
+  /** D-85: motivo del último fallo de publicación+minteo (la habitación sigue en DRAFT). */
+  mintError?: string | null;
 }
 
 /** Detalle de un día: todas las habitaciones con su estado y el resumen. */
@@ -26,6 +30,8 @@ export interface DayDetail {
   date: string;
   rooms: DayRoom[];
   summary: { published: number; reserved: number; occupied: number; maintenance: number };
+  /** D-85: los endpoints de publicar encolan y el worker mintea (la UI espera el resultado). */
+  mintOnPublish?: boolean;
 }
 
 /** Aviso del panel (mismo patrón que el resto del back-office). */

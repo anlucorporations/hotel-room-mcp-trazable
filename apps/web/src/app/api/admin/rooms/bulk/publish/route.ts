@@ -1,7 +1,8 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { AuthService, RoomsRepository, type RoomRecord } from "@hotel/shared";
+import { AuthService, RoomMintJobsRepository, RoomsRepository, type RoomRecord } from "@hotel/shared";
 import { requireRole } from "@/lib/guard";
+import { isMintOnPublishEnabled } from "@/lib/mint-on-publish";
 import { bulkPublishErrorEntries, summarizeBulkPublishResults } from "@/lib/room-bulk-feedback";
 import { roomContentHash } from "@/lib/rooms";
 
@@ -9,6 +10,7 @@ export const dynamic = "force-dynamic";
 
 const roomsRepo = new RoomsRepository();
 const authService = new AuthService();
+const mintJobsRepo = new RoomMintJobsRepository();
 
 /** Límite de saneo (2026-10-04): evita lotes desproporcionados y protege el endpoint. */
 const MAX_BULK_ROOMS = 50;
@@ -22,6 +24,9 @@ interface BulkRoomResult {
   roomId: string;
   roomNumber: number | null;
   ok: boolean;
+  /** D-85: la publicación se ha encolado (registro+anclaje+minteo los hará el worker). */
+  queued?: boolean;
+  jobId?: string;
   onChainAnchored?: boolean;
   error?: string;
   message?: string;
@@ -126,6 +131,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       : {};
 
   const results: BulkRoomResult[] = [];
+  const mintOnPublish = isMintOnPublishEnabled();
   for (const id of roomIds) {
     try {
       const prepared = await preparePublication(id);
@@ -148,6 +154,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
       if (!prepared.hasImage) {
         results.push({ roomId: id, roomNumber: room.roomNumber, ok: false, error: "PUBLISH_REQUIRES_IMAGE", message: "Para publicar se exige al menos una foto (D-20)." });
+        continue;
+      }
+
+      // D-85: el lote solo ENCOLA. El worker registra cada habitación, ancla la huella y mintea su
+      // primera noche; si algo falla, esa habitación se queda en DRAFT y el job queda FAILED.
+      if (mintOnPublish) {
+        const job = await mintJobsRepo.enqueue({
+          roomId: id,
+          contentHash,
+          signature: null,
+          signerAddress: null,
+          publishedBy: auth.session.username,
+        });
+        results.push({
+          roomId: id,
+          roomNumber: room.roomNumber,
+          ok: true,
+          queued: true,
+          jobId: job.id,
+          onChainAnchored: false,
+        });
         continue;
       }
 
@@ -184,13 +211,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
   }
 
-  const published = results.filter((result) => result.ok);
-  if (published.length === 0) {
+  const succeeded = results.filter((result) => result.ok);
+  if (succeeded.length === 0) {
     // Sin ninguna publicación, se devuelve el **motivo agregado** para que la interfaz (y cualquier
     // otro cliente) no se quede con un 400 mudo. Cada `results[i]` conserva su detalle.
-    return NextResponse.json({ results, published: 0, message: failureSummary(results) }, { status: 400 });
+    return NextResponse.json({ results, published: 0, queued: 0, message: failureSummary(results) }, { status: 400 });
   }
-  return NextResponse.json({ results, published: published.length });
+  if (mintOnPublish) {
+    return NextResponse.json({ results, published: 0, queued: succeeded.length }, { status: 202 });
+  }
+  return NextResponse.json({ results, published: succeeded.length, queued: 0 });
 }
 
 /** Texto agregado de por qué no se publicó ninguna habitación (motivos de la API, en español). */

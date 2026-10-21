@@ -202,7 +202,9 @@ Estado respecto a `.env.example`: **OK** = presente · **FALTA** = la exige el c
 | `SESSION_TRACE_SECRET` | shared/auth | no | OK (vacío) | Clave del HMAC que pseudonimiza la IP y el *user agent* de los accesos de operadores (ADR-24). Si falta, se deriva de `AES_SECRET_KEY` |
 | `RETENTION_INTERVAL_MS` / `NOTIFICATIONS_RETENTION_DAYS` | worker | no | OK | Planificador de retención: cada 6 h y 90 días de conservación de correos enviados |
 | `DEPLOYER_PRIVATE_KEY` | contratos | sí | OK | Clave de despliegue (en Anvil, cuenta conocida) |
-| `MINTER_RELAYER_PRIVATE_KEY`, `BURNER_BOT_PRIVATE_KEY`, `RECEPTION_WALLET_PRIVATE_KEY` | shared/burner, despliegue | sí | OK | D-04 añade la hot-wallet con `RECEPTION_ROLE` |
+| `MINTER_RELAYER_PRIVATE_KEY`, `BURNER_BOT_PRIVATE_KEY`, `RECEPTION_WALLET_PRIVATE_KEY` | shared/burner, despliegue | sí | OK | D-04 añade la hot-wallet con `RECEPTION_ROLE`. **D-85 (2026-10-21):** `MINTER_RELAYER_PRIVATE_KEY` pasa a ser la hot wallet **dedicada** del worker para publicar con minteo (`DEFAULT_ADMIN_ROLE` + `MINTER_ROLE`); en producción vive en el secreto `hotel-minter-relayer-private-key` |
+| `MINT_ON_PUBLISH_ENABLED` | web | no | NUEVA (v86) | `true` = publicar encola y responde 202 (worker mintea antes de marcar PUBLISHED); vacío = flujo anterior (rollback) |
+| `MINT_ON_PUBLISH_INTERVAL_MS` / `MINT_TX_GAS_PRICE_WEI` / `MINT_TX_GAS_LIMIT` | worker | no | NUEVA (v86) | Barrido del outbox `room_mint_jobs` (4 s), gas legado de Besu (1000 wei) y límite por tx (900 000) |
 | `GNOSIS_SAFE_ADDRESS` | despliegue | no | OK (vacío) | Multisig de D-11 (B-7) |
 
 ### 3.5 Servicios externos

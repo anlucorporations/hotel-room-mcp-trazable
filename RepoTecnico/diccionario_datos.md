@@ -347,7 +347,7 @@ Incidencias marcadas al verificar la habitación en el check-out (vocabulario ce
 
 Índice: `(checkout_id)`.
 
-### 3.8 Dominio habitaciones (`room_types`, `rooms`, `room_images`, `room_amenities`, `room_amenity_links`, `room_space_types`, `room_spaces`, `room_publications`, `room_status_history`, `room_cleaning_checklist_items`, `room_cleaning_checklists`) — **PROPUESTA F1 + RF-52/RF-55**
+### 3.8 Dominio habitaciones (`room_types`, `rooms`, `room_images`, `room_amenities`, `room_amenity_links`, `room_space_types`, `room_spaces`, `room_publications`, `room_mint_jobs`, `room_status_history`, `room_cleaning_checklist_items`, `room_cleaning_checklists`) — **PROPUESTA F1 + RF-52/RF-55**
 
 Modelo del ente *Habitación* (Suite Administración → sección 1). Gestionado por el **administrador con
 wallet** (D-1); la ficha vive en PostgreSQL (D-2) y la **BD es la fuente única del maestro** (D-3). Sin PII
@@ -440,6 +440,33 @@ semilla reejecutable, igual que los servicios.
 | `unpublished_at` | `TIMESTAMP` | sí | — | Despublicación |
 
 Índices: `(room_id, published_at DESC)`, parcial `(on_chain_anchored) WHERE = FALSE`.
+
+#### `room_mint_jobs` — outbox de publicación con minteo on-chain (D-85, 2026-10-21)
+Publicar desde el back-office (unitario o masivo) deja un job aquí; el worker relayer registra la
+habitación (`registerRoom`), ancla la huella (`publishRoom`) y mintea la **primera noche** (`mint`).
+Solo si las tres transacciones confirman se escribe la publicación y la habitación pasa a `PUBLISHED`.
+
+| Campo | Tipo | Nulo | Default | Descripción |
+|---|---|---|---|---|
+| `id` | `UUID` | PK | `gen_random_uuid()` | — |
+| `room_id` | `UUID` | no | — | FK a `rooms(id)` `ON DELETE CASCADE` |
+| `status` | `VARCHAR(12)` | no | `PENDING` | `PENDING` · `RUNNING` · `DONE` · `FAILED` |
+| `attempts` | `INT` | no | `0` | Intentos de procesamiento |
+| `content_hash` | `VARCHAR(66)` | no | — | Huella de la ficha calculada al publicar (D-2/D-18) |
+| `signature` | `TEXT` | sí | — | Firma EIP-191 opcional del administrador |
+| `signer_address` | `VARCHAR(42)` | sí | — | Wallet que firma; `NULL` si no se firmó |
+| `published_by` | `VARCHAR(100)` | no | — | Administrador que encola la publicación |
+| `register_tx_hash` | `VARCHAR(66)` | sí | — | Transacción de `registerRoom` (NULL si ya estaba registrada) |
+| `publish_tx_hash` | `VARCHAR(66)` | sí | — | Transacción de `publishRoom` (anclaje de la huella) |
+| `mint_tx_hash` | `VARCHAR(66)` | sí | — | Transacción de `mint` de la primera noche |
+| `token_id` | `VARCHAR(66)` | sí | — | `tokenId` de la noche minteada |
+| `last_error` | `TEXT` | sí | — | Motivo del último fallo (la habitación sigue en DRAFT) |
+| `created_at` | `TIMESTAMP` | no | `NOW()` | — |
+| `updated_at` | `TIMESTAMP` | no | `NOW()` | — |
+| `completed_at` | `TIMESTAMP` | sí | — | Cierre (`DONE` o `FAILED`) |
+
+Índices: único parcial `(room_id) WHERE status IN ('PENDING','RUNNING')` (un job activo por
+habitación; encolar es idempotente) y parcial `(status, created_at) WHERE status = 'PENDING'`.
 
 #### `room_status_history` — historial de estados
 `id` PK, `room_id` FK, `status_kind VARCHAR(12)` (`PUBLICATION` · `OPERATIONAL`), `from_value`/`to_value`,

@@ -1,0 +1,88 @@
+{
+  "id": "release-v86-publicacion-minteo-2026-10-21",
+  "titulo": "Release v86 — publicar habitación mintea la primera noche on-chain (unitario y masivo) con reversión si falla",
+  "fechaUtc": "2026-10-21T22:06:00Z",
+  "alcance": "web + worker + datos/esquema (nueva tabla room_mint_jobs) + provisión on-chain de la wallet relayer",
+  "decision": "D-85 · ADR-32 (docs/adr/ADR-32-publicacion-con-minteo-onchain.md)",
+  "problema": {
+    "sintoma": "La publicación masiva no registraba ni publicaba on-chain y nunca minteaba; solo la 201 estaba registrada en Besu y el resto quedó PENDING_ANCHOR",
+    "peticion": "Mintear los NFT al publicar la habitación, también en la publicación masiva",
+    "decisionesResponsable": [
+      "Relayer del servidor (hot wallet), no la wallet del navegador",
+      "Wallet dedicada nueva con DEFAULT_ADMIN_ROLE + MINTER_ROLE",
+      "Solo la primera noche de la ventana por habitación",
+      "Si falla el minteo, revertir la publicación off-chain (la habitación sigue en DRAFT)"
+    ]
+  },
+  "diseno": {
+    "outbox": "Tabla room_mint_jobs: un job activo por habitación (índice único parcial PENDING/RUNNING), claim con FOR UPDATE SKIP LOCKED, estados PENDING/RUNNING/DONE/FAILED y rastro register/publish/mint tx + tokenId",
+    "flujoWorker": "registerRoom (si falta) -> publishRoom(contentHash) -> mint(primera noche = mañana UTC) -> recordPublication + setPublicationStatus(PUBLISHED) + upsert nfts -> job DONE. Si algo falla: job FAILED y room sigue DRAFT",
+    "api": "POST /api/admin/rooms/[id]/publish y /bulk/publish solo encolan y responden 202 (PENDING_ONCHAIN / {queued}); flag MINT_ON_PUBLISH_ENABLED=true (sin él, flujo anterior)",
+    "ui": "Aviso «publicación en curso», sondeo hasta PUBLISHED o error, ribbon «Publicando…» y mintError en el listado",
+    "gas": "Besu gas legado: gasPrice 1000 wei, gas limit 900 000 por tx",
+    "idempotencia": "isRoomRegistered/ownerOf antes de enviar; reintentar no duplica"
+  },
+  "provisionOnChain": {
+    "relayer": "0xD439542F90E14CF7755a1C5c5bed90Ab952a6Ddf",
+    "saldoInicial": "20 ETH (desde la cuenta deployer 0xf39F…2266)",
+    "roles": ["DEFAULT_ADMIN_ROLE", "MINTER_ROLE"],
+    "verificacion": "hasRole x2 = true; secret GCP hotel-minter-relayer-private-key (solo worker)",
+    "nota": "La cuenta 0xf39F…2266 (deployer) conserva los roles; la nueva wallet es dedicada al worker"
+  },
+  "build": {
+    "worker": { "id": "f589e4e9-055d-467a-9234-1d7e2c8f92a1", "imagen": "worker:v86", "resultado": "SUCCESS" },
+    "web": { "id": "ea9c4207-1266-400a-bc49-d3c866635e1b", "imagen": "web:v86", "resultado": "SUCCESS" }
+  },
+  "despliegue": {
+    "metodo": "canario --no-traffic --tag=v86 + verificación + update-traffic --to-latest",
+    "workerRevision": "hotel-mcp-worker-00036-duc (100 %)",
+    "webRevision": "hotel-mcp-web-00155-cit (100 %)",
+    "configConservada": { "workerSecretos": 8, "webVariables": 32, "webSecretos": 9, "volumenGcs": "room-images -> /repo/docs/imagenes" },
+    "envNuevas": ["MINTER_RELAYER_PRIVATE_KEY (worker, secreto)", "MINT_TX_GAS_LIMIT=900000 (worker)", "MINT_ON_PUBLISH_ENABLED=true (web)"],
+    "migracion": "el worker aplica el esquema al arrancar (room_mint_jobs + índices)"
+  },
+  "verificacionE2E": {
+    "metodo": "Se crearon 2 habitaciones de prueba (998 SIMPLE y 999 SUITE) con foto en el bucket y se encolaron sus jobs; el worker de producción las procesó. Se usó una tercera (997, sin foto) para probar la reversión.",
+    "caminoFeliz": {
+      "998": {
+        "registrada": true,
+        "publicationHashOnChain": "0x33e9635c9fd0741f40ea79ab193e95bd8f3b7b519d77bb16ed7b1666c0c6571f",
+        "tokenId": "99820261022",
+        "ownerNFT": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 (tesorería)",
+        "registerTx": "0x124cd2a4d7d13c77061e999ed59f5769cfa80f16a364aa5c816cb2797e81ac05",
+        "publishTx": "0x02928cdb09b24f09f453efd864b851b405c2ec507eb4683e21f07fcce8437691",
+        "mintTx": "0x5e1ebcb00f23d54a7c8b0d846802ee17e522382a81d61597d242b471bf196ad4",
+        "db": "room PUBLISHED; publication anclada; job DONE attempts=1; nfts(sentinel) AVAILABLE anchored"
+      },
+      "999": {
+        "registrada": true,
+        "publicationHashOnChain": "0x70f2b1878f96c1599f8a7cdf51a018ce063d22f87f9432f0c16e47756c6d0332",
+        "tokenId": "99920261022",
+        "publishTx": "0x9f5cbe9936c1b9811877ec850f93d602f8ae85b451f78b6bcef22a52a5ada936",
+        "mintTx": "0x9ecf03f81abcf9ba0847974fc19ffd867a42d39f11cbfbb9808fc7307dd92f1e",
+        "db": "room PUBLISHED; publication anclada; job DONE attempts=1; nfts AVAILABLE anchored"
+      }
+    },
+    "reversionPorFallo": {
+      "997": {
+        "preparacion": "ficha DRAFT sin foto, job encolado directamente",
+        "resultado": "job FAILED (last_error «la ficha no tiene ninguna foto (D-20)»), room sigue DRAFT, 0 publicaciones, sin publish_tx/mint_tx",
+        "veredicto": "se cumple la decisión: no se publica nada que no esté minteado on-chain"
+      }
+    },
+    "limpieza": "las 3 habitaciones de prueba (997/998/999) se archivaron (OUT_OF_SERVICE, archived_at) y salen del catálogo; los eventos on-chain de pruebas permanecen en Besu (red de pruebas)",
+    "produccion": {
+      "healthReady": "200 READY",
+      "home": "200",
+      "catalogo": "200",
+      "publicRooms": "200 · 48 visibles (sin cambios; 101/102 por mantenimiento)"
+    }
+  },
+  "pendientes": [
+    "Salud dedicada del outbox de publicación en /health (PENDING atascados) y alerta de saldo del relayer.",
+    "Backfill opcional: encolar la publicación con minteo de las 50 habitaciones ya publicadas para alinear su registro on-chain (hoy solo la 201 y las de prueba están registradas).",
+    "La ventana completa de 90 noches sigue siendo manual (Acuñar ventana / Barrido global).",
+    "Rotación y custodia de la hot wallet relayer; en producción real no debe usar claves de Anvil conocidas."
+  ],
+  "rollback": "web: --to-revisions=hotel-mcp-web-00153-des=100 y MINT_ON_PUBLISH_ENABLED vacío; worker: --to-revisions=<revisión anterior v85>=100. La tabla room_mint_jobs es aditiva y no rompe versiones anteriores."
+}

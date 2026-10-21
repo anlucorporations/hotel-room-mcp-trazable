@@ -1,12 +1,14 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import {
+  RoomMintJobsRepository,
   RoomsRepository,
   RoomRepositoryError,
   type RoomOperationalStatus,
   type RoomPublicationStatus,
 } from "@hotel/shared";
 import { requireRole } from "@/lib/guard";
+import { isMintOnPublishEnabled } from "@/lib/mint-on-publish";
 import {
   OPERATIONAL_STATUSES,
   PUBLICATION_STATUSES,
@@ -18,6 +20,7 @@ import {
 export const dynamic = "force-dynamic";
 
 const roomsRepo = new RoomsRepository();
+const mintJobsRepo = new RoomMintJobsRepository();
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -42,14 +45,26 @@ export async function GET(request: NextRequest, { params }: RouteParams): Promis
     if (!room) {
       return NextResponse.json({ error: "ROOM_NOT_FOUND", message: "La habitación no existe." }, { status: 404 });
     }
-    const [images, publications, amenities, spaces, reservedNights] = await Promise.all([
+    const [images, publications, amenities, spaces, reservedNights, mintJob] = await Promise.all([
       roomsRepo.listImages(id),
       roomsRepo.listPublications(id),
       roomsRepo.listAmenityCodes(id),
       roomsRepo.listRoomSpaces(id),
       roomsRepo.listReservedNights(id, from, to),
+      mintJobsRepo.findLatestByRoom(id),
     ]);
-    return NextResponse.json({ room, images, publications, amenities, spaces, reservedNights, window: { from, to } });
+    return NextResponse.json({
+      room,
+      images,
+      publications,
+      amenities,
+      spaces,
+      reservedNights,
+      window: { from, to },
+      mintOnPublish: isMintOnPublishEnabled(),
+      mintPending: mintJob?.status === "PENDING" || mintJob?.status === "RUNNING",
+      mintError: mintJob?.status === "FAILED" ? mintJob.lastError : null,
+    });
   } catch (error: unknown) {
     console.error("[API /api/admin/rooms/[id]] GET:", error);
     return NextResponse.json(

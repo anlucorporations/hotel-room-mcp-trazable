@@ -4007,3 +4007,57 @@ entregue (D-20) y resolver las incidencias abiertas de 101/102 si se quieren ven
 
 Evidencia: [`evidencias/release-v84-habitaciones-2026-10-21.json`](./evidencias/release-v84-habitaciones-2026-10-21.json).
 
+---
+
+## 100. Release v86 — publicación con minteo on-chain obligatorio (D-85 · ADR-32) (2026-10-21)
+
+**Qué se desplegó.** Publicar una habitación (unitario **y masivo**) ya no la publica directamente:
+deja un job en `room_mint_jobs` y responde **202**. El worker relayer registra la habitación, ancla la
+huella y mintea **la primera noche**; solo si todo confirma la habitación queda `PUBLISHED`. Si falla,
+sigue en `DRAFT` y el job queda `FAILED`. Flag web `MINT_ON_PUBLISH_ENABLED=true` (sin él se recupera el
+flujo anterior sin desplegar).
+
+**Provisión on-chain (una vez).**
+
+| Elemento | Valor |
+|---|---|
+| Hot wallet dedicada | `0xD439542F90E14CF7755a1C5c5bed90Ab952a6Ddf` |
+| Saldo inicial | **20 ETH** (desde la cuenta deployer `0xf39F…2266`) |
+| Roles | `DEFAULT_ADMIN_ROLE` (registerRoom/publishRoom) + `MINTER_ROLE` (mint), `hasRole` = true |
+| Clave | Secreto GCP **`hotel-minter-relayer-private-key`**, inyectado **solo en el worker** |
+| Gas | Besu legado: `MINT_TX_GAS_PRICE_WEI=1000`, `MINT_TX_GAS_LIMIT=900000` |
+
+**Build y despliegue.**
+
+| Componente | Imagen | Build | Revisión sirviendo | Tráfico |
+|---|---|---|---|---|
+| worker | `…/hotel-mcp/worker:v86` | ✅ SUCCESS `f589e4e9-055d-467a-9234-1d7e2c8f92a1` | **`hotel-mcp-worker-00036-duc`** | **100 %** |
+| web | `…/hotel-mcp/web:v86` | ✅ SUCCESS `ea9c4207-1266-400a-bc49-d3c866635e1b` | **`hotel-mcp-web-00155-cit`** | **100 %** |
+
+**Método.** Canario `--no-traffic --tag=v86` en ambos servicios, verificación por URL etiquetada y
+promoción con `update-traffic --to-latest`. Configuración conservada: worker **21 variables + 8
+secretos** (se añadió el del relayer), web **32 variables + 9 secretos + volumen GCS** (se añadió
+`MINT_ON_PUBLISH_ENABLED`). La migración de `room_mint_jobs` la aplica el worker al arrancar; en sus
+logs aparece `outbox de publicación con minteo on-chain activo`.
+
+**Verificación E2E (producción real).** Se prepararon 998 (SIMPLE) y 999 (SUITE) con foto y se encolaron
+sus jobs; el worker las procesó en ~10 s cada una:
+
+| Comprobación | Resultado |
+|---|---|
+| `isRoomRegistered(998/999)` | **true** |
+| `publicationHashOf` | Coincide con la huella calculada de la ficha |
+| `ownerOf(99820261022 / 99920261022)` | Tesorería `0xf39F…2266` |
+| Transacciones | `register` + `publish` + `mint` reales por habitación; DB con publicación anclada y job `DONE` |
+| Reversión por fallo (997 sin foto) | Job `FAILED` («no tiene ninguna foto, D-20»), habitación **DRAFT**, 0 publicaciones |
+| Limpieza | 997/998/999 archivadas (`OUT_OF_SERVICE`); catálogo sigue con **48** visibles |
+| Producción | `/health/ready`, `/`, `/catalogo`, `/api/public/rooms` → **200** |
+
+**Rollback.** Web: `MINT_ON_PUBLISH_ENABLED` vacío + `--to-revisions=hotel-mcp-web-00153-des=100`;
+worker: volver a `worker:v85`. La tabla `room_mint_jobs` es aditiva y no rompe versiones anteriores.
+
+**Pendiente.** Salud del outbox (jobs `PENDING`), alerta de saldo del relayer, backfill de las 50 ya
+publicadas y rotación de la hot wallet.
+
+Evidencia: [`evidencias/release-v86-publicacion-minteo-2026-10-21.json`](./evidencias/release-v86-publicacion-minteo-2026-10-21.json).
+

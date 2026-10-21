@@ -41,6 +41,8 @@ export interface BoardDayActionsProps {
   readonly onActionChange: (action: BoardDayAction) => void;
   readonly canPublish: boolean;
   readonly canMint: boolean;
+  /** D-85: el endpoint encola y el worker mintea; el panel espera y refresca. */
+  readonly mintOnPublish?: boolean;
   readonly onNotice: (notice: BoardNotice) => void;
   readonly onReload: () => Promise<void>;
   /**
@@ -78,6 +80,7 @@ export function BoardDayActions({
   onActionChange,
   canPublish,
   canMint,
+  mintOnPublish = false,
   onNotice,
   onReload,
   onNestedModalChange,
@@ -137,6 +140,14 @@ export function BoardDayActions({
       : ta("boardPublishError");
   }
 
+  /** Tras encolar (D-85), refresca el panel mientras el worker mintea y publica. */
+  async function refreshWhilePublishing(): Promise<void> {
+    for (let attempt = 0; attempt < 15; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await onReload();
+    }
+  }
+
   /** Publicación del lote con un solo TOTP. */
   async function submitPublish(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -149,15 +160,22 @@ export function BoardDayActions({
       });
       const data = await res.json().catch(() => ({}));
       const feedback = summarizeBulkPublishResults(data.results, data.published);
-      if (!res.ok && feedback.published === 0) {
+      if (!res.ok && feedback.published === 0 && (data.queued ?? 0) === 0) {
         throw new Error(
           feedback.failed > 0 ? publishFailureText(feedback) : data.message || ta("boardPublishError"),
         );
       }
-      onNotice({ kind: "ok", text: ta("boardPublishOk", { published: feedback.published }) });
       setMfaOpen(false);
       setMfaCode("");
-      await onReload();
+      if (mintOnPublish) {
+        // D-85: la publicación se completa cuando el worker mintea la primera noche on-chain.
+        onNotice({ kind: "ok", text: ta("boardPublishQueued", { count: data.queued ?? 0 }) });
+        await onReload();
+        void refreshWhilePublishing();
+      } else {
+        onNotice({ kind: "ok", text: ta("boardPublishOk", { published: feedback.published }) });
+        await onReload();
+      }
     } catch (error: unknown) {
       onNotice({ kind: "error", text: error instanceof Error ? error.message : ta("boardPublishError") });
     } finally {

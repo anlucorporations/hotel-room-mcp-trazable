@@ -185,6 +185,27 @@ const workerEnvSchema = z.object({
   PENDING_ALERT_MIN: z.coerce.number().int().positive().default(10),
   /** Reintentos del outbox antes de alertar (por defecto, 5). */
   RETRY_ALERT_COUNT: z.coerce.number().int().positive().default(5),
+
+  // ── Publicación con minteo on-chain (2026-10-21, D-82) ─────────────────────
+  /**
+   * Clave de la **hot wallet del relayer de publicación**: debe tener `DEFAULT_ADMIN_ROLE` (para
+   * `registerRoom`/`publishRoom`) y `MINTER_ROLE` (para `mint`). Si falta, el outbox
+   * `room_mint_jobs` no se procesa y se avisa: las publicaciones quedarían en `PENDING`.
+   */
+  MINTER_RELAYER_PRIVATE_KEY: emptyAsUndefined(
+    z
+      .string()
+      .regex(/^0x[0-9a-fA-F]{64}$/, "MINTER_RELAYER_PRIVATE_KEY debe ser una clave privada 0x + 64 hex"),
+  ),
+  /** Periodo de barrido del outbox de publicación, en ms (por defecto, 4 000). */
+  MINT_ON_PUBLISH_INTERVAL_MS: z.coerce.number().int().positive().default(4_000),
+  /**
+   * `gasPrice` legado para Besu. La red del proyecto tiene `baseFee = 0` y exige `>= 1000 wei`;
+   * viem no debe estimar con EIP-1559 (Besu no lo soporta igual). Por defecto, 1000.
+   */
+  MINT_TX_GAS_PRICE_WEI: z.coerce.number().int().nonnegative().default(1_000),
+  /** Límite de gas fijo por transacción de publicación (register/publish/mint). Por defecto, 500 000. */
+  MINT_TX_GAS_LIMIT: z.coerce.number().int().positive().default(900_000),
 });
 
 export type WorkerConfig = z.infer<typeof workerEnvSchema>;

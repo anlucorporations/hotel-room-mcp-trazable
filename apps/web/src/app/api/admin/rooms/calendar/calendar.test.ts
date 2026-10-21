@@ -11,12 +11,17 @@ const { mockRooms } = vi.hoisted(() => ({
     listRoomDayStates: vi.fn(),
     listRoomIdsInMaintenance: vi.fn(),
     listRoomIdsWithImages: vi.fn(),
+    listLatestByRooms: vi.fn(),
   },
 }));
 
 vi.mock("@hotel/shared", async (importOriginal) => {
   const actual = await importOriginal<typeof Shared>();
-  return { ...actual, RoomsRepository: vi.fn(() => mockRooms) };
+  return {
+    ...actual,
+    RoomsRepository: vi.fn(() => mockRooms),
+    RoomMintJobsRepository: vi.fn(() => ({ listLatestByRooms: mockRooms.listLatestByRooms })),
+  };
 });
 
 import { GET } from "./route";
@@ -59,6 +64,7 @@ beforeEach(() => {
   mockRooms.listRoomDayStates.mockResolvedValue([]);
   mockRooms.listRoomIdsInMaintenance.mockResolvedValue([]);
   mockRooms.listRoomIdsWithImages.mockResolvedValue([]);
+  mockRooms.listLatestByRooms.mockResolvedValue(new Map());
 });
 
 describe("GET /api/admin/rooms/calendar (2026-10-04)", () => {
@@ -122,6 +128,8 @@ describe("GET /api/admin/rooms/calendar (2026-10-04)", () => {
     expect(data.rooms[0]).toMatchObject({ roomNumber: 101, published: true, reserved: false, maintenance: false, hasImage: true });
     expect(data.rooms[1]).toMatchObject({ roomNumber: 102, published: false, reserved: true, hasImage: false });
     expect(data.rooms[2]).toMatchObject({ roomNumber: 103, maintenance: true, published: false, hasImage: true });
+    expect(data.rooms[0]).toMatchObject({ mintPending: false, mintError: null });
+    expect(data.mintOnPublish).toBe(false);
     expect(data.summary).toEqual({ published: 1, reserved: 1, occupied: 0, maintenance: 1 });
   });
 });

@@ -470,6 +470,40 @@ CREATE INDEX IF NOT EXISTS idx_room_publications_room
 CREATE INDEX IF NOT EXISTS idx_room_publications_pending
     ON room_publications(on_chain_anchored) WHERE on_chain_anchored = FALSE;
 
+-- Publicación con minteo on-chain (2026-10-21, D-85): outbox de publicación.
+--
+-- Publicar deja de escribir la publicación off-chain directamente: se encola aquí y el worker
+-- (relayer con DEFAULT_ADMIN + MINTER) registra la habitación, ancla la huella y mintea la primera
+-- noche. Solo si las tres transacciones confirman se marca la habitación PUBLISHED y se deja la
+-- publicación anclada; si falla, la habitación sigue en DRAFT y el job queda FAILED con el motivo.
+CREATE TABLE IF NOT EXISTS room_mint_jobs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    status VARCHAR(12) NOT NULL DEFAULT 'PENDING'
+        CHECK (status IN ('PENDING', 'RUNNING', 'DONE', 'FAILED')),
+    attempts INT NOT NULL DEFAULT 0,
+    -- Huella de la ficha calculada al publicar (D-2/D-18) y firma opcional del administrador.
+    content_hash VARCHAR(66) NOT NULL,
+    signature TEXT NULL,
+    signer_address VARCHAR(42) NULL,
+    published_by VARCHAR(100) NOT NULL,
+    -- Rastro de las transacciones reales (vacías hasta que el relayer las emite).
+    register_tx_hash VARCHAR(66) NULL,
+    publish_tx_hash VARCHAR(66) NULL,
+    mint_tx_hash VARCHAR(66) NULL,
+    token_id VARCHAR(66) NULL,
+    last_error TEXT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMP NULL
+);
+
+-- Un solo job activo por habitación: evita duplicar el registro/minteo si se pulsa publicar dos veces.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_room_mint_jobs_active
+    ON room_mint_jobs(room_id) WHERE status IN ('PENDING', 'RUNNING');
+CREATE INDEX IF NOT EXISTS idx_room_mint_jobs_pending
+    ON room_mint_jobs(status, created_at) WHERE status = 'PENDING';
+
 -- Historial de cambios de estado (publicación u operativo), D-19.
 CREATE TABLE IF NOT EXISTS room_status_history (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

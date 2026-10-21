@@ -9,12 +9,16 @@
 --               · RepoTecnico/diagrama_er.md        (modelo entidad-relación)
 --               · RepoTecnico/diccionario_datos.md  (diccionario de datos)
 --
--- Versión   : 1.4.0
--- Fecha     : 2026-10-12
+-- Versión   : 1.5.0
+-- Fecha     : 2026-10-21
 -- Motor     : PostgreSQL 14+ (requiere la extensión pgcrypto)
 -- Uso       : psql -f RepoTecnico/base_datos.sql
 --
 -- Changelog
+--   1.5.0 (2026-10-21) · Publicación con minteo on-chain (D-85): nueva tabla
+--     `room_mint_jobs` (outbox de publicación) con índice único parcial de un job
+--     activo por habitación, índice de pendientes y comentarios. Sincronizada con
+--     `migrator.ts`, `diccionario_datos.md` y `diagrama_er.md`. Total: 61 tablas.
 --   1.4.0 (2026-10-12) · Cierre del ciclo F1 (vNext): bloque de 12 tablas nuevas
 --     (terminal_operators, operator_wallets, on_chain_signatures, maintenance_area_*,
 --     housekeeping_inspections, operator_audit_log, housekeeping_damage_charges,
@@ -503,6 +507,28 @@ CREATE TABLE IF NOT EXISTS room_publications (
 ALTER TABLE room_publications ADD COLUMN IF NOT EXISTS signature TEXT NULL;
 ALTER TABLE room_publications ADD COLUMN IF NOT EXISTS signer_address VARCHAR(42) NULL;
 
+-- Outbox de publicación con minteo on-chain (D-85, 2026-10-21). Publicar encola; el worker relayer
+-- registra la habitación, ancla la huella y mintea la primera noche. Solo si todo confirma se escribe
+-- la publicación y la habitación pasa a PUBLISHED; si falla, se queda en DRAFT y el job en FAILED.
+CREATE TABLE IF NOT EXISTS room_mint_jobs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    status VARCHAR(12) NOT NULL DEFAULT 'PENDING'
+        CHECK (status IN ('PENDING', 'RUNNING', 'DONE', 'FAILED')),
+    attempts INT NOT NULL DEFAULT 0,
+    content_hash VARCHAR(66) NOT NULL,
+    signature TEXT NULL,
+    signer_address VARCHAR(42) NULL,
+    published_by VARCHAR(100) NOT NULL,
+    register_tx_hash VARCHAR(66) NULL,
+    publish_tx_hash VARCHAR(66) NULL,
+    mint_tx_hash VARCHAR(66) NULL,
+    token_id VARCHAR(66) NULL,
+    last_error TEXT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMP NULL
+);
 
 -- Historial de cambios de estado (publicación u operativo) para trazabilidad (D-19).
 CREATE TABLE IF NOT EXISTS room_status_history (
@@ -962,6 +988,12 @@ CREATE INDEX IF NOT EXISTS idx_room_publications_room
 CREATE INDEX IF NOT EXISTS idx_room_publications_pending
     ON room_publications(on_chain_anchored) WHERE on_chain_anchored = FALSE;
 
+-- room_mint_jobs
+CREATE UNIQUE INDEX IF NOT EXISTS idx_room_mint_jobs_active
+    ON room_mint_jobs(room_id) WHERE status IN ('PENDING', 'RUNNING');
+CREATE INDEX IF NOT EXISTS idx_room_mint_jobs_pending
+    ON room_mint_jobs(status, created_at) WHERE status = 'PENDING';
+
 -- room_status_history
 CREATE INDEX IF NOT EXISTS idx_room_status_history_room
     ON room_status_history(room_id, changed_at DESC);
@@ -1309,6 +1341,14 @@ COMMENT ON TABLE room_publications IS 'Publicaciones ancladas: huella de la fich
 COMMENT ON COLUMN room_publications.content_hash IS 'Huella (keccak256) del contenido publicado';
 COMMENT ON COLUMN room_publications.tx_hash IS 'Transacción de anclaje; NULL si aún no está anclada';
 COMMENT ON COLUMN room_publications.on_chain_anchored IS 'TRUE cuando el anclaje se confirma en la cadena';
+
+-- ---- room_mint_jobs ----
+COMMENT ON TABLE room_mint_jobs IS 'Outbox de publicación con minteo on-chain: registro + anclaje + primera noche (D-85)';
+COMMENT ON COLUMN room_mint_jobs.status IS 'PENDING · RUNNING · DONE · FAILED';
+COMMENT ON COLUMN room_mint_jobs.content_hash IS 'Huella de la ficha calculada al publicar (D-2/D-18)';
+COMMENT ON COLUMN room_mint_jobs.publish_tx_hash IS 'Transacción real de publishRoom (anclaje de la huella)';
+COMMENT ON COLUMN room_mint_jobs.mint_tx_hash IS 'Transacción real de mint de la primera noche';
+COMMENT ON COLUMN room_mint_jobs.last_error IS 'Motivo del fallo; la habitación sigue en DRAFT hasta reintentar';
 
 -- ---- room_status_history ----
 COMMENT ON TABLE room_status_history IS 'Historial de cambios de estado (publicación u operativo), D-19';

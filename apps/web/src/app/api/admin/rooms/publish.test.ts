@@ -6,7 +6,7 @@ import type * as SharedModule from "@hotel/shared";
 
 vi.mock("@/lib/guard", () => guardMock);
 
-const { mockRepo, mockAuth } = vi.hoisted(() => ({
+const { mockRepo, mockAuth, mockMintJobs } = vi.hoisted(() => ({
   mockRepo: {
     findById: vi.fn(),
     listImages: vi.fn(),
@@ -17,6 +17,9 @@ const { mockRepo, mockAuth } = vi.hoisted(() => ({
     findUser: vi.fn(),
     verifyUserTotp: vi.fn(),
   },
+  mockMintJobs: {
+    enqueue: vi.fn(),
+  },
 }));
 
 vi.mock("@hotel/shared", async (importOriginal) => {
@@ -25,6 +28,7 @@ vi.mock("@hotel/shared", async (importOriginal) => {
     ...actual,
     RoomsRepository: vi.fn(() => mockRepo),
     AuthService: vi.fn(() => mockAuth),
+    RoomMintJobsRepository: vi.fn(() => mockMintJobs),
   };
 });
 
@@ -267,5 +271,33 @@ describe("POST /api/admin/rooms/[id]/publish (F1 · D-2, D-18, D-21)", () => {
     expect(res.status).toBe(400);
     const data = await res.json();
     expect(data.error).toBe("INVALID_SIGNATURE");
+  });
+
+  it("con MINT_ON_PUBLISH_ENABLED encola el minteo y NO publica todavía (D-82)", async () => {
+    vi.stubEnv("MINT_ON_PUBLISH_ENABLED", "true");
+    mockRepo.findById.mockResolvedValueOnce(room);
+    mockRepo.listImages.mockResolvedValueOnce([image]);
+    mockMintJobs.enqueue.mockResolvedValueOnce({ id: "job-1", status: "PENDING" });
+    const res = await POST(request({ confirmTotpCode: "123456" }), idParams());
+    expect(res.status).toBe(202);
+    const data = await res.json();
+    expect(data).toMatchObject({ status: "PENDING_ONCHAIN", queued: true, jobId: "job-1", onChainAnchored: false });
+    expect(mockMintJobs.enqueue).toHaveBeenCalledWith(
+      expect.objectContaining({ roomId: "room-1", publishedBy: "admin@hotel.es" }),
+    );
+    // La publicación off-chain solo la escribe el worker tras el minteo.
+    expect(mockRepo.recordPublication).not.toHaveBeenCalled();
+    expect(mockRepo.setPublicationStatus).not.toHaveBeenCalled();
+    vi.unstubAllEnvs();
+  });
+
+  it("con MINT_ON_PUBLISH_ENABLED rechaza publicar una habitación ya publicada (409)", async () => {
+    vi.stubEnv("MINT_ON_PUBLISH_ENABLED", "true");
+    mockRepo.findById.mockResolvedValueOnce({ ...room, publicationStatus: "PUBLISHED" });
+    mockRepo.listImages.mockResolvedValueOnce([image]);
+    const res = await POST(request({ confirmTotpCode: "123456" }), idParams());
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toBe("ALREADY_PUBLISHED");
+    vi.unstubAllEnvs();
   });
 });

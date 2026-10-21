@@ -15,6 +15,8 @@ import {
   OperationsRepository,
   OperationalSignatureQueue,
   releaseDistributedLock,
+  RoomMintJobsRepository,
+  RoomsRepository,
   runMigrations,
 } from "@hotel/shared";
 import { tryReadDeployment } from "@hotel/shared/deployments";
@@ -45,6 +47,8 @@ import { startSlaScheduler } from "./sla-scheduler";
 import { startPreventiveScheduler } from "./preventive-scheduler";
 import { startMintWindowScheduler } from "./mint-window-scheduler";
 import { startListenerRuntime } from "./listener-runtime";
+import { ViemPublishMinter } from "./mint-publish-relayer";
+import { MintPublishProcessor } from "./mint-publish-processor";
 
 // Node no carga `.env` por si solo (Next.js si lo hace): en desarrollo lo cargamos desde la
 // raiz del monorepo. Si el fichero no existe se usan las variables del entorno (CI/contenedor),
@@ -209,6 +213,11 @@ async function main(): Promise<void> {
     controller.signal,
   );
 
+  // Publicación con minteo on-chain (2026-10-21, D-85): procesa `room_mint_jobs`. Los endpoints de
+  // publicar solo encolan; este bucle registra la habitación, ancla la huella y mintea la primera
+  // noche, y solo entonces deja la habitación PUBLISHED. Sin clave de relayer se avisa y no arranca.
+  const mintPublishRuntime = startMintPublishIfConfigured(config, chain, pool, logger, controller.signal);
+
   // Señal de vida de la quema en `/health` (H-04 de la auditoría V6): si el planificador no arrancó
   // —worker desplegado sin la clave de firma, el fallo real que pasó en producción— se reporta
   // `disabled` y se avisa a DevOps, en vez de dejar solo una línea de log que nadie lee.
@@ -331,6 +340,7 @@ async function main(): Promise<void> {
     // El bucle ya terminó (o falló): ahora sí es seguro cerrar servidor, consumidor y stores.
     scheduler?.stop();
     anchorRuntime?.stop();
+    mintPublishRuntime?.stop();
     retentionScheduler.stop();
     preventiveScheduler.stop();
     supplyReminderScheduler.stop();
@@ -345,6 +355,90 @@ async function main(): Promise<void> {
     await closeDbPool();
     logger.info("worker detenido · recursos liberados");
   }
+}
+
+/**
+ * Arranca el procesador del outbox de **publicación con minteo on-chain** (D-85) si hay clave de
+ * relayer. Nunca impide arrancar el worker: sin clave se avisa y las publicaciones quedan en
+ * `PENDING` (visibles en el panel), pero el resto del sistema sigue operativo.
+ *
+ * Un ciclo cada `MINT_ON_PUBLISH_INTERVAL_MS`; el cerrojo distribuido por Redis serializa el envío
+ * entre réplicas (misma hot wallet ⇒ mismos nonces). Sin Redis se degrada a instancia única.
+ */
+function startMintPublishIfConfigured(
+  config: WorkerConfig,
+  chain: typeof anvilChain | typeof besuChain,
+  pool: ReturnType<typeof getDbPool>,
+  logger: ReturnType<typeof createLogger>,
+  signal: AbortSignal,
+): { stop: () => void } | null {
+  if (!config.MINTER_RELAYER_PRIVATE_KEY) {
+    logger.warn(
+      "sin MINTER_RELAYER_PRIVATE_KEY: la publicación con minteo on-chain queda DESACTIVADA (los jobs room_mint_jobs no se procesarán)",
+    );
+    return null;
+  }
+
+  const minter = new ViemPublishMinter({
+    rpcUrl: config.RPC_URL,
+    contractAddress: config.CONTRACT_ADDRESS as `0x${string}`,
+    chain,
+    privateKey: config.MINTER_RELAYER_PRIVATE_KEY as `0x${string}`,
+    confirmations: CONFIRMATIONS_N,
+    timeoutMs: config.RPC_TIMEOUT_MS,
+    gasPriceWei: BigInt(config.MINT_TX_GAS_PRICE_WEI),
+    gasLimit: BigInt(config.MINT_TX_GAS_LIMIT),
+  });
+  const processor = new MintPublishProcessor({
+    jobs: new RoomMintJobsRepository(pool),
+    rooms: new RoomsRepository(pool),
+    nfts: new NFTsRepository(pool),
+    minter,
+    logger,
+  });
+  const lockKey = `lock:mint-publish:${minter.address.toLowerCase()}`;
+
+  let running = false;
+  const tick = async (): Promise<void> => {
+    if (signal.aborted || running) return;
+    running = true;
+    let lockValue: string | null = null;
+    let lockUnavailable = false;
+    try {
+      try {
+        lockValue = await acquireDistributedLock(lockKey, 300);
+      } catch (error: unknown) {
+        lockUnavailable = true;
+        logger.warn(
+          { error },
+          "no se pudo tomar el cerrojo del relayer de publicación (Redis); se procesa sin cerrojo (asume instancia única)",
+        );
+      }
+      if (lockValue === null && !lockUnavailable) {
+        // Otra réplica está publicando; se reintenta en el siguiente ciclo.
+        return;
+      }
+      const outcome = await processor.runOnce();
+      if (outcome !== "idle") logger.info({ outcome }, "outbox de publicación: ciclo completado");
+    } catch (error: unknown) {
+      logger.error({ error }, "outbox de publicación: error en el ciclo");
+    } finally {
+      if (lockValue !== null) {
+        await releaseDistributedLock(lockKey, lockValue).catch((error: unknown) => {
+          logger.warn({ error }, "no se pudo liberar el cerrojo del relayer de publicación");
+        });
+      }
+      running = false;
+    }
+  };
+
+  const timer = setInterval(() => void tick(), config.MINT_ON_PUBLISH_INTERVAL_MS);
+  void tick();
+  logger.info(
+    { intervalMs: config.MINT_ON_PUBLISH_INTERVAL_MS, relayer: minter.address },
+    "outbox de publicación con minteo on-chain activo",
+  );
+  return { stop: () => clearInterval(timer) };
 }
 
 /** Cliente público viem (mismo RPC que el listener) para el planificador de quema. */

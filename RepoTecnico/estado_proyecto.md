@@ -6429,3 +6429,46 @@ de foto.
 Evidencia: [`evidencias/release-v84-habitaciones-2026-10-21.json`](./evidencias/release-v84-habitaciones-2026-10-21.json)
 y [`despliegue_gcp.md`](./despliegue_gcp.md) §99.
 
+---
+
+## 69. RELEASE v86 — publicar mintea la primera noche on-chain (unitario y masivo) · D-85 (2026-10-21)
+
+**Petición del responsable.** Que **se minteen los NFT al publicar la habitación**, también en la
+publicación masiva. Decisiones acordadas: **relayer del servidor** (no la wallet del navegador), **wallet
+dedicada nueva** con roles, **solo la primera noche** por habitación y **revertir la publicación
+off-chain si el minteo falla**.
+
+**Diseño (ADR-32 · D-85).** Los endpoints de publicar ya no escriben la publicación: dejan un job en la
+nueva tabla **`room_mint_jobs`** y responden **202**. El worker relayer ejecuta, en orden:
+`registerRoom` (si falta) → `publishRoom(contentHash)` → `mint` de la primera noche (mañana UTC); solo
+entonces registra la publicación, pone la habitación `PUBLISHED`, indexa la noche en `nfts` y marca el
+job `DONE`. Si cualquier paso falla, el job queda `FAILED` y **la habitación sigue en `DRAFT`**. Es
+idempotente (un job activo por habitación, `SKIP LOCKED`, comprobación previa de registro y `ownerOf`).
+
+**Provisión on-chain.** Wallet dedicada **`0xD439…6Ddf`** con 20 ETH y roles **`DEFAULT_ADMIN_ROLE` +
+`MINTER_ROLE`** (concedidos con la cuenta deployer `0xf39F…2266`); clave en el secreto GCP
+`hotel-minter-relayer-private-key` e inyectada **solo al worker**. Gas legado de Besu: `gasPrice`
+1000 wei y límite fijo de 900 000.
+
+| Elemento | Valor |
+|---|---|
+| Imágenes | **`worker:v86`** (build `f589e4e9…`) y **`web:v86`** (build `ea9c4207…`), ambas SUCCESS |
+| Revisiones sirviendo | **`hotel-mcp-worker-00036-duc`** y **`hotel-mcp-web-00155-cit`** (100 %) |
+| Flags/secretos | web `MINT_ON_PUBLISH_ENABLED=true`; worker secreto `MINTER_RELAYER_PRIVATE_KEY` y `MINT_TX_GAS_LIMIT=900000` |
+| Esquema | `room_mint_jobs` + índice único parcial de job activo (aplicado por el worker al arrancar) |
+| Pruebas | worker **195/195**, repositorio shared 8/8, procesador 6/6, API web y i18n en verde; typecheck y lint OK |
+
+**Verificación E2E real en producción.** Se crearon dos habitaciones de prueba (998 SIMPLE, 999 SUITE)
+con foto y jobs encolados: el worker las **registró, ancló y minteó** (`ownerOf` de `99820261022` y
+`99920261022` = tesorería) y las dejó `PUBLISHED` con la publicación anclada y el job `DONE`. Se usó una
+tercera sin foto (997) para probar la reversión: job `FAILED` («no tiene ninguna foto, D-20»), habitación
+**DRAFT** y **cero publicaciones**. Las tres de prueba quedaron archivadas (`OUT_OF_SERVICE`) y fuera del
+catálogo; el resto de producción sigue igual (**48 visibles**, 101/102 por mantenimiento).
+
+**Pendiente.** Salud dedicada del outbox (jobs `PENDING` atascados), alerta de saldo del relayer,
+backfill opcional de las 50 ya publicadas (hoy solo la 201 y las de prueba están registradas on-chain),
+y la ventana completa de 90 noches sigue siendo manual (Acuñar ventana / Barrido global).
+
+Evidencia: [`evidencias/release-v86-publicacion-minteo-2026-10-21.json`](./evidencias/release-v86-publicacion-minteo-2026-10-21.json)
+y [`despliegue_gcp.md`](./despliegue_gcp.md) §100.
+

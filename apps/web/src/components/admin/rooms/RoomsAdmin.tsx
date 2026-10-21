@@ -134,6 +134,8 @@ export function RoomsAdmin() {
   const mintWindow = useMintWindow();
 
   const [rooms, setRooms] = useState<readonly AdminRoom[]>([]);
+  /** D-85: con el flag activo, publicar encola y el worker mintea antes de marcar PUBLISHED. */
+  const [mintOnPublish, setMintOnPublish] = useState(false);
   /** Catálogos (`/options`) para traducir códigos en la tabla y alimentar el formulario. */
   const [options, setOptions] = useState<AdminRoomOptions | null>(null);
   const [listLoading, setListLoading] = useState(false);
@@ -255,6 +257,7 @@ export function RoomsAdmin() {
       const res = await apiFetch("/api/admin/rooms");
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || t("loadError"));
+      setMintOnPublish(data.mintOnPublish === true);
       // `reservedNights` se normaliza a número (el `COUNT()` de PostgreSQL viaja como cadena en JSON):
       // las reglas y el distintivo del tablero comparan con `=== 0` (2026-10-04).
       setRooms(
@@ -375,6 +378,37 @@ export function RoomsAdmin() {
   }
 
   /**
+   * D-85: espera a que el worker termine la publicación con minteo. Sondea la ficha hasta ver
+   * `PUBLISHED` o un error del job; mientras tanto el listado muestra «publicación en curso».
+   */
+  async function waitForRoomPublication(roomId: string): Promise<void> {
+    for (let attempt = 0; attempt < 30; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const res = await apiFetch(`/api/admin/rooms/${roomId}`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) continue;
+      if (data.room?.publicationStatus === "PUBLISHED") {
+        setNotice({ kind: "ok", text: t("published") });
+        break;
+      }
+      if (data.mintError) {
+        setNotice({ kind: "error", text: String(data.mintError) });
+        break;
+      }
+    }
+    await loadRooms();
+    if (selectedId) await loadDetail(selectedId);
+  }
+
+  /** D-85: refresca el listado mientras el worker procesa un lote encolado. */
+  async function refreshWhileBulkPublishing(): Promise<void> {
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await loadRooms();
+    }
+  }
+
+  /**
    * Confirma la publicación con el TOTP del diálogo. Atiende **dos caminos** (2026-10-04):
    *   · una sola habitación (acción rápida de fila o botón de la ficha) → flujo unitario de siempre;
    *   · un lote (acción masiva) → `POST /api/admin/rooms/bulk/publish` con **un** TOTP y anclaje
@@ -393,6 +427,26 @@ export function RoomsAdmin() {
       }
       const room = rooms.find((entry) => entry.id === targetIds[0]) ?? detail?.room;
       if (!room) return;
+
+      // D-85: el servidor encola el registro+anclaje+minteo y el worker lo ejecuta. La habitación
+      // no se marca PUBLISHED hasta que la primera noche está minteada on-chain.
+      if (mintOnPublish) {
+        const res = await apiFetch(`/api/admin/rooms/${room.id}/publish`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ confirmTotpCode: mfaCode.trim() }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || t("publishError"));
+        setMfaOpen(false);
+        setMfaCode("");
+        setPendingPublish(null);
+        setNotice({ kind: "ok", text: t("publishQueued") });
+        await loadRooms();
+        void waitForRoomPublication(room.id);
+        return;
+      }
+
       // Paso 1: huella a firmar/anclar (D-2/D-18).
       const prepRes = await apiFetch(`/api/admin/rooms/${room.id}/publish`);
       const prep = await prepRes.json().catch(() => ({}));
@@ -491,6 +545,27 @@ export function RoomsAdmin() {
    * igual y queda `PENDING_ANCHOR` (D-18). Nunca revierte por el anclaje.
    */
   async function publishBatch(ids: string[]): Promise<void> {
+    // D-85: el lote solo se encola; el worker registra/ancla/mintea cada habitación y la deja
+    // PUBLISHED solo si la primera noche está on-chain. Sin wallet del navegador de por medio.
+    if (mintOnPublish) {
+      const res = await apiFetch("/api/admin/rooms/bulk/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomIds: ids, confirmTotpCode: mfaCode.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      const queued = typeof data.queued === "number" ? data.queued : 0;
+      if (!res.ok && queued === 0) throw new Error(data.message || ta("roomBulkPublishError"));
+      setMfaOpen(false);
+      setMfaCode("");
+      setPendingPublish(null);
+      setNotice({ kind: "ok", text: ta("roomBulkPublishQueued", { queued }) });
+      exitBulkMode();
+      await loadRooms();
+      void refreshWhileBulkPublishing();
+      return;
+    }
+
     const txHashes: Record<string, string> = {};
     if (isConnected && address) {
       for (const id of ids) {

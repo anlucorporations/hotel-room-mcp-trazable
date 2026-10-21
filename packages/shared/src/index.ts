@@ -58,6 +58,7 @@ export * from "./db/repositories/nfts.repository";
 export * from "./db/repositories/operations.repository";
 export * from "./db/repositories/reservations.repository";
 export * from "./db/repositories/reviews.repository";
+export * from "./db/repositories/room-mint-jobs.repository";
 export * from "./db/repositories/rooms.repository";
 export * from "./db/repositories/terminal-operators.repository";
 export * from "./db/repositories/settings.repository";

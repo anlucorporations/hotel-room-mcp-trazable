@@ -299,7 +299,7 @@ erDiagram
 
 ## 6. Dominio habitaciones, reseñas y contenido público (F1/F5)
 
-### 6.1 `room_types`, `rooms`, `room_images`, `room_amenities`, `room_amenity_links`, `room_space_types`, `room_spaces`, `room_publications`, `room_status_history`, `reviews`, `platform_settings`
+### 6.1 `room_types`, `rooms`, `room_images`, `room_amenities`, `room_amenity_links`, `room_space_types`, `room_spaces`, `room_publications`, `room_mint_jobs`, `room_status_history`, `reviews`, `platform_settings`
 
 > Modelo del ente *Habitación* (Suite Administración → sección 1.1) y de las **reseñas** de la suite
 > pública. Decisiones D-1…D-28. `nfts` se referencia sin repetir sus atributos (está definida en §2.1).
@@ -407,6 +407,25 @@ erDiagram
         TIMESTAMP unpublished_at "Despublicación"
     }
 
+    room_mint_jobs {
+        UUID id PK
+        UUID room_id FK "FK a rooms ON DELETE CASCADE"
+        VARCHAR(12) status "PENDING · RUNNING · DONE · FAILED"
+        INT attempts "Intentos de procesamiento"
+        VARCHAR(66) content_hash "Huella de la ficha al publicar (D-85)"
+        TEXT signature "Firma opcional del administrador"
+        VARCHAR(42) signer_address "Wallet que firma; NULL si no se firmó"
+        VARCHAR(100) published_by "Administrador que encola"
+        VARCHAR(66) register_tx_hash "Transacción de registerRoom"
+        VARCHAR(66) publish_tx_hash "Transacción de publishRoom (anclaje)"
+        VARCHAR(66) mint_tx_hash "Transacción de mint de la primera noche"
+        VARCHAR(66) token_id "tokenId minteado"
+        TEXT last_error "Motivo del fallo; la habitación sigue en DRAFT"
+        TIMESTAMP created_at "Alta del job"
+        TIMESTAMP updated_at "Última actualización"
+        TIMESTAMP completed_at "Cierre DONE/FAILED"
+    }
+
     room_status_history {
         UUID id PK
         UUID room_id FK "FK a rooms ON DELETE CASCADE"
@@ -467,6 +486,7 @@ erDiagram
     rooms ||--o{ room_spaces : "se compone de"
     room_space_types ||--o{ room_spaces : "tipifica"
     rooms ||--o{ room_publications : "se publica con"
+    rooms ||--o{ room_mint_jobs : "encola publicación con minteo"
     rooms ||--o{ room_status_history : "registra"
     rooms ||--o{ room_cleaning_checklists : "tiene checklist"
     room_cleaning_checklist_items ||--o{ room_cleaning_checklists : "se comprueba en"
@@ -1010,6 +1030,7 @@ erDiagram
 | 9 | `room_amenity_links` | `room_id` | `rooms(id)` | N:1 | `CASCADE` |
 | 10 | `room_amenity_links` | `amenity_code` | `room_amenities(code)` | N:1 | `ON UPDATE CASCADE` |
 | 11 | `room_publications` | `room_id` | `rooms(id)` | N:1 | `CASCADE` |
+| 11b | `room_mint_jobs` | `room_id` | `rooms(id)` | N:1 | `CASCADE` |
 | 12 | `room_status_history` | `room_id` | `rooms(id)` | N:1 | `CASCADE` |
 | 12a | `room_cleaning_checklists` | `room_id` | `rooms(id)` | N:1 | `CASCADE` |
 | 12b | `room_cleaning_checklists` | `item_code` | `room_cleaning_checklist_items(code)` | N:1 | `ON UPDATE CASCADE` |

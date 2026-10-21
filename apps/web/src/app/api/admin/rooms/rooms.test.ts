@@ -30,12 +30,22 @@ const { mockRepo } = vi.hoisted(() => ({
     countReservedNightsByRooms: vi.fn(),
     // Publicación (2026-10-21): el listado informa de qué fichas tienen foto (D-20).
     listRoomIdsWithImages: vi.fn(),
+    // D-82: estado del outbox de publicación (pendiente/error de minteo).
+    listLatestByRooms: vi.fn(),
+    findLatestByRoom: vi.fn(),
   },
 }));
 
 vi.mock("@hotel/shared", async (importOriginal) => {
   const actual = await importOriginal<typeof SharedModule>();
-  return { ...actual, RoomsRepository: vi.fn(() => mockRepo) };
+  return {
+    ...actual,
+    RoomsRepository: vi.fn(() => mockRepo),
+    RoomMintJobsRepository: vi.fn(() => ({
+      listLatestByRooms: mockRepo.listLatestByRooms,
+      findLatestByRoom: mockRepo.findLatestByRoom,
+    })),
+  };
 });
 
 import { GET as listGET, POST as createPOST } from "./route";
@@ -79,6 +89,8 @@ describe("API /api/admin/rooms (F1 · D-1, D-7)", () => {
     vi.clearAllMocks();
     resetGuardState();
     mockRepo.listRoomIdsWithImages.mockResolvedValue([]);
+    mockRepo.listLatestByRooms.mockResolvedValue(new Map());
+    mockRepo.findLatestByRoom.mockResolvedValue(null);
   });
 
   it("GET exige el rol de administrador", async () => {
@@ -117,6 +129,8 @@ describe("API /api/admin/rooms (F1 · D-1, D-7)", () => {
     expect(data.rooms[0].reservedNights).toBe(3);
     // El listado informa de la galería (D-20): es lo que usa el tablero para bloquear «Publicar».
     expect(data.rooms[0].hasImage).toBe(true);
+    expect(data.rooms[0].mintPending).toBe(false);
+    expect(data.mintOnPublish).toBe(false);
     expect(data.reservedWindow).toMatchObject({ from: expect.any(String), to: expect.any(String) });
   });
 
