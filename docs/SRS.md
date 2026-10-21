@@ -428,6 +428,11 @@ esta es la vista de verificación, con el artefacto que lo demuestra.
 | RNF-13, RNF-14, RNF-15 | — | US-22 | `apps/web/e2e/a11y.spec.ts` (axe, 16/16: 8 rutas × `chromium`/`mobile`), `lib/a11y/*` |
 | RNF-17 | — | US-20 | `pnpm test:coverage` + `RepoTecnico/cobertura.md` |
 | RNF-18 | — | US-21 | `docs/adr/` + guardián de documentación |
+| RF-61 | CU-W-15, CU-W-22 | — | `/api/reviews` (`reviews.test.ts`), `reviews.repository.test.ts` (tabla `reviews`, `UNIQUE(token_id)`), `review-guardian.test.ts`, moderación en `/admin/resenas` |
+| RF-62 | CU-W-21 | — | `/api/admin/content*` (`content.test.ts`), tablas `hotel_images`/`hotel_offers`, `/admin/contenido` (JPG ≤ 2 MB, una portada por sección) |
+| RF-63 | CU-W-21 | — | `activities.repository.test.ts` (tablas `activities`/`activity_schedules`/`activity_bookings`), `/api/actividades.test.ts`, `/admin/actividades` |
+| RF-64 | CU-W-12 | — | `/api/damage-charges.test.ts`, `damage-charges.test.ts` y `damage-charges.repository.test.ts`, portal `/mis-noches/cargos` (ACK/DISPUTED/RESOLVED_*) |
+| RF-65 | CU-W-16, CU-W-17 | — | `apps/mcp/src/knowledge/search.test.ts`, `apps/mcp/src/tools/tools.test.ts`, `apps/mcp/src/knowledge/index-sync.test.ts` (citas `manual §sección`, saneador PII) |
 | RT-01…RT-12 | CU-PR-02 | US-01 | `Deploy.s.sol`, `sync-deployment`, `.env.example`, `entornos_globales.md` |
 
 ### 10.1 Requisitos sin fila de verificación, y por qué
