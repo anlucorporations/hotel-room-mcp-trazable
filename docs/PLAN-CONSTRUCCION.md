@@ -79,7 +79,7 @@ Anvil en el `after_script`):
 |---|---|---|
 | `setup` | pnpm + Foundry | sí |
 | `static` | `typecheck`, `lint`, `forge fmt --check` | sí |
-| `test` | Vitest (5 paquetes) + `forge test` (13 suites, tras retirar la generación legacy en M9) | sí |
+| `test` | Vitest (5 paquetes) + `forge test` (20 suites, tras retirar la generación legacy en M9) | sí |
 | `coverage` | `test:coverage` con umbrales + `forge coverage` + lcov | sí (trinquete) |
 | `chain-e2e` | E2E on-chain M4–M7 contra Anvil con PostgreSQL y Redis, desplegando el contrato y **descubriendo su dirección del broadcast real** | sí |
 | `web-e2e` | Playwright + axe | sí |

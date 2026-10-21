@@ -76,7 +76,7 @@
 | `src/libraries/` | `RoomMaster.sol` (maestro de 50 habitaciones) y `DateLib.sol` (calendario) |
 | `src/Faucet.sol` | Faucet de pruebas: solo se despliega con `DEPLOY_FAUCET=true` |
 | `src/HotelNFT.sol`, `src/HotelMarketplace.sol` | **Retirados del árbol en M9** (ADR-02). Un guardián de `packages/shared` prohíbe reintroducir sus identificadores (`hotelNftAbi`, `hotelMarketplaceAbi`) |
-| `test/` | **13 ficheros de suite / 125 pruebas** (medido con `pnpm test:contracts` al cerrar M9): `HotelNights.{mint,buy,resale,checkin,burn,royalty,roles,admin,ownership,invariants}.t.sol`, `Deploy.s.t.sol`, `Faucet.t.sol` y `DateLib.t.sol`. Las cifras de **16 suites / 146 pruebas** que aparecen en los registros de M1–M8 son **anteriores** a la retirada de la generación legacy |
+| `test/` | **20 ficheros de suite / 202 pruebas** (medido con `pnpm test:contracts` el 2026-10-21): `HotelNights.{mint,buy,resale,checkin,burn,royalty,roles,admin,ownership,invariants,rooms}.t.sol`, `Deploy.s.t.sol`, `DeployAuction.t.sol`, `DeployOperations.t.sol`, `Faucet.t.sol`, `DateLib.t.sol`, `HotelOperations{.t,.invariants}.t.sol` y `NightAuction{.t,.invariants}.t.sol`. Las cifras de **13 suites / 125 pruebas** (cierre de M9) y **16 suites / 146** (M1–M8) son **anteriores** a las suites de subasta, registro de habitaciones y operaciones firmadas |
 | `script/Deploy.s.sol` | Despliegue con bootstrap de roles y faucet opcional |
 | `scripts/sync-deployment.ts` | Añade `abiHash` y valida contra el esquema del registro |
 | `scripts/gen-abi.ts` | Regenera los ABI de `packages/shared/src/abi/**` |
@@ -157,7 +157,7 @@ pnpm --filter @hotel/web dev        # y worker, mcp, monitor
 - `scripts/e2e/` en la raíz está **vacío**: los guiones E2E viven en `packages/contracts/scripts/e2e/`.
 - La generación **legacy** `HotelNFT`/`HotelMarketplace` se **retiró del árbol** en M9 (ADR-02): ya no
   está en `src/`, ni en `packages/shared/src/abi/`, ni en las suites Foundry, y un guardián impide que
-  vuelva. La documentación normativa ya está alineada (**13 suites / 125 pruebas**, medido).
+  vuelva. La documentación normativa ya está alineada (**20 suites / 202 pruebas**, medido el 2026-10-21).
 - `apps/mcp/src/**` contiene una prueba con `chainId: 31337` que deriva del canónico **81234**.
 - El HTTP del worker **no autentica y su CORS es abierto** (`Access-Control-Allow-Origin: *`).
 

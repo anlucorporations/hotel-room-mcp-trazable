@@ -69,7 +69,7 @@ cumplir un deseo del cliente) · `EXT` = añadido sin base en el brief (mantenid
 | RNF-04 | Fiabilidad | Recuperación ante desastre | ANA | **MEDIDO**: `pg_dump` + restauración real + comparación 6/6 tablas (283 filas), RTO 0,73 s |
 | RNF-05 | Escalabilidad | ≥ 200 usuarios concurrentes sin degradar | ANA | **NO CUMPLE en una máquina** y está medido: 31 % de *timeouts* por agotamiento del pool; k6 desde otra máquina es B-3 |
 | RNF-06 | Seguridad | Doble factor obligatorio en back-office y recepción | CLI (implícito) | **OK**: contraseña + TOTP; 401/403 en todas las rutas protegidas (ADR-04) |
-| RNF-07 | Seguridad | Contratos con pruebas unitarias, de integración e invariantes | ANA | **OK**: 13 suites / 125 pruebas Foundry (tras retirar la generación legacy en M9) |
+| RNF-07 | Seguridad | Contratos con pruebas unitarias, de integración e invariantes | ANA | **OK**: 20 suites / 202 pruebas Foundry (tras retirar la generación legacy en M9; medido 2026-10-21) |
 | RNF-08 | Resiliencia | Multi-RPC con *failover* | ANA | **RETIRADO**: un solo RPC, sin failover (ADR-26) |
 | RNF-09 | Resiliencia | Cotización EUR con caché y respaldo | ANA | **PAR**: respaldo declarado con factor fijo que envejece (ADR-14) |
 | RNF-10 | Observabilidad | *Heartbeat* y alerta si la red se queda muda | ANA | **OK**: listener con heartbeat y alerta de silencio (una por episodio); monitor de cadena y gas (ADR-26) |

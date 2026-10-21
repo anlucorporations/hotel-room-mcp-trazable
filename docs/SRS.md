@@ -90,7 +90,7 @@ paleta real, y verificación reproducible con artefactos.
 | Capa | Tecnología | Nota |
 |---|---|---|
 | Monorepo | pnpm workspaces + **turbo** | Node ≥ 24; `pnpm@10` |
-| Contratos | **Foundry** (`forge`, `anvil`, `cast`) | **13 suites, 125 pruebas** (la generación legacy se retiró en M9) |
+| Contratos | **Foundry** (`forge`, `anvil`, `cast`) | **20 suites, 202 pruebas** (la generación legacy se retiró en M9; crecieron con subasta, registro de habitaciones y operaciones firmadas) |
 | Web | Next.js (App Router) + React + Tailwind + recharts | i18n ES/EN/RU; cliente wagmi/viem |
 | Backend | Node + TypeScript (`tsx`) | worker, mcp, monitor |
 | Persistencia | **PostgreSQL 18** (`pg`) | única; 13 tablas |
@@ -423,7 +423,7 @@ esta es la vista de verificación, con el artefacto que lo demuestra.
 | RNF-02, RNF-05, RNF-21 | — | US-19, US-20 | `scripts/load-tests/run-load-test.ts` y `RepoTecnico/evidencias/load-test.json` |
 | RNF-04 | — | US-19 | `scripts/backup/restore-verify.ts` y `RepoTecnico/evidencias/dr-verify.json` |
 | RNF-06, RNF-19 | CU-01 | US-13 | `auth.test.ts`, `secrets-guardian.test.ts`, `admin-auth-guardian.test.ts` |
-| RNF-07 | — | US-02 | `forge test`: 13 suites / 125 pruebas |
+| RNF-07 | — | US-02 | `forge test`: 20 suites / 202 pruebas |
 | RNF-10, RNF-20 | — | US-15 | `listener-events.test.ts`, `chain-monitor.test.ts`, ADR-26 |
 | RNF-13, RNF-14, RNF-15 | — | US-22 | `apps/web/e2e/a11y.spec.ts` (axe, 16/16: 8 rutas × `chromium`/`mobile`), `lib/a11y/*` |
 | RNF-17 | — | US-20 | `pnpm test:coverage` + `RepoTecnico/cobertura.md` |

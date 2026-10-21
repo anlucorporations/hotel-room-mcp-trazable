@@ -61,7 +61,7 @@ Estados: **COMPLETO** (hecho y cableado) · **PARCIAL** (existe pero incompleto 
 | `script/Deploy.s.sol` | **COMPLETO** | Despliega el canónico `HotelNights` con bootstrap de roles y faucet opcional; el registro lo valida `deployments/schema.ts` | D-02 |
 | `scripts/sync-deployment.ts` | **COMPLETO** | Añade el `abiHash` del artefacto y valida contra el esquema; genera `packages/shared/deployments/<chainId>.json` | D-02 |
 | `deployments/*.json` | **PARCIAL** | El registro canónico (`packages/shared/deployments/81234.json`) es válido y está sincronizado; los crudos por cadena dejaron de versionarse y quedan ficheros antiguos de Amoy sin uso | D-02, D-08 |
-| Suites Foundry | **COMPLETO** | **13 suites / 125 pruebas** verdes sobre el contrato canónico (16/146 en M8: las tres suites y las 21 pruebas de la generación legacy se retiraron en M9) | D-05, D-06 |
+| Suites Foundry | **COMPLETO** | **20 suites / 202 pruebas** verdes sobre el contrato canónico, medidas el 2026-10-21 (al cerrar M9 eran 13/125; crecieron con las suites de subasta C2, registro de habitaciones F1 y operaciones firmadas F3–F9. 16/146 en M8 por la generación legacy retirada) | D-05, D-06 |
 
 ### 2.2 Núcleo compartido (`packages/shared`)
 

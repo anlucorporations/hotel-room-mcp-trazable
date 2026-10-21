@@ -49,7 +49,7 @@ es una **entrega operable y comprobable**, no una capa:
 | Hito | Objetivo | Estado | Evidencia |
 |---|---|---|---|
 | **M0** | Entorno reproducible (PostgreSQL, Redis, Anvil, `.env`, migraciones) | ✅ | `/health/ready` con PostgreSQL, Redis y cadena `UP` |
-| **M1** | Contrato canónico completo (check-in, royalty por tipo, suelo) | ✅ | Foundry en verde y despliegue verificado con `cast` (tras retirar la generación legacy en M9: **13 suites / 125 pruebas**) |
+| **M1** | Contrato canónico completo (check-in, royalty por tipo, suelo) | ✅ | Foundry en verde y despliegue verificado con `cast` (al cerrar M9: **13 suites / 125 pruebas**; hoy **20 suites / 202 pruebas**) |
 | **M2** | Una sola base de datos (SQLite fuera) | ✅ | 525 pruebas verdes y checkpoint avanzando en PostgreSQL |
 | **M3** | Acceso cerrado (contraseña + TOTP + guards, secretos fuera) | ✅ | 401/403 en cada ruta; 619 pruebas verdes |
 | **M4** | Compra y reventa operativas | ✅ | E2E M4 (39 comprobaciones) + verificación adversarial |
