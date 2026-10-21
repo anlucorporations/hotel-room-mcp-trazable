@@ -3883,3 +3883,64 @@ secciones · 7 ilustraciones**) y guardián `huesped-sync.test.ts` en verde (10/
 
 **Rollback.** `gcloud run services update-traffic hotel-mcp-web --region=europe-west1
 --to-revisions=hotel-mcp-web-00146-not=100` (v82).
+
+---
+
+## 98. Release v85 — la quema programada sobrevive a un revert sin datos de Besu (2026-10-21)
+
+**Qué pasó.** La quema programada del **2026-10-20** falló en producción: `/health` publicó
+`burn.lastRun = {reason: "ERROR", burnedTokensCount: 0}` y los logs del worker mostraron
+`[Burner] Fallo en el ciclo de quema: Execution reverted with reason: Execution reverted.` cada 5 min
+entre las **10:01 y las 10:56 UTC** (hora de la quema, `BURN_HOUR_LOCAL=12` Europe/Madrid), con **8
+noches candidatas**. El planificador dejó de reintentar al salir de la hora y **la quema del día no se
+ejecutó**.
+
+**Causa raíz (dos capas).**
+
+1. El índice `nfts` tenía **9 filas `AVAILABLE` caducadas de la habitación 101**
+   (`10120261007`, `…1008`, `1012`–`1015`, `1018`–`1020`) registradas por el back-office con
+   `allowUnanchored=true` (`on_chain_anchored = FALSE`, hash centinela) **que nunca se mintearon**
+   on-chain: `ownerOf` revierte con `ERC721NonexistentToken`. `getUnsoldExpiredNFTs` las devolvía como
+   candidatas y `burnExpired` revertía al intentar quemar tokens inexistentes.
+2. **Besu devuelve el revert sin datos decodificables**, así que `viem` lo expone como
+   `ContractFunctionExecutionError → CallExecutionError → ExecutionRevertedError`, **no** como
+   `ContractFunctionRevertedError`. `isRevertError` solo reconocía esta segunda forma: el revert se
+   clasificaba como **caída de red** y `canSimulate` lo propagaba, tumbando el ciclo completo sin
+   llegar al reintento token a token ni a la reconciliación del índice (diseño que sí existía desde
+   H-01). El primer arreglo (`824f36a`) se quedó corto porque en la **imagen Docker conviven dos
+   copias físicas de `viem`** (peers de `zod` distintos para worker y shared): el error del cliente del
+   worker **no es `instanceof`** las clases que importa `shared`, así que se reconoce también por
+   **nombre** y recorriendo la cadena de `cause` (`5c19706`).
+
+**Corrección.** `packages/shared/src/burner/service.ts` (`isRevertError` reconoce ambas formas de
+revert y no depende de la identidad de las clases entre copias de viem) + regresión en
+`burner.test.ts` (23/23: cadena real de viem, error de otra copia, red que no es revert). Con el
+arreglo, el ciclo degrada como está diseñado: lote → token a token → `ownerOf` revierte ⇒ la fila
+inexistente se **reconcilia como `BURNED`** y el ciclo termina `COMPLETED`.
+
+| Componente | Imagen | Build | Revisión sirviendo | Tráfico |
+|---|---|---|---|---|
+| worker | **`worker:v85`** | ✅ SUCCESS `66028421-5953-4e90-97e0-9315bf937860` (2m54s) | **`hotel-mcp-worker-00033-zoy`** | **100 %** |
+| web | `web:v83` (sin cambios) | — | `hotel-mcp-web-00148-wuf` | 100 % |
+| mcp | `mcp:v78` (sin cambios) | — | `hotel-mcp-mcp-00035-sok` | 100 % |
+
+**Método de verificación.** Canario `--no-traffic --tag=v85` con `BURN_INTERVAL_MS=60000` (modo
+forzado de dev) para ejecutar un ciclo real sin esperar a las 12:00; la revisión limpia
+(`00033-zoy`, **sin** `BURN_INTERVAL_MS`) se desplegó después y se promovió con `update-traffic
+--to-latest`. Se conservó la configuración (**20 variables + 7 secretos**). Las revisiones de canario
+(`00031-waw` v84 fallida y `00032-mez` forzada) se eliminaron al terminar.
+
+| Comprobación | Resultado |
+|---|---|
+| Ciclo forzado (revisión `00032-mez`) | **9 candidatas → `COMPLETED` · burnedTokensCount 0** |
+| Reconciliación | Las 9 noches («ya no existe on-chain») → **`BURNED`**, sin alerta (no había inventario vivo) |
+| Base de datos | `10120261007..1020` → **9 filas `BURNED`**; caducadas `AVAILABLE` sin anclar: **0**; caducadas `AVAILABLE` (cualquiera): **0** |
+| Cerrojo diario | Retenido (26 h) tras el ciclo `COMPLETED`: la quema del 2026-10-21 no se repite |
+| Producción | `hotel-mcp-worker-00033-zoy` al 100 %; `lag 0`, `aggregateLag 0`, `burn.scheduler=enabled`, anchor ok; sin errores en logs |
+| `/health` | **503** por `emailDegraded: true` (**SMTP de relleno**, estado conocido §19; no es avería) |
+
+**Rollback.** `gcloud run services update-traffic hotel-mcp-worker --region=europe-west1
+--to-revisions=hotel-mcp-worker-00027-qfn=100` (worker:v78). La siguiente quema programada es la del
+**2026-10-22 a las 12:00** Europe/Madrid.
+
+Evidencia: [`evidencias/release-v85-quema-2026-10-21.json`](./evidencias/release-v85-quema-2026-10-21.json).

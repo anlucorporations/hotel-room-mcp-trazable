@@ -1,0 +1,62 @@
+{
+  "id": "release-v85-quema-2026-10-21",
+  "titulo": "Release v85 — la quema programada sobrevive a un revert sin datos de Besu y reconcilia filas fantasma",
+  "fechaUtc": "2026-10-21T00:45:00Z",
+  "alcance": "worker (web v83 y mcp v78 sin cambios)",
+  "incidente": {
+    "fecha": "2026-10-20",
+    "ventana": "10:01–10:56 UTC (hora de quema, reintento cada 5 min)",
+    "sintoma": "burn.lastRun reason=ERROR durante toda la hora; la quema del día no se ejecutó",
+    "candidatas": 8,
+    "detalle": "filas AVAILABLE caducadas de la habitación 101 (2026-10-07..19) que no existían on-chain (back-office con allowUnanchored, nunca minteadas). burnExpired revirtió con ERC721NonexistentToken."
+  },
+  "causaRaiz": [
+    "getUnsoldExpiredNFTs devolvía filas no ancladas (on_chain_anchored=FALSE) como candidatas a quema.",
+    "Besu devuelve el revert de burnExpired y de ownerOf SIN datos decodificables; viem lo expone como ContractFunctionExecutionError → CallExecutionError → ExecutionRevertedError, no como ContractFunctionRevertedError.",
+    "isRevertError solo reconocía ContractFunctionRevertedError: el revert se clasificaba como caída de red y tumbaba el ciclo entero (sin reintento token a token ni reconciliación).",
+    "En la imagen Docker conviven dos copias físicas de viem (peers de zod distintos para worker y shared), así que `instanceof` entre copias es false; hubo que reconocer el revert también por nombre y cadena de `cause`."
+  ],
+  "correccion": {
+    "commits": ["824f36a", "5c19706"],
+    "archivos": ["packages/shared/src/burner/service.ts", "packages/shared/src/burner/burner.test.ts"],
+    "pruebas": "burner.test.ts 23/23 (incluye cadena real de viem, error de otra copia y red que no es revert)",
+    "tipoCambio": "fix en shared (solo comportamiento del worker)"
+  },
+  "build": {
+    "id": "66028421-5953-4e90-97e0-9315bf937860",
+    "imagen": "europe-west1-docker.pkg.dev/hotel-mcp/hotel-mcp/worker:v85",
+    "duracion": "2m54s",
+    "resultado": "SUCCESS"
+  },
+  "despliegue": {
+    "metodo": "canario con BURN_INTERVAL_MS=60000 para forzar el ciclo + revisión limpia sin el override + update-traffic --to-latest",
+    "revisionVerificada": "hotel-mcp-worker-00032-mez (v85 con BURN_INTERVAL_MS=60000, 0 % de tráfico, eliminada al terminar)",
+    "revisionProduccion": "hotel-mcp-worker-00033-zoy (v85 sin BURN_INTERVAL_MS)",
+    "trafico": "100%",
+    "configuracionConservada": { "variables": 20, "secretos": 7 },
+    "rollback": "hotel-mcp-worker-00027-qfn (worker:v78)"
+  },
+  "verificacion": {
+    "cicloForzado": {
+      "candidatas": 9,
+      "resultado": "COMPLETED · burnedTokensCount 0",
+      "reconciliadas": 9,
+      "detalle": "las 9 noches inexistentes on-chain se marcaron BURNED; sin alerta (no había inventario vivo)",
+      "dedupe": "el cerrojo diario quedó retenido (26 h), por lo que la quema del 2026-10-21 no se repite"
+    },
+    "baseDatos": {
+      "ghostRows": "9 filas (10120261007..10120261020) → status BURNED",
+      "expiredUnanchoredAvailable": 0,
+      "expiredAvailableAny": 0
+    },
+    "produccion": {
+      "revision": "hotel-mcp-worker-00033-zoy",
+      "health": "503 por emailDegraded conocido (SMTP de relleno); internals sanos: lag 0, aggregateLag 0, burn.scheduler enabled, anchor scheduler ok",
+      "errores": "ninguno en logs desde la promoción"
+    }
+  },
+  "notas": [
+    "La rama de trabajo sigue siendo Hotel-DSH-GCP-v3, replicada en origin/github/codecrypto.",
+    "El SMTP de relleno sigue siendo la causa del 503 de /health del worker (estado preexistente)."
+  ]
+}

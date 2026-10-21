@@ -6351,3 +6351,25 @@ han redactado como **propuesta del equipo** (pendiente de confirmación del clie
 Con esto el manual del huésped es coherente en **las tres superficies**: MCP (`mcp:v78`, asistente),
 web (`web:v83`, guías navegables) y repositorio (`docs/manual-huesped.md`). Documentado en
 `despliegue_gcp.md` §97 y evidencia `evidencias/release-v83-2026-10-20.json`.
+
+
+---
+
+## 67. RELEASE v85 — la quema programada se recupera de un revert sin datos de Besu (2026-10-21)
+
+| Elemento | Valor |
+|---|---|
+| Incidente | Quema del **2026-10-20** fallida: `burn.lastRun=ERROR` cada 5 min entre 10:01 y 10:56 UTC; **8 candidatas**; la quema del día no se ejecutó |
+| Causa raíz | (1) 9 filas `AVAILABLE` caducadas de la habitación 101 registradas con `allowUnanchored` y **nunca minteadas** (`ownerOf` revierte); (2) Besu devuelve el revert **sin datos** → `ExecutionRevertedError`, que `isRevertError` no reconocía y clasificaba como caída de red; (3) en la imagen hay **dos copias de viem** (peers de zod), así que `instanceof` entre copias es false |
+| Corrección | `isRevertError` reconoce ambas formas de revert y **no depende de `instanceof`** (nombre + cadena de `cause`); commits `824f36a` + `5c19706`; `burner.test.ts` **23/23** |
+| Imagen | **`worker:v85`** (Cloud Build `66028421…`, 2m54s) |
+| Revisión sirviendo | **`hotel-mcp-worker-00033-zoy`** (100 %) — canario forzado `00032-mez` eliminado |
+| Configuración | conservada: **20 variables + 7 secretos** (sin `BURN_INTERVAL_MS`) |
+| Verificación | Ciclo forzado real: 9 candidatas → **`COMPLETED`**, 0 quemadas on-chain, **9 reconciliadas como `BURNED`**; BD sin caducadas `AVAILABLE` (0); worker `lag 0`; sin errores |
+| Rollback | `hotel-mcp-worker-00027-qfn` (worker:v78) |
+| Siguiente quema | **2026-10-22 12:00** Europe/Madrid (el cerrojo diario del 21 quedó consumido por el ciclo de verificación) |
+
+El incidente y el arreglo quedan documentados en [`despliegue_gcp.md`](./despliegue_gcp.md) §98 y en
+[`evidencias/release-v85-quema-2026-10-21.json`](./evidencias/release-v85-quema-2026-10-21.json). El
+`/health` del worker sigue devolviendo **503** por `emailDegraded` (SMTP de relleno), estado
+preexistente y ajeno a esta release.
