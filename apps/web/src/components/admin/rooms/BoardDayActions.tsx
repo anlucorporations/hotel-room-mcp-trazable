@@ -6,6 +6,11 @@ import { useAdminContext } from "@/components/admin/AdminLayout";
 import { AdminMint } from "@/components/admin/AdminMint";
 import { MaintenanceIcon } from "@/components/rooms/roomIcons";
 import { addDays, type BoardDayAction } from "@/lib/room-board-calendar";
+import {
+  bulkPublishErrorEntries,
+  summarizeBulkPublishResults,
+  type BulkPublishFeedback,
+} from "@/lib/room-bulk-feedback";
 import { ModalShell } from "@/components/ui/ModalShell";
 import type { BoardNotice, DayRoom } from "./board-dto";
 
@@ -104,6 +109,34 @@ export function BoardDayActions({
   /** El minteo on-chain trabaja de una en una: solo con una habitación seleccionada. */
   const mintTarget = selectedRooms.length === 1 ? selectedRooms[0] : undefined;
 
+  /**
+   * Explica el fallo de la publicación masiva con los motivos reales que devuelve la API.
+   *
+   * El 400 trae `results` por habitación (sin foto, sin descripción, ya publicada…). Antes se
+   * descartaba y el operador solo veía «No se pudieron publicar las habitaciones».
+   */
+  function publishFailureText(feedback: BulkPublishFeedback): string {
+    const parts = bulkPublishErrorEntries(feedback).map(({ code, count }) => {
+      switch (code) {
+        case "PUBLISH_REQUIRES_IMAGE":
+          return ta("boardPublishImageMissing", { count });
+        case "PUBLISH_REQUIRES_DESCRIPTION":
+          return ta("boardPublishDescriptionMissing", { count });
+        case "ALREADY_PUBLISHED":
+          return ta("boardPublishAlready", { count });
+        case "ALREADY_ARCHIVED":
+          return ta("boardPublishArchived", { count });
+        case "ROOM_NOT_FOUND":
+          return ta("boardPublishRoomMissing", { count });
+        default:
+          return ta("boardPublishUnknown", { count });
+      }
+    });
+    return parts.length > 0
+      ? `${ta("boardPublishError")} ${parts.join(" · ")}`
+      : ta("boardPublishError");
+  }
+
   /** Publicación del lote con un solo TOTP. */
   async function submitPublish(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -115,8 +148,13 @@ export function BoardDayActions({
         body: JSON.stringify({ roomIds, confirmTotpCode: mfaCode.trim() }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok && (data.published ?? 0) === 0) throw new Error(data.message || ta("boardPublishError"));
-      onNotice({ kind: "ok", text: ta("boardPublishOk", { published: data.published ?? 0 }) });
+      const feedback = summarizeBulkPublishResults(data.results, data.published);
+      if (!res.ok && feedback.published === 0) {
+        throw new Error(
+          feedback.failed > 0 ? publishFailureText(feedback) : data.message || ta("boardPublishError"),
+        );
+      }
+      onNotice({ kind: "ok", text: ta("boardPublishOk", { published: feedback.published }) });
       setMfaOpen(false);
       setMfaCode("");
       await onReload();

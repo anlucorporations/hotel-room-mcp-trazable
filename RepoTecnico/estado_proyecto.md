@@ -6373,3 +6373,52 @@ El incidente y el arreglo quedan documentados en [`despliegue_gcp.md`](./desplie
 [`evidencias/release-v85-quema-2026-10-21.json`](./evidencias/release-v85-quema-2026-10-21.json). El
 `/health` del worker sigue devolviendo **503** por `emailDegraded` (SMTP de relleno), estado
 preexistente y ajeno a esta release.
+
+---
+
+## 68. RELEASE v84 — habitaciones publicables: fotos, motivo real del 400 y galería persistente (2026-10-21)
+
+**El problema.** El responsable reportó que **no se podían publicar las habitaciones** desde
+`/admin/habitacion/publicar`. Los intentos reales (`POST /api/admin/rooms/bulk/publish` del 19-10 a
+las 18:49–18:50 y del 21-10 a las 13:34, tres veces) devolvían **HTTP 400 con 0 publicadas**.
+
+**Diagnóstico (datos reales de producción).**
+
+| Comprobación | Antes | Después |
+|---|---|---|
+| Habitaciones / publicadas | 50 / **1** (la 201) | 50 / **50** |
+| Descripción ES y tarifa | 50 / 50 ✅ | 50 / 50 ✅ |
+| Fotos en `room_images` | **1** (demo de la 201, con el fichero ausente → 404) | **50**, todas servidas por la API |
+| Motivo visible en la UI | aviso genérico («No se pudieron publicar las habitaciones.») | motivo por habitación (sin foto, sin descripción, ya publicada…) |
+
+**Causa raíz.** Publicar exige **al menos una foto** (D-20) y la siembra del inventario (18-10 23:56)
+creó las 50 fichas **sin galería**. El endpoint masivo devolvía el detalle solo en `results[]` y la
+interfaz lo descartaba, así que el 400 parecía un fallo del sistema. Además, el tablero permitía
+seleccionar fichas sin foto y las fotos subidas se guardaban en el **disco efímero** del contenedor.
+
+**Corrección (web:v84).**
+- `GET /api/admin/rooms` y `GET /api/admin/rooms/calendar` exponen **`hasImage`**; el tablero marca
+  «Sin foto», deshabilita la selección para publicar y avisa de cuántas fichas quedan fuera (D-20).
+- `GET/POST /api/admin/rooms/bulk/publish` devuelve un **mensaje agregado** con los motivos; el tablero
+  y la lista de habitaciones los traducen con `lib/room-bulk-feedback.ts`.
+- `scripts/planta.ts --images-only --apply` sube la foto del **tipo real** de cada habitación, sin
+  duplicar y sustituyendo galerías de tipo incorrecto.
+- **Persistencia:** bucket `gs://hotel-mcp-room-images` montado por GCS FUSE en `/repo/docs/imagenes`
+  (antes las fotos vivían en el disco efímero del contenedor y se perdían al redesplegar).
+
+**Datos.** 43 fotos subidas por la API (8 sustituciones), 0 fallos; y publicación masiva con TOTP del
+owner: **HTTP 200, 49 publicadas** (la 201 ya lo estaba). El catálogo público muestra **48** porque
+**101 y 102** tienen incidencias de mantenimiento abiertas que bloquean la venta (D-53), no por falta
+de foto.
+
+| Elemento | Valor |
+|---|---|
+| Imagen | **`web:v84`** (Cloud Build `ed75798d…`, us-central1, 3m48s, SUCCESS) |
+| Revisión sirviendo | **`hotel-mcp-web-00151-jag`** (100 %) |
+| Configuración | conservada: **32 variables + 9 secretos + volumen GCS** |
+| Pruebas | Vitest de los módulos tocados + i18n 9/9; typecheck 6/6 y eslint OK |
+| Rollback | `hotel-mcp-web-00148-wuf` (web:v83); el bucket de fotos es compatible |
+
+Evidencia: [`evidencias/release-v84-habitaciones-2026-10-21.json`](./evidencias/release-v84-habitaciones-2026-10-21.json)
+y [`despliegue_gcp.md`](./despliegue_gcp.md) §99.
+

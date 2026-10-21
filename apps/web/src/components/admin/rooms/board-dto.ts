@@ -17,6 +17,8 @@ export interface DayRoom {
   reserved: boolean;
   occupied: boolean;
   maintenance: boolean;
+  /** `true` si la ficha tiene al menos una foto: sin ella la API rechaza publicar (D-20). */
+  hasImage: boolean;
 }
 
 /** Detalle de un día: todas las habitaciones con su estado y el resumen. */

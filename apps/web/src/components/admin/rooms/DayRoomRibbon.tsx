@@ -82,7 +82,15 @@ export function DayRoomRibbon({ room, action, selected, onToggle }: DayRoomRibbo
             {ta("boardLegendMaintenance")}
           </span>
         )}
-        {idle && <span>{ta("boardNoActivity")}</span>}
+        {!room.hasImage && (
+          <span
+            data-testid={`board-room-no-photo-${room.roomNumber}`}
+            className="inline-flex items-center gap-1 text-warning"
+          >
+            {ta("boardRoomNoPhoto")}
+          </span>
+        )}
+        {idle && room.hasImage && <span>{ta("boardNoActivity")}</span>}
       </div>
 
       {/* Pie: el check de selección */}

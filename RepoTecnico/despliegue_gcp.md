@@ -3944,3 +3944,62 @@ forzado de dev) para ejecutar un ciclo real sin esperar a las 12:00; la revisió
 **2026-10-22 a las 12:00** Europe/Madrid.
 
 Evidencia: [`evidencias/release-v85-quema-2026-10-21.json`](./evidencias/release-v85-quema-2026-10-21.json).
+
+---
+
+## 99. Release v84 — habitaciones publicables y galería persistente en Cloud Storage (2026-10-21)
+
+**Qué se desplegó.** La corrección del bloqueo de publicación de habitaciones (web) y el cambio de
+persistencia de la galería: las fotos dejan el disco efímero del contenedor y pasan a un **bucket de
+Cloud Storage montado con GCS FUSE**.
+
+**Diagnóstico.** `POST /api/admin/rooms/bulk/publish` devolvía **400 con 0 publicadas** porque solo
+**1 de 50** habitaciones tenía fila en `room_images` y publicar exige al menos una foto (D-20). La
+interfaz descartaba el detalle `results[]` y mostraba un aviso genérico. La foto de demostración de la
+201 apuntaba a un fichero inexistente (`/data/room-images/...` → 404), síntoma del disco efímero.
+
+**Cambios de plataforma (esta release incluye infraestructura).**
+
+| Elemento | Valor |
+|---|---|
+| Bucket | `gs://hotel-mcp-room-images` (europe-west1, uniform access) |
+| IAM | `hotel-mcp-run@hotel-mcp.iam.gserviceaccount.com` → `roles/storage.objectAdmin` |
+| Contenido inicial | 103 ficheros de `docs/imagenes` copiados antes de montar |
+| Montaje | `--add-volume=name=room-images,type=cloud-storage,bucket=hotel-mcp-room-images --add-volume-mount=volume=room-images,mount-path=/repo/docs/imagenes` |
+| Efecto | `roomImagesDir()` sigue apuntando a `/repo/docs/imagenes`; ahora las escrituras de `POST /api/admin/rooms/[id]/images` persisten y las ven todas las instancias |
+
+**Build y despliegue.**
+
+| Componente | Imagen | Build | Revisión sirviendo | Tráfico |
+|---|---|---|---|---|
+| web | `…/hotel-mcp/web:v84` | ✅ SUCCESS `ed75798d-dab1-40f4-ac00-1041611c7fb0` (3m48s, `us-central1`) | `hotel-mcp-web-00151-jag` | **100 %** |
+| worker / mcp | `worker:v85` / `mcp:v78` (sin cambios) | — | vigentes | 100 % |
+
+**Método.** Canario `--no-traffic --tag=v84`, verificación por URL etiquetada y promoción con
+`update-traffic --to-latest`. La configuración se conservó (**32 variables + 9 secretos + volumen
+GCS**). El primer `gcloud builds submit` (pool por defecto) quedó en **QUEUED** y se canceló; el
+reintento con `--region=us-central1` arrancó y terminó en 3m48s.
+
+**Datos de producción corregidos.** 43 fotos subidas por la API de administración (8 de ellas
+sustituyendo galerías con el tipo equivocado) y publicación masiva con TOTP del owner: **49
+habitaciones publicadas** (la 201 ya estaba). Estado final: **50/50 `PUBLISHED`**.
+
+| Comprobación | Resultado |
+|---|---|
+| `/health/ready` (canario y producción) | **200 READY** (postgres, redis, RPC UP) |
+| `GET /api/admin/rooms` | 50 habitaciones, **`hasImage: true` en 50** |
+| `GET /api/admin/rooms/calendar?date=…` | incluye **`hasImage`**; 50 publicadas |
+| `POST /api/admin/rooms/bulk/publish` | **200 · 49 publicadas · 0 fallos** |
+| Foto de habitación | `/api/rooms/images/111-Simple-2026-10-21-1.jpg` → **200** |
+| Catálogo público | **48 habitaciones**; 101 y 102 excluidas por incidencias de mantenimiento `OPEN` con `blocksSale=true` (D-53) |
+| Bucket | **153 objetos** (103 previos + 50 fotos de habitación) |
+
+**Rollback.** `gcloud run services update-traffic hotel-mcp-web --region=europe-west1
+--to-revisions=hotel-mcp-web-00148-wuf=100` (web:v83). Las fotos del bucket son compatibles con v83
+(las sirve igual `/api/rooms/images/[file]`).
+
+**Pendiente.** Sustituir las fotos de tipo reutilizadas por las del hotel cuando el cliente las
+entregue (D-20) y resolver las incidencias abiertas de 101/102 si se quieren vender.
+
+Evidencia: [`evidencias/release-v84-habitaciones-2026-10-21.json`](./evidencias/release-v84-habitaciones-2026-10-21.json).
+

@@ -9,7 +9,10 @@
  *   pnpm --filter @hotel/shared exec tsx ../../scripts/planta.ts                 # plan
  *   pnpm --filter @hotel/shared exec tsx ../../scripts/planta.ts --apply         # ejecuta (confirma)
  *   pnpm --filter @hotel/shared exec tsx ../../scripts/planta.ts --apply --yes   # sin confirmación
- *   pnpm --filter @hotel/shared exec tsx ../../scripts/planta.ts --images-only   # solo las fotos
+ *   pnpm --filter @hotel/shared exec tsx ../../scripts/planta.ts --images-only   # solo materializa
+ *   pnpm --filter @hotel/shared exec tsx ../../scripts/planta.ts --images-only --apply --yes
+ *                                                                                # materializa y **sube**
+ *                                                                                # a las habitaciones que ya existan
  *
  * Entorno:
  *   PLANTA_BASE_URL      (por defecto, la web de producción)
@@ -300,7 +303,7 @@ function sleep(ms: number): Promise<void> {
  * habitaciones en ráfaga dispara el límite: sin esto el script se corta a mitad (observado el
  * 2026-10-05 con HTTP 429 «Edge WAF Rate Limit»).
  */
-async function requestWithRetry(url: string, init: RequestInit, label: string, attempts = 5): Promise<Response> {
+async function requestWithRetry(url: string, init: RequestInit, label: string, attempts = 7): Promise<Response> {
   let delay = 2000;
   for (let attempt = 1; ; attempt += 1) {
     const res = await fetch(url, init);
@@ -370,17 +373,78 @@ function roomPayload(spec: RoomSpec): Record<string, unknown> {
 }
 
 /**
- * Números de habitación que ya existen (una sola petición).
+ * Habitaciones que ya existen, indexadas por número y con su `id` (una sola petición).
  *
  * Es clave para el ritmo: si se intentara crear cada una de las 40 y 37 devolvieran 409, esos 37
  * rechazos consumen la cuota del límite del borde y la petición siguiente recibe 429 (observado el
- * 2026-10-05). Consultando primero, solo se envían las altas que faltan de verdad.
+ * 2026-10-05). Consultando primero, solo se envían las altas que faltan de verdad. El `id` es lo que
+ * necesita la subida de fotos a habitaciones ya creadas (`--images-only --apply`); `hasImage` evita,
+ * además, una petición de galería por habitación (que disparaba el 429 del borde), y `roomType` sirve
+ * para elegir la imagen de origen correcta aunque el inventario no siga el reparto del plan.
  */
-async function fetchExistingRoomNumbers(baseUrl: string, session: Session): Promise<Set<number>> {
+async function fetchExistingRooms(
+  baseUrl: string,
+  session: Session,
+): Promise<Map<number, { id: string; hasImage: boolean | null; roomType: string }>> {
   const res = await requestWithRetry(`${baseUrl}/api/admin/rooms`, { headers: { cookie: session.cookie } }, "listado");
   if (!res.ok) throw new Error(`no se pudo leer el listado de habitaciones (HTTP ${res.status})`);
-  const data = (await res.json().catch(() => ({}))) as { rooms?: Array<{ roomNumber: number }> };
-  return new Set((data.rooms ?? []).map((room) => room.roomNumber));
+  const data = (await res.json().catch(() => ({}))) as {
+    rooms?: Array<{ id: string; roomNumber: number; roomType?: string; hasImage?: boolean }>;
+  };
+  return new Map(
+    (data.rooms ?? []).map((room) => [
+      room.roomNumber,
+      {
+        id: room.id,
+        hasImage: typeof room.hasImage === "boolean" ? room.hasImage : null,
+        roomType: room.roomType ?? "SIMPLE",
+      },
+    ]),
+  );
+}
+
+/** Nº de fotos que ya tiene la habitación (para no duplicar la subida). */
+async function fetchRoomImageCount(baseUrl: string, session: Session, roomId: string): Promise<number> {
+  const res = await requestWithRetry(
+    `${baseUrl}/api/admin/rooms/${roomId}/images`,
+    { headers: { cookie: session.cookie } },
+    "galería",
+  );
+  if (!res.ok) throw new Error(`no se pudo leer la galería de ${roomId} (HTTP ${res.status})`);
+  const data = (await res.json().catch(() => ({}))) as { images?: unknown[] };
+  return Array.isArray(data.images) ? data.images.length : 0;
+}
+
+/** Ids de las fotos de la habitación (para sustituir una galería incorrecta). */
+async function listRoomImageIds(baseUrl: string, session: Session, roomId: string): Promise<string[]> {
+  const res = await requestWithRetry(
+    `${baseUrl}/api/admin/rooms/${roomId}/images`,
+    { headers: { cookie: session.cookie } },
+    "galería",
+  );
+  if (!res.ok) throw new Error(`no se pudo leer la galería de ${roomId} (HTTP ${res.status})`);
+  const data = (await res.json().catch(() => ({}))) as { images?: Array<{ id: string }> };
+  return (data.images ?? []).map((image) => image.id);
+}
+
+/** Elimina una foto (fila + fichero) de una habitación. */
+async function deleteRoomImage(baseUrl: string, session: Session, roomId: string, imageId: string): Promise<void> {
+  const res = await requestWithRetry(
+    `${baseUrl}/api/admin/rooms/${roomId}/images/${imageId}`,
+    { method: "DELETE", headers: { cookie: session.cookie } },
+    "borrado de foto",
+  );
+  if (!res.ok && res.status !== 404) {
+    throw new Error(`no se pudo borrar la foto ${imageId} (HTTP ${res.status})`);
+  }
+}
+
+/** Retira toda la galería de la habitación (para sustituirla por la foto del tipo real). */
+async function clearRoomImages(baseUrl: string, session: Session, roomId: string): Promise<void> {
+  for (const imageId of await listRoomImageIds(baseUrl, session, roomId)) {
+    await deleteRoomImage(baseUrl, session, roomId, imageId);
+    await sleep(300);
+  }
 }
 
 /** Crea la habitación. Devuelve su id, o `null` si el número ya existía. */
@@ -401,28 +465,66 @@ async function createRoom(baseUrl: string, session: Session, spec: RoomSpec): Pr
   return data.room.id;
 }
 
-/** Sube la foto de la habitación: crea la fila de `room_images` que consume el frontend. */
-async function uploadPhoto(baseUrl: string, session: Session, roomId: string, spec: RoomSpec): Promise<void> {
-  const filePath = path.join(IMAGES_DIR, spec.imageFileName);
-  const bytes = readFileSync(filePath);
+/** Sube una foto concreta a una habitación (multipart) y deja que el servidor la nombre. */
+async function uploadImageBytes(
+  baseUrl: string,
+  session: Session,
+  roomId: string,
+  fileName: string,
+  bytes: Buffer,
+  alt: { es: string; en: string; ru: string },
+): Promise<void> {
   if (bytes.byteLength === 0 || bytes.byteLength > 2 * 1024 * 1024) {
-    throw new Error(`la foto ${spec.imageFileName} no cabe en el límite de 2 MB`);
+    throw new Error(`la foto ${fileName} no cabe en el límite de 2 MB`);
   }
   const form = new FormData();
-  form.set("file", new Blob([bytes], { type: "image/jpeg" }), spec.imageFileName);
-  form.set("altTextEs", `Habitación ${spec.roomNumber} · ${spec.template.label}`);
-  form.set("altTextEn", `Room ${spec.roomNumber} · ${spec.template.label}`);
-  form.set("altTextRu", `Номер ${spec.roomNumber} · ${spec.template.label}`);
+  form.set("file", new Blob([bytes], { type: "image/jpeg" }), fileName);
+  form.set("altTextEs", alt.es);
+  form.set("altTextEn", alt.en);
+  form.set("altTextRu", alt.ru);
 
   const res = await requestWithRetry(`${baseUrl}/api/admin/rooms/${roomId}/images`, {
     method: "POST",
     headers: { cookie: session.cookie },
     body: form,
-  }, `foto ${spec.roomNumber}`);
+  }, `foto ${fileName}`);
   const data = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
   if (!res.ok) {
-    throw new Error(`foto de ${spec.roomNumber} falló (HTTP ${res.status}): ${data.message ?? data.error ?? "sin detalle"}`);
+    throw new Error(`foto ${fileName} falló (HTTP ${res.status}): ${data.message ?? data.error ?? "sin detalle"}`);
   }
+}
+
+/** Sube la foto de la habitación: crea la fila de `room_images` que consume el frontend. */
+async function uploadPhoto(baseUrl: string, session: Session, roomId: string, spec: RoomSpec): Promise<void> {
+  const filePath = path.join(IMAGES_DIR, spec.imageFileName);
+  const bytes = readFileSync(filePath);
+  await uploadImageBytes(baseUrl, session, roomId, spec.imageFileName, bytes, {
+    es: `Habitación ${spec.roomNumber} · ${spec.template.label}`,
+    en: `Room ${spec.roomNumber} · ${spec.template.label}`,
+    ru: `Номер ${spec.roomNumber} · ${spec.template.label}`,
+  });
+}
+
+/**
+ * Sube la foto de una habitación **que ya existe**, eligiendo la imagen de origen por su **tipo
+ * real** en la base (no por la planta del plan): así cubre inventarios sembrados con otro reparto.
+ * El servidor nombra el fichero de forma canónica con el tipo que tiene la habitación.
+ */
+async function uploadPhotoForExistingRoom(
+  baseUrl: string,
+  session: Session,
+  roomId: string,
+  roomNumber: number,
+  roomType: string,
+): Promise<void> {
+  const template = TEMPLATES[roomType.toUpperCase() as RoomType];
+  if (!template) throw new Error(`tipo de habitación sin plantilla de foto: ${roomType}`);
+  const bytes = readFileSync(path.join(IMAGES_DIR, template.sourceImage));
+  await uploadImageBytes(baseUrl, session, roomId, template.sourceImage, bytes, {
+    es: `Habitación ${roomNumber} · ${template.label}`,
+    en: `Room ${roomNumber} · ${template.label}`,
+    ru: `Номер ${roomNumber} · ${template.label}`,
+  });
 }
 
 // ── Flujo principal ─────────────────────────────────────────────────────────────────────────────
@@ -456,7 +558,9 @@ async function main(): Promise<void> {
 
   const confirmed = await confirm(
     IMAGES_ONLY
-      ? `¿Materializar ${plan.length} fotos en docs/imagenes?`
+      ? APPLY
+        ? `¿Subir una foto a cada habitación que ya exista y no tenga, en ${BASE_URL}?`
+        : `¿Materializar ${plan.length} fotos en docs/imagenes?`
       : `¿Crear ${plan.length} habitaciones en ${BASE_URL} y subir sus fotos?`,
   );
   if (!confirmed) {
@@ -464,12 +568,14 @@ async function main(): Promise<void> {
     return;
   }
 
-  // — Fase 1: fotos con el nombre canónico de cada habitación —
-  const images = materializeImages(plan);
-  log(`fotos: ${images.created} creadas · ${images.existing} ya existían`);
-  if (IMAGES_ONLY) return;
+  // — Fase 1: fotos con el nombre canónico de cada habitación (solo materializar) —
+  if (IMAGES_ONLY && !APPLY) {
+    const images = materializeImages(plan);
+    log(`fotos: ${images.created} creadas · ${images.existing} ya existían`);
+    return;
+  }
 
-  // — Fase 2: alta por la API de administración (validada y auditada) —
+  // — Fase 2: API de administración (validada y auditada) —
   const user = process.env.ADMIN_USER;
   const password = process.env.ADMIN_PASSWORD;
   const secret = process.env.ADMIN_TOTP_SECRET;
@@ -479,7 +585,54 @@ async function main(): Promise<void> {
   const session = await login(BASE_URL, user, password, secret);
   log("sesión iniciada (contraseña + TOTP)");
 
-  const existing = await fetchExistingRoomNumbers(BASE_URL, session);
+  const existing = await fetchExistingRooms(BASE_URL, session);
+
+  // — Modo «solo fotos + subir»: completa la galería de habitaciones ya creadas (D-20) —
+  // Es el camino para desbloquear la publicación de un inventario sembrado sin fotos: sin al menos
+  // una imagen la API rechaza publicar (PUBLISH_REQUIRES_IMAGE). Recorre el **inventario real**
+  // (no el plan) para cubrir cualquier reparto de plantas y elige la foto por el tipo real.
+  if (IMAGES_ONLY) {
+    const planByNumber = new Map(plan.map((room) => [room.roomNumber, room]));
+    let uploaded = 0;
+    let replaced = 0;
+    let already = 0;
+    for (const [roomNumber, room] of existing) {
+      // El listado ya dice si tiene foto (`hasImage`). Si el servidor no lo aporta (versión
+      // anterior), se consulta la galería; así no se duplica una subida nunca.
+      const photoCount =
+        room.hasImage === null
+          ? await fetchRoomImageCount(BASE_URL, session, room.id)
+          : room.hasImage
+            ? 1
+            : 0;
+      const planRoom = planByNumber.get(roomNumber);
+      // Sustitución: una foto pudo subirse con el tipo del plan cuando el inventario real difiere
+      // (p. ej. la siembra antigua de 50 habitaciones). Se reemplaza por la del tipo real.
+      const typeMismatch =
+        photoCount > 0 &&
+        planRoom !== undefined &&
+        planRoom.template.type !== room.roomType.toUpperCase();
+      if (photoCount > 0 && !typeMismatch) {
+        already += 1;
+        continue;
+      }
+      if (typeMismatch) {
+        await clearRoomImages(BASE_URL, session, room.id);
+        replaced += 1;
+      }
+      await uploadPhotoForExistingRoom(BASE_URL, session, room.id, roomNumber, room.roomType);
+      uploaded += 1;
+      log(`  ✓ ${roomNumber} (${room.roomType}) con su foto`);
+      await sleep(3000); // ritmo pausado: evita el límite del borde (429)
+    }
+    log(`resumen fotos: ${uploaded} subidas (${replaced} sustituidas) · ${already} ya tenían`);
+    log(`registro en ${LOG_FILE}`);
+    return;
+  }
+
+  // — Fase 3: alta de las habitaciones que falten (plan) con su foto —
+  const images = materializeImages(plan);
+  log(`fotos: ${images.created} creadas · ${images.existing} ya existían`);
   const pending = plan.filter((room) => !existing.has(room.roomNumber));
   const alreadyThere = plan.length - pending.length;
   log(`ya existían ${alreadyThere} · por crear ${pending.length}`);

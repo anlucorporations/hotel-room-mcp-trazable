@@ -22,6 +22,8 @@ interface RoomDayEntry {
   reserved: boolean;
   occupied: boolean;
   maintenance: boolean;
+  /** `true` si la ficha tiene al menos una foto: sin ella la API rechaza publicar (D-20). */
+  hasImage: boolean;
 }
 
 /**
@@ -104,15 +106,17 @@ async function dayDetail(date: string): Promise<{
   rooms: RoomDayEntry[];
   summary: { published: number; reserved: number; occupied: number; maintenance: number };
 }> {
-  const [rooms, states, maintenanceRoomIds] = await Promise.all([
+  const [rooms, states, maintenanceRoomIds, roomsWithImages] = await Promise.all([
     roomsRepo.listRooms(),
     roomsRepo.listRoomDayStates(date, date),
     roomsRepo.listRoomIdsInMaintenance(),
+    roomsRepo.listRoomIdsWithImages(),
   ]);
 
   const byRoom = new Map<string, RoomDayStateRecord>();
   for (const state of states) byRoom.set(state.roomId, state);
   const maintenance = new Set(maintenanceRoomIds);
+  const withImage = new Set(roomsWithImages);
 
   const entries: RoomDayEntry[] = rooms.map((room) => {
     const state = byRoom.get(room.id);
@@ -127,6 +131,7 @@ async function dayDetail(date: string): Promise<{
       reserved: state?.reserved === true,
       occupied: state?.occupied === true,
       maintenance: maintenance.has(room.id),
+      hasImage: withImage.has(room.id),
     };
   });
 

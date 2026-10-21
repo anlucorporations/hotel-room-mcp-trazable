@@ -44,6 +44,7 @@ const room = (
   reserved: false,
   occupied: false,
   maintenance: false,
+  hasImage: true,
   ...extra,
 });
 
@@ -208,5 +209,36 @@ describe("BoardDayDialog — selección y elegibilidad", () => {
       html.indexOf('data-testid="board-floor-2"'),
     );
     expect(floor1).toContain("2 seleccionadas");
+  });
+});
+
+describe("BoardDayDialog — fichas sin foto (D-20)", () => {
+  const sinFoto: DayDetail = {
+    ...day,
+    summary: { published: 0, reserved: 0, occupied: 0, maintenance: 0 },
+    rooms: [
+      room(102, "DOBLE", 1, { hasImage: false }),
+      room(103, "SIMPLE", 1),
+      room(201, "SUITE", 2, { hasImage: false, publicationStatus: "PUBLISHED", published: true }),
+    ],
+  };
+
+  it("avisa del número de fichas no publicables y las marca en su ribbon", () => {
+    const html = renderWith({ day: sinFoto, action: "PUBLISH" });
+    expect(html).toContain('data-testid="board-missing-photo-hint"');
+    // Solo cuenta las que no están publicadas: 102 (201 ya lo está).
+    expect(html).toContain("1 habitación(es) sin foto");
+    expect(html).toContain('data-testid="board-room-no-photo-102"');
+  });
+
+  it("una ficha sin foto no se puede marcar para publicar; las demás sí", () => {
+    const html = renderWith({ day: sinFoto, action: "PUBLISH" });
+    expect(html).toMatch(/data-testid="board-room-102"[^>]*disabled=""/);
+    expect(html).not.toMatch(/data-testid="board-room-103"[^>]*disabled=""/);
+  });
+
+  it("el aviso de fotos no aparece con acciones que no publican", () => {
+    const html = renderWith({ day: sinFoto, action: "RESERVE" });
+    expect(html).not.toContain('data-testid="board-missing-photo-hint"');
   });
 });

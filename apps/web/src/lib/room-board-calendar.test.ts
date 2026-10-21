@@ -123,7 +123,14 @@ describe("aggregateBoardDays", () => {
 });
 
 describe("isDayRoomEligible (panel del día)", () => {
-  const base = { published: false, reserved: false, occupied: false, maintenance: false, publicationStatus: "DRAFT" };
+  const base = {
+    published: false,
+    reserved: false,
+    occupied: false,
+    maintenance: false,
+    publicationStatus: "DRAFT",
+    hasImage: true,
+  };
 
   it("PUBLISH: solo si la noche está libre, no hay mantenimiento y no está publicada", () => {
     expect(isDayRoomEligible(base, "PUBLISH")).toBe(true);
@@ -132,6 +139,13 @@ describe("isDayRoomEligible (panel del día)", () => {
     expect(isDayRoomEligible({ ...base, reserved: true }, "PUBLISH")).toBe(false);
     expect(isDayRoomEligible({ ...base, occupied: true }, "PUBLISH")).toBe(false);
     expect(isDayRoomEligible({ ...base, maintenance: true }, "PUBLISH")).toBe(false);
+  });
+
+  it("PUBLISH: una ficha sin foto no es elegible (D-20), aunque la noche esté libre", () => {
+    expect(isDayRoomEligible({ ...base, hasImage: false }, "PUBLISH")).toBe(false);
+    // La falta de foto no afecta a las demás acciones.
+    expect(isDayRoomEligible({ ...base, hasImage: false }, "RESERVE")).toBe(true);
+    expect(isDayRoomEligible({ ...base, hasImage: false }, "SERVICE")).toBe(true);
   });
 
   it("RESERVE: noche libre y sin mantenimiento", () => {

@@ -469,6 +469,17 @@ export class RoomsRepository {
     return res.rows.map(mapImage);
   }
 
+  /**
+   * Ids de las habitaciones con **al menos una foto** en la galería (D-20).
+   *
+   * Lo consume el tablero de publicación: publicar exige una foto, así que la interfaz necesita
+   * saber qué fichas pueden publicarse antes de pedir el TOTP (y no descubrirlo con un 400 genérico).
+   */
+  async listRoomIdsWithImages(): Promise<string[]> {
+    const res = await this.pool.query("SELECT DISTINCT room_id FROM room_images");
+    return res.rows.map((row) => row.room_id as string);
+  }
+
   async findImageById(id: string): Promise<RoomImageRecord | null> {
     const res = await this.pool.query("SELECT * FROM room_images WHERE id = $1", [id]);
     return res.rows.length > 0 ? mapImage(res.rows[0]) : null;

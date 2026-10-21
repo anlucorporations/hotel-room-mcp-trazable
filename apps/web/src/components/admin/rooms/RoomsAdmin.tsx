@@ -20,6 +20,7 @@ import { useAdminContext } from "@/components/admin/AdminLayout";
 import { AdminCard } from "@/components/admin/AdminPanel";
 import { RoomDetailCard } from "@/components/rooms/RoomDetailCard";
 import { ModalShell } from "@/components/ui/ModalShell";
+import { summarizeBulkPublishResults } from "@/lib/room-bulk-feedback";
 import { RoomFormDialog, type RoomFormOutcome } from "./RoomFormDialog";
 import {
   catalogEntryName,
@@ -536,16 +537,17 @@ export function RoomsAdmin() {
       body: JSON.stringify({ roomIds: ids, confirmTotpCode: mfaCode.trim(), txHashes }),
     });
     const data = await res.json().catch(() => ({}));
-    const failed = Array.isArray(data.results)
-      ? (data.results as Array<{ ok?: boolean }>).filter((result) => !result.ok).length
-      : 0;
-    if (!res.ok && failed === ids.length) throw new Error(data.message || ta("roomBulkPublishError"));
+    // El endpoint devuelve el detalle por habitación (`results`) y, si no se publicó ninguna, un
+    // `message` agregado con los motivos: sin foto (D-20), sin descripción, ya publicadas…
+    const feedback = summarizeBulkPublishResults(data.results, data.published);
+    const failed = feedback.failed;
+    if (!res.ok && feedback.published === 0) throw new Error(data.message || ta("roomBulkPublishError"));
     setMfaOpen(false);
     setMfaCode("");
     setPendingPublish(null);
     setNotice({
       kind: "ok",
-      text: ta("roomBulkPublishDone", { published: data.published ?? 0, failed }),
+      text: ta("roomBulkPublishDone", { published: feedback.published, failed }),
     });
     exitBulkMode();
     await loadRooms();

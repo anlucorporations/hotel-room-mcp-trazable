@@ -177,6 +177,9 @@ describe("POST /api/admin/rooms/bulk/publish (2026-10-04, tablero Admin)", () =>
     const data = await res.json();
     expect(data.published).toBe(0);
     expect(data.results[0]).toMatchObject({ roomId: "room-x", ok: false, error: "ROOM_NOT_FOUND" });
+    // El 400 no es mudo: lleva el motivo agregado para que la interfaz lo muestre.
+    expect(data.message).toContain("No se pudo publicar ninguna habitación");
+    expect(data.message).toContain("inexistentes");
   });
 });
 

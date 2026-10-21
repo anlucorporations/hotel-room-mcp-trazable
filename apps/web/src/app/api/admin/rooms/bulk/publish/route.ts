@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { AuthService, RoomsRepository, type RoomRecord } from "@hotel/shared";
 import { requireRole } from "@/lib/guard";
+import { bulkPublishErrorEntries, summarizeBulkPublishResults } from "@/lib/room-bulk-feedback";
 import { roomContentHash } from "@/lib/rooms";
 
 export const dynamic = "force-dynamic";
@@ -185,7 +186,28 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const published = results.filter((result) => result.ok);
   if (published.length === 0) {
-    return NextResponse.json({ results, published: 0 }, { status: 400 });
+    // Sin ninguna publicación, se devuelve el **motivo agregado** para que la interfaz (y cualquier
+    // otro cliente) no se quede con un 400 mudo. Cada `results[i]` conserva su detalle.
+    return NextResponse.json({ results, published: 0, message: failureSummary(results) }, { status: 400 });
   }
   return NextResponse.json({ results, published: published.length });
+}
+
+/** Texto agregado de por qué no se publicó ninguna habitación (motivos de la API, en español). */
+function failureSummary(results: readonly BulkRoomResult[]): string {
+  const feedback = summarizeBulkPublishResults(results, 0);
+  const labels: Readonly<Record<string, string>> = {
+    PUBLISH_REQUIRES_IMAGE: "sin foto (se exige al menos una, D-20)",
+    PUBLISH_REQUIRES_DESCRIPTION: "sin descripción en español (D-6/D-21)",
+    ALREADY_PUBLISHED: "ya publicadas",
+    ALREADY_ARCHIVED: "archivadas",
+    ROOM_NOT_FOUND: "inexistentes",
+    INTERNAL_SERVER_ERROR: "con error interno",
+  };
+  const parts = bulkPublishErrorEntries(feedback).map(
+    ({ code, count }) => `${count} ${labels[code] ?? "con error desconocido"}`,
+  );
+  return parts.length > 0
+    ? `No se pudo publicar ninguna habitación: ${parts.join("; ")}.`
+    : "No se pudo publicar ninguna habitación.";
 }

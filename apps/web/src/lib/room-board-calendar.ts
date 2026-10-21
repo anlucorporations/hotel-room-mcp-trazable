@@ -181,13 +181,16 @@ export interface DayRoomFlags {
   readonly occupied: boolean;
   readonly maintenance: boolean;
   readonly publicationStatus: string;
+  /** La ficha tiene al menos una foto (D-20: sin foto la API rechaza publicar). */
+  readonly hasImage: boolean;
 }
 
 /**
  * ¿Esta habitación admite esta acción **ese día**? (2026-10-04, panel del día.)
  *
- *   · `PUBLISH`: la noche está libre (ni reservada ni ocupada), no está en mantenimiento y la ficha
- *     no está ya publicada — publicar de nuevo no aporta nada.
+ *   · `PUBLISH`: la noche está libre (ni reservada ni ocupada), no está en mantenimiento, la ficha
+ *     no está ya publicada — publicar de nuevo no aporta nada — y **tiene al menos una foto**, porque
+ *     es requisito de la API (D-20) y la interfaz no debe dejar llegar a un 400.
  *   · `RESERVE`: la noche está libre y la habitación no está en mantenimiento.
  *   · `RELEASE`: hay una reserva viva esa noche (es lo único que se puede liberar).
  *   · `MINT`: la noche está libre (el minteo on-chain vuelve a validar contra la cadena).
@@ -198,7 +201,14 @@ export interface DayRoomFlags {
 export function isDayRoomEligible(room: DayRoomFlags, action: BoardDayAction): boolean {
   switch (action) {
     case "PUBLISH":
-      return !room.published && room.publicationStatus !== "PUBLISHED" && !room.reserved && !room.occupied && !room.maintenance;
+      return (
+        !room.published &&
+        room.publicationStatus !== "PUBLISHED" &&
+        !room.reserved &&
+        !room.occupied &&
+        !room.maintenance &&
+        room.hasImage
+      );
     case "RESERVE":
       return !room.reserved && !room.occupied && !room.maintenance;
     case "RELEASE":

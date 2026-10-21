@@ -40,15 +40,25 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // (reservas vivas PENDING/CONFIRMED/COMPLETED + tokens vendidos). Ausente = 0.
     const from = isoDateFromToday(0);
     const to = isoDateFromToday(RESERVED_WINDOW_DAYS);
-    const counts = await roomsRepo.countReservedNightsByRooms(
-      rooms.map((room) => room.id),
-      from,
-      to,
-    );
+    const [counts, roomsWithImages] = await Promise.all([
+      roomsRepo.countReservedNightsByRooms(
+        rooms.map((room) => room.id),
+        from,
+        to,
+      ),
+      // `hasImage` (2026-10-21): publicar exige al menos una foto (D-20); el listado lo expone para
+      // que los clientes (tablero y scripts de siembra) no tengan que consultar la galería una a una.
+      roomsRepo.listRoomIdsWithImages(),
+    ]);
+    const withImage = new Set(roomsWithImages);
 
     return NextResponse.json({
       reservedWindow: { from, to },
-      rooms: rooms.map((room) => ({ ...room, reservedNights: counts.get(room.id) ?? 0 })),
+      rooms: rooms.map((room) => ({
+        ...room,
+        reservedNights: counts.get(room.id) ?? 0,
+        hasImage: withImage.has(room.id),
+      })),
     });
   } catch (error: unknown) {
     console.error("[API /api/admin/rooms] GET:", error);

@@ -79,6 +79,9 @@ export function BoardDayDialog({
   const eligible = rooms.filter((room) => isDayRoomEligible(room, action)).map((room) => room.id);
   const selectedRooms = rooms.filter((room) => selectedIds.has(room.id));
   const allEligibleSelected = eligible.length > 0 && eligible.every((id) => selectedIds.has(id));
+  // Publicar exige foto (D-20): el panel avisa de cuántas fichas quedan fuera por ese motivo, en
+  // lugar de dejar que el operador las seleccione y reciba un 400 sin explicación.
+  const missingPhoto = rooms.filter((room) => !room.hasImage && room.publicationStatus !== "PUBLISHED").length;
   // Fichas por planta (ordenadas), que es como se presenta el día: cada planta, su cuadrícula.
   const floors = groupRoomsByFloor(rooms);
 
@@ -118,6 +121,12 @@ export function BoardDayDialog({
               })
             : t("loading")}
         </p>
+
+        {action === "PUBLISH" && missingPhoto > 0 && (
+          <p data-testid="board-missing-photo-hint" role="status" className="text-small text-warning">
+            {ta("boardPublishMissingPhotos", { count: missingPhoto })}
+          </p>
+        )}
 
         <BoardDayActions
           date={date}

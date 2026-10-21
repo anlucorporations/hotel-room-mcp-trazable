@@ -28,6 +28,8 @@ const { mockRepo } = vi.hoisted(() => ({
     setRoomSpaces: vi.fn(),
     // Tablero 2026-10-04 (distintivo «Reservada»).
     countReservedNightsByRooms: vi.fn(),
+    // Publicación (2026-10-21): el listado informa de qué fichas tienen foto (D-20).
+    listRoomIdsWithImages: vi.fn(),
   },
 }));
 
@@ -76,6 +78,7 @@ describe("API /api/admin/rooms (F1 · D-1, D-7)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resetGuardState();
+    mockRepo.listRoomIdsWithImages.mockResolvedValue([]);
   });
 
   it("GET exige el rol de administrador", async () => {
@@ -107,10 +110,13 @@ describe("API /api/admin/rooms (F1 · D-1, D-7)", () => {
   it("GET añade reservedNights por habitación (0 si no hay noches ocupadas, 2026-10-04)", async () => {
     mockRepo.listRooms.mockResolvedValueOnce([room]);
     mockRepo.countReservedNightsByRooms.mockResolvedValueOnce(new Map([["room-1", 3]]));
+    mockRepo.listRoomIdsWithImages.mockResolvedValueOnce(["room-1"]);
     const res = await listGET(request("GET"));
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.rooms[0].reservedNights).toBe(3);
+    // El listado informa de la galería (D-20): es lo que usa el tablero para bloquear «Publicar».
+    expect(data.rooms[0].hasImage).toBe(true);
     expect(data.reservedWindow).toMatchObject({ from: expect.any(String), to: expect.any(String) });
   });
 

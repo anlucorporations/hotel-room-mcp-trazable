@@ -10,6 +10,7 @@ const { mockRooms } = vi.hoisted(() => ({
     listRooms: vi.fn(),
     listRoomDayStates: vi.fn(),
     listRoomIdsInMaintenance: vi.fn(),
+    listRoomIdsWithImages: vi.fn(),
   },
 }));
 
@@ -57,6 +58,7 @@ beforeEach(() => {
   mockRooms.listRooms.mockResolvedValue([]);
   mockRooms.listRoomDayStates.mockResolvedValue([]);
   mockRooms.listRoomIdsInMaintenance.mockResolvedValue([]);
+  mockRooms.listRoomIdsWithImages.mockResolvedValue([]);
 });
 
 describe("GET /api/admin/rooms/calendar (2026-10-04)", () => {
@@ -109,15 +111,17 @@ describe("GET /api/admin/rooms/calendar (2026-10-04)", () => {
       { roomId: "r2", date: "2026-10-05", published: false, reserved: true, occupied: false },
     ]);
     mockRooms.listRoomIdsInMaintenance.mockResolvedValueOnce(["r3"]);
+    // La galería (D-20) decide qué fichas se pueden publicar: r1 y r3 tienen foto, r2 no.
+    mockRooms.listRoomIdsWithImages.mockResolvedValueOnce(["r1", "r3"]);
 
     const res = await GET(request("?date=2026-10-05"));
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.date).toBe("2026-10-05");
     expect(data.rooms).toHaveLength(3);
-    expect(data.rooms[0]).toMatchObject({ roomNumber: 101, published: true, reserved: false, maintenance: false });
-    expect(data.rooms[1]).toMatchObject({ roomNumber: 102, published: false, reserved: true });
-    expect(data.rooms[2]).toMatchObject({ roomNumber: 103, maintenance: true, published: false });
+    expect(data.rooms[0]).toMatchObject({ roomNumber: 101, published: true, reserved: false, maintenance: false, hasImage: true });
+    expect(data.rooms[1]).toMatchObject({ roomNumber: 102, published: false, reserved: true, hasImage: false });
+    expect(data.rooms[2]).toMatchObject({ roomNumber: 103, maintenance: true, published: false, hasImage: true });
     expect(data.summary).toEqual({ published: 1, reserved: 1, occupied: 0, maintenance: 1 });
   });
 });

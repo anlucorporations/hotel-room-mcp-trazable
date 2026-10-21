@@ -1,0 +1,90 @@
+{
+  "id": "release-v84-habitaciones-2026-10-21",
+  "titulo": "Release v84 — diagnóstico y desbloqueo de la publicación de habitaciones (fotos + motivo real del 400)",
+  "fechaUtc": "2026-10-21T15:00:00Z",
+  "alcance": "web (worker v85 y mcp v78 sin cambios) + datos de producción (galería de habitaciones) + bucket de imágenes",
+  "sintoma": {
+    "reporte": "No se pueden publicar las habitaciones desde /admin/habitacion/publicar",
+    "evidencia": "POST /api/admin/rooms/bulk/publish -> HTTP 400 con published=0 el 2026-10-19 18:49-18:50 y el 2026-10-21 13:34 (3 intentos)",
+    "estadoInicial": {
+      "habitaciones": 50,
+      "publicadas": 1,
+      "borradores": 49,
+      "conDescripcionEs": 50,
+      "conTarifa": 50,
+      "conFoto": 1,
+      "publicacionesVisibles": 1
+    }
+  },
+  "causaRaiz": [
+    "Publicar exige al menos una foto (D-20): POST /api/admin/rooms/[id]/publish y /bulk/publish devuelven PUBLISH_REQUIRES_IMAGE cuando room_images está vacía.",
+    "La siembra del inventario (2026-10-18 23:56) creó las 50 habitaciones sin filas en room_images; solo la 201 tenía una fila de demostración ('demo-seed') cuyo fichero no existía en el contenedor (/data/room-images -> 404).",
+    "El endpoint masivo devolvía 400 solo con results[] por habitación, sin mensaje agregado; BoardDayActions descartaba results y mostraba el aviso genérico 'No se pudieron publicar las habitaciones'.",
+    "El tablero no consultaba las fotos: una habitación sin foto aparecía como seleccionable para publicar.",
+    "Riesgo de persistencia: las fotos subidas se escribían en el sistema de ficheros efímero del contenedor (/repo/docs/imagenes), que se pierde al redesplegar o al atender otra instancia (minScale 1 / maxScale 3)."
+  ],
+  "correccion": {
+    "codigo": [
+      "packages/shared/src/db/repositories/rooms.repository.ts: nuevo listRoomIdsWithImages()",
+      "GET /api/admin/rooms/calendar: nuevo campo hasImage por habitación",
+      "GET /api/admin/rooms: nuevo campo hasImage en el listado (evita N consultas de galería)",
+      "lib/room-board-calendar.ts: PUBLICAR exige hasImage (D-20)",
+      "DayRoomRibbon / BoardDayDialog: marca 'Sin foto', deshabilita la selección y avisa del número de fichas no publicables",
+      "lib/room-bulk-feedback.ts + BoardDayActions / RoomsAdmin: resumen localizado de los motivos del 400",
+      "POST /api/admin/rooms/bulk/publish: mensaje agregado cuando no se publica ninguna habitación",
+      "scripts/planta.ts --images-only --apply: sube fotos por el tipo real de la habitación, sin duplicar y sustituyendo galerías de tipo incorrecto"
+    ],
+    "pruebas": "Vitest: room-bulk-feedback 6/6, room-board-calendar 24/24, board-day-dialog 13/13, calendar route 6/6, bulk publish API (mensaje agregado) OK; i18n-keys 5/5 e i18n-parity 4/4; typecheck y eslint OK",
+    "datos": "43 fotos subidas por la API (8 de ellas sustituyendo la galería de tipo incorrecto: 101-105, 201-203); 0 fallos",
+    "persistencia": "Bucket gs://hotel-mcp-room-images (europe-west1) montado en /repo/docs/imagenes (GCS FUSE) con objectAdmin para hotel-mcp-run@hotel-mcp.iam.gserviceaccount.com; se copiaron las 103 imágenes del repositorio antes del montaje"
+  },
+  "build": {
+    "id": "ed75798d-dab1-40f4-ac00-1041611c7fb0",
+    "region": "us-central1 (el pool por defecto dejó el primer intento en QUEUED y se canceló)",
+    "imagen": "europe-west1-docker.pkg.dev/hotel-mcp/hotel-mcp/web:v84",
+    "inicio": "2026-10-21T14:54:22Z",
+    "fin": "2026-10-21T14:58:10Z",
+    "resultado": "SUCCESS"
+  },
+  "despliegue": {
+    "metodo": "canario --no-traffic --tag=v84, verificación por URL etiquetada y update-traffic --to-latest",
+    "revisionProduccion": "hotel-mcp-web-00151-jag (100 %)",
+    "revisionAnterior": "hotel-mcp-web-00148-wuf (web:v83)",
+    "configuracionConservada": { "variables": 32, "secretos": 9, "volumenGcs": "room-images -> /repo/docs/imagenes" }
+  },
+  "verificacion": {
+    "canario": {
+      "healthReady": "200 READY (postgres, redis, RPC UP)",
+      "home": "200",
+      "fotoHabitacion": "200",
+      "publicRooms": "200"
+    },
+    "adminApiProduccion": {
+      "habitaciones": 50,
+      "hasImage": 50,
+      "estados": { "PUBLISHED": 50 },
+      "calendarDate": "2026-10-21",
+      "calendarHasImage": true
+    },
+    "publicacion": {
+      "metodo": "POST /api/admin/rooms/bulk/publish con TOTP del owner (misma vía que el tablero)",
+      "resultado": "HTTP 200 · 49 publicadas (la 201 ya lo estaba) · 0 fallos",
+      "estadosFinales": { "PUBLISHED": 50 }
+    },
+    "catalogoPublico": {
+      "habitacionesVisibles": 48,
+      "excluidas": [101, 102],
+      "motivoExclusion": "incidencias de mantenimiento OPEN con blocksSale=true (preexistentes de pruebas F4/F5), no por falta de foto (D-53)"
+    },
+    "bucket": {
+      "objetos": 153,
+      "fotosHabitacion2026_10_21": 50
+    }
+  },
+  "rollback": "gcloud run services update-traffic hotel-mcp-web --region=europe-west1 --to-revisions=hotel-mcp-web-00148-wuf=100 (web:v83) — el bucket y las fotos son compatibles con v83",
+  "pendientes": [
+    "Sustituir las fotos de tipo reutilizadas por las fotos reales del hotel cuando el cliente las entregue (D-20).",
+    "Valorar limpiar las revisiones de tag antiguas (v39..v54) que ya no se usan.",
+    "101 y 102 siguen fuera del catálogo por incidencias de mantenimiento abiertas: resolverlas en la suite de mantenimiento si se quieren vender."
+  ]
+}
