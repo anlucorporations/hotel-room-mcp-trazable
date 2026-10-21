@@ -39,17 +39,19 @@
     "persistencia": "Bucket gs://hotel-mcp-room-images (europe-west1) montado en /repo/docs/imagenes (GCS FUSE) con objectAdmin para hotel-mcp-run@hotel-mcp.iam.gserviceaccount.com; se copiaron las 103 imágenes del repositorio antes del montaje"
   },
   "build": {
-    "id": "ed75798d-dab1-40f4-ac00-1041611c7fb0",
+    "id": "617ca456-3579-4bf3-ae5c-68d07724bb24",
     "region": "us-central1 (el pool por defecto dejó el primer intento en QUEUED y se canceló)",
-    "imagen": "europe-west1-docker.pkg.dev/hotel-mcp/hotel-mcp/web:v84",
-    "inicio": "2026-10-21T14:54:22Z",
-    "fin": "2026-10-21T14:58:10Z",
-    "resultado": "SUCCESS"
+    "imagen": "europe-west1-docker.pkg.dev/hotel-mcp/hotel-mcp/web:v85",
+    "inicio": "2026-10-21T19:22:17Z",
+    "fin": "2026-10-21T19:26:00Z",
+    "resultado": "SUCCESS",
+    "commit": "8c3ae9b (rama Hotel-DSH-GCP-v3, subida a origin, codecrypto y github)",
+    "nota": "web:v84 (build ed75798d) sirvió el cambio desde las 14:58; v85 se reconstruyó desde el commit ya subido para que la imagen y el repositorio coincidan."
   },
   "despliegue": {
-    "metodo": "canario --no-traffic --tag=v84, verificación por URL etiquetada y update-traffic --to-latest",
-    "revisionProduccion": "hotel-mcp-web-00151-jag (100 %)",
-    "revisionAnterior": "hotel-mcp-web-00148-wuf (web:v83)",
+    "metodo": "canario --no-traffic --tag=v85, verificación por URL etiquetada y update-traffic --to-latest",
+    "revisionProduccion": "hotel-mcp-web-00153-des (100 %)",
+    "revisionAnterior": "hotel-mcp-web-00148-wuf (web:v83); canario intermedio v84 en hotel-mcp-web-00151-jag",
     "configuracionConservada": { "variables": 32, "secretos": 9, "volumenGcs": "room-images -> /repo/docs/imagenes" }
   },
   "verificacion": {
@@ -79,6 +81,15 @@
     "bucket": {
       "objetos": 153,
       "fotosHabitacion2026_10_21": 50
+    },
+    "produccionTrasV85": {
+      "revision": "hotel-mcp-web-00153-des",
+      "healthReady": "200 READY",
+      "home": "200",
+      "catalogo": "200",
+      "fotoHabitacion": "200",
+      "publicRooms": "200",
+      "habitacionesVisiblesCatalogo": 48
     }
   },
   "rollback": "gcloud run services update-traffic hotel-mcp-web --region=europe-west1 --to-revisions=hotel-mcp-web-00148-wuf=100 (web:v83) — el bucket y las fotos son compatibles con v83",

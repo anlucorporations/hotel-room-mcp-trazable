@@ -6413,11 +6413,18 @@ de foto.
 
 | Elemento | Valor |
 |---|---|
-| Imagen | **`web:v84`** (Cloud Build `ed75798d…`, us-central1, 3m48s, SUCCESS) |
-| Revisión sirviendo | **`hotel-mcp-web-00151-jag`** (100 %) |
+| Imágenes | **`web:v84`** (build `ed75798d…`, 3m48s) y, ya desde el commit subido, **`web:v85`** (build `617ca456…`) |
+| Revisión sirviendo | **`hotel-mcp-web-00153-des`** (100 %, `web:v85`) |
+| Repositorio | commit **`8c3ae9b`** en `Hotel-DSH-GCP-v3`, subido a `origin` (GitLab), `codecrypto` y `github` |
 | Configuración | conservada: **32 variables + 9 secretos + volumen GCS** |
 | Pruebas | Vitest de los módulos tocados + i18n 9/9; typecheck 6/6 y eslint OK |
 | Rollback | `hotel-mcp-web-00148-wuf` (web:v83); el bucket de fotos es compatible |
+
+> **Cierre de la release.** Tras `/push`, se reconstruyó la imagen (`web:v85`) desde el commit
+> `8c3ae9b` y se redesplegó con la misma configuración (canario + `update-traffic --to-latest`), para
+> que la imagen en producción y el repositorio remoto coincidan. Verificación final: `/health/ready`,
+> `/`, `/catalogo`, foto de habitación y `/api/public/rooms` → **200**; catálogo con **48** visibles
+> (101/102 siguen bloqueadas por mantenimiento).
 
 Evidencia: [`evidencias/release-v84-habitaciones-2026-10-21.json`](./evidencias/release-v84-habitaciones-2026-10-21.json)
 y [`despliegue_gcp.md`](./despliegue_gcp.md) §99.

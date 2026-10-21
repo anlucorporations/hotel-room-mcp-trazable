@@ -3972,13 +3972,17 @@ interfaz descartaba el detalle `results[]` y mostraba un aviso genérico. La fot
 
 | Componente | Imagen | Build | Revisión sirviendo | Tráfico |
 |---|---|---|---|---|
-| web | `…/hotel-mcp/web:v84` | ✅ SUCCESS `ed75798d-dab1-40f4-ac00-1041611c7fb0` (3m48s, `us-central1`) | `hotel-mcp-web-00151-jag` | **100 %** |
+| web (intermedia) | `…/hotel-mcp/web:v84` | ✅ SUCCESS `ed75798d-dab1-40f4-ac00-1041611c7fb0` (3m48s, `us-central1`) | `hotel-mcp-web-00151-jag` (sustituida) | 100 % |
+| web (final) | `…/hotel-mcp/web:v85` | ✅ SUCCESS `617ca456-3579-4bf3-ae5c-68d07724bb24` (3m43s, `us-central1`) | **`hotel-mcp-web-00153-des`** | **100 %** |
 | worker / mcp | `worker:v85` / `mcp:v78` (sin cambios) | — | vigentes | 100 % |
 
-**Método.** Canario `--no-traffic --tag=v84`, verificación por URL etiquetada y promoción con
-`update-traffic --to-latest`. La configuración se conservó (**32 variables + 9 secretos + volumen
-GCS**). El primer `gcloud builds submit` (pool por defecto) quedó en **QUEUED** y se canceló; el
-reintento con `--region=us-central1` arrancó y terminó en 3m48s.
+**Método.** Canario `--no-traffic --tag=v84` (y después `--tag=v85`), verificación por URL etiquetada
+y promoción con `update-traffic --to-latest`. La configuración se conservó (**32 variables + 9
+secretos + volumen GCS**). El primer `gcloud builds submit` (pool por defecto) quedó en **QUEUED** y
+se canceló; los reintentos con `--region=us-central1` arrancaron y terminaron. Tras el `/push` del
+commit `8c3ae9b` (rama `Hotel-DSH-GCP-v3`, en `origin`, `codecrypto` y `github`) se reconstruyó la
+imagen **`web:v85`** desde ese mismo commit y se redesplegó, de modo que **producción y repositorio
+coinciden**.
 
 **Datos de producción corregidos.** 43 fotos subidas por la API de administración (8 de ellas
 sustituyendo galerías con el tipo equivocado) y publicación masiva con TOTP del owner: **49
