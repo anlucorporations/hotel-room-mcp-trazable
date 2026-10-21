@@ -2,6 +2,7 @@ import type { PublicClient, WalletClient, Address, Hex } from "viem";
 import {
   BaseError,
   ContractFunctionRevertedError,
+  ExecutionRevertedError,
   decodeEventLog,
   formatEther,
   getAddress,
@@ -53,16 +54,29 @@ export interface BurnCycleResult {
  * on-chain»: el índice marcaba `BURNED` inventario vivo, sin alerta y sin vuelta atrás (hallazgo
  * **H-01**, crítico, del informe de auditoría V6). Ante la duda, se propaga el error: fallar fuerte es
  * recuperable; corromper el índice en silencio, no.
+ *
+ * **Dos formas de revert (2026-10-21).** No todos los nodos devuelven el `data` del revert, así que
+ * `viem` no siempre puede decodificar el error personalizado del contrato:
+ *   - con datos decodificables → `ContractFunctionRevertedError` (p. ej. `NotExpired(tokenId)`);
+ *   - sin datos (lo que hace **Besu** con `burnExpired` y con `ownerOf` de un token inexistente) →
+ *     `ExecutionRevertedError` dentro de la cadena `ContractFunctionExecutionError → CallExecutionError`.
+ * La primera versión solo reconocía la primera forma; con la segunda, un revert legítimo se trataba
+ * como caída de red y **tumbaba el ciclo completo de quema** (producción, 2026-10-20: 8 candidatas
+ * que no existían on-chain; el ciclo falló con `ERROR` cada 5 min toda la hora de quema, sin llegar
+ * al reintento token-a-token ni a la reconciliación del índice). Reconocer ambas es lo que permite
+ * que el diseño degradado (simular lote → token a token → reconciliar) haga su trabajo.
  */
 export function isRevertError(error: unknown): boolean {
   if (error instanceof BaseError) {
-    if (error.walk((candidate) => candidate instanceof ContractFunctionRevertedError) !== null) {
+    const isRevert = (candidate: unknown): boolean =>
+      candidate instanceof ContractFunctionRevertedError || candidate instanceof ExecutionRevertedError;
+    if (error.walk(isRevert) !== null) {
       return true;
     }
   }
   // Dobles de prueba y errores ya normalizados por otros clientes EIP-1193.
   const name = (error as { name?: unknown } | null)?.name;
-  return name === "ContractFunctionRevertedError";
+  return name === "ContractFunctionRevertedError" || name === "ExecutionRevertedError";
 }
 
 export interface BurnerServiceOptions {

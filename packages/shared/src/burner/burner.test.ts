@@ -1,6 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { Mock } from "vitest";
-import { BaseError, ContractFunctionRevertedError, encodeEventTopics, parseAbiItem } from "viem";
+import {
+  BaseError,
+  ContractFunctionExecutionError,
+  ContractFunctionRevertedError,
+  ExecutionRevertedError,
+  encodeEventTopics,
+  parseAbiItem,
+} from "viem";
 import type { PublicClient, WalletClient } from "viem";
 import { BurnerService, chunked, isRevertError, type BurnLock } from "./service";
 import type { NFTsRepository } from "../db/repositories/nfts.repository";
@@ -10,13 +17,27 @@ const BURN_EVENT = parseAbiItem("event Burn(uint256 indexed tokenId)");
 
 /**
  * Error con la forma de un **revert** del contrato, que es lo que `viem` lanza cuando `eth_call`
- * revierte. La distinción importa desde el hallazgo H-01: un revert es un veredicto de negocio («esta
- * noche no se puede quemar»), un error de red no lo es.
+ * revierte con datos decodificables. La distinción importa desde el hallazgo H-01: un revert es un
+ * veredicto de negocio («esta noche no se puede quemar»), un error de red no lo es.
  */
 function revertError(message = "execution reverted"): Error {
   const error = new Error(message);
   error.name = "ContractFunctionRevertedError";
   return error;
+}
+
+/**
+ * Revert **sin datos decodificables**, que es como lo devuelve Besu en producción: `viem` lo expone
+ * como `ContractFunctionExecutionError → CallExecutionError → ExecutionRevertedError` (no como
+ * `ContractFunctionRevertedError`). Reproduce la cadena real observada el 2026-10-20 al quemar
+ * `burnExpired` y al leer `ownerOf` de un token inexistente.
+ */
+function genericRevertError(): BaseError {
+  return new ContractFunctionExecutionError(new ExecutionRevertedError({ message: "Execution reverted" }), {
+    abi: [],
+    contractAddress: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+    functionName: "burnExpired",
+  });
 }
 
 /** Log de `Burn(tokenId)` como el que devuelve el recibo de una quema confirmada. */
@@ -253,6 +274,47 @@ describe("BurnerService (US-09 · D-03)", () => {
     expect(queue.enqueueNotification).not.toHaveBeenCalled();
   });
 
+  /**
+   * Regresión de la quema fallida en producción (2026-10-20). El índice tenía 8 filas `AVAILABLE`
+   * caducadas de la habitación 101 que **no existían on-chain** (registradas por el back-office como
+   * `on_chain_anchored = FALSE` y nunca minteadas realmente). Besu devolvió el revert SIN datos
+   * decodificables → `ExecutionRevertedError`; `isRevertError` no lo reconocía, `canSimulate` lo
+   * propagaba como si fuera red y el ciclo entero terminaba en `ERROR` cada 5 minutos, sin llegar al
+   * reintento token a token ni a la reconciliación. El resultado correcto es completar el ciclo,
+   * reconciliar las 8 filas como `BURNED` y no alertar (no hay inventario vivo perdido).
+   */
+  it("con candidatas que no existen on-chain, reconcilia y completa (no ERROR) · regresión 2026-10-20", async () => {
+    const ghostTokens = [
+      "10120261007",
+      "10120261008",
+      "10120261012",
+      "10120261013",
+      "10120261014",
+      "10120261015",
+      "10120261018",
+      "10120261019",
+    ];
+    buildService({ tokens: ghostTokens });
+    // Tanto el lote como cada token individual revierten sin datos decodificables (Besu).
+    publicClient.simulateContract.mockRejectedValue(genericRevertError());
+    publicClient.readContract.mockImplementation(async ({ functionName }: { functionName: string }) => {
+      if (functionName === "burnBatchMax") return 50n;
+      if (functionName === "ownerOf") throw genericRevertError(); // token inexistente
+      throw new Error(`no soportado en el mock: ${functionName}`);
+    });
+
+    const result = await service.executeScheduledBurn(publicClient, walletClient, options);
+
+    expect(result.reason).toBe("COMPLETED");
+    expect(result.executed).toBe(true);
+    expect(result.burnedTokensCount).toBe(0);
+    expect(walletClient.writeContract).not.toHaveBeenCalled();
+    // Las 8 filas del índice convergen: el token no existe, no puede quedar AVAILABLE.
+    expect(nftsRepo.updateNFTStatus).toHaveBeenCalledTimes(8);
+    expect(nftsRepo.updateNFTStatus).toHaveBeenCalledWith("10120261007", "BURNED");
+    expect(queue.enqueueNotification).not.toHaveBeenCalled();
+  });
+
   it("con saldo bajo NO quema y avisa a DevOps", async () => {
     publicClient.getBalance.mockResolvedValue(0n);
 
@@ -353,6 +415,16 @@ describe("isRevertError — revert de contrato frente a error de transporte", ()
 
   it("reconoce un revert ya normalizado por nombre", () => {
     expect(isRevertError(revertError())).toBe(true);
+  });
+
+  it("reconoce el revert SIN datos decodificables que devuelve Besu (ExecutionRevertedError)", () => {
+    // Cadena real de producción: ContractFunctionExecutionError → CallExecutionError →
+    // ExecutionRevertedError. Antes se clasificaba como error de transporte y tumbaba el ciclo.
+    expect(isRevertError(new ExecutionRevertedError({ message: "Execution reverted" }))).toBe(true);
+    expect(
+      isRevertError(new BaseError("call failed", { cause: new ExecutionRevertedError() })),
+    ).toBe(true);
+    expect(isRevertError(genericRevertError())).toBe(true);
   });
 
   it("NO confunde un error de red con un revert (esa confusión era el defecto)", () => {
