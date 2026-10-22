@@ -4211,12 +4211,19 @@ checkpoints del worker se reiniciaron al contrato nuevo (bloque 5873504).
 |---|---|---|---|---|
 | worker | `worker:v89` | `f2b7a2c2-d491-47f0-9116-6e70a7241e40` SUCCESS | **`hotel-mcp-worker-00046-tad`** | 100 % |
 | web | `web:v89` | `bc4bfd0b-23a7-4e3d-81d5-c9a0b1e6bc71` SUCCESS | **`hotel-mcp-web-00161-pux`** | 100 % |
+| mcp | `mcp:v78` (sin cambio de imagen) | — | **`hotel-mcp-mcp-00027-cfv`** | 100 % |
 
 **Configuración.** Web: `NEXT_PUBLIC_CONTRACT_ADDRESS=0x8b1B…0253`,
 `NEXT_PUBLIC_DEPLOYMENT_BLOCK=5848830`, `NEXT_PUBLIC_AUCTION_ADDRESS=0x42E5…5b8a`,
 `NEXT_PUBLIC_AUCTION_DEPLOYMENT_BLOCK=5848838`, `MINT_ON_PUBLISH_ENABLED=true`. Worker:
 `CONTRACT_ADDRESS=0x8b1B…0253`, `DEPLOYMENT_BLOCK=5848830`. Conservados el volumen GCS de imágenes y
 el resto de secretos.
+
+**Asistente MCP.** El servicio `hotel-mcp-mcp` seguía apuntando al contrato original `0xf8b1…25f4`
+(bloque 5655378), de modo que el asistente podía leer noches/publicaciones de cadenas anteriores. Se
+alineó a `CONTRACT_ADDRESS=0x8b1B…0253` y `DEPLOYMENT_BLOCK=5848830` (revisión
+`hotel-mcp-mcp-00027-cfv`, 100 %); `/health` **ok** y las herramientas de disponibilidad devuelven
+`[]` y `exists:false` para las habitaciones antiguas.
 
 | Comprobación | Resultado |
 |---|---|

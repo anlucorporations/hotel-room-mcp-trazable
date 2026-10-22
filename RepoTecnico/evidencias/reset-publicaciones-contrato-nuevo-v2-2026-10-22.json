@@ -45,11 +45,13 @@
   "despliegue": {
     "worker": { "imagen": "worker:v89", "build": "f2b7a2c2-d491-47f0-9116-6e70a7241e40", "revision": "hotel-mcp-worker-00046-tad", "env": "CONTRACT_ADDRESS=0x8b1B…0253, DEPLOYMENT_BLOCK=5848830" },
     "web": { "imagen": "web:v89", "build": "bc4bfd0b-23a7-4e3d-81d5-c9a0b1e6bc71", "revision": "hotel-mcp-web-00161-pux" },
+    "mcp": { "imagen": "mcp:v78 (sin cambio de imagen)", "revision": "hotel-mcp-mcp-00027-cfv", "env": "CONTRACT_ADDRESS=0x8b1B…0253, DEPLOYMENT_BLOCK=5848830", "motivo": "seguía apuntando al contrato original 0xf8b1…25f4 (bloque 5655378), por lo que el asistente podía leer noches/publicaciones de cadenas anteriores" },
     "precaucion": "Tras promover worker v89 se eliminó la revisión anterior (00043-koz, v88) para que ninguna instancia antigua procesara jobs con el contrato anterior."
   },
   "verificacion": {
     "web": { "/health/ready": 200, "/": 200, "/catalogo": 200, "/api/public/rooms": "200 · {\"rooms\": []}" },
     "worker": { "/health": "ok · lag 0" },
+    "asistente": "listAvailableNights(2026-10-20..2026-12-31) → [] · checkAvailability(103, 20261025) → {exists:false, available:false}",
     "db": "50 DRAFT · 0 publicaciones · 0 nfts · 0 jobs · 50 fotos",
     "cadena": "contrato nuevo sin registros/publicaciones/mints"
   },

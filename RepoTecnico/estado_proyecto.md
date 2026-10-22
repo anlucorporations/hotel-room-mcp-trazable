@@ -6623,6 +6623,7 @@ con sus **50 fotos**. Checkpoints del worker reiniciados al contrato nuevo.
 | Imágenes | **`worker:v89`** (build `f2b7a2c2…`) y **`web:v89`** (build `bc4bfd0b…`) |
 | Revisiones | **`hotel-mcp-worker-00046-tad`** y **`hotel-mcp-web-00161-pux`** (100 %) |
 | Config | web con contrato/bloque/subasta nuevos + `MINT_ON_PUBLISH_ENABLED=true`; worker `CONTRACT_ADDRESS`/`DEPLOYMENT_BLOCK` nuevos |
+| Asistente MCP | **`hotel-mcp-mcp-00027-cfv`** (100 %) alineado a `CONTRACT_ADDRESS`/`DEPLOYMENT_BLOCK` nuevos; antes apuntaba al contrato original `0xf8b1…` |
 
 **Incidencia.** Entre la primera limpieza (01:48) y el cambio de worker (15:27) la revisión antigua del
 worker siguió viva con el contrato anterior y aparecieron publicaciones nuevas (215/216/219/220). Se
