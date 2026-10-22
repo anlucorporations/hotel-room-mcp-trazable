@@ -46,6 +46,11 @@ export GCP_LOCAL_SECRETS_DIR="${GCP_LOCAL_SECRETS_DIR:-$HOME/.config/hotel-mcp}"
 # URL pública de la web (metadata Open Graph/Twitter). Se inyecta en el BUILD de la imagen.
 export GCP_WEB_URL="${GCP_WEB_URL:-https://hotel-mcp-web-475955050238.europe-west1.run.app}"
 
+# WalletConnect Cloud (RF-11 · ADR-29 · B-4). El **projectId es público** (viaja en el bundle del
+# cliente), no es un secreto; se inyecta en el BUILD de la web y lo consume `f8-build-images.sh`.
+# Valor por defecto: projectId del piloto (el que ya usa producción). Sobrescribible por entorno.
+export WALLETCONNECT_PROJECT_ID="${WALLETCONNECT_PROJECT_ID:-de053d144ca84cbf4eab76fad97f200a}"
+
 export GCP_CHAIN_RPC_URL="${GCP_CHAIN_RPC_URL:-https://besu.alumnos.codecrypto.academy}"
 export GCP_CHAIN_ID="${GCP_CHAIN_ID:-81234}"
 # Compatibilidad: los scripts/runbooks antiguos leían `GCP_ANVIL_*`; ahora apuntan a Besu salvo que

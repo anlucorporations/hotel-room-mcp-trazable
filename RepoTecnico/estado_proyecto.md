@@ -6631,3 +6631,31 @@ eliminó esa revisión, se repitió la limpieza a las 15:29 y el estado final qu
 
 Evidencia: [`evidencias/reset-publicaciones-contrato-nuevo-v2-2026-10-22.json`](./evidencias/reset-publicaciones-contrato-nuevo-v2-2026-10-22.json)
 y [`despliegue_gcp.md`](./despliegue_gcp.md) §104.
+
+---
+
+## 74. B-4 RESUELTO — WalletConnect projectId del piloto persistido (2026-10-22)
+
+**Petición.** El responsable entrega el `projectId` de WalletConnect Cloud:
+`de053d144ca84cbf4eab76fad97f200a`. Es un **identificador público** (viaja en el bundle del cliente),
+no un secreto; así está declarado en [`ADR-29`](../docs/adr/ADR-29-walletconnect-v2-activacion-por-projectid.md).
+
+**Estado real.** No faltaba en producción: `web:v64` (C0, 2026-10-17) lo activó y todas las releases
+posteriores —incluida **`web:v89`**— lo llevan inyectado en el BUILD. Verificado hoy sobre el bundle de
+producción: los chunks `/_next/static/chunks/7362-…js` y `/_next/static/chunks/app/layout-…js` contienen
+el `projectId` y `walletConnect`.
+
+**Qué se cierra.**
+
+- Persistido como **valor por defecto** en `infra/gcp/gcp-env.sh` (`WALLETCONNECT_PROJECT_ID`), la
+  variable que consume `f8-build-images.sh`: un despliegue futuro ya no puede dejar WalletConnect
+  desactivado por olvido (antes solo se activaba si el operador exportaba la variable).
+- `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` añadido al `.env` local (no versionado) para desarrollo.
+- Documentado para la **APK (A1.3)**: se inyecta en su configuración de build; puede requerir registrar
+  el dominio/enlaces de la app en WalletConnect Cloud.
+- Actualizados [`docs/BACKLOG-SPRINTS.md`](../docs/BACKLOG-SPRINTS.md) (B-4 fuera de pendientes),
+  [`plan_desarrollo_apk.md`](./plan_desarrollo_apk.md) (dependencia resuelta) y
+  [`entornos_globales.md`](./entornos_globales.md).
+
+**Pendiente que sigue abierto:** la prueba manual en dispositivo del QR WalletConnect sobre Besu
+(`TC-ACC-003`), que no depende del `projectId` sino de un móvil físico.

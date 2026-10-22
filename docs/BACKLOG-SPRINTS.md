@@ -248,7 +248,7 @@ fase pública, no del MVP: no se declara certificado.
 | 6 | Unificar los dos indexadores de la misma noche (índice del listener y agregados) | **Pendiente** | Equipo |
 | 7 | Guardar el hash del ancla de check-in (`nfts.check_in_tx_hash`) | **Pendiente** | Equipo |
 | 8 | Escaneo axe **con datos** (worker vivo y dashboard con sesión) | **Pendiente** | Equipo |
-| 9 | `projectId` de WalletConnect Cloud (B-4) | **Pendiente** | Cliente |
+| 9 | `projectId` de WalletConnect Cloud (B-4) | **Resuelto (2026-10-22)**: `de053…f200a` (público), ya en producción y persistido en `infra/gcp/gcp-env.sh`; falta la prueba en dispositivo `TC-ACC-003` | Cliente |
 | 10 | Credenciales o certificado del PMS (B-5) y decisión sobre `SES.HOSPEDAJES` | **Pendiente** | Cliente |
 | 11 | 3 fotos definitivas de los tipos de habitación (B-6) | **Pendiente** | Cliente |
 | 12 | Dos firmantes para la multisig y política de custodia de claves (B-7) | **Pendiente** | Cliente |

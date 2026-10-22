@@ -178,7 +178,7 @@ Estado respecto a `.env.example`: **OK** = presente · **FALTA** = la exige el c
 | `NEXT_PUBLIC_NETWORK` | no | **FALTA** | `besu` o vacío |
 | `NEXT_PUBLIC_FAUCET_ADDRESS` | no | **FALTA** | Solo en desarrollo; sin ella se oculta el faucet |
 | `NEXT_PUBLIC_BLOCK_EXPLORER_URL` / `_NAME` | no | **FALTA** | Anvil no tiene explorador |
-| `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | no | **OK** | WalletConnect v2 (RF-11, ADR-29); configurado en el build `v64` (producción). Sin valor el conector no se ofrece |
+| `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | no | **OK** | WalletConnect v2 (RF-11, ADR-29); projectId público del piloto `de053…f200a`, inyectado en el BUILD (producción desde `v64`; verificado también en `v89`) y persistido como valor por defecto en `infra/gcp/gcp-env.sh`. Sin valor el conector no se ofrece |
 
 ### 3.3 Base de datos y Redis
 

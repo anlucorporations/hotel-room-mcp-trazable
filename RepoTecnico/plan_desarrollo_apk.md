@@ -105,7 +105,7 @@ verde + ficha de Play revisada.
 | Dependencia | Estado | Impacto |
 |---|---|---|
 | APIs web existentes (catálogo, compra, pases, cargos, push) | **listas** | la app no necesita backend nuevo salvo endpoints de app (registro push, versión mínima, auth de wallet) |
-| WalletConnect projectId | **pendiente de configurar** | sin él no hay QR móvil; el deep link a MetaMask sigue disponible |
+| WalletConnect projectId | **✅ disponible** (`de053…f200a`, público; valor por defecto en `infra/gcp/gcp-env.sh`) | desbloqueado: A1.3 lo inyecta en la config de la app; puede requerir registrar el dominio/enlaces de la app en WalletConnect Cloud |
 | Toolchain Android en CI | **pendiente** | bloquea A1.1 |
 | H-02/H-03 | **borradores listos** | bloquean A6 (publicación), no A1–A5 |
 | Cuentas Play Console + firma | **pendiente del cliente** | bloquea A6 |
