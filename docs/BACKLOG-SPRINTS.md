@@ -245,7 +245,7 @@ fase pública, no del MVP: no se declara certificado.
 | 3 | Cobertura de `apps/web` (24,95 %): entorno DOM con jsdom + `@testing-library` y dobles de wagmi | **Pendiente** | Equipo |
 | 4 | Dimensionar el pool de la web y cachear el catálogo (o capa CDN) para el perfil de 200 concurrentes | **Pendiente** | Equipo / operación |
 | 5 | Cerrar el HTTP del worker (autenticación y CORS) antes de exponerlo | **Pendiente** | Equipo |
-| 6 | Unificar los dos indexadores de la misma noche (índice del listener y agregados) | **Pendiente** | Equipo |
+| 6 | Unificar los dos indexadores de la misma noche (índice del listener y agregados) | **Resuelto (2026-10-22)**: un solo indexador ([ADR-34](../docs/adr/ADR-34-un-solo-indexador-de-eventos.md), D-87) | Equipo |
 | 7 | Guardar el hash del ancla de check-in (`nfts.check_in_tx_hash`) | **Pendiente** | Equipo |
 | 8 | Escaneo axe **con datos** (worker vivo y dashboard con sesión) | **Pendiente** | Equipo |
 | 9 | `projectId` de WalletConnect Cloud (B-4) | **Resuelto (2026-10-22)**: `de053…f200a` (público), ya en producción y persistido en `infra/gcp/gcp-env.sh`; falta la prueba en dispositivo `TC-ACC-003` | Cliente |

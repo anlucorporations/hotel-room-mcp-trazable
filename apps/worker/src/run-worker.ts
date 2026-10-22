@@ -43,6 +43,12 @@ export interface RunWorkerDeps {
   readonly signal: AbortSignal;
   /** Espera inyectable (los tests la sustituyen para no dormir de verdad). */
   readonly sleep?: (ms: number) => Promise<void>;
+  /**
+   * Se invoca UNA vez tras el rebind (checkpoint y agregados ya alineados al contrato actual) y
+   * antes del bucle. El worker arranca ahí el listener canónico (ADR-34): así el primer lote de
+   * eventos no se aplica antes de que los agregados estén vinculados/reseteados al contrato nuevo.
+   */
+  readonly onWorkerReady?: () => void | Promise<void>;
 }
 
 const defaultSleep = (ms: number, signal: AbortSignal): Promise<void> =>
@@ -212,6 +218,11 @@ export async function runWorker(
     headBlock,
   );
 
+  // Con el rebind hecho (checkpoint y agregados alineados), se arranca el indexador único
+  // (listener → índice `nfts` + agregados, ADR-34). Arrancarlo antes aplicaría eventos con los
+  // agregados aún vinculados al contrato anterior.
+  await deps.onWorkerReady?.();
+
   const processor = new SaleProcessor({
     chainSource,
     mailer,
@@ -232,11 +243,11 @@ export async function runWorker(
     signal,
   });
 
-  // Agregados/histórico (FASE 3): se alimenta de los mismos bloques, de forma idempotente.
+  // Agregados/histórico (FASE 3): las lecturas y el relleno de fechas. La escritura llega por el
+  // flujo canónico del listener (`AggregateEventIngestor`, ADR-34), no por un escaneo propio.
   const aggregateProcessor = new AggregateProcessor({
     chainSource,
     store: aggregateStore,
-    deploymentBlock: config.deploymentBlock,
   });
 
   const shutdownTimeoutMs =
@@ -282,8 +293,8 @@ async function raceShutdown(
 }
 
 /**
- * Un ciclo de procesamiento: lee la cabecera, procesa el catch-up hasta ella y actualiza la
- * salud. El bucle continúa siempre (resiliencia: la red/SMTP pueden recuperarse).
+ * Un ciclo de procesamiento: lee la cabecera, procesa el catch-up de **email** hasta ella y
+ * actualiza la salud. El bucle continúa siempre (resiliencia: la red/SMTP pueden recuperarse).
  *
  * Sólo los fallos del RPC (`getHeadBlock`/`getSaleLogs`) llegan al `catch` del email y se
  * contabilizan para la transición a `down` por RPC (MAJOR 2). El fallo al procesar un evento
@@ -291,13 +302,17 @@ async function raceShutdown(
  * "processing"), de modo que un único evento defectuoso no se clasifica como fallo de RPC ni
  * atasca el avance del checkpoint (head-of-line blocking).
  *
+ * Los **agregados/histórico ya no se escanean en este ciclo** (ADR-34): el listener es el
+ * indexador único y los alimenta con el flujo canónico. Aquí solo se rellenan fechas históricas
+ * y se publica el lag de agregados.
+ *
  * Salud:
  *   - Email: el lag se reporta con el `lastBlock` PERSISTIDO del `CheckpointStore` (MINOR 13), no
  *     con el retorno de `catchUp`. Así, si un email no se entregó (BLOCKER 1), el checkpoint queda
  *     detrás de `head` y el lag lo refleja de forma honesta tras un crash parcial.
- *   - Agregados (MAJOR 4): se observa el pipeline. Un `catchUp` correcto registra el último bloque
- *     agregado (lag de agregados); un fallo persistente (p. ej. I/O de PostgreSQL) degrada `/health`
- *     tras N fallos consecutivos, en vez de quedar invisible.
+ *   - Agregados (MAJOR 4): el `AggregateEventIngestor` registra el último bloque agregado del flujo
+ *     canónico; un fallo persistente (p. ej. I/O de PostgreSQL) degrada `/health` tras N fallos
+ *     consecutivos, en vez de quedar invisible.
  */
 export async function runCycle(
   processor: SaleProcessor,
@@ -329,11 +344,11 @@ export async function runCycle(
     return;
   }
 
-  // Agregados/histórico (CU-09/11): aislados del ciclo del email. Un fallo (p. ej. I/O de
-  // PostgreSQL) NO se clasifica como fallo de RPC, pero SÍ se observa en `/health` (MAJOR 4):
-  // degrada tras N fallos consecutivos y publica el lag de agregados.
+  // Agregados/histórico (CU-09/11): ya NO se escanean en este ciclo. El listener es el indexador
+  // único (ADR-34) y los alimenta con el flujo canónico; aquí solo se completan fechas históricas
+  // y se publica el lag. Un fallo (p. ej. I/O de PostgreSQL) NO se clasifica como fallo de RPC,
+  // pero SÍ se observa en `/health` (MAJOR 4): degrada tras N fallos consecutivos.
   try {
-    await aggregateProcessor.catchUp(head);
     // Relleno de fechas del histórico anterior a M7 (H6): sin marca temporal, esas ventas quedan
     // fuera de la serie mensual y el dashboard mostraría menos volumen que su propio KPI. Es
     // best-effort (un bloque irrecuperable se queda sin fecha y se declara), así que no puede

@@ -19,7 +19,7 @@ const newProcessor = (
   store: InMemoryAggregateStore,
   chainSource: FakeChainSource = new FakeChainSource(0n),
 ): AggregateProcessor =>
-  new AggregateProcessor({ chainSource, store, deploymentBlock: 0 });
+  new AggregateProcessor({ chainSource, store });
 
 // ── Constructores de eventos para los tests ──────────────────────────────────
 const mint = (overrides: Partial<Extract<ChainEvent, { kind: "mint" }>> = {}): ChainEvent => ({
@@ -255,7 +255,6 @@ describe("AggregateProcessor · agregados de D-16 (serie, desglose y ranking)", 
     const processor = new AggregateProcessor({
       chainSource: new FakeChainSource(0n),
       store,
-      deploymentBlock: 0,
       timeZone: "UTC",
       topResoldLimit: 1,
     });
@@ -278,7 +277,7 @@ describe("AggregateProcessor · relleno de fechas del histórico anterior a M7 (
   it("recupera la fecha de cada bloque y deja de declarar ventas sin fecha", async () => {
     const store = new InMemoryAggregateStore();
     const chain = new FakeChainSource(0n);
-    const processor = new AggregateProcessor({ chainSource: chain, store, deploymentBlock: 0 });
+    const processor = new AggregateProcessor({ chainSource: chain, store });
 
     // Dos ventas antiguas (insertadas antes de que existiera la columna): sin marca temporal.
     await processor.apply([
@@ -307,7 +306,6 @@ describe("AggregateProcessor · relleno de fechas del histórico anterior a M7 (
     const processor = new AggregateProcessor({
       chainSource: new FakeChainSource(0n),
       store,
-      deploymentBlock: 0,
     });
 
     await processor.apply([
@@ -321,7 +319,7 @@ describe("AggregateProcessor · relleno de fechas del histórico anterior a M7 (
   it("si la cabecera de un bloque no se puede leer, la fila sigue declarada (no se inventa fecha)", async () => {
     const store = new InMemoryAggregateStore();
     const chain = new FakeChainSource(0n);
-    const processor = new AggregateProcessor({ chainSource: chain, store, deploymentBlock: 0 });
+    const processor = new AggregateProcessor({ chainSource: chain, store });
 
     await processor.apply([sale({ txHash: `0x${"71".repeat(32)}`, logIndex: 0, blockNumber: 10n })]);
     chain.failBlockTimestamp = true;
@@ -383,24 +381,25 @@ describe("AggregateProcessor · idempotencia (TC-WK-022)", () => {
     expect(await processor.getHistory()).toHaveLength(2); // dos ventas
   });
 
-  it("idempotencia tras reinicio (mismo estado persistido, nuevo store/proceso) vía catch-up", async () => {
+  it("idempotencia tras reinicio (mismo estado persistido, nuevo store/proceso)", async () => {
     const events: ChainEvent[] = [
       mint({ txHash: `0x${"41".repeat(32)}`, logIndex: 0, blockNumber: 2n }),
       sale({ saleTypeRaw: 0, txHash: `0x${"42".repeat(32)}`, logIndex: 0, blockNumber: 3n }),
     ];
 
-    // Primer arranque: catch-up hasta el bloque 5.
+    // Primer arranque: el flujo canónico aplica el lote y avanza lastBlock (ADR-34).
     const store1 = new InMemoryAggregateStore();
-    const chain1 = new FakeChainSource(5n, [], events);
-    await new AggregateProcessor({ chainSource: chain1, store: store1, deploymentBlock: 0 }).catchUp(5n);
+    const processor1 = newProcessor(store1);
+    await processor1.apply(events);
+    await processor1.setLastBlock(5);
     expect((await store1.getCounters()).mintedCount).toBe(1);
     expect((await store1.getCounters()).soldCount).toBe(1);
 
     // Reinicio: mismo estado persistido, nuevo store; reprocesa el rango sin duplicar.
     const store2 = new InMemoryAggregateStore(store1.snapshot());
-    const chain2 = new FakeChainSource(5n, [], events);
-    const processor2 = new AggregateProcessor({ chainSource: chain2, store: store2, deploymentBlock: 0 });
-    await processor2.catchUp(5n);
+    const processor2 = newProcessor(store2);
+    expect(await processor2.apply(events)).toBe(0);
+    await processor2.setLastBlock(5);
     const aggregates = await processor2.getAggregates();
     expect(aggregates.mintedCount).toBe(1);
     expect(aggregates.soldCount).toBe(1);
@@ -415,7 +414,6 @@ describe("AggregateStore · reset por redeploy (MAJOR 3)", () => {
     await new AggregateProcessor({
       chainSource: new FakeChainSource(0n),
       store,
-      deploymentBlock: 0,
     }).apply([
       mint({ txHash: `0x${"51".repeat(32)}`, logIndex: 0, blockNumber: 2n }),
       sale({ saleTypeRaw: 0, txHash: `0x${"52".repeat(32)}`, logIndex: 0, blockNumber: 3n }),
@@ -466,7 +464,6 @@ describe("AggregateStore · reset por redeploy (MAJOR 3)", () => {
     await new AggregateProcessor({
       chainSource: new FakeChainSource(0n),
       store: store1,
-      deploymentBlock: 0,
     }).apply([sale({ saleTypeRaw: 0, txHash: `0x${"61".repeat(32)}`, logIndex: 0 })]);
     await store1.reset(7);
 

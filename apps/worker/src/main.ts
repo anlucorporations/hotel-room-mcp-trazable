@@ -47,6 +47,7 @@ import { startSlaScheduler } from "./sla-scheduler";
 import { startPreventiveScheduler } from "./preventive-scheduler";
 import { startMintWindowScheduler } from "./mint-window-scheduler";
 import { startListenerRuntime } from "./listener-runtime";
+import { AggregateEventIngestor } from "./aggregate-ingestor";
 import { ViemPublishMinter } from "./mint-publish-relayer";
 import { MintPublishProcessor } from "./mint-publish-processor";
 
@@ -116,14 +117,23 @@ async function main(): Promise<void> {
   const notificationQueue = new NotificationQueueService(pool);
 
   // Lectura de agregados/histórico para los endpoints HTTP: comparte el `aggregateStore` con el
-  // procesador que escribe dentro de `runWorker` (misma fuente de verdad PostgreSQL).
+  // ingestor que escribe desde el flujo canónico del listener (ADR-34).
   const aggregateReader = new AggregateProcessor({
     chainSource,
     store: aggregateStore,
-    deploymentBlock,
   });
 
   const health = createWorkerHealthState();
+
+  // Indexador único (ADR-34): el listener publica el flujo canónico y este ingestor alimenta los
+  // agregados/histórico desde la MISMA pasada que mantiene el índice `nfts`. La salud usa los mismos
+  // umbrales que antes observaba el escaneo propio del procesador de agregados.
+  const aggregateIngestor = new AggregateEventIngestor({
+    writer: aggregateReader,
+    getBlockTimestamp: (blockNumber) => chainSource.getBlockTimestamp(blockNumber),
+    onApplied: (lastBlock) => health.recordAggregateCycle(lastBlock),
+    onFailure: () => health.recordAggregateFailure(),
+  });
 
   // Consumidor de la cola única de correo (D-03). El pipeline de ventas solo ENCOLA; entregar es
   // responsabilidad de este consumidor, y la salud refleja si el correo sale de verdad.
@@ -298,8 +308,10 @@ async function main(): Promise<void> {
     intervalMs: Number(process.env.VALIDATION_SLA_CHECK_INTERVAL_MS ?? 15 * 60_000),
   });
 
-  // Listener de eventos (D-12): heartbeat, alerta de silencio y alimentación del índice off-chain
-  // desde los eventos del contrato canónico (antes nadie lo instanciaba).
+  // Listener de eventos (D-12 + ADR-34): heartbeat, alerta de silencio y **único indexador** que
+  // alimenta a la vez el índice off-chain `nfts` y los agregados/histórico (onCanonicalEvents).
+  // Se crea sin autostart: `runWorker` lo arranca después del rebind, con los agregados ya
+  // alineados al contrato actual.
   const listenerRuntime = startListenerRuntime({
     listener: new EventListenerService(
       {
@@ -307,6 +319,9 @@ async function main(): Promise<void> {
         devopsEmail: config.DEVOPS_ALERT_EMAIL,
         reorgConfirmations: config.REORG_CONFIRMATIONS,
         silenceThresholdMs: config.SILENCE_THRESHOLD_MS,
+        onCanonicalEvents: async (batch) => {
+          await aggregateIngestor.apply(batch);
+        },
       },
       new NFTsRepository(pool),
       notificationQueue,
@@ -317,6 +332,7 @@ async function main(): Promise<void> {
     signal: controller.signal,
     pollIntervalMs: config.POLL_INTERVAL_MS,
     fromBlock: deploymentBlock,
+    autostart: false,
   });
 
   try {
@@ -334,6 +350,7 @@ async function main(): Promise<void> {
         logger,
         health,
         signal: controller.signal,
+        onWorkerReady: () => listenerRuntime.start(),
       },
     );
   } finally {

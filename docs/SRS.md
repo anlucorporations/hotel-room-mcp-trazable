@@ -466,8 +466,10 @@ descubrirla en producción.
    podría difundir un segundo `markCheckedIn`; la cadena consume la noche una sola vez igualmente.
 6. **Sin traza off-chain del ancla**: falta `nfts.check_in_tx_hash` para auditar qué transacción
    consumió cada noche (el hash sí se devuelve en la respuesta y la UI lo muestra).
-7. **Dos indexadores de la misma noche** (índice del listener y agregados del procesador) que pueden
-   discrepar entre sí; unificarlos es deuda con destino operación.
+7. ~~**Dos indexadores de la misma noche** (índice del listener y agregados del procesador) que
+   pueden discrepar entre sí; unificarlos es deuda con destino operación.~~ **RESUELTO (2026-10-22)**:
+   el listener es el indexador único y alimenta el índice y los agregados en la misma pasada
+   ([ADR-34](adr/ADR-34-un-solo-indexador-de-eventos.md), D-87).
 8. **Subir el suelo de listado no revisa los listados ya creados.**
 9. **El HTTP del worker no autentica y su CORS es abierto** (cerrar antes de exponerlo).
 10. **`fetchResaleMarket`**: un fallo **parcial** de RPC muestra una lista incompleta sin avisar (el

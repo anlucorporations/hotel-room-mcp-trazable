@@ -83,32 +83,6 @@ export class FakeChainSource implements ChainSource {
   }
 }
 
-/**
- * ChainSource fake en el que el RPC del email funciona (cabecera y `getSaleLogs`) pero
- * `getDomainLogs` (agregados) SIEMPRE falla. Simula un fallo aislado del pipeline de agregados
- * (p. ej. lectura de logs de dominio) para verificar que `/health` lo observa (MAJOR 4) sin
- * contarlo como fallo de RPC del email.
- */
-export class AggregateFailingChainSource implements ChainSource {
-  constructor(private readonly head: bigint) {}
-
-  async getHeadBlock(): Promise<bigint> {
-    return this.head;
-  }
-
-  async getBlockTimestamp(): Promise<number> {
-    throw new Error("I/O de agregados caído");
-  }
-
-  async getSaleLogs(): Promise<SaleEvent[]> {
-    return [];
-  }
-
-  async getDomainLogs(): Promise<ChainEvent[]> {
-    throw new Error("I/O de agregados caído");
-  }
-}
-
 /** ChainSource fake cuya `getHeadBlock` siempre falla (simula caída del RPC). */
 export class FailingChainSource implements ChainSource {
   async getHeadBlock(): Promise<bigint> {

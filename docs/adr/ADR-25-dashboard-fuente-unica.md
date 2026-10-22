@@ -23,8 +23,9 @@ independiente.
   (`backfillTimestamps`): `undatedSalesCount` pasó de 26 a 0.
 - La zona horaria es una constante del dominio (`DASHBOARD_TIME_ZONE`, `Europe/Madrid`) porque es un dato
   del hotel.
-- Siguen existiendo dos indexadores de la misma noche (el índice del listener y los agregados del
-  procesador); unificarlos es deuda declarada.
+- ~~Siguen existiendo dos indexadores de la misma noche (el índice del listener y los agregados del
+  procesador); unificarlos es deuda declarada.~~ **Resuelto (2026-10-22)**: una sola pasada indexa
+  ambos ([ADR-34](ADR-34-un-solo-indexador-de-eventos.md), D-87).
 
 ## Dónde se ve
 

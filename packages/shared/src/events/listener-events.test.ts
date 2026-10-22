@@ -1,6 +1,6 @@
 import { encodeAbiParameters, encodeEventTopics, parseAbiItem } from "viem";
 import { describe, expect, it, vi } from "vitest";
-import { EventListenerService } from "./listener";
+import { EventListenerService, type CanonicalEventsBatch } from "./listener";
 
 /**
  * Listener de eventos (D-12).
@@ -29,6 +29,7 @@ function mintLog() {
   return {
     address: CONTRACT,
     blockNumber: 10n,
+    logIndex: 0,
     transactionHash: "0xmint",
     topics: encodeEventTopics({ abi: [MINT], eventName: "Mint", args: { tokenId: TOKEN, room: 101n } }),
     data: encodeAbiParameters(
@@ -42,6 +43,7 @@ function saleLog() {
   return {
     address: CONTRACT,
     blockNumber: 12n,
+    logIndex: 1,
     transactionHash: "0xsale",
     topics: encodeEventTopics({
       abi: [SALE],
@@ -60,6 +62,7 @@ function royaltyLog() {
   return {
     address: CONTRACT,
     blockNumber: 12n,
+    logIndex: 2,
     transactionHash: "0xsale",
     topics: encodeEventTopics({
       abi: [ROYALTY],
@@ -76,6 +79,8 @@ function buildListener(
     readContract?: (call: { functionName: string; args?: unknown[] }) => Promise<unknown>;
     silenceThresholdMs?: number;
     now?: () => number;
+    /** Consumidor del flujo canónico único (ADR-34). */
+    onCanonicalEvents?: (batch: CanonicalEventsBatch) => void | Promise<void>;
   } = {},
 ) {
   const upsertNFT = vi.fn().mockResolvedValue({});
@@ -105,6 +110,9 @@ function buildListener(
       reorgConfirmations: 1,
       silenceThresholdMs: overrides.silenceThresholdMs ?? 600000,
       ...(overrides.now !== undefined ? { now: overrides.now } : {}),
+      ...(overrides.onCanonicalEvents !== undefined
+        ? { onCanonicalEvents: overrides.onCanonicalEvents }
+        : {}),
     },
     nftsRepo,
     queue,
@@ -271,5 +279,61 @@ describe("EventListenerService · eventos canónicos (D-12)", () => {
     await listener.reconcileLogsChunked(publicClient, 0n, 20n); // mismo rango (fallo a mitad + reintento)
 
     expect(listener.getStagedEventsCount()).toBe(2); // mint + venta, no cuatro
+  });
+
+  it("el flujo canónico se publica una sola vez, con localización y royalty separado (ADR-34)", async () => {
+    const received: CanonicalEventsBatch[] = [];
+    const { listener, publicClient } = buildListener({
+      onCanonicalEvents: (batch) => {
+        received.push(batch);
+      },
+    });
+
+    await listener.reconcileLogsChunked(publicClient, 0n, 20n);
+
+    expect(received).toHaveLength(1);
+    const batch = received[0]!;
+    expect(batch.scannedToBlock).toBe(20n);
+    const events = batch.events;
+    expect(events.map((event) => event.kind)).toEqual(["mint", "sale", "royaltyPaid"]);
+    expect(events.map((event) => event.logIndex)).toEqual([0, 1, 2]);
+    expect(events[1]).toMatchObject({
+      kind: "sale",
+      saleTypeRaw: 1,
+      txHash: "0xsale",
+      blockNumber: 12n,
+    });
+    expect(events[2]).toMatchObject({
+      kind: "royaltyPaid",
+      amountWei: 10000000000000000n,
+      tokenId: TOKEN,
+    });
+  });
+
+  it("publica también los lotes sin eventos: `scannedToBlock` mantiene el checkpoint al día", async () => {
+    const received: CanonicalEventsBatch[] = [];
+    const { listener, publicClient } = buildListener({
+      onCanonicalEvents: (batch) => {
+        received.push(batch);
+      },
+    });
+    (publicClient as unknown as { getLogs: ReturnType<typeof vi.fn> }).getLogs.mockResolvedValue([]);
+
+    await listener.reconcileLogsChunked(publicClient, 0n, 20n);
+
+    expect(received).toHaveLength(1);
+    expect(received[0]).toEqual({ events: [], scannedToBlock: 20n });
+  });
+
+  it("si el consumidor canónico falla, la reconciliación propaga (el runtime reintenta el rango)", async () => {
+    const { listener, publicClient } = buildListener({
+      onCanonicalEvents: () => {
+        throw new Error("agregados caídos");
+      },
+    });
+
+    await expect(listener.reconcileLogsChunked(publicClient, 0n, 20n)).rejects.toThrow(
+      "agregados caídos",
+    );
   });
 });

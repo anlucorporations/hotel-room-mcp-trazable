@@ -17,7 +17,9 @@ import type { ChainEvent, ChainSource, SaleEvent } from "./types";
  * `main.ts`, no este módulo).
  *
  * - `getSaleLogs`: solo eventos `Sale`, para el aviso por email (CU-10, docs/SRS.md §9).
- * - `getDomainLogs`: `Mint`/`Sale`/`RoyaltyPaid`/`Burn`, para agregados/histórico (CU-09/11).
+ * - `getDomainLogs`: `Mint`/`Sale`/`RoyaltyPaid`/`Burn`, **solo lectura de diagnóstico/tests**. El
+ *   indexador de agregados ya NO la usa: el único escaneo lo hace el listener y el worker consume su
+ *   flujo canónico ([ADR-34](../../docs/adr/ADR-34-un-solo-indexador-de-eventos.md), D-87).
  */
 export interface ViemChainSourceOptions {
   readonly rpcUrl: string;

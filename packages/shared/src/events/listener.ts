@@ -23,6 +23,16 @@ export interface EventListenerConfig {
    * observado en `pnpm test` bajo turbo durante la verificación de M7).
    */
   now?: () => number;
+  /**
+   * Consumidor del **flujo canónico único** (ADR-34). El listener decodifica cada lote de logs una
+   * sola vez y publica aquí los eventos de dominio con su localización on-chain. El worker lo usa
+   * para alimentar los agregados/histórico desde la MISMA pasada que mantiene el índice `nfts`, de
+   * modo que ambos no pueden discrepar por leer la cadena dos veces.
+   *
+   * Si el consumidor lanza, la reconciliación falla y el runtime reintenta el mismo rango en el
+   * siguiente ciclo (los eventos ya apilados se deduplican y las escrituras son idempotentes).
+   */
+  onCanonicalEvents?: (batch: CanonicalEventsBatch) => void | Promise<void>;
 }
 
 /** Eventos del contrato canónico que el índice off-chain necesita. */
@@ -100,6 +110,149 @@ export type StagedEventData<TEventType extends StagedEventType> = Extract<
   { eventType: TEventType }
 >["data"];
 
+/** Localización on-chain de un evento: la clave de idempotencia de los agregados es `txHash:logIndex`. */
+export interface CanonicalEventLocation {
+  readonly blockNumber: bigint;
+  readonly txHash: `0x${string}`;
+  readonly logIndex: number;
+}
+
+/**
+ * Evento canónico **decodificado de una sola pasada** (ADR-34), con su localización on-chain.
+ *
+ * Es el contrato del indexador único: el listener lo publica por `onCanonicalEvents` y lo consumen
+ * (a) el propio índice off-chain `nfts` y (b) los agregados/histórico del worker. Incluye los seis
+ * eventos canónicos (los cuatro de agregados y los dos que solo afectan al índice).
+ */
+export type CanonicalDomainEvent =
+  | (CanonicalEventLocation & {
+      readonly kind: "mint";
+      readonly tokenId: bigint;
+      readonly room: bigint;
+      readonly dateYYYYMMDD: bigint;
+      readonly roomType: string;
+      readonly priceWei: bigint;
+    })
+  | (CanonicalEventLocation & {
+      readonly kind: "sale";
+      readonly tokenId: bigint;
+      readonly seller: `0x${string}`;
+      readonly buyer: `0x${string}`;
+      readonly priceWei: bigint;
+      readonly saleTypeRaw: number;
+    })
+  | (CanonicalEventLocation & {
+      readonly kind: "royaltyPaid";
+      readonly tokenId: bigint;
+      readonly receiver: `0x${string}`;
+      readonly amountWei: bigint;
+    })
+  | (CanonicalEventLocation & {
+      readonly kind: "listed";
+      readonly tokenId: bigint;
+      readonly seller: `0x${string}`;
+      readonly priceWei: bigint;
+    })
+  | (CanonicalEventLocation & {
+      readonly kind: "checkedIn";
+      readonly tokenId: bigint;
+    })
+  | (CanonicalEventLocation & {
+      readonly kind: "burn";
+      readonly tokenId: bigint;
+    });
+
+/**
+ * Lote publicado por el flujo canónico único (ADR-34).
+ *
+ * `scannedToBlock` es el último bloque LEÍDO del lote, aunque no haya eventos: el consumidor lo usa
+ * como checkpoint (los agregados no deben quedarse en lag en tramos de cadena sin actividad).
+ */
+export interface CanonicalEventsBatch {
+  readonly events: readonly CanonicalDomainEvent[];
+  readonly scannedToBlock: bigint;
+}
+
+/**
+ * Decodifica un lote de logs del contrato canónico **una sola vez** y devuelve los eventos de
+ * dominio en el mismo orden en que llegaron. Los logs de otros eventos (p. ej. transferencias
+ * ERC-721) se ignoran; los que no tienen localización completa no se publican (no serían
+ * idempotentes).
+ *
+ * Función pura y exportada: es el punto único de decodificación del que dependen el índice y los
+ * agregados (ADR-34), y se puede probar sin RPC ni base de datos.
+ */
+export function decodeCanonicalDomainEvents(
+  logs: readonly Log[],
+): CanonicalDomainEvent[] {
+  const events: CanonicalDomainEvent[] = [];
+  for (const log of logs) {
+    const { blockNumber, transactionHash, logIndex } = log;
+    if (blockNumber == null || transactionHash == null || logIndex == null) continue;
+    const location = { blockNumber, txHash: transactionHash, logIndex };
+    try {
+      const decoded = decodeEventLog({
+        abi: Object.values(CANONICAL_EVENTS),
+        data: log.data,
+        topics: log.topics,
+      });
+      switch (decoded.eventName) {
+        case "Mint":
+          events.push({
+            kind: "mint",
+            tokenId: decoded.args.tokenId,
+            room: decoded.args.room,
+            dateYYYYMMDD: decoded.args.dateYYYYMMDD,
+            roomType: decoded.args.roomType,
+            priceWei: decoded.args.price,
+            ...location,
+          });
+          break;
+        case "Sale":
+          events.push({
+            kind: "sale",
+            tokenId: decoded.args.tokenId,
+            seller: decoded.args.seller,
+            buyer: decoded.args.buyer,
+            priceWei: decoded.args.price,
+            saleTypeRaw: Number(decoded.args.saleType),
+            ...location,
+          });
+          break;
+        case "RoyaltyPaid":
+          events.push({
+            kind: "royaltyPaid",
+            tokenId: decoded.args.tokenId,
+            receiver: decoded.args.receiver,
+            amountWei: decoded.args.amount,
+            ...location,
+          });
+          break;
+        case "Listed":
+          events.push({
+            kind: "listed",
+            tokenId: decoded.args.tokenId,
+            seller: decoded.args.seller,
+            priceWei: decoded.args.price,
+            ...location,
+          });
+          break;
+        case "CheckedIn":
+          events.push({ kind: "checkedIn", tokenId: decoded.args.tokenId, ...location });
+          break;
+        case "Burn":
+          events.push({ kind: "burn", tokenId: decoded.args.tokenId, ...location });
+          break;
+        default:
+          break;
+      }
+    } catch {
+      // Log de otro evento del mismo contrato: se ignora.
+    }
+  }
+  return events;
+}
+
 export class EventListenerService {
   private nftsRepo: NFTsRepository;
   private notificationQueue: NotificationQueueService;
@@ -112,6 +265,7 @@ export class EventListenerService {
     heartbeatTimeoutMs: number;
     silenceThresholdMs: number;
     chunkSize: number;
+    onCanonicalEvents?: (batch: CanonicalEventsBatch) => void | Promise<void>;
   };
   private lastBlockNumber: bigint = 0n;
   private lastBlockTimestamp: number = Date.now();
@@ -142,6 +296,7 @@ export class EventListenerService {
       heartbeatTimeoutMs: config.heartbeatTimeoutMs ?? 5000,
       silenceThresholdMs: config.silenceThresholdMs ?? 600000,
       chunkSize: config.chunkSize ?? 2000,
+      onCanonicalEvents: config.onCanonicalEvents,
     };
   }
 
@@ -391,6 +546,18 @@ export class EventListenerService {
 
       for (const log of logs) {
         this.stageFromLog(log);
+      }
+
+      // Flujo canónico único (ADR-34): el mismo lote que acaba de apilarse para el índice `nfts`
+      // se publica UNA sola vez para que los agregados/histórico lo consuman sin volver a escanear
+      // la cadena. Se publica también cuando no hay eventos: `scannedToBlock` permite al consumidor
+      // avanzar su checkpoint y no quedarse «en lag» en tramos silenciosos. Si el consumidor falla,
+      // no se avanza: el runtime reintenta este rango.
+      if (this.config.onCanonicalEvents) {
+        await this.config.onCanonicalEvents({
+          events: decodeCanonicalDomainEvents(logs),
+          scannedToBlock: currentTo,
+        });
       }
 
       totalLogsCount += logs.length;

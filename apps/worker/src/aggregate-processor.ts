@@ -1,7 +1,6 @@
 import {
   compareHistoryDesc,
   DASHBOARD_TIME_ZONE,
-  GETLOGS_MAX_RANGE,
   occupancyRatioPercent,
   TOP_RESOLD_LIMIT,
   type DashboardAggregates,
@@ -30,12 +29,14 @@ import type {
  *
  * No conoce viem ni `pg`: recibe su `AggregateStore` por construcción (DIP), por lo que es
  * testeable con fakes en memoria, sin base de datos.
+ *
+ * **Ya no escanea la cadena** (ADR-34): el indexador único es el listener, que publica el flujo
+ * canónico y alimenta este procesador a través de `AggregateEventIngestor`. Aquí quedan solo la
+ * aplicación de lotes (`apply`), las lecturas del dashboard/histórico y el relleno de fechas.
  */
 export interface AggregateProcessorDeps {
   readonly chainSource: ChainSource;
   readonly store: AggregateStore;
-  /** Bloque de despliegue: límite inferior del catch-up (ADR-09). */
-  readonly deploymentBlock: number;
   /**
    * Zona horaria del hotel para la serie mensual (D-16). Por defecto `Europe/Madrid`: el mes de
    * una venta es el del hotel, no el de UTC.
@@ -48,49 +49,14 @@ export interface AggregateProcessorDeps {
 export class AggregateProcessor {
   private readonly chainSource: ChainSource;
   private readonly store: AggregateStore;
-  private readonly deploymentBlock: number;
   private readonly timeZone: string;
   private readonly topResoldLimit: number;
 
   constructor(deps: AggregateProcessorDeps) {
     this.chainSource = deps.chainSource;
     this.store = deps.store;
-    this.deploymentBlock = deps.deploymentBlock;
     this.timeZone = deps.timeZone ?? DASHBOARD_TIME_ZONE;
     this.topResoldLimit = deps.topResoldLimit ?? TOP_RESOLD_LIMIT;
-  }
-
-  /**
-   * Procesa los eventos de dominio desde `max(lastBlock+1, deploymentBlock)` hasta `head`, en
-   * chunks ≤ `GETLOGS_MAX_RANGE`, avanzando `lastBlock` tras cada chunk. La lectura del RPC
-   * (`getDomainLogs`) puede lanzar: el error se propaga al llamador (`runCycle`), que lo cuenta
-   * como fallo del RPC y no avanza el `lastBlock` del chunk.
-   *
-   * Idempotente: cada evento se aplica con clave `txHash:logIndex`; reprocesos/solapes no duplican.
-   */
-  async catchUp(headBlock: bigint): Promise<bigint> {
-    const counters = await this.store.getCounters();
-    // `lastBlock = 0` puede ser "nada agregado aún": arrancamos en el deploymentBlock.
-    const resumeFrom =
-      counters.lastBlock === 0 ? this.deploymentBlock : counters.lastBlock + 1;
-    let fromBlock = BigInt(Math.max(resumeFrom, this.deploymentBlock));
-
-    if (fromBlock > headBlock) {
-      return headBlock;
-    }
-
-    while (fromBlock <= headBlock) {
-      const toBlock = minBigInt(
-        fromBlock + BigInt(GETLOGS_MAX_RANGE - 1),
-        headBlock,
-      );
-      const events = await this.chainSource.getDomainLogs(fromBlock, toBlock);
-      await this.apply(events);
-      await this.store.setLastBlock(Number(toBlock));
-      fromBlock = toBlock + 1n;
-    }
-
-    return headBlock;
   }
 
   /**
@@ -201,5 +167,3 @@ function toHistoryEntry(row: HistoryRow): SaleHistoryEntry {
 
 /** Traduce el `uint8` on-chain (`enum SaleType`) a la unión de dominio. */
 const toSaleType = (raw: number): SaleType => (raw === 0 ? "PRIMARY" : "SECONDARY");
-
-const minBigInt = (a: bigint, b: bigint): bigint => (a < b ? a : b);

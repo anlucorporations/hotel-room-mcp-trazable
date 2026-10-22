@@ -129,7 +129,10 @@ export interface ChainSource {
   getSaleLogs(fromBlock: bigint, toBlock: bigint): Promise<SaleEvent[]>;
   /**
    * Eventos de dominio (`Mint`/`Sale`/`RoyaltyPaid`/`Burn`) en el rango ya acotado, ordenados
-   * por (blockNumber asc, logIndex asc) para un agregado determinista (agregados/histórico).
+   * por (blockNumber asc, logIndex asc).
+   *
+   * **No lo usa el indexador**: desde ADR-34 el único escaneo es el del listener y los agregados
+   * consumen su flujo canónico. Se conserva para diagnóstico y pruebas.
    */
   getDomainLogs(fromBlock: bigint, toBlock: bigint): Promise<ChainEvent[]>;
 }

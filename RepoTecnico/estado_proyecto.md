@@ -6659,3 +6659,43 @@ el `projectId` y `walletConnect`.
 
 **Pendiente que sigue abierto:** la prueba manual en dispositivo del QR WalletConnect sobre Besu
 (`TC-ACC-003`), que no depende del `projectId` sino de un móvil físico.
+
+---
+
+## 75. DEUDA SALDADA — un solo indexador de eventos (ADR-34 · D-87) (2026-10-22)
+
+**Petición.** Unificar los dos indexadores de la misma noche (índice del listener y agregados del
+procesador), deuda declarada en [ADR-25](../docs/adr/ADR-25-dashboard-fuente-unica.md) y
+[`SRS §7.7`](../docs/SRS.md).
+
+**Problema.** El listener escaneaba la cadena para escribir `nfts` y el `AggregateProcessor` volvía a
+escanearla (`getDomainLogs`) para los agregados/histórico, cada uno con su cursor y su ritmo. Los dos
+decodificaban los mismos eventos y podían discrepar (KPI «noches vendidas» frente a inventario).
+
+**Solución (ADR-34).**
+
+| Pieza | Cambio |
+|---|---|
+| `packages/shared/src/events/listener.ts` | `decodeCanonicalDomainEvents` (decodificación pura) y hook `onCanonicalEvents`; el lote se publica **una vez** con `blockNumber`/`txHash`/`logIndex` |
+| `apps/worker/src/aggregate-ingestor.ts` (nuevo) | traduce el flujo canónico a `ChainEvent`, resuelve la marca temporal solo de bloques con venta (fail-closed) y aplica idempotente; avanza `lastBlock` y alimenta `/health` |
+| `apps/worker/src/run-worker.ts` | el listener se arranca tras el rebind (`onWorkerReady`); `runCycle` ya **no** escanea agregados (solo backfill de fechas y lag) |
+| `apps/worker/src/aggregate-processor.ts` | se retira `catchUp` (y `deploymentBlock`); quedan `apply`, lecturas y `backfillTimestamps` |
+| `apps/worker/src/listener-runtime.ts` | `autostart:false` + `start()` con primera pasada inmediata |
+| `apps/worker/src/main.ts` | cablea listener → `AggregateEventIngestor` → agregados, tras el rebind |
+
+El pipeline de **email** (`SaleProcessor` + cola única) no se toca: no es un indexador y conserva su
+checkpoint y su garantía at-least-once.
+
+**Pruebas.** `listener-events.test.ts` (lote único con localización y propagación de fallo),
+`aggregate-ingestor.test.ts` (traducción, timestamps, fail-closed, salud, 7 pruebas),
+`run-worker.test.ts` (el ciclo no escanea agregados y publica el `lastBlock` persistido) y
+`aggregate-processor.test.ts` (idempotencia y lecturas sin catch-up). Suites: **shared 771/774** y
+**worker 203/203**; typecheck y lint del worker verdes. Los **3 fallos de shared son preexistentes**
+(`documentation-sync` «61 vs 60 tablas» y `reset-plan`), ajenos a este cambio.
+
+**Pendiente operativo.** El cambio está en el repositorio y probado; para que producción deje de
+ejecutar los dos escaneos hay que **construir y desplegar `worker:v90`** (la revisión actual,
+`00046-tad`/`v89`, mantiene el código anterior). Sin cambio de esquema ni de contrato.
+
+Artefactos: [ADR-34](../docs/adr/ADR-34-un-solo-indexador-de-eventos.md) · [`BACKLOG §3.6`](../docs/BACKLOG-SPRINTS.md)
+· [`SRS §7.7`](../docs/SRS.md) · manual [`02-base-de-datos`](./Manuales/02-instalacion/02-base-de-datos.md).

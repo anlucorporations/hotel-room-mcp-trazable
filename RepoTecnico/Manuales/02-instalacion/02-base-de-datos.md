@@ -202,8 +202,9 @@ Otros huecos comprobados en M9 y no resueltos:
   desde PostgreSQL no devuelve resultados.
 - No se guarda el hash de la transacción que ancló el check-in (`check_in_tx_hash`): el hash se
   devuelve en la respuesta y la UI lo muestra, pero no queda traza off-chain.
-- **Dos indexadores de la misma noche** (índice del listener y agregados del procesador) que pueden
-  discrepar entre sí.
+- ~~**Dos indexadores de la misma noche** (índice del listener y agregados del procesador) que pueden
+  discrepar entre sí.~~ **Resuelto (2026-10-22)**: el listener es el indexador único y alimenta ambos
+  en la misma pasada ([ADR-34](../../../docs/adr/ADR-34-un-solo-indexador-de-eventos.md), D-87).
 - `nfts.check_in_secret_enc` sigue poblándose pero el pase nuevo ya no lo usa: su retirada es deuda.
 
 ---

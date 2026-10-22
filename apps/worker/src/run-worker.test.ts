@@ -4,7 +4,6 @@ import { runCycle, runWorker } from "./run-worker";
 import { SaleProcessor } from "./sale-processor";
 import { AggregateProcessor } from "./aggregate-processor";
 import {
-  AggregateFailingChainSource,
   AlwaysFailingMailer,
   createAggregateState,
   FailingChainSource,
@@ -28,7 +27,6 @@ const newAggregateProcessor = (
   new AggregateProcessor({
     chainSource,
     store,
-    deploymentBlock: 0,
   });
 
 const CONTRACT = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
@@ -169,10 +167,12 @@ describe("runWorker · ciclo y salud", () => {
     // El checkpoint de email se rebobinó al bloque de despliegue y el catch-up llegó a la cabeza.
     expect(chain.requestedRanges[0]?.from).toBe(41n);
     expect(await store.getLastBlock(CONTRACT)).toBe(50);
-    // Los agregados de la cadena desaparecida no se arrastran: reset + reproceso de la nueva.
+    // Los agregados de la cadena desaparecida no se arrastran: reset a base y `last_block` en el
+    // bloque de despliegue. El reproceso lo hace el indexador único (listener → ingestor, ADR-34),
+    // que no se ejecuta en este test unitario de `runWorker`: por eso aquí NO llega a 50.
     expect(aggregateStore.resetCount).toBe(1);
     expect((await aggregateStore.getCounters()).mintedCount).toBe(0);
-    expect((await aggregateStore.getCounters()).lastBlock).toBe(50);
+    expect((await aggregateStore.getCounters()).lastBlock).toBe(40);
     // Y la salud no miente con un lag negativo.
     expect(health.lag).toBe(0);
     expect(health.toReport().status).toBe("ok");
@@ -387,37 +387,12 @@ describe("runWorker · rebind consciente de agregados (MAJOR 3)", () => {
 });
 
 describe("runWorker · /health observa el pipeline de agregados (MAJOR 4)", () => {
-  it("degrada a down tras N fallos consecutivos del catchUp de agregados", async () => {
-    const health = createWorkerHealthState({
-      rpcFailureThreshold: 99, // descartamos la vía de RPC.
-      aggregateFailureThreshold: 3,
-    });
-    const aggChain = new AggregateFailingChainSource(10n);
-    const processor = new SaleProcessor({
-      chainSource: aggChain,
-      mailer: new FakeMailer(),
-      store: new InMemoryCheckpointStore(),
-      logger: silentLogger(),
-      contractAddress: CONTRACT,
-      deploymentBlock: 0,
-      sleep: noSleep,
-    });
-    const aggregate = newAggregateProcessor(aggChain);
-    const deps = { chainSource: aggChain, logger: silentLogger(), health };
-
-    await runCycle(processor, aggregate, deps);
-    await runCycle(processor, aggregate, deps);
-    expect(health.toReport().status).toBe("ok"); // 2 fallos < umbral
-    expect(health.toReport().details?.consecutiveRpcFailures).toBe(0); // no es fallo de RPC
-    await runCycle(processor, aggregate, deps);
-    expect(health.toReport().status).toBe("down"); // 3 fallos de agregados ⇒ down
-    expect(health.toReport().details?.consecutiveAggregateFailures).toBe(3);
-  });
-
-  it("publica aggregateLastBlock y aggregateLag tras el ciclo de agregados", async () => {
+  it("el ciclo ya NO escanea agregados: publica el lastBlock que dejó el ingestor canónico (ADR-34)", async () => {
     const health = createWorkerHealthState({ lagThreshold: 10 });
     const chain = new FakeChainSource(100n);
     const aggregateStore = new InMemoryAggregateStore();
+    // El ingestor canónico ya aplicó hasta la cabecera en la MISMA pasada del listener.
+    await aggregateStore.setLastBlock(100);
     const processor = new SaleProcessor({
       chainSource: chain,
       mailer: new FakeMailer(),
@@ -427,15 +402,12 @@ describe("runWorker · /health observa el pipeline de agregados (MAJOR 4)", () =
       deploymentBlock: 0,
       sleep: noSleep,
     });
-    const aggregate = new AggregateProcessor({
-      chainSource: chain,
-      store: aggregateStore,
-      deploymentBlock: 0,
-    });
+    const aggregate = newAggregateProcessor(chain, aggregateStore);
 
     await runCycle(processor, aggregate, { chainSource: chain, logger: silentLogger(), health });
 
-    // Tras el catch-up el agregado alcanza la cabecera ⇒ lag 0; reportamos ambos lags.
+    // Sin segundo escaneo: el procesador de agregados solo lee el estado persistido.
+    expect(chain.requestedDomainRanges).toEqual([]);
     expect(health.aggregateLastBlock).toBe(100);
     expect(health.aggregateLag).toBe(0);
     expect(health.toReport().details).toMatchObject({ aggregateLastBlock: 100, aggregateLag: 0 });
