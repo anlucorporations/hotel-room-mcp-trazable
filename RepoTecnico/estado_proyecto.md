@@ -6591,3 +6591,42 @@ verificación. El operador de QA se desactivó y se invalidó su hash.
 
 Evidencia: [`evidencias/verificacion-publicacion-masiva-fecha-2026-10-22.json`](./evidencias/verificacion-publicacion-masiva-fecha-2026-10-22.json)
 y [`despliegue_gcp.md`](./despliegue_gcp.md) §103.
+
+
+---
+
+## 73. SEGUNDA LIMPIEZA TOTAL DE PUBLICACIONES + CONTRATO NUEVO v2 (2026-10-22)
+
+**Petición.** Eliminar las publicaciones de las habitaciones creadas. Decisiones del responsable:
+**las 50 habitaciones**; off-chain **despublicar + borrar registros e índice** (conservando habitaciones
+y fotos, D-8); on-chain **contrato nuevo = cadena limpia**.
+
+**On-chain.**
+
+| Elemento | Valor |
+|---|---|
+| `HotelNights` nuevo | **`0x8b1B398b9c49AFE6394aaE438f6F2E8039120253`** · bloque **5848830** |
+| `NightAuction` nueva | `0x42E5a852Aa5cd4284227796Bc5d2461189A65b8a` · bloque 5848838 |
+| Roles | relayer `0xD439…6Ddf` (admin+minter), burner `0x3C44…93BC`, recepción `0x90F7…b906`, subasta `AUCTION_ROLE` |
+| Estado | **0 registros, 0 publicaciones, 0 mint** (`getLogs` desde el despliegue; `isRoomRegistered(103)=false`) |
+| Anteriores | `0xf8b1…25f4` y `0xD604…c5dd` quedan huérfanos e inmutables (fuera de la plataforma) |
+
+**Off-chain.** Borradas `room_publications`, `room_mint_jobs`, `room_status_history` y el índice
+(`nfts`, `listings`, `sale_events`, `reviews`, `checkin_contingency_logs`); **50 habitaciones en `DRAFT`**
+con sus **50 fotos**. Checkpoints del worker reiniciados al contrato nuevo.
+
+**Estado final.** DB: 50 DRAFT · 0 publicaciones · 0 NFT · 0 jobs · 50 fotos. Web: `/api/public/rooms`
+→ `{"rooms": []}`; `/health/ready`, `/` y `/catalogo` → 200. Worker: `ok`, `lag 0`.
+
+| Elemento | Valor |
+|---|---|
+| Imágenes | **`worker:v89`** (build `f2b7a2c2…`) y **`web:v89`** (build `bc4bfd0b…`) |
+| Revisiones | **`hotel-mcp-worker-00046-tad`** y **`hotel-mcp-web-00161-pux`** (100 %) |
+| Config | web con contrato/bloque/subasta nuevos + `MINT_ON_PUBLISH_ENABLED=true`; worker `CONTRACT_ADDRESS`/`DEPLOYMENT_BLOCK` nuevos |
+
+**Incidencia.** Entre la primera limpieza (01:48) y el cambio de worker (15:27) la revisión antigua del
+worker siguió viva con el contrato anterior y aparecieron publicaciones nuevas (215/216/219/220). Se
+eliminó esa revisión, se repitió la limpieza a las 15:29 y el estado final quedó limpio.
+
+Evidencia: [`evidencias/reset-publicaciones-contrato-nuevo-v2-2026-10-22.json`](./evidencias/reset-publicaciones-contrato-nuevo-v2-2026-10-22.json)
+y [`despliegue_gcp.md`](./despliegue_gcp.md) §104.

@@ -4180,3 +4180,54 @@ prueba se desactivó. Los tokens sobrantes del ensayo previo (10720261023/118202
 índice; son inmutables on-chain.
 
 Evidencia: [`evidencias/verificacion-publicacion-masiva-fecha-2026-10-22.json`](./evidencias/verificacion-publicacion-masiva-fecha-2026-10-22.json).
+
+
+---
+
+## 104. Segunda limpieza total de publicaciones y HotelNights v2 (2026-10-22)
+
+**Motivo.** Eliminar las publicaciones de las habitaciones creadas. Como la cadena es inmutable, la
+cadena limpia exige un `HotelNights` nuevo; off-chain se despublica y se borran los registros de
+publicación y el índice, conservando habitaciones y fotos.
+
+**Contratos desplegados (Besu, chainId 81234).**
+
+| Contrato | Dirección | Bloque |
+|---|---|---|
+| `HotelNights` | **`0x8b1B398b9c49AFE6394aaE438f6F2E8039120253`** | **5848830** |
+| `NightAuction` | `0x42E5a852Aa5cd4284227796Bc5d2461189A65b8a` | 5848838 |
+
+Roles concedidos: relayer `0xD439…6Ddf` (DEFAULT_ADMIN + MINTER), burner `0x3C44…93BC` (BURNER),
+recepción `0x90F7…b906` (RECEPTION), subasta `0x42E5…5b8a` (AUCTION_ROLE). Registro:
+`packages/shared/deployments/81234.json` y `packages/contracts/deployments/81234-auction.json`
+(sincronizados). Quedan huérfanos e inmutables los contratos `0xf8b1…25f4` y `0xD604…c5dd`.
+
+**Datos off-chain.** Job de limpieza dentro de la VPC: borrado de `room_publications`,
+`room_mint_jobs`, `room_status_history` y del índice (`nfts`, `listings`, `sale_events`, `reviews`,
+`checkin_contingency_logs`); las **50 habitaciones pasan a `DRAFT`** conservando sus 50 fotos; los
+checkpoints del worker se reiniciaron al contrato nuevo (bloque 5873504).
+
+| Componente | Imagen | Build | Revisión | Tráfico |
+|---|---|---|---|---|
+| worker | `worker:v89` | `f2b7a2c2-d491-47f0-9116-6e70a7241e40` SUCCESS | **`hotel-mcp-worker-00046-tad`** | 100 % |
+| web | `web:v89` | `bc4bfd0b-23a7-4e3d-81d5-c9a0b1e6bc71` SUCCESS | **`hotel-mcp-web-00161-pux`** | 100 % |
+
+**Configuración.** Web: `NEXT_PUBLIC_CONTRACT_ADDRESS=0x8b1B…0253`,
+`NEXT_PUBLIC_DEPLOYMENT_BLOCK=5848830`, `NEXT_PUBLIC_AUCTION_ADDRESS=0x42E5…5b8a`,
+`NEXT_PUBLIC_AUCTION_DEPLOYMENT_BLOCK=5848838`, `MINT_ON_PUBLISH_ENABLED=true`. Worker:
+`CONTRACT_ADDRESS=0x8b1B…0253`, `DEPLOYMENT_BLOCK=5848830`. Conservados el volumen GCS de imágenes y
+el resto de secretos.
+
+| Comprobación | Resultado |
+|---|---|
+| Cadena nueva | **0 `RoomRegistered`, 0 `RoomPublished`, 0 `Mint`** desde 5848830 |
+| DB | **50 DRAFT · 0 publicaciones · 0 nfts · 0 jobs · 50 fotos** |
+| Web producción | `/health/ready`, `/`, `/catalogo`, `/api/public/rooms` → 200; `{"rooms":[]}` |
+| Worker | `/health` **ok**, `lag 0` |
+
+**Incidencia y prevención.** La revisión antigua del worker (`00043-koz`, v88) siguió viva hasta las
+15:27 y publicó habitaciones con el contrato anterior (215/216/219/220). Se eliminó dicha revisión, se
+repitió la limpieza completa y se promovió v89. Regla operativa: **al promover un worker, eliminar la
+revisión anterior** para que ninguna instancia antigua procese jobs.
+
+Evidencia: [`evidencias/reset-publicaciones-contrato-nuevo-v2-2026-10-22.json`](./evidencias/reset-publicaciones-contrato-nuevo-v2-2026-10-22.json).

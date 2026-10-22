@@ -1,0 +1,58 @@
+{
+  "id": "reset-publicaciones-contrato-nuevo-v2-2026-10-22",
+  "titulo": "Segunda limpieza total de publicaciones: 50 habitaciones en DRAFT y nuevo HotelNights limpio",
+  "fechaUtc": "2026-10-22T15:35:00Z",
+  "peticion": "Eliminar las publicaciones de las habitaciones creadas",
+  "decisionesResponsable": [
+    "Alcance: las 50 habitaciones",
+    "Off-chain: despublicar (DRAFT), borrar room_publications, room_mint_jobs y el índice (nfts y derivados); conservar habitaciones y fotos (D-8)",
+    "On-chain: desplegar un HotelNights nuevo (cadena limpia); el anterior queda huérfano e inmutable"
+  ],
+  "onChain": {
+    "contratoNuevo": {
+      "Hotelnights": "0x8b1B398b9c49AFE6394aaE438f6F2E8039120253",
+      "deploymentBlock": 5848830,
+      "treasury": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "minListingPriceWei": "10000000000000000"
+    },
+    "subastaNueva": {
+      "address": "0x42E5a852Aa5cd4284227796Bc5d2461189A65b8a",
+      "deploymentBlock": 5848838,
+      "hotel": "0x8b1B398b9c49AFE6394aaE438f6F2E8039120253"
+    },
+    "roles": {
+      "relayerPublicacion": "0xD439542F90E14CF7755a1C5c5bed90Ab952a6Ddf → DEFAULT_ADMIN + MINTER",
+      "burner": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC → BURNER",
+      "reception": "0x90F79bf6EB2c4f870365E785982E1f101E93b906 → RECEPTION",
+      "auction": "0x42E5…5b8a → AUCTION_ROLE",
+      "admin": "0xf39F…2266 (deployer/treasury)"
+    },
+    "verificacionLimpieza": "getLogs desde 5848830: 0 RoomRegistered, 0 RoomPublished, 0 Mint; isRoomRegistered(103)=false",
+    "contratosAnteriores": [
+      "0xf8b1d4d0a2dd9dd53200a4c6783a69c15e3a25f4 (primero)",
+      "0xd604c06206f6dedd82d42f90d1f5bb34a2e7c5dd (segundo)"
+    ],
+    "nota": "Los contratos anteriores son inmutables: sus registros/hashes/NFT siguen en la cadena, huérfanos y fuera de la plataforma."
+  },
+  "offChain": {
+    "tablasBorradas": ["listings", "sale_events", "checkin_contingency_logs", "reviews", "nfts", "room_publications", "room_mint_jobs", "room_status_history"],
+    "habitaciones": "50 conservadas en publication_status=DRAFT, archived_at=NULL",
+    "fotos": "50 filas de room_images conservadas",
+    "checkpointsWorker": "worker_checkpoints y worker_aggregate_counters reiniciados al contrato nuevo en el bloque 5873504",
+    "antes": { "rooms": 50, "publicadas": 12, "publicaciones": ">0", "nfts": ">0", "jobs": ">0" },
+    "despues": { "rooms": 50, "publicadas": 0, "publicaciones": 0, "jobs": 0, "nfts": 0, "fotos": 50 }
+  },
+  "despliegue": {
+    "worker": { "imagen": "worker:v89", "build": "f2b7a2c2-d491-47f0-9116-6e70a7241e40", "revision": "hotel-mcp-worker-00046-tad", "env": "CONTRACT_ADDRESS=0x8b1B…0253, DEPLOYMENT_BLOCK=5848830" },
+    "web": { "imagen": "web:v89", "build": "bc4bfd0b-23a7-4e3d-81d5-c9a0b1e6bc71", "revision": "hotel-mcp-web-00161-pux" },
+    "precaucion": "Tras promover worker v89 se eliminó la revisión anterior (00043-koz, v88) para que ninguna instancia antigua procesara jobs con el contrato anterior."
+  },
+  "verificacion": {
+    "web": { "/health/ready": 200, "/": 200, "/catalogo": 200, "/api/public/rooms": "200 · {\"rooms\": []}" },
+    "worker": { "/health": "ok · lag 0" },
+    "db": "50 DRAFT · 0 publicaciones · 0 nfts · 0 jobs · 50 fotos",
+    "cadena": "contrato nuevo sin registros/publicaciones/mints"
+  },
+  "incidenciaDuranteLaLimpieza": "Entre la primera limpieza (01:48) y el cambio de worker (15:27) la revisión antigua del worker (v88, contrato anterior) siguió viva y otras publicaciones aparecieron (p. ej. 215/216/219/220). Se eliminó la revisión antigua y se repitió la limpieza completa a las 15:29, quedando el estado final en 0 publicaciones.",
+  "nota": "El contrato anterior no se puede borrar (inmutable). La limpieza on-chain se consigue usando un contrato nuevo; los antiguos quedan documentados como históricos."
+}
