@@ -1,0 +1,106 @@
+{
+  "id": "verificacion-publicacion-imagen-tipo-oct25-2026-10-22",
+  "titulo": "Verificación: al publicar se usa la imagen del tipo de la habitación (unitario y masivo) — 2 por tipo disponibles el 25-oct",
+  "fechaUtc": "2026-10-22T01:10:00Z",
+  "objetivo": "Verificar que al publicar se usa la imagen del tipo de habitación que se publica, también en las publicaciones masivas, y dejar 2 habitaciones de cada tipo publicadas para el 25 de octubre",
+  "contrato": "0xD604C06206f6DeDd82d42F90D1F5bB34a2E7c5dd (HotelNights nuevo, bloque 5845688)",
+  "habitacionesProbadas": {
+    "publicacionUnitaria": [
+      { "room": 103, "type": "SIMPLE", "cover": "103-Simple-2026-10-21-1.jpg" },
+      { "room": 116, "type": "DOBLE", "cover": "116-Doble-2026-10-21-1.jpg" },
+      { "room": 201, "type": "SUITE", "cover": "201-Suite-2026-10-21-1.jpg" }
+    ],
+    "publicacionMasiva": [
+      { "room": 104, "type": "SIMPLE", "cover": "104-Simple-2026-10-21-1.jpg" },
+      { "room": 117, "type": "DOBLE", "cover": "117-Doble-2026-10-21-1.jpg" },
+      { "room": 202, "type": "SUITE", "cover": "202-Suite-2026-10-21-1.jpg" }
+    ]
+  },
+  "imagenesPorTipo": {
+    "simple": {
+      "cid": "bafkreialyiktnrmy3kvdjebdndkc4tynjw63ghx4pw7mg2hznz3jema2qy",
+      "bytes": 444012,
+      "habitaciones": [103, 104]
+    },
+    "doble": {
+      "cid": "bafkreid5x5rjq7xjo4e7jejtoagifqxsapqa4utiwlysyzddzhdnrtrm7u",
+      "bytes": 105410,
+      "habitaciones": [116, 117]
+    },
+    "suite": {
+      "cid": "bafkreigedvpfrnvaoiceno5v4qtrkibhxzzatmsfrinyalx5wzzk6anfne",
+      "bytes": 150081,
+      "habitaciones": [201, 202]
+    }
+  },
+  "comprobaciones": {
+    "antesDePublicar": {
+      "galeria": "Las 50 habitaciones tienen portada con el nombre canónico del tipo real (0 discrepancias, 0 sin foto).",
+      "candidatas": "103/104/116/117/201/202 con hasImage=true y DRAFT"
+    },
+    "publicacion": {
+      "unitaria": "POST /api/admin/rooms/{id}/publish → 202 PENDING_ONCHAIN para 103, 116 y 201",
+      "masiva": "POST /api/admin/rooms/bulk/publish con [104, 117, 202] → 202 queued=3",
+      "resultado": "Los 6 jobs terminan en DONE; las 6 habitaciones pasan a PUBLISHED (~10-14 s por habitación)"
+    },
+    "onChain": {
+      "RoomRegistered": [103, 104, 116, 117, 201, 202],
+      "RoomPublished": [103, 104, 116, 117, 201, 202],
+      "publicationHashPorTipo": {
+        "103": "0x1a58967328939c1b83ae7090620c3219fb3c2dc89de823f1a2a396239b90329e",
+        "104": "0xf6a664c061a98668c75f6e9ab955509d8f97a3b32bf85138ecfefb2720e9daac",
+        "116": "0x87f97bc56492d295926e035bf8e6e9b7d189979b13d6ca23b7b35a2e9993f217",
+        "117": "0xcbea2b73bafd81306f3f6d4330d6fbc9fe2b86c857a0b6dc69ea96a711e4a457",
+        "201": "0x7945975cbf91422d8e962125e629184335e7cb768265c885334ae42b4f7b8b35",
+        "202": "0xeb811dfe9022defd7e5e5faced6643f5e6a6cd822c1183233553527a8fb6f06d"
+      },
+      "mints": "18 en total (6 por fecha 2026-10-23, 2026-10-24 y 2026-10-25), todas de las 6 habitaciones"
+    },
+    "imagenEnLosNFT": {
+      "103/104 (SIMPLE)": "tokenURI.image = ipfs://<CID simple> · attribute Tipo=simple",
+      "116/117 (DOBLE)": "tokenURI.image = ipfs://<CID doble> · attribute Tipo=doble",
+      "201/202 (SUITE)": "tokenURI.image = ipfs://<CID suite> · attribute Tipo=suite",
+      "verificadoEn": "tokenId 20261025 de cada habitación (también 20261023 y 20261024)"
+    },
+    "imagenEnCatalogo": {
+      "covers": "GET /api/public/rooms/covers devuelve para cada habitación el fichero de su tipo",
+      "http": "Las 6 imágenes responden 200 image/jpeg con cabecera JPEG válida (tamaños por tipo: 444012/105410/150081 bytes)",
+      "alt": "Texto alternativo «Habitación N · Simple|Doble|Suite»"
+    },
+    "disponibilidad25Oct": {
+      "api": "GET /api/nfts?status=AVAILABLE&dateFrom=2026-10-25&dateTo=2026-10-25",
+      "total": 6,
+      "items": [
+        { "room": 103, "type": "SIMPLE", "tokenId": "10320261025" },
+        { "room": 104, "type": "SIMPLE", "tokenId": "10420261025" },
+        { "room": 116, "type": "DOBLE", "tokenId": "11620261025" },
+        { "room": 117, "type": "DOBLE", "tokenId": "11720261025" },
+        { "room": 201, "type": "SUITE", "tokenId": "20120261025" },
+        { "room": 202, "type": "SUITE", "tokenId": "20220261025" }
+      ],
+      "catalogoPublico": "GET /api/public/rooms devuelve solo estas 6 habitaciones publicadas"
+    }
+  },
+  "incidenciasDuranteLaPrueba": [
+    {
+      "problema": "Una revisión antigua del worker con etiqueta (`hotel-mcp-worker-00036-duc`, worker:v86) seguía viva y reclamó los jobs de publicación, ejecutándolos contra el contrato ANTIGUO (0xf8b1…25f4) aunque la revisión al 100 % era la nueva.",
+      "evidencia": "Las txs de registro/minteo iban a 0xf8b1…; el contrato nuevo seguía con isRoomRegistered=false",
+      "correccion": "Se eliminó la revisión antigua (`gcloud run revisions delete hotel-mcp-worker-00036-duc`), se revirtieron las 6 habitaciones a DRAFT borrando publicaciones/nfts/jobs de la cadena antigua y se republicaron sobre el contrato nuevo."
+    },
+    {
+      "problema": "El primer minteo manual del 24-oct para la 103 se hizo con metadata de prueba (sin imagen) al probar el envío con gas fijo.",
+      "correccion": "No se puede reescribir on-chain: se retiró del índice la fila 10320261024 (el token queda huérfano en la cadena pero no se ofrece); el 24-oct queda con 5 noches y el 25-oct con las 6 correctas."
+    }
+  ],
+  "limpieza": {
+    "operadorQA": "qa-publicacion@hotel.es desactivado y hash invalidado (no puede iniciar sesión)",
+    "contrato": "El contrato antiguo no se toca (inmutable); la plataforma usa el nuevo",
+    "jobsTemporales": "hotel-mcp-qa-* eliminados"
+  },
+  "veredicto": "CUMPLE: las 6 habitaciones (2 por tipo) están publicadas y disponibles para el 25-oct; en unitario y en masivo la imagen de ficha y la imagen de la metadata NFT corresponden al tipo de la habitación.",
+  "artefactos": {
+    "workerRevision": "hotel-mcp-worker-00039-fad",
+    "webRevision": "hotel-mcp-web-00157-wer",
+    "tablas": "room_publications (6 ancladas), nfts (Oct23 6 · Oct24 5 · Oct25 6)"
+  }
+}

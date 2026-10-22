@@ -6510,3 +6510,42 @@ vacío. Catálogo público: `{"rooms": []}`.
 
 Evidencia: [`evidencias/reset-publicaciones-contrato-nuevo-2026-10-22.json`](./evidencias/reset-publicaciones-contrato-nuevo-2026-10-22.json)
 y [`despliegue_gcp.md`](./despliegue_gcp.md) §101.
+
+
+---
+
+## 71. VERIFICACIÓN — la publicación usa la imagen del tipo (unitario y masivo) · 2 por tipo para el 25-oct (2026-10-22)
+
+**Objetivo.** Comprobar que al publicar se usa la **imagen del tipo real** de la habitación, también
+en la **publicación masiva**, y dejar **2 habitaciones de cada tipo publicadas para el 25 de octubre**.
+
+**Preparación.** La galería de las 50 habitaciones se revisó contra su tipo: **0 discrepancias y 0
+sin foto** (fichero canónico `<nº>-<Simple|Doble|Suite>-<fecha>-1.jpg`). Se publicaron 6 habitaciones
+en el contrato nuevo `0xD604…c5dd`:
+
+| Vía | SIMPLE | DOBLE | SUITE |
+|---|---|---|---|
+| Unitaria (`POST /rooms/{id}/publish`) | 103 | 116 | 201 |
+| Masiva (`POST /rooms/bulk/publish`) | 104 | 117 | 202 |
+
+Las 6 pasaron a `PUBLISHED` con job `DONE` y publicación **anclada** on-chain.
+
+**Resultado de la verificación.**
+
+| Comprobación | Resultado |
+|---|---|
+| Ficha/catálogo | `GET /api/public/rooms/covers` devuelve la imagen de cada tipo; las 6 imágenes responden **200 image/jpeg** |
+| NFT (metadata on-chain) | `tokenURI` de las noches del 23, 24 y 25-oct: **image = CID del tipo** (`simple`/`doble`/`suite`) y atributo Tipo correcto |
+| Contrato nuevo | `RoomRegistered` y `RoomPublished` para 103/104/116/117/201/202; `publicationHash` coincide con la huella de cada ficha |
+| **Disponibilidad 25-oct** | `GET /api/nfts?status=AVAILABLE&dateFrom=2026-10-25&dateTo=2026-10-25` → **6 noches** (2 SIMPLE, 2 DOBLE, 2 SUITE) |
+| On-chain | **18 mint**: 6 el 23-oct, 6 el 24-oct y 6 el 25-oct |
+
+**Incidencia detectada y corregida.** Una revisión antigua del worker con etiqueta
+(`hotel-mcp-worker-00036-duc`, `worker:v86`) seguía viva y reclamó los jobs, ejecutándolos contra el
+**contrato antiguo**. Se eliminó esa revisión, se revirtieron las 6 habitaciones a `DRAFT` y se
+republicaron sobre el contrato nuevo. Además, el primer minteo manual del 24-oct de la 103 usó
+metadata de prueba; al ser inmutable se retiró su fila del índice (no se ofrece) y el 24-oct queda con
+5 noches. El operador de QA usado se desactivó y se invalidó su hash.
+
+Evidencia: [`evidencias/verificacion-publicacion-imagen-tipo-oct25-2026-10-22.json`](./evidencias/verificacion-publicacion-imagen-tipo-oct25-2026-10-22.json)
+y [`despliegue_gcp.md`](./despliegue_gcp.md) §102.

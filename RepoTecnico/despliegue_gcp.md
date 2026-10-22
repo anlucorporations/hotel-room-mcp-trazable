@@ -4112,3 +4112,38 @@ resto de secretos.
 `CONTRACT_ADDRESS` a `0xf8b1…25f4` y restaurar el índice desde backup; no se recomienda.
 
 Evidencia: [`evidencias/reset-publicaciones-contrato-nuevo-2026-10-22.json`](./evidencias/reset-publicaciones-contrato-nuevo-2026-10-22.json).
+
+
+---
+
+## 102. Verificación de publicación con imagen por tipo (unitario y masivo) — 6 habitaciones para el 25-oct (2026-10-22)
+
+**Qué se verificó.** Que publicar (unitario y masivo) use la **imagen del tipo real** de la habitación,
+y que haya **2 habitaciones de cada tipo disponibles para el 25 de octubre**. Contrato:
+`HotelNights` `0xD604C06206f6DeDd82d42F90D1F5bB34a2E7c5dd`.
+
+| Vía | SIMPLE | DOBLE | SUITE |
+|---|---|---|---|
+| Unitaria | 103 | 116 | 201 |
+| Masiva (bulk) | 104 | 117 | 202 |
+
+**Comprobaciones.** Cada una de las 6 portadas es `<nº>-<Tipo>-…jpg` y se sirve por
+`/api/rooms/images/…` con **200 image/jpeg**; la metadata on-chain (`tokenURI`) de las noches del
+23/24/25-oct usa el **CID del tipo** correcto (`simple`/`doble`/`suite`); el catálogo público devuelve
+solo esas 6 habitaciones y `GET /api/nfts?...dateFrom=2026-10-25&dateTo=2026-10-25` devuelve **6
+noches** (2 por tipo).
+
+**Incidencia operativa (importante).** Cloud Run mantenía con vida la revisión etiquetada
+`hotel-mcp-worker-00036-duc` (`worker:v86`) aunque el 100 % del tráfico era `00039-fad`; esa revisión
+antigua reclamó los jobs y los ejecutó contra el **contrato anterior**. Se eliminó la revisión antigua
+y se repitió la publicación sobre el contrato nuevo. Además se retiró del índice el token
+`10320261024` (metadata de prueba, inmutable on-chain). El operador de QA se desactivó.
+
+| Recurso | Valor final |
+|---|---|
+| Worker | `hotel-mcp-worker-00039-fad` (`worker:v87`, contrato nuevo) |
+| Web | `hotel-mcp-web-00157-wer` (`web:v87`) |
+| Publicaciones ancladas | 6 (`room_publications.on_chain_anchored = true`) |
+| Índice | Oct-23: 6 · Oct-24: 5 · Oct-25: 6 noches |
+
+Evidencia: [`evidencias/verificacion-publicacion-imagen-tipo-oct25-2026-10-22.json`](./evidencias/verificacion-publicacion-imagen-tipo-oct25-2026-10-22.json).
