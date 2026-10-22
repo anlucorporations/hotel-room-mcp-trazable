@@ -10,6 +10,7 @@ function jobRow(overrides: Partial<Record<string, unknown>> = {}): QueryResultRo
     room_id: "room-1",
     status: "PENDING",
     attempts: 0,
+    target_date: null,
     content_hash: "0x" + "a".repeat(64),
     signature: null,
     signer_address: null,
@@ -47,8 +48,34 @@ describe("RoomMintJobsRepository (D-85)", () => {
       contentHash: "0x" + "a".repeat(64),
       publishedBy: "admin@hotel.es",
     });
-    expect(job).toMatchObject({ id: "job-1", roomId: "room-1", status: "PENDING", attempts: 0 });
+    expect(job).toMatchObject({ id: "job-1", roomId: "room-1", status: "PENDING", attempts: 0, targetDate: null });
     expect(String(mockPool.query.mock.calls[0][0])).toContain("ON CONFLICT");
+  });
+
+  it("enqueue guarda la fecha seleccionada (publicación masiva acotada al día)", async () => {
+    mockPool.query.mockResolvedValueOnce({ rows: [jobRow({ target_date: new Date("2026-11-10T00:00:00Z") })] });
+    const job = await repository.enqueue({
+      roomId: "room-1",
+      targetDate: "2026-11-10",
+      contentHash: "0x" + "a".repeat(64),
+      publishedBy: "admin@hotel.es",
+    });
+    expect(job.targetDate).toBe("2026-11-10");
+    expect(mockPool.query.mock.calls[0][1]).toContain("2026-11-10");
+  });
+
+  it("si el job activo es de otra fecha, enqueue falla para no publicar la noche equivocada", async () => {
+    mockPool.query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [jobRow({ target_date: new Date("2026-11-11T00:00:00Z") })] });
+    await expect(
+      repository.enqueue({
+        roomId: "room-1",
+        targetDate: "2026-11-10",
+        contentHash: "0x" + "a".repeat(64),
+        publishedBy: "admin@hotel.es",
+      }),
+    ).rejects.toThrow(/otra fecha|publicación en curso/);
   });
 
   it("enqueue es idempotente: si ya hay job activo, devuelve el existente", async () => {

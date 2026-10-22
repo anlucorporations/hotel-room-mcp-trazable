@@ -224,6 +224,14 @@ export interface RecordRoomPublicationInput {
   txHash?: string | null;
   signature?: string | null;
   signerAddress?: string | null;
+  /**
+   * Ventana de publicación (2026-10-22): si se indica, la ficha queda publicada **solo** entre
+   * `publishedAt` y `unpublishedAt` (ambos inclusive por fecha UTC). Se usa para publicar una
+   * habitación únicamente en la fecha seleccionada desde el tablero; sin ellos, la ventana es
+   * abierta desde ahora (comportamiento histórico).
+   */
+  publishedAt?: Date | null;
+  unpublishedAt?: Date | null;
 }
 
 /** Error de negocio reconocible por la API para devolver 409/400 con un código claro. */
@@ -560,8 +568,9 @@ export class RoomsRepository {
   async recordPublication(input: RecordRoomPublicationInput): Promise<RoomPublicationRecord> {
     const res = await this.pool.query(
       `INSERT INTO room_publications
-          (room_id, content_hash, tx_hash, on_chain_anchored, signature, signer_address, published_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+          (room_id, content_hash, tx_hash, on_chain_anchored, signature, signer_address, published_by,
+           published_at, unpublished_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, COALESCE($8, NOW()), $9)
        RETURNING *`,
       [
         input.roomId,
@@ -572,6 +581,8 @@ export class RoomsRepository {
         input.signature ?? null,
         input.signerAddress ?? null,
         input.publishedBy,
+        input.publishedAt ?? null,
+        input.unpublishedAt ?? null,
       ],
     );
     return mapPublication(res.rows[0]);

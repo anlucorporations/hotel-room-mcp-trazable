@@ -84,8 +84,30 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (!auth.ok) return auth.response;
 
   const body = (await request.json().catch(() => null)) as
-    | { roomIds?: unknown; confirmTotpCode?: unknown; txHashes?: unknown }
+    | { roomIds?: unknown; confirmTotpCode?: unknown; txHashes?: unknown; date?: unknown }
     | null;
+
+  // Publicación masiva acotada a la fecha seleccionada en el tablero (2026-10-22). Sin `date` se
+  // mantiene el comportamiento histórico (ficha completa y primera noche).
+  const rawDate = typeof body?.date === "string" && body.date.trim().length > 0 ? body.date.trim() : null;
+  let targetDate: string | null = null;
+  if (rawDate !== null) {
+    const parsed = new Date(`${rawDate}T00:00:00.000Z`);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(rawDate) || Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== rawDate) {
+      return NextResponse.json(
+        { error: "INVALID_DATE", message: "La fecha seleccionada debe ser AAAA-MM-DD." },
+        { status: 400 },
+      );
+    }
+    const todayIso = new Date().toISOString().slice(0, 10);
+    if (rawDate < todayIso) {
+      return NextResponse.json(
+        { error: "DATE_IN_PAST", message: "No se puede publicar una fecha que ya pasó." },
+        { status: 400 },
+      );
+    }
+    targetDate = rawDate;
+  }
 
   const roomIds = Array.isArray(body?.roomIds)
     ? [...new Set(body.roomIds.filter((value): value is string => typeof value === "string" && value.length > 0))]
@@ -144,7 +166,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         results.push({ roomId: id, roomNumber: room.roomNumber, ok: false, error: "ALREADY_ARCHIVED", message: "La habitación está archivada." });
         continue;
       }
-      if (room.publicationStatus === "PUBLISHED") {
+      // Con fecha seleccionada sí se admite una habitación ya publicada: se añade esa noche.
+      if (room.publicationStatus === "PUBLISHED" && targetDate === null) {
         results.push({ roomId: id, roomNumber: room.roomNumber, ok: false, error: "ALREADY_PUBLISHED", message: "La habitación ya está publicada." });
         continue;
       }
@@ -162,6 +185,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       if (mintOnPublish) {
         const job = await mintJobsRepo.enqueue({
           roomId: id,
+          targetDate,
           contentHash,
           signature: null,
           signerAddress: null,
@@ -178,6 +202,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         continue;
       }
 
+      if (targetDate !== null) {
+        results.push({ roomId: id, roomNumber: room.roomNumber, ok: false, error: "DATE_REQUIRES_MINT_ON_PUBLISH", message: "Publicar por fecha exige MINT_ON_PUBLISH_ENABLED." });
+        continue;
+      }
       const txHash = readTxHash(txHashes[id]);
       const publication = await roomsRepo.recordPublication({
         roomId: id,
@@ -218,7 +246,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ results, published: 0, queued: 0, message: failureSummary(results) }, { status: 400 });
   }
   if (mintOnPublish) {
-    return NextResponse.json({ results, published: 0, queued: succeeded.length }, { status: 202 });
+    return NextResponse.json(
+      { results, published: 0, queued: succeeded.length, ...(targetDate !== null ? { date: targetDate } : {}) },
+      { status: 202 },
+    );
   }
   return NextResponse.json({ results, published: succeeded.length, queued: 0 });
 }

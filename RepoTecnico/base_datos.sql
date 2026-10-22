@@ -9,12 +9,15 @@
 --               · RepoTecnico/diagrama_er.md        (modelo entidad-relación)
 --               · RepoTecnico/diccionario_datos.md  (diccionario de datos)
 --
--- Versión   : 1.5.0
--- Fecha     : 2026-10-21
+-- Versión   : 1.6.0
+-- Fecha     : 2026-10-22
 -- Motor     : PostgreSQL 14+ (requiere la extensión pgcrypto)
 -- Uso       : psql -f RepoTecnico/base_datos.sql
 --
 -- Changelog
+--   1.6.0 (2026-10-22) · Publicación masiva acotada a la fecha seleccionada (D-86):
+--     `room_mint_jobs.target_date DATE NULL` + ALTER idempotente. Sincronizado con
+--     `migrator.ts`, `diccionario_datos.md` y `diagrama_er.md`.
 --   1.5.0 (2026-10-21) · Publicación con minteo on-chain (D-85): nueva tabla
 --     `room_mint_jobs` (outbox de publicación) con índice único parcial de un job
 --     activo por habitación, índice de pendientes y comentarios. Sincronizada con
@@ -516,6 +519,8 @@ CREATE TABLE IF NOT EXISTS room_mint_jobs (
     status VARCHAR(12) NOT NULL DEFAULT 'PENDING'
         CHECK (status IN ('PENDING', 'RUNNING', 'DONE', 'FAILED')),
     attempts INT NOT NULL DEFAULT 0,
+    -- Fecha seleccionada en el tablero (AAAA-MM-DD) para publicar SOLO esa noche.
+    target_date DATE NULL,
     content_hash VARCHAR(66) NOT NULL,
     signature TEXT NULL,
     signer_address VARCHAR(42) NULL,
@@ -989,6 +994,8 @@ CREATE INDEX IF NOT EXISTS idx_room_publications_pending
     ON room_publications(on_chain_anchored) WHERE on_chain_anchored = FALSE;
 
 -- room_mint_jobs
+ALTER TABLE room_mint_jobs ADD COLUMN IF NOT EXISTS target_date DATE NULL;
+
 CREATE UNIQUE INDEX IF NOT EXISTS idx_room_mint_jobs_active
     ON room_mint_jobs(room_id) WHERE status IN ('PENDING', 'RUNNING');
 CREATE INDEX IF NOT EXISTS idx_room_mint_jobs_pending

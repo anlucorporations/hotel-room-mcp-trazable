@@ -452,6 +452,7 @@ Solo si las tres transacciones confirman se escribe la publicación y la habitac
 | `room_id` | `UUID` | no | — | FK a `rooms(id)` `ON DELETE CASCADE` |
 | `status` | `VARCHAR(12)` | no | `PENDING` | `PENDING` · `RUNNING` · `DONE` · `FAILED` |
 | `attempts` | `INT` | no | `0` | Intentos de procesamiento |
+| `target_date` | `DATE` | sí | — | Fecha seleccionada (AAAA-MM-DD) para publicar **solo esa noche**; `NULL` = primera noche (mañana) y ventana abierta |
 | `content_hash` | `VARCHAR(66)` | no | — | Huella de la ficha calculada al publicar (D-2/D-18) |
 | `signature` | `TEXT` | sí | — | Firma EIP-191 opcional del administrador |
 | `signer_address` | `VARCHAR(42)` | sí | — | Wallet que firma; `NULL` si no se firmó |

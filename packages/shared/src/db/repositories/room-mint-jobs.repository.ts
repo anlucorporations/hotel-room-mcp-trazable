@@ -28,6 +28,8 @@ export interface RoomMintJobRecord {
   roomId: string;
   status: RoomMintJobStatus;
   attempts: number;
+  /** Fecha seleccionada (AAAA-MM-DD) para publicar SOLO esa noche; `null` = primera noche. */
+  targetDate: string | null;
   contentHash: string;
   signature: string | null;
   signerAddress: string | null;
@@ -45,6 +47,8 @@ export interface RoomMintJobRecord {
 /** Datos para encolar una publicación. */
 export interface EnqueueRoomMintJobInput {
   roomId: string;
+  /** Fecha seleccionada en el tablero (AAAA-MM-DD). Si falta, se mintea la primera noche. */
+  targetDate?: string | null;
   contentHash: string;
   signature?: string | null;
   signerAddress?: string | null;
@@ -59,6 +63,14 @@ export interface CompleteRoomMintJobInput {
   tokenId: string | null;
 }
 
+/** `DATE` de PostgreSQL (JS `Date` local) → `AAAA-MM-DD`, o `null`. */
+function isoDay(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  if (typeof value === "string") return value.slice(0, 10);
+  return null;
+}
+
 /** Mapea la fila de PostgreSQL al registro de dominio. */
 function mapJob(row: Record<string, unknown>): RoomMintJobRecord {
   return {
@@ -66,6 +78,7 @@ function mapJob(row: Record<string, unknown>): RoomMintJobRecord {
     roomId: row.room_id as string,
     status: row.status as RoomMintJobStatus,
     attempts: row.attempts as number,
+    targetDate: isoDay(row.target_date),
     contentHash: row.content_hash as string,
     signature: (row.signature as string | null) ?? null,
     signerAddress: (row.signer_address as string | null) ?? null,
@@ -91,12 +104,13 @@ export class RoomMintJobsRepository {
    */
   async enqueue(input: EnqueueRoomMintJobInput): Promise<RoomMintJobRecord> {
     const res = await this.pool.query(
-      `INSERT INTO room_mint_jobs (room_id, content_hash, signature, signer_address, published_by)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO room_mint_jobs (room_id, target_date, content_hash, signature, signer_address, published_by)
+       VALUES ($1, $2, $3, $4, $5, $6)
        ON CONFLICT (room_id) WHERE status IN ('PENDING', 'RUNNING') DO NOTHING
        RETURNING *`,
       [
         input.roomId,
+        input.targetDate ?? null,
         input.contentHash,
         input.signature ?? null,
         input.signerAddress ?? null,
@@ -115,7 +129,14 @@ export class RoomMintJobsRepository {
     if (existing.rows.length === 0) {
       throw new Error("no se pudo encolar la publicación: el job activo desapareció");
     }
-    return mapJob(existing.rows[0]);
+    const job = mapJob(existing.rows[0]);
+    // Un job activo para OTRA fecha no sirve: la publicación quedaría en la noche equivocada.
+    if ((input.targetDate ?? null) !== job.targetDate) {
+      throw new Error(
+        `ya hay una publicación en curso para esta habitación en ${job.targetDate ?? "la primera noche"}; espera a que termine`,
+      );
+    }
+    return job;
   }
 
   /**

@@ -412,6 +412,7 @@ erDiagram
         UUID room_id FK "FK a rooms ON DELETE CASCADE"
         VARCHAR(12) status "PENDING · RUNNING · DONE · FAILED"
         INT attempts "Intentos de procesamiento"
+        DATE target_date "Fecha seleccionada (solo esa noche); NULL = primera noche"
         VARCHAR(66) content_hash "Huella de la ficha al publicar (D-85)"
         TEXT signature "Firma opcional del administrador"
         VARCHAR(42) signer_address "Wallet que firma; NULL si no se firmó"

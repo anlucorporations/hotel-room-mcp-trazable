@@ -156,7 +156,8 @@ export function BoardDayActions({
       const res = await apiFetch("/api/admin/rooms/bulk/publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomIds, confirmTotpCode: mfaCode.trim() }),
+        // Fecha seleccionada en el tablero: la publicación masiva solo afecta a esa noche.
+        body: JSON.stringify({ roomIds, confirmTotpCode: mfaCode.trim(), date }),
       });
       const data = await res.json().catch(() => ({}));
       const feedback = summarizeBulkPublishResults(data.results, data.published);
@@ -169,7 +170,10 @@ export function BoardDayActions({
       setMfaCode("");
       if (mintOnPublish) {
         // D-85: la publicación se completa cuando el worker mintea la primera noche on-chain.
-        onNotice({ kind: "ok", text: ta("boardPublishQueued", { count: data.queued ?? 0 }) });
+        onNotice({
+          kind: "ok",
+          text: ta("boardPublishQueuedDate", { count: data.queued ?? 0, date }),
+        });
         await onReload();
         void refreshWhilePublishing();
       } else {

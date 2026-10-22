@@ -482,6 +482,9 @@ CREATE TABLE IF NOT EXISTS room_mint_jobs (
     status VARCHAR(12) NOT NULL DEFAULT 'PENDING'
         CHECK (status IN ('PENDING', 'RUNNING', 'DONE', 'FAILED')),
     attempts INT NOT NULL DEFAULT 0,
+    -- Fecha seleccionada en el tablero (AAAA-MM-DD) para publicar SOLO esa noche.
+    -- NULL = comportamiento histórico: mintear la primera noche (mañana) con ventana abierta.
+    target_date DATE NULL,
     -- Huella de la ficha calculada al publicar (D-2/D-18) y firma opcional del administrador.
     content_hash VARCHAR(66) NOT NULL,
     signature TEXT NULL,
@@ -503,6 +506,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_room_mint_jobs_active
     ON room_mint_jobs(room_id) WHERE status IN ('PENDING', 'RUNNING');
 CREATE INDEX IF NOT EXISTS idx_room_mint_jobs_pending
     ON room_mint_jobs(status, created_at) WHERE status = 'PENDING';
+
+-- Migración incremental (2026-10-22): publicaciones masivas acotadas a la fecha seleccionada.
+ALTER TABLE room_mint_jobs ADD COLUMN IF NOT EXISTS target_date DATE NULL;
 
 -- Historial de cambios de estado (publicación u operativo), D-19.
 CREATE TABLE IF NOT EXISTS room_status_history (

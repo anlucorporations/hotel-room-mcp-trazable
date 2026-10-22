@@ -49,6 +49,7 @@ const job = (overrides: Partial<RoomMintJobRecord> = {}): RoomMintJobRecord => (
   roomId: "room-1",
   status: "RUNNING",
   attempts: 1,
+  targetDate: null,
   contentHash: "0x" + "a".repeat(64),
   signature: null,
   signerAddress: null,
@@ -148,6 +149,34 @@ describe("MintPublishProcessor (D-85)", () => {
       }),
     );
     expect(h.jobs.fail).not.toHaveBeenCalled();
+  });
+
+  it("con fecha seleccionada mintea ESA noche y limita la ventana de publicación a ese día", async () => {
+    const h = makeHarness();
+    h.jobs.claimNext.mockReset();
+    h.jobs.claimNext.mockResolvedValueOnce(job({ targetDate: "2026-11-10" }));
+    expect(await h.processor.runOnce()).toBe("done");
+    expect(h.minter.mintNight).toHaveBeenCalledWith(
+      expect.objectContaining({ roomNumber: 101, dateYYYYMMDD: 20261110 }),
+    );
+    expect(h.rooms.recordPublication).toHaveBeenCalledWith(
+      expect.objectContaining({
+        publishedAt: new Date("2026-11-10T00:00:00.000Z"),
+        unpublishedAt: new Date("2026-11-10T23:59:59.999Z"),
+      }),
+    );
+    expect(h.nfts.upsertNFT).toHaveBeenCalledWith(
+      expect.objectContaining({ checkInDate: "2026-11-10", tokenId: "10120261110" }),
+    );
+  });
+
+  it("con fecha seleccionada en el pasado falla sin publicar", async () => {
+    const h = makeHarness();
+    h.jobs.claimNext.mockReset();
+    h.jobs.claimNext.mockResolvedValueOnce(job({ targetDate: "2020-01-01" }));
+    expect(await h.processor.runOnce()).toBe("failed");
+    expect(h.jobs.fail).toHaveBeenCalledWith("job-1", expect.stringContaining("ya pasó"));
+    expect(h.rooms.recordPublication).not.toHaveBeenCalled();
   });
 
   it("idempotente: si ya estaba registrada y la noche existe, no repite transacciones", async () => {

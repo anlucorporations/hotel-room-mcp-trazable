@@ -6549,3 +6549,45 @@ metadata de prueba; al ser inmutable se retiró su fila del índice (no se ofrec
 
 Evidencia: [`evidencias/verificacion-publicacion-imagen-tipo-oct25-2026-10-22.json`](./evidencias/verificacion-publicacion-imagen-tipo-oct25-2026-10-22.json)
 y [`despliegue_gcp.md`](./despliegue_gcp.md) §102.
+
+
+---
+
+## 72. VERIFICACIÓN — la publicación masiva solo afecta a la fecha seleccionada · D-86 (2026-10-22)
+
+**Objetivo.** Verificar que al publicar habitaciones en masa desde el tablero solo se publiquen en la
+**fecha seleccionada**.
+
+**Antes (fallo reproducido).** Con `date=2026-11-10` (que el endpoint ignoraba), 107 y 118 quedaron
+publicadas con ventana **abierta** desde ahora: el calendario marcaba publicados 2026-10-23,
+2026-11-10, 2026-11-11 y 2026-12-01; la única noche minteada era la del **23-oct**, no la elegida.
+
+**Corrección (D-86 · ADR-33).** El tablero envía la fecha; el endpoint la valida y la guarda en
+`room_mint_jobs.target_date`; el worker mintea **esa noche** y registra la publicación con ventana
+`[fecha 00:00Z, fecha 23:59:59.999Z]`. Sin fecha se conserva el flujo histórico (primera noche).
+
+**Después (verificado en producción).**
+
+| Comprobación | 107 | 118 |
+|---|---|---|
+| Ventana de publicación | 2026-11-10 00:00Z → 23:59:59.999Z | igual |
+| Calendario 2026-11-10 | published=true | published=true |
+| Calendario 2026-10-23 / 11-11 / 12-01 | false / false / false | false / false / false |
+| NFT | `10720261110` | `11820261110` |
+| Catálogo `GET /api/nfts?dateFrom=2026-11-10` | aparece | aparece |
+| Catálogo 2026-11-11 | 0 noches | 0 noches |
+
+| Elemento | Valor |
+|---|---|
+| Imágenes | **`worker:v88`** (build `48df2349…`) y **`web:v88`** (build `440559a5…`) |
+| Revisiones | **`hotel-mcp-worker-00043-koz`** y **`hotel-mcp-web-00159-quj`** (100 %) |
+| Esquema | `room_mint_jobs.target_date DATE NULL` (+ ALTER idempotente) |
+| Pruebas | shared 10/10, processor 8/8, API web e i18n en verde; typecheck y lint OK |
+| Prevención | tras promover v88 se eliminó la revisión anterior del worker para evitar que instancias antiguas procesaran jobs sin fecha |
+
+**Sobras on-chain.** Los tokens `10720261023` y `11820261023` se mintearon en el ensayo **previo** al
+arreglo; son futuros y no se pueden quemar. Se retiraron del índice (no se ofertan) y no afectan a la
+verificación. El operador de QA se desactivó y se invalidó su hash.
+
+Evidencia: [`evidencias/verificacion-publicacion-masiva-fecha-2026-10-22.json`](./evidencias/verificacion-publicacion-masiva-fecha-2026-10-22.json)
+y [`despliegue_gcp.md`](./despliegue_gcp.md) §103.

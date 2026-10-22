@@ -840,6 +840,8 @@
     "boardPublishOk": "{published} rooms published.",
     "boardPublishError": "The rooms could not be published.",
     "boardPublishQueued": "{count} publications in progress: they will be confirmed once the first night is minted on-chain.",
+    "boardPublishQueuedDate": "{count} publications in progress for {date}: they will be confirmed once that night is minted on-chain.",
+    "roomBulkPublishQueued": "{queued} queued: they will be published once the first night is minted on-chain.",
     "boardRoomMintPending": "Publishing…",
     "boardPublishHint": "Publishes the whole card (90-night window) with TOTP; on-chain anchoring is completed by the rooms-list sweep.",
     "boardPublishMissingPhotos": "{count} room(s) without a photo: they cannot be published until you upload one in their card (D-20).",

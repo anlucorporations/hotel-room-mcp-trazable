@@ -58,6 +58,7 @@ fuente única de las decisiones; el código, el PRD y el SRS apuntan a él.
 | [ADR-30](ADR-30-mensajes-firmados-legibles-en-la-wallet.md) | Mensajes firmados legibles en la wallet: catálogo, EIP-712 v2 y texto de publicación | RNF-19 · C0 | vigente |
 | [ADR-31](ADR-31-app-android-huesped.md) | App Android del huésped: nativa, no custodial, pago en checkout web hasta dictamen legal | A-1/A-2/A-3 (2026-10-20) | propuesta |
 | [ADR-32](ADR-32-publicacion-con-minteo-onchain.md) | Publicación con minteo on-chain obligatorio (unitario y masivo): outbox + relayer dedicado; si falla el minteo no se publica | D-85 (2026-10-21) | vigente |
+| [ADR-33](ADR-33-publicacion-masiva-por-fecha.md) | La publicación masiva del tablero solo publica/mintea la **fecha seleccionada** (ventana de un día) | D-86 (2026-10-22) | vigente |
 
 ## Trazabilidad con las decisiones de la auditoría V5
 

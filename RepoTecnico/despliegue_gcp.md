@@ -4147,3 +4147,36 @@ y se repitió la publicación sobre el contrato nuevo. Además se retiró del í
 | Índice | Oct-23: 6 · Oct-24: 5 · Oct-25: 6 noches |
 
 Evidencia: [`evidencias/verificacion-publicacion-imagen-tipo-oct25-2026-10-22.json`](./evidencias/verificacion-publicacion-imagen-tipo-oct25-2026-10-22.json).
+
+
+---
+
+## 103. Publicación masiva acotada a la fecha seleccionada — D-86 · ADR-33 (2026-10-22)
+
+**Qué se corrigió.** El panel del día ya envía `date` en `POST /api/admin/rooms/bulk/publish`; el
+endpoint la valida (AAAA-MM-DD, no pasada) y la guarda como `room_mint_jobs.target_date`; el worker
+mintea **esa noche** y registra la ventana de publicación `[fecha 00:00Z, fecha 23:59:59.999Z]`. Sin
+fecha se mantiene el comportamiento anterior (primera noche, ventana abierta).
+
+**Migración.** `ALTER TABLE room_mint_jobs ADD COLUMN IF NOT EXISTS target_date DATE NULL;` aplicada por
+el worker al arrancar. Artefactos sincronizados: `diccionario_datos.md`, `diagrama_er.md`,
+`base_datos.sql`.
+
+**Despliegue.**
+
+| Componente | Imagen | Build | Revisión | Tráfico |
+|---|---|---|---|---|
+| worker | `worker:v88` | `48df2349-8de7-42e8-8421-d34ef5a8f72b` SUCCESS | **`hotel-mcp-worker-00043-koz`** | 100 % |
+| web | `web:v88` | `440559a5-278a-43a7-bed3-d4aa3dedd47c` SUCCESS | **`hotel-mcp-web-00159-quj`** | 100 % |
+
+**Verificación en producción.** Bulk publish de 107 y 118 con `date=2026-11-10`: respuesta `202
+{queued:2, date:2026-11-10}`; ventana de las dos publicaciones limitada al 10-nov; calendario solo
+publica el 10-nov (23-oct, 11-nov y 1-dic quedan no publicados); `GET /api/nfts` del 10-nov devuelve
+exactamente 107 y 118 y el 11-nov devuelve 0.
+
+**Prevención operativa.** Se eliminó la revisión anterior del worker tras promover v88 para que
+ninguna instancia antigua (sin soporte de `target_date`) procesara jobs de fecha. El operador QA de la
+prueba se desactivó. Los tokens sobrantes del ensayo previo (10720261023/11820261023) se retiraron del
+índice; son inmutables on-chain.
+
+Evidencia: [`evidencias/verificacion-publicacion-masiva-fecha-2026-10-22.json`](./evidencias/verificacion-publicacion-masiva-fecha-2026-10-22.json).

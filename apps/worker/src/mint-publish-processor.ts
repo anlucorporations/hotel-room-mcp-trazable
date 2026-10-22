@@ -104,8 +104,17 @@ export class MintPublishProcessor {
     // 2) Anclaje de la huella de la ficha (D-2/D-18).
     const publishTxHash = await minter.publishRoom(room.roomNumber, assertContentHash(job.contentHash));
 
-    // 3) Primera noche de la ventana global (D-4/D-11): mañana UTC.
-    const dateYYYYMMDD = addDaysYYYYMMDD(todayYYYYMMDDUtc(this.now()), 1);
+    // 3) Noche a mintear: la **fecha seleccionada** en el tablero (publicación masiva acotada a ese
+    // día) o, si no hay fecha, la primera noche de la ventana (mañana UTC, comportamiento histórico).
+    const today = todayYYYYMMDDUtc(this.now());
+    const targetDate = job.targetDate;
+    if (targetDate !== null && !/^\d{4}-\d{2}-\d{2}$/.test(targetDate)) {
+      throw new Error(`fecha seleccionada inválida: "${targetDate}"`);
+    }
+    const dateYYYYMMDD = targetDate === null ? addDaysYYYYMMDD(today, 1) : Number(targetDate.replace(/-/g, ""));
+    if (targetDate !== null && dateYYYYMMDD < today) {
+      throw new Error(`la fecha seleccionada (${targetDate}) ya pasó`);
+    }
     const tokenId = encodeTokenId(room.roomNumber, dateYYYYMMDD).toString();
     let mintTxHash: string | null = null;
     let owner: string | null = null;
@@ -141,6 +150,9 @@ export class MintPublishProcessor {
       signature: job.signature,
       signerAddress: job.signerAddress,
       publishedBy: job.publishedBy,
+      // Publicación masiva con fecha: la ventana se limita a ese día (solo esa noche se ofrece).
+      publishedAt: targetDate === null ? null : new Date(`${targetDate}T00:00:00.000Z`),
+      unpublishedAt: targetDate === null ? null : new Date(`${targetDate}T23:59:59.999Z`),
     });
     const published = await rooms.setPublicationStatus(
       room.id,

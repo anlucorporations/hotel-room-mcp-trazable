@@ -1,0 +1,73 @@
+{
+  "id": "verificacion-publicacion-masiva-fecha-2026-10-22",
+  "titulo": "Verificación: la publicación masiva solo publica la fecha seleccionada (antes fallaba; corregido y verificado)",
+  "fechaUtc": "2026-10-22T01:45:00Z",
+  "objetivo": "Verificar que al publicar habitaciones masivas solo se publiquen en la fecha seleccionada",
+  "veredicto": "ANTES: NO se cumplía. DESPUÉS del arreglo: SÍ se cumple.",
+  "antes": {
+    "prueba": "Bulk publish de 107 y 118 con date=2026-11-10 (el endpoint ignoraba date)",
+    "api": "202 {queued:2} sin campo date",
+    "publicacionOffChain": "Ventana abierta desde NOW (publishedAt=2026-10-22T01:17:51Z, unpublishedAt=null)",
+    "calendario": {
+      "2026-10-23": "published=true",
+      "2026-11-10": "published=true",
+      "2026-11-11": "published=true",
+      "2026-12-01": "published=true"
+    },
+    "nfts": {
+      "2026-10-23": ["10720261023", "11820261023"],
+      "2026-11-10": [],
+      "2026-11-11": []
+    },
+    "conclusion": "Publicaba la ficha para todas las fechas (ventana abierta) y minteaba la primera noche (23-oct), no la fecha seleccionada."
+  },
+  "causaRaiz": [
+    "El tablero no enviaba la fecha en POST /api/admin/rooms/bulk/publish.",
+    "El endpoint no aceptaba ni validaba `date`; encolaba el job sin fecha.",
+    "El worker minteaba siempre `hoy + 1` y registraba la publicación con ventana abierta (publishedAt=NOW, unpublishedAt=null), por lo que el calendario marcaba publicados todos los días."
+  ],
+  "correccion": {
+    "esquema": "room_mint_jobs.target_date DATE NULL (+ ALTER idempotente); sincronizado en diccionario_datos.md, diagrama_er.md y base_datos.sql.",
+    "api": "POST /api/admin/rooms/bulk/publish acepta `date` (AAAA-MM-DD): valida formato/calendario y que no sea pasada; encola targetDate; permite habitaciones ya publicadas para añadir esa noche; responde 202 con `date`.",
+    "worker": "Si el job trae targetDate: mintea ESA noche (no mañana) y registra la publicación con ventana [fecha 00:00Z, fecha 23:59:59.999Z]; si la fecha ya pasó, el job falla sin publicar. Sin targetDate se conserva el comportamiento histórico (primera noche, ventana abierta).",
+    "ui": "El panel del día envía la fecha seleccionada y muestra «{count} publicaciones en curso para el {date}…».",
+    "decision": "D-86 · ADR-33"
+  },
+  "despues": {
+    "prueba": "Bulk publish de 107 y 118 con date=2026-11-10 sobre el contrato 0xD604…c5dd",
+    "api": "202 {queued:2, published:0, date:2026-11-10}",
+    "publicacionOffChain": [
+      { "room": 107, "publishedAt": "2026-11-10T00:00:00.000Z", "unpublishedAt": "2026-11-10T23:59:59.999Z", "anchored": true },
+      { "room": 118, "publishedAt": "2026-11-10T00:00:00.000Z", "unpublishedAt": "2026-11-10T23:59:59.999Z", "anchored": true }
+    ],
+    "calendario": {
+      "2026-10-23": { "107": false, "118": false },
+      "2026-11-10": { "107": true, "118": true },
+      "2026-11-11": { "107": false, "118": false },
+      "2026-12-01": { "107": false, "118": false }
+    },
+    "nfts": {
+      "2026-11-10": ["10720261110", "11820261110"],
+      "2026-11-11": [],
+      "2026-10-23": "sin tokens de 107/118 (se retiraron del índice las sobras on-chain del ensayo previo)"
+    },
+    "catalogoPublico": "GET /api/nfts?...dateFrom=2026-11-10&dateTo=2026-11-10 → exactamente 107 y 118; 2026-11-11 → 0 noches",
+    "conclusion": "Solo la fecha seleccionada queda publicada y ofertada."
+  },
+  "despliegue": {
+    "worker": { "imagen": "worker:v88", "build": "48df2349-8de7-42e8-8421-d34ef5a8f72b", "revision": "hotel-mcp-worker-00043-koz" },
+    "web": { "imagen": "web:v88", "build": "440559a5-278a-43a7-bed3-d4aa3dedd47c", "revision": "hotel-mcp-web-00159-quj" },
+    "migracion": "columna target_date aplicada por el worker al arrancar",
+    "precaucion": "Tras promover v88 se eliminó la revisión anterior (hotel-mcp-worker-00039-fad) para que ninguna instancia antigua procesara jobs sin soporte de fecha (incidencia ya vista con la revisión 00036-duc)."
+  },
+  "pruebas": {
+    "shared": "room-mint-jobs.repository 10/10 (incluye targetDate y conflicto de fechas)",
+    "worker": "mint-publish-processor 8/8 (incluye fecha seleccionada y fecha pasada)",
+    "web": "bulk publish API + i18n 9/9 + typecheck y lint OK"
+  },
+  "limpieza": {
+    "sobrasOnChain": "Los tokens 10720261023 y 11820261023 se mintearon en el ensayo PREVIO al arreglo; por ser futuros no se pueden quemar. Se retiraron del índice (no se ofertan) y no afectan a la verificación.",
+    "operadorQA": "qa-fecha@hotel.es desactivado y hash invalidado",
+    "jobsTemporales": "eliminados"
+  }
+}

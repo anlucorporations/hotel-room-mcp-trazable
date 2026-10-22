@@ -205,6 +205,42 @@ describe("POST /api/admin/rooms/bulk/publish (2026-10-04, tablero Admin)", () =>
     vi.unstubAllEnvs();
   });
 
+  it("con fecha seleccionada encola SOLO esa noche y admite habitaciones ya publicadas (D-86)", async () => {
+    vi.stubEnv("MINT_ON_PUBLISH_ENABLED", "true");
+    mockRooms.findById.mockImplementation(async (id: string) =>
+      id === "room-1" ? { ...room, publicationStatus: "PUBLISHED" } : room,
+    );
+    const res = await bulkPublishPOST(
+      request(`${BASE}/bulk/publish`, {
+        roomIds: ["room-1", "room-2"],
+        confirmTotpCode: "123456",
+        date: "2026-11-10",
+      }),
+    );
+    expect(res.status).toBe(202);
+    const data = await res.json();
+    expect(data).toMatchObject({ queued: 2, published: 0, date: "2026-11-10" });
+    expect(mockMintJobs.enqueue).toHaveBeenCalledWith(
+      expect.objectContaining({ roomId: "room-1", targetDate: "2026-11-10" }),
+    );
+    vi.unstubAllEnvs();
+  });
+
+  it("rechaza una fecha inválida o pasada (400)", async () => {
+    vi.stubEnv("MINT_ON_PUBLISH_ENABLED", "true");
+    const bad = await bulkPublishPOST(
+      request(`${BASE}/bulk/publish`, { roomIds: ["room-1"], confirmTotpCode: "123456", date: "2026-13-40" }),
+    );
+    expect(bad.status).toBe(400);
+    expect((await bad.json()).error).toBe("INVALID_DATE");
+    const past = await bulkPublishPOST(
+      request(`${BASE}/bulk/publish`, { roomIds: ["room-1"], confirmTotpCode: "123456", date: "2020-01-01" }),
+    );
+    expect(past.status).toBe(400);
+    expect((await past.json()).error).toBe("DATE_IN_PAST");
+    vi.unstubAllEnvs();
+  });
+
   it("en modo encolado, un lote sin habitaciones válidas sigue devolviendo 400 con motivo", async () => {
     vi.stubEnv("MINT_ON_PUBLISH_ENABLED", "true");
     mockRooms.findById.mockResolvedValue({ ...room, publicationStatus: "PUBLISHED" });
