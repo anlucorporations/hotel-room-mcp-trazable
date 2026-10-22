@@ -1,0 +1,134 @@
+{
+  "id": "reset-publicaciones-contrato-nuevo-2026-10-22",
+  "titulo": "Eliminación de las publicaciones de habitaciones (off-chain y on-chain) y despliegue de un HotelNights limpio",
+  "fechaUtc": "2026-10-22T00:15:00Z",
+  "peticion": "Eliminar todas las publicaciones de las habitaciones publicadas, tanto off-chain como on-chain",
+  "decisionesResponsable": [
+    "Off-chain: despublicar (DRAFT), borrar las filas de room_publications y retirar las 3 habitaciones de prueba; conservar habitaciones y fotos (D-8)",
+    "On-chain: desplegar un contrato HotelNights nuevo (el anterior es inmutable y no admite unpublish/unregister)",
+    "Alcance: las 50 habitaciones publicadas + las 3 de prueba (997/998/999)"
+  ],
+  "estadoAnterior": {
+    "offChain": {
+      "rooms": 53,
+      "publicadas": 50,
+      "room_publications": 52,
+      "nfts": 101,
+      "room_mint_jobs": 3,
+      "testRooms": [
+        997,
+        998,
+        999
+      ]
+    },
+    "onChain": {
+      "contrato": "0xf8b1d4d0a2dd9dd53200a4c6783a69c15e3a25f4",
+      "registradas": [
+        201,
+        998,
+        999
+      ],
+      "publicacionesOnChain": [
+        201,
+        998,
+        999
+      ],
+      "nftsMinteados": 4
+    }
+  },
+  "onChain": {
+    "contratoNuevo": "0xD604C06206f6DeDd82d42F90D1F5bB34a2E7c5dd",
+    "deploymentBlock": 5845688,
+    "deployTx": "packages/contracts/broadcast/Deploy.s.sol/81234/run-latest.json",
+    "treasury": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "minListingPriceWei": "10000000000000000",
+    "subastaNueva": {
+      "address": "0xBA6BfBa894B5cAF04c3462A5C8556fFBa4de6782",
+      "deploymentBlock": 5845697
+    },
+    "roles": {
+      "relayerPublicacion": "0xD439542F90E14CF7755a1C5c5bed90Ab952a6Ddf → DEFAULT_ADMIN + MINTER",
+      "burner": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC → BURNER",
+      "reception": "0x90F79bf6EB2c4f870365E785982E1f101E93b906 → RECEPTION",
+      "auction": "0xBA6B…6782 → AUCTION_ROLE",
+      "admin": "0xf39F…2266 (deployer/treasury)"
+    },
+    "verificacionLimpieza": "getLogs desde el bloque de despliegue: 0 RoomRegistered, 0 RoomPublished, 0 Mint",
+    "contratoAnterior": "0xf8b1…25f4 queda huérfano pero intacto en la cadena (inmutable); la plataforma ya no lo usa"
+  },
+  "offChain": {
+    "tablasBorradas": [
+      "listings",
+      "sale_events",
+      "checkin_contingency_logs",
+      "reviews",
+      "nfts",
+      "room_publications",
+      "room_mint_jobs",
+      "room_status_history"
+    ],
+    "habitacionesPruebaBorradas": [
+      997,
+      998,
+      999
+    ],
+    "rooms": "50 habitaciones conservadas y puestas en publication_status=DRAFT, archived_at=NULL",
+    "fotos": "las 50 filas de room_images se conservan",
+    "checkpointsWorker": "worker_checkpoints y worker_aggregate_counters reiniciados al contrato nuevo en el bloque 5845716",
+    "noTocado": "reservas, housekeeping, mantenimiento, operadores, contenido y ajustes"
+  },
+  "estadoFinal": {
+    "offChain": {
+      "rooms": 50,
+      "publicadas": 0,
+      "room_publications": 0,
+      "room_mint_jobs": 0,
+      "nfts": 0,
+      "room_images": 50,
+      "testRooms": 0
+    },
+    "onChain": {
+      "registradas": 0,
+      "publicaciones": 0,
+      "nfts": 0
+    }
+  },
+  "despliegue": {
+    "builds": {
+      "web": {
+        "id": "d2fbfe39-9d1e-4c02-9cbc-7b4bc668b28f",
+        "imagen": "web:v87"
+      },
+      "worker": {
+        "id": "058a7382-4a9f-49f3-b1d2-56d239b91383",
+        "imagen": "worker:v87",
+        "resultado": "SUCCESS"
+      }
+    },
+    "revisiones": {
+      "web": "hotel-mcp-web-00157-wer (100 %)",
+      "worker": "hotel-mcp-worker-00039-fad (100 %)"
+    },
+    "config": {
+      "web": "NEXT_PUBLIC_CONTRACT_ADDRESS=0xD604…c5dd, NEXT_PUBLIC_DEPLOYMENT_BLOCK=5845688, NEXT_PUBLIC_AUCTION_ADDRESS=0xBA6B…6782, NEXT_PUBLIC_AUCTION_DEPLOYMENT_BLOCK=5845697, MINT_ON_PUBLISH_ENABLED=true",
+      "worker": "CONTRACT_ADDRESS=0xD604…c5dd, DEPLOYMENT_BLOCK=5845688",
+      "conservado": "GCS de imágenes, 9 secretos web, secretos worker salvo el nuevo contrato"
+    }
+  },
+  "verificacion": {
+    "web": {
+      "/health/ready": 200,
+      "/": 200,
+      "/catalogo": 200,
+      "/api/public/rooms": "200 · {\"rooms\": []}"
+    },
+    "worker": {
+      "/health": "ok · lag 0",
+      "listener": "activo sobre el contrato nuevo"
+    },
+    "db": "50 DRAFT, 0 publicaciones, 0 nfts, 0 jobs, 50 fotos",
+    "cadena": "0 registros/publicaciones/mints en el contrato nuevo"
+  },
+  "nota": "El contrato anterior no se puede borrar: su estado (registros, hashes de publicación y 4 NFT) permanece en la cadena. La 'limpieza on-chain' se consigue usando un contrato nuevo; el antiguo queda documentado como histórico.",
+  "rollback": "No aplica para el contrato (los despliegues son inmutables). Para volver al estado anterior habría que repuntar CONTRACT_ADDRESS al contrato antiguo (0xf8b1…) y restaurar los datos off-chain desde backup; no se recomienda."
+}

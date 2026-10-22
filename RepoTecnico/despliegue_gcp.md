@@ -4061,3 +4061,54 @@ publicadas y rotación de la hot wallet.
 
 Evidencia: [`evidencias/release-v86-publicacion-minteo-2026-10-21.json`](./evidencias/release-v86-publicacion-minteo-2026-10-21.json).
 
+
+
+---
+
+## 101. Reset de publicaciones y despliegue de un HotelNights limpio (2026-10-22)
+
+**Motivo.** Eliminar todas las publicaciones de habitaciones. El contrato es inmutable: no existen
+`unpublish`/`unregister`, `publishRoom` rechaza `bytes32(0)` y solo se pueden quemar noches caducadas
+(no había ninguna). Por eso la cadena limpia se consigue con un **contrato nuevo**.
+
+**Contratos desplegados (Besu, chainId 81234).**
+
+| Contrato | Dirección | Bloque | Notas |
+|---|---|---|---|
+| `HotelNights` | **`0xD604C06206f6DeDd82d42F90D1F5bB34a2E7c5dd`** | **5845688** | treasury/admin `0xf39F…2266`; `minListingPrice` 0.01 ETH |
+| `NightAuction` | `0xBA6BfBa894B5cAF04c3462A5C8556fFBa4de6782` | 5845697 | recibe `AUCTION_ROLE` del `HotelNights` nuevo |
+
+Roles concedidos en el `HotelNights` nuevo: relayer de publicación `0xD439…6Ddf` (`DEFAULT_ADMIN` +
+`MINTER`), burner `0x3C44…93BC` (`BURNER`), recepción `0x90F7…b906` (`RECEPTION`). Registro:
+`packages/shared/deployments/81234.json` (sincronizado con `pnpm --filter @hotel/contracts sync`) y
+`packages/contracts/deployments/81234-auction.json`. El contrato anterior `0xf8b1…25f4` queda huérfano
+pero **no se puede borrar** de la cadena; simplemente deja de usarse.
+
+**Datos off-chain.** Job de limpieza dentro de la VPC: borrado de `room_publications`, `room_mint_jobs`,
+`room_status_history` y del índice de la cadena anterior (`nfts`, `listings`, `sale_events`, `reviews`,
+`checkin_contingency_logs`); habitaciones de prueba 997/998/999 eliminadas; las **50 reales pasan a
+`DRAFT`** conservando sus fotos; checkpoints del worker reiniciados al contrato nuevo (bloque 5845716).
+No se tocaron reservas, housekeeping, mantenimiento, operadores, contenido ni ajustes.
+
+| Componente | Imagen | Build | Revisión | Tráfico |
+|---|---|---|---|---|
+| web | `web:v87` | `d2fbfe39-9d1e-4c02-9cbc-7b4bc668b28f` SUCCESS | **`hotel-mcp-web-00157-wer`** | 100 % |
+| worker | `worker:v87` | `058a7382…` SUCCESS | **`hotel-mcp-worker-00039-fad`** | 100 % |
+
+**Configuración.** Web: `NEXT_PUBLIC_CONTRACT_ADDRESS=0xD604…c5dd`,
+`NEXT_PUBLIC_DEPLOYMENT_BLOCK=5845688`, `NEXT_PUBLIC_AUCTION_ADDRESS=0xBA6B…6782`,
+`NEXT_PUBLIC_AUCTION_DEPLOYMENT_BLOCK=5845697`, `MINT_ON_PUBLISH_ENABLED=true`. Worker:
+`CONTRACT_ADDRESS=0xD604…c5dd`, `DEPLOYMENT_BLOCK=5845688`. Conservados el volumen GCS de imágenes y el
+resto de secretos.
+
+| Comprobación | Resultado |
+|---|---|
+| Cadena nueva | `getLogs` desde 5845688: **0 `RoomRegistered`, 0 `RoomPublished`, 0 `Mint`** |
+| DB | **50 rooms DRAFT · 0 publicaciones · 0 nfts · 0 jobs · 50 fotos** · 0 habitaciones de prueba |
+| Web producción | `/health/ready`, `/`, `/catalogo`, `/api/public/rooms` → **200**; `{"rooms":[]}` |
+| Worker | `/health` **ok**, `lag 0`, listener y outbox de publicación activos sobre el contrato nuevo |
+
+**Rollback.** No existe rollback de cadena. Volver al estado anterior exigiría repuntar
+`CONTRACT_ADDRESS` a `0xf8b1…25f4` y restaurar el índice desde backup; no se recomienda.
+
+Evidencia: [`evidencias/reset-publicaciones-contrato-nuevo-2026-10-22.json`](./evidencias/reset-publicaciones-contrato-nuevo-2026-10-22.json).

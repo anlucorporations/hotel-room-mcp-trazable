@@ -6472,3 +6472,41 @@ y la ventana completa de 90 noches sigue siendo manual (Acuñar ventana / Barrid
 Evidencia: [`evidencias/release-v86-publicacion-minteo-2026-10-21.json`](./evidencias/release-v86-publicacion-minteo-2026-10-21.json)
 y [`despliegue_gcp.md`](./despliegue_gcp.md) §100.
 
+
+
+---
+
+## 70. RESET DE PUBLICACIONES + CONTRATO NUEVO — cadena limpia (2026-10-22)
+
+**Petición.** Eliminar todas las publicaciones de las habitaciones publicadas, off-chain y on-chain.
+Como el contrato es **inmutable** (no hay `unpublish`/`unregister` y las noches futuras no se pueden
+quemar), la única forma de dejar la cadena limpia es **desplegar un `HotelNights` nuevo**.
+
+**On-chain.**
+
+| Elemento | Valor |
+|---|---|
+| `HotelNights` nuevo | **`0xD604C06206f6DeDd82d42F90D1F5bB34a2E7c5dd`** · bloque **5845688** |
+| `NightAuction` nueva | `0xBA6BfBa894B5cAF04c3462A5C8556fFBa4de6782` · bloque 5845697 |
+| Roles | relayer `0xD439…6Ddf` (DEFAULT_ADMIN + MINTER), burner `0x3C44…93BC`, recepción `0x90F7…b906`, subasta `AUCTION_ROLE` |
+| Estado inicial | **0 registros, 0 publicaciones, 0 mint** (verificado con `getLogs` desde el despliegue) |
+| Contrato anterior | `0xf8b1…25f4` queda **huérfano pero intacto** en Besu (inmutable); la plataforma ya no lo usa |
+
+**Off-chain.** Se borraron `room_publications`, `room_mint_jobs`, `room_status_history` y el índice de la
+cadena anterior (`nfts`, `listings`, `sale_events`, `reviews`, `checkin_contingency_logs`); se retiraron
+las 3 habitaciones de prueba (997/998/999) y las **50 habitaciones reales quedaron en `DRAFT`**,
+conservando sus **50 fotos** (D-8). No se tocaron reservas, housekeeping, mantenimiento, operadores,
+contenido ni ajustes. Los checkpoints del worker se reiniciaron al contrato nuevo.
+
+**Estado final.** Off-chain: 50 habitaciones en DRAFT, 0 publicaciones, 0 NFT. On-chain: contrato nuevo
+vacío. Catálogo público: `{"rooms": []}`.
+
+| Elemento | Valor |
+|---|---|
+| Imágenes | **`web:v87`** (build `d2fbfe39…`) y **`worker:v87`** (reconstruida con el registro de despliegue nuevo) |
+| Revisiones | **`hotel-mcp-web-00157-wer`** y **`hotel-mcp-worker-00039-fad`** (`worker:v87`, 100 %) |
+| Config | web: contrato/bloque/subasta nuevos + `MINT_ON_PUBLISH_ENABLED=true`; worker: `CONTRACT_ADDRESS`/`DEPLOYMENT_BLOCK` nuevos |
+| Verificación | `/health/ready`, `/`, `/catalogo`, `/api/public/rooms` → 200; `{"rooms":[]}`; worker `ok`, `lag 0` |
+
+Evidencia: [`evidencias/reset-publicaciones-contrato-nuevo-2026-10-22.json`](./evidencias/reset-publicaciones-contrato-nuevo-2026-10-22.json)
+y [`despliegue_gcp.md`](./despliegue_gcp.md) §101.
