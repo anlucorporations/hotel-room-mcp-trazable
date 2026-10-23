@@ -4238,3 +4238,45 @@ repitió la limpieza completa y se promovió v89. Regla operativa: **al promover
 revisión anterior** para que ninguna instancia antigua procese jobs.
 
 Evidencia: [`evidencias/reset-publicaciones-contrato-nuevo-v2-2026-10-22.json`](./evidencias/reset-publicaciones-contrato-nuevo-v2-2026-10-22.json).
+
+---
+
+## 105. Release v91 — un solo indexador de eventos (ADR-34 · D-87) (2026-10-23)
+
+**Motivo.** Saldar la deuda de los **dos indexadores de la misma noche**: el listener escaneaba la
+cadena para el índice `nfts` y el `AggregateProcessor` la volvía a escanear para los agregados, con
+cursores y ritmos distintos. Decisión y detalle: [ADR-34](../docs/adr/ADR-34-un-solo-indexador-de-eventos.md).
+
+**Cambio desplegado.** El listener decodifica cada lote una sola vez (`decodeCanonicalDomainEvents`) y
+lo publica con `onCanonicalEvents` (eventos + `scannedToBlock`); `AggregateEventIngestor` alimenta los
+agregados/histórico desde esa misma pasada. Se retiró `AggregateProcessor.catchUp` y `runCycle` ya no
+escanea agregados. El listener arranca tras el rebind (`onWorkerReady`). El pipeline de email no cambia.
+
+| Componente | Imagen | Build | Revisión | Tráfico |
+|---|---|---|---|---|
+| worker | `worker:v91` | `883aa3bd-6c4d-415c-8981-2ea6792b503e` SUCCESS (2m32s) | **`hotel-mcp-worker-00052-meb`** | 100 % |
+
+Revisiones retiradas: `00046-tad` (v89) y `00049-xaw` (v90). Sin cambios de esquema ni de contrato:
+sigue `HotelNights` `0x8b1B…0253` y `worker:v91` conserva `CONTRACT_ADDRESS`/`DEPLOYMENT_BLOCK`.
+
+> **Primera pasada (v90).** El build `2fdc38f7…` (`worker:v90`) desplegó la funcionalidad y se verificó,
+> pero `/health` parpadeaba a `down` con `aggregateLag = -1`: el checkpoint del ingestor iba un bloque
+> por delante de otra lectura de cabeza del RPC balanceado. Se corrigió con una **tolerancia de 10
+> bloques** para el lag negativo de agregados (`AGGREGATE_AHEAD_TOLERANCE_BLOCKS`, `health.ts`); un
+> reorg/reinicio real sigue marcándolo. `v91` es la release final.
+
+**Verificación.**
+
+| Comprobación | Resultado |
+|---|---|
+| `/health` (18 muestras) | **200 `ok`** estable; `lag 0`; `aggregateLag` −1…2 (tolerado, sin 503) |
+| Arranque del listener | log «listener … índice off-chain + agregados, ADR-34» desde el bloque 5848830 |
+| Cadena | sin cambios: `0x8b1B…0253`, 0 registros/publicaciones/mints |
+| DB | 50 `DRAFT` · 0 publicaciones · 0 NFT · 50 fotos; `worker_checkpoints` y `worker_aggregate_counters` del contrato nuevo en el bloque 5890620, contadores a 0 |
+| Pruebas | worker **207/207**; shared **773/775** (2 fallos preexistentes: doc-sync «61 vs 60 tablas» y reset-plan); typecheck y lint verdes |
+| Jobs temporales | job de verificación eliminado; quedan `reconcile-rooms` y `reset-all` |
+
+**Rollback.** Redesplegar la imagen `worker:v89` desde Artifact Registry (vuelve al doble escaneo); no
+hay migraciones ni cambios de contrato que revertir ni restaurar.
+
+Evidencia: [`evidencias/un-solo-indexador-2026-10-23.json`](./evidencias/un-solo-indexador-2026-10-23.json).

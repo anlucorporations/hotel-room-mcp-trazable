@@ -1,0 +1,72 @@
+{
+  "id": "un-solo-indexador-2026-10-23",
+  "titulo": "Un solo indexador de eventos desplegado en producción (ADR-34 · D-87)",
+  "fechaUtc": "2026-10-23T01:10:00Z",
+  "peticion": "Unificar los dos indexadores de la misma noche (índice del listener y agregados del procesador)",
+  "decision": {
+    "adr": "ADR-34-un-solo-indexador-de-eventos.md",
+    "id": "D-87",
+    "resumen": "El listener decodifica cada lote una sola vez y publica el flujo canónico (eventos + scannedToBlock); AggregateEventIngestor alimenta los agregados desde esa misma pasada. Se retira AggregateProcessor.catchUp; el pipeline de email no cambia."
+  },
+  "cambios": [
+    "packages/shared/src/events/listener.ts: decodeCanonicalDomainEvents + onCanonicalEvents (batch con localización y scannedToBlock)",
+    "apps/worker/src/aggregate-ingestor.ts: ingestor de agregados con timestamps de venta fail-closed, idempotencia y salud",
+    "apps/worker/src/run-worker.ts: listener arrancado tras el rebind; runCycle sin escaneo de agregados",
+    "apps/worker/src/aggregate-processor.ts: retirado catchUp y su deploymentBlock",
+    "apps/worker/src/listener-runtime.ts: autostart:false + start() con pasada inmediata",
+    "apps/worker/src/health.ts: tolerancia AGGREGATE_AHEAD_TOLERANCE_BLOCKS=10 para el lag negativo de agregados (bucles independientes / RPC balanceado)"
+  ],
+  "builds": {
+    "v90": {
+      "id": "2fdc38f7-1bf9-4b46-ab26-cc5eca67fd5b",
+      "imagen": "worker:v90",
+      "duracion": "2m28s",
+      "resultado": "SUCCESS",
+      "nota": "primera pasada: funcional, pero /health parpadeaba a down con aggregateLag=-1; sustituida por v91"
+    },
+    "v91": {
+      "id": "883aa3bd-6c4d-415c-8981-2ea6792b503e",
+      "imagen": "worker:v91",
+      "duracion": "2m32s",
+      "resultado": "SUCCESS",
+      "nota": "release final con la tolerancia de salud"
+    }
+  },
+  "despliegue": {
+    "revisionFinal": "hotel-mcp-worker-00052-meb",
+    "trafico": "100 %",
+    "tag": "v91",
+    "revisionesRetiradas": [
+      "hotel-mcp-worker-00046-tad (v89)",
+      "hotel-mcp-worker-00049-xaw (v90)"
+    ],
+    "config": "CONTRACT_ADDRESS=0x8b1B398b9c49AFE6394aaE438f6F2E8039120253, DEPLOYMENT_BLOCK=5848830 (sin cambios)"
+  },
+  "verificacion": {
+    "health": "18 muestras: 200 ok, lag 0, aggregateLag entre -1 y 2 (tolerado); sin 503",
+    "listener": "log de arranque 'listener de eventos activo (… índice off-chain + agregados, ADR-34)' desde el bloque 5848830",
+    "cadena": "sin cambios de contrato: 0x8b1B…0253 con 0 registros/publicaciones/mints",
+    "db": {
+      "rooms": 50,
+      "draft": 50,
+      "publicadas": 0,
+      "room_publications": 0,
+      "nfts": 0,
+      "room_images": 50,
+      "worker_checkpoints": "0x8b1b398b9c49afe6394aae438f6f2e8039120253 → last_block 5890620",
+      "worker_aggregate_counters": "0x8b1b398b9c49afe6394aae438f6f2e8039120253 → last_block 5890620; sold/minted/burned = 0"
+    },
+    "pruebas": {
+      "worker": "207/207",
+      "shared": "773/775 (2 fallos preexistentes: documentation-sync «61 vs 60 tablas» y reset-plan)",
+      "typecheck": "OK",
+      "lint": "0 errores (3 warnings preexistentes en script e2e)"
+    },
+    "urlsAntiguas": "v89 y v90 devuelven 404 tras eliminar sus revisiones"
+  },
+  "rollback": "Redesplegar worker:v89 desde Artifact Registry: vuelve al doble escaneo. Sin migraciones ni cambios de contrato que revertir.",
+  "commits": [
+    "c10e319 feat(worker): un solo indexador de eventos (ADR-34 · D-87)"
+  ],
+  "nota": "El cambio no toca esquema, contrato ni policy de negocio; solo el camino de lectura/escritura del indexador y la tolerancia de salud."
+}

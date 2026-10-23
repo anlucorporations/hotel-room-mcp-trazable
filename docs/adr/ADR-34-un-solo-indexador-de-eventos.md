@@ -63,6 +63,10 @@ entrega de correo al avance del índice.
   completo igual que antes; la idempotencia del store hace seguros los reintentos.
 - Si el listener o PostgreSQL fallan, **ambos índices se quedan atrás juntos** y `/health` lo muestra
   (`aggregateLag`), en lugar de que uno avance y el otro no.
+- El ingestor escribe desde el bucle del listener y lee la cabeza en un instante distinto al de
+  `/health`: con RPC balanceado el checkpoint puede ir 1–4 bloques por delante de otra lectura. La
+  salud tolera ese desfase (`AGGREGATE_AHEAD_TOLERANCE_BLOCKS = 10`) para no parpadear a `down`; un
+  reorg/reinicio real sigue superándolo y se reporta.
 - Un evento consolidado en `nfts` y aplicado a agregados sale del **mismo lote**: no puede haber una
   venta en el histórico sin su efecto en el índice (ni al revés) por un problema de cursor.
 - El coste de re-escanear desde el bloque de despliegue en cada arranque ya existía para el índice;

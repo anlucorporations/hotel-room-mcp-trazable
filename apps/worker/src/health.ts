@@ -32,6 +32,17 @@ import type { HealthProvider, HealthReport } from "@hotel/shared/health";
 export const DEFAULT_LAG_THRESHOLD = 50 as const;
 export const DEFAULT_AGGREGATE_FAILURE_THRESHOLD = 3 as const;
 
+/**
+ * Tolerancia (bloques) para un lag de agregados ligeramente negativo (ADR-34).
+ *
+ * Desde la unificación, el ingestor de agregados corre en el bucle del listener y lee la cabeza en
+ * un instante distinto al de `/health`; con un RPC balanceado entre nodos, el checkpoint puede ir
+ * 1–4 bloques «por delante» de la cabeza que ve otra lectura sin que nada esté roto. Sin esta
+ * tolerancia, `/health` parpadeaba a `down` y el monitor recibía un 503 espurio. Un
+ * reinicio/reorg real (miles de bloques) sigue superando la tolerancia y se reporta `down`.
+ */
+export const AGGREGATE_AHEAD_TOLERANCE_BLOCKS = 10 as const;
+
 export interface WorkerHealthOptions {
   /** Lag máximo tolerado (bloques) antes de marcar `down` (aplica a email y agregados). */
   readonly lagThreshold?: number;
@@ -136,7 +147,9 @@ export class WorkerHealthState {
     if (this.emailDegraded) return true;
     if (this.processingDegraded) return true;
     if (isAheadOfChain(this.lag)) return true;
-    if (isAheadOfChain(this.aggregateLag)) return true;
+    // Los agregados se escriben en el bucle del listener: se tolera el desfase de unos bloques
+    // entre dos lecturas de cabeza (ADR-34); un reorg/reinicio real sigue marcando `down`.
+    if (isAheadOfChain(this.aggregateLag, AGGREGATE_AHEAD_TOLERANCE_BLOCKS)) return true;
     if (overThreshold(this.lag, this.lagThreshold)) return true;
     return overThreshold(this.aggregateLag, this.lagThreshold);
   }
@@ -192,11 +205,14 @@ const overThreshold = (value: number | null, threshold: number): boolean =>
   value !== null && value > threshold;
 
 /**
- * `true` si el checkpoint va por delante de la cabeza (`lag` negativo). Es una **inconsistencia**,
- * no un retraso: la cadena quedó detrás de lo ya procesado (reinicio/reorg) y el pipeline no puede
- * avanzar, así que la salud debe degradarse en vez de reportar `ok` con un lag imposible.
+ * `true` si el checkpoint va por delante de la cabeza (`lag` negativo) más allá de `tolerance`.
+ * Es una **inconsistencia**, no un retraso: la cadena quedó detrás de lo ya procesado
+ * (reinicio/reorg) y el pipeline no puede avanzar, así que la salud debe degradarse en vez de
+ * reportar `ok` con un lag imposible. La `tolerance` se usa solo en el pipeline de agregados, que
+ * corre en un bucle independiente (ver `AGGREGATE_AHEAD_TOLERANCE_BLOCKS`).
  */
-const isAheadOfChain = (lag: number | null): boolean => lag !== null && lag < 0;
+const isAheadOfChain = (lag: number | null, tolerance = 0): boolean =>
+  lag !== null && lag < -tolerance;
 
 /**
  * Estado de la **quema programada** en `/health` (hallazgo **H-04** de la auditoría V6).

@@ -29,6 +29,18 @@ describe("salud del worker · checkpoint adelantado a la cadena", () => {
     expect(health.toReport().status).toBe("down");
   });
 
+  it("un desfase de pocos bloques del agregado (otra lectura de cabeza) NO degrada la salud", () => {
+    // ADR-34: el ingestor escribe desde el bucle del listener, que lee la cabeza en otro instante
+    // que `/health`. Con RPC balanceado son normales 1–4 bloques de desfase; no es un reorg.
+    const health = createWorkerHealthState();
+
+    health.recordCycle(1000, 1000);
+    health.recordAggregateCycle(1002);
+
+    expect(health.aggregateLag).toBe(-2);
+    expect(health.toReport().status).toBe("ok");
+  });
+
   it("un retraso positivo dentro del umbral sigue reportando ok", () => {
     const health = createWorkerHealthState({ lagThreshold: 50 });
 

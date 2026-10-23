@@ -6682,6 +6682,7 @@ decodificaban los mismos eventos y podían discrepar (KPI «noches vendidas» fr
 | `apps/worker/src/aggregate-processor.ts` | se retira `catchUp` (y `deploymentBlock`); quedan `apply`, lecturas y `backfillTimestamps` |
 | `apps/worker/src/listener-runtime.ts` | `autostart:false` + `start()` con primera pasada inmediata |
 | `apps/worker/src/main.ts` | cablea listener → `AggregateEventIngestor` → agregados, tras el rebind |
+| `apps/worker/src/health.ts` | tolerancia de 10 bloques para el lag de agregados negativo: el ingestor corre en otro bucle y una lectura de cabeza distinta puede ir 1–4 bloques por detrás sin que sea un reorg |
 
 El pipeline de **email** (`SaleProcessor` + cola única) no se toca: no es un indexador y conserva su
 checkpoint y su garantía at-least-once.
@@ -6689,13 +6690,25 @@ checkpoint y su garantía at-least-once.
 **Pruebas.** `listener-events.test.ts` (lote único con localización y propagación de fallo),
 `aggregate-ingestor.test.ts` (traducción, timestamps, fail-closed, salud, 7 pruebas),
 `run-worker.test.ts` (el ciclo no escanea agregados y publica el `lastBlock` persistido) y
-`aggregate-processor.test.ts` (idempotencia y lecturas sin catch-up). Suites: **shared 771/774** y
-**worker 203/203**; typecheck y lint del worker verdes. Los **3 fallos de shared son preexistentes**
+`aggregate-processor.test.ts` (idempotencia y lecturas sin catch-up). Suites: **shared 773/775** y
+**worker 207/207**; typecheck y lint del worker verdes. Los **2 fallos de shared son preexistentes**
 (`documentation-sync` «61 vs 60 tablas» y `reset-plan`), ajenos a este cambio.
 
-**Pendiente operativo.** El cambio está en el repositorio y probado; para que producción deje de
-ejecutar los dos escaneos hay que **construir y desplegar `worker:v90`** (la revisión actual,
-`00046-tad`/`v89`, mantiene el código anterior). Sin cambio de esquema ni de contrato.
+**Despliegue (2026-10-23).**
+
+| Elemento | Valor |
+|---|---|
+| Build final | **`worker:v91`** · `883aa3bd-6c4d-415c-8981-2ea6792b503e` SUCCESS (2m32s) |
+| Revisión | **`hotel-mcp-worker-00052-meb`** (100 %), imagen `worker:v91` |
+| Revisiones retiradas | `00046-tad` (v89) y `00049-xaw` (v90) — regla operativa: al promover un worker, eliminar la anterior |
+| Verificación | `/health` **200 `ok` estable** (18 muestras: `lag 0`, `aggregateLag` −1…2); log de arranque «listener … ADR-34» desde el bloque 5848830 |
+| DB | 50 `DRAFT` · 0 publicaciones · 0 NFT · 50 fotos; contadores y checkpoint del contrato `0x8b1B…` en el bloque 5890620 (0 ventas/minteos) |
+| Rollback | redesplegar `worker:v89` desde Artifact Registry (sin cambios de esquema ni de contrato) |
+
+**Nota de la primera pasada.** `worker:v90` (build `2fdc38f7…`) se desplegó y verificó funcionalmente,
+pero `/health` parpadeaba a `down` con `aggregateLag = -1` (el checkpoint del ingestor iba un bloque por
+delante de otra lectura de cabeza del RPC balanceado). `v91` añade la tolerancia descrita y deja el
+endpoint estable; el 503 espurio al monitor desaparece.
 
 Artefactos: [ADR-34](../docs/adr/ADR-34-un-solo-indexador-de-eventos.md) · [`BACKLOG §3.6`](../docs/BACKLOG-SPRINTS.md)
 · [`SRS §7.7`](../docs/SRS.md) · manual [`02-base-de-datos`](./Manuales/02-instalacion/02-base-de-datos.md).
