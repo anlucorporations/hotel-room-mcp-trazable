@@ -171,7 +171,7 @@ describe("NFTsRepository (US-04, US-07b)", () => {
     it("debe preguntar por ventas primarias con índice AVAILABLE y sin reventa activa", async () => {
       mockPool.query.mockResolvedValueOnce({ rows: [] });
 
-      await repository.listGhostPrimarySales();
+      await repository.listGhostPrimarySales(5848830);
 
       expect(mockPool.query).toHaveBeenCalledTimes(1);
       const sql = String((mockPool.query.mock.calls[0] as unknown[])[0]);
@@ -183,6 +183,17 @@ describe("NFTsRepository (US-04, US-07b)", () => {
       expect(sql).toContain("NOT EXISTS");
     });
 
+    it("acota el registro de ventas al despliegue vigente (evita fantasmas de contratos anteriores)", async () => {
+      mockPool.query.mockResolvedValueOnce({ rows: [] });
+
+      await repository.listGhostPrimarySales(5848830);
+
+      const sql = String((mockPool.query.mock.calls[0] as unknown[])[0]);
+      expect(sql).toContain("se.block_number >= $1::BIGINT");
+      const params = (mockPool.query.mock.calls[0] as unknown[])[1] as unknown[];
+      expect(params).toEqual(["5848830"]);
+    });
+
     it("debe mapear fila a la forma del catálogo (tokenId, habitación numérica, fecha ISO)", async () => {
       mockPool.query.mockResolvedValueOnce({
         rows: [
@@ -191,7 +202,7 @@ describe("NFTsRepository (US-04, US-07b)", () => {
         ],
       });
 
-      const ghosts = await repository.listGhostPrimarySales();
+      const ghosts = await repository.listGhostPrimarySales(5848830);
 
       expect(ghosts).toEqual([
         { tokenId: "10820261103", roomNumber: 108, checkInDate: "2026-11-03" },
@@ -216,7 +227,7 @@ describe("NFTsRepository (US-04, US-07b)", () => {
     it("NO usa `SELECT DISTINCT` con `ORDER BY` de expresión (SQL inválido en PostgreSQL)", async () => {
       mockPool.query.mockResolvedValueOnce({ rows: [] });
 
-      await repository.listGhostPrimarySales();
+      await repository.listGhostPrimarySales(5848830);
 
       const sql = String((mockPool.query.mock.calls[0] as unknown[])[0]);
       const orderBy = /ORDER BY\s+([^\n]+)/i.exec(sql)?.[1]?.trim() ?? "";

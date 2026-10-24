@@ -1,0 +1,8 @@
+flowchart TD
+  A["Admin publica habitación 101 para 2026-11-05"] --> B["Job PENDING/activo"]
+  B --> C["Admin publica la MISMA habitación para 2026-11-18"]
+  C --> D{"enqueue: ya hay job activo"}
+  D -->|antes| E["❌ excepción → INTERNAL_SERVER_ERROR 400/500"]
+  D -->|después| F["✅ 409 PUBLISH_IN_PROGRESS<br/>con la fecha en curso y «espera a que termine»"]
+  E --> G["Operador no sabe qué pasa"]
+  F --> H["Operador espera y reintenta"]

@@ -1,0 +1,122 @@
+{
+  "account": {
+    "id": "cuenta-7",
+    "index": 7,
+    "address": "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955"
+  },
+  "startedAt": "2026-10-24T19:33:58.961Z",
+  "entries": [
+    {
+      "id": "apoyo-1-reservas",
+      "kind": "apoyo",
+      "flow": "3.1 · reservar 3 habitaciones en fechas distintas",
+      "question": "Quiero reservar tres noches en fechas distintas: la habitación 106 (simple) para el 4 de diciembre de 2026, la 120 (doble) para el 7 de diciembre de 2026 y la 215 (suite) para el 13 de diciembre de 2026. ¿Están disponibles y cómo las compro?",
+      "expected": "Debe consultar disponibilidad real (no inventar), ofrecer las 3 noches con su precio y guiar a preparar la reserva/firma en la wallet (una por noche o estancia).",
+      "status": 200,
+      "reply": "Las tres noches están disponibles. La habitación 106 (simple) para el 4 de diciembre de 2026 tiene un precio de 0.05 ETH. La habitación 120 (doble) para el 7 de diciembre de 2026 tiene un precio de 0.09 ETH. La habitación 215 (suite) para el 13 de diciembre de 2026 tiene un precio de 0.25 ETH.\n\n¿Quieres que prepare la compra de estas tres noches?",
+      "uiText": "",
+      "domainToolCalls": 3,
+      "highlights": [
+        {
+          "tokenId": "10620261204",
+          "room": null,
+          "type": null,
+          "dateYYYYMMDD": null,
+          "priceWei": "50000000000000000",
+          "saleType": "PRIMARY"
+        },
+        {
+          "tokenId": "12020261207",
+          "room": null,
+          "type": null,
+          "dateYYYYMMDD": null,
+          "priceWei": "90000000000000000",
+          "saleType": "PRIMARY"
+        },
+        {
+          "tokenId": "21520261213",
+          "room": null,
+          "type": null,
+          "dateYYYYMMDD": null,
+          "priceWei": "250000000000000000",
+          "saleType": "PRIMARY"
+        }
+      ],
+      "pageAction": {
+        "kind": "catalog",
+        "href": "/catalogo?desde=2026-12-13&hasta=2026-12-13&buscar=215",
+        "search": {
+          "type": null,
+          "from": "2026-12-13",
+          "to": "2026-12-13",
+          "room": "215"
+        }
+      },
+      "preparedPurchase": null,
+      "urlAfter": "https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app/catalogo?desde=2026-12-13&hasta=2026-12-13&buscar=215",
+      "screenshot": "capturas/cuenta-7/apoyo-1-reservas.png",
+      "capturedAt": "2026-10-24T19:34:53.328Z"
+    },
+    {
+      "id": "apoyo-2-subasta-pujas",
+      "kind": "apoyo",
+      "flow": "3.2 · subastar 2 reservadas + 3.3 · pujar en 2 subastas y ganar ≥1",
+      "question": "Ya tengo las tres noches compradas. Ahora quiero subastar dos de ellas y, además, pujar en dos subastas de suites para intentar ganar al menos una. ¿Cómo lo hago paso a paso?",
+      "expected": "Debe explicar el mecanismo real: el hotel es quien abre subastas de suites (no el huésped) y guiar a /subastas para pujar; si el huésped no puede subastar sus noches, debe decirlo con claridad y ofrecer la reventa como alternativa.",
+      "status": 200,
+      "reply": "No puedes subastar noches que ya posees. Las subastas solo se pueden realizar sobre noches premium que el hotel pone a disposición. Si deseas vender tus noches, puedes hacerlo a través de la sección de reventa.\n\nPara pujar en las subastas de suites, sigue estos pasos:\n1. Ve a la sección de \"Subastas\".\n2. Selecciona la suite en la que deseas pujar.\n3. Realiza una puja igual o superior a la cantidad mínima requerida.\n4. Firma la transacción en tu wallet para confirmar la puja.",
+      "uiText": "No puedes subastar noches que ya posees. Las subastas solo se pueden realizar sobre noches premium que el hotel pone a disposición. Si deseas vender tus noches, puedes hacerlo a través de la sección de reventa.Para pujar en las subastas de suites, sigue estos pasos:Ve a la sección de \"Subastas\".Selecciona la suite en la que deseas pujar.Realiza una puja igual o superior a la cantidad mínima requerida.Firma la transacción en tu wallet para confirmar la puja.",
+      "domainToolCalls": 0,
+      "highlights": [],
+      "pageAction": null,
+      "preparedPurchase": null,
+      "urlAfter": "https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app/catalogo?desde=2026-12-13&hasta=2026-12-13&buscar=215",
+      "screenshot": "capturas/cuenta-7/apoyo-2-subasta-pujas.png",
+      "capturedAt": "2026-10-24T19:35:04.519Z"
+    },
+    {
+      "id": "apoyo-3-reventa",
+      "kind": "apoyo",
+      "flow": "3.4 · reventa de una noche ganada + 3.5 · comprar 1 en reventa",
+      "question": "He ganado dos suites en las subastas. Quiero poner una de ellas en reventa y comprar otra noche en reventa. ¿Cuáles son los pasos y qué comisiones hay?",
+      "expected": "Debe guiar a /mis-noches para listar (precio mínimo y royalty) y a /reventa o al catálogo para comprar una noche listada; sin inventar precios ni comisiones.",
+      "status": 200,
+      "reply": "Para poner una de tus suites recién adquiridas en reventa, sigue estos pasos:\n1. Ve a la sección \"Mis noches\".\n2. Selecciona la suite que deseas vender.\n3. Fija el precio de reventa.\n4. Haz clic en \"Listar\" y firma la transacción en tu wallet. El vendedor es quien paga el royalty, pero no se especifican porcentajes en el manual.\n\nPara comprar otra noche en reventa:\n1. Dirígete a la sección \"Reventa\".\n2. Elige la noche que te interese.\n3. Revisa el precio y confirma la compra firmando la transacción en tu wallet.",
+      "uiText": "",
+      "domainToolCalls": 0,
+      "highlights": [],
+      "pageAction": {
+        "kind": "catalog",
+        "href": "/catalogo?tipo=suite",
+        "search": {
+          "type": "suite",
+          "from": "",
+          "to": "",
+          "room": ""
+        }
+      },
+      "preparedPurchase": null,
+      "urlAfter": "https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app/catalogo?tipo=suite",
+      "screenshot": "capturas/cuenta-7/apoyo-3-reventa.png",
+      "capturedAt": "2026-10-24T19:36:00.802Z"
+    },
+    {
+      "id": "apoyo-4-uso",
+      "kind": "apoyo",
+      "flow": "3.6 · usar 1 reservada + 3.7 · usar 1 obtenida por subasta",
+      "question": "Quiero usar las noches que tengo: una de las que reservé directamente y otra que gané en una subasta. No importa que la fecha no coincida con hoy. ¿Qué tengo que hacer para el check-in?",
+      "expected": "Debe guiar al resguardo QR de /mis-noches y a la recepción (check-in); aclarar que el check-in lo marca recepción y que la fecha no bloquea el uso en este entorno de pruebas.",
+      "status": 200,
+      "reply": "Para hacer el check-in, sigue estos pasos:\n1. Ve a la sección \"Mis noches\".\n2. Selecciona \"Ver mi resguardo QR\".\n3. Firma la transacción en tu wallet para generar el resguardo.\n4. Presenta el código QR en recepción para que lo escaneen y marquen tu noche como utilizada. Recuerda que el resguardo es de un solo uso.",
+      "uiText": "Para hacer el check-in, sigue estos pasos:Ve a la sección \"Mis noches\".Selecciona \"Ver mi resguardo QR\".Firma la transacción en tu wallet para generar el resguardo.Presenta el código QR en recepción para que lo escaneen y marquen tu noche como utilizada. Recuerda que el resguardo es de un solo uso.",
+      "domainToolCalls": 0,
+      "highlights": [],
+      "pageAction": null,
+      "preparedPurchase": null,
+      "urlAfter": "https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app/catalogo?tipo=suite",
+      "screenshot": "capturas/cuenta-7/apoyo-4-uso.png",
+      "capturedAt": "2026-10-24T19:36:11.971Z"
+    }
+  ],
+  "finishedAt": "2026-10-24T19:36:17.978Z"
+}

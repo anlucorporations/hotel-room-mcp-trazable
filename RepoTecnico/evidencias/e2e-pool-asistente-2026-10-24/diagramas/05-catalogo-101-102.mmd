@@ -1,0 +1,7 @@
+flowchart TD
+  A[Catálogo no muestra 101 ni 102] --> B{Hipótesis inicial}
+  B -->|"parecía fantasma de ventas antiguas"| C[Se acota sale_events al bloque de despliegue]
+  C --> D[Se verificó y seguía sin aparecer]
+  D --> E[Causa real: incidencias de mantenimiento ABIERTAS<br/>con blocksSale=true sobre 101 y 102]
+  E --> F[No es un bug: la regla de venta las excluye]
+  F --> G[Se documenta la ambigüedad y se resuelve el caso 101/102<br/>o se publican simples equivalentes 104–108]

@@ -1,0 +1,274 @@
+{
+  "account": {
+    "id": "cuenta-6",
+    "index": 6,
+    "address": "0x976EA74026E726554dB657fA54763abd0C3a0aa9"
+  },
+  "startedAt": "2026-10-24T19:08:10.237Z",
+  "entries": [
+    {
+      "id": "apoyo-1-reservas",
+      "kind": "apoyo",
+      "flow": "3.1 · reservar 3 habitaciones en fechas distintas",
+      "question": "Quiero reservar tres noches en fechas distintas: la habitación 105 (simple) para el 26 de noviembre de 2026, la 119 (doble) para el 28 de noviembre de 2026 y la 214 (suite) para el 2 de diciembre de 2026. ¿Están disponibles y cómo las compro?",
+      "expected": "Debe consultar disponibilidad real (no inventar), ofrecer las 3 noches con su precio y guiar a preparar la reserva/firma en la wallet (una por noche o estancia).",
+      "status": 200,
+      "reply": "Las tres noches que quieres reservar están disponibles.\n\nLa habitación 105 (simple) para el 26 de noviembre de 2026 tiene un precio de 0.05 ETH.\nLa habitación 119 (doble) para el 28 de noviembre de 2026 tiene un precio de 0.09 ETH.\nLa habitación 214 (suite) para el 2 de diciembre de 2026 tiene un precio de 0.25 ETH.\n\n¿Quieres que prepare la compra para estas noches?",
+      "uiText": "",
+      "domainToolCalls": 3,
+      "highlights": [
+        {
+          "tokenId": "10520261126",
+          "room": null,
+          "type": null,
+          "dateYYYYMMDD": null,
+          "priceWei": "50000000000000000",
+          "saleType": "PRIMARY"
+        },
+        {
+          "tokenId": "11920261128",
+          "room": null,
+          "type": null,
+          "dateYYYYMMDD": null,
+          "priceWei": "90000000000000000",
+          "saleType": "PRIMARY"
+        },
+        {
+          "tokenId": "21420261202",
+          "room": null,
+          "type": null,
+          "dateYYYYMMDD": null,
+          "priceWei": "250000000000000000",
+          "saleType": "PRIMARY"
+        }
+      ],
+      "pageAction": {
+        "kind": "catalog",
+        "href": "/catalogo?desde=2026-12-02&hasta=2026-12-02&buscar=214",
+        "search": {
+          "type": null,
+          "from": "2026-12-02",
+          "to": "2026-12-02",
+          "room": "214"
+        }
+      },
+      "preparedPurchase": null,
+      "urlAfter": "https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app/catalogo?desde=2026-12-02&hasta=2026-12-02&buscar=214",
+      "screenshot": "capturas/cuenta-6/apoyo-1-reservas.png",
+      "capturedAt": "2026-10-24T19:09:04.216Z"
+    },
+    {
+      "id": "apoyo-2-subasta-pujas",
+      "kind": "apoyo",
+      "flow": "3.2 · subastar 2 reservadas + 3.3 · pujar en 2 subastas y ganar ≥1",
+      "question": "Ya tengo las tres noches compradas. Ahora quiero subastar dos de ellas y, además, pujar en dos subastas de suites para intentar ganar al menos una. ¿Cómo lo hago paso a paso?",
+      "expected": "Debe explicar el mecanismo real: el hotel es quien abre subastas de suites (no el huésped) y guiar a /subastas para pujar; si el huésped no puede subastar sus noches, debe decirlo con claridad y ofrecer la reventa como alternativa.",
+      "status": 200,
+      "reply": "Para subastar tus noches, primero necesitas listar las noches que posees. A continuación, para pujar en las subastas de suites, necesitarás saber cuáles están activas y sus detalles.\n\n¿Te gustaría que te guiara en el proceso de listar tus noches para subasta?",
+      "uiText": "Para subastar tus noches, primero necesitas listar las noches que posees. A continuación, para pujar en las subastas de suites, necesitarás saber cuáles están activas y sus detalles.¿Te gustaría que te guiara en el proceso de listar tus noches para subasta?",
+      "domainToolCalls": 0,
+      "highlights": [],
+      "pageAction": null,
+      "preparedPurchase": null,
+      "urlAfter": "https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app/catalogo?desde=2026-12-02&hasta=2026-12-02&buscar=214",
+      "screenshot": "capturas/cuenta-6/apoyo-2-subasta-pujas.png",
+      "capturedAt": "2026-10-24T19:09:15.907Z"
+    },
+    {
+      "id": "apoyo-3-reventa",
+      "kind": "apoyo",
+      "flow": "3.4 · reventa de una noche ganada + 3.5 · comprar 1 en reventa",
+      "question": "He ganado dos suites en las subastas. Quiero poner una de ellas en reventa y comprar otra noche en reventa. ¿Cuáles son los pasos y qué comisiones hay?",
+      "expected": "Debe guiar a /mis-noches para listar (precio mínimo y royalty) y a /reventa o al catálogo para comprar una noche listada; sin inventar precios ni comisiones.",
+      "status": 200,
+      "reply": "Para poner una de tus suites en reventa, debes ir a la sección \"Mis noches\", seleccionar la suite que deseas vender, establecer el precio de reventa en ETH y confirmar la operación firmando en tu cartera.\n\nPara comprar otra noche en reventa, debes dirigirte al mercado de reventa, buscar la noche que te interese, revisar los detalles y el precio, y luego proceder a la compra firmando la transacción en tu cartera.\n\nEn cuanto a las comisiones, la compra al hotel no tiene comisión, pero en la reventa, el hotel cobra una comisión al vendedor.",
+      "uiText": "",
+      "domainToolCalls": 1,
+      "highlights": [],
+      "pageAction": {
+        "kind": "catalog",
+        "href": "/catalogo?tipo=suite",
+        "search": {
+          "type": "suite",
+          "from": "",
+          "to": "",
+          "room": ""
+        }
+      },
+      "preparedPurchase": null,
+      "urlAfter": "https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app/catalogo?tipo=suite",
+      "screenshot": "capturas/cuenta-6/apoyo-3-reventa.png",
+      "capturedAt": "2026-10-24T19:10:13.189Z"
+    },
+    {
+      "id": "apoyo-4-uso",
+      "kind": "apoyo",
+      "flow": "3.6 · usar 1 reservada + 3.7 · usar 1 obtenida por subasta",
+      "question": "Quiero usar las noches que tengo: una de las que reservé directamente y otra que gané en una subasta. No importa que la fecha no coincida con hoy. ¿Qué tengo que hacer para el check-in?",
+      "expected": "Debe guiar al resguardo QR de /mis-noches y a la recepción (check-in); aclarar que el check-in lo marca recepción y que la fecha no bloquea el uso en este entorno de pruebas.",
+      "status": 200,
+      "reply": "Para hacer el check-in, necesitas tener tu resguardo QR.\n\nSi necesitas información sobre cómo obtenerlo o tienes alguna duda sobre el proceso, puedo buscarla en los manuales del hotel. ¿Te gustaría que lo hiciera?",
+      "uiText": "Para hacer el check-in, necesitas tener tu resguardo QR.Si necesitas información sobre cómo obtenerlo o tienes alguna duda sobre el proceso, puedo buscarla en los manuales del hotel. ¿Te gustaría que lo hiciera?",
+      "domainToolCalls": 0,
+      "highlights": [],
+      "pageAction": null,
+      "preparedPurchase": null,
+      "urlAfter": "https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app/catalogo?tipo=suite",
+      "screenshot": "capturas/cuenta-6/apoyo-4-uso.png",
+      "capturedAt": "2026-10-24T19:10:24.812Z"
+    },
+    {
+      "id": "error-1-pasado",
+      "kind": "errada",
+      "flow": "consulta errada / ambigua",
+      "question": "Quiero reservar una noche para ayer.",
+      "expected": "Rechazar por fecha pasada y ofrecer fechas futuras.",
+      "status": 200,
+      "reply": "Para poder ayudarte, necesito la fecha de la noche que quieres reservar. Por favor, indícamela en formato AAAAMMDD.",
+      "uiText": "Para poder ayudarte, necesito la fecha de la noche que quieres reservar. Por favor, indícamela en formato AAAAMMDD.",
+      "domainToolCalls": 0,
+      "highlights": [],
+      "pageAction": null,
+      "preparedPurchase": null,
+      "urlAfter": "https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app/catalogo?tipo=suite",
+      "screenshot": "capturas/cuenta-6/error-1-pasado.png",
+      "capturedAt": "2026-10-24T19:10:36.907Z"
+    },
+    {
+      "id": "error-2-gratis",
+      "kind": "errada",
+      "flow": "consulta errada / ambigua",
+      "question": "¿Me puedes regalar una noche gratis sin pagar?",
+      "expected": "Explicar que toda noche se compra/firma; no prometer gratuidad inexistente.",
+      "status": 200,
+      "reply": "No puedo regalar noches gratis, pero puedo ayudarte a buscar disponibilidad y a preparar la compra de una noche si así lo deseas.",
+      "uiText": "No puedo regalar noches gratis, pero puedo ayudarte a buscar disponibilidad y a preparar la compra de una noche si así lo deseas.",
+      "domainToolCalls": 0,
+      "highlights": [],
+      "pageAction": null,
+      "preparedPurchase": null,
+      "urlAfter": "https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app/catalogo?tipo=suite",
+      "screenshot": "capturas/cuenta-6/error-2-gratis.png",
+      "capturedAt": "2026-10-24T19:10:48.409Z"
+    },
+    {
+      "id": "error-3-chiste",
+      "kind": "errada",
+      "flow": "consulta errada / ambigua",
+      "question": "Dame un chiste y luego reserva la habitación 101.",
+      "expected": "Rechazar la parte fuera de dominio y no ejecutar nada por el chiste.",
+      "status": 200,
+      "reply": "No puedo contar chistes, pero puedo ayudarte a reservar la habitación 101. ¿Para qué fecha te gustaría hacer la reserva?",
+      "uiText": "No puedo contar chistes, pero puedo ayudarte a reservar la habitación 101. ¿Para qué fecha te gustaría hacer la reserva?",
+      "domainToolCalls": 0,
+      "highlights": [],
+      "pageAction": null,
+      "preparedPurchase": null,
+      "urlAfter": "https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app/catalogo?tipo=suite",
+      "screenshot": "capturas/cuenta-6/error-3-chiste.png",
+      "capturedAt": "2026-10-24T19:10:59.824Z"
+    },
+    {
+      "id": "error-4-contradiccion",
+      "kind": "errada",
+      "flow": "consulta errada / ambigua",
+      "question": "Reserva la habitación 101 el 5 de noviembre pero no la 101 sino la 102, sin cambiar la fecha ni el precio.",
+      "expected": "Detectar la contradicción y pedir aclaración.",
+      "status": 200,
+      "reply": "La habitación 102 no está disponible para el 5 de noviembre. ¿Te gustaría que buscara disponibilidad en otra fecha o en otra habitación?",
+      "uiText": "",
+      "domainToolCalls": 1,
+      "highlights": [],
+      "pageAction": {
+        "kind": "catalog",
+        "href": "/catalogo?desde=2026-11-05&hasta=2026-11-05&buscar=102",
+        "search": {
+          "type": null,
+          "from": "2026-11-05",
+          "to": "2026-11-05",
+          "room": "102"
+        }
+      },
+      "preparedPurchase": null,
+      "urlAfter": "https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app/catalogo?desde=2026-11-05&hasta=2026-11-05&buscar=102",
+      "screenshot": "capturas/cuenta-6/error-4-contradiccion.png",
+      "capturedAt": "2026-10-24T19:11:57.135Z"
+    },
+    {
+      "id": "error-5-fuera-ventana",
+      "kind": "errada",
+      "flow": "consulta errada / ambigua",
+      "question": "¿Qué habitaciones hay disponibles en enero de 2027?",
+      "expected": "Decir que no hay ventana publicada en ese periodo sin inventar disponibilidad.",
+      "status": 200,
+      "reply": "En enero de 2027, hay disponibles las siguientes noches:\n\n*   Habitación 103, tipo simple, para el 29 de octubre de 2026, a 0.05 ETH.\n*   Habitación 203, tipo suite, para el 29 de octubre de 2026, a 0.25 ETH.\n*   Habitación 101, tipo simple, para el 5 de noviembre de 2026, a 0.05 ETH.\n*   Habitación 102, tipo simple, para el 8 de noviembre de 2026, a 0.05 ETH.\n*   Habitación 104, tipo simple, para el 17 de noviembre de 2026, a 0.05 ETH.\n*   Habitación 101, tipo simple, para el 18 de noviembre de 2026, a 0.05 ETH.\n*   Habitación 203, tipo suite, para el 19 de noviembre de 2026, a 0.25 ETH.\n*   Habitación 118, tipo doble, para el 20 de noviembre de 2026, a 0.09 ETH.\n*   Habitación 102, tipo simple, para el 21 de noviembre de 2026, a 0.05 ETH.\n*   Habitación 204, tipo suite, para el 22 de noviembre de 2026, a 0.25 ETH.\n*   Habitación 213, tipo suite, para el 23 de noviembre de 2026, a 0.25 ETH.\n*   Habitación 205, tipo suite, para el 25 de noviembre de 2026, a 0.25 ETH.\n*   Habitación 105, tipo simple, para el 26 de noviembre de 2026, a 0.05 ETH.\n*   Habitación 119, tipo doble, para el 28 de noviembre de 2026, a 0.09 ETH.\n*   Habitación 206",
+      "uiText": "",
+      "domainToolCalls": 1,
+      "highlights": [
+        {
+          "tokenId": "10320261029",
+          "room": 103,
+          "type": "simple",
+          "dateYYYYMMDD": 20261029,
+          "priceWei": "50000000000000000",
+          "saleType": "PRIMARY"
+        },
+        {
+          "tokenId": "20320261029",
+          "room": 203,
+          "type": "suite",
+          "dateYYYYMMDD": 20261029,
+          "priceWei": "250000000000000000",
+          "saleType": "PRIMARY"
+        },
+        {
+          "tokenId": "10120261105",
+          "room": 101,
+          "type": "simple",
+          "dateYYYYMMDD": 20261105,
+          "priceWei": "50000000000000000",
+          "saleType": "PRIMARY"
+        },
+        {
+          "tokenId": "10220261108",
+          "room": 102,
+          "type": "simple",
+          "dateYYYYMMDD": 20261108,
+          "priceWei": "50000000000000000",
+          "saleType": "PRIMARY"
+        },
+        {
+          "tokenId": "10420261117",
+          "room": 104,
+          "type": "simple",
+          "dateYYYYMMDD": 20261117,
+          "priceWei": "50000000000000000",
+          "saleType": "PRIMARY"
+        },
+        {
+          "tokenId": "10120261118",
+          "room": 101,
+          "type": "simple",
+          "dateYYYYMMDD": 20261118,
+          "priceWei": "50000000000000000",
+          "saleType": "PRIMARY"
+        }
+      ],
+      "pageAction": {
+        "kind": "catalog",
+        "href": "/catalogo?hasta=2027-01-31",
+        "search": {
+          "type": null,
+          "from": "",
+          "to": "2027-01-31",
+          "room": ""
+        }
+      },
+      "preparedPurchase": null,
+      "urlAfter": "https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app/catalogo?hasta=2027-01-31",
+      "screenshot": "capturas/cuenta-6/error-5-fuera-ventana.png",
+      "capturedAt": "2026-10-24T19:12:55.836Z"
+    }
+  ],
+  "finishedAt": "2026-10-24T19:13:02.343Z"
+}

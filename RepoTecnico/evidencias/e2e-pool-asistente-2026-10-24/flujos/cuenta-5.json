@@ -1,0 +1,143 @@
+{
+  "account": "cuenta-5",
+  "address": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+  "stages": {
+    "buy": [
+      {
+        "tokenId": "11620261110",
+        "room": 116,
+        "date": "2026-11-10",
+        "ok": true,
+        "owner": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+        "screenshots": [
+          "flujos/capturas/cuenta-5/buy-11620261110-revision.png",
+          "flujos/capturas/cuenta-5/buy-11620261110-firma.png",
+          "flujos/capturas/cuenta-5/buy-11620261110-confirmada.png"
+        ]
+      },
+      {
+        "tokenId": "11720261112",
+        "room": 117,
+        "date": "2026-11-12",
+        "ok": true,
+        "owner": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+        "screenshots": [
+          "flujos/capturas/cuenta-5/buy-11720261112-revision.png",
+          "flujos/capturas/cuenta-5/buy-11720261112-firma.png",
+          "flujos/capturas/cuenta-5/buy-11720261112-confirmada.png"
+        ]
+      },
+      {
+        "tokenId": "20120261114",
+        "room": 201,
+        "date": "2026-11-14",
+        "ok": true,
+        "owner": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+        "screenshots": [
+          "flujos/capturas/cuenta-5/buy-20120261114-revision.png",
+          "flujos/capturas/cuenta-5/buy-20120261114-firma.png",
+          "flujos/capturas/cuenta-5/buy-20120261114-confirmada.png"
+        ]
+      }
+    ],
+    "bid": [
+      {
+        "tokenId": "20320261119",
+        "reserve": "250000000000000000",
+        "ok": true,
+        "highestBidder": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+        "screenshots": [
+          "flujos/capturas/cuenta-5/bid-20320261119-antes.png",
+          "flujos/capturas/cuenta-5/bid-20320261119-pujada.png"
+        ]
+      },
+      {
+        "tokenId": "20420261122",
+        "reserve": "250000000000000000",
+        "ok": true,
+        "highestBidder": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+        "screenshots": [
+          "flujos/capturas/cuenta-5/bid-20420261122-antes.png",
+          "flujos/capturas/cuenta-5/bid-20420261122-pujada.png"
+        ]
+      }
+    ],
+    "checkin": [
+      {
+        "tokenId": "11620261110",
+        "stage": "reserved",
+        "http": 503,
+        "ok": false,
+        "body": {
+          "error": "ANCLAJE_NO_CONFIGURADO",
+          "message": "La recepción no tiene configurada la wallet on-chain: el check-in no puede anclarse y no se registra"
+        },
+        "screenshot": "flujos/capturas/cuenta-5/checkin-11620261110-resguardo.png"
+      },
+      {
+        "tokenId": "11620261110",
+        "stage": "reserved",
+        "http": 503,
+        "apiBody": {
+          "error": "ANCLAJE_NO_CONFIGURADO",
+          "message": "La recepción no tiene configurada la wallet on-chain: el check-in no puede anclarse y no se registra"
+        },
+        "onchainTx": "0x01c32d752af83616ad089d13e2c9375df7c7d61a481f0eccfafb83821ac553f8",
+        "onchainError": null,
+        "ok": true,
+        "screenshot": "flujos/capturas/cuenta-5/checkin-11620261110-resguardo.png"
+      },
+      {
+        "tokenId": "20420261122",
+        "stage": "auction",
+        "http": 200,
+        "apiBody": {
+          "success": true,
+          "status": "CHECKED_IN",
+          "tokenId": "20420261122",
+          "roomNumber": 204,
+          "checkInDate": "2026-11-22",
+          "roomType": "SUITE",
+          "onChainTxHash": "0xc478acc9b4ab4c3710100a91bdf3ed4f923823c38828fc198071d7e173f0278e",
+          "onChainAnchor": "BROADCAST",
+          "executionTimeMs": 1001,
+          "processedBy": "recepcion@hotel.es"
+        },
+        "onchainTx": "0x9764b04a156222d255d1ad23f366f1064dab6b245911f35d7efda7149d2566a5",
+        "onchainError": null,
+        "ok": true,
+        "screenshot": "flujos/capturas/cuenta-5/checkin-20420261122-resguardo.png"
+      }
+    ],
+    "settle": [
+      {
+        "tokenId": "20320261119",
+        "tx": "0xfb5dd7f3c17b57a0aecea2d58a6d85f99755a2b98e5fc2e5259c5f3494b9fa63",
+        "ok": true,
+        "owner": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc"
+      },
+      {
+        "tokenId": "20420261122",
+        "tx": "0x9b94d43ed0e726613c21b6333772270cc3db61c9cfc286806a7a9ed6a698b21b",
+        "ok": true,
+        "owner": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc"
+      }
+    ],
+    "resale": [
+      {
+        "tokenId": "20320261119",
+        "ok": true,
+        "price": "0.30",
+        "screenshot": "flujos/capturas/cuenta-5/resale-20320261119-listada.png"
+      }
+    ],
+    "buyResale": [
+      {
+        "tokenId": "20520261125",
+        "seller": 6,
+        "ok": true,
+        "screenshot": "flujos/capturas/cuenta-5/reventa-20520261125-comprada.png"
+      }
+    ]
+  }
+}

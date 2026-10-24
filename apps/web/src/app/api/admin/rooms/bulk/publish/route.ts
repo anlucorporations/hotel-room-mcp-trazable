@@ -183,14 +183,33 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       // D-85: el lote solo ENCOLA. El worker registra cada habitación, ancla la huella y mintea su
       // primera noche; si algo falla, esa habitación se queda en DRAFT y el job queda FAILED.
       if (mintOnPublish) {
-        const job = await mintJobsRepo.enqueue({
-          roomId: id,
-          targetDate,
-          contentHash,
-          signature: null,
-          signerAddress: null,
-          publishedBy: auth.session.username,
-        });
+        // 2026-10-24: un job ACTIVO para otra fecha de la misma habitación no es un fallo interno.
+        // Antes se devolvía `INTERNAL_SERVER_ERROR` (500 lógico) y el operador no sabía qué pasaba;
+        // ahora se responde 409 con el motivo real y la fecha en curso, que es accionable.
+        let job;
+        try {
+          job = await mintJobsRepo.enqueue({
+            roomId: id,
+            targetDate,
+            contentHash,
+            signature: null,
+            signerAddress: null,
+            publishedBy: auth.session.username,
+          });
+        } catch (enqueueError: unknown) {
+          const message = enqueueError instanceof Error ? enqueueError.message : "No se pudo encolar.";
+          const inProgress = message.includes("publicación en curso");
+          results.push({
+            roomId: id,
+            roomNumber: room.roomNumber,
+            ok: false,
+            error: inProgress ? "PUBLISH_IN_PROGRESS" : "INTERNAL_SERVER_ERROR",
+            message: inProgress
+              ? `Ya hay una publicación en curso para esta habitación: ${message}. Espera a que termine y vuelve a intentarlo.`
+              : "No se pudo publicar esta habitación.",
+          });
+          continue;
+        }
         results.push({
           roomId: id,
           roomNumber: room.roomNumber,
@@ -243,7 +262,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (succeeded.length === 0) {
     // Sin ninguna publicación, se devuelve el **motivo agregado** para que la interfaz (y cualquier
     // otro cliente) no se quede con un 400 mudo. Cada `results[i]` conserva su detalle.
-    return NextResponse.json({ results, published: 0, queued: 0, message: failureSummary(results) }, { status: 400 });
+    // Si TODAS fallaron porque la habitación ya tiene una publicación en curso, 409 (conflicto
+    // de estado), no 400 (petición mal formada).
+    const allInProgress = results.every((result) => result.error === "PUBLISH_IN_PROGRESS");
+    return NextResponse.json(
+      { results, published: 0, queued: 0, message: failureSummary(results) },
+      { status: allInProgress ? 409 : 400 },
+    );
   }
   if (mintOnPublish) {
     return NextResponse.json(
@@ -262,6 +287,7 @@ function failureSummary(results: readonly BulkRoomResult[]): string {
     PUBLISH_REQUIRES_DESCRIPTION: "sin descripción en español (D-6/D-21)",
     ALREADY_PUBLISHED: "ya publicadas",
     ALREADY_ARCHIVED: "archivadas",
+    PUBLISH_IN_PROGRESS: "con una publicación en curso",
     ROOM_NOT_FOUND: "inexistentes",
     INTERNAL_SERVER_ERROR: "con error interno",
   };

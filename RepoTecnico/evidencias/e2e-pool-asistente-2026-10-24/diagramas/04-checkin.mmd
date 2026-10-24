@@ -1,0 +1,9 @@
+flowchart TD
+  A["Huésped en Mis noches"] --> B["Ver mi resguardo QR"]
+  B --> C["Firma EIP-712 del titular"]
+  C --> D["Servidor emite JWS + QR de un solo uso"]
+  D --> E{"Recepción canjea el resguardo"}
+  E -->|antes| F["❌ API 503 ANCLAJE_NO_CONFIGURADO<br/>la web no tenía la clave de recepción"]
+  E -->|después| G["✅ API 200 CHECKED_IN<br/>markCheckedIn on-chain"]
+  F --> H["Se ancla on-chain con la hot-wallet<br/>de recepción (RECEPTION_ROLE)"]
+  H --> G

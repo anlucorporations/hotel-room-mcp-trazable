@@ -267,9 +267,9 @@ export class NFTsRepository {
    * `token_id` con listado activo. Solo ventas **primarias**: una secundaria no cambia la condición
    * de inventario del hotel.
    */
-  async listGhostPrimarySales(): Promise<
-    Array<{ tokenId: string; roomNumber: number; checkInDate: string }>
-  > {
+  async listGhostPrimarySales(
+    fromBlock?: number | bigint,
+  ): Promise<Array<{ tokenId: string; roomNumber: number; checkInDate: string }>> {
     // OJO (defecto detectado en producción, release v15): esta consulta era
     // `SELECT DISTINCT … ORDER BY se.token_id::NUMERIC`, y PostgreSQL la RECHAZA —
     // «for SELECT DISTINCT, ORDER BY expressions must appear in select list»— porque el orden usa una
@@ -277,6 +277,17 @@ export class NFTsRepository {
     // respaldo por RPC en cada petición y la capa F9 quedaba inerte (y el aviso, invisible).
     // `GROUP BY` deduplica igual y **sí** admite expresiones en el ORDER BY, así que la forma es
     // inmune a esa trampa. El guardián `ghost-query-shape` fija la regla.
+    // **Alcance por despliegue.** `sale_events` no guarda la dirección del contrato: en una
+    // cadena que se ha redeployado (el contrato es inmutable y los `tokenId` se repiten entre
+    // generaciones), las ventas de contratos anteriores se colaban como «fantasmas» y ocultaban
+    // noches que SÍ están disponibles en el contrato vigente. Se limita el registro a los eventos
+    // del despliegue activo (bloque de despliegue incluido), que es la autoridad real.
+    const params: unknown[] = [];
+    let windowClause = "";
+    if (fromBlock !== undefined && fromBlock !== null) {
+      params.push(String(fromBlock));
+      windowClause = " AND se.block_number >= $1::BIGINT";
+    }
     const res = await this.pool.query(
       `SELECT se.token_id,
               MIN(n.room_number) AS room_number,
@@ -284,12 +295,13 @@ export class NFTsRepository {
          FROM sale_events se
          JOIN nfts n ON n.token_id = se.token_id
         WHERE se.is_secondary = FALSE
-          AND n.status = 'AVAILABLE'
+          AND n.status = 'AVAILABLE'${windowClause}
           AND NOT EXISTS (
             SELECT 1 FROM listings l WHERE l.token_id = se.token_id AND l.active = TRUE
           )
         GROUP BY se.token_id
         ORDER BY se.token_id::NUMERIC ASC`,
+      params,
     );
     // `room_number` es `INT` y `check_in_date` es `DATE`: el mapeo coincide con `mapRowToNFT`
     // (número y `AAAA-MM-DD`), para que el consumidor no tenga dos formatos de la misma noche.

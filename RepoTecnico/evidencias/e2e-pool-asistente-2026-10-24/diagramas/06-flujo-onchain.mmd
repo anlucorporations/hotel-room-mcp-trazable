@@ -1,0 +1,10 @@
+flowchart LR
+  A[Reservar 3 noches<br/>buy primaria] --> B[Subastar 2 propias]
+  B -->|"NO SOPORTADO: solo hotel subasta"| B1[Se documenta como brecha de producto]
+  A --> C[Pujar 2 subastas<br/>bid]
+  C --> D[Liquidar subastas<br/>settle]
+  D --> E[Ganar 2 suites<br/>NFT del ganador]
+  E --> F[Listar 1 en reventa<br/>list]
+  E --> G[Check-in de 1 ganada<br/>markCheckedIn]
+  F --> H[Otra cuenta compra la reventa<br/>buyResale]
+  A --> I[Check-in de 1 reservada<br/>markCheckedIn]

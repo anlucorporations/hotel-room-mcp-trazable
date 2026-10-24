@@ -1,0 +1,8 @@
+flowchart TD
+  Q["Pregunta: «quiero subastar 2 de mis noches»"] --> L{LLM}
+  L -->|antes| X["❌ Mezcla subasta con reventa: «ve a la sección de reventa y lista tus noches»"]
+  L -->|antes| Y["❌ Rechaza todo el procedimiento: «no puedo ayudarte con subastas»"]
+  X --> P["Producto real: las subastas SOLO las abre el hotel<br/>sobre noches premium de su inventario"]
+  Y --> P
+  P --> R["✅ Corrección: regla explícita en el prompt"]
+  R --> S["Respuesta: «No puedes subastar tus noches.<br/>Para venderlas usa Mis noches → Reventa.<br/>Para pujar ve a Subastas → puja → firma»"]

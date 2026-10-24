@@ -1,0 +1,60 @@
+[
+  {
+    "id": "subasta",
+    "question": "Ya tengo tres noches compradas. Quiero subastar dos de ellas y ademas pujar en dos subastas de suites para intentar ganar al menos una. Como lo hago paso a paso?",
+    "status": 200,
+    "reply": "No puedes subastar tus noches. La única forma de vender las noches que ya posees es a través de la reventa. Si deseas vender tus noches, debes ir a la sección \"Mis noches\", fijar un precio de reventa y luego seleccionar \"Listar\".\n\nPara pujar en las subastas de suites, debes ir a la sección \"Subastas\", elegir la noche en la que deseas pujar, realizar una puja igual o superior a la cantidad mínima requerida y luego firmar la transacción en tu wallet.",
+    "domainToolCalls": 0,
+    "pageAction": null
+  },
+  {
+    "id": "checkin",
+    "question": "Quiero usar una noche que reserve y otra que gane en una subasta. Como hago el check-in?",
+    "status": 200,
+    "reply": "Para hacer el check-in, debes seguir estos pasos:\n\n1.  Ve a la sección \"Mis noches\" en tu perfil.\n2.  Selecciona la noche para la que deseas generar el resguardo QR.\n3.  Pulsa en \"Ver mi resguardo QR\". Deberás firmar una transacción con tu wallet para generar el resguardo.\n4.  Presenta el código QR en recepción. El personal del hotel lo escaneará y registrará tu entrada.\n\nRecuerda que el resguardo QR es de un solo uso. Si tienes algún problema, puedes copiar el token del resguardo y enseñarlo en recepción.",
+    "domainToolCalls": 1,
+    "pageAction": null
+  },
+  {
+    "id": "precio",
+    "question": "Cuanto cuesta la habitacion 104 para el 17 de noviembre de 2026?",
+    "status": 200,
+    "reply": "No he podido completar la respuesta. ¿Puedes reformular la pregunta?",
+    "domainToolCalls": 1,
+    "pageAction": {
+      "kind": "catalog",
+      "href": "/catalogo?desde=2026-11-17&hasta=2026-11-17&buscar=104",
+      "search": {
+        "type": null,
+        "from": "2026-11-17",
+        "to": "2026-11-17",
+        "room": "104"
+      }
+    }
+  },
+  {
+    "id": "fuera-ventana",
+    "question": "Que habitaciones hay disponibles en enero de 2027?",
+    "status": 200,
+    "reply": "Lamentablemente, no hay noches disponibles en enero de 2027.",
+    "domainToolCalls": 1,
+    "pageAction": {
+      "kind": "catalog",
+      "href": "/catalogo?hasta=2027-01-31",
+      "search": {
+        "type": null,
+        "from": "",
+        "to": "2027-01-31",
+        "room": ""
+      }
+    }
+  },
+  {
+    "id": "fecha-pasada",
+    "question": "Quiero reservar una noche para ayer.",
+    "status": 200,
+    "reply": "lamento informarte que la fecha que indicas para la reserva ya ha pasado. ¿Te gustaría buscar disponibilidad para una fecha futura?",
+    "domainToolCalls": 0,
+    "pageAction": null
+  }
+]

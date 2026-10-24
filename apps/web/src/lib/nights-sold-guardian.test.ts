@@ -68,7 +68,7 @@ describe("fetchCatalog: las dos capas del camino de BD (estructural)", () => {
   it("F9 · capa 1: el catálogo consulta el registro de ventas y proyecta la exclusión", () => {
     // La llamada tiene que estar EN EL BLOQUE DE BD y su resultado consumido: basta con definirla
     // o con invocarla sin usar lo que devuelve para que el guardián quede decorativo.
-    expect(source).toMatch(/const ghosts = await nftsRepo\.listGhostPrimarySales\(\)/);
+    expect(source).toMatch(/const ghosts = await nftsRepo\.listGhostPrimarySales\(Number\(deploymentBlock\)\)/);
     // Desde 2026-10-18 la exclusión se aplica sobre lo ya intersectado con el maestro administrado.
     expect(source).toMatch(/excludeGhosts\(administered, ghosts\)/);
     expect(source).toMatch(/withoutGhosts/);
@@ -92,7 +92,7 @@ describe("fetchCatalog: las dos capas del camino de BD (estructural)", () => {
   });
 
   it("el orden es capa 1 → capa 2 (no al revés: sin eso la exclusión estructural no existe)", () => {
-    const layerOne = source.indexOf("listGhostPrimarySales()");
+    const layerOne = source.indexOf("listGhostPrimarySales(Number(deploymentBlock))");
     const layerTwo = source.indexOf("filterSoldOnChain(withoutGhosts)");
     expect(layerOne).toBeGreaterThan(-1);
     expect(layerTwo).toBeGreaterThan(layerOne);

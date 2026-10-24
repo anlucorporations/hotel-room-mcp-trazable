@@ -418,7 +418,7 @@ export async function fetchCatalog(): Promise<CatalogResult> {
       // `AVAILABLE`, existe venta primaria y NO hay reventa activa, esa noche se retira **sin
       // preguntar a la red**. Cierra el §35 en su origen (worker desfasado → noches fantasma →
       // «No pudimos verificar el precio on-chain») y quita lecturas RPC del camino caliente.
-      const ghosts = await nftsRepo.listGhostPrimarySales();
+      const ghosts = await nftsRepo.listGhostPrimarySales(Number(deploymentBlock));
       if (ghosts.length > 0) {
         // No es silencio: el desfase entre índice y eventos tiene que verse para poder accionar
         // (reconciliar/redesplegar el worker), que es justo lo que faltó la primera vez.

@@ -1,0 +1,235 @@
+{
+  "capturedAt": "2026-10-24T19:22:07.966Z",
+  "chainId": 81234,
+  "contract": "0x8b1B398b9c49AFE6394aaE438f6F2E8039120253",
+  "auction": "0x42E5a852Aa5cd4284227796Bc5d2461189A65b8a",
+  "accounts": {
+    "cuenta-5": {
+      "address": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+      "balanceWei": "59070000000000000000",
+      "balanceCC": "59.0700",
+      "owned": [
+        "11620261110",
+        "11720261112",
+        "20120261114"
+      ]
+    },
+    "cuenta-6": {
+      "address": "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
+      "balanceWei": "49070000000000000000",
+      "balanceCC": "49.0700",
+      "owned": [
+        "20220261116",
+        "11620261124",
+        "11720261127"
+      ]
+    },
+    "cuenta-7": {
+      "address": "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
+      "balanceWei": "48910000000000000000",
+      "balanceCC": "48.9100",
+      "owned": [
+        "20120261129",
+        "20220261201",
+        "11620261208"
+      ]
+    },
+    "cuenta-8": {
+      "address": "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f",
+      "balanceWei": "48910000000000000000",
+      "balanceCC": "48.9100",
+      "owned": [
+        "11720261210",
+        "20120261212",
+        "20220261214"
+      ]
+    },
+    "cuenta-9": {
+      "address": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+      "balanceWei": "149070000000000000000",
+      "balanceCC": "149.0700",
+      "owned": [
+        "11620261220",
+        "11720261222",
+        "20120261223"
+      ]
+    }
+  },
+  "tokens": {
+    "11620261110": {
+      "owner": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+      "soldOnce": true,
+      "checkedIn": true,
+      "listed": false,
+      "listingPriceWei": "0"
+    },
+    "11720261112": {
+      "owner": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+      "soldOnce": true,
+      "checkedIn": false,
+      "listed": false,
+      "listingPriceWei": "0"
+    },
+    "20120261114": {
+      "owner": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+      "soldOnce": true,
+      "checkedIn": false,
+      "listed": false,
+      "listingPriceWei": "0"
+    },
+    "20220261116": {
+      "owner": "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
+      "soldOnce": true,
+      "checkedIn": true,
+      "listed": false,
+      "listingPriceWei": "0"
+    },
+    "11620261124": {
+      "owner": "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
+      "soldOnce": true,
+      "checkedIn": false,
+      "listed": false,
+      "listingPriceWei": "0"
+    },
+    "11720261127": {
+      "owner": "0x976EA74026E726554dB657fA54763abd0C3a0aa9",
+      "soldOnce": true,
+      "checkedIn": false,
+      "listed": false,
+      "listingPriceWei": "0"
+    },
+    "20120261129": {
+      "owner": "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
+      "soldOnce": true,
+      "checkedIn": true,
+      "listed": false,
+      "listingPriceWei": "0"
+    },
+    "20220261201": {
+      "owner": "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
+      "soldOnce": true,
+      "checkedIn": false,
+      "listed": false,
+      "listingPriceWei": "0"
+    },
+    "11620261208": {
+      "owner": "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
+      "soldOnce": true,
+      "checkedIn": false,
+      "listed": false,
+      "listingPriceWei": "0"
+    },
+    "11720261210": {
+      "owner": "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f",
+      "soldOnce": true,
+      "checkedIn": true,
+      "listed": false,
+      "listingPriceWei": "0"
+    },
+    "20120261212": {
+      "owner": "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f",
+      "soldOnce": true,
+      "checkedIn": false,
+      "listed": false,
+      "listingPriceWei": "0"
+    },
+    "20220261214": {
+      "owner": "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f",
+      "soldOnce": true,
+      "checkedIn": false,
+      "listed": false,
+      "listingPriceWei": "0"
+    },
+    "11620261220": {
+      "owner": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+      "soldOnce": true,
+      "checkedIn": true,
+      "listed": false,
+      "listingPriceWei": "0"
+    },
+    "11720261222": {
+      "owner": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+      "soldOnce": true,
+      "checkedIn": false,
+      "listed": false,
+      "listingPriceWei": "0"
+    },
+    "20120261223": {
+      "owner": "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720",
+      "soldOnce": true,
+      "checkedIn": false,
+      "listed": false,
+      "listingPriceWei": "0"
+    },
+    "20320261119": {
+      "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "soldOnce": false,
+      "checkedIn": false,
+      "listed": false,
+      "listingPriceWei": "0"
+    },
+    "20420261122": {
+      "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "soldOnce": false,
+      "checkedIn": false,
+      "listed": false,
+      "listingPriceWei": "0"
+    },
+    "20520261125": {
+      "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "soldOnce": false,
+      "checkedIn": false,
+      "listed": false,
+      "listingPriceWei": "0"
+    },
+    "20620261130": {
+      "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "soldOnce": false,
+      "checkedIn": false,
+      "listed": false,
+      "listingPriceWei": "0"
+    },
+    "20720261203": {
+      "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "soldOnce": false,
+      "checkedIn": false,
+      "listed": false,
+      "listingPriceWei": "0"
+    },
+    "20820261206": {
+      "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "soldOnce": false,
+      "checkedIn": false,
+      "listed": false,
+      "listingPriceWei": "0"
+    },
+    "20920261209": {
+      "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "soldOnce": false,
+      "checkedIn": false,
+      "listed": false,
+      "listingPriceWei": "0"
+    },
+    "21020261211": {
+      "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "soldOnce": false,
+      "checkedIn": false,
+      "listed": false,
+      "listingPriceWei": "0"
+    },
+    "21120261216": {
+      "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "soldOnce": false,
+      "checkedIn": false,
+      "listed": false,
+      "listingPriceWei": "0"
+    },
+    "21220261219": {
+      "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "soldOnce": false,
+      "checkedIn": false,
+      "listed": false,
+      "listingPriceWei": "0"
+    }
+  }
+}
