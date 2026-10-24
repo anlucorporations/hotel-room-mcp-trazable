@@ -1,0 +1,26 @@
+{
+  "capturedAt": "2026-10-24T23:08:10.171Z",
+  "chainId": 81234,
+  "auctionContract": "0x42E5a852Aa5cd4284227796Bc5d2461189A65b8a",
+  "roles": {
+    "guestAddress": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+    "hotelAddress": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "AUCTION_ADMIN_ROLE": "0xa0cfda562e348e6dd163503c96e8678ef086abaf74d083a23226889f462cacaa",
+    "guestHasRole": false,
+    "hotelHasRole": true
+  },
+  "attempts": [
+    {
+      "label": "huésped intenta abrir subasta de su propia noche",
+      "from": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+      "allowed": false,
+      "decodedRevertReason": "AccessControlUnauthorizedAccount(0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc, 0xa0cfda562e348e6dd163503c96e8678ef086abaf74d083a23226889f462cacaa)"
+    },
+    {
+      "label": "hotel intenta subastar una noche que ya es de un huésped",
+      "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "allowed": false,
+      "decodedRevertReason": "NightNotHotelInventory(11620261110 [1.162e10])"
+    }
+  ]
+}

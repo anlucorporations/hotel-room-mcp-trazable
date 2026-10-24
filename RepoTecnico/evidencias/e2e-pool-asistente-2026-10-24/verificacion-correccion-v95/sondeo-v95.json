@@ -1,0 +1,30 @@
+[
+  {
+    "id": "subastar-mis-noches",
+    "question": "Quiero subastar dos de las tres habitaciones que reservé.",
+    "status": 200,
+    "reply": "No puedes subastar tus noches. Las subastas las organiza el hotel para noches premium. Si deseas vender tus noches, puedes listarlas en la sección de reventa.",
+    "clarifiesHotelOnly": true
+  },
+  {
+    "id": "subastar-mi-suite",
+    "question": "¿Puedo subastar mi suite del 14 de noviembre de 2026?",
+    "status": 200,
+    "reply": "No puedes subastar tus noches. Si deseas vender tu suite, puedes listar tu noche en la sección de reventa.",
+    "clarifiesHotelOnly": true
+  },
+  {
+    "id": "subastar-noche-comprada",
+    "question": "Subasta la noche que compré en la habitación 201.",
+    "status": 200,
+    "reply": "No puedes subastar tus noches. Solo puedes venderlas a través de la sección de reventa. ¿Te gustaría listar tu noche en la habitación 201 para su reventa?",
+    "clarifiesHotelOnly": true
+  },
+  {
+    "id": "pujar",
+    "question": "¿Cómo pujo en la subasta de una suite?",
+    "status": 200,
+    "reply": "No puedes subastar tus noches. Si deseas vender una noche que posees, puedes listar tu noche en la sección de reventa. Si deseas pujar en una subasta, debes ir a la sección de subastas, elegir la noche, pujar igual o por encima del precio mínimo y luego firmar la transacción en tu wallet.",
+    "clarifiesHotelOnly": true
+  }
+]

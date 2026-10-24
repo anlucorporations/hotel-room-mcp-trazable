@@ -379,6 +379,11 @@ Evidencia: `verificacion-correccion-v93/sondeo-v93.json`.
 
 ## 7. Brecha de producto: el huésped no puede subastar sus noches (requisito 3.2)
 
+> **Decisión del responsable (2026-10-24):** «corrige para que solo el hotel subaste una habitación».
+> Se mantiene la regla de producto: **solo el hotel abre subastas**; el huésped revende. La
+> corrección aplicada es hacerlo explícito y garantizado en el contrato (ya lo imponía), en la web y
+> en el asistente (ver §12.6). No se implementa subasta secundaria.
+
 **Qué pedía el encargo.** «Subastar 2 de las 3 habitaciones reservadas» por cada cuenta.
 
 **Qué permite el contrato.** `NightAuction.createAuction` exige `hotel.ownerOf(tokenId) == hotel.treasury()` y que la noche no se haya vendido: **solo el hotel puede abrir subastas**, y solo sobre su inventario primario. El huésped, una vez comprada la noche, solo tiene `list` (reventa) y `unlist`. Por tanto **3.2 no es ejecutable** con el sistema actual.
@@ -594,3 +599,28 @@ Pruebas unitarias: 189 del módulo assistant en verde (incluye fallback con noch
 | Check-in en IaC y documentación | ✅ script + docs; API 200 |
 | Incidencias 101/102 resueltas | ✅ catálogo y asistente |
 | Subasta secundaria del huésped (3.2) | ⏳ **pendiente de decisión de producto** (§7) |
+
+### 12.6 «Solo el hotel subasta»: garantizado y visible en las tres capas
+
+**Decisión aplicada.** No se habilita que el huésped subaste sus noches: se refuerza que **solo el
+hotel** pueda abrir subastas, en contrato, web y asistente.
+
+| Capa | Corrección | Verificación |
+|---|---|---|
+| **Contrato** | Ya lo imponía: `createAuction` exige `AUCTION_ADMIN_ROLE` y que la noche siga siendo inventario de la tesorería. Se añadió evidencia on-chain reproducible. | `verificacion-solo-hotel-subasta.json`: la cuenta huésped **no tiene** `AUCTION_ADMIN_ROLE`; su intento revierte `AccessControlUnauthorizedAccount(...)`; si firma el hotel sobre una noche ya vendida, revierte `NightNotHotelInventory(11620261110)`. Pruebas Foundry existentes: `test_CreateAuctionRevertsForNonAdmin`, `test_CreateAuctionRevertsForNightAlreadySold`. |
+| **Web** | Aviso explícito en `/subastas` (`auctions-hotel-only`): «Solo el hotel puede abrir subastas de noches. Si eres huésped y quieres vender una noche tuya, ponla en reventa…», traducido a ES/EN/RU. | Comprobado en el HTML servido tras el despliegue. |
+| **Asistente** | Guarda determinista `ensureHotelOnlyAuctionGuidance`: si el usuario pide subastar **una noche propia** y la respuesta del modelo no lo aclara, se antepone la explicación correcta (aunque el LLM alucine). | Pruebas nuevas `auction-policy.test.ts` (5/5) + verificación en producción: la respuesta empieza por «Solo el hotel puede abrir subastas…» cuando hace falta. |
+
+**Reproducción de la prueba on-chain:**
+
+```bash
+node scripts/e2e/pool/verify-hotel-only-auctions.mjs
+# → roles.guestHasRole=false, roles.hotelHasRole=true
+# → intento del huésped: AccessControlUnauthorizedAccount
+# → intento del hotel sobre noche vendida: NightNotHotelInventory
+```
+
+**Matiz de alcance.** El requisito 3.2 original («subastar 2 de las 3 habitaciones reservadas») queda
+**rectificado por decisión de producto**: el huésped no subasta; el hotel subasta su inventario y el
+huésped puja. El resto de los flujos (reservar, pujar, ganar, revender, comprar reventa y usar por
+check-in) sí se ejecutaron de verdad en Besu 81234.

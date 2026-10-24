@@ -151,7 +151,11 @@
     "navContact": "Contact",
     "navHotelGroup": "The hotel",
     "navDiscoverGroup": "Discover",
-    "navAuctions": "Auctions"
+    "navAuctions": "Auctions",
+    "footerExplore": "Explore",
+    "footerStay": "Your stay",
+    "footerLegal": "Legal",
+    "footerCopyright": "© 2026 Hotel Marina del Sol · Alicante"
   },
   "help": {
     "title": "Help and manuals",
@@ -251,7 +255,8 @@
     "endOfList": "You have viewed all available nights in the next 90 days.",
     "buyPaused": "Sales paused",
     "pageTitle": "Night catalogue",
-    "pageTagline": "Every night available over the next 90 days, with its room type and price. Booking direct, with no middlemen."
+    "pageTagline": "Every night available over the next 90 days, with its room type and price. Booking direct, with no middlemen.",
+    "viewRoom": "View the room"
   },
   "wallet": {
     "chooseWallet": "Choose your wallet",
@@ -2120,7 +2125,8 @@
       "revertedHint": "The network rejected the transaction. Check the amount and try again.",
       "unverifiable": "We could not read the receipt",
       "unverifiableHint": "The transaction may be mined. Refresh the page to check your bid."
-    }
+    },
+    "hotelOnly": "Only the hotel can open night auctions. If you are a guest and want to sell one of your nights, list it for resale from “My nights”; to get an auction night, place a bid here."
   },
   "amaDeLlaves": {
     "title": "Head housekeeper",
@@ -2408,5 +2414,48 @@
     "empty": "No tasks pending validation.",
     "loading": "Loading…",
     "error": "Could not load the validation queue."
+  },
+  "roomDetail": {
+    "eyebrow": "Room",
+    "title": "Room {room}",
+    "breadcrumbHome": "Home",
+    "breadcrumbRooms": "Rooms",
+    "meta": {
+      "capacity": "{count, plural, one {# guest} other {# guests}}",
+      "beds": "{count, plural, one {# bed} other {# beds}}",
+      "size": "{size} m²",
+      "balcony": "Balcony",
+      "accessible": "Accessible",
+      "viewSEA": "Sea view",
+      "viewGARDEN": "Garden view",
+      "viewINTERIOR": "Interior view"
+    },
+    "aboutTitle": "The room",
+    "aboutFallback": "A {type} room with the usual essentials: breakfast, wifi and terrace access.",
+    "servicesTitle": "Included services",
+    "services": {
+      "breakfast": "Market breakfast",
+      "wifi": "Fibre wifi",
+      "terrace": "Terrace access",
+      "concierge": "24 h concierge"
+    },
+    "policiesTitle": "Before you book",
+    "policies": {
+      "entry": "Check-in from 15:00",
+      "exit": "Check-out by 12:00",
+      "cancellation": "Free cancellation up to 48 h before",
+      "pets": "Pets welcome (€10/night)",
+      "payment": "Card, wallet or bank transfer"
+    },
+    "reviewsTitle": "Reviews for this room type",
+    "reviewsEmpty": "No reviews for this room type yet.",
+    "bookingTitle": "Book this room",
+    "bookingBody": "Availability and price are confirmed in the catalogue against the chain. Pick dates and we show only what can be verified.",
+    "ctaCatalog": "See available nights",
+    "ctaType": "See all {type}",
+    "trust": "Direct booking · verified on-chain payment · offline digital pass",
+    "galleryLabel": "Gallery of room {room}",
+    "back": "Back to rooms",
+    "notFound": "We couldn’t find this room."
   }
 }

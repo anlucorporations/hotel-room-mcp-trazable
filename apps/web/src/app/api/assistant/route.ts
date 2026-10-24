@@ -10,6 +10,7 @@ import { runAssistant } from "@/lib/assistant/orchestrator";
 import { pageActionForTurn } from "@/lib/assistant/page-action";
 import { buildSystemPrompt } from "@/lib/assistant/prompt";
 import { redactPromptLeak } from "@/lib/assistant/prompt-leak-filter";
+import { ensureHotelOnlyAuctionGuidance } from "@/lib/assistant/auction-policy";
 import { InMemoryRateLimiter, type RateLimiter } from "@/lib/assistant/rate-limit";
 import type { ChatMessage } from "@/lib/assistant/types";
 
@@ -211,8 +212,14 @@ export async function POST(request: Request): Promise<NextResponse> {
     // de firma es el siguiente paso del usuario y lo perdería). Si el modelo no consultó el catálogo
     // pero el usuario pidió habitaciones, se abre el catálogo igualmente (respaldo por intención).
     const lastUserText = [...sanitized.messages].reverse().find((m) => m.role === "user")?.text;
+    // Regla de producto determinista: el huésped no puede subastar sus noches. Se aplica después
+    // del modelo para que ni una alucinación pueda proponer un camino inexistente (pool E2E 2026-10-24).
+    const guardedReply = ensureHotelOnlyAuctionGuidance(
+      redactPromptLeak(result.reply, REDACTED_REPLY),
+      lastUserText,
+    );
     return NextResponse.json({
-      reply: redactPromptLeak(result.reply, REDACTED_REPLY),
+      reply: guardedReply,
       domainToolCalls: result.domainToolCalls,
       preparedPurchase: result.preparedPurchase,
       // Estancia de varias noches (petición del responsable, 2026-10-13): una compra preparada por

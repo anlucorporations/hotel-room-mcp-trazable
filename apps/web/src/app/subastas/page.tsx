@@ -28,6 +28,14 @@ export default async function AuctionsPage() {
       <section className="mx-auto w-full max-w-6xl px-4 py-10">
         <h1 className="font-display text-display text-ink">{t("title")}</h1>
         <p className="mt-2 max-w-[70ch] text-ink-soft">{t("intro")}</p>
+        {/* Regla de producto explícita (pool E2E 2026-10-24): las subastas las abre SOLO el hotel;
+            el huésped revende. Se dice aquí, no solo en el asistente. */}
+        <p
+          data-testid="auctions-hotel-only"
+          className="mt-3 max-w-[70ch] rounded-brand border border-line bg-mist-2 px-4 py-3 text-small text-ink-soft"
+        >
+          {t("hotelOnly")}
+        </p>
 
         {!configured ? (
           <p

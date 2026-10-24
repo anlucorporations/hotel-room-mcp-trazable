@@ -151,7 +151,11 @@
     "navContact": "Contacto",
     "navHotelGroup": "El hotel",
     "navDiscoverGroup": "Descubre",
-    "navAuctions": "Subastas"
+    "navAuctions": "Subastas",
+    "footerExplore": "Explorar",
+    "footerStay": "Tu estancia",
+    "footerLegal": "Legal",
+    "footerCopyright": "© 2026 Hotel Marina del Sol · Alicante"
   },
   "help": {
     "title": "Ayuda y manuales",
@@ -251,7 +255,8 @@
     "endOfList": "Has visto todas las noches disponibles en los próximos 90 días.",
     "buyPaused": "Ventas en pausa",
     "pageTitle": "Catálogo de noches",
-    "pageTagline": "Todas las noches disponibles en los próximos 90 días, con su tipo de habitación y su precio. La compra es directa, sin intermediarios."
+    "pageTagline": "Todas las noches disponibles en los próximos 90 días, con su tipo de habitación y su precio. La compra es directa, sin intermediarios.",
+    "viewRoom": "Ver la habitación"
   },
   "wallet": {
     "chooseWallet": "Elige tu billetera",
@@ -2120,7 +2125,8 @@
       "revertedHint": "La red rechazó la transacción. Revisa el importe y vuelve a intentarlo.",
       "unverifiable": "No pudimos leer el recibo",
       "unverifiableHint": "La transacción puede estar minada. Actualiza la página para comprobar tu puja."
-    }
+    },
+    "hotelOnly": "Solo el hotel puede abrir subastas de noches. Si eres huésped y quieres vender una noche tuya, ponla en reventa desde «Mis noches»; si quieres una de subasta, puja aquí."
   },
   "amaDeLlaves": {
     "title": "Ama de llaves",
@@ -2408,5 +2414,48 @@
     "empty": "No hay tareas pendientes de validación.",
     "loading": "Cargando…",
     "error": "No se pudo cargar la cola de validación."
+  },
+  "roomDetail": {
+    "eyebrow": "Habitación",
+    "title": "Habitación {room}",
+    "breadcrumbHome": "Inicio",
+    "breadcrumbRooms": "Habitaciones",
+    "meta": {
+      "capacity": "{count, plural, one {# huésped} other {# huéspedes}}",
+      "beds": "{count, plural, one {# cama} other {# camas}}",
+      "size": "{size} m²",
+      "balcony": "Balcón",
+      "accessible": "Accesible",
+      "viewSEA": "Vista al mar",
+      "viewGARDEN": "Vista al jardín",
+      "viewINTERIOR": "Vista interior"
+    },
+    "aboutTitle": "La habitación",
+    "aboutFallback": "Una habitación de {type} con la dotación de siempre: desayuno, wifi y acceso a la terraza.",
+    "servicesTitle": "Servicios incluidos",
+    "services": {
+      "breakfast": "Desayuno de mercado",
+      "wifi": "Wifi de fibra",
+      "terrace": "Acceso a la terraza",
+      "concierge": "Conserjería 24 h"
+    },
+    "policiesTitle": "Antes de reservar",
+    "policies": {
+      "entry": "Entrada desde las 15:00",
+      "exit": "Salida hasta las 12:00",
+      "cancellation": "Cancelación gratuita hasta 48 h antes",
+      "pets": "Mascotas bienvenidas (10 €/noche)",
+      "payment": "Pago con tarjeta, wallet o transferencia"
+    },
+    "reviewsTitle": "Reseñas de este tipo de habitación",
+    "reviewsEmpty": "Aún no hay reseñas publicadas de este tipo.",
+    "bookingTitle": "Reservar esta habitación",
+    "bookingBody": "La disponibilidad y el precio se confirman en el catálogo contra la cadena. Elige fechas y te mostramos solo lo que se puede comprobar.",
+    "ctaCatalog": "Ver noches disponibles",
+    "ctaType": "Ver todas las {type}",
+    "trust": "Reserva directa · pago verificado en cadena · pase digital offline",
+    "galleryLabel": "Galería de la habitación {room}",
+    "back": "Volver a habitaciones",
+    "notFound": "No encontramos esta habitación."
   }
 }
