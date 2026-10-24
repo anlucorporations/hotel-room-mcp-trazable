@@ -341,6 +341,53 @@ describe("respuesta vacía del modelo (defecto medido en H4)", () => {
     expect(result.reply.trim().length).toBeGreaterThan(0);
   });
 
+  it("con noches encontradas, el fallback usa los datos reales (habitación, fecha y precio en ETH)", async () => {
+    const llm = new FakeLlm([
+      { text: "", toolUses: [{ id: "c", name: "listAvailableNights", input: {} }] },
+      { text: "   ", toolUses: [] },
+    ]);
+    const gateway = new FakeGateway({
+      listAvailableNights: [
+        { tokenId: "10420261117", room: 104, type: "simple", dateYYYYMMDD: 20261117, priceWei: "50000000000000000", saleType: "PRIMARY" },
+      ],
+    });
+    const result = await runAssistant(
+      { llm, gateway, validatePreparedTx: okValidator, system: SYSTEM_PROMPT },
+      [{ role: "user", text: "¿qué hay disponible?" }],
+    );
+
+    expect(result.reply).toContain("104");
+    expect(result.reply).toContain("17/11/2026");
+    expect(result.reply).toMatch(/0\.05 ETH/);
+    expect(result.reply).toMatch(/preparar la reserva/i);
+    expect(result.reply).not.toMatch(/reformular/i);
+  });
+
+  it("con compras preparadas, el fallback invita a revisarlas y firmarlas", async () => {
+    const llm = new FakeLlm([
+      {
+        text: "",
+        toolUses: [
+          { id: "a", name: "checkAvailability", input: { room: 102, date: "20260615" } },
+          { id: "b", name: "buildPurchaseTx", input: { tokenId: TOKEN } },
+        ],
+      },
+      { text: "", toolUses: [] },
+    ]);
+    const gateway = new FakeGateway({
+      checkAvailability: { tokenId: TOKEN, room: 102, type: "simple", dateYYYYMMDD: 20260615, priceWei: "50000000000000000", available: true, exists: true },
+      buildPurchaseTx: TX,
+    });
+    const result = await runAssistant(
+      { llm, gateway, validatePreparedTx: okValidator, system: SYSTEM_PROMPT },
+      [{ role: "user", text: "compra la 102 para el 15 de junio" }],
+    );
+
+    expect(result.preparedPurchases).toHaveLength(1);
+    expect(result.reply).toMatch(/fírmala|firmar/i);
+    expect(result.reply).not.toMatch(/reformular/i);
+  });
+
   it("sustituye una pseudollamada en texto por el mensaje de reserva", async () => {
     // Medido en H4: el modelo escribió «tool_code / print(default_api...)» como texto. Mostrar eso
     // al huésped es peor que pedirle que reformule.

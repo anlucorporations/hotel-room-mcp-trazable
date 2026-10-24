@@ -100,6 +100,18 @@ else
   echo "       (define ENABLE_BURN_SCHEDULER=1 y el secreto hotel-burner-private-key para activarla)."
 fi
 
+# ── Check-in: hot-wallet de recepción ───────────────────────────────────────────────────────────
+# El check-in por resguardo firma `markCheckedIn` con esta clave. Si falta, la web arranca y responde
+# 503 ANCLAJE_NO_CONFIGURADO (cerrado en falso), pero el flujo queda inservible. Se documenta aquí
+# para que un redespliegue no vuelva a dejarlo sin configurar (hallazgo del pool E2E 2026-10-24).
+RECEPTION_SECRETS=""
+if gcloud secrets describe hotel-reception-private-key --project="$GCP_PROJECT_ID" >/dev/null 2>&1; then
+  RECEPTION_SECRETS="RECEPTION_WALLET_PRIVATE_KEY=hotel-reception-private-key:latest"
+  echo "==> Check-in ACTIVADO (hot-wallet hotel-reception-private-key)"
+else
+  echo "AVISO: falta el secreto hotel-reception-private-key; el check-in por API responderá 503 ANCLAJE_NO_CONFIGURADO"
+fi
+
 RELAYER_ENV=""
 RELAYER_SECRETS=""
 if [[ "${ENABLE_RELAYER_BURN:-0}" == "1" ]]; then
@@ -187,7 +199,7 @@ gcloud run deploy hotel-mcp-web \
   --port=3000 --allow-unauthenticated \
   --min-instances=0 --max-instances=3 --cpu=1 --memory=1Gi \
   --set-env-vars="$(join_nonempty "$COMMON_ENV" "MCP_BASE_URL=${MCP_URL}/mcp" "WORKER_BASE_URL=${WORKER_URL}" "LOG_LEVEL=info" "$VAPID_ENV" "$ASSISTANT_ENV" "$RELAYER_ENV")" \
-  --set-secrets="$(join_nonempty "$COMMON_SECRETS" "$VAPID_SECRETS" "SESSION_SECRET=hotel-session-secret:latest" "JWT_SECRET=hotel-jwt-secret:latest" "TICKET_SIGNING_SECRET=hotel-ticket-signing-secret:latest" "CHECKIN_SECRET_KEY=hotel-checkin-secret-key:latest" "AES_SECRET_KEY=hotel-aes-secret-key:latest" "MCP_SHARED_SECRET=hotel-mcp-shared-secret:latest" "$RELAYER_SECRETS")" \
+  --set-secrets="$(join_nonempty "$COMMON_SECRETS" "$VAPID_SECRETS" "$RECEPTION_SECRETS" "SESSION_SECRET=hotel-session-secret:latest" "JWT_SECRET=hotel-jwt-secret:latest" "TICKET_SIGNING_SECRET=hotel-ticket-signing-secret:latest" "CHECKIN_SECRET_KEY=hotel-checkin-secret-key:latest" "AES_SECRET_KEY=hotel-aes-secret-key:latest" "MCP_SHARED_SECRET=hotel-mcp-shared-secret:latest" "$RELAYER_SECRETS")" \
   --network="$NETWORK" --subnet="$SUBNET" --vpc-egress=private-ranges-only \
   $CANARY_FLAGS \
   --quiet

@@ -319,13 +319,17 @@ describe("respuesta vacía del proveedor (defecto medido en H4)", () => {
     expect(response.toolUses).toHaveLength(1);
   });
 
-  it("tras agotar el reintento devuelve el texto vacío en lugar de fallar", async () => {
+  it("tras agotar los reintentos devuelve el texto vacío en lugar de fallar", async () => {
+    let llamadas = 0;
     const model = mockModel({
-      doGenerate: {
-        content: [],
-        finishReason: { unified: "stop", raw: "stop" },
-        usage: USAGE,
-        warnings: [],
+      doGenerate: async () => {
+        llamadas += 1;
+        return {
+          content: [],
+          finishReason: { unified: "stop", raw: "stop" },
+          usage: USAGE,
+          warnings: [],
+        };
       },
     });
 
@@ -335,6 +339,8 @@ describe("respuesta vacía del proveedor (defecto medido en H4)", () => {
       tools: [TOOL],
     });
 
+    // Pool E2E 2026-10-24: el proveedor encadenó respuestas vacías; se permiten 3 intentos.
+    expect(llamadas).toBe(3);
     expect(response.text).toBe("");
     expect(response.toolUses).toEqual([]);
   });

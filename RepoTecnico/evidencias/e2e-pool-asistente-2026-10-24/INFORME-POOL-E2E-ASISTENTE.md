@@ -435,11 +435,11 @@ node e2e/pool/run-checkin.mjs --stage=auction
 
 ## 9. Limitaciones y pendientes
 
-1. **Subasta de noches propias (3.2)** — no soportada por el contrato actual; propuesta en §7.
-2. **Respuestas vacías del LLM** — intermitencia del proveedor; se recomienda reintento visible y mensajes de apoyo con enlaces.
-3. **El asistente no prepara compras múltiples en el primer turno** — aunque el orquestador soporta varias `buildPurchaseTx` por turno, el prompt pide confirmación. Queda como mejora: si el usuario ya pidió comprar 3 noches concretas, preparar las 3 de una vez.
+1. **Subasta de noches propias (3.2)** — no soportada por el contrato actual; **pendiente de decisión de producto** (propuesta en §7).
+2. ~~Respuestas vacías del LLM~~ — **corregido en §12.1** (fallback determinista + 3 intentos).
+3. ~~El asistente no prepara compras múltiples en el primer turno~~ — **corregido en §12.2** (prepara N compras en un turno si el usuario ya dio habitación y fecha).
 4. **Evidencias de captura** — son capturas de escritorio (1440×960); no se repitió el pool en móvil.
-5. **Catálogo 101/102** — siguen bloqueadas por incidencias de mantenimiento abiertas (estado legítimo); para ofrecerlas, el hotel debe resolverlas desde el back-office.
+5. ~~Catálogo 101/102~~ — **corregido en §12.5** (eran incidencias de mantenimiento de pruebas; resueltas).
 
 ---
 
@@ -447,8 +447,8 @@ node e2e/pool/run-checkin.mjs --stage=auction
 
 | Elemento | Estado |
 |---|---|
-| Imagen web desplegada | `europe-west1-docker.pkg.dev/hotel-mcp/hotel-mcp/web:v93` |
-| Revisiones Cloud Run | `hotel-mcp-web-00099-cnf` (v92, correcciones base) y `hotel-mcp-web-00100-rrt` (v93, prompt final) — 100 % del tráfico |
+| Imagen web desplegada | `europe-west1-docker.pkg.dev/hotel-mcp/hotel-mcp/web:v94` (segunda ronda, §12) |
+| Revisiones Cloud Run | `hotel-mcp-web-00099-cnf` (v92), `hotel-mcp-web-00100-rrt` (v93) y `hotel-mcp-web-00101-9gl` (v94, ronda de cierre) — 100 % del tráfico |
 | `RECEPTION_WALLET_PRIVATE_KEY` | Configurada en el servicio web (hot-wallet de recepción, `RECEPTION_ROLE`) |
 | `/api/health` | `{"status":"ok","service":"web"}` |
 | `/health/ready` | `READY` — PostgreSQL `UP`, Redis `UP`, Polygon RPC `UP` |
@@ -456,7 +456,7 @@ node e2e/pool/run-checkin.mjs --stage=auction
 | `POST /api/reception/checkin` | **200 `CHECKED_IN`** con `onChainTxHash` y `onChainAnchor: BROADCAST` |
 | `POST /api/admin/rooms/bulk/publish` (conflicto) | **409 `PUBLISH_IN_PROGRESS`** verificado |
 | Pruebas unitarias afectadas | `nights-sold-guardian` 21/21 · `prompt` 19/19 · `nfts.repository` 8/8 · `admin/rooms` 76/76 · typecheck web y shared en verde |
-| Sonda del asistente `v93` | subasta ✅ · check-in ✅ · ventana de fechas ✅ · fecha pasada ✅ · precio ⚠️ (fallback del proveedor, §6.7) |
+| Sonda del asistente `v93/v94` | subasta ✅ · check-in ✅ · ventana de fechas ✅ · fecha pasada ✅ · precio ✅ (fallback determinista con datos reales, §12.1) |
 
 **Conclusión del pool:** el asistente, después de las correcciones, **sabe guiar** los 7 flujos
 soportados (reservar, pujar, ganar, revender, comprar reventa y hacer check-in de noches reservadas
@@ -535,3 +535,62 @@ la billetera.
 **Capturas del asistente (una por pregunta y cuenta):** `capturas/cuenta-{5..9}/apoyo-*.png` y
 `capturas/cuenta-{5..9}/error-*.png` (45 capturas). **Capturas de todos los movimientos:**
 `flujos/capturas/cuenta-{5..9}/` (123 capturas).
+
+---
+
+## 12. Segunda ronda de correcciones (2026-10-24, `web:v94`)
+
+Tras revisar el informe, se corrigieron uno a uno los errores pendientes y se verificaron en producción.
+
+### 12.1 Respuestas vacías del LLM → apoyo determinista con datos reales
+
+**En cristiano.** Cuando el proveedor de IA devolvía una respuesta vacía, el asistente contestaba «No he podido completar la respuesta. ¿Puedes reformular?» aunque **ya sabía** qué noches había encontrado. El huésped se quedaba sin el dato que el sistema tenía.
+
+**Solución implementada.**
+- El adaptador del modelo ahora hace **3 intentos** ante texto inservible (antes 2).
+- Si aun así no hay texto, el orquestador compone una **respuesta determinista con los datos reales del turno**:
+  - si hay compras preparadas: «He preparado N compras. Revísalas y fírmalas…»;
+  - si hay noches encontradas: lista con **habitación, tipo, fecha y precio en ETH**;
+  - si no hay datos: se mantiene el mensaje genérico.
+- Se corrigió además que `checkAvailability` no devuelve habitación/fecha/tipo: ahora **se derivan del `tokenId`**, así la tarjeta y el fallback saben qué noche es.
+
+**Verificación en producción (sonda `verificacion-correccion-v94/sondeo-v94.json`):**
+
+| Pregunta | Respuesta observada |
+|---|---|
+| «¿Cuánto cuesta la habitación 101 para el 5/11/2026?» | El modelo devolvió texto vacío y **entró el fallback**: `Habitación 101 simple del 05/11/2026 por 0.05 ETH` + «Puedes preparar la reserva…» ✅ |
+| «¿Está disponible la 102 para el 8/11/2026?» | «Sí… precio 0.05 ETH» ✅ |
+
+Pruebas unitarias: 189 del módulo assistant en verde (incluye fallback con noches, fallback con compras, 3 intentos y derivación desde `tokenId`).
+
+### 12.2 Compras múltiples en un solo turno
+
+**En cristiano.** El asistente pedía confirmación noche por noche y gastaba turnos de más (el encargo limita a 4 preguntas por cuenta).
+
+**Solución.** Regla del prompt: **si el mensaje ya indica habitación y fecha concretas y pide comprar/reservar, no se pide confirmación**; se verifica disponibilidad y se preparan todas las compras en ese mismo turno. La seguridad no cambia: nada se cobra hasta que el huésped firma en su cartera.
+
+**Verificación en producción:** una sola petición con tres noches devolvió **`preparedPurchases: 3`** y la respuesta «He preparado la compra de las tres noches…» (0.05 + 0.09 + 0.25 ETH). ✅
+
+### 12.3 La clave de recepción, cableada en el despliegue
+
+**En cristiano.** El check-in funcionaba porque alguien puso la clave a mano; un redespliegue normal la habría vuelto a apagar.
+
+**Solución.** `infra/gcp/70-deploy-apps.sh` cablea `RECEPTION_WALLET_PRIVATE_KEY` desde el secreto **`hotel-reception-private-key`** (Secret Manager) en el servicio web, avisa si falta y se documentó en `RepoTecnico/entornos_globales.md`. El check-in por API sigue respondiendo **200 `CHECKED_IN`** con ancla on-chain.
+
+### 12.4 Las simples 101/102 ya se ofrecen
+
+**En cristiano.** No salían en el catálogo porque tenían **averías abiertas de pruebas anteriores** que bloquean la venta. No era un bug: era estado legítimo.
+
+**Solución (operación real).** Se resolvieron las 3 incidencias con la API de mantenimiento (acción `resolve`). Verificación: `/catalogo?buscar=101` muestra sus 4 noches, `/catalogo?buscar=102` las suyas, y el asistente confirma disponibilidad y precio. ✅
+
+### 12.5 Estado tras la segunda ronda
+
+| Corrección | Estado |
+|---|---|
+| Fallback determinista ante respuesta vacía | ✅ desplegado y verificado en producción |
+| 3 intentos ante texto inservible | ✅ tests + despliegue |
+| Compras múltiples en un turno | ✅ `preparedPurchases: 3` verificado |
+| Habitación/fecha derivadas del `tokenId` | ✅ verificado (fallback con datos completos) |
+| Check-in en IaC y documentación | ✅ script + docs; API 200 |
+| Incidencias 101/102 resueltas | ✅ catálogo y asistente |
+| Subasta secundaria del huésped (3.2) | ⏳ **pendiente de decisión de producto** (§7) |

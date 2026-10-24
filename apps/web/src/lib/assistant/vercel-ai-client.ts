@@ -55,10 +55,12 @@ const MAX_RETRIES = 1;
  * Medido en H4, Gemini 2.5 Flash-Lite falla de dos maneras que `maxRetries` del SDK no cubre (no son
  * errores de protocolo): devuelve un candidato **sin texto** (~40 % de las respuestas antes de esta
  * guarda) o escribe la llamada a la herramienta **como texto** (`tool_code` + `print(default_api…)`),
- * que el huésped vería en pantalla. Ambas se reintentan una vez. El consumo de los intentos se
+ * que el huésped vería en pantalla. Ambas se reintentan **dos veces** (tres intentos en total).
+ * Medido en el pool E2E del 2026-10-24: el proveedor encadenó varias respuestas vacías seguidas.
+ * El consumo de los intentos se
  * **suma** porque el proveedor los factura todos.
  */
-const MAX_EMPTY_RETRIES = 1;
+const MAX_EMPTY_RETRIES = 2;
 
 /** Detector de la pseudollamada escrita como texto. */
 const PSEUDO_TOOL_CALL = /(\btool_code\b|\bdefault_api\s*\.|\bprint\s*\(\s*default_api)/i;

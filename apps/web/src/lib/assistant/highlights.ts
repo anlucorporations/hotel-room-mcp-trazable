@@ -1,4 +1,4 @@
-import type { NightType } from "@hotel/shared/domain";
+import { decodeTokenId, roomTypeOf, type NightType } from "@hotel/shared/domain";
 
 /**
  * **Noches destacadas del turno** (petición del responsable, 2026-10-11): el formato amigable de las
@@ -53,16 +53,40 @@ function asType(value: unknown): NightType | null {
     : null;
 }
 
+/** `tokenId` (habitación·fecha) → `{ room, dateYYYYMMDD }`, o `null` si no tiene forma numérica. */
+function decodeNightToken(tokenId: string): { room: number; dateYYYYMMDD: number } | null {
+  if (!/^\d{5,}$/.test(tokenId)) return null;
+  try {
+    return decodeTokenId(BigInt(tokenId));
+  } catch {
+    return null;
+  }
+}
+
 /** Normaliza un descriptor de noche; `null` si no tiene ni tokenId (nada que ofrecer). */
 function toHighlight(value: unknown): NightHighlight | null {
   if (!isRecord(value)) return null;
   const tokenId = asString(value.tokenId);
   if (tokenId === null) return null;
+  let room = asNumber(value.room);
+  let dateYYYYMMDD = asNumber(value.dateYYYYMMDD);
+  let type = asType(value.type);
+  // `checkAvailability` solo devuelve `{tokenId, priceWei, saleType}`: habitación y fecha viven en el
+  // tokenId. Sin esto, la tarjeta salía sin habitación/fecha y el fallback determinista del
+  // asistente no podía decir qué noche era (defecto visto en el pool E2E del 2026-10-24).
+  if (room === null || dateYYYYMMDD === null || type === null) {
+    const decoded = decodeNightToken(tokenId);
+    if (decoded !== null) {
+      room ??= decoded.room;
+      dateYYYYMMDD ??= decoded.dateYYYYMMDD;
+      type ??= roomTypeOf(decoded.room);
+    }
+  }
   return {
     tokenId,
-    room: asNumber(value.room),
-    type: asType(value.type),
-    dateYYYYMMDD: asNumber(value.dateYYYYMMDD),
+    room,
+    type,
+    dateYYYYMMDD,
     priceWei: asString(value.priceWei),
     saleType: asString(value.saleType),
   };

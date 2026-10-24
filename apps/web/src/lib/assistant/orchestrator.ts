@@ -1,3 +1,4 @@
+import { formatEther } from "viem";
 import type { PurchaseTxData } from "@hotel/shared/domain";
 import type { LlmClient } from "./llm";
 import type { ToolGateway } from "./tools-gateway";
@@ -56,9 +57,66 @@ const EMPTY_REPLY_FALLBACK =
  * de ofrecerse; la garantía frente a «noche equivocada» NO es el tokenId (que afirma el LLM) sino
  * el precio on-chain + el contrato + la revisión del usuario en el handoff (MINOR#20/#25).
  */
+/** `AAAAMMDD` → `dd/mm/aaaa` (o `null` si no tiene forma de fecha). */
+function formatNightDate(dateYYYYMMDD: number | null): string | null {
+  if (dateYYYYMMDD === null) return null;
+  const raw = String(dateYYYYMMDD);
+  if (raw.length !== 8) return null;
+  return `${raw.slice(6, 8)}/${raw.slice(4, 6)}/${raw.slice(0, 4)}`;
+}
+
+/** Precio `wei` → `0,05 ETH` (o `null` si no es convertible). */
+function formatPriceEth(priceWei: string | null): string | null {
+  if (priceWei === null) return null;
+  try {
+    return `${formatEther(BigInt(priceWei))} ETH`;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * **Apoyo determinista** cuando el proveedor devuelve texto inservible.
+ *
+ * El fallback genérico («reformula la pregunta») es honesto pero inútil: si el turno ya consultó el
+ * catálogo o preparó compras, el usuario tiene delante la información real y solo necesita saber qué
+ * hacer. Se compone una respuesta con **datos que ya devolvieron las herramientas** (nunca inventados):
+ *   1. compras preparadas → «revísalas y fírmalas»;
+ *   2. noches encontradas → lista con habitación, tipo, fecha y precio en ETH;
+ *   3. si no hay nada, `null` y se usa el mensaje genérico.
+ */
+function deterministicSupportReply(
+  preparedPurchases: readonly PreparedPurchase[],
+  highlights: readonly NightHighlight[],
+): string | null {
+  if (preparedPurchases.length > 0) {
+    const count = preparedPurchases.length;
+    return count === 1
+      ? "He preparado la compra de la noche. Revísala y fírmala en tu cartera para completar la reserva."
+      : `He preparado las compras de ${count} noches. Revísalas y fírmalas en tu cartera para completar la reserva.`;
+  }
+  if (highlights.length === 0) return null;
+  const lines = highlights.slice(0, 5).map((highlight) => {
+    const parts: string[] = [];
+    if (highlight.room !== null) parts.push(`Habitación ${highlight.room}`);
+    if (highlight.type !== null) parts.push(highlight.type);
+    const date = formatNightDate(highlight.dateYYYYMMDD);
+    if (date !== null) parts.push(`del ${date}`);
+    const price = formatPriceEth(highlight.priceWei);
+    const head = parts.join(" ");
+    return `- ${head}${price !== null ? ` por ${price}` : ""}`;
+  });
+  return `Estas son las noches que he encontrado:\n${lines.join("\n")}\nPuedes preparar la reserva desde la tarjeta de cada noche.`;
+}
+
 /** Garantiza que el usuario recibe algo legible: ni vacío ni una pseudollamada en texto. */
-function replyOrFallback(text: string): string {
-  return isUnusableText(text) ? EMPTY_REPLY_FALLBACK : text;
+function replyOrFallback(
+  text: string,
+  preparedPurchases: readonly PreparedPurchase[] = [],
+  highlights: readonly NightHighlight[] = [],
+): string {
+  if (!isUnusableText(text)) return text;
+  return deterministicSupportReply(preparedPurchases, highlights) ?? EMPTY_REPLY_FALLBACK;
 }
 
 export async function runAssistant(
@@ -103,7 +161,7 @@ export async function runAssistant(
     usage = addUsage(usage, res.usage ?? EMPTY_USAGE);
     if (res.toolUses.length === 0) {
       return {
-        reply: replyOrFallback(res.text),
+        reply: replyOrFallback(res.text, preparedPurchases, highlights),
         domainToolCalls,
         preparedPurchase: preparedPurchases[0] ?? null,
         preparedPurchases,
@@ -145,7 +203,7 @@ export async function runAssistant(
   llmCalls += 1;
   usage = addUsage(usage, closing.usage ?? EMPTY_USAGE);
   return {
-    reply: replyOrFallback(closing.text),
+    reply: replyOrFallback(closing.text, preparedPurchases, highlights),
     domainToolCalls,
     preparedPurchase: preparedPurchases[0] ?? null,
     preparedPurchases,

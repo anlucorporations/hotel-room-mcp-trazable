@@ -58,10 +58,17 @@ describe("SYSTEM_PROMPT — secuencia de preparación de la compra", () => {
     // «directamente» con un tokenId que calculaba él (una sola llamada), el MCP lo rechazaba y el
     // usuario recibía «el tokenId no es válido» sin ninguna reserva preparada. La regla ahora obliga
     // a la secuencia checkAvailability → buildPurchaseTx dentro del mismo turno.
-    expect(SYSTEM_PROMPT).toMatch(/obtén el tokenId llamando a checkAvailability/i);
+    expect(SYSTEM_PROMPT).toMatch(/obtén el tokenId con checkAvailability/i);
     expect(SYSTEM_PROMPT).toMatch(/buildPurchaseTx con ESE tokenId/i);
     expect(SYSTEM_PROMPT).toMatch(/No calcules ni inventes el tokenId/i);
     expect(SYSTEM_PROMPT).toMatch(/EN ESTE MISMO turno/i);
+  });
+
+  it("no pide confirmación extra si el mensaje ya trae habitación y fecha", () => {
+    // Corrección del pool E2E (2026-10-24): con el tope de 4 preguntas, el asistente gastaba un
+    // turno en pedir confirmación incluso cuando el usuario ya había dicho qué noche quería.
+    expect(SYSTEM_PROMPT).toMatch(/ya indica habitación y fecha concretas y pide comprar\/reservar, NO pidas confirmación/i);
+    expect(SYSTEM_PROMPT).toMatch(/en ese mismo turno/i);
   });
 });
 

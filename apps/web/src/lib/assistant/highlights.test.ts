@@ -63,6 +63,11 @@ describe("highlightsFromToolResult · checkAvailability", () => {
     });
     expect(disponible).toHaveLength(1);
     expect(disponible[0]!.tokenId).toBe("10120261012");
+    // `checkAvailability` no devuelve habitación/fecha/tipo: se derivan del tokenId para que la
+    // tarjeta y el fallback determinista sepan QUÉ noche es (defecto del pool E2E 2026-10-24).
+    expect(disponible[0]!.room).toBe(101);
+    expect(disponible[0]!.dateYYYYMMDD).toBe(20261012);
+    expect(disponible[0]!.type).toBe("simple");
 
     // No disponible: no hay nada que ofrecer (el texto del asistente explica el motivo).
     expect(

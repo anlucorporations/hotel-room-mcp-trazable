@@ -1,0 +1,127 @@
+[
+  {
+    "id": "compra-3-noches",
+    "question": "Compra la habitación 104 para el 17 de noviembre de 2026, la 118 para el 20 de noviembre de 2026 y la 213 para el 23 de noviembre de 2026.",
+    "status": 200,
+    "reply": "He preparado la compra de las tres noches. Deberás firmar tres transacciones en tu wallet:\n\n*   Habitación 104 para el 17 de noviembre de 2026 por 0.05 ETH.\n*   Habitación 118 para el 20 de noviembre de 2026 por 0.09 ETH.\n*   Habitación 213 para el 23 de noviembre de 2026 por 0.25 ETH.",
+    "preparedPurchases": [
+      {
+        "tokenId": "10420261117",
+        "tx": {
+          "to": "0x8b1B398b9c49AFE6394aaE438f6F2E8039120253",
+          "data": "0xd96a094a000000000000000000000000000000000000000000000000000000026d1890fd",
+          "value": "50000000000000000",
+          "chainId": 81234
+        }
+      },
+      {
+        "tokenId": "11820261120",
+        "tx": {
+          "to": "0x8b1B398b9c49AFE6394aaE438f6F2E8039120253",
+          "data": "0xd96a094a00000000000000000000000000000000000000000000000000000002c08adf00",
+          "value": "90000000000000000",
+          "chainId": 81234
+        }
+      },
+      {
+        "tokenId": "21320261123",
+        "tx": {
+          "to": "0x8b1B398b9c49AFE6394aaE438f6F2E8039120253",
+          "data": "0xd96a094a00000000000000000000000000000000000000000000000000000004f6c95e03",
+          "value": "250000000000000000",
+          "chainId": 81234
+        }
+      }
+    ],
+    "highlights": [
+      {
+        "tokenId": "10420261117",
+        "room": 104,
+        "type": "simple",
+        "dateYYYYMMDD": 20261117,
+        "priceWei": "50000000000000000",
+        "saleType": "PRIMARY"
+      },
+      {
+        "tokenId": "11820261120",
+        "room": 118,
+        "type": "doble",
+        "dateYYYYMMDD": 20261120,
+        "priceWei": "90000000000000000",
+        "saleType": "PRIMARY"
+      },
+      {
+        "tokenId": "21320261123",
+        "room": 213,
+        "type": "suite",
+        "dateYYYYMMDD": 20261123,
+        "priceWei": "250000000000000000",
+        "saleType": "PRIMARY"
+      }
+    ],
+    "domainToolCalls": 6
+  },
+  {
+    "id": "precio-101",
+    "question": "¿Cuánto cuesta la habitación 101 para el 5 de noviembre de 2026?",
+    "status": 200,
+    "reply": "Estas son las noches que he encontrado:\n- Habitación 101 simple del 05/11/2026 por 0.05 ETH\nPuedes preparar la reserva desde la tarjeta de cada noche.",
+    "preparedPurchases": [],
+    "highlights": [
+      {
+        "tokenId": "10120261105",
+        "room": 101,
+        "type": "simple",
+        "dateYYYYMMDD": 20261105,
+        "priceWei": "50000000000000000",
+        "saleType": "PRIMARY"
+      }
+    ],
+    "domainToolCalls": 1
+  },
+  {
+    "id": "precio-116",
+    "question": "Precio de la habitación 116 para el 10 de noviembre de 2026.",
+    "status": 200,
+    "reply": "La habitación 116 no está disponible para el 10 de noviembre de 2026. ¿Te gustaría que buscara disponibilidad en otras fechas o para otro tipo de habitación?",
+    "preparedPurchases": [],
+    "highlights": [],
+    "domainToolCalls": 1
+  },
+  {
+    "id": "disponibilidad-102",
+    "question": "¿Está disponible la habitación 102 para el 8 de noviembre de 2026?",
+    "status": 200,
+    "reply": "Sí, la habitación 102 está disponible para el 8 de noviembre de 2026. El precio es de 0.05 ETH.",
+    "preparedPurchases": [],
+    "highlights": [
+      {
+        "tokenId": "10220261108",
+        "room": 102,
+        "type": "simple",
+        "dateYYYYMMDD": 20261108,
+        "priceWei": "50000000000000000",
+        "saleType": "PRIMARY"
+      }
+    ],
+    "domainToolCalls": 1
+  },
+  {
+    "id": "subasta",
+    "question": "¿Cómo pujo en una subasta de suite?",
+    "status": 200,
+    "reply": "No puedes subastar tus noches. Si quieres vender una noche que posees, puedes listar tu noche en la sección de reventa. Si quieres pujar en una subasta, debes ir a la sección de subastas, elegir la noche que te interese y pujar igual o por encima del precio mínimo. Luego, deberás firmar la transacción en tu wallet.",
+    "preparedPurchases": [],
+    "highlights": [],
+    "domainToolCalls": 0
+  },
+  {
+    "id": "checkin",
+    "question": "¿Cómo hago el check-in de una noche que tengo?",
+    "status": 200,
+    "reply": "Para hacer el check-in de una noche que ya posees, debes seguir estos pasos:\n1. Ve a la sección \"Mis noches\" en tu cuenta.\n2. Selecciona \"Ver mi resguardo QR\".\n3. Firma la transacción con tu wallet para generar el QR.\n4. Presenta el QR en recepción para que lo escaneen y marquen tu noche como utilizada.",
+    "preparedPurchases": [],
+    "highlights": [],
+    "domainToolCalls": 0
+  }
+]
