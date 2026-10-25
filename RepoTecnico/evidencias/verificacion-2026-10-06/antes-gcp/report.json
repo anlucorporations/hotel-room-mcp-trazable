@@ -1,0 +1,1691 @@
+{
+  "base": "https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app",
+  "label": "antes-gcp",
+  "at": "2026-10-06T20:41:10.940Z",
+  "results": [
+    {
+      "kind": "login",
+      "ok": true,
+      "status": 200,
+      "role": null,
+      "h1": "Dashboard"
+    },
+    {
+      "kind": "api",
+      "route": "/api/health",
+      "status": 200,
+      "body": "{\"status\":\"ok\",\"service\":\"web\"}"
+    },
+    {
+      "kind": "page",
+      "route": "/",
+      "status": 200,
+      "ms": 12537,
+      "h1": "Tu noche frente al Mediterráneo, en propiedad.",
+      "screenshot": "02-home.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked.",
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked.",
+        "[error] Connecting to 'https://cca-lite.coinbase.com/metrics' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked.",
+        "[error] Fetch API cannot load https://cca-lite.coinbase.com/metrics. Refused to connect because it violates the document's Content Security Policy.",
+        "[error] Analytics SDK: TypeError: Failed to fetch\n    at _t (<anonymous>:1:64025)\n    at <anonymous>:1:68106 {context: AnalyticsSDKApiError}"
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 2484,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "wallet-menu-button",
+          "wallet-menu-title",
+          "booking-bar"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/empresa",
+      "status": 200,
+      "ms": 5466,
+      "h1": "Un hotel pequeño en el paseo marítimo de Alicante",
+      "screenshot": "03-empresa.png",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 1611,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "wallet-menu-button",
+          "wallet-menu-title"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/instalaciones",
+      "status": 200,
+      "ms": 7273,
+      "h1": "Cómo se distribuye el hotel",
+      "screenshot": "04-instalaciones.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked.",
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 1567,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "wallet-menu-button",
+          "wallet-menu-title"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/servicios",
+      "status": 200,
+      "ms": 6736,
+      "h1": "Todo lo necesario para no preocuparte por nada",
+      "screenshot": "05-servicios.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/metrics' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked.",
+        "[error] Fetch API cannot load https://cca-lite.coinbase.com/metrics. Refused to connect because it violates the document's Content Security Policy.",
+        "[error] Analytics SDK: TypeError: Failed to fetch\n    at _t (<anonymous>:1:64025)\n    at <anonymous>:1:68106 {context: AnalyticsSDKApiError}",
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked.",
+        "[error] Connecting to 'https://cca-lite.coinbase.com/metrics' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked.",
+        "[error] Fetch API cannot load https://cca-lite.coinbase.com/metrics. Refused to connect because it violates the document's Content Security Policy.",
+        "[error] Analytics SDK: TypeError: Failed to fetch\n    at _t (<anonymous>:1:64025)\n    at <anonymous>:1:68106 {context: AnalyticsSDKApiError}"
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 1293,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "wallet-menu-button",
+          "wallet-menu-title"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/habitaciones",
+      "status": 200,
+      "ms": 6781,
+      "h1": "Tres tipos de habitación, una misma costa",
+      "screenshot": "06-habitaciones.png",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 1586,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "wallet-menu-button",
+          "wallet-menu-title"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/experiencias",
+      "status": 200,
+      "ms": 4500,
+      "h1": "Experiencia",
+      "screenshot": "07-experiencias.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 482,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "wallet-menu-button",
+          "wallet-menu-title"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/actividades",
+      "status": 200,
+      "ms": 5477,
+      "h1": "Actividades",
+      "screenshot": "08-actividades.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 533,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "wallet-menu-button",
+          "wallet-menu-title"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/planes",
+      "status": 200,
+      "ms": 5487,
+      "h1": "Planes",
+      "screenshot": "09-planes.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 495,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "wallet-menu-button",
+          "wallet-menu-title"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/resenas",
+      "status": 200,
+      "ms": 3767,
+      "h1": "Reseñas",
+      "screenshot": "10-resenas.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 498,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "wallet-menu-button",
+          "wallet-menu-title"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/contacto",
+      "status": 200,
+      "ms": 13014,
+      "h1": "Contacto",
+      "screenshot": "11-contacto.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 820,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "wallet-menu-button",
+          "wallet-menu-title"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/catalogo",
+      "status": 200,
+      "ms": 10725,
+      "h1": "Catálogo de noches",
+      "screenshot": "12-catalogo.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked.",
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 2780,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "wallet-menu-button",
+          "wallet-menu-title",
+          "booking-bar",
+          "result-count",
+          "filter-search",
+          "filter-max-price",
+          "filter-date-from",
+          "filter-date-to",
+          "catalog-grid",
+          "night-card-10120261007",
+          "buy-button-10120261007",
+          "night-card-10120261008",
+          "buy-button-10120261008",
+          "night-card-10120261009",
+          "buy-button-10120261009",
+          "night-card-10120261010",
+          "buy-button-10120261010",
+          "night-card-10120261011",
+          "buy-button-10120261011",
+          "night-card-10120261012",
+          "buy-button-10120261012",
+          "night-card-10120261013",
+          "buy-button-10120261013",
+          "night-card-10120261014",
+          "buy-button-10120261014",
+          "night-card-10120261015",
+          "buy-button-10120261015",
+          "night-card-10120261016",
+          "buy-button-10120261016",
+          "night-card-10120261017",
+          "buy-button-10120261017",
+          "night-card-10120261018",
+          "buy-button-10120261018",
+          "load-more"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/reservar",
+      "status": 200,
+      "ms": 4999,
+      "h1": "Reserva tu noche",
+      "screenshot": "13-reservar.png",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 634,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "wallet-menu-button",
+          "wallet-menu-title",
+          "no-wallet"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/reventa",
+      "status": 200,
+      "ms": 4979,
+      "h1": "Mercado de reventa",
+      "screenshot": "14-reventa.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 748,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "wallet-menu-button",
+          "wallet-menu-title",
+          "resale-count",
+          "resale-grid",
+          "night-card-10120261027",
+          "buy-button-10120261027"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/historico",
+      "status": 200,
+      "ms": 4538,
+      "h1": "Histórico de ventas",
+      "screenshot": "15-historico.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 895,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "wallet-menu-button",
+          "wallet-menu-title",
+          "history-row",
+          "history-row",
+          "history-row",
+          "history-row",
+          "history-row",
+          "history-row",
+          "history-row",
+          "history-row"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/mis-noches",
+      "status": 200,
+      "ms": 5964,
+      "h1": "Mis noches",
+      "screenshot": "16-mis-noches.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 577,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "wallet-menu-button",
+          "wallet-menu-title",
+          "no-wallet"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/mis-noches/mis-reventas",
+      "status": 200,
+      "ms": 4756,
+      "h1": "Mis reventas",
+      "screenshot": "17-mis-noches-mis-reventas.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 575,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "wallet-menu-button",
+          "wallet-menu-title",
+          "no-wallet"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/checkin",
+      "status": 200,
+      "ms": 5780,
+      "h1": "Resguardo de check-in",
+      "screenshot": "18-checkin.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 597,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "wallet-menu-button",
+          "wallet-menu-title"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/ayuda",
+      "status": 200,
+      "ms": 19213,
+      "h1": "Ayuda y manuales",
+      "screenshot": "19-ayuda.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked.",
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked.",
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked.",
+        "[error] Connecting to 'https://cca-lite.coinbase.com/metrics' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked.",
+        "[error] Fetch API cannot load https://cca-lite.coinbase.com/metrics. Refused to connect because it violates the document's Content Security Policy.",
+        "[error] Analytics SDK: TypeError: Failed to fetch\n    at _t (<anonymous>:1:64025)\n    at <anonymous>:1:68106 {context: AnalyticsSDKApiError}"
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 12338,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "wallet-menu-button",
+          "wallet-menu-title"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/ayuda/cliente",
+      "status": 200,
+      "ms": 11769,
+      "h1": "Manual del cliente — Hotel Marina del Sol",
+      "screenshot": "20-ayuda-cliente.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked.",
+        "[error] Connecting to 'https://cca-lite.coinbase.com/metrics' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked.",
+        "[error] Fetch API cannot load https://cca-lite.coinbase.com/metrics. Refused to connect because it violates the document's Content Security Policy.",
+        "[error] Analytics SDK: TypeError: Failed to fetch\n    at _t (<anonymous>:1:64025)\n    at <anonymous>:1:68106 {context: AnalyticsSDKApiError}"
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 14732,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "wallet-menu-button",
+          "wallet-menu-title"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/ayuda/comprador",
+      "status": 200,
+      "ms": 10734,
+      "h1": "Guía del comprador — Hotel Marina del Sol",
+      "screenshot": "21-ayuda-comprador.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 14547,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "wallet-menu-button",
+          "wallet-menu-title"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/ayuda/recepcion",
+      "status": 200,
+      "ms": 10253,
+      "h1": "Manual de recepción — Hotel Marina del Sol",
+      "screenshot": "22-ayuda-recepcion.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/metrics' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked.",
+        "[error] Fetch API cannot load https://cca-lite.coinbase.com/metrics. Refused to connect because it violates the document's Content Security Policy.",
+        "[error] Analytics SDK: TypeError: Failed to fetch\n    at _t (<anonymous>:1:64025)\n    at <anonymous>:1:68106 {context: AnalyticsSDKApiError}",
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked.",
+        "[error] Connecting to 'https://cca-lite.coinbase.com/metrics' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked.",
+        "[error] Fetch API cannot load https://cca-lite.coinbase.com/metrics. Refused to connect because it violates the document's Content Security Policy.",
+        "[error] Analytics SDK: TypeError: Failed to fetch\n    at _t (<anonymous>:1:64025)\n    at <anonymous>:1:68106 {context: AnalyticsSDKApiError}"
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 13688,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "wallet-menu-button",
+          "wallet-menu-title"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/asistente",
+      "status": 200,
+      "ms": 3266,
+      "h1": "Asistente IA",
+      "screenshot": "23-asistente.png",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 661,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "wallet-menu-button",
+          "wallet-menu-title",
+          "assistant-suggestions",
+          "assistant-input",
+          "assistant-send"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/privacidad",
+      "status": 200,
+      "ms": 4721,
+      "h1": "Privacidad",
+      "screenshot": "24-privacidad.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 1302,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "wallet-menu-button",
+          "wallet-menu-title"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/terminos",
+      "status": 200,
+      "ms": 4499,
+      "h1": "Términos del servicio",
+      "screenshot": "25-terminos.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 2259,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "wallet-menu-button",
+          "wallet-menu-title"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/admin/dashboard",
+      "status": 200,
+      "ms": 7261,
+      "h1": "Dashboard",
+      "screenshot": "26-admin-dashboard.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 1535,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "admin-sidebar-collapse",
+          "nav-section-habitacion",
+          "nav-section-recepcion",
+          "nav-section-housekeeping",
+          "nav-section-actividades",
+          "nav-section-mantenimiento",
+          "nav-section-administracion",
+          "admin-session-block",
+          "wallet-menu-button",
+          "wallet-menu-title",
+          "admin-roles",
+          "nav-section-plataforma",
+          "nav-section-sistemas",
+          "admin-nav-toggle",
+          "admin-help-link",
+          "dashboard-period",
+          "dashboard-timezone",
+          "dashboard-asof",
+          "metric-primary-volume",
+          "metric-royalties",
+          "metric-secondary-volume",
+          "metric-sold",
+          "metric-minted",
+          "metric-burned",
+          "metric-occupancy",
+          "chart-monthly",
+          "chart-room-type",
+          "top-resold-empty"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/admin/mint",
+      "status": 404,
+      "ms": 3517,
+      "h1": "404",
+      "screenshot": "27-admin-mint.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked.",
+        "[error] Failed to load resource: the server responded with a status of 404 ()",
+        "[error] Failed to load resource: the server responded with a status of 404 ()",
+        "[error] Error checking Cross-Origin-Opener-Policy: HTTP error! status: 404"
+      ],
+      "pageErrors": [],
+      "failed": [
+        "404 https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app/admin/mint",
+        "404 https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app/admin/mint"
+      ],
+      "navError": null,
+      "signals": {
+        "bodyChars": 63,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": []
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/admin/habitacion",
+      "status": 200,
+      "ms": 4490,
+      "h1": "Back-office · Habitaciones",
+      "screenshot": "28-admin-habitacion.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 563,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "admin-sidebar-collapse",
+          "nav-section-habitacion",
+          "nav-section-recepcion",
+          "nav-section-housekeeping",
+          "nav-section-actividades",
+          "nav-section-mantenimiento",
+          "nav-section-administracion",
+          "admin-session-block",
+          "wallet-menu-button",
+          "wallet-menu-title",
+          "admin-roles",
+          "nav-section-plataforma",
+          "nav-section-sistemas",
+          "admin-nav-toggle",
+          "admin-help-link",
+          "role-denied"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/admin/habitacion/publicar",
+      "status": 200,
+      "ms": 6485,
+      "h1": "Back-office · Publicar",
+      "screenshot": "29-admin-habitacion-publicar.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 954,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "admin-sidebar-collapse",
+          "nav-section-habitacion",
+          "nav-section-recepcion",
+          "nav-section-housekeeping",
+          "nav-section-actividades",
+          "nav-section-mantenimiento",
+          "nav-section-administracion",
+          "admin-session-block",
+          "wallet-menu-button",
+          "wallet-menu-title",
+          "admin-roles",
+          "nav-section-plataforma",
+          "nav-section-sistemas",
+          "admin-nav-toggle",
+          "admin-help-link",
+          "calendario-habitaciones",
+          "board-view-day",
+          "board-view-week",
+          "board-view-month",
+          "board-view-quarter",
+          "board-prev",
+          "board-heading",
+          "board-next",
+          "board-day-2026-10-01",
+          "board-day-2026-10-02",
+          "board-day-2026-10-03",
+          "board-day-2026-10-04",
+          "board-day-2026-10-05",
+          "board-day-2026-10-06",
+          "board-day-2026-10-07",
+          "board-day-2026-10-08",
+          "board-day-2026-10-09",
+          "board-day-2026-10-10",
+          "board-day-2026-10-11",
+          "board-day-2026-10-12",
+          "board-day-2026-10-13",
+          "board-day-2026-10-14",
+          "board-day-2026-10-15",
+          "board-day-2026-10-16",
+          "board-day-2026-10-17"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/admin/actividades",
+      "status": 200,
+      "ms": 3758,
+      "h1": "Actividades",
+      "screenshot": "30-admin-actividades.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked.",
+        "[error] Failed to load resource: the server responded with a status of 403 ()",
+        "[error] Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "pageErrors": [],
+      "failed": [
+        "403 https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app/api/admin/actividades/schedules",
+        "403 https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app/api/admin/actividades/activities"
+      ],
+      "navError": null,
+      "signals": {
+        "bodyChars": 184,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "activities-role-denied"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/admin/resenas",
+      "status": 200,
+      "ms": 3997,
+      "h1": "Reseñas",
+      "screenshot": "31-admin-resenas.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked.",
+        "[error] Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "pageErrors": [],
+      "failed": [
+        "403 https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app/api/admin/reviews?status=PENDING"
+      ],
+      "navError": null,
+      "signals": {
+        "bodyChars": 172,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "reviews-role-denied"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/admin/contenido",
+      "status": 200,
+      "ms": 4021,
+      "h1": "Contenido de la web",
+      "screenshot": "32-admin-contenido.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked.",
+        "[error] Failed to load resource: the server responded with a status of 403 ()",
+        "[error] Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "pageErrors": [],
+      "failed": [
+        "403 https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app/api/admin/content/images?section=HERO",
+        "403 https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app/api/admin/content/offers"
+      ],
+      "navError": null,
+      "signals": {
+        "bodyChars": 203,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "content-role-denied"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/admin/roles",
+      "status": 200,
+      "ms": 4502,
+      "h1": "Roles y ownership",
+      "screenshot": "33-admin-roles.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 622,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "admin-sidebar-collapse",
+          "nav-section-habitacion",
+          "nav-section-recepcion",
+          "nav-section-housekeeping",
+          "nav-section-actividades",
+          "nav-section-mantenimiento",
+          "nav-section-administracion",
+          "admin-session-block",
+          "wallet-menu-button",
+          "wallet-menu-title",
+          "admin-roles",
+          "nav-section-plataforma",
+          "nav-section-sistemas",
+          "admin-nav-toggle",
+          "admin-help-link",
+          "role-denied"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/admin/royalty",
+      "status": 200,
+      "ms": 4750,
+      "h1": "Royalty",
+      "screenshot": "34-admin-royalty.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 626,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "admin-sidebar-collapse",
+          "nav-section-habitacion",
+          "nav-section-recepcion",
+          "nav-section-housekeeping",
+          "nav-section-actividades",
+          "nav-section-mantenimiento",
+          "nav-section-administracion",
+          "admin-session-block",
+          "wallet-menu-button",
+          "wallet-menu-title",
+          "admin-roles",
+          "nav-section-plataforma",
+          "nav-section-sistemas",
+          "admin-nav-toggle",
+          "admin-help-link",
+          "role-denied"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/admin/fondos",
+      "status": 200,
+      "ms": 4776,
+      "h1": "Fondos",
+      "screenshot": "35-admin-fondos.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 598,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "admin-sidebar-collapse",
+          "nav-section-habitacion",
+          "nav-section-recepcion",
+          "nav-section-housekeeping",
+          "nav-section-actividades",
+          "nav-section-mantenimiento",
+          "nav-section-administracion",
+          "admin-session-block",
+          "wallet-menu-button",
+          "wallet-menu-title",
+          "admin-roles",
+          "nav-section-plataforma",
+          "nav-section-sistemas",
+          "admin-nav-toggle",
+          "admin-help-link",
+          "role-denied"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/admin/caducadas",
+      "status": 200,
+      "ms": 4995,
+      "h1": "Noches caducadas",
+      "screenshot": "36-admin-caducadas.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 521,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "admin-sidebar-collapse",
+          "nav-section-habitacion",
+          "nav-section-recepcion",
+          "nav-section-housekeeping",
+          "nav-section-actividades",
+          "nav-section-mantenimiento",
+          "nav-section-administracion",
+          "admin-session-block",
+          "wallet-menu-button",
+          "wallet-menu-title",
+          "admin-roles",
+          "nav-section-plataforma",
+          "nav-section-sistemas",
+          "admin-nav-toggle",
+          "admin-help-link",
+          "role-denied"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/admin/seguridad",
+      "status": 200,
+      "ms": 5459,
+      "h1": "Seguridad y mis datos",
+      "screenshot": "37-admin-seguridad.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 589,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "admin-sidebar-collapse",
+          "nav-section-habitacion",
+          "nav-section-recepcion",
+          "nav-section-housekeeping",
+          "nav-section-actividades",
+          "nav-section-mantenimiento",
+          "nav-section-administracion",
+          "admin-session-block",
+          "wallet-menu-button",
+          "wallet-menu-title",
+          "admin-roles",
+          "nav-section-plataforma",
+          "nav-section-sistemas",
+          "admin-nav-toggle",
+          "admin-help-link",
+          "rotate-mfa",
+          "open-change-password"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/admin/pausa",
+      "status": 200,
+      "ms": 4537,
+      "h1": "Pausa de emergencia",
+      "screenshot": "38-admin-pausa.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 521,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "admin-sidebar-collapse",
+          "nav-section-habitacion",
+          "nav-section-recepcion",
+          "nav-section-housekeeping",
+          "nav-section-actividades",
+          "nav-section-mantenimiento",
+          "nav-section-administracion",
+          "admin-session-block",
+          "wallet-menu-button",
+          "wallet-menu-title",
+          "admin-roles",
+          "nav-section-plataforma",
+          "nav-section-sistemas",
+          "admin-nav-toggle",
+          "admin-help-link",
+          "role-denied"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/admin/sistemas",
+      "status": 200,
+      "ms": 6474,
+      "h1": "Sistemas",
+      "screenshot": "39-admin-sistemas.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 462,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "admin-sidebar-collapse",
+          "nav-section-habitacion",
+          "nav-section-recepcion",
+          "nav-section-housekeeping",
+          "nav-section-actividades",
+          "nav-section-mantenimiento",
+          "nav-section-administracion",
+          "admin-session-block",
+          "wallet-menu-button",
+          "wallet-menu-title",
+          "admin-roles",
+          "nav-section-plataforma",
+          "nav-section-sistemas",
+          "admin-nav-toggle",
+          "admin-help-link",
+          "systems-denied"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/admin/sistemas/ajustes",
+      "status": 200,
+      "ms": 5019,
+      "h1": "Sistemas",
+      "screenshot": "40-admin-sistemas-ajustes.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 472,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "admin-sidebar-collapse",
+          "nav-section-habitacion",
+          "nav-section-recepcion",
+          "nav-section-housekeeping",
+          "nav-section-actividades",
+          "nav-section-mantenimiento",
+          "nav-section-administracion",
+          "admin-session-block",
+          "wallet-menu-button",
+          "wallet-menu-title",
+          "admin-roles",
+          "nav-section-plataforma",
+          "nav-section-sistemas",
+          "admin-nav-toggle",
+          "admin-help-link",
+          "systems-denied"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/admin/sistemas/contratos",
+      "status": 200,
+      "ms": 3730,
+      "h1": "Sistemas",
+      "screenshot": "41-admin-sistemas-contratos.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 474,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "admin-sidebar-collapse",
+          "nav-section-habitacion",
+          "nav-section-recepcion",
+          "nav-section-housekeeping",
+          "nav-section-actividades",
+          "nav-section-mantenimiento",
+          "nav-section-administracion",
+          "admin-session-block",
+          "wallet-menu-button",
+          "wallet-menu-title",
+          "admin-roles",
+          "nav-section-plataforma",
+          "nav-section-sistemas",
+          "admin-nav-toggle",
+          "admin-help-link",
+          "systems-denied"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/admin/sistemas/finanzas",
+      "status": 200,
+      "ms": 4015,
+      "h1": "Sistemas",
+      "screenshot": "42-admin-sistemas-finanzas.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 473,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "admin-sidebar-collapse",
+          "nav-section-habitacion",
+          "nav-section-recepcion",
+          "nav-section-housekeeping",
+          "nav-section-actividades",
+          "nav-section-mantenimiento",
+          "nav-section-administracion",
+          "admin-session-block",
+          "wallet-menu-button",
+          "wallet-menu-title",
+          "admin-roles",
+          "nav-section-plataforma",
+          "nav-section-sistemas",
+          "admin-nav-toggle",
+          "admin-help-link",
+          "systems-denied"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/admin/sistemas/operaciones",
+      "status": 200,
+      "ms": 3469,
+      "h1": "Sistemas",
+      "screenshot": "43-admin-sistemas-operaciones.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 476,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "admin-sidebar-collapse",
+          "nav-section-habitacion",
+          "nav-section-recepcion",
+          "nav-section-housekeeping",
+          "nav-section-actividades",
+          "nav-section-mantenimiento",
+          "nav-section-administracion",
+          "admin-session-block",
+          "wallet-menu-button",
+          "wallet-menu-title",
+          "admin-roles",
+          "nav-section-plataforma",
+          "nav-section-sistemas",
+          "admin-nav-toggle",
+          "admin-help-link",
+          "systems-denied"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/admin/sistemas/usuarios",
+      "status": 200,
+      "ms": 3488,
+      "h1": "Sistemas",
+      "screenshot": "44-admin-sistemas-usuarios.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 473,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "admin-sidebar-collapse",
+          "nav-section-habitacion",
+          "nav-section-recepcion",
+          "nav-section-housekeeping",
+          "nav-section-actividades",
+          "nav-section-mantenimiento",
+          "nav-section-administracion",
+          "admin-session-block",
+          "wallet-menu-button",
+          "wallet-menu-title",
+          "admin-roles",
+          "nav-section-plataforma",
+          "nav-section-sistemas",
+          "admin-nav-toggle",
+          "admin-help-link",
+          "systems-denied"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/admin/housekeeping/lenceria",
+      "status": 200,
+      "ms": 3266,
+      "h1": "Lencería y suministros",
+      "screenshot": "45-admin-housekeeping-lenceria.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked.",
+        "[error] Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "pageErrors": [],
+      "failed": [
+        "403 https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app/api/admin/housekeeping/supplies"
+      ],
+      "navError": null,
+      "signals": {
+        "bodyChars": 199,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "supplies-role-denied"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/admin/mantenimiento/incidencias",
+      "status": 200,
+      "ms": 3986,
+      "h1": "Incidencias",
+      "screenshot": "46-admin-mantenimiento-incidencias.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked.",
+        "[error] Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "pageErrors": [],
+      "failed": [
+        "403 https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app/api/admin/mantenimiento/incidents"
+      ],
+      "navError": null,
+      "signals": {
+        "bodyChars": 159,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "incidents-role-denied"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/admin/mantenimiento/preventivo",
+      "status": 200,
+      "ms": 4008,
+      "h1": "Mantenimiento preventivo",
+      "screenshot": "47-admin-mantenimiento-preventivo.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked.",
+        "[error] Failed to load resource: the server responded with a status of 403 ()",
+        "[error] Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "pageErrors": [],
+      "failed": [
+        "403 https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app/api/admin/mantenimiento/plans",
+        "403 https://hotel-mcp-web-d6jlzeq5yq-ew.a.run.app/api/mantenimiento/tasks?due=2026-10-06"
+      ],
+      "navError": null,
+      "signals": {
+        "bodyChars": 170,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "preventive-role-denied"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/housekeeping",
+      "status": 200,
+      "ms": 5009,
+      "h1": "Back-office · acceso con contraseña y TOTP",
+      "screenshot": "48-housekeeping.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 260,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": true,
+        "dialogs": 0,
+        "testids": [
+          "admin-nav-toggle",
+          "admin-help-link",
+          "admin-username",
+          "admin-password",
+          "admin-sign-in"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/mantenimiento",
+      "status": 200,
+      "ms": 4975,
+      "h1": "Back-office · acceso con contraseña y TOTP",
+      "screenshot": "49-mantenimiento.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 459,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": true,
+        "dialogs": 0,
+        "testids": [
+          "admin-sidebar-collapse",
+          "nav-section-habitacion",
+          "nav-section-recepcion",
+          "nav-section-housekeeping",
+          "nav-section-actividades",
+          "nav-section-mantenimiento",
+          "nav-section-administracion",
+          "admin-session-block",
+          "wallet-menu-button",
+          "wallet-menu-title",
+          "admin-roles",
+          "nav-section-plataforma",
+          "nav-section-sistemas",
+          "admin-nav-toggle",
+          "admin-help-link",
+          "admin-username",
+          "admin-password",
+          "admin-sign-in"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/recepcion",
+      "status": 200,
+      "ms": 5999,
+      "h1": "Puesto de recepción",
+      "screenshot": "50-recepcion.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 1461,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "wallet-menu-button",
+          "wallet-menu-title",
+          "reception-tab-today",
+          "reception-tab-checkin",
+          "reception-tab-checkout",
+          "reception-tab-activities",
+          "reception-date",
+          "reception-stats",
+          "reservations-table",
+          "rooms-grid",
+          "report-open"
+        ]
+      }
+    },
+    {
+      "kind": "page",
+      "route": "/recepcion/reservas",
+      "status": 200,
+      "ms": 4248,
+      "h1": "Reservas",
+      "screenshot": "51-recepcion-reservas.png",
+      "consoleErrors": [
+        "[error] Connecting to 'https://cca-lite.coinbase.com/amp' violates the following Content Security Policy directive: \"connect-src 'self' https://*.alchemy.com https://*.infura.io wss://*.alchemy.com wss://*.infura.io https://*.walletconnect.com wss://*.walletconnect.com https://api.coingecko.com https://mcc-foundry-anvil-slzlptbcla-ew.a.run.app wss://mcc-foundry-anvil-slzlptbcla-ew.a.run.app\". The action has been blocked."
+      ],
+      "pageErrors": [],
+      "failed": [],
+      "navError": null,
+      "signals": {
+        "bodyChars": 851,
+        "hasNextError": false,
+        "hasDegraded": false,
+        "hasEmpty": false,
+        "hasAuthGate": false,
+        "dialogs": 0,
+        "testids": [
+          "wallet-menu-button",
+          "wallet-menu-title",
+          "res-open-create",
+          "res-row-132d9f69-8831-411d-bf3c-c763a551d6c0",
+          "res-row-b461a36e-3d81-4af3-971c-1b8488c2e4ab",
+          "res-row-43cd8995-f053-467d-82ee-e5836102d11f",
+          "res-row-4de9c132-86e5-42a2-a03a-55591ec9bf41",
+          "res-row-be6f025d-c641-4806-bf81-6e901c6a29e4"
+        ]
+      }
+    }
+  ]
+}
