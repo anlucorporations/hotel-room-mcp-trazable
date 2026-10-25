@@ -22,53 +22,59 @@ export async function SuiteCard({ suite, locale }: { suite: HomeSuite; locale: s
   const alt = suite.cover === null ? "" : pick(locale, suite.cover.altEs, suite.cover.altEn, suite.cover.altRu);
 
   return (
-    <li className="overflow-hidden rounded-brand border border-line bg-shell">
-      <div className="grid gap-0 tablet:grid-cols-[minmax(0,20rem)_1fr]">
+    <li className="group flex flex-col">
+      <div className="relative aspect-[4/5] overflow-hidden rounded-brand-sm bg-mist-2">
         {suite.cover ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={contentImageUrl(suite.cover.fileName)}
             alt={alt}
             loading="lazy"
-            className="h-48 w-full object-cover tablet:h-full"
+            className="h-full w-full object-cover transition-transform duration-500 ease-brand group-hover:scale-[1.03]"
           />
-        ) : (
-          <div aria-hidden="true" className="h-24 w-full bg-mist-2 tablet:h-full" />
-        )}
+        ) : null}
+        <p className="absolute left-3 top-3 rounded-pill bg-shell/95 px-3 py-1.5 text-micro font-bold uppercase tracking-[0.12em] text-ink">
+          {t("suites.roomLabel", { number: suite.roomNumber })}
+        </p>
+      </div>
 
-        <div className="flex flex-col justify-between gap-4 p-5">
-          <div>
-            <p className="text-micro font-semibold uppercase tracking-[0.14em] text-coral-text">
+      <div className="flex flex-1 flex-col gap-3 pt-4">
+        <div>
+          <p className="text-micro font-bold uppercase tracking-[0.14em] text-coral-text">
+            {roomType(suite.roomType)}
+          </p>
+          <h3 className="mt-1 font-display text-h3 font-semibold leading-tight">
+            <Link href={`/habitaciones/${suite.roomNumber}`} className="transition-colors hover:text-azure">
               {t("suites.roomLabel", { number: suite.roomNumber })}
-            </p>
-            <h3 className="mt-1 font-display text-h3 font-medium text-ink">{roomType(suite.roomType)}</h3>
-            <dl className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-small text-ink-soft">
-              <div className="flex gap-1.5">
-                <dt className="font-medium text-ink">{t("suites.capacityLabel")}</dt>
-                <dd>{t("suites.capacity", { count: suite.capacity })}</dd>
-              </div>
-              <div className="flex gap-1.5">
-                <dt className="font-medium text-ink">{t("suites.bedsLabel")}</dt>
-                <dd>{suite.beds}</dd>
-              </div>
-              {suite.sizeM2 !== null && (
-                <div className="flex gap-1.5">
-                  <dt className="font-medium text-ink">{t("suites.sizeLabel")}</dt>
-                  <dd>{t("suites.size", { size: suite.sizeM2 })}</dd>
-                </div>
-              )}
-            </dl>
-            {description && <p className="mt-3 max-w-prose text-small text-ink-soft">{description}</p>}
-          </div>
-
-          <div>
-            <Link
-              href="/catalogo"
-              className="inline-flex min-h-touch items-center rounded-pill bg-azure px-5 text-small font-semibold text-shell transition-colors hover:bg-azure-deep"
-            >
-              {t("suites.cta")}
             </Link>
-          </div>
+          </h3>
+          <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-small text-ink-soft">
+            <div className="flex gap-1.5">
+              <dt className="font-medium text-ink">{t("suites.capacityLabel")}</dt>
+              <dd>{t("suites.capacity", { count: suite.capacity })}</dd>
+            </div>
+            <div className="flex gap-1.5">
+              <dt className="font-medium text-ink">{t("suites.bedsLabel")}</dt>
+              <dd>{suite.beds}</dd>
+            </div>
+            {suite.sizeM2 !== null && (
+              <div className="flex gap-1.5">
+                <dt className="font-medium text-ink">{t("suites.sizeLabel")}</dt>
+                <dd>{t("suites.size", { size: suite.sizeM2 })}</dd>
+              </div>
+            )}
+          </dl>
+          {description && <p className="mt-2 max-w-prose text-body-sm text-ink-soft">{description}</p>}
+        </div>
+
+        <div className="mt-auto pt-2">
+          <Link
+            href="/catalogo"
+            className="inline-flex min-h-touch items-center border-b border-line-strong pb-0.5 text-small font-semibold text-azure transition-colors hover:text-azure-deep"
+          >
+            {t("suites.cta")}
+            <span aria-hidden="true" className="ml-1">→</span>
+          </Link>
         </div>
       </div>
     </li>

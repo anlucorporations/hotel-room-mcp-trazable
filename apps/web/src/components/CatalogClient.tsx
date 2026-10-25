@@ -200,7 +200,7 @@ export function CatalogClient({
         onSearchChange={onSearchChange}
       />
 
-      <div className="mx-auto w-full max-w-6xl px-5 py-8">
+      <div className="mx-auto w-full max-w-7xl px-5 py-12 tablet:px-8">
         <h2 className="sr-only">{t("sectionHeading")}</h2>
 
         {/* Estado del contrato (M7): con el contrato en pausa NO se ofrecen compras que revertirían. */}
@@ -212,7 +212,7 @@ export function CatalogClient({
           <div
             data-testid="empty-state"
             role="status"
-            className="flex flex-col items-center rounded-brand-lg border border-dashed border-line bg-mist-2 px-5 py-16 text-center"
+            className="flex flex-col items-center border-t border-line px-5 py-16 text-center"
           >
             <span className="mb-3.5 text-azure opacity-60">
               <EmptyIcon />
@@ -225,7 +225,7 @@ export function CatalogClient({
                 <button
                   type="button"
                   onClick={onClearFilters}
-                  className="mt-5 inline-flex min-h-touch items-center rounded-pill border border-line bg-shell px-5 font-semibold text-ink transition-colors hover:border-azure hover:text-azure"
+                  className="mt-5 inline-flex min-h-touch items-center rounded-pill border border-line-strong bg-shell px-5 font-semibold text-ink transition-colors hover:border-azure hover:text-azure"
                 >
                   {t("clearFilters")}
                 </button>
@@ -241,7 +241,7 @@ export function CatalogClient({
         ) : (
           <ul
             data-testid="catalog-grid"
-            className="grid grid-cols-1 gap-6 tablet:grid-cols-2 tablet:gap-7 desktop:grid-cols-3"
+            className="grid grid-cols-1 gap-8 tablet:grid-cols-2 tablet:gap-8 desktop:grid-cols-3"
           >
             {shown.map((night, index) => (
               <li
@@ -274,7 +274,7 @@ export function CatalogClient({
               data-testid="load-more"
               aria-label={t("loadMore")}
               onClick={onLoadMore}
-              className="inline-flex min-h-touch min-w-[200px] items-center justify-center rounded-pill border border-line bg-shell px-6 font-semibold text-ink transition-colors hover:border-azure hover:text-azure"
+              className="inline-flex min-h-touch min-w-[200px] items-center justify-center rounded-pill border border-line-strong bg-shell px-6 font-semibold text-ink transition-colors hover:border-azure hover:text-azure"
             >
               {t("loadMore")}
             </button>

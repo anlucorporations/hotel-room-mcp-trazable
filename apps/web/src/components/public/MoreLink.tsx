@@ -19,11 +19,11 @@ export function MoreLink({
   section: string;
 }) {
   return (
-    <p className="mt-5">
+    <p className="mt-8">
       <Link
         href={href}
         aria-label={`${label}: ${section}`}
-        className="inline-flex min-h-touch items-center gap-1 rounded-pill border border-azure px-4 text-small font-semibold text-azure transition-colors hover:bg-azure-deep hover:text-shell"
+        className="inline-flex min-h-touch items-center gap-1 border-b border-line-strong pb-0.5 text-small font-semibold text-azure transition-colors hover:text-azure-deep"
       >
         {label}
         <span aria-hidden="true">→</span>

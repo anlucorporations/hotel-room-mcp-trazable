@@ -1,10 +1,14 @@
 # Manual de identidad visual — Hotel Marina del Sol
 
-> **Sistema**: **«Brisa Marina»** · **Versión**: **2.0.0** · **Fecha**: 2026-10
-> **Alcance**: las 5 suites (pública, recepción, housekeeping, mantenimiento, administración) ·
+> **Sistema**: **«Cal & Sal»** (suite pública) + **«Posidonia»** (suite administrativa) ·
+> **Versión**: **3.0.0** · **Fecha**: 2026-10-23
+> **Alcance**: suite pública (27 rutas + layout editorial) y `/admin/**` (AdminLTE con Posidonia) ·
 > Web responsive (ES/EN/RU) · **Alcance del rediseño**: `apps/web` (la app nativa queda fuera, D-49/D-50).
-> **Sustituye a**: «Mediterráneo editorial» v1.2.2 (rediseño completo desde cero aprobado por el
-> responsable; el histórico de versiones se conserva en §8).
+> **Sustituye a**: «Brisa Marina» v2.0.0. Las tablas de §2–§7 se conservan como **histórico de v2**;
+> la fuente vigente de cada identidad son los manuales candidatos
+> [`propuesta-A-cal-y-sal.md`](./propuestas_v3_identidad/propuesta-A-cal-y-sal.md) y
+> [`propuesta-B-posidonia.md`](./propuestas_v3_identidad/propuesta-B-posidonia.md), el preset
+> (público) y `apps/web/src/app/admin-surface.css` (administración).
 >
 > **Fuentes de verdad** (este manual **no** las sustituye, las explica):
 > `packages/config/tailwind/preset.cjs` (tokens) · `apps/web/src/lib/a11y/palette.ts` (espejo medible)
@@ -18,6 +22,36 @@
 >
 > Las tablas de este manual se **derivan del código**: si un token cambia, cambian el preset, el
 > espejo y el guardián — y este documento se actualiza en el mismo commit.
+
+---
+
+## 0. Identidad por superficie (v3.0.0 · 2026-10-23)
+
+La aplicación usa **dos identidades simultáneas** sobre el mismo sistema de componentes y guardianes.
+No se duplica el preset: la suite pública conserva el preset y `:root`; la suite administrativa
+re-viste las mismas utilidades dentro de `.admin-surface` (generado por
+`scripts/design/build-admin-surface.mjs`).
+
+| Superficie | Identidad | Lienzo / acción / oscuro | Tipografías | Dónde se aplica |
+|---|---|---|---|---|
+| Suite pública | **Cal & Sal** | `#F8F3E9` / `#0B5C74` / `#0F2833` | Cormorant Garamond + Onest | `packages/config/tailwind/preset.cjs`, `palette.ts`, `globals.css`, home editorial |
+| Suite administrativa | **Posidonia** | `#F2F8F7` / `#0B6A5A` / `#052528` | Spectral + Inter Tight | `apps/web/src/app/admin-surface.css` + `.admin-surface` en `AdminLayout` |
+
+- **Medición**: 26 pares de layout × 3 identidades y los pares completos de cada manual candidato;
+  `a11y.test.ts` sigue midiendo la identidad pública contra el preset (fuente única) y el generador
+  de la piel administrativa mide B. **0 fallos** en las tres.
+- **Distribución pública**: «Marina Editorial» (referencia Wix wh-1061) documentada en
+  [`RepoTecnico/propuesta_suite_publica/README.md`](./propuesta_suite_publica/README.md).
+- **Tipografías**: las cuatro familias se autohospedan en `apps/web/public/fonts/` y se declaran en `apps/web/src/app/fonts.css` (latin + cyrillic); build y runtime no dependen de Google Fonts.
+- **Rutas**: todas las rutas y su lógica se conservan; el cambio es presentacional. Se añade la ficha pública `/habitaciones/[room]` (presentacional, con datos publicables y fallback al maestro) y **las tarjetas de una noche la enlazan** desde el título y desde el filete «Ver la habitación» (`NightCard`, catálogo y reventa).
+- **Ficha pública**: galería editorial (16/10 + dos 4/3), relato, servicios, políticas y reseñas del tipo a la izquierda, tarjeta de reserva **sticky 7/4** a la derecha; sin precio inventado (remite al catálogo, donde se comprueba contra la cadena). Namespace `roomDetail` en ES/EN/RU.
+- **Back-office**: capturada la **piel Posidonia con sesión de shell** (sidebar con acordeón, cabecera de contenido, bloque de sesión y cifras en estado degradado honesto) en [`evidencias/admin-posidonia-dashboard.png`](./evidencias/admin-posidonia-dashboard.png) y su versión móvil.
+- **Pendiente declarado**: el resto de plantillas editoriales de **contenido institucional** (heredan ya cabecera y pie) y el **modo noche** del personal (propuesto, no aprobado). El detalle por fases vive en [`02-propuesta-suite-publica.md`](./propuesta_suite_publica/02-propuesta-suite-publica.md) §11.
+
+**Verificación de esta versión**: `pnpm --filter @hotel/web exec tsc --noEmit` OK · `vitest run src/lib`
+**620/620** · `next build` **EXIT 0** · `contrast-audit` **51 pares, 0 fallos** · rutas
+`/habitaciones/201`, `/catalogo` y `/admin/dashboard` **200** · capturas de home, catálogo, ficha,
+back-office y móvil en `RepoTecnico/evidencias/`.
 
 ---
 
@@ -301,6 +335,7 @@ Contenido máximo `max-w-6xl` (excepto hero a sangre) y medida de lectura ≤ 66
 
 | Versión | Fecha | Cambios |
 |---|---|---|
+| **3.0.0** | 2026-10-23 | **Identidad por superficie**: suite pública «Cal & Sal» (caliza/azul mar/terracota, Cormorant Garamond + Onest) + suite administrativa «Posidonia» (verde-teal/agua, Spectral + Inter Tight) aplicada con `.admin-surface`; distribución editorial de la suite pública basada en Wix wh-1061; 4 familias con cirílico; guardianes de paleta, contraste, cirílico, piezas de marca y piel admin actualizados; **0 fallos WCAG** en las tres identidades. La app nativa queda fuera (D-49/D-50). |
 | **2.0.0** | 2026-10 | **Rediseño completo «Brisa Marina»** (sustituye a «Mediterráneo editorial»): vocabulario de tokens nuevo (`mist`, `mist-2`, `azure`, `azure-deep`, `navy`, `navy-soft`, `pearl`, `coral`, `coral-text`, `amber`, `fern` + `shell`, `line`, `line-strong`, `ink`, `ink-soft` y los cuatro estados con valores nuevos); tipografías **Playfair Display + Manrope** con cirílico nativo (se retira la cascada de respaldo Fraunces/Hanken/Playfair/Inter); **sombras frías**; velo del hero al 65 % (4,79:1); frontera de controles `line-strong #6B8296`; migración token a token en **142 ficheros** (código, guardianes, `docs/imagenes/*.svg`, maqueta del catálogo, generador de manuales y documentación); `contrast-audit.mjs` reescrito (**50 pares**, 0 fallos); guardián `cyrillic-fonts.test.ts` reescrito para la nueva arquitectura. **Verificado**: 584/584 pruebas de `apps/web`, `pnpm typecheck` y `next build` en verde. **Dos ajustes de diseño por medición**: `warning` `#96690E`→`#8A5F0C` (4,29→4,98:1 sobre su banda) y `fern` `#2E7D57`→`#276E4C` (chip sobre tinte al 10 %: 4,18→5,04:1). |
 | **1.2.2** | 2026-09-29 | Acceso unificado bajo la plantilla (D-82): `AdminSignInScreen` se compone a través de `AdminLayout` con el prop `gate`; se retira `WalletBar` del acceso. |
 | **1.2.1** | 2026-09-29 | Reparto de las barras del back-office (D-80/D-81): la navbar queda para **Ayuda** y el bloque de sesión pasa al panel **Administración**. |
@@ -330,6 +365,7 @@ pnpm --filter @hotel/web exec playwright test e2e/a11y.spec.ts   # axe en navega
 | Contacto (después) | [`evidencias/pantalla-contacto.png`](./evidencias/pantalla-contacto.png) | Página donde se corrigió el defecto de claves i18n (§9): muestra «Cómo llegar» y «Registro de viajeros». |
 | Contacto (antes) | [`evidencias/pantalla-contacto-antes-del-arreglo.png`](./evidencias/pantalla-contacto-antes-del-arreglo.png) | Evidencia del defecto: la página pintaba `home.howToArrive.title` y `home.travelers.title`. |
 | Back-office AdminLTE | [`evidencias/pantalla-admin-dashboard.png`](./evidencias/pantalla-admin-dashboard.png) · [`pantalla-admin-minteo.png`](./evidencias/pantalla-admin-minteo.png) | Sidebar `navy` con secciones `pearl`, pastilla activa `bg-shell text-navy`, navbar con **Ayuda**, migas y `content-wrapper`; sesión real (login + TOTP) y estado degradado honesto. |
+| **Back-office Posidonia (v3)** | [`evidencias/admin-posidonia-dashboard.png`](./evidencias/admin-posidonia-dashboard.png) · [`admin-posidonia-dashboard-movil.png`](./evidencias/admin-posidonia-dashboard-movil.png) | Dashboard con la piel **Posidonia** (sidebar verde-teal, Spectral + Inter Tight), cabecera de contenido, bloque de sesión OWNER y **estado degradado honesto** sin worker; escritorio 1440 y móvil 390. |
 | Recepción | [`evidencias/pantalla-recepcion.png`](./evidencias/pantalla-recepcion.png) | Suite de personal: 50 habitaciones con chip `fern` («Libre») y pestaña activa azur. |
 
 **Resultado de la verificación del rediseño (2026-10):**

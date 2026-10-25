@@ -32,9 +32,9 @@ export default async function ReservePage({
 
   return (
     <PublicShell>
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-5 py-10">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-5 py-16 tablet:px-8 tablet:py-24">
         <header className="flex flex-col gap-1">
-          <h1 className="font-display text-h1 font-medium">{t("title")}</h1>
+          <h1 className="max-w-[20ch] text-balance font-display text-h1 font-semibold tracking-tight">{t("title")}</h1>
           <p className="max-w-prose text-body text-ink-soft">{t("tagline")}</p>
         </header>
         <ReserveFlow initial={initial} />

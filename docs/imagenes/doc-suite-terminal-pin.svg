@@ -1,56 +1,56 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 320" width="960" height="320" role="img" aria-labelledby="t d">
   <title id="t">Terminal con PIN</title>
   <desc id="d">Entrada y trabajo sin cartera</desc>
-  <rect width="960" height="320" rx="18" fill="#f4f9fc"/>
-  <rect x="0" y="0" width="960" height="8" rx="4" fill="#b98324"/>
-  <text x="40" y="56" font-family="Playfair Display, Georgia, serif" font-size="26" font-weight="700" fill="#0e2a3f">Terminal con PIN</text>
-  <text x="40" y="84" font-family="Manrope, Arial, sans-serif" font-size="14" fill="#41566a">Entrada y trabajo sin cartera</text>
+  <rect width="960" height="320" rx="18" fill="#F8F3E9"/>
+  <rect x="0" y="0" width="960" height="8" rx="4" fill="#9A6A12"/>
+  <text x="40" y="56" font-family="Playfair Display, Georgia, serif" font-size="26" font-weight="700" fill="#0F2833">Terminal con PIN</text>
+  <text x="40" y="84" font-family="Manrope, Arial, sans-serif" font-size="14" fill="#495764">Entrada y trabajo sin cartera</text>
 
   <g>
-    <rect x="40" y="120" width="150" height="86" rx="14" fill="#ffffff" stroke="#dbe7ef" stroke-width="2"/>
-    <rect x="40" y="120" width="150" height="8" rx="4" fill="#b98324"/>
-    <text x="115" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#101f2c">Operario</text>
-    <text x="115" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#41566a">técnico o camarera</text>
+    <rect x="40" y="120" width="150" height="86" rx="14" fill="#ffffff" stroke="#E4D9C5" stroke-width="2"/>
+    <rect x="40" y="120" width="150" height="8" rx="4" fill="#9A6A12"/>
+    <text x="115" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#15222C">Operario</text>
+    <text x="115" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#495764">técnico o camarera</text>
   </g>
   <g>
-    <line x1="196" y1="163" x2="214" y2="163" stroke="#6b8296" stroke-width="2"/>
-    <polygon points="214,163 206,158 206,168" fill="#6b8296"/>
+    <line x1="196" y1="163" x2="214" y2="163" stroke="#8B7A62" stroke-width="2"/>
+    <polygon points="214,163 206,158 206,168" fill="#8B7A62"/>
   </g>
   <g>
-    <rect x="222" y="120" width="150" height="86" rx="14" fill="#ffffff" stroke="#dbe7ef" stroke-width="2"/>
-    <rect x="222" y="120" width="150" height="8" rx="4" fill="#b98324"/>
-    <text x="298" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#101f2c">PIN</text>
-    <text x="298" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#41566a">4–6 dígitos</text>
+    <rect x="222" y="120" width="150" height="86" rx="14" fill="#ffffff" stroke="#E4D9C5" stroke-width="2"/>
+    <rect x="222" y="120" width="150" height="8" rx="4" fill="#9A6A12"/>
+    <text x="298" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#15222C">PIN</text>
+    <text x="298" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#495764">4–6 dígitos</text>
   </g>
   <g>
-    <line x1="378" y1="163" x2="397" y2="163" stroke="#6b8296" stroke-width="2"/>
-    <polygon points="397,163 388,158 388,168" fill="#6b8296"/>
+    <line x1="378" y1="163" x2="397" y2="163" stroke="#8B7A62" stroke-width="2"/>
+    <polygon points="397,163 388,158 388,168" fill="#8B7A62"/>
   </g>
   <g>
-    <rect x="405" y="120" width="150" height="86" rx="14" fill="#ffffff" stroke="#dbe7ef" stroke-width="2"/>
-    <rect x="405" y="120" width="150" height="8" rx="4" fill="#b98324"/>
-    <text x="480" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#101f2c">Mis tareas</text>
-    <text x="480" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#41566a">solo lo asignado</text>
+    <rect x="405" y="120" width="150" height="86" rx="14" fill="#ffffff" stroke="#E4D9C5" stroke-width="2"/>
+    <rect x="405" y="120" width="150" height="8" rx="4" fill="#9A6A12"/>
+    <text x="480" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#15222C">Mis tareas</text>
+    <text x="480" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#495764">solo lo asignado</text>
   </g>
   <g>
-    <line x1="561" y1="163" x2="580" y2="163" stroke="#6b8296" stroke-width="2"/>
-    <polygon points="580,163 570,158 570,168" fill="#6b8296"/>
+    <line x1="561" y1="163" x2="580" y2="163" stroke="#8B7A62" stroke-width="2"/>
+    <polygon points="580,163 570,158 570,168" fill="#8B7A62"/>
   </g>
   <g>
-    <rect x="588" y="120" width="150" height="86" rx="14" fill="#ffffff" stroke="#dbe7ef" stroke-width="2"/>
-    <rect x="588" y="120" width="150" height="8" rx="4" fill="#b98324"/>
-    <text x="662" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#101f2c">Trabajo</text>
-    <text x="662" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#41566a">avance y cierre</text>
+    <rect x="588" y="120" width="150" height="86" rx="14" fill="#ffffff" stroke="#E4D9C5" stroke-width="2"/>
+    <rect x="588" y="120" width="150" height="8" rx="4" fill="#9A6A12"/>
+    <text x="662" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#15222C">Trabajo</text>
+    <text x="662" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#495764">avance y cierre</text>
   </g>
   <g>
-    <line x1="744" y1="163" x2="762" y2="163" stroke="#6b8296" stroke-width="2"/>
-    <polygon points="762,163 753,158 753,168" fill="#6b8296"/>
+    <line x1="744" y1="163" x2="762" y2="163" stroke="#8B7A62" stroke-width="2"/>
+    <polygon points="762,163 753,158 753,168" fill="#8B7A62"/>
   </g>
   <g>
-    <rect x="770" y="120" width="150" height="86" rx="14" fill="#ffffff" stroke="#dbe7ef" stroke-width="2"/>
-    <rect x="770" y="120" width="150" height="8" rx="4" fill="#b98324"/>
-    <text x="845" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#101f2c">Validación</text>
-    <text x="845" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#41566a">del jefe</text>
+    <rect x="770" y="120" width="150" height="86" rx="14" fill="#ffffff" stroke="#E4D9C5" stroke-width="2"/>
+    <rect x="770" y="120" width="150" height="8" rx="4" fill="#9A6A12"/>
+    <text x="845" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#15222C">Validación</text>
+    <text x="845" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#495764">del jefe</text>
   </g>
-  <text x="920" y="298" text-anchor="end" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#6b8296">Hotel Marina del Sol · manuales</text>
+  <text x="920" y="298" text-anchor="end" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#8B7A62">Hotel Marina del Sol · manuales</text>
 </svg>

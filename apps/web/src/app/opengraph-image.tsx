@@ -16,11 +16,11 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 /** Tokens del sistema visual (mismos valores que `packages/config/tailwind/preset.cjs`). */
-const OCEAN = "#0E2A3F";
-const OCEAN_SOFT = "#1A4160";
-const SAND = "#F4F9FC";
-const CHAMPAGNE = "#C3D4E0";
-const TERRACOTTA = "#C4522C";
+const OCEAN = "#0F2833";
+const OCEAN_SOFT = "#1A3B49";
+const SAND = "#F8F3E9";
+const CHAMPAGNE = "#D9E8EC";
+const TERRACOTTA = "#AE4E2A";
 
 export default function OpengraphImage() {
   return new ImageResponse(

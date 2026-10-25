@@ -95,18 +95,42 @@ export function SiteHeader() {
   // D-77: la cabecera pública conoce la sesión para que el menú de Usuario ofrezca los accesos a
   // las suites que corresponden al tipo de usuario. Es solo vista: cada suite revalida en servidor.
   const session = useAdminSession();
+  // Distribución editorial (2026-10-23): en la home la cabecera se superpone al hero y se vuelve
+  // sólida al hacer scroll. En el resto de páginas es sticky y sólida desde el primer píxel.
+  const isHome = pathname === "/";
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    if (!isHome) return;
+    const onScroll = () => setScrolled(window.scrollY > 28);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [isHome]);
+  const overlay = isHome && !scrolled;
+  const headerClass = isHome
+    ? "fixed"
+    : "sticky top-0";
+  const toneClass = overlay
+    ? "site-header--overlay border-line text-ink backdrop-blur tablet:border-transparent tablet:text-shell"
+    : "border-line bg-shell/95 text-ink backdrop-blur";
+  const brandTone = overlay ? "text-ink tablet:text-shell" : "text-ink";
+  const subTone = overlay ? "text-ink-soft tablet:text-shell/75" : "text-ink-soft";
+  const navTone = overlay
+    ? "text-shell/85 hover:text-shell"
+    : "text-ink-soft hover:text-ink";
+  const navActive = overlay ? "text-shell" : "text-ink";
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-mist/85 backdrop-blur">
-      <div className="mx-auto flex h-[68px] w-full max-w-6xl items-center gap-4 px-5 sm:gap-5">
+    <header className={`${headerClass} top-0 z-40 border-b transition-colors duration-300 ${toneClass}`}>
+      <div className="mx-auto flex h-[76px] w-full max-w-7xl items-center gap-4 px-5 tablet:px-8">
         <Link
           href="/"
           aria-label={t("brandHome")}
-          className="flex items-center gap-3 font-display text-[21px] font-semibold leading-none tracking-tight"
+          className={`flex items-center gap-2.5 font-display text-[18px] font-semibold leading-none tracking-tight tablet:gap-3 tablet:text-[22px] ${brandTone}`}
         >
           <span
             aria-hidden="true"
-            className="h-[34px] w-[34px] flex-none rounded-full shadow-[inset_0_0_0_1.5px_rgba(255,255,255,0.4)]"
+            className="h-[30px] w-[30px] flex-none rounded-full shadow-[inset_0_0_0_1.5px_rgba(255,255,255,0.4)] tablet:h-[34px] tablet:w-[34px]"
             style={{
               background:
                 "radial-gradient(circle at 32% 30%, var(--amber), var(--coral) 55%, var(--azure) 130%)",
@@ -114,13 +138,13 @@ export function SiteHeader() {
           />
           <span className="flex flex-col">
             {t("brandTitle")}
-            <small className="font-sans text-[10.5px] font-medium uppercase tracking-[0.18em] text-ink-soft">
+            <small className={`font-sans text-[10px] font-medium uppercase tracking-[0.2em] ${subTone}`}>
               {t("brandSubtitle")}
             </small>
           </span>
         </Link>
 
-        <nav aria-label={t("navLabel")} className="ml-2 hidden items-center gap-5 tablet:flex">
+        <nav aria-label={t("navLabel")} className="mx-auto hidden items-center gap-4 tablet:flex desktop:gap-6">
           {PRIMARY_ITEMS.map((item) => {
             const active = isActiveRoute(pathname, item.href);
             return (
@@ -128,8 +152,8 @@ export function SiteHeader() {
                 key={item.href}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                className={`py-1.5 text-small font-medium transition-colors hover:text-ink ${
-                  active ? "text-ink" : "text-ink-soft"
+                className={`py-1.5 text-small font-medium transition-colors ${navTone} ${
+                  active ? navActive : ""
                 }`}
               >
                 {t(item.labelKey)}
@@ -142,8 +166,8 @@ export function SiteHeader() {
             return (
               <details key={group.labelKey} className="group relative">
                 <summary
-                  className={`flex cursor-pointer list-none items-center gap-1 py-1.5 text-small font-medium transition-colors hover:text-ink ${
-                    groupActive ? "text-ink" : "text-ink-soft"
+                  className={`flex cursor-pointer list-none items-center gap-1 py-1.5 text-small font-medium transition-colors ${navTone} ${
+                    groupActive ? navActive : ""
                   }`}
                 >
                   {t(group.labelKey)}
@@ -169,12 +193,12 @@ export function SiteHeader() {
           })}
         </nav>
 
-        <div className="ml-auto flex items-center gap-2">
-          {/* Asistente IA en móvil (incremento v4): avatar en la cabecera que abre la conversación.
-              En escritorio lo sustituye el icono flotante del `AssistantDock`. */}
-          <AssistantHeaderTrigger />
-          <WalletMenu session={session} />
-          <MobileNav pathname={pathname} />
+        <div className="ml-auto flex items-center gap-1.5 tablet:gap-2">
+          {/* En móvil la cabecera se queda en logo + menú: el asistente y la wallet viven dentro
+              del panel para no robar ancho ni romper el wordmark a 320–390 px. */}
+          <div className="hidden tablet:block"><AssistantHeaderTrigger /></div>
+          <div className="hidden tablet:block"><WalletMenu session={session} /></div>
+          <MobileNav pathname={pathname} session={session} />
         </div>
       </div>
     </header>
@@ -188,7 +212,7 @@ export function SiteHeader() {
  * los mismos enlaces que la barra de escritorio. El panel cierra con Escape, al elegir un enlace y al cambiar de ruta;
  * el foco se mueve al primer enlace al abrir y vuelve al botón al cerrar.
  */
-function MobileNav({ pathname }: { pathname: string }) {
+function MobileNav({ pathname, session }: { pathname: string; session: ReturnType<typeof useAdminSession> }) {
   const t = useTranslations("shell");
   const [open, setOpen] = useState(false);
   const panelId = useId();
@@ -251,12 +275,12 @@ function MobileNav({ pathname }: { pathname: string }) {
             aria-hidden="true"
             tabIndex={-1}
             onClick={() => setOpen(false)}
-            className="fixed inset-0 top-[68px] z-30 cursor-default bg-ink/20"
+            className="fixed inset-0 top-[76px] z-30 cursor-default bg-ink/30"
           />
           <nav
             id={panelId}
             aria-label={t("navLabel")}
-            className="absolute left-0 right-0 top-[68px] z-40 border-b border-line bg-mist px-5 py-3 shadow-[0_10px_30px_rgba(0,0,0,0.08)]"
+            className="absolute left-0 right-0 top-[76px] z-40 max-h-[calc(100dvh-76px)] overflow-y-auto border-b border-line bg-shell px-5 py-4 shadow-modal "
           >
             {[{ labelKey: null, items: PRIMARY_ITEMS }, ...NAV_GROUPS].map((group, groupIndex) => (
               <div key={group.labelKey ?? "primary"} className={groupIndex === 0 ? "" : "mt-3 border-t border-line pt-3"}>
@@ -288,6 +312,9 @@ function MobileNav({ pathname }: { pathname: string }) {
                 </ul>
               </div>
             ))}
+            <div className="mt-4 border-t border-line pt-4">
+              <WalletMenu session={session} />
+            </div>
           </nav>
         </>
       ) : null}

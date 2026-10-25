@@ -1,33 +1,33 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 320" width="960" height="320" role="img" aria-labelledby="t d">
   <title id="t">CU-38 · Liberar una habitación</title>
   <desc id="d">De pendiente de limpieza a disponible para vender</desc>
-  <rect width="960" height="320" rx="18" fill="#f4f9fc"/>
-  <rect width="960" height="8" rx="4" fill="#0f6c9c"/>
-  <text x="40" y="56" font-family="Playfair Display, Georgia, serif" font-size="26" font-weight="700" fill="#0e2a3f">CU-38 · Liberar una habitación</text>
-  <text x="40" y="84" font-family="Manrope, Arial, sans-serif" font-size="14" fill="#41566a">De pendiente de limpieza a disponible para vender</text>
+  <rect width="960" height="320" rx="18" fill="#F8F3E9"/>
+  <rect width="960" height="8" rx="4" fill="#0B5C74"/>
+  <text x="40" y="56" font-family="Playfair Display, Georgia, serif" font-size="26" font-weight="700" fill="#0F2833">CU-38 · Liberar una habitación</text>
+  <text x="40" y="84" font-family="Manrope, Arial, sans-serif" font-size="14" fill="#495764">De pendiente de limpieza a disponible para vender</text>
   <g>
-    <rect x="40" y="120" width="170" height="86" rx="14" fill="#ffffff" stroke="#dbe7ef" stroke-width="2"/>
-    <rect x="40" y="120" width="170" height="8" rx="4" fill="#0f6c9c"/>
-    <text x="125" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#101f2c">Check-out</text>
-    <text x="125" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#41566a">habitación sucia</text>
-  </g>  <line x1="216" y1="163" x2="269" y2="163" stroke="#6b8296" stroke-width="2"/>
-  <polygon points="269,163 260,158 260,168" fill="#6b8296"/>  <g>
-    <rect x="277" y="120" width="170" height="86" rx="14" fill="#ffffff" stroke="#dbe7ef" stroke-width="2"/>
-    <rect x="277" y="120" width="170" height="8" rx="4" fill="#0f6c9c"/>
-    <text x="362" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#101f2c">Limpieza</text>
-    <text x="362" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#41566a">camarera termina</text>
-  </g>  <line x1="453" y1="163" x2="505" y2="163" stroke="#6b8296" stroke-width="2"/>
-  <polygon points="505,163 496,158 496,168" fill="#6b8296"/>  <g>
-    <rect x="513" y="120" width="170" height="86" rx="14" fill="#ffffff" stroke="#dbe7ef" stroke-width="2"/>
-    <rect x="513" y="120" width="170" height="8" rx="4" fill="#0f6c9c"/>
-    <text x="598" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#101f2c">Inspección</text>
-    <text x="598" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#41566a">si aplica</text>
-  </g>  <line x1="689" y1="163" x2="742" y2="163" stroke="#6b8296" stroke-width="2"/>
-  <polygon points="742,163 733,158 733,168" fill="#6b8296"/>  <g>
-    <rect x="750" y="120" width="170" height="86" rx="14" fill="#ffffff" stroke="#dbe7ef" stroke-width="2"/>
-    <rect x="750" y="120" width="170" height="8" rx="4" fill="#0f6c9c"/>
-    <text x="835" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#101f2c">Liberar</text>
-    <text x="835" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#41566a">vuelve a la venta</text>
+    <rect x="40" y="120" width="170" height="86" rx="14" fill="#ffffff" stroke="#E4D9C5" stroke-width="2"/>
+    <rect x="40" y="120" width="170" height="8" rx="4" fill="#0B5C74"/>
+    <text x="125" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#15222C">Check-out</text>
+    <text x="125" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#495764">habitación sucia</text>
+  </g>  <line x1="216" y1="163" x2="269" y2="163" stroke="#8B7A62" stroke-width="2"/>
+  <polygon points="269,163 260,158 260,168" fill="#8B7A62"/>  <g>
+    <rect x="277" y="120" width="170" height="86" rx="14" fill="#ffffff" stroke="#E4D9C5" stroke-width="2"/>
+    <rect x="277" y="120" width="170" height="8" rx="4" fill="#0B5C74"/>
+    <text x="362" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#15222C">Limpieza</text>
+    <text x="362" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#495764">camarera termina</text>
+  </g>  <line x1="453" y1="163" x2="505" y2="163" stroke="#8B7A62" stroke-width="2"/>
+  <polygon points="505,163 496,158 496,168" fill="#8B7A62"/>  <g>
+    <rect x="513" y="120" width="170" height="86" rx="14" fill="#ffffff" stroke="#E4D9C5" stroke-width="2"/>
+    <rect x="513" y="120" width="170" height="8" rx="4" fill="#0B5C74"/>
+    <text x="598" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#15222C">Inspección</text>
+    <text x="598" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#495764">si aplica</text>
+  </g>  <line x1="689" y1="163" x2="742" y2="163" stroke="#8B7A62" stroke-width="2"/>
+  <polygon points="742,163 733,158 733,168" fill="#8B7A62"/>  <g>
+    <rect x="750" y="120" width="170" height="86" rx="14" fill="#ffffff" stroke="#E4D9C5" stroke-width="2"/>
+    <rect x="750" y="120" width="170" height="8" rx="4" fill="#0B5C74"/>
+    <text x="835" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#15222C">Liberar</text>
+    <text x="835" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#495764">vuelve a la venta</text>
   </g>
-  <text x="920" y="298" text-anchor="end" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#6b8296">Hotel Marina del Sol · CU-38/CU-39</text>
+  <text x="920" y="298" text-anchor="end" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#8B7A62">Hotel Marina del Sol · CU-38/CU-39</text>
 </svg>

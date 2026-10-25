@@ -39,11 +39,11 @@ const TYPES: readonly NightType[] = ["simple", "doble", "suite"];
 
 const CHIP_BASE =
   "inline-flex min-h-touch flex-none items-center gap-2 whitespace-nowrap rounded-pill border px-4 text-small font-semibold transition-colors";
-const CHIP_ON = "border-azure bg-azure text-shell";
-const CHIP_OFF = "border-line bg-shell text-ink-soft hover:border-azure hover:text-azure";
+const CHIP_ON = "border-ink bg-ink text-shell";
+const CHIP_OFF = "border-line-strong bg-shell text-ink-soft hover:border-azure hover:text-azure";
 
 const CONTROL_BASE =
-  "min-h-touch rounded-pill border border-line bg-shell px-4 text-small text-ink transition-colors focus:border-azure focus:outline-none focus:ring-2 focus:ring-azure/40";
+  "min-h-touch rounded-pill border border-line-strong bg-shell px-4 text-small text-ink transition-colors focus:border-azure focus:outline-none focus:ring-2 focus:ring-azure/40";
 
 function Chip({
   pressed,
@@ -96,9 +96,9 @@ export function FilterBar({
   return (
     <section
       aria-label={t("filtersLabel")}
-      className="sticky top-[68px] z-30 border-b border-line bg-mist/90 py-4 backdrop-blur"
+      className="sticky top-[76px] z-30 border-b border-line bg-shell/95 py-3 backdrop-blur"
     >
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-5">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-5 tablet:px-8">
         <div className="flex items-center gap-3">
           <div
             role="group"

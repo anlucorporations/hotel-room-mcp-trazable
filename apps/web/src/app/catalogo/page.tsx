@@ -65,13 +65,13 @@ export default async function CatalogPage({
 
   return (
     <PublicShell>
-      <header className="mx-auto w-full max-w-6xl px-5 pt-10">
-        <h1 className="font-display text-h1 font-medium">{t("pageTitle")}</h1>
-        <p className="mt-3 max-w-prose text-body text-ink-soft">{t("pageTagline")}</p>
+      <header className="mx-auto w-full max-w-7xl px-5 pt-16 tablet:px-8 tablet:pt-24">
+        <h1 className="max-w-[20ch] text-balance font-display text-h1 font-semibold tracking-tight">{t("pageTitle")}</h1>
+        <p className="mt-4 max-w-prose text-body-lg text-ink-soft">{t("pageTagline")}</p>
       </header>
       {/* Barra de reserva (Fase C.2): el catálogo es la pantalla de decisión, así que la
           disponibilidad se consulta sin volver a la home. */}
-      <div className="mx-auto w-full max-w-6xl px-5 pt-6">
+      <div className="mx-auto w-full max-w-7xl px-5 pt-8 tablet:px-8">
         <BookingBar variant="inline" />
       </div>
       {filtered && (
@@ -80,7 +80,7 @@ export default async function CatalogPage({
         <p
           data-testid="catalog-assistant-notice"
           role="status"
-          className="mx-auto mt-6 flex w-full max-w-6xl flex-wrap items-center gap-x-3 gap-y-1 rounded-brand-lg border border-azure/40 bg-info-bg px-5 py-3 text-small text-ink"
+          className="mx-auto mt-6 flex w-full max-w-7xl flex-wrap items-center gap-x-3 gap-y-1 rounded-brand-lg border border-azure/40 bg-info-bg px-5 py-3 text-small text-ink"
         >
           <span>{t("assistantNotice", { filters: filtersSummary })}</span>
           <Link href="/catalogo" className="font-semibold text-azure underline">
@@ -89,7 +89,7 @@ export default async function CatalogPage({
         </p>
       )}
       {nights === null ? (
-        <div className="mx-auto w-full max-w-6xl px-5 py-8">
+        <div className="mx-auto w-full max-w-7xl px-5 py-12 tablet:px-8">
           <DegradedState />
         </div>
       ) : (
@@ -99,7 +99,7 @@ export default async function CatalogPage({
             <p
               data-testid="catalog-sync-notice"
               role="status"
-              className="mx-auto mt-6 w-full max-w-6xl rounded-brand-lg border border-info/40 bg-info-bg px-5 py-3 text-small text-info"
+              className="mx-auto mt-6 w-full max-w-7xl rounded-brand-lg border border-info/40 bg-info-bg px-5 py-3 text-small text-info"
             >
               {t("syncingNotice", { count: hiddenSoldCount })}
             </p>

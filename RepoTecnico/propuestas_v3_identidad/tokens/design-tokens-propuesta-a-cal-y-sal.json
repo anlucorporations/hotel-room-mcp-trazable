@@ -1,0 +1,341 @@
+{
+  "$description": "Propuesta A «Cal & Sal» — identidad visual v3 del Hotel Marina del Sol (2026-10). Candidata, no aplicada.",
+  "name": "Cal & Sal (propuesta A)",
+  "version": "3.0.0-candidate",
+  "color": {
+    "background": {
+      "$type": "color",
+      "$value": "#F8F3E9",
+      "$description": "Lienzo de página: la caliza tibia del patio (token de código: mist)"
+    },
+    "background-alt": {
+      "$type": "color",
+      "$value": "#EFE7D6",
+      "$description": "Bandas, filas alternas, sidebar claro (token de código: mist-2)"
+    },
+    "surface": {
+      "$type": "color",
+      "$value": "#FFFFFF",
+      "$description": "Tarjetas, formularios, modales, tabla (token de código: shell)"
+    },
+    "surface-raised": {
+      "$type": "color",
+      "$value": "#E9DDC8",
+      "$description": "Superficie elevada, hover del sidebar, chips (token de código: arena)"
+    },
+    "text-primary": {
+      "$type": "color",
+      "$value": "#15222C",
+      "$description": "Texto principal (14,6:1 sobre caliza) (token de código: ink)"
+    },
+    "text-secondary": {
+      "$type": "color",
+      "$value": "#495764",
+      "$description": "Texto secundario, ayudas, migas (token de código: ink-soft)"
+    },
+    "interactive": {
+      "$type": "color",
+      "$value": "#0B5C74",
+      "$description": "Acción primaria, enlaces, anillo de foco (token de código: azure)"
+    },
+    "interactive-hover": {
+      "$type": "color",
+      "$value": "#084659",
+      "$description": "Hover y pulsado de la acción (token de código: azure-deep)"
+    },
+    "surface-dark": {
+      "$type": "color",
+      "$value": "#0F2833",
+      "$description": "Hero, pie, velo del hero y pantalla de acceso (token de código: navy)"
+    },
+    "surface-dark-alt": {
+      "$type": "color",
+      "$value": "#1A3B49",
+      "$description": "Superficie oscura secundaria y hover (token de código: navy-soft)"
+    },
+    "premium-dark": {
+      "$type": "color",
+      "$value": "#D9E8EC",
+      "$description": "Detalle premium SOLO sobre oscuro (12,2:1) (token de código: pearl)"
+    },
+    "accent-fill": {
+      "$type": "color",
+      "$value": "#AE4E2A",
+      "$description": "Relleno de atención con texto blanco (5,4:1) (token de código: coral)"
+    },
+    "accent-text": {
+      "$type": "color",
+      "$value": "#8F3D1E",
+      "$description": "Atención como texto sobre claro (7,4:1) (token de código: coral-text)"
+    },
+    "premium-light": {
+      "$type": "color",
+      "$value": "#9A6A12",
+      "$description": "Etiqueta premium (Suite) con texto blanco (token de código: amber)"
+    },
+    "available": {
+      "$type": "color",
+      "$value": "#56682F",
+      "$description": "Chip «disponible» / «libre» con texto blanco (token de código: fern)"
+    },
+    "border": {
+      "$type": "color",
+      "$value": "#E4D9C5",
+      "$description": "Filetes decorativos y separadores (no controles) (token de código: line)"
+    },
+    "border-strong": {
+      "$type": "color",
+      "$value": "#8B7A62",
+      "$description": "Frontera de controles (≥3:1) (token de código: line-strong)"
+    },
+    "success": {
+      "$type": "color",
+      "$value": "#1C6E48",
+      "$description": "Confirmación (token de código: success)"
+    },
+    "warning": {
+      "$type": "color",
+      "$value": "#875A0B",
+      "$description": "Aviso (token de código: warning)"
+    },
+    "error": {
+      "$type": "color",
+      "$value": "#A62A1F",
+      "$description": "Error y bloqueo (token de código: error)"
+    },
+    "info": {
+      "$type": "color",
+      "$value": "#1E6273",
+      "$description": "Información y ayuda (token de código: info)"
+    }
+  },
+  "typography": {
+    "display": {
+      "$type": "fontFamily",
+      "$value": "\"Cormorant Garamond\", \"Iowan Old Style\", Georgia, serif"
+    },
+    "sans": {
+      "$type": "fontFamily",
+      "$value": "Onest, \"Segoe UI\", system-ui, -apple-system, sans-serif"
+    },
+    "scale": {
+      "display": {
+        "$type": "typography",
+        "$value": {
+          "fontSize": "clamp(2.75rem, 1.85rem + 4.2vw, 5rem)",
+          "fontWeight": 600,
+          "lineHeight": 0.98,
+          "letterSpacing": "-0.02em"
+        }
+      },
+      "h1": {
+        "$type": "typography",
+        "$value": {
+          "fontSize": "clamp(2.25rem, 1.6rem + 2.9vw, 3.875rem)",
+          "fontWeight": 600,
+          "lineHeight": 1.03,
+          "letterSpacing": "-0.015em"
+        }
+      },
+      "h2": {
+        "$type": "typography",
+        "$value": {
+          "fontSize": "clamp(1.625rem, 1.3rem + 1.45vw, 2.375rem)",
+          "fontWeight": 600,
+          "lineHeight": 1.1,
+          "letterSpacing": "-0.01em"
+        }
+      },
+      "h3": {
+        "$type": "typography",
+        "$value": {
+          "fontSize": "1.3125rem",
+          "fontWeight": 600,
+          "lineHeight": 1.25,
+          "letterSpacing": "0"
+        }
+      },
+      "h4": {
+        "$type": "typography",
+        "$value": {
+          "fontSize": "1.0625rem",
+          "fontWeight": 600,
+          "lineHeight": 1.35,
+          "letterSpacing": "0"
+        }
+      },
+      "body-lg": {
+        "$type": "typography",
+        "$value": {
+          "fontSize": "1.1875rem",
+          "fontWeight": 400,
+          "lineHeight": 1.6,
+          "letterSpacing": "0"
+        }
+      },
+      "body": {
+        "$type": "typography",
+        "$value": {
+          "fontSize": "1.0625rem",
+          "fontWeight": 400,
+          "lineHeight": 1.55,
+          "letterSpacing": "0"
+        }
+      },
+      "body-sm": {
+        "$type": "typography",
+        "$value": {
+          "fontSize": "0.9375rem",
+          "fontWeight": 400,
+          "lineHeight": 1.55,
+          "letterSpacing": "0"
+        }
+      },
+      "small": {
+        "$type": "typography",
+        "$value": {
+          "fontSize": "0.875rem",
+          "fontWeight": 500,
+          "lineHeight": 1.5,
+          "letterSpacing": "0"
+        }
+      },
+      "caption": {
+        "$type": "typography",
+        "$value": {
+          "fontSize": "0.8125rem",
+          "fontWeight": 400,
+          "lineHeight": 1.4,
+          "letterSpacing": "0"
+        }
+      },
+      "overline": {
+        "$type": "typography",
+        "$value": {
+          "fontSize": "0.75rem",
+          "fontWeight": 600,
+          "lineHeight": 1.4,
+          "letterSpacing": "0.16em"
+        }
+      },
+      "micro": {
+        "$type": "typography",
+        "$value": {
+          "fontSize": "0.75rem",
+          "fontWeight": 500,
+          "lineHeight": 1.4,
+          "letterSpacing": "0.04em"
+        }
+      },
+      "code": {
+        "$type": "typography",
+        "$value": {
+          "fontSize": "0.875rem",
+          "fontWeight": 400,
+          "lineHeight": 1.4,
+          "letterSpacing": "0"
+        }
+      }
+    }
+  },
+  "radius": {
+    "brand-xs": {
+      "$type": "dimension",
+      "$value": "6px"
+    },
+    "brand-sm": {
+      "$type": "dimension",
+      "$value": "12px"
+    },
+    "brand": {
+      "$type": "dimension",
+      "$value": "18px"
+    },
+    "brand-lg": {
+      "$type": "dimension",
+      "$value": "28px"
+    },
+    "pill": {
+      "$type": "dimension",
+      "$value": "9999px"
+    }
+  },
+  "shadow": {
+    "card": {
+      "$type": "shadow",
+      "$value": "0 1px 2px rgba(21,34,44,.05), 0 8px 24px rgba(139,122,98,.12)"
+    },
+    "card-hover": {
+      "$type": "shadow",
+      "$value": "0 16px 36px rgba(21,34,44,.14)"
+    },
+    "modal": {
+      "$type": "shadow",
+      "$value": "0 28px 72px rgba(15,40,51,.24)"
+    }
+  },
+  "space": {
+    "4": {
+      "$type": "dimension",
+      "$value": "4px"
+    },
+    "8": {
+      "$type": "dimension",
+      "$value": "8px"
+    },
+    "12": {
+      "$type": "dimension",
+      "$value": "12px"
+    },
+    "16": {
+      "$type": "dimension",
+      "$value": "16px"
+    },
+    "20": {
+      "$type": "dimension",
+      "$value": "20px"
+    },
+    "24": {
+      "$type": "dimension",
+      "$value": "24px"
+    },
+    "28": {
+      "$type": "dimension",
+      "$value": "28px"
+    },
+    "32": {
+      "$type": "dimension",
+      "$value": "32px"
+    },
+    "40": {
+      "$type": "dimension",
+      "$value": "40px"
+    },
+    "48": {
+      "$type": "dimension",
+      "$value": "48px"
+    },
+    "64": {
+      "$type": "dimension",
+      "$value": "64px"
+    },
+    "96": {
+      "$type": "dimension",
+      "$value": "96px"
+    }
+  },
+  "breakpoint": {
+    "tablet": {
+      "$type": "dimension",
+      "$value": "768px"
+    },
+    "desktop": {
+      "$type": "dimension",
+      "$value": "1024px"
+    },
+    "wide": {
+      "$type": "dimension",
+      "$value": "1440px"
+    }
+  }
+}

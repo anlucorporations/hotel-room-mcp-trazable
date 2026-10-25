@@ -17,14 +17,16 @@ export async function ExperienceCard({ image, locale }: { image: HomeImage; loca
   const caption = pick(locale, image.altEs, image.altEn, image.altRu);
 
   return (
-    <li className="overflow-hidden rounded-brand border border-line bg-shell">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={contentImageUrl(image.fileName)}
-        alt={caption === "" ? t("experience.imageAlt") : ""}
-        loading="lazy"
-        className="h-48 w-full object-cover"
-      />
+    <li className="group overflow-hidden rounded-brand-sm bg-mist-2">
+      <div className="relative overflow-hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={contentImageUrl(image.fileName)}
+          alt={caption === "" ? t("experience.imageAlt") : ""}
+          loading="lazy"
+          className="aspect-[4/3] w-full object-cover transition-transform duration-500 ease-brand group-hover:scale-[1.02]"
+        />
+      </div>
       {caption !== "" && (
         <p className="px-4 py-3 text-caption text-ink-soft">{caption}</p>
       )}

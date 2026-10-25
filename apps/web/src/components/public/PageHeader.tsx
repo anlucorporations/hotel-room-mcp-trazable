@@ -19,12 +19,12 @@ export function PageHeader({
   children?: ReactNode;
 }) {
   return (
-    <header className="mx-auto w-full max-w-6xl px-5 pb-4 pt-10 desktop:pt-14">
+    <header className="mx-auto w-full max-w-7xl px-5 pb-6 pt-16 tablet:px-8 tablet:pt-24">
       <p className="mb-3 text-micro font-bold uppercase tracking-[0.18em] text-coral-text">
         {eyebrow}
       </p>
-      <h1 className="max-w-[22ch] font-display text-h1 font-medium">{title}</h1>
-      {lead && <p className="mt-4 max-w-prose text-body-lg text-ink-soft">{lead}</p>}
+      <h1 className="max-w-[20ch] text-balance font-display text-h1 font-semibold tracking-tight">{title}</h1>
+      {lead && <p className="mt-5 max-w-prose text-body-lg text-ink-soft">{lead}</p>}
       {children}
     </header>
   );
@@ -51,16 +51,16 @@ export function PageSection({
       aria-labelledby={`${id}-title`}
       className={
         tone === "band"
-          ? "border-y border-line/70 bg-mist-2/60 px-5 py-10"
-          : "px-5 py-10"
+          ? "border-y border-line/70 bg-mist-2/60 px-5 py-16 tablet:px-8 tablet:py-24"
+          : "px-5 py-16 tablet:px-8 tablet:py-24"
       }
     >
-      <div className="mx-auto w-full max-w-6xl">
-        <h2 id={`${id}-title`} className="font-display text-h2 font-medium">
+      <div className="mx-auto w-full max-w-7xl">
+        <h2 id={`${id}-title`} className="max-w-[22ch] text-balance font-display text-h2 font-semibold tracking-tight">
           {title}
         </h2>
-        {subtitle && <p className="mt-2 max-w-prose text-small text-ink-soft">{subtitle}</p>}
-        <div className="mt-6">{children}</div>
+        {subtitle && <p className="mt-3 max-w-prose text-body text-ink-soft">{subtitle}</p>}
+        <div className="mt-10">{children}</div>
       </div>
     </section>
   );

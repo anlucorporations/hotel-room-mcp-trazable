@@ -1,56 +1,56 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 320" width="960" height="320" role="img" aria-labelledby="t d">
   <title id="t">Cargos por daños</title>
   <desc id="d">Del hallazgo a la liquidación en el check-out</desc>
-  <rect width="960" height="320" rx="18" fill="#f4f9fc"/>
-  <rect x="0" y="0" width="960" height="8" rx="4" fill="#c4522c"/>
-  <text x="40" y="56" font-family="Playfair Display, Georgia, serif" font-size="26" font-weight="700" fill="#0e2a3f">Cargos por daños</text>
-  <text x="40" y="84" font-family="Manrope, Arial, sans-serif" font-size="14" fill="#41566a">Del hallazgo a la liquidación en el check-out</text>
+  <rect width="960" height="320" rx="18" fill="#F8F3E9"/>
+  <rect x="0" y="0" width="960" height="8" rx="4" fill="#AE4E2A"/>
+  <text x="40" y="56" font-family="Playfair Display, Georgia, serif" font-size="26" font-weight="700" fill="#0F2833">Cargos por daños</text>
+  <text x="40" y="84" font-family="Manrope, Arial, sans-serif" font-size="14" fill="#495764">Del hallazgo a la liquidación en el check-out</text>
 
   <g>
-    <rect x="40" y="120" width="150" height="86" rx="14" fill="#ffffff" stroke="#dbe7ef" stroke-width="2"/>
-    <rect x="40" y="120" width="150" height="8" rx="4" fill="#c4522c"/>
-    <text x="115" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#101f2c">Daño</text>
-    <text x="115" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#41566a">foto y descripción</text>
+    <rect x="40" y="120" width="150" height="86" rx="14" fill="#ffffff" stroke="#E4D9C5" stroke-width="2"/>
+    <rect x="40" y="120" width="150" height="8" rx="4" fill="#AE4E2A"/>
+    <text x="115" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#15222C">Daño</text>
+    <text x="115" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#495764">foto y descripción</text>
   </g>
   <g>
-    <line x1="196" y1="163" x2="214" y2="163" stroke="#6b8296" stroke-width="2"/>
-    <polygon points="214,163 206,158 206,168" fill="#6b8296"/>
+    <line x1="196" y1="163" x2="214" y2="163" stroke="#8B7A62" stroke-width="2"/>
+    <polygon points="214,163 206,158 206,168" fill="#8B7A62"/>
   </g>
   <g>
-    <rect x="222" y="120" width="150" height="86" rx="14" fill="#ffffff" stroke="#dbe7ef" stroke-width="2"/>
-    <rect x="222" y="120" width="150" height="8" rx="4" fill="#c4522c"/>
-    <text x="298" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#101f2c">Aviso</text>
-    <text x="298" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#41566a">plazo para reclamar</text>
+    <rect x="222" y="120" width="150" height="86" rx="14" fill="#ffffff" stroke="#E4D9C5" stroke-width="2"/>
+    <rect x="222" y="120" width="150" height="8" rx="4" fill="#AE4E2A"/>
+    <text x="298" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#15222C">Aviso</text>
+    <text x="298" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#495764">plazo para reclamar</text>
   </g>
   <g>
-    <line x1="378" y1="163" x2="397" y2="163" stroke="#6b8296" stroke-width="2"/>
-    <polygon points="397,163 388,158 388,168" fill="#6b8296"/>
+    <line x1="378" y1="163" x2="397" y2="163" stroke="#8B7A62" stroke-width="2"/>
+    <polygon points="397,163 388,158 388,168" fill="#8B7A62"/>
   </g>
   <g>
-    <rect x="405" y="120" width="150" height="86" rx="14" fill="#ffffff" stroke="#dbe7ef" stroke-width="2"/>
-    <rect x="405" y="120" width="150" height="8" rx="4" fill="#c4522c"/>
-    <text x="480" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#101f2c">Reclamación</text>
-    <text x="480" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#41566a">huésped</text>
+    <rect x="405" y="120" width="150" height="86" rx="14" fill="#ffffff" stroke="#E4D9C5" stroke-width="2"/>
+    <rect x="405" y="120" width="150" height="8" rx="4" fill="#AE4E2A"/>
+    <text x="480" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#15222C">Reclamación</text>
+    <text x="480" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#495764">huésped</text>
   </g>
   <g>
-    <line x1="561" y1="163" x2="580" y2="163" stroke="#6b8296" stroke-width="2"/>
-    <polygon points="580,163 570,158 570,168" fill="#6b8296"/>
+    <line x1="561" y1="163" x2="580" y2="163" stroke="#8B7A62" stroke-width="2"/>
+    <polygon points="580,163 570,158 570,168" fill="#8B7A62"/>
   </g>
   <g>
-    <rect x="588" y="120" width="150" height="86" rx="14" fill="#ffffff" stroke="#dbe7ef" stroke-width="2"/>
-    <rect x="588" y="120" width="150" height="8" rx="4" fill="#c4522c"/>
-    <text x="662" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#101f2c">Resolución</text>
-    <text x="662" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#41566a">aceptar o rechazar</text>
+    <rect x="588" y="120" width="150" height="86" rx="14" fill="#ffffff" stroke="#E4D9C5" stroke-width="2"/>
+    <rect x="588" y="120" width="150" height="8" rx="4" fill="#AE4E2A"/>
+    <text x="662" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#15222C">Resolución</text>
+    <text x="662" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#495764">aceptar o rechazar</text>
   </g>
   <g>
-    <line x1="744" y1="163" x2="762" y2="163" stroke="#6b8296" stroke-width="2"/>
-    <polygon points="762,163 753,158 753,168" fill="#6b8296"/>
+    <line x1="744" y1="163" x2="762" y2="163" stroke="#8B7A62" stroke-width="2"/>
+    <polygon points="762,163 753,158 753,168" fill="#8B7A62"/>
   </g>
   <g>
-    <rect x="770" y="120" width="150" height="86" rx="14" fill="#ffffff" stroke="#dbe7ef" stroke-width="2"/>
-    <rect x="770" y="120" width="150" height="8" rx="4" fill="#c4522c"/>
-    <text x="845" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#101f2c">Check-out</text>
-    <text x="845" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#41566a">liquidar el cargo</text>
+    <rect x="770" y="120" width="150" height="86" rx="14" fill="#ffffff" stroke="#E4D9C5" stroke-width="2"/>
+    <rect x="770" y="120" width="150" height="8" rx="4" fill="#AE4E2A"/>
+    <text x="845" y="160" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="15" font-weight="700" fill="#15222C">Check-out</text>
+    <text x="845" y="182" text-anchor="middle" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#495764">liquidar el cargo</text>
   </g>
-  <text x="920" y="298" text-anchor="end" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#6b8296">Hotel Marina del Sol · manuales</text>
+  <text x="920" y="298" text-anchor="end" font-family="Manrope, Arial, sans-serif" font-size="12" fill="#8B7A62">Hotel Marina del Sol · manuales</text>
 </svg>

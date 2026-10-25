@@ -184,16 +184,16 @@ export function ReserveFlow({ initial }: { initial?: BookingQuery } = {}) {
   }
 
   return (
-    <div className="grid gap-6 tablet:grid-cols-[minmax(0,1fr)_20rem] tablet:items-start">
+    <div className="grid gap-10 tablet:grid-cols-[minmax(0,7fr)_minmax(0,4fr)] tablet:items-start">
       <div className="flex flex-col gap-6">
-      <form onSubmit={reserve} className="flex flex-col gap-3 rounded-brand-lg border border-line bg-shell p-5">
+      <form onSubmit={reserve} className="flex flex-col gap-5 border-t border-line pt-6">
         <label className="flex flex-col gap-1 text-small">
           <span className="font-medium text-ink">{t("room")}</span>
           <select
             value={form.roomId}
             onChange={(event) => setForm({ ...form, roomId: event.target.value })}
             data-testid="reserve-room"
-            className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
+            className="min-h-touch w-full rounded-none border-0 border-b border-line-strong bg-transparent px-0 text-ink focus:border-azure focus:outline-none focus:ring-0"
           >
             {rooms.length === 0 && <option value="">{t("noRooms")}</option>}
             {rooms.map((room) => (
@@ -211,7 +211,7 @@ export function ReserveFlow({ initial }: { initial?: BookingQuery } = {}) {
               required
               value={form.checkInDate}
               onChange={(event) => setForm({ ...form, checkInDate: event.target.value })}
-              className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
+              className="min-h-touch w-full rounded-none border-0 border-b border-line-strong bg-transparent px-0 text-ink focus:border-azure focus:outline-none focus:ring-0"
             />
           </label>
           <label className="flex flex-col gap-1 text-small">
@@ -221,7 +221,7 @@ export function ReserveFlow({ initial }: { initial?: BookingQuery } = {}) {
               required
               value={form.checkOutDate}
               onChange={(event) => setForm({ ...form, checkOutDate: event.target.value })}
-              className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
+              className="min-h-touch w-full rounded-none border-0 border-b border-line-strong bg-transparent px-0 text-ink focus:border-azure focus:outline-none focus:ring-0"
             />
           </label>
           <label className="flex min-w-[16rem] flex-1 flex-col gap-1 text-small">
@@ -231,7 +231,7 @@ export function ReserveFlow({ initial }: { initial?: BookingQuery } = {}) {
               value={form.email}
               onChange={(event) => setForm({ ...form, email: event.target.value })}
               placeholder={t("emailPlaceholder")}
-              className="min-h-touch rounded-brand-sm border border-line-strong bg-mist px-3"
+              className="min-h-touch w-full rounded-none border-0 border-b border-line-strong bg-transparent px-0 text-ink focus:border-azure focus:outline-none focus:ring-0"
             />
           </label>
         </div>
@@ -239,7 +239,7 @@ export function ReserveFlow({ initial }: { initial?: BookingQuery } = {}) {
           type="submit"
           disabled={busy || !form.roomId || summary.nights === 0 || priceUnknown}
           aria-disabled={busy || !form.roomId || summary.nights === 0 || priceUnknown}
-          className="min-h-touch self-start rounded-pill bg-azure px-5 text-small font-semibold text-shell disabled:opacity-50"
+          className="inline-flex min-h-touch items-center self-start rounded-pill bg-azure px-6 text-small font-semibold text-shell transition-colors hover:bg-azure-deep disabled:opacity-50"
         >
           {busy ? t("reserving") : t("reserve")}
         </button>

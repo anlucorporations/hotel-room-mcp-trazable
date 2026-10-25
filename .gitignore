@@ -66,3 +66,6 @@ packages/contracts/lcov.info
 # `pnpm --filter @hotel/web run manuals`. Los PDF públicos versionados son los de
 # apps/web/public/manual/.
 docs/pdf/
+
+# Binarios locales del sistema (p. ej. librerías del navegador para Playwright): no se versionan.
+*.deb

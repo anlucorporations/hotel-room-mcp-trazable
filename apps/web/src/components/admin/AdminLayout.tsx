@@ -508,7 +508,7 @@ export function AdminLayout({ children, gate = false }: { children: ReactNode; g
   const hasSession = Boolean(session.sessionUsername);
 
   const shell = (body: ReactNode) => (
-    <div className="flex min-h-screen bg-mist">
+    <div className="admin-surface flex min-h-screen bg-mist">
       <a
         href="#admin-contenido"
         className="sr-only z-50 rounded-br-brand-sm bg-azure px-4 py-3 font-semibold text-shell focus:not-sr-only focus:absolute focus:left-0 focus:top-0"

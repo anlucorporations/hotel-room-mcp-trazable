@@ -175,3 +175,108 @@ export async function getPublicReviews(limit = 60): Promise<PublicReviews> {
         : { average: null, count: 0 },
   };
 }
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Ficha pública de habitación (ruta `/habitaciones/[room]`)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Imagen pública de una habitación (solo lo que necesita la galería). */
+export interface PublicRoomImage {
+  readonly fileName: string;
+  readonly altEs: string | null;
+  readonly altEn: string | null;
+  readonly altRu: string | null;
+}
+
+/** Vista pública de una habitación: solo datos publicables, sin tarifas ni estados internos. */
+export interface PublicRoomDetail {
+  readonly roomNumber: number;
+  readonly roomType: "simple" | "doble" | "suite";
+  readonly capacity: number;
+  readonly beds: number;
+  readonly sizeM2: number | null;
+  readonly descriptionEs: string | null;
+  readonly descriptionEn: string | null;
+  readonly descriptionRu: string | null;
+  readonly viewKind: string | null;
+  readonly hasBalcony: boolean;
+  readonly isAccessible: boolean;
+  readonly images: readonly PublicRoomImage[];
+  /** `true` si la lectura cayó al maestro del código (sin BD o habitación no publicada). */
+  readonly fromMaster: boolean;
+}
+
+/** Fila del maestro para una habitación concreta (fallback sin BD). */
+function masterRoomDetail(roomNumber: number): PublicRoomDetail | null {
+  const row = buildRoomSeed().find((room) => room.roomNumber === roomNumber);
+  if (!row) return null;
+  return {
+    roomNumber,
+    roomType: roomTypeKey(row.roomType),
+    capacity: row.capacity,
+    beds: row.beds,
+    sizeM2: null,
+    descriptionEs: row.descriptionEs,
+    descriptionEn: row.descriptionEn,
+    descriptionRu: row.descriptionRu,
+    viewKind: null,
+    hasBalcony: false,
+    isAccessible: false,
+    images: [],
+    fromMaster: true,
+  };
+}
+
+function toPublicRoomImage(image: {
+  fileName: string;
+  altTextEs: string | null;
+  altTextEn: string | null;
+  altTextRu: string | null;
+}): PublicRoomImage {
+  return {
+    fileName: image.fileName,
+    altEs: image.altTextEs,
+    altEn: image.altTextEn,
+    altRu: image.altTextRu,
+  };
+}
+
+/**
+ * Detalle público de una habitación por número (CU-04 · ficha).
+ *
+ * Solo se devuelve una habitación **publicada**; si la base no responde, se cae al maestro del
+ * código (información real de la siembra) con galería vacía para que la página degrade sin
+ * inventar fotos ni tarifas. Nunca se exponen estados operativos, tarifas base ni datos internos.
+ */
+export async function getPublicRoomDetail(roomNumber: number): Promise<PublicRoomDetail | null> {
+  try {
+    const repo = new RoomsRepository();
+    const rooms = await repo.listRooms();
+    const row = rooms.find(
+      (room) => room.roomNumber === roomNumber && room.publicationStatus === "PUBLISHED",
+    );
+    if (!row) {
+      // La BD respondió: si la habitación existe pero no está publicada, la ficha no se ofrece.
+      return rooms.some((room) => room.roomNumber === roomNumber) ? null : masterRoomDetail(roomNumber);
+    }
+    const images = await repo.listImages(row.id).catch(() => []);
+    return {
+      roomNumber: row.roomNumber,
+      roomType: roomTypeKey(row.roomType),
+      capacity: row.capacity,
+      beds: row.beds,
+      sizeM2: row.sizeM2,
+      descriptionEs: row.descriptionEs,
+      descriptionEn: row.descriptionEn,
+      descriptionRu: row.descriptionRu,
+      viewKind: row.viewKind,
+      hasBalcony: row.hasBalcony,
+      isAccessible: row.isAccessible,
+      images: images.map(toPublicRoomImage),
+      fromMaster: false,
+    };
+  } catch {
+    return masterRoomDetail(roomNumber);
+  }
+}

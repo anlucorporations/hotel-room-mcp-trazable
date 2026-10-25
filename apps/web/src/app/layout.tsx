@@ -1,28 +1,22 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Manrope, Playfair_Display } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { Providers } from "./providers";
+import "./fonts.css";
 import "./globals.css";
+import "./admin-surface.css";
 
 /**
- * Tipografías de marca «Brisa Marina» (Manual_Identidad_Visual.md v2.0.0): serif elegante
- * (display) + geométrica fresca (UI). Las DOS familias publican el subconjunto `cyrillic` en
- * Google Fonts, así que el locale RU queda cubierto por las propias fuentes de marca: ya no hace
- * falta la cascada glifo a glifo con respaldos sin precarga del sistema anterior. El guardián
- * `cyrillic-fonts.test.ts` exige que ambas declaren el subconjunto cirílico.
+ * Tipografías por superficie (2026-10-23):
+ *   · Suite pública «Cal & Sal»: Cormorant Garamond (display) + Onest (UI).
+ *   · Suite administrativa «Posidonia»: Spectral (display) + Inter Tight (UI), activadas en el
+ *     scope `.admin-surface` (ver `app/admin-surface.css`).
+ * Los woff2 se **autohospedan** en `public/fonts/` y se declaran en `fonts.css` (latin + cyrillic),
+ * de modo que build y runtime no dependen de `fonts.gstatic.com`. El guardián
+ * `cyrillic-fonts.test.ts` exige las cuatro familias con ambos subconjuntos y las pilas correctas.
  */
-const playfair = Playfair_Display({
-  subsets: ["latin", "cyrillic"],
-  variable: "--font-playfair",
-  display: "swap",
-});
-const manrope = Manrope({
-  subsets: ["latin", "cyrillic"],
-  variable: "--font-manrope",
-  display: "swap",
-});
+
 
 // Metadata i18n (MINOR#41): título y descripción desde las claves `app.*`.
 // La imagen social la genera `app/opengraph-image.tsx` con los tokens de marca (Fase D).
@@ -62,10 +56,7 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html
-      lang={locale}
-      className={`${playfair.variable} ${manrope.variable}`}
-    >
+    <html lang={locale}>
       <body>
         <a
           href="#main-content"

@@ -14,10 +14,10 @@ export async function TestimonialCard({ review }: { review: HomeReview }) {
   const roomType = await getTranslations("roomType");
 
   return (
-    <li className="flex flex-col gap-3 rounded-brand border border-line bg-shell p-5">
+    <li className="flex flex-col gap-4 border-t border-line pt-5">
       <Stars rating={review.rating} label={t("reviews.ratingLabel", { rating: review.rating })} />
       {review.comment && (
-        <blockquote className="font-display text-body-lg leading-snug text-ink">
+        <blockquote className="font-display text-h3 font-medium italic leading-snug text-ink">
           “{review.comment}”
         </blockquote>
       )}

@@ -1,7 +1,7 @@
 /**
  * Utilidades de color de la paleta de marca: **tokens reales** del preset compartido
  * (`packages/config/tailwind/preset.cjs`) y del sistema visual «Brisa Marina»
- * (RepoTecnico/Manual_Identidad_Visual.md v2.0.0).
+ * de la identidad pública «Cal & Sal» (RepoTecnico/propuestas_v3_identidad/).
  *
  * Por qué existe este espejo en TypeScript: el preset es un módulo CommonJS de build que el
  * cliente no debe empaquetar (Tailwind lo consume en tiempo de compilación), pero las gráficas
@@ -12,38 +12,39 @@
  * («la certificación WCAG se medía contra colores que no existen en el preset»).
  */
 export const PALETTE = {
-  // — Fondos luminosos (registro aéreo) —
-  mist: "#F4F9FC",
-  "mist-2": "#E6F0F6",
+  // — Fondos luminosos (caliza) —
+  mist: "#F8F3E9",
+  "mist-2": "#EFE7D6",
   shell: "#FFFFFF",
+  arena: "#E9DDC8",
   // — Texto —
-  ink: "#101F2C",
-  "ink-soft": "#41566A",
-  // — Marca / acción (azur vívido) —
-  azure: "#0F6C9C",
-  "azure-deep": "#0A4F75",
-  // — Registro oscuro (hero, pie, suite de administración AdminLTE) —
-  navy: "#0E2A3F",
-  "navy-soft": "#1A4160",
-  pearl: "#C3D4E0",
-  // — Acento de atención (coral) —
-  coral: "#C4522C",
-  "coral-text": "#A34222",
+  ink: "#15222C",
+  "ink-soft": "#495764",
+  // — Marca / acción (azul mar) —
+  azure: "#0B5C74",
+  "azure-deep": "#084659",
+  // — Registro oscuro (hero, pie, velo) —
+  navy: "#0F2833",
+  "navy-soft": "#1A3B49",
+  pearl: "#D9E8EC",
+  // — Acento de atención (terracota) —
+  coral: "#AE4E2A",
+  "coral-text": "#8F3D1E",
   // — Premium sobre claro y estados de habitación —
-  amber: "#B98324",
-  fern: "#276E4C",
+  amber: "#9A6A12",
+  fern: "#56682F",
   // — Bordes —
-  line: "#DBE7EF",
-  "line-strong": "#6B8296",
+  line: "#E4D9C5",
+  "line-strong": "#8B7A62",
   // — Estados semánticos —
-  success: "#1F7A4D",
-  "success-bg": "#E2F2E9",
-  warning: "#8A5F0C",
-  "warning-bg": "#FBF0D6",
-  error: "#B3261E",
-  "error-bg": "#FAE5E3",
-  info: "#0F6380",
-  "info-bg": "#E0EFF5",
+  success: "#1C6E48",
+  "success-bg": "#E2F0E8",
+  warning: "#875A0B",
+  "warning-bg": "#F9EFD4",
+  error: "#A62A1F",
+  "error-bg": "#F7E3DF",
+  info: "#1E6273",
+  "info-bg": "#E1EDF1",
 } as const;
 
 /** Token de color de la paleta de marca. */
@@ -71,8 +72,8 @@ export const NEUTRAL_HEX: Readonly<Record<string, string>> = {
   white: "#FFFFFF",
   black: "#000000",
   transparent: "#FFFFFF",
-  current: "#101F2C",
-  inherit: "#101F2C",
+  current: "#15222C",
+  inherit: "#15222C",
   none: "#FFFFFF",
 };
 
@@ -107,7 +108,9 @@ export const DECLARED_TEXT_ON_BACKGROUND: ReadonlyArray<{
   { foreground: "shell", background: "coral", where: "texto blanco sobre relleno de atención" },
   { foreground: "shell", background: "coral-text", where: "texto blanco sobre aviso coral" },
   { foreground: "shell", background: "fern", where: "texto blanco sobre etiqueta helecho" },
-  { foreground: "ink", background: "amber", where: "etiqueta premium (ink sobre ámbar)" },
+  { foreground: "shell", background: "amber", where: "etiqueta premium (shell sobre ámbar)" },
+  { foreground: "ink", background: "arena", where: "texto principal sobre superficie arena" },
+  { foreground: "ink-soft", background: "arena", where: "texto secundario sobre superficie arena" },
   { foreground: "ink", background: "line", where: "texto principal sobre separador (chips)" },
   { foreground: "ink-soft", background: "line", where: "texto secundario sobre separador (chips)" },
   { foreground: "white", background: "azure", where: "texto blanco (utilidad) sobre acción primaria" },

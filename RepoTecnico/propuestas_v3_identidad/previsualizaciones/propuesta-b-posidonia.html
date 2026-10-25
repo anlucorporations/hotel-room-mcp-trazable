@@ -1,0 +1,852 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Propuesta B · Posidonia — identidad visual Hotel Marina del Sol</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Spectral:wght@500;600;700&family=Inter+Tight:wght@400;500;600;700&display=swap');
+
+:root{
+  --mist: #F2F8F7;
+  --mist-2: #E3EFEE;
+  --shell: #FFFFFF;
+  --ink: #0C2226;
+  --ink-soft: #44605F;
+  --azure: #0B6A5A;
+  --azure-deep: #074B40;
+  --navy: #052528;
+  --navy-soft: #0A3A3D;
+  --pearl: #BFD8D4;
+  --coral: #B44D33;
+  --coral-text: #963C24;
+  --amber: #C9A66B;
+  --fern: #2F7A58;
+  --agua: #0C7A87;
+  --line: #D5E5E1;
+  --line-strong: #5C7B76;
+  --success: #196A45;
+  --success-bg: #DFF0E7;
+  --warning: #855A0C;
+  --warning-bg: #F9EFD4;
+  --error: #A3291E;
+  --error-bg: #F8E3DF;
+  --info: #0C6673;
+  --info-bg: #DEEEF1;
+  --r-brand-xs: 4px;
+  --r-brand-sm: 8px;
+  --r-brand: 14px;
+  --r-brand-lg: 20px;
+  --r-pill: 9999px;
+  --adm-sidebar-bg: var(--navy);
+  --adm-sidebar-text: var(--mist);
+  --adm-sidebar-muted: var(--pearl);
+  --adm-hover: var(--navy-soft);
+  --adm-active-bg: var(--azure);
+  --adm-active-text: var(--shell);
+  --adm-navbar: var(--shell);
+  --adm-page: var(--mist);
+  --adm-border: var(--line);
+  --adm-icon-tile: var(--mist-2);
+  --font-display: Spectral, "Iowan Old Style", Georgia, serif;
+  --font-sans: "Inter Tight", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --shadow-card: 0 1px 2px rgba(5,37,40,.06), 0 8px 22px rgba(11,106,90,.10);
+  --shadow-hover: 0 14px 32px rgba(5,37,40,.16);
+  --shadow-modal: 0 26px 68px rgba(5,37,40,.26);
+  --ease: cubic-bezier(.2,.7,.2,1);
+  --veil: rgba(5,37,40,0.7);
+  --veil-soft: rgba(5,37,40,0.35);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--mist);color:var(--ink);font-family:var(--font-sans);font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4,blockquote{font-family:var(--font-display);color:var(--ink);margin:0}
+p{margin:0}
+a{color:var(--azure);text-decoration:none}
+img{max-width:100%;display:block}
+button{font:inherit;cursor:pointer}
+::selection{background:var(--azure);color:var(--shell)}
+
+.t-display{font-family:var(--font-display);font-size:clamp(2.75rem, 1.85rem + 4.2vw, 5rem);font-weight:600;line-height:1;letter-spacing:-0.03em;}
+.t-h1{font-family:var(--font-display);font-size:clamp(2.25rem, 1.6rem + 2.9vw, 3.875rem);font-weight:600;line-height:1.05;letter-spacing:-0.025em;}
+.t-h2{font-family:var(--font-display);font-size:clamp(1.625rem, 1.3rem + 1.45vw, 2.375rem);font-weight:600;line-height:1.12;letter-spacing:-0.015em;}
+.t-h3{font-family:var(--font-display);font-size:1.3125rem;font-weight:600;line-height:1.25;letter-spacing:0;}
+.t-h4{font-family:var(--font-sans);font-size:1.0625rem;font-weight:600;line-height:1.35;letter-spacing:0;}
+.t-body-lg{font-family:var(--font-sans);font-size:1.1875rem;font-weight:400;line-height:1.6;letter-spacing:0;}
+.t-body{font-family:var(--font-sans);font-size:1.0625rem;font-weight:400;line-height:1.55;letter-spacing:0;}
+.t-body-sm{font-family:var(--font-sans);font-size:0.9375rem;font-weight:400;line-height:1.5;letter-spacing:0;}
+.t-small{font-family:var(--font-sans);font-size:0.875rem;font-weight:500;line-height:1.45;letter-spacing:0;}
+.t-caption{font-family:var(--font-sans);font-size:0.8125rem;font-weight:400;line-height:1.4;letter-spacing:0;}
+.t-overline{font-family:var(--font-sans);font-size:0.75rem;font-weight:600;line-height:1.4;letter-spacing:0.12em;text-transform:uppercase;}
+.t-micro{font-family:var(--font-sans);font-size:0.75rem;font-weight:500;line-height:1.4;letter-spacing:0.04em;}
+.t-code{font-family:var(--font-sans);font-size:0.875rem;font-weight:400;line-height:1.4;letter-spacing:0;}
+
+.doc{max-width:1360px;margin:0 auto;padding:40px 28px 96px}
+.eyebrow{font-family:var(--font-sans);font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--coral-text)}
+.eyebrow--light{color:var(--pearl)}
+.top{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;flex-wrap:wrap}
+.hero-title{font-size:76px;line-height:.95;letter-spacing:-.025em;font-weight:600;margin:10px 0 0}
+.hero-title .tag{display:inline-block;vertical-align:middle;margin-left:16px;font-family:var(--font-sans);font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;background:var(--azure);color:var(--shell);border-radius:999px;padding:7px 14px;transform:translateY(-12px)}
+.tagline{font-family:var(--font-display);font-size:26px;font-style:italic;color:var(--ink-soft);margin-top:6px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;max-width:430px;justify-content:flex-end}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;border:1px solid var(--line-strong);border-radius:999px;padding:6px 12px;background:var(--shell);color:var(--ink)}
+.chip--ok{background:var(--success-bg);border-color:var(--success);color:var(--success)}
+.chip--tag{background:var(--coral);border-color:var(--coral);color:var(--shell)}
+.lede{max-width:74ch;margin-top:22px;font-size:19px;line-height:1.6;color:var(--ink-soft)}
+.lede strong{color:var(--ink);font-weight:600}
+.strip{display:flex;gap:0;margin-top:26px;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);height:54px}
+.strip span{flex:1}
+.strip span:first-child{flex:2}
+.toc{position:sticky;top:0;z-index:30;display:flex;gap:2px;flex-wrap:wrap;padding:12px 0;margin:30px 0 0;background:linear-gradient(var(--mist) 72%,transparent);border-bottom:1px solid var(--line)}
+.toc a{font-size:12.5px;font-weight:600;color:var(--ink-soft);padding:7px 12px;border-radius:999px}
+.toc a:hover{background:var(--mist-2);color:var(--ink)}
+.block{margin-top:74px;scroll-margin-top:74px}
+.block-head{display:flex;justify-content:space-between;align-items:flex-end;gap:28px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:14px}
+.block-head h2{font-size:34px;line-height:1.1;font-weight:600;margin-top:6px;letter-spacing:-.015em}
+.note{max-width:46ch;font-size:13.5px;line-height:1.55;color:var(--ink-soft)}
+.card{background:var(--shell);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow-card)}
+
+/* 01 · Color */
+.sw-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:24px}
+.sw{background:var(--shell);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-card)}
+.sw-color{height:88px;display:flex;align-items:flex-end;justify-content:space-between;padding:10px 12px}
+.sw-code{font-family:var(--font-sans);font-size:10px;font-weight:700;letter-spacing:.06em;padding:3px 7px;border-radius:6px;border:1px solid rgba(0,0,0,.12);background:rgba(255,255,255,.82);color:#101010}
+.sw-body{padding:10px 12px 12px}
+.sw-role{font-size:13px;font-weight:700}
+.sw-use{font-size:11.5px;line-height:1.35;color:var(--ink-soft);margin-top:3px;min-height:31px}
+.sw-meta{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:7px;font-size:10.5px;color:var(--ink-soft)}
+.ratio{font-family:var(--font-sans);font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--success-bg);color:var(--success);white-space:nowrap}
+.ratio--border{background:var(--info-bg);color:var(--info)}
+.ratio--n/a{background:var(--warning-bg);color:var(--warning)}
+
+/* 02 · Tipografía */
+.type-grid{display:grid;grid-template-columns:1.12fr .88fr;gap:20px;margin-top:24px;align-items:start}
+.specimen{padding:28px 30px 26px}
+.specimen .display-line{font-size:64px;line-height:1;letter-spacing:-.025em;font-weight:600}
+.specimen .display-line em{font-style:italic;color:var(--coral-text)}
+.specimen .h2-line{font-size:30px;line-height:1.14;margin-top:18px;font-weight:600}
+.specimen .body-line{font-size:17px;line-height:1.6;color:var(--ink-soft);margin-top:12px;max-width:52ch}
+.specimen .cyr{display:flex;gap:14px;flex-wrap:wrap;margin-top:16px;font-size:13px;color:var(--ink-soft)}
+.cyr b{font-weight:600;color:var(--ink)}
+.scale{width:100%;border-collapse:collapse;font-size:12px}
+.scale th{text-align:left;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);padding:9px 10px;border-bottom:1px solid var(--line);background:var(--mist-2)}
+.scale td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+.scale td:first-child{font-weight:600;white-space:nowrap}
+.scale tr:last-child td{border-bottom:0}
+.brand-card{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:0;overflow:hidden;margin-top:14px}
+.brand-tile{padding:24px 26px;display:flex;flex-direction:column;justify-content:center;gap:14px;min-height:168px;border-right:1px solid var(--line)}
+.brand-tile:last-child{border-right:0}
+.brand-tile--dark{background:var(--navy);color:var(--mist)}
+.brand-tile--dark .brand strong,.brand-tile--dark .brand em{color:var(--mist)}
+.brand-tile--dark .brand em{color:var(--pearl)}
+.brand-tile--dark .monogram{background:var(--pearl);color:var(--navy)}
+.brand-lock{display:flex;align-items:center;gap:12px}
+.brand-lock .monogram{width:44px;height:44px;font-size:17px}
+.brand-lock strong{display:block;font-family:var(--font-sans);font-size:13px;letter-spacing:.2em;font-weight:700}
+.brand-lock em{display:block;font-style:normal;font-size:9.5px;letter-spacing:.15em;color:var(--ink-soft);margin-top:2px}
+.brand-tile--dark .brand-lock em{color:var(--pearl)}
+.brand-caption{font-size:10.5px;line-height:1.45;color:var(--ink-soft)}
+.brand-tile--dark .brand-caption{color:var(--pearl)}
+.font-notes{display:flex;gap:14px;margin-top:14px;flex-wrap:wrap}
+.font-note{flex:1 1 240px;background:var(--mist-2);border-radius:var(--r-sm);padding:12px 14px;font-size:12px;line-height:1.5;color:var(--ink-soft)}
+.font-note b{display:block;color:var(--ink);font-size:13px;margin-bottom:2px}
+
+/* 03 · Web */
+.frame{border:1px solid var(--line);border-radius:22px;overflow:hidden;background:var(--shell);box-shadow:var(--shadow-modal);margin-top:24px}
+.browser{height:42px;background:var(--mist-2);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:7px;padding:0 16px}
+.browser i{width:10px;height:10px;border-radius:50%;background:var(--line-strong);opacity:.55}
+.browser .url{margin:0 auto;background:var(--shell);border:1px solid var(--line);border-radius:999px;font-size:11.5px;padding:4px 18px;color:var(--ink-soft)}
+.browser .note{font-size:10.5px;color:var(--ink-soft);letter-spacing:.08em;text-transform:uppercase}
+.site{font-size:15px;background:var(--mist)}
+.site-nav{display:flex;align-items:center;gap:26px;padding:15px 34px;background:var(--shell);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:11px;min-width:220px}
+.monogram{width:40px;height:40px;border-radius:50%;background:var(--azure);color:var(--shell);display:grid;place-items:center;font-family:var(--font-display);font-size:16px;font-weight:600;flex:none}
+.monogram--sm{width:32px;height:32px;font-size:13px}
+.brand strong{display:block;font-size:12px;letter-spacing:.18em;font-weight:700}
+.brand em{display:block;font-style:normal;font-size:9.5px;letter-spacing:.14em;color:var(--ink-soft);margin-top:1px}
+.site-links{display:flex;gap:22px;font-size:13px;color:var(--ink-soft)}
+.site-actions{margin-left:auto;display:flex;align-items:center;gap:14px}
+.site-actions .lang{font-size:10.5px;letter-spacing:.1em;color:var(--ink-soft)}
+.hero{position:relative;min-height:560px;background-size:cover;background-position:center;display:flex;align-items:center;padding:56px 54px}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,37,40,.58),rgba(5,37,40,.88))}
+.hero-copy{position:relative;z-index:2;max-width:660px;color:var(--shell)}
+.hero-copy h1{font-size:64px;line-height:1.01;letter-spacing:-.02em;color:var(--shell);font-weight:600;margin-top:14px}
+.hero-copy h1 em{font-style:italic;color:var(--pearl)}
+.hero-lead{font-size:16px;line-height:1.6;color:rgba(255,255,255,.9);margin-top:16px;max-width:50ch}
+.hero-cta{display:flex;gap:12px;margin-top:26px}
+.booking{margin:-42px 34px 0;position:relative;z-index:3;background:var(--shell);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow-card);padding:14px;display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:center}
+.b-field{border:1px solid var(--line-strong);border-radius:var(--r-sm);padding:8px 12px;background:var(--shell)}
+.b-field span{display:block;font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft)}
+.b-field strong{display:block;font-size:14px;line-height:1.2;margin-top:2px}
+.b-field em{display:block;font-style:normal;font-size:10.5px;color:var(--ink-soft)}
+.site-section{padding:42px 34px 10px}
+.site-head{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
+.site-head h2{font-size:34px;line-height:1.1;letter-spacing:-.015em;font-weight:600;margin-top:6px}
+.text-link{font-size:12.5px;font-weight:600}
+.rooms{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:22px}
+.room{background:var(--shell);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-card)}
+.room-img{height:176px;background-size:cover;background-position:center;position:relative}
+.room-badge{position:absolute;left:12px;top:12px;font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:var(--shell);color:var(--ink);border-radius:999px;padding:5px 10px}
+.room-badge--premium{background:var(--amber);color:var(--shell)}
+.room-badge--available{background:var(--fern);color:var(--shell)}
+.room-body{padding:14px 16px 16px}
+.room-type{font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--coral-text)}
+.room-body h3{font-size:22px;line-height:1.15;margin-top:5px;font-weight:600}
+.room-meta{font-size:11.5px;color:var(--ink-soft);margin-top:4px}
+.room-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.room-price{font-family:var(--font-display);font-size:23px;font-weight:600;line-height:1}
+.room-price small{font-family:var(--font-sans);font-size:10px;font-weight:500;color:var(--ink-soft)}
+.split{display:grid;grid-template-columns:1.05fr .95fr;gap:0;margin:46px 34px 0;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:var(--shell)}
+.split-img{min-height:310px;background-size:cover;background-position:center}
+.split-copy{padding:34px 36px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;background:var(--mist-2)}
+.split-copy h2{font-size:32px;line-height:1.12;margin-top:8px;font-weight:600}
+.split-copy p{font-size:14px;line-height:1.6;color:var(--ink-soft);margin-top:10px;max-width:44ch}
+.quote{padding:44px 34px 10px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.quote blockquote{font-size:30px;line-height:1.32;font-style:italic;max-width:760px;margin-top:12px;color:var(--ink)}
+.quote-author{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-top:16px}
+.site-footer{background:var(--navy);color:var(--mist);padding:30px 34px;margin-top:40px;display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:center}
+.site-footer .brand strong,.site-footer .brand em{color:var(--mist)}
+.site-footer .brand em{color:var(--pearl)}
+.site-footer nav{display:flex;gap:20px;font-size:11.5px;color:var(--pearl)}
+.site-footer .legal{font-size:10.5px;color:var(--pearl);opacity:.85}
+
+/* Botones y controles de la demo */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 20px;border-radius:var(--r-sm);font-size:13.5px;font-weight:600;border:1px solid transparent;transition:background .18s var(--ease),color .18s var(--ease),transform .18s var(--ease),box-shadow .18s var(--ease)}
+.btn-sm{min-height:38px;padding:0 15px;font-size:12px;border-radius:calc(var(--r-sm) - 2px)}
+.btn-primary{background:var(--azure);color:var(--shell)}
+.btn-primary:hover{background:var(--azure-deep)}
+.btn-secondary{background:var(--shell);color:var(--ink);border-color:var(--line-strong)}
+.btn-secondary:hover{background:var(--mist-2)}
+.btn-ghost{background:transparent;color:var(--ink);border-color:var(--line-strong)}
+.btn-ghost-light{background:transparent;color:var(--shell);border-color:rgba(255,255,255,.55)}
+.btn-danger{background:var(--error);color:var(--shell)}
+.btn-disabled{background:var(--mist-2);color:var(--ink-soft);border-color:var(--line);cursor:not-allowed;opacity:.75}
+.btn-focus{box-shadow:0 0 0 4px var(--mist-2),0 0 0 6px var(--azure);outline:none}
+.btn-block{width:100%}
+
+/* 04 · Móvil y APK */
+.phones{display:flex;gap:30px;justify-content:center;align-items:flex-start;flex-wrap:wrap;margin-top:26px}
+.phone{width:376px;height:752px;border-radius:48px;background:#0c1014;padding:9px;flex:none;box-shadow:0 32px 64px rgba(0,0,0,.24),0 0 0 1px rgba(255,255,255,.06) inset;position:relative}
+.phone::after{content:"";position:absolute;top:16px;left:50%;transform:translateX(-50%);width:104px;height:26px;border-radius:999px;background:#0c1014;z-index:5}
+.screen{position:relative;height:100%;border-radius:40px;overflow:hidden;background:var(--mist);display:flex;flex-direction:column}
+.sbar{height:36px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:11px;font-weight:700;color:var(--ink)}
+.sbar span:last-child{letter-spacing:2px;font-size:9px}
+.app-nav{height:50px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:var(--shell);border-bottom:1px solid var(--line)}
+.wordmark-sm{font-size:10px;font-weight:700;letter-spacing:.16em}
+.app-nav .iconbtn{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--shell);color:var(--ink);display:grid;place-items:center;font-size:14px;padding:0}
+.scr{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.mhero{height:216px;background-size:cover;background-position:center;position:relative;display:flex;align-items:flex-end;padding:22px 20px}
+.mhero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,37,40,.2),rgba(5,37,40,.86))}
+.mhero-copy{position:relative;z-index:2;color:var(--shell)}
+.mhero-copy h2{font-size:27px;line-height:1.06;color:var(--shell);font-weight:600;margin-top:6px}
+.mhero-copy h2 em{font-style:italic;color:var(--pearl)}
+.mbooking{margin:-26px 16px 0;position:relative;z-index:3;padding:12px;border-radius:var(--r);background:var(--shell);border:1px solid var(--line);box-shadow:var(--shadow-card);display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mbooking .b-field{padding:7px 10px}
+.mbooking .btn{grid-column:1/-1;min-height:40px;font-size:12.5px}
+.mlist{padding:18px 16px 70px;flex:1}
+.mlist .overline{margin-bottom:10px}
+.mrow{display:flex;align-items:center;gap:11px;background:var(--shell);border:1px solid var(--line);border-radius:var(--r-sm);padding:9px;margin-bottom:9px}
+.mrow img{width:52px;height:52px;border-radius:calc(var(--r-sm) - 3px);object-fit:cover;flex:none}
+.mrow strong{display:block;font-size:12.5px}
+.mrow span{display:block;font-size:10.5px;color:var(--ink-soft);margin-top:1px}
+.mrow b{margin-left:auto;font-family:var(--font-display);font-size:18px;font-weight:600}
+.tabbar{position:absolute;bottom:0;left:0;right:0;height:66px;background:var(--shell);border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-around;padding-bottom:6px}
+.tabbar span{font-size:9.5px;color:var(--ink-soft);display:flex;flex-direction:column;align-items:center;gap:3px;font-weight:600}
+.tabbar span i{font-style:normal;font-size:16px}
+.tabbar .is-active{color:var(--azure)}
+.app-head{padding:14px 18px 10px;display:flex;justify-content:space-between;align-items:center;background:var(--shell)}
+.app-head h3{font-size:20px;font-weight:600;line-height:1.1}
+.app-head span{font-size:10.5px;color:var(--ink-soft)}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--azure);color:var(--shell);display:grid;place-items:center;font-size:12px;font-weight:700}
+.app-body{padding:14px 16px 76px;overflow:hidden;flex:1;display:flex;flex-direction:column;gap:11px}
+.greeting{font-size:13px;color:var(--ink-soft)}
+.ticket{background:var(--navy);color:var(--mist);border-radius:var(--r);padding:16px;display:flex;gap:14px;position:relative;overflow:hidden}
+.ticket::after{content:"";position:absolute;right:-26px;top:-26px;width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,.06)}
+.ticket-qr{background:var(--shell);border-radius:10px;padding:6px;width:92px;height:92px;flex:none}
+.ticket-qr svg{width:100%;height:100%;display:block}
+.ticket-info{min-width:0}
+.ticket-info .overline{color:var(--pearl);font-size:9px}
+.ticket-info h3{font-size:20px;color:var(--shell);line-height:1.1;margin-top:4px;font-weight:600}
+.ticket-info p{font-size:11px;color:var(--pearl);margin-top:4px}
+.ticket-chip{display:inline-flex;margin-top:8px;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:var(--fern);color:var(--shell);padding:4px 8px;border-radius:999px}
+.pill-row{display:flex;gap:6px;flex-wrap:wrap}
+.pill{font-size:9.5px;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--mist-2);color:var(--ink-soft)}
+.pill--ok{background:var(--success-bg);color:var(--success)}
+.pill--warn{background:var(--warning-bg);color:var(--warning)}
+.pill--err{background:var(--error-bg);color:var(--error)}
+.actions-row{display:flex;gap:9px}
+.actions-row .btn{flex:1;min-height:42px;font-size:12px}
+.progress{height:8px;border-radius:999px;background:var(--mist-2);overflow:hidden}
+.progress i{display:block;height:100%;width:64%;background:var(--azure);border-radius:999px}
+.room-row{display:flex;align-items:center;gap:10px;background:var(--shell);border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 11px}
+.room-row .num{font-family:var(--font-display);font-size:20px;font-weight:600;width:44px;flex:none}
+.room-row .who{font-size:11px;color:var(--ink-soft);min-width:0}
+.room-row .who strong{display:block;color:var(--ink);font-size:12px;font-weight:600}
+.room-row .btn{margin-left:auto;min-height:34px;font-size:11px;padding:0 11px}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--fern);flex:none}
+
+/* 05 · AdminLTE */
+.admin-frame{display:flex;min-height:700px;margin-top:24px;border:1px solid var(--line);border-radius:20px;overflow:hidden;background:var(--adm-page);box-shadow:var(--shadow-modal)}
+.adm-side{width:258px;flex:none;background:var(--adm-sidebar-bg);color:var(--adm-sidebar-text);display:flex;flex-direction:column;border-right:1px solid var(--line)}
+.adm-brand{height:64px;display:flex;align-items:center;gap:10px;padding:0 18px;border-bottom:1px solid rgba(127,127,127,.22)}
+.adm-brand strong{display:block;font-size:11px;letter-spacing:.16em;font-weight:700}
+.adm-brand em{display:block;font-style:normal;font-size:9px;letter-spacing:.12em;opacity:.75;margin-top:1px}
+.adm-sec{padding:16px 18px 5px;font-size:9.5px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--adm-sidebar-muted)}
+.adm-item{display:flex;align-items:center;gap:10px;margin:1px 10px;padding:9px 11px;border-radius:var(--r-sm);font-size:12.5px;line-height:1.2;color:var(--adm-sidebar-text)}
+.adm-item i{font-style:normal;width:18px;text-align:center;font-size:14px;opacity:.9}
+.adm-item.is-active{background:var(--adm-active-bg);color:var(--adm-active-text);font-weight:600}
+.adm-item.is-hover{background:var(--adm-hover)}
+.adm-item .lock{margin-left:auto;font-size:10px;opacity:.55;display:inline-flex;align-items:center}
+.adm-item .chev{margin-left:auto;font-size:11px;opacity:.7}
+.adm-section{font-weight:600;text-transform:uppercase;letter-spacing:.08em;font-size:10.5px;padding:10px 11px}
+.adm-section.is-open{color:var(--adm-sidebar-text)}
+.adm-sub{padding:2px 0 4px}
+.adm-sub .adm-item{padding-left:32px;font-size:12px}
+.adm-session{margin-top:auto;padding:14px 16px;border-top:1px solid rgba(127,127,127,.22);font-size:10.5px;color:var(--adm-sidebar-muted)}
+.adm-session b{display:block;color:var(--adm-sidebar-text);font-size:11.5px;margin-bottom:4px}
+.adm-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.adm-nav{height:64px;flex:none;background:var(--adm-navbar);border-bottom:1px solid var(--adm-border);display:flex;align-items:center;gap:14px;padding:0 20px}
+.adm-nav .iconbtn{width:38px;height:38px;border-radius:10px;border:1px solid var(--line-strong);background:var(--shell);color:var(--ink);display:grid;place-items:center;padding:0}
+.adm-search{flex:1;max-width:420px;display:flex;align-items:center;gap:8px;background:var(--mist);border:1px solid var(--line-strong);border-radius:999px;padding:8px 14px;font-size:12px;color:var(--ink-soft)}
+.adm-nav-right{margin-left:auto;display:flex;align-items:center;gap:14px;font-size:12px;color:var(--ink-soft)}
+.adm-content{padding:22px 24px 26px;display:flex;flex-direction:column;gap:16px;flex:1}
+.adm-head{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap}
+.crumbs{font-size:11px;color:var(--ink-soft)}
+.adm-head h2{font-size:30px;line-height:1.1;letter-spacing:-.015em;font-weight:600;margin-top:4px}
+.adm-sub{font-size:11.5px;color:var(--ink-soft);margin-top:3px}
+.adm-actions{display:flex;gap:8px}
+.adm-actions .btn{min-height:38px;font-size:12px;padding:0 14px}
+.adm-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}
+.kpi{position:relative;background:var(--shell);border:1px solid var(--line);border-radius:var(--r);padding:14px 15px;box-shadow:var(--shadow-card)}
+.kpi .label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft)}
+.kpi .value{font-family:var(--font-display);font-size:29px;font-weight:600;line-height:1.05;margin-top:6px}
+.kpi .delta{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;margin-top:5px;color:var(--fern)}
+.kpi .delta.down{color:var(--coral-text)}
+.kpi .icon{position:absolute;right:12px;top:12px;width:38px;height:38px;border-radius:11px;background:var(--adm-icon-tile);color:var(--azure);display:grid;place-items:center;font-size:16px}
+.adm-grid{display:grid;grid-template-columns:1.55fr 1fr;gap:14px}
+.adm-grid2{display:grid;grid-template-columns:1.55fr 1fr;gap:14px}
+.card-head{padding:12px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;font-weight:600}
+.card-head span{font-size:10.5px;color:var(--ink-soft);font-weight:500}
+.chart{padding:14px 15px 10px;height:190px;display:flex;align-items:flex-end;gap:9px}
+.chart .col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;height:100%}
+.chart .bar{background:var(--azure);border-radius:6px 6px 3px 3px;min-height:6px}
+.chart .bar--alt{background:var(--amber)}
+.chart-legend{display:flex;gap:14px;padding:0 15px 14px;font-size:10.5px;color:var(--ink-soft)}
+.chart-legend i{display:inline-block;width:9px;height:9px;border-radius:3px;background:var(--azure);margin-right:5px}
+.chart-legend i.alt{background:var(--amber)}
+.timeline{padding:8px 15px 14px;display:flex;flex-direction:column;gap:11px}
+.tl{display:flex;gap:10px;font-size:11.5px;line-height:1.4}
+.tl .dot{width:8px;height:8px;border-radius:50%;background:var(--azure);flex:none;margin-top:4px}
+.tl .dot.ok{background:var(--fern)}
+.tl .dot.warn{background:var(--amber)}
+.tl b{display:block;font-size:11.5px}
+.tl span{color:var(--ink-soft);font-size:10.5px}
+.adm-table{width:100%;border-collapse:collapse;font-size:11.5px}
+.adm-table th{background:var(--mist-2);text-align:left;padding:8px 13px;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);border-bottom:1px solid var(--line)}
+.adm-table td{padding:9px 13px;border-bottom:1px solid var(--line)}
+.adm-table tr:last-child td{border-bottom:0}
+.adm-table .status{font-size:9.5px;font-weight:700;padding:3px 8px;border-radius:999px;display:inline-block}
+.st-ok{background:var(--success-bg);color:var(--success)}
+.st-warn{background:var(--warning-bg);color:var(--warning)}
+.st-err{background:var(--error-bg);color:var(--error)}
+.st-info{background:var(--info-bg);color:var(--info)}
+.adm-list{padding:10px 15px 14px;display:flex;flex-direction:column;gap:9px}
+.adm-list-row{display:flex;align-items:center;gap:9px;font-size:11.5px}
+.adm-list-row b{margin-left:auto;font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--warning-bg);color:var(--warning)}
+.adm-footnote{font-size:10px;color:var(--ink-soft);text-align:right}
+
+/* 06 · Componentes */
+.comp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:24px}
+.comp{padding:16px 17px}
+.comp>.overline{font-size:9.5px;letter-spacing:.14em;margin-bottom:12px;color:var(--coral-text)}
+.comp .stack{display:flex;flex-direction:column;gap:9px}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+.field label{display:block;font-size:10.5px;font-weight:700;margin-bottom:4px}
+.field input,.field select{width:100%;height:40px;border:1px solid var(--line-strong);border-radius:var(--r-sm);background:var(--shell);padding:0 11px;font:inherit;font-size:12.5px;color:var(--ink)}
+.field .help{font-size:10px;color:var(--ink-soft);margin-top:4px}
+.field.error input{border-color:var(--error);box-shadow:0 0 0 3px var(--error-bg)}
+.field.error .help{color:var(--error);font-weight:600}
+.badges{display:flex;gap:6px;flex-wrap:wrap}
+.badge{font-size:9.5px;font-weight:700;letter-spacing:.06em;padding:4px 9px;border-radius:999px;background:var(--mist-2);color:var(--ink-soft)}
+.badge--suite{background:var(--amber);color:var(--ink)}
+.badge--resale{background:var(--coral);color:var(--shell)}
+.badge--free{background:var(--fern);color:var(--shell)}
+.badge--error{background:var(--error-bg);color:var(--error)}
+.mini-table{width:100%;border-collapse:collapse;font-size:11px}
+.mini-table th{text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);padding:6px 8px;border-bottom:1px solid var(--line)}
+.mini-table td{padding:7px 8px;border-bottom:1px solid var(--line)}
+.empty{background:var(--mist-2);border:1px dashed var(--line-strong);border-radius:var(--r-sm);padding:16px;text-align:center;font-size:11.5px;color:var(--ink-soft)}
+.empty b{display:block;color:var(--ink);font-size:13px;margin-bottom:2px}
+.focus-demo{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border-radius:var(--r-sm);background:var(--shell);border:1px solid var(--line-strong);font-size:12.5px;font-weight:600;box-shadow:0 0 0 4px var(--mist-2),0 0 0 6px var(--azure)}
+.swatches-mini{display:flex;gap:5px;margin-top:2px}
+.swatches-mini i{width:22px;height:22px;border-radius:6px;border:1px solid rgba(0,0,0,.08)}
+
+/* 07 · Contraste */
+.contrast{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;margin-top:24px;align-items:start}
+.ctable{width:100%;border-collapse:collapse;font-size:11.5px}
+.ctable th{text-align:left;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-soft);padding:8px 10px;border-bottom:1px solid var(--line);background:var(--mist-2)}
+.ctable td{padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.ctable tr:last-child td{border-bottom:0}
+.pair{display:flex;align-items:center;gap:6px}
+.pair i{width:16px;height:16px;border-radius:5px;border:1px solid rgba(0,0,0,.14);display:inline-block}
+.ok{color:var(--success);font-weight:700}
+.ko{color:var(--error);font-weight:700}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:22px}
+.sum{background:var(--shell);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow-card)}
+.sum b{display:block;font-family:var(--font-display);font-size:30px;line-height:1;font-weight:600}
+.sum span{display:block;font-size:10.5px;color:var(--ink-soft);margin-top:5px}
+.foot{margin-top:64px;border-top:1px solid var(--line);padding-top:18px;display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;font-size:11px;color:var(--ink-soft)}
+.foot code{font-size:10.5px;background:var(--mist-2);padding:2px 6px;border-radius:5px}
+</style>
+</head>
+<body>
+<div class="doc">
+  <header class="top">
+    <div>
+      <p class="eyebrow">@visualUiUx · identidad visual v3 · propuesta B</p>
+      <h1 class="hero-title">Posidonia</h1>
+      <p class="tagline">Frescura de fondo, control a la vista.</p>
+    </div>
+    <div class="chips">
+      <span class="chip chip--ok">✅ WCAG 2.1 AA medido</span>
+      <span class="chip">AdminLTE 3 · dark skin «sala de máquinas»</span>
+      <span class="chip">Web · Móvil · APK</span>
+    </div>
+  </header>
+  <p class="lede"><strong>fresca · crisp · sostenible · precisa · operativa.</strong> La pradera de posidonia bajo un agua transparente: verde-teal profundo, aguas claras y arena. Más fría y energética que la A, con una lectura operativa impecable: el rail oscuro del back-office separa el mando de la operación y el lienzo claro mantiene la frescura en el escaparate.</p>
+  <div class="strip"><span style="background:var(--mist)"></span><span style="background:var(--mist-2)"></span><span style="background:var(--shell)"></span><span style="background:var(--ink)"></span><span style="background:var(--azure)"></span><span style="background:var(--navy)"></span><span style="background:var(--pearl)"></span><span style="background:var(--agua)"></span><span style="background:var(--coral)"></span><span style="background:var(--amber)"></span><span style="background:var(--fern)"></span></div>
+  <nav class="toc" aria-label="Índice de la propuesta">
+    <a href="#paleta">01 Color</a><a href="#tipografia">02 Tipografía</a><a href="#web">03 Web</a><a href="#movil">04 Móvil · APK</a><a href="#admin">05 AdminLTE</a><a href="#componentes">06 Componentes</a><a href="#contraste">07 Contraste</a>
+  </nav>
+
+  <section class="block" id="paleta">
+    <div class="block-head"><div><p class="eyebrow">01 · Color</p><h2>Paleta por rol semántico</h2></div><p class="note">Muestra, HEX, HSL y el ratio del par texto/fondo con el que se usa. Todos los pares declarados se miden; si uno no llega a AA, esta propuesta no se publica.</p></div>
+    <div class="sw-grid"><article class="sw">
+  <div class="sw-color" style="background:var(--mist)"><span class="sw-code">#F2F8F7</span></div>
+  <div class="sw-body">
+    <p class="sw-role">background</p>
+    <p class="sw-use">Lienzo de página: bruma de agua clara</p>
+    <div class="sw-meta"><span>hsl(170 30% 96%)</span><span class="ratio" title="#0C2226 sobre #F2F8F7">AAA · 15,36:1</span></div>
+    <div class="sw-meta"><span>token <b>mist</b></span><span>ink / mist</span></div>
+  </div>
+</article><article class="sw">
+  <div class="sw-color" style="background:var(--mist-2)"><span class="sw-code">#E3EFEE</span></div>
+  <div class="sw-body">
+    <p class="sw-role">background-alt</p>
+    <p class="sw-use">Bandas, filas alternas, estados suaves</p>
+    <div class="sw-meta"><span>hsl(175 27% 91%)</span><span class="ratio" title="#0C2226 sobre #E3EFEE">AAA · 14,03:1</span></div>
+    <div class="sw-meta"><span>token <b>mist-2</b></span><span>ink / mist-2</span></div>
+  </div>
+</article><article class="sw">
+  <div class="sw-color" style="background:var(--shell)"><span class="sw-code">#FFFFFF</span></div>
+  <div class="sw-body">
+    <p class="sw-role">surface</p>
+    <p class="sw-use">Tarjetas, formularios, modales, tabla</p>
+    <div class="sw-meta"><span>hsl(0 0% 100%)</span><span class="ratio" title="#0C2226 sobre #FFFFFF">AAA · 16,50:1</span></div>
+    <div class="sw-meta"><span>token <b>shell</b></span><span>ink / shell</span></div>
+  </div>
+</article><article class="sw">
+  <div class="sw-color" style="background:var(--ink)"><span class="sw-code">#0C2226</span></div>
+  <div class="sw-body">
+    <p class="sw-role">text-primary</p>
+    <p class="sw-use">Texto principal (15,4:1 sobre bruma)</p>
+    <div class="sw-meta"><span>hsl(189 52% 10%)</span><span class="ratio" title="#0C2226 sobre #F2F8F7">AAA · 15,36:1</span></div>
+    <div class="sw-meta"><span>token <b>ink</b></span><span>ink / mist</span></div>
+  </div>
+</article><article class="sw">
+  <div class="sw-color" style="background:var(--ink-soft)"><span class="sw-code">#44605F</span></div>
+  <div class="sw-body">
+    <p class="sw-role">text-secondary</p>
+    <p class="sw-use">Texto secundario, ayudas, migas</p>
+    <div class="sw-meta"><span>hsl(178 17% 32%)</span><span class="ratio" title="#44605F sobre #F2F8F7">AA · 6,34:1</span></div>
+    <div class="sw-meta"><span>token <b>ink-soft</b></span><span>ink-soft / mist</span></div>
+  </div>
+</article><article class="sw">
+  <div class="sw-color" style="background:var(--azure)"><span class="sw-code">#0B6A5A</span></div>
+  <div class="sw-body">
+    <p class="sw-role">interactive</p>
+    <p class="sw-use">Acción primaria, enlaces, foco (posidonia)</p>
+    <div class="sw-meta"><span>hsl(170 81% 23%)</span><span class="ratio" title="#FFFFFF sobre #0B6A5A">AA · 6,51:1</span></div>
+    <div class="sw-meta"><span>token <b>azure</b></span><span>shell / azure</span></div>
+  </div>
+</article><article class="sw">
+  <div class="sw-color" style="background:var(--azure-deep)"><span class="sw-code">#074B40</span></div>
+  <div class="sw-body">
+    <p class="sw-role">interactive-hover</p>
+    <p class="sw-use">Hover y pulsado</p>
+    <div class="sw-meta"><span>hsl(170 83% 16%)</span><span class="ratio" title="#FFFFFF sobre #074B40">AAA · 10,05:1</span></div>
+    <div class="sw-meta"><span>token <b>azure-deep</b></span><span>shell / azure-deep</span></div>
+  </div>
+</article><article class="sw">
+  <div class="sw-color" style="background:var(--agua)"><span class="sw-code">#0C7A87</span></div>
+  <div class="sw-body">
+    <p class="sw-role">interactive-secondary</p>
+    <p class="sw-use">NUEVO: apoyo interactivo, gráficas y datos</p>
+    <div class="sw-meta"><span>hsl(186 84% 29%)</span><span class="ratio" title="#FFFFFF sobre #0C7A87">AA · 5,06:1</span></div>
+    <div class="sw-meta"><span>token <b>agua</b></span><span>shell / agua</span></div>
+  </div>
+</article><article class="sw">
+  <div class="sw-color" style="background:var(--navy)"><span class="sw-code">#052528</span></div>
+  <div class="sw-body">
+    <p class="sw-role">surface-dark</p>
+    <p class="sw-use">Hero, pie, sidebar AdminLTE y velo</p>
+    <div class="sw-meta"><span>hsl(185 78% 9%)</span><span class="ratio" title="#FFFFFF sobre #052528">AAA · 16,13:1</span></div>
+    <div class="sw-meta"><span>token <b>navy</b></span><span>shell / navy</span></div>
+  </div>
+</article><article class="sw">
+  <div class="sw-color" style="background:var(--navy-soft)"><span class="sw-code">#0A3A3D</span></div>
+  <div class="sw-body">
+    <p class="sw-role">surface-dark-alt</p>
+    <p class="sw-use">Superficie oscura secundaria y hover</p>
+    <div class="sw-meta"><span>hsl(184 72% 14%)</span><span class="ratio" title="#FFFFFF sobre #0A3A3D">AAA · 12,46:1</span></div>
+    <div class="sw-meta"><span>token <b>navy-soft</b></span><span>shell / navy-soft</span></div>
+  </div>
+</article><article class="sw">
+  <div class="sw-color" style="background:var(--pearl)"><span class="sw-code">#BFD8D4</span></div>
+  <div class="sw-body">
+    <p class="sw-role">premium-dark</p>
+    <p class="sw-use">Detalle premium SOLO sobre oscuro (10,8:1)</p>
+    <div class="sw-meta"><span>hsl(170 24% 80%)</span><span class="ratio" title="#BFD8D4 sobre #052528">AAA · 10,75:1</span></div>
+    <div class="sw-meta"><span>token <b>pearl</b></span><span>pearl / navy</span></div>
+  </div>
+</article><article class="sw">
+  <div class="sw-color" style="background:var(--coral)"><span class="sw-code">#B44D33</span></div>
+  <div class="sw-body">
+    <p class="sw-role">accent-fill</p>
+    <p class="sw-use">Relleno de atención con texto blanco (5,2:1)</p>
+    <div class="sw-meta"><span>hsl(12 56% 45%)</span><span class="ratio" title="#FFFFFF sobre #B44D33">AA · 5,19:1</span></div>
+    <div class="sw-meta"><span>token <b>coral</b></span><span>shell / coral</span></div>
+  </div>
+</article><article class="sw">
+  <div class="sw-color" style="background:var(--coral-text)"><span class="sw-code">#963C24</span></div>
+  <div class="sw-body">
+    <p class="sw-role">accent-text</p>
+    <p class="sw-use">Atención como texto sobre claro (7,1:1)</p>
+    <div class="sw-meta"><span>hsl(13 61% 36%)</span><span class="ratio" title="#963C24 sobre #FFFFFF">AAA · 7,07:1</span></div>
+    <div class="sw-meta"><span>token <b>coral-text</b></span><span>coral-text / shell</span></div>
+  </div>
+</article><article class="sw">
+  <div class="sw-color" style="background:var(--amber)"><span class="sw-code">#C9A66B</span></div>
+  <div class="sw-body">
+    <p class="sw-role">premium-light</p>
+    <p class="sw-use">Detalle arena: etiqueta premium con tinta encima</p>
+    <div class="sw-meta"><span>hsl(38 47% 60%)</span><span class="ratio" title="#0C2226 sobre #C9A66B">AAA · 7,19:1</span></div>
+    <div class="sw-meta"><span>token <b>amber</b></span><span>ink / amber</span></div>
+  </div>
+</article><article class="sw">
+  <div class="sw-color" style="background:var(--fern)"><span class="sw-code">#2F7A58</span></div>
+  <div class="sw-body">
+    <p class="sw-role">available</p>
+    <p class="sw-use">Chip «disponible» / «libre» con texto blanco</p>
+    <div class="sw-meta"><span>hsl(153 44% 33%)</span><span class="ratio" title="#FFFFFF sobre #2F7A58">AA · 5,19:1</span></div>
+    <div class="sw-meta"><span>token <b>fern</b></span><span>shell / fern</span></div>
+  </div>
+</article><article class="sw">
+  <div class="sw-color" style="background:var(--line)"><span class="sw-code">#D5E5E1</span></div>
+  <div class="sw-body">
+    <p class="sw-role">border</p>
+    <p class="sw-use">Filetes decorativos y separadores</p>
+    <div class="sw-meta"><span>hsl(165 24% 87%)</span><span class="ratio" title="#0C2226 sobre #D5E5E1">AAA · 12,67:1</span></div>
+    <div class="sw-meta"><span>token <b>line</b></span><span>ink / line</span></div>
+  </div>
+</article><article class="sw">
+  <div class="sw-color" style="background:var(--line-strong)"><span class="sw-code">#5C7B76</span></div>
+  <div class="sw-body">
+    <p class="sw-role">border-strong</p>
+    <p class="sw-use">Frontera de controles (≥3:1)</p>
+    <div class="sw-meta"><span>hsl(170 14% 42%)</span><span class="ratio ratio--border" title="#5C7B76 sobre #FFFFFF">≥3:1 · 4,62:1</span></div>
+    <div class="sw-meta"><span>token <b>line-strong</b></span><span>line-strong / shell</span></div>
+  </div>
+</article><article class="sw">
+  <div class="sw-color" style="background:var(--success)"><span class="sw-code">#196A45</span></div>
+  <div class="sw-body">
+    <p class="sw-role">success</p>
+    <p class="sw-use">Confirmación</p>
+    <div class="sw-meta"><span>hsl(153 62% 26%)</span><span class="ratio" title="#196A45 sobre #DFF0E7">AA · 5,57:1</span></div>
+    <div class="sw-meta"><span>token <b>success</b></span><span>success / success-bg</span></div>
+  </div>
+</article><article class="sw">
+  <div class="sw-color" style="background:var(--warning)"><span class="sw-code">#855A0C</span></div>
+  <div class="sw-body">
+    <p class="sw-role">warning</p>
+    <p class="sw-use">Aviso</p>
+    <div class="sw-meta"><span>hsl(39 83% 28%)</span><span class="ratio" title="#855A0C sobre #F9EFD4">AA · 5,29:1</span></div>
+    <div class="sw-meta"><span>token <b>warning</b></span><span>warning / warning-bg</span></div>
+  </div>
+</article><article class="sw">
+  <div class="sw-color" style="background:var(--error)"><span class="sw-code">#A3291E</span></div>
+  <div class="sw-body">
+    <p class="sw-role">error</p>
+    <p class="sw-use">Error y bloqueo</p>
+    <div class="sw-meta"><span>hsl(5 69% 38%)</span><span class="ratio" title="#A3291E sobre #F8E3DF">AA · 5,89:1</span></div>
+    <div class="sw-meta"><span>token <b>error</b></span><span>error / error-bg</span></div>
+  </div>
+</article><article class="sw">
+  <div class="sw-color" style="background:var(--info)"><span class="sw-code">#0C6673</span></div>
+  <div class="sw-body">
+    <p class="sw-role">info</p>
+    <p class="sw-use">Información y ayuda</p>
+    <div class="sw-meta"><span>hsl(188 81% 25%)</span><span class="ratio" title="#0C6673 sobre #DEEEF1">AA · 5,56:1</span></div>
+    <div class="sw-meta"><span>token <b>info</b></span><span>info / info-bg</span></div>
+  </div>
+</article></div>
+  </section>
+
+  <section class="block" id="tipografia">
+    <div class="block-head"><div><p class="eyebrow">02 · Tipografía y marca</p><h2>Escala modular, fuentes y lockup</h2></div><p class="note">Spectral para la voz editorial y Inter Tight para la interfaz. Ambas publican cirílico: el locale RU se pinta con las fuentes de marca.</p></div>
+    <div class="type-grid">
+  <div class="card specimen">
+    <p class="eyebrow">Spectral 600 · display</p>
+    <p class="display-line">El mar entra<br><em>en la habitación.</em></p>
+    <p class="h2-line">Frescura operativa, noche a noche</p>
+    <p class="body-line">Texto base de 17&nbsp;px con interlineado 1,55. La hospitalidad se lee antes de entender el producto: vocabulario de viajero, nunca de cripto.</p>
+    <div class="cyr"><span><b>ES</b> Noches en propiedad</span><span><b>EN</b> Nights you own</span><span><b>RU</b> Ночи у моря · Бронирование</span></div>
+    <p class="eyebrow" style="margin-top:18px;color:var(--coral-text)">Inter Tight · interfaz y datos</p>
+    <p style="font-family:var(--font-sans);font-size:15px;margin-top:6px">ABCDEFGHIJKLMNOPQRSTUVWXYZ<br>abcdefghijklmnopqrstuvwxyz · 0123456789 € % · АБВГДЕЖЗИЙ</p>
+    <div style="border-top:1px solid var(--line);margin-top:18px;padding-top:14px;display:grid;gap:7px">
+      <p class="overline" style="font-size:11px;letter-spacing:0.12em;color:var(--coral-text)">Overline · 12 px · 600 · 0.12em</p>
+      <p style="font-family:var(--font-sans);font-size:13px;color:var(--ink-soft)">Caption 13 px · metadatos, pie de foto y ayudas de formulario.</p>
+      <p style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px">Code · 0x7f3a9c…e21c · tokenId #1284</p>
+    </div>
+  </div>
+  <div>
+    <div class="card" style="overflow:hidden"><table class="scale"><thead><tr><th>Nivel</th><th>Tamaño</th><th>Peso</th><th>Interlineado</th><th>Tracking</th><th>Uso</th></tr></thead><tbody><tr><td>display</td><td>44–80 px</td><td>600</td><td>1</td><td>-0.03em</td><td>Hero de la landing y portada de sección</td></tr><tr><td>h1</td><td>36–62 px</td><td>600</td><td>1.05</td><td>-0.025em</td><td>Título de página</td></tr><tr><td>h2</td><td>26–38 px</td><td>600</td><td>1.12</td><td>-0.015em</td><td>Sección</td></tr><tr><td>h3</td><td>21–22 px</td><td>600</td><td>1.25</td><td>0</td><td>Subtítulo / tarjeta destacada</td></tr><tr><td>h4</td><td>17–18 px</td><td>600</td><td>1.35</td><td>0</td><td>Cabecera de tarjeta / bloque</td></tr><tr><td>body-lg</td><td>19 px</td><td>400</td><td>1.6</td><td>0</td><td>Entradilla editorial</td></tr><tr><td>body</td><td>17 px</td><td>400</td><td>1.55</td><td>0</td><td>Texto base (mínimo 17 px)</td></tr><tr><td>body-sm</td><td>15 px</td><td>400</td><td>1.5</td><td>0</td><td>Tablas densas de personal</td></tr><tr><td>small</td><td>14 px</td><td>500</td><td>1.45</td><td>0</td><td>Ayudas, etiquetas de formulario</td></tr><tr><td>caption</td><td>13 px</td><td>400</td><td>1.4</td><td>0</td><td>Metadatos, pie de foto</td></tr><tr><td>overline</td><td>12 px</td><td>600</td><td>1.4</td><td>0.12em</td><td>Eyebrow en mayúsculas</td></tr><tr><td>micro</td><td>12 px</td><td>500</td><td>1.4</td><td>0.04em</td><td>Chips y etiquetas de estado</td></tr><tr><td>code</td><td>14 px</td><td>400</td><td>1.4</td><td>0</td><td>Hash, tokenId, direcciones</td></tr></tbody></table></div>
+    <div class="font-notes">
+      <p class="font-note"><b>Spectral</b>Serif de pantalla con carácter contemporáneo y curva suave; cirílico nativo y buena lectura a sizes medios.</p>
+      <p class="font-note"><b>Inter Tight</b>Grotesca de alta densidad, métricas ajustadas y cifras tabulares: ideal para tablas, KPIs y APK.</p>
+    </div>
+  </div>
+</div>
+    <div class="card brand-card">
+    <div class="brand-tile">
+      <div class="brand-lock"><span class="monogram">M·S</span><span><strong>MARINA DEL SOL</strong><em>ALICANTE · COSTA BLANCA</em></span></div>
+      <p class="brand-caption">Lockup principal sobre bruma: monograma en disco posidonia + nombre en mayúsculas con tracking 0,20 em.</p>
+    </div>
+    <div class="brand-tile brand-tile--dark">
+      <div class="brand-lock"><span class="monogram">M·S</span><span><strong>MARINA DEL SOL</strong><em>ALICANTE · COSTA BLANCA</em></span></div>
+      <p class="brand-caption">Versión negativa sobre abismo: monograma en perla. Es la que va en el pie, el hero y la imagen social.</p>
+    </div>
+    <div class="brand-tile">
+      <span class="monogram" style="width:56px;height:56px;font-size:20px">M·S</span>
+      <p class="brand-caption">Monograma suelto para avatar, favicon y app icon (adaptive icon: fondo posidonia, glifo bruma). Área de respeto = altura de la «M».</p>
+    </div>
+  </div>
+  </section>
+
+  <section class="block" id="web">
+    <div class="block-head"><div><p class="eyebrow">03 · Web</p><h2>Landing pública</h2></div><p class="note">Hero a sangre con velo al 70 % (medido), barra de reserva flotante, tarjetas de habitación y narrativa editorial. Mobile-first a 320 px.</p></div>
+    <div class="frame">
+  <div class="browser"><i></i><i></i><i></i><span class="url">hotelmarinadelsol.es</span><span class="note">previsualización · Posidonia</span></div>
+  <div class="site">
+    <header class="site-nav">
+      <div class="brand"><span class="monogram">M·S</span><span><strong>MARINA DEL SOL</strong><em>ALICANTE · COSTA BLANCA</em></span></div>
+      <nav class="site-links"><a>Habitaciones</a><a>Experiencias</a><a>El hotel</a><a>Reventa</a></nav>
+      <div class="site-actions"><span class="lang">ES · EN · RU</span><button class="btn btn-primary btn-sm">Reservar</button></div>
+    </header>
+    <div class="hero" style="background-image:url('../../../docs/imagenes/201-Suite-2026-09-28-1.jpg')">
+      <div class="hero-copy">
+        <p class="eyebrow eyebrow--light">Alicante · Costa Blanca · posidonia y cal</p>
+        <h1>Despierta<br><em>mirando al mar.</em></h1>
+        <p class="hero-lead">Noches en propiedad sobre la costa de Alicante: reserva directa, trazabilidad en cadena y la calma de un hotel de verdad.</p>
+        <div class="hero-cta"><button class="btn btn-primary">Reservar una noche</button><button class="btn btn-ghost-light">Ver habitaciones</button></div>
+      </div>
+    </div>
+    <div class="booking">
+      <div class="b-field"><span>Entrada</span><strong>12 oct</strong><em>sábado</em></div>
+      <div class="b-field"><span>Salida</span><strong>15 oct</strong><em>martes · 3 noches</em></div>
+      <div class="b-field"><span>Huéspedes</span><strong>2 personas</strong><em>1 habitación</em></div>
+      <button class="btn btn-primary btn-block" style="height:56px">Buscar disponibilidad</button>
+    </div>
+    <section class="site-section">
+      <div class="site-head"><div><p class="eyebrow">Habitaciones</p><h2>Elige tu vista al mar</h2></div><a class="text-link">Ver las 50 habitaciones →</a></div>
+      <div class="rooms">
+        <article class="room"><div class="room-img" style="background-image:url('../../../docs/imagenes/101-Simple-2026-09-28-1.jpg')"><span class="room-badge room-badge--available">Disponible</span></div><div class="room-body"><p class="room-type">Doble</p><h3>Doble con terraza</h3><p class="room-meta">2 personas · 22 m² · balcón al patio</p><div class="room-foot"><span class="room-price">92 €<small> /noche</small></span><button class="btn btn-secondary btn-sm">Reservar</button></div></div></article>
+        <article class="room"><div class="room-img" style="background-image:url('../../../docs/imagenes/201-Suite-2026-09-28-1.jpg')"><span class="room-badge room-badge--premium">Suite</span></div><div class="room-body"><p class="room-type">Suite</p><h3>Suite vista mar</h3><p class="room-meta">3 personas · 38 m² · salón y terraza</p><div class="room-foot"><span class="room-price">148 €<small> /noche</small></span><button class="btn btn-secondary btn-sm">Reservar</button></div></div></article>
+        <article class="room"><div class="room-img" style="background-image:url('../../../docs/imagenes/116-Doble-2026-09-28-1.jpg')"><span class="room-badge">Últimas 3</span></div><div class="room-body"><p class="room-type">Familiar</p><h3>Doble familiar</h3><p class="room-meta">4 personas · 30 m² · dos camas</p><div class="room-foot"><span class="room-price">118 €<small> /noche</small></span><button class="btn btn-secondary btn-sm">Reservar</button></div></div></article>
+      </div>
+    </section>
+    <section class="split"><div class="split-img" style="background-image:url('../../../docs/imagenes/201-Suite-2026-09-28-1.jpg')"></div><div class="split-copy"><p class="eyebrow">Experiencias</p><h2>Menos ruido, más mar.</h2><p>Una estancia sostenible, sin fricción: reserva en tres pasos, pase digital y todo lo que necesitas a un toque en el móvil.</p><button class="btn btn-secondary" style="margin-top:18px">Descubrir experiencias</button></div></section>
+    <section class="quote"><p class="eyebrow">Huéspedes verificados</p><blockquote>“Compré la noche desde el móvil y en recepción solo tuve que enseñar el pase. Lo demás, sencillamente funcionó.”</blockquote><p class="quote-author">Marta &amp; Luis · Suite vista mar · octubre 2026</p></section>
+    <footer class="site-footer"><div class="brand"><span class="monogram monogram--sm">M·S</span><span><strong>MARINA DEL SOL</strong><em>ALICANTE · COSTA BLANCA</em></span></div><nav><a style="color:inherit">Habitaciones</a><a style="color:inherit">Experiencias</a><a style="color:inherit">Reventa</a><a style="color:inherit">Contacto</a></nav><span class="legal">© 2026 Hotel Marina del Sol · ES · EN · RU</span></footer>
+  </div>
+</div>
+  </section>
+
+  <section class="block" id="movil">
+    <div class="block-head"><div><p class="eyebrow">04 · Móvil y APK</p><h2>El mismo token en tres pantallas</h2></div><p class="note">Web móvil, app del huésped (Compose) y suite de housekeeping. Mismos roles de color, área táctil ≥44 px (48 dp en Android).</p></div>
+    <div class="phones">
+  <div class="phone"><div class="screen">
+    <div class="sbar"><span>9:41</span><span>▪▪▪ ▮</span></div>
+    <div class="app-nav"><button class="iconbtn" aria-label="Menú">☰</button><span class="wordmark-sm">MARINA DEL SOL</span><button class="iconbtn" aria-label="Cuenta">○</button></div>
+    <div class="scr">
+      <div class="mhero" style="background-image:url('../../../docs/imagenes/201-Suite-2026-09-28-1.jpg')"><div class="mhero-copy"><p class="eyebrow eyebrow--light">Alicante · Costa Blanca</p><h2>Despierta<br><em>mirando al mar.</em></h2></div></div>
+      <div class="mbooking">
+        <div class="b-field"><span>Entrada</span><strong>12 oct</strong></div>
+        <div class="b-field"><span>Salida</span><strong>15 oct</strong></div>
+        <button class="btn btn-primary">Ver disponibilidad</button>
+      </div>
+      <div class="mlist"><p class="eyebrow">Habitaciones</p>
+        <div class="mrow"><img src="../../../docs/imagenes/101-Simple-2026-09-28-1.jpg" alt="Doble con terraza"><div><strong>Doble con terraza</strong><span>2 personas · 22 m²</span></div><b>92 €</b></div>
+        <div class="mrow"><img src="../../../docs/imagenes/201-Suite-2026-09-28-1.jpg" alt="Suite vista mar"><div><strong>Suite vista mar</strong><span>3 personas · 38 m²</span></div><b>148 €</b></div>
+        <div class="mrow"><img src="../../../docs/imagenes/116-Doble-2026-09-28-1.jpg" alt="Doble familiar"><div><strong>Doble familiar</strong><span>4 personas · 30 m²</span></div><b>118 €</b></div>
+      </div>
+    </div>
+    <div class="tabbar"><span class="is-active"><i>⌂</i>Inicio</span><span><i>◫</i>Noches</span><span><i>◌</i>Asistente</span><span><i>☰</i>Cuenta</span></div>
+  </div></div>
+
+  <div class="phone"><div class="screen">
+    <div class="sbar"><span>9:41</span><span>▪▪▪ ▮</span></div>
+    <div class="app-head"><div><h3>Mis noches</h3><span>Buenas tardes, Marta · 12 oct</span></div><span class="avatar">MR</span></div>
+    <div class="app-body">
+      <div class="ticket">
+        <div class="ticket-qr" style="color:var(--ink)"><svg viewBox="0 0 25 25" width="92" height="92" role="img" aria-label="Código QR del pase de la noche" fill="currentColor"><rect x="9" y="0" width="1" height="1"/><rect x="12" y="0" width="1" height="1"/><rect x="15" y="0" width="1" height="1"/><rect x="7" y="1" width="1" height="1"/><rect x="9" y="1" width="1" height="1"/><rect x="13" y="1" width="1" height="1"/><rect x="16" y="1" width="1" height="1"/><rect x="14" y="2" width="1" height="1"/><rect x="8" y="3" width="1" height="1"/><rect x="10" y="3" width="1" height="1"/><rect x="11" y="3" width="1" height="1"/><rect x="15" y="3" width="1" height="1"/><rect x="10" y="4" width="1" height="1"/><rect x="12" y="4" width="1" height="1"/><rect x="14" y="4" width="1" height="1"/><rect x="15" y="4" width="1" height="1"/><rect x="17" y="4" width="1" height="1"/><rect x="8" y="5" width="1" height="1"/><rect x="11" y="5" width="1" height="1"/><rect x="14" y="5" width="1" height="1"/><rect x="16" y="5" width="1" height="1"/><rect x="17" y="5" width="1" height="1"/><rect x="7" y="6" width="1" height="1"/><rect x="9" y="6" width="1" height="1"/><rect x="11" y="6" width="1" height="1"/><rect x="16" y="6" width="1" height="1"/><rect x="0" y="7" width="1" height="1"/><rect x="6" y="7" width="1" height="1"/><rect x="9" y="7" width="1" height="1"/><rect x="11" y="7" width="1" height="1"/><rect x="13" y="7" width="1" height="1"/><rect x="17" y="7" width="1" height="1"/><rect x="20" y="7" width="1" height="1"/><rect x="21" y="7" width="1" height="1"/><rect x="0" y="8" width="1" height="1"/><rect x="3" y="8" width="1" height="1"/><rect x="4" y="8" width="1" height="1"/><rect x="5" y="8" width="1" height="1"/><rect x="6" y="8" width="1" height="1"/><rect x="11" y="8" width="1" height="1"/><rect x="14" y="8" width="1" height="1"/><rect x="15" y="8" width="1" height="1"/><rect x="20" y="8" width="1" height="1"/><rect x="24" y="8" width="1" height="1"/><rect x="0" y="9" width="1" height="1"/><rect x="2" y="9" width="1" height="1"/><rect x="8" y="9" width="1" height="1"/><rect x="10" y="9" width="1" height="1"/><rect x="12" y="9" width="1" height="1"/><rect x="18" y="9" width="1" height="1"/><rect x="19" y="9" width="1" height="1"/><rect x="20" y="9" width="1" height="1"/><rect x="22" y="9" width="1" height="1"/><rect x="24" y="9" width="1" height="1"/><rect x="0" y="10" width="1" height="1"/><rect x="8" y="10" width="1" height="1"/><rect x="9" y="10" width="1" height="1"/><rect x="11" y="10" width="1" height="1"/><rect x="19" y="10" width="1" height="1"/><rect x="21" y="10" width="1" height="1"/><rect x="0" y="11" width="1" height="1"/><rect x="1" y="11" width="1" height="1"/><rect x="7" y="11" width="1" height="1"/><rect x="8" y="11" width="1" height="1"/><rect x="12" y="11" width="1" height="1"/><rect x="17" y="11" width="1" height="1"/><rect x="19" y="11" width="1" height="1"/><rect x="23" y="11" width="1" height="1"/><rect x="0" y="12" width="1" height="1"/><rect x="1" y="12" width="1" height="1"/><rect x="2" y="12" width="1" height="1"/><rect x="5" y="12" width="1" height="1"/><rect x="8" y="12" width="1" height="1"/><rect x="14" y="12" width="1" height="1"/><rect x="15" y="12" width="1" height="1"/><rect x="17" y="12" width="1" height="1"/><rect x="22" y="12" width="1" height="1"/><rect x="24" y="12" width="1" height="1"/><rect x="0" y="13" width="1" height="1"/><rect x="3" y="13" width="1" height="1"/><rect x="6" y="13" width="1" height="1"/><rect x="7" y="13" width="1" height="1"/><rect x="8" y="13" width="1" height="1"/><rect x="9" y="13" width="1" height="1"/><rect x="10" y="13" width="1" height="1"/><rect x="12" y="13" width="1" height="1"/><rect x="13" y="13" width="1" height="1"/><rect x="17" y="13" width="1" height="1"/><rect x="20" y="13" width="1" height="1"/><rect x="24" y="13" width="1" height="1"/><rect x="0" y="14" width="1" height="1"/><rect x="1" y="14" width="1" height="1"/><rect x="2" y="14" width="1" height="1"/><rect x="4" y="14" width="1" height="1"/><rect x="7" y="14" width="1" height="1"/><rect x="10" y="14" width="1" height="1"/><rect x="11" y="14" width="1" height="1"/><rect x="23" y="14" width="1" height="1"/><rect x="0" y="15" width="1" height="1"/><rect x="1" y="15" width="1" height="1"/><rect x="3" y="15" width="1" height="1"/><rect x="4" y="15" width="1" height="1"/><rect x="7" y="15" width="1" height="1"/><rect x="13" y="15" width="1" height="1"/><rect x="16" y="15" width="1" height="1"/><rect x="18" y="15" width="1" height="1"/><rect x="23" y="15" width="1" height="1"/><rect x="0" y="16" width="1" height="1"/><rect x="1" y="16" width="1" height="1"/><rect x="2" y="16" width="1" height="1"/><rect x="5" y="16" width="1" height="1"/><rect x="9" y="16" width="1" height="1"/><rect x="14" y="16" width="1" height="1"/><rect x="22" y="16" width="1" height="1"/><rect x="2" y="17" width="1" height="1"/><rect x="6" y="17" width="1" height="1"/><rect x="7" y="17" width="1" height="1"/><rect x="11" y="17" width="1" height="1"/><rect x="12" y="17" width="1" height="1"/><rect x="14" y="17" width="1" height="1"/><rect x="15" y="17" width="1" height="1"/><rect x="22" y="17" width="1" height="1"/><rect x="24" y="17" width="1" height="1"/><rect x="12" y="18" width="1" height="1"/><rect x="17" y="18" width="1" height="1"/><rect x="9" y="19" width="1" height="1"/><rect x="12" y="19" width="1" height="1"/><rect x="13" y="19" width="1" height="1"/><rect x="14" y="19" width="1" height="1"/><rect x="15" y="19" width="1" height="1"/><rect x="17" y="19" width="1" height="1"/><rect x="18" y="19" width="1" height="1"/><rect x="19" y="19" width="1" height="1"/><rect x="21" y="19" width="1" height="1"/><rect x="22" y="19" width="1" height="1"/><rect x="9" y="20" width="1" height="1"/><rect x="12" y="20" width="1" height="1"/><rect x="13" y="20" width="1" height="1"/><rect x="14" y="20" width="1" height="1"/><rect x="16" y="20" width="1" height="1"/><rect x="17" y="20" width="1" height="1"/><rect x="18" y="20" width="1" height="1"/><rect x="19" y="20" width="1" height="1"/><rect x="22" y="20" width="1" height="1"/><rect x="23" y="20" width="1" height="1"/><rect x="7" y="21" width="1" height="1"/><rect x="8" y="21" width="1" height="1"/><rect x="10" y="21" width="1" height="1"/><rect x="13" y="21" width="1" height="1"/><rect x="17" y="21" width="1" height="1"/><rect x="19" y="21" width="1" height="1"/><rect x="22" y="21" width="1" height="1"/><rect x="23" y="21" width="1" height="1"/><rect x="8" y="22" width="1" height="1"/><rect x="14" y="22" width="1" height="1"/><rect x="7" y="23" width="1" height="1"/><rect x="14" y="23" width="1" height="1"/><rect x="15" y="23" width="1" height="1"/><rect x="16" y="23" width="1" height="1"/><rect x="21" y="23" width="1" height="1"/><rect x="22" y="23" width="1" height="1"/><rect x="24" y="23" width="1" height="1"/><rect x="10" y="24" width="1" height="1"/><rect x="12" y="24" width="1" height="1"/><rect x="14" y="24" width="1" height="1"/><rect x="16" y="24" width="1" height="1"/><rect x="17" y="24" width="1" height="1"/><rect x="23" y="24" width="1" height="1"/><rect x="0" y="0" width="7" height="7" fill="none" stroke="currentColor" stroke-width="1"/><rect x="2" y="2" width="3" height="3"/><rect x="18" y="0" width="7" height="7" fill="none" stroke="currentColor" stroke-width="1"/><rect x="20" y="2" width="3" height="3"/><rect x="0" y="18" width="7" height="7" fill="none" stroke="currentColor" stroke-width="1"/><rect x="2" y="20" width="3" height="3"/></svg></div>
+        <div class="ticket-info"><p class="overline">Pase de la noche</p><h3>Suite 201</h3><p>12 – 15 oct · 3 noches<br>Reserva MD-2412 · 2 huéspedes</p><span class="ticket-chip">Check-in disponible</span></div>
+      </div>
+      <div class="pill-row"><span class="pill pill--ok">Noche en tu cartera</span><span class="pill">Reventa activa</span></div>
+      <div class="actions-row"><button class="btn btn-primary">Mostrar pase</button><button class="btn btn-secondary">Vender noche</button></div>
+      <div class="room-row" style="margin-top:2px"><span class="status-dot"></span><div class="who"><strong>Desayuno incluido</strong>07:30 – 11:00 · terraza</div><button class="btn btn-ghost">Ver</button></div>
+      <div class="room-row"><span class="status-dot" style="background:var(--azure)"></span><div class="who"><strong>Conserjería</strong>Abierta 24 h · chatea con el asistente</div><button class="btn btn-ghost">Abrir</button></div>
+      <div class="room-row"><span class="status-dot" style="background:var(--amber)"></span><div class="who"><strong>Cargos de la estancia</strong>Sin cargos pendientes · 0,00 €</div><button class="btn btn-ghost">Ver</button></div>
+    </div>
+    <div class="tabbar"><span><i>⌂</i>Inicio</span><span class="is-active"><i>◫</i>Noches</span><span><i>◌</i>Asistente</span><span><i>☰</i>Cuenta</span></div>
+  </div></div>
+
+  <div class="phone"><div class="screen">
+    <div class="sbar"><span>7:42</span><span>▪▪▪ ▮</span></div>
+    <div class="app-head"><div><h3>Housekeeping</h3><span>Turno mañana · 12 oct · 50 habitaciones</span></div><span class="avatar">AL</span></div>
+    <div class="app-body">
+      <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--ink-soft)"><span>Limpieza completada</span><b style="color:var(--ink)">32 / 50</b></div>
+      <div class="progress"><i></i></div>
+      <div class="pill-row"><span class="pill pill--ok">Libres 12</span><span class="pill pill--warn">Limpieza 6</span><span class="pill pill--err">Revisar 2</span></div>
+      <div class="room-row"><span class="num">204</span><div class="who"><strong>Check-out 11:00</strong>2 huéspedes · salida</div><button class="btn btn-primary">Marcar limpia</button></div>
+      <div class="room-row"><span class="num">305</span><div class="who"><strong>Limpiando</strong>Asignada a ti · 12 min</div><button class="btn btn-secondary">Terminar</button></div>
+      <div class="room-row"><span class="num">210</span><div class="who"><strong>Revisar</strong>Aire acondicionado · incidencia</div><button class="btn btn-ghost">Detalle</button></div>
+      <div class="empty" style="margin-top:2px"><b>Todo en orden</b>Sin incidencias nuevas en tu planta.</div>
+    </div>
+    <div class="tabbar"><span><i>◫</i>Tablero</span><span class="is-active"><i>▦</i>Habitaciones</span><span><i>✎</i>Parte</span><span><i>☰</i>Más</span></div>
+  </div></div>
+</div>
+  </section>
+
+  <section class="block" id="admin">
+    <div class="block-head"><div><p class="eyebrow">05 · AdminLTE</p><h2>Back-office · dark skin «sala de máquinas»</h2></div><p class="note">Misma distribución AdminLTE de siempre —sidebar plegable, navbar, migas, content-wrapper y small-box— con la identidad nueva. El shell no se reescribe: se re-viste.</p></div>
+    <div class="admin-frame">
+  <aside class="adm-side">
+    <div class="adm-brand"><span class="monogram monogram--sm">M·S</span><span><strong>MARINA DEL SOL</strong><em>ADMINISTRACIÓN</em></span></div>
+    <div class="adm-item adm-section"><i aria-hidden="true">▤</i><span>Habitación</span><span class="chev" aria-hidden="true">›</span></div><div class="adm-item adm-section"><i aria-hidden="true">◔</i><span>Recepción</span><span class="chev" aria-hidden="true">›</span></div><div class="adm-item adm-section is-hover"><i aria-hidden="true">✦</i><span>Housekeeping</span><span class="chev" aria-hidden="true">›</span></div><div class="adm-item adm-section"><i aria-hidden="true">◈</i><span>Actividades</span><span class="chev" aria-hidden="true">›</span></div><div class="adm-item adm-section"><i aria-hidden="true">✚</i><span>Mantenimiento</span><span class="chev" aria-hidden="true">›</span></div><div class="adm-item adm-section is-open"><i aria-hidden="true">◫</i><span>Administración</span><span class="chev" aria-hidden="true">⌄</span></div><div class="adm-sub"><div class="adm-item is-active"><span>Panel del día</span></div><div class="adm-item"><span>Royalty</span><span class="lock" aria-label="Requiere rol"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span></div><div class="adm-item"><span>Fondos</span><span class="lock" aria-label="Requiere rol"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span></div><div class="adm-item"><span>Roles</span></div><div class="adm-item"><span>Reseñas</span></div></div><div class="adm-item adm-section"><i aria-hidden="true">⚙</i><span>Plataforma</span><span class="chev" aria-hidden="true">›</span></div><div class="adm-item adm-section"><i aria-hidden="true">◍</i><span>Sistemas</span><span class="chev" aria-hidden="true">›</span></div>
+    <div class="adm-session"><b>A. Ruiz · Propietaria</b>DEFAULT_ADMIN · MINTER · TREASURER<br>Sesión verificada · TOTP</div>
+  </aside>
+  <div class="adm-main">
+    <header class="adm-nav">
+      <button class="iconbtn" aria-label="Abrir menú">☰</button>
+      <div class="adm-search">⌕ Buscar reserva, huésped o token…</div>
+      <div class="adm-nav-right"><span>? Ayuda</span><span>◔ Avisos</span><span class="avatar">AR</span></div>
+    </header>
+    <div class="adm-content">
+      <div class="adm-head">
+        <div><p class="crumbs">Inicio / Administración / Panel del día</p><h2>Panel del día</h2><p class="adm-sub">sábado, 12 de octubre · 07:42 · 50 habitaciones · ocupación 82 %</p></div>
+        <div class="adm-actions"><button class="btn btn-secondary">Exportar</button><button class="btn btn-primary">Publicar noche</button></div>
+      </div>
+      <div class="adm-kpis">
+        <div class="kpi"><span class="icon">◔</span><p class="label">Ocupación hoy</p><p class="value">82 %</p><span class="delta">▲ 4,2 pts</span></div>
+        <div class="kpi"><span class="icon">◫</span><p class="label">Noches vendidas</p><p class="value">1.284</p><span class="delta">▲ 6,1 %</span></div>
+        <div class="kpi"><span class="icon">€</span><p class="label">Ingresos del mes</p><p class="value">18.450 €</p><span class="delta">▲ 8,4 %</span></div>
+        <div class="kpi"><span class="icon">✚</span><p class="label">Incidencias</p><p class="value">3</p><span class="delta down">▼ 2 abiertas</span></div>
+      </div>
+      <div class="adm-grid">
+        <div class="card"><div class="card-head">Noches vendidas · últimos 14 días <span>objetivo 1.200</span></div><div class="chart"><div class="col"><div class="bar" style="height:42%"></div></div><div class="col"><div class="bar" style="height:55%"></div></div><div class="col"><div class="bar bar--alt" style="height:48%"></div></div><div class="col"><div class="bar" style="height:62%"></div></div><div class="col"><div class="bar" style="height:58%"></div></div><div class="col"><div class="bar bar--alt" style="height:74%"></div></div><div class="col"><div class="bar" style="height:68%"></div></div><div class="col"><div class="bar" style="height:81%"></div></div><div class="col"><div class="bar bar--alt" style="height:76%"></div></div><div class="col"><div class="bar" style="height:88%"></div></div><div class="col"><div class="bar" style="height:84%"></div></div><div class="col"><div class="bar bar--alt" style="height:92%"></div></div><div class="col"><div class="bar" style="height:86%"></div></div><div class="col"><div class="bar" style="height:96%"></div></div></div><div class="chart-legend"><span><i></i>Venta directa</span><span><i class="alt"></i>Reventa</span></div></div>
+        <div class="card"><div class="card-head">Actividad reciente <span>en vivo</span></div><div class="timeline">
+          <div class="tl"><span class="dot ok"></span><div><b>Noche acuñada · #1284</b><span>Suite 201 · 12 oct · hace 4 min</span></div></div>
+          <div class="tl"><span class="dot"></span><div><b>Check-in completado</b><span>Habitación 104 · L. García · 07:38</span></div></div>
+          <div class="tl"><span class="dot warn"></span><div><b>Incidencia abierta</b><span>Hab. 210 · climatización · 07:21</span></div></div>
+          <div class="tl"><span class="dot ok"></span><div><b>Reventa publicada</b><span>Noche #1190 · 96 € · 07:15</span></div></div>
+        </div></div>
+      </div>
+      <div class="adm-grid2">
+        <div class="card"><div class="card-head">Reservas de hoy <span>ver todas →</span></div><table class="adm-table"><thead><tr><th>Hab.</th><th>Huésped</th><th>Estado</th><th>Hora</th><th>Importe</th></tr></thead><tbody>
+          <tr><td>101</td><td>L. García</td><td><span class="status st-ok">Confirmada</span></td><td>14:00</td><td>276 €</td></tr>
+          <tr><td>204</td><td>M. Rossi</td><td><span class="status st-info">Check-out</span></td><td>11:00</td><td>—</td></tr>
+          <tr><td>305</td><td>J. Pérez</td><td><span class="status st-warn">Limpieza</span></td><td>15:30</td><td>148 €</td></tr>
+          <tr><td>210</td><td>A. Novak</td><td><span class="status st-err">Incidencia</span></td><td>16:00</td><td>92 €</td></tr>
+        </tbody></table></div>
+        <div class="card"><div class="card-head">Preventivo de esta semana <span>4 tareas</span></div><div class="adm-list">
+          <div class="adm-list-row"><span class="status st-info">Hoy</span> Revisión ascensor <b>1</b></div>
+          <div class="adm-list-row"><span class="status st-warn">Mañana</span> Climatización 2ª planta <b>6</b></div>
+          <div class="adm-list-row"><span class="status st-ok">Vie</span> Piscina · análisis agua <b>—</b></div>
+          <div class="adm-list-row"><span class="status st-info">Sáb</span> Lencería · inventario <b>2</b></div>
+        </div></div>
+      </div>
+      <p class="adm-footnote">Datos de demostración · la identidad no altera la lógica ni las cifras reales del panel</p>
+    </div>
+  </div>
+</div>
+<div class="phones" style="margin-top:18px">
+  <div class="phone" style="width:340px;height:600px"><div class="screen">
+    <div class="sbar"><span>7:42</span><span>▪▪▪ ▮</span></div>
+    <div class="adm-nav" style="height:52px;padding:0 12px"><button class="iconbtn" style="width:34px;height:34px">☰</button><strong style="font-size:12px">Panel del día</strong><span class="avatar" style="margin-left:auto">AR</span></div>
+    <div style="padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--adm-page);flex:1">
+      <div class="adm-kpis" style="grid-template-columns:1fr 1fr;gap:8px">
+        <div class="kpi" style="padding:11px"><p class="label">Ocupación</p><p class="value" style="font-size:23px">82 %</p><span class="delta">▲ 4,2</span></div>
+        <div class="kpi" style="padding:11px"><p class="label">Ingresos</p><p class="value" style="font-size:23px">18.450 €</p><span class="delta">▲ 8,4 %</span></div>
+      </div>
+      <div class="card" style="padding:0"><div class="card-head" style="font-size:12px">Reservas de hoy</div><table class="adm-table"><tbody><tr><td>101 · L. García</td><td><span class="status st-ok">Confirmada</span></td></tr><tr><td>204 · M. Rossi</td><td><span class="status st-info">Check-out</span></td></tr><tr><td>305 · J. Pérez</td><td><span class="status st-warn">Limpieza</span></td></tr></tbody></table></div>
+      <button class="btn btn-primary" style="min-height:44px">Publicar noche</button>
+    </div>
+  </div></div>
+  <p class="note" style="max-width:330px;align-self:center">En móvil, el shell AdminLTE pasa a <strong>cajón lateral</strong> con velo, la barra superior queda fija y los KPI se apilan en dos columnas. Las tablas densas se convierten en filas-tarjeta sin sacar columnas del DOM.</p>
+</div>
+  </section>
+
+  <section class="block" id="componentes">
+    <div class="block-head"><div><p class="eyebrow">06 · Componentes</p><h2>Inventario atómico en contexto</h2></div><p class="note">Átomos, moléculas y organismos con sus estados: hover, foco, disabled, error, vacío y degradado honesto.</p></div>
+    <div class="comp-grid">
+  <div class="card comp"><p class="overline">Botones y foco</p><div class="stack">
+    <div class="btn-row"><button class="btn btn-primary">Publicar noche</button><button class="btn btn-secondary">Exportar</button></div>
+    <div class="btn-row"><button class="btn btn-ghost">Ver detalle</button><button class="btn btn-danger">Cancelar</button><button class="btn btn-disabled" disabled>Sin saldo</button></div>
+    <span class="focus-demo">Foco visible · doble anillo</span>
+    <p class="help" style="font-size:10px;color:var(--ink-soft)">Área táctil mínima 44×44 px · foco ≥3:1 contra los colores adyacentes.</p>
+  </div></div>
+  <div class="card comp"><p class="overline">Campos de formulario</p><div class="stack">
+    <div class="field"><label for="f1">Correo del huésped</label><input id="f1" value="marta@ejemplo.es"></div>
+    <div class="field"><label for="f2">Número de huéspedes</label><select id="f2"><option>2 personas</option></select><p class="help">La frontera del control usa <b>line-strong</b> (≥3:1).</p></div>
+    <div class="field error"><label for="f3">Código de reserva</label><input id="f3" value="MD-24"><p class="help" role="alert">Faltan 2 caracteres. Revisa el resguardo.</p></div>
+  </div></div>
+  <div class="card comp"><p class="overline">Etiquetas y estados</p><div class="stack">
+    <div class="badges"><span class="badge badge--suite">Suite</span><span class="badge badge--resale">Reventa</span><span class="badge badge--free">Disponible</span><span class="badge">Ocupada</span><span class="badge badge--error">Incidencia</span></div>
+    <div class="pill-row" style="margin-top:4px"><span class="pill pill--ok">Confirmada</span><span class="pill pill--warn">Limpieza</span><span class="pill pill--err">Bloqueada</span><span class="pill">En revisión</span></div>
+    <p class="help" style="font-size:10px;color:var(--ink-soft)">El color nunca es el único canal: cada estado lleva texto y, en tablas, símbolo.</p>
+  </div></div>
+  <div class="card comp"><p class="overline">Tabla densa (DataTable)</p><table class="mini-table"><thead><tr><th>Hab.</th><th>Estado</th><th>Huésped</th></tr></thead><tbody><tr><td>101</td><td>Disponible</td><td>—</td></tr><tr><td>204</td><td>Salida 11:00</td><td>M. Rossi</td></tr><tr><td>305</td><td>Limpieza</td><td>J. Pérez</td></tr></tbody></table><p class="help" style="font-size:10px;color:var(--ink-soft);margin-top:8px">Cabecera fija, filas de 44 px y columnas ocultables sin salir del DOM.</p></div>
+  <div class="card comp"><p class="overline">Vacío y degradado</p><div class="stack">
+    <div class="empty"><b>No hay incidencias</b>Todo en orden en tu planta.</div>
+    <div class="empty" style="background:var(--warning-bg);border-color:var(--warning)"><b>No pudimos comprobar la cadena</b>El RPC no responde. Reintenta en unos segundos.</div>
+  </div></div>
+  <div class="card comp"><p class="overline">Paleta en contexto</p><div class="stack">
+    <div class="swatches-mini"><i style="background:var(--mist)" title="mist #F2F8F7"></i><i style="background:var(--mist-2)" title="mist-2 #E3EFEE"></i><i style="background:var(--shell)" title="shell #FFFFFF"></i><i style="background:var(--ink)" title="ink #0C2226"></i><i style="background:var(--ink-soft)" title="ink-soft #44605F"></i><i style="background:var(--azure)" title="azure #0B6A5A"></i><i style="background:var(--azure-deep)" title="azure-deep #074B40"></i><i style="background:var(--navy)" title="navy #052528"></i><i style="background:var(--pearl)" title="pearl #BFD8D4"></i><i style="background:var(--coral)" title="coral #B44D33"></i><i style="background:var(--amber)" title="amber #C9A66B"></i><i style="background:var(--fern)" title="fern #2F7A58"></i></div>
+    <p class="help" style="font-size:10px;color:var(--ink-soft)">Un solo origen de verdad: los mismos valores se consumen en web, en el back-office AdminLTE y en el tema Compose de la APK.</p>
+    <button class="btn btn-secondary" style="margin-top:2px">Sincronizar tokens</button>
+  </div></div>
+</div>
+  </section>
+
+  <section class="block" id="contraste">
+    <div class="block-head"><div><p class="eyebrow">07 · Accesibilidad</p><h2>Contraste medido, no estimado</h2></div><p class="note">Matemática WCAG 2.1 sin redondear. Los pares prohibidos se incluyen como comprobación negativa: confirman que el límite está medido y no es una opinión.</p></div>
+    <div class="summary">
+  <div class="sum"><b>44</b><span>pares texto/fondo medidos con WCAG 2.1</span></div>
+  <div class="sum"><b>0</b><span>pares por debajo de su mínimo</span></div>
+  <div class="sum"><b>3,92:1</b><span>ratio mínimo declarado (fronteras de control)</span></div>
+</div>
+<div class="contrast">
+  <div class="card" style="overflow:hidden"><table class="ctable"><thead><tr><th></th><th>Par texto / fondo</th><th>Ratio</th><th>Nivel</th></tr></thead><tbody><tr><td><span class="pair"><i style="background:#0C2226"></i><i style="background:#F2F8F7"></i></span></td><td>Texto principal sobre lienzo de bruma</td><td class="ok">15,36:1</td><td>AAA</td></tr><tr><td><span class="pair"><i style="background:#0C2226"></i><i style="background:#FFFFFF"></i></span></td><td>Texto principal sobre tarjeta</td><td class="ok">16,50:1</td><td>AAA</td></tr><tr><td><span class="pair"><i style="background:#0C2226"></i><i style="background:#E3EFEE"></i></span></td><td>Texto principal sobre banda</td><td class="ok">14,03:1</td><td>AAA</td></tr><tr><td><span class="pair"><i style="background:#44605F"></i><i style="background:#F2F8F7"></i></span></td><td>Texto secundario sobre lienzo</td><td class="ok">6,34:1</td><td>AA</td></tr><tr><td><span class="pair"><i style="background:#44605F"></i><i style="background:#FFFFFF"></i></span></td><td>Texto secundario sobre tarjeta</td><td class="ok">6,81:1</td><td>AA</td></tr><tr><td><span class="pair"><i style="background:#44605F"></i><i style="background:#E3EFEE"></i></span></td><td>Texto secundario sobre banda</td><td class="ok">5,79:1</td><td>AA</td></tr><tr><td><span class="pair"><i style="background:#0B6A5A"></i><i style="background:#FFFFFF"></i></span></td><td>Enlace / acción sobre tarjeta</td><td class="ok">6,51:1</td><td>AA</td></tr><tr><td><span class="pair"><i style="background:#0B6A5A"></i><i style="background:#F2F8F7"></i></span></td><td>Enlace sobre el lienzo</td><td class="ok">6,06:1</td><td>AA</td></tr><tr><td><span class="pair"><i style="background:#0C7A87"></i><i style="background:#FFFFFF"></i></span></td><td>Apoyo interactivo sobre tarjeta</td><td class="ok">5,06:1</td><td>AA</td></tr><tr><td><span class="pair"><i style="background:#0C7A87"></i><i style="background:#F2F8F7"></i></span></td><td>Apoyo interactivo sobre el lienzo</td><td class="ok">4,71:1</td><td>AA</td></tr><tr><td><span class="pair"><i style="background:#FFFFFF"></i><i style="background:#0B6A5A"></i></span></td><td>Texto blanco sobre acción primaria</td><td class="ok">6,51:1</td><td>AA</td></tr><tr><td><span class="pair"><i style="background:#FFFFFF"></i><i style="background:#074B40"></i></span></td><td>Texto blanco sobre acción en hover</td><td class="ok">10,05:1</td><td>AAA</td></tr><tr><td><span class="pair"><i style="background:#FFFFFF"></i><i style="background:#506669"></i></span></td><td>Titular del hero sobre velo de abismo al 70 %</td><td class="ok">6,09:1</td><td>AA</td></tr></tbody></table></div>
+  <div class="card" style="overflow:hidden"><table class="ctable"><thead><tr><th></th><th>Par prohibido</th><th>Ratio</th><th>Motivo</th></tr></thead><tbody><tr><td><span class="pair"><i style="background:#0C2226"></i><i style="background:#052528"></i></span></td><td>Texto tinta sobre superficie oscura</td><td class="ko">1,02:1</td><td>Se pierde la jerarquía del registro oscuro</td></tr><tr><td><span class="pair"><i style="background:#BFD8D4"></i><i style="background:#FFFFFF"></i></span></td><td>Detalle premium sobre blanco</td><td class="ko">1,50:1</td><td>Solo existe sobre oscuro</td></tr><tr><td><span class="pair"><i style="background:#C9A66B"></i><i style="background:#FFFFFF"></i></span></td><td>Arena como texto sobre blanco</td><td class="ko">2,30:1</td><td>Es una superficie: se usa con tinta encima</td></tr><tr><td><span class="pair"><i style="background:#D5E5E1"></i><i style="background:#F2F8F7"></i></span></td><td>Filete decorativo como frontera de control</td><td class="ko">1,21:1</td><td>Incumple WCAG 1.4.11 (mínimo 3:1)</td></tr></tbody></table></div>
+</div>
+<p class="note" style="margin-top:12px;max-width:none">Tabla completa (44 pares aprobados y 4 prohibidos) en <a href="../contraste-propuesta-b-posidonia.md"><code>contraste-propuesta-b-posidonia.md</code></a>. Verificación: <code>node scripts/design/proposals-v3.mjs</code> — el script falla si algún par incumple.</p>
+  </section>
+
+  <footer class="foot">
+    <span>Propuesta B · <b>Posidonia</b> · generada por <code>scripts/design/proposals-v3.mjs</code></span>
+    <span>Hotel Marina del Sol · Alicante · 2026-10 · tokens listos para <code>packages/config/tailwind/preset.cjs</code></span>
+  </footer>
+</div>
+</body>
+</html>

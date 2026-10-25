@@ -63,8 +63,8 @@ describe("Identidad visual · piezas de marca dentro de la paleta", () => {
     const cover = readFileSync(`${IMAGES_DIR}/doc-portada-hotel.svg`, "utf8");
     const navy = preset.theme.extend.colors.navy!.toUpperCase();
     expect(cover.toUpperCase()).toContain(navy);
-    // El titular de la portada usa el marino `navy` del sistema «Brisa Marina».
-    expect(cover).toMatch(/font-size="76"[^>]*fill="#0E2A3F"/);
+    // El titular de la portada usa el marino `navy` de la identidad vigente.
+    expect(cover).toMatch(new RegExp(`font-size="76"[^>]*fill="${navy}"`, "i"));
   });
 
   it("la imagen social se genera con tokens de la paleta", () => {

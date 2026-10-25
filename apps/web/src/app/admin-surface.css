@@ -1,0 +1,163 @@
+/**
+ * PIEL «POSIDONIA» (B) DE LA SUITE ADMINISTRATIVA — generado por
+ * `scripts/design/build-admin-surface.mjs`. NO editar a mano: regenerar el script.
+ *
+ * Se aplica dentro del scope `.admin-surface` (raíz de AdminLayout). La suite pública conserva
+ * «Cal & Sal» del preset y de `:root`. El markup no cambia: solo se re-visten las mismas
+ * utilidades y variables para que los componentes compartidos (DataTable, WalletMenu…) se pinten
+ * con la identidad administrativa cuando están dentro del back-office.
+ *
+ * Fuente de verdad de los valores: `scripts/design/proposals-v3.data.mjs` (PROPOSAL_B).
+ */
+
+.admin-surface {
+  /* Tokens Posidonia para estilos en línea y anillo de foco. */
+  --mist: #F2F8F7;
+  --mist-2: #E3EFEE;
+  --shell: #FFFFFF;
+  --ink: #0C2226;
+  --ink-soft: #44605F;
+  --azure: #0B6A5A;
+  --azure-deep: #074B40;
+  --navy: #052528;
+  --navy-soft: #0A3A3D;
+  --pearl: #BFD8D4;
+  --coral: #B44D33;
+  --coral-text: #963C24;
+  --amber: #C9A66B;
+  --fern: #2F7A58;
+  --agua: #0C7A87;
+  --line: #D5E5E1;
+  --line-strong: #5C7B76;
+  --success: #196A45;
+  --success-bg: #DFF0E7;
+  --warning: #855A0C;
+  --warning-bg: #F9EFD4;
+  --error: #A3291E;
+  --error-bg: #F8E3DF;
+  --info: #0C6673;
+  --info-bg: #DEEEF1;
+  --font-display: "Spectral";
+  --font-sans: "Inter Tight";
+  font-family: var(--font-sans), "Segoe UI", system-ui, -apple-system, sans-serif;
+  color: var(--ink);
+  background-color: var(--mist);
+}
+
+/* Tipografía display dentro del scope (la clase usa la variable, pero se refuerza aquí). */
+.admin-surface [class~="font-display"] {
+  font-family: var(--font-display), "Iowan Old Style", Georgia, serif;
+}
+
+/* Radios y elevación de Posidonia. */
+.admin-surface [class~="rounded-brand-xs"]{border-radius:4px}
+.admin-surface [class~="rounded-brand-sm"]{border-radius:8px}
+.admin-surface [class~="rounded-brand"]{border-radius:14px}
+.admin-surface [class~="rounded-brand-lg"]{border-radius:20px}
+.admin-surface [class~="shadow-card"]{box-shadow:0 1px 2px rgba(5,37,40,.06), 0 8px 22px rgba(11,106,90,.10)}
+.admin-surface [class~="shadow-card-hover"]{box-shadow:0 14px 32px rgba(5,37,40,.16)}
+.admin-surface [class~="shadow-modal"]{box-shadow:0 26px 68px rgba(5,37,40,.26)}
+
+/* Re-viste de cada utilidad de color encontrada en el producto (solo dentro del scope). */
+.admin-surface [class~="text-ink-soft"]{color:#44605F;}
+.admin-surface [class~="border-line"]{border-color:#D5E5E1;}
+.admin-surface [class~="bg-shell"]{background-color:#FFFFFF;}
+.admin-surface [class~="text-ink"]{color:#0C2226;}
+.admin-surface [class~="text-azure-deep"]{color:#074B40;}
+.admin-surface [class~="bg-mist-2"]{background-color:#E3EFEE;}
+.admin-surface [class~="hover:bg-mist"]:hover{background-color:#F2F8F7;}
+.admin-surface [class~="hover:border-azure"]:hover{border-color:#0B6A5A;}
+.admin-surface [class~="divide-line"]{border-color:#D5E5E1;}
+.admin-surface [class~="hover:bg-mist-2"]:hover{background-color:#E3EFEE;}
+.admin-surface [class~="hover:text-ink"]:hover{color:#0C2226;}
+.admin-surface [class~="focus:ring-azure"]:focus{--tw-ring-color:#0B6A5A;}
+.admin-surface [class~="hover:text-azure"]:hover{color:#0B6A5A;}
+.admin-surface [class~="hover:text-coral-text"]:hover{color:#963C24;}
+.admin-surface [class~="border-azure/40"]{border-color:rgb(11 106 90 / 0.4);}
+.admin-surface [class~="bg-info-bg"]{background-color:#DEEEF1;}
+.admin-surface [class~="text-azure"]{color:#0B6A5A;}
+.admin-surface [class~="border-info/40"]{border-color:rgb(12 102 115 / 0.4);}
+.admin-surface [class~="text-info"]{color:#0C6673;}
+.admin-surface [class~="bg-azure"]{background-color:#0B6A5A;}
+.admin-surface [class~="text-shell"]{color:#FFFFFF;}
+.admin-surface [class~="text-coral-text"]{color:#963C24;}
+.admin-surface [class~="border-line-strong"]{border-color:#5C7B76;}
+.admin-surface [class~="bg-mist-2/60"]{background-color:rgb(227 239 238 / 0.6);}
+.admin-surface [class~="hover:bg-azure-deep"]:hover{background-color:#074B40;}
+.admin-surface [class~="border-azure"]{border-color:#0B6A5A;}
+.admin-surface [class~="hover:text-shell"]:hover{color:#FFFFFF;}
+.admin-surface [class~="focus:bg-azure-deep"]:focus{background-color:#074B40;}
+.admin-surface [class~="focus:text-shell"]:focus{color:#FFFFFF;}
+.admin-surface [class~="bg-mist/90"]{background-color:rgb(242 248 247 / 0.9);}
+.admin-surface [class~="border-coral-text/40"]{border-color:rgb(150 60 36 / 0.4);}
+.admin-surface [class~="bg-coral"]{background-color:#B44D33;}
+.admin-surface [class~="bg-amber"]{background-color:#C9A66B;}
+.admin-surface [class~="bg-shell/90"]{background-color:rgb(255 255 255 / 0.9);}
+.admin-surface [class~="bg-fern"]{background-color:#2F7A58;}
+.admin-surface [class~="from-azure"]{--tw-gradient-from:#0B6A5A var(--tw-gradient-from-position);--tw-gradient-to:rgb(0 0 0 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to);}
+.admin-surface [class~="to-fern"]{--tw-gradient-to:#2F7A58 var(--tw-gradient-to-position);}
+.admin-surface [class~="text-error"]{color:#A3291E;}
+.admin-surface [class~="text-mist"]{color:#F2F8F7;}
+.admin-surface [class~="text-navy"]{color:#052528;}
+.admin-surface [class~="hover:bg-navy-soft"]:hover{background-color:#0A3A3D;}
+.admin-surface [class~="bg-navy"]{background-color:#052528;}
+.admin-surface [class~="text-pearl"]{color:#BFD8D4;}
+.admin-surface [class~="border-pearl/30"]{border-color:rgb(191 216 212 / 0.3);}
+.admin-surface [class~="bg-mist-2/50"]{background-color:rgb(227 239 238 / 0.5);}
+.admin-surface [class~="bg-mist"]{background-color:#F2F8F7;}
+.admin-surface [class~="bg-navy/60"]{background-color:rgb(5 37 40 / 0.6);}
+.admin-surface [class~="focus:border-azure"]:focus{border-color:#0B6A5A;}
+.admin-surface [class~="border-success/40"]{border-color:rgb(25 106 69 / 0.4);}
+.admin-surface [class~="bg-success-bg"]{background-color:#DFF0E7;}
+.admin-surface [class~="text-success"]{color:#196A45;}
+.admin-surface [class~="border-error/40"]{border-color:rgb(163 41 30 / 0.4);}
+.admin-surface [class~="bg-error-bg"]{background-color:#F8E3DF;}
+.admin-surface [class~="border-line/60"]{border-color:rgb(213 229 225 / 0.6);}
+.admin-surface [class~="border-coral/50"]{border-color:rgb(180 77 51 / 0.5);}
+.admin-surface [class~="bg-coral/5"]{background-color:rgb(180 77 51 / 0.05);}
+.admin-surface [class~="bg-coral/20"]{background-color:rgb(180 77 51 / 0.2);}
+.admin-surface [class~="text-ink-soft/40"]{color:rgb(68 96 95 / 0.4);}
+.admin-surface [class~="text-warning"]{color:#855A0C;}
+.admin-surface [class~="ring-azure"]{--tw-ring-color:#0B6A5A;}
+.admin-surface [class~="accent-azure"]{accent-color:#0B6A5A;}
+.admin-surface [class~="hover:text-azure-deep"]:hover{color:#074B40;}
+.admin-surface [class~="bg-azure/10"]{background-color:rgb(11 106 90 / 0.1);}
+.admin-surface [class~="bg-ink/40"]{background-color:rgb(12 34 38 / 0.4);}
+.admin-surface [class~="focus:ring-azure/40"]:focus{--tw-ring-color:rgb(11 106 90 / 0.4);}
+.admin-surface [class~="focus-visible:outline-azure"]:focus-visible{outline-color:#0B6A5A;}
+.admin-surface [class~="bg-navy/70"]{background-color:rgb(5 37 40 / 0.7);}
+.admin-surface [class~="from-navy/80"]{--tw-gradient-from:rgb(5 37 40 / 0.8) var(--tw-gradient-from-position);--tw-gradient-to:rgb(0 0 0 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to);}
+.admin-surface [class~="via-navy/40"]{--tw-gradient-to:rgb(0 0 0 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from),rgb(5 37 40 / 0.4) var(--tw-gradient-via-position),var(--tw-gradient-to);}
+.admin-surface [class~="border-shell/60"]{border-color:rgb(255 255 255 / 0.6);}
+.admin-surface [class~="decoration-mist/50"]{text-decoration-color:rgb(242 248 247 / 0.5);}
+.admin-surface [class~="text-coral-text/25"]{color:rgb(150 60 36 / 0.25);}
+.admin-surface [class~="bg-shell/95"]{background-color:rgb(255 255 255 / 0.95);}
+.admin-surface [class~="bg-success/15"]{background-color:rgb(25 106 69 / 0.15);}
+.admin-surface [class~="bg-azure-deep"]{background-color:#074B40;}
+.admin-surface [class~="bg-warning-bg"]{background-color:#F9EFD4;}
+.admin-surface [class~="border-warning/40"]{border-color:rgb(133 90 12 / 0.4);}
+.admin-surface [class~="text-ink/80"]{color:rgb(12 34 38 / 0.8);}
+.admin-surface [class~="border-fern/30"]{border-color:rgb(47 122 88 / 0.3);}
+.admin-surface [class~="bg-fern/10"]{background-color:rgb(47 122 88 / 0.1);}
+.admin-surface [class~="hover:border-fern/60"]:hover{border-color:rgb(47 122 88 / 0.6);}
+@media (min-width: 768px){.admin-surface [class~="tablet:text-shell"]{color:#FFFFFF;}}
+@media (min-width: 768px){.admin-surface [class~="tablet:text-shell/75"]{color:rgb(255 255 255 / 0.75);}}
+.admin-surface [class~="text-shell/85"]{color:rgb(255 255 255 / 0.85);}
+.admin-surface [class~="bg-ink/30"]{background-color:rgb(12 34 38 / 0.3);}
+.admin-surface [class~="border-warning/50"]{border-color:rgb(133 90 12 / 0.5);}
+.admin-surface [class~="border-line/70"]{border-color:rgb(213 229 225 / 0.7);}
+.admin-surface [class~="border-fern/40"]{border-color:rgb(47 122 88 / 0.4);}
+.admin-surface [class~="text-fern"]{color:#2F7A58;}
+.admin-surface [class~="border-amber/50"]{border-color:rgb(201 166 107 / 0.5);}
+.admin-surface [class~="bg-amber/10"]{background-color:rgb(201 166 107 / 0.1);}
+.admin-surface [class~="border-coral-text/50"]{border-color:rgb(150 60 36 / 0.5);}
+.admin-surface [class~="bg-coral-text/10"]{background-color:rgb(150 60 36 / 0.1);}
+.admin-surface [class~="border-ink-soft/40"]{border-color:rgb(68 96 95 / 0.4);}
+.admin-surface [class~="bg-ink-soft/10"]{background-color:rgb(68 96 95 / 0.1);}
+.admin-surface [class~="border-coral-text/30"]{border-color:rgb(150 60 36 / 0.3);}
+.admin-surface [class~="bg-azure/15"]{background-color:rgb(11 106 90 / 0.15);}
+.admin-surface [class~="border-coral"]{border-color:#B44D33;}
+.admin-surface [class~="bg-coral/15"]{background-color:rgb(180 77 51 / 0.15);}
+.admin-surface [class~="border-navy"]{border-color:#052528;}
+.admin-surface [class~="bg-coral-text"]{background-color:#963C24;}
+.admin-surface [class~="bg-ink-soft/50"]{background-color:rgb(68 96 95 / 0.5);}

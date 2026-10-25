@@ -53,15 +53,15 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
       </section>
 
       {/* 2 · Servicios */}
-      <section aria-labelledby="home-services" className="border-y border-line/70 bg-mist-2/60 px-5 py-10">
-        <div className="mx-auto w-full max-w-6xl">
-          <h2 id="home-services" className="font-display text-h2 font-medium">{t("services.title")}</h2>
-          <p className="mt-2 max-w-prose text-small text-ink-soft">{t("services.subtitle")}</p>
-          <ul className="mt-6 grid gap-4 tablet:grid-cols-3">
+      <section aria-labelledby="home-services" className="bg-mist-2/60 px-5 py-16 tablet:px-8 tablet:py-24">
+        <div className="mx-auto w-full max-w-7xl">
+          <h2 id="home-services" className="max-w-[22ch] text-balance font-display text-h1 font-semibold tracking-tight">{t("services.title")}</h2>
+          <p className="mt-3 max-w-prose text-body text-ink-soft">{t("services.subtitle")}</p>
+          <ul className="mt-10 grid gap-8 tablet:grid-cols-3">
             {SERVICES.map((key) => (
-              <li key={key} className="rounded-brand border border-line bg-shell p-5">
-                <h3 className="font-display text-body font-semibold text-ink">{t(`services.items.${key}.title`)}</h3>
-                <p className="mt-1.5 text-small text-ink-soft">{t(`services.items.${key}.body`)}</p>
+              <li key={key} className="border-t border-line pt-5">
+                <h3 className="font-display text-h3 font-semibold text-ink">{t(`services.items.${key}.title`)}</h3>
+                <p className="mt-2 text-body-sm text-ink-soft">{t(`services.items.${key}.body`)}</p>
               </li>
             ))}
           </ul>
@@ -70,21 +70,21 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
       </section>
 
       {/* 3 · Alojamiento: tarjetas reales de habitación (Fase C); sin fichas publicadas, texto de marca */}
-      <section aria-labelledby="home-styles" className="px-5 py-10">
-        <div className="mx-auto w-full max-w-6xl">
-          <h2 id="home-styles" className="font-display text-h2 font-medium">{t("styles.title")}</h2>
-          <p className="mt-2 max-w-prose text-small text-ink-soft">{t("styles.subtitle")}</p>
+      <section aria-labelledby="home-styles" className="px-5 py-16 tablet:px-8 tablet:py-24">
+        <div className="mx-auto w-full max-w-7xl">
+          <h2 id="home-styles" className="max-w-[22ch] text-balance font-display text-h1 font-semibold tracking-tight">{t("styles.title")}</h2>
+          <p className="mt-3 max-w-prose text-body text-ink-soft">{t("styles.subtitle")}</p>
           {content.suites.length === 0 ? (
-            <ul className="mt-6 grid gap-4 tablet:grid-cols-3">
+            <ul className="mt-10 grid gap-8 tablet:grid-cols-3">
               {STYLES.map(({ key, type }) => (
-                <li key={key} className="rounded-brand border border-line bg-shell p-5">
-                  <h3 className="font-display text-body font-semibold text-ink">{roomType(type)}</h3>
-                  <p className="mt-1.5 text-small text-ink-soft">{t(`styles.items.${key}`)}</p>
+                <li key={key} className="border-t border-line pt-5">
+                  <h3 className="font-display text-h3 font-semibold text-ink">{roomType(type)}</h3>
+                  <p className="mt-2 text-body-sm text-ink-soft">{t(`styles.items.${key}`)}</p>
                 </li>
               ))}
             </ul>
           ) : (
-            <ul className="mt-6 flex flex-col gap-5">
+            <ul className="mt-10 grid gap-6 tablet:grid-cols-2 desktop:grid-cols-3">
               {content.suites.map((suite) => (
                 <SuiteCard key={suite.id} suite={suite} locale={locale} />
               ))}
@@ -95,30 +95,30 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
       </section>
 
       {/* 4 · Planes informativos (D-69) */}
-      <section aria-labelledby="home-plans" className="border-y border-line/70 bg-mist-2/60 px-5 py-10">
-        <div className="mx-auto w-full max-w-6xl">
-          <h2 id="home-plans" className="font-display text-h2 font-medium">{t("plans.title")}</h2>
-          <p className="mt-2 max-w-prose text-small text-ink-soft">{t("plans.subtitle")}</p>
+      <section aria-labelledby="home-plans" className="bg-mist-2/60 px-5 py-16 tablet:px-8 tablet:py-24">
+        <div className="mx-auto w-full max-w-7xl">
+          <h2 id="home-plans" className="max-w-[22ch] text-balance font-display text-h1 font-semibold tracking-tight">{t("plans.title")}</h2>
+          <p className="mt-3 max-w-prose text-body text-ink-soft">{t("plans.subtitle")}</p>
           {content.offers.length === 0 ? (
             <p className="mt-6 text-small text-ink-soft">{t("plans.empty")}</p>
           ) : (
-            <ul className="mt-6 grid gap-4 tablet:grid-cols-2">
+            <ul className="mt-10 grid gap-6 tablet:grid-cols-2">
               {content.offers.slice(0, 2).map((offer: HotelOfferRecord) => (
-                <li key={offer.id} className="overflow-hidden rounded-brand border border-line bg-shell">
+                <li key={offer.id} className="group overflow-hidden">
                   {offer.imageFileName && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={contentImageUrl(offer.imageFileName)}
                       alt=""
                       loading="lazy"
-                      className="h-40 w-full object-cover"
+                      className="aspect-[16/10] w-full object-cover"
                     />
                   )}
-                  <div className="p-5">
-                    <h3 className="font-display text-body font-semibold text-ink">
+                  <div className="pt-4">
+                    <h3 className="font-display text-h3 font-semibold text-ink">
                       {pick(locale, offer.titleEs, offer.titleEn, offer.titleRu)}
                     </h3>
-                    <p className="mt-1.5 text-small text-ink-soft">
+                    <p className="mt-2 text-body-sm text-ink-soft">
                       {pick(locale, offer.bodyEs, offer.bodyEn, offer.bodyRu)}
                     </p>
                   </div>
@@ -131,20 +131,20 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
       </section>
 
       {/* 5 · Actividades */}
-      <section aria-labelledby="home-activities" className="px-5 py-10">
-        <div className="mx-auto w-full max-w-6xl">
-          <h2 id="home-activities" className="font-display text-h2 font-medium">{t("activities.title")}</h2>
-          <p className="mt-2 max-w-prose text-small text-ink-soft">{t("activities.subtitle")}</p>
+      <section aria-labelledby="home-activities" className="px-5 py-16 tablet:px-8 tablet:py-24">
+        <div className="mx-auto w-full max-w-7xl">
+          <h2 id="home-activities" className="max-w-[22ch] text-balance font-display text-h1 font-semibold tracking-tight">{t("activities.title")}</h2>
+          <p className="mt-3 max-w-prose text-body text-ink-soft">{t("activities.subtitle")}</p>
           {content.activities.length === 0 ? (
             <p className="mt-6 text-small text-ink-soft">{t("activities.empty")}</p>
           ) : (
-            <ul className="mt-6 grid gap-4 tablet:grid-cols-3">
+            <ul className="mt-10 grid gap-8 tablet:grid-cols-3">
               {content.activities.slice(0, 3).map((activity: ActivityRecord) => (
-                <li key={activity.id} className="rounded-brand border border-line bg-shell p-5">
-                  <h3 className="font-display text-body font-semibold text-ink">
+                <li key={activity.id} className="border-t border-line pt-5">
+                  <h3 className="font-display text-h3 font-semibold text-ink">
                     {pick(locale, activity.nameEs, activity.nameEn, activity.nameRu)}
                   </h3>
-                  <p className="mt-1.5 text-small text-ink-soft">
+                  <p className="mt-2 text-body-sm text-ink-soft">
                     {pick(locale, activity.descriptionEs, activity.descriptionEn, activity.descriptionRu)}
                   </p>
                   {activity.priceCents > 0 && (
@@ -161,14 +161,14 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
       </section>
 
       {/* 6 · Experiencia con galería (D-66, D-70) */}
-      <section aria-labelledby="home-experience" className="border-y border-line/70 bg-mist-2/60 px-5 py-10">
-        <div className="mx-auto w-full max-w-6xl">
-          <h2 id="home-experience" className="font-display text-h2 font-medium">{t("experience.title")}</h2>
-          <p className="mt-2 max-w-prose text-small text-ink-soft">{t("experience.subtitle")}</p>
+      <section aria-labelledby="home-experience" className="bg-mist-2/60 px-5 py-16 tablet:px-8 tablet:py-24">
+        <div className="mx-auto w-full max-w-7xl">
+          <h2 id="home-experience" className="max-w-[22ch] text-balance font-display text-h1 font-semibold tracking-tight">{t("experience.title")}</h2>
+          <p className="mt-3 max-w-prose text-body text-ink-soft">{t("experience.subtitle")}</p>
           {content.gallery.length === 0 ? (
             <p className="mt-6 text-small text-ink-soft">{t("experience.empty")}</p>
           ) : (
-            <ul className="mt-6 grid grid-cols-2 gap-3 tablet:grid-cols-3">
+            <ul className="mt-10 grid grid-cols-1 gap-4 tablet:grid-cols-3">
               {content.gallery.slice(0, 6).map((image: HotelImageRecord) => (
                 <ExperienceCard
                   key={image.id}
@@ -188,10 +188,10 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
       </section>
 
       {/* 7 · Reseñas (D-68) */}
-      <section aria-labelledby="home-reviews" className="px-5 py-10">
-        <div className="mx-auto w-full max-w-6xl">
-          <h2 id="home-reviews" className="font-display text-h2 font-medium">{t("reviews.title")}</h2>
-          <p className="mt-2 max-w-prose text-small text-ink-soft">{t("reviews.subtitle")}</p>
+      <section aria-labelledby="home-reviews" className="px-5 py-16 tablet:px-8 tablet:py-24">
+        <div className="mx-auto w-full max-w-7xl">
+          <h2 id="home-reviews" className="max-w-[22ch] text-balance font-display text-h1 font-semibold tracking-tight">{t("reviews.title")}</h2>
+          <p className="mt-3 max-w-prose text-body text-ink-soft">{t("reviews.subtitle")}</p>
           {content.reviewsSummary.average !== null && (
             <p className="mt-3 font-display text-h3 font-semibold text-azure-deep" data-testid="reviews-average">
               {t("reviews.average", {
@@ -203,7 +203,7 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
           {content.reviews.length === 0 ? (
             <p className="mt-4 text-small text-ink-soft">{t("reviews.empty")}</p>
           ) : (
-            <ul className="mt-6 grid gap-4 tablet:grid-cols-3">
+            <ul className="mt-10 grid gap-8 tablet:grid-cols-3">
               {content.reviews.slice(0, 3).map((review: HomeReview) => (
                 <TestimonialCard key={review.id} review={review} />
               ))}
@@ -214,18 +214,18 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
       </section>
 
       {/* 8 · Contacto y mapa (D-67) */}
-      <section id="contacto" aria-labelledby="home-contact" className="border-t border-line/70 bg-mist-2/60 px-5 py-10">
+      <section id="contacto" aria-labelledby="home-contact" className="bg-mist-2/60 px-5 py-16 tablet:px-8 tablet:py-24">
         <div className="mx-auto grid w-full max-w-6xl gap-6 tablet:grid-cols-2">
           <div>
-            <h2 id="home-contact" className="font-display text-h2 font-medium">{t("contact.title")}</h2>
-            <p className="mt-2 max-w-prose text-small text-ink-soft">{t("contact.subtitle")}</p>
+            <h2 id="home-contact" className="max-w-[22ch] text-balance font-display text-h1 font-semibold tracking-tight">{t("contact.title")}</h2>
+            <p className="mt-3 max-w-prose text-body text-ink-soft">{t("contact.subtitle")}</p>
             <address className="mt-4 flex flex-col gap-1 text-small not-italic text-ink">
               <span>{t("contact.address")}</span>
               <a className="text-azure-deep underline" href={`tel:${t("contact.phoneHref")}`}>{t("contact.phone")}</a>
               <a className="text-azure-deep underline" href={`mailto:${t("contact.email")}`}>{t("contact.email")}</a>
             </address>
           </div>
-          <div className="overflow-hidden rounded-brand border border-line">
+          <div className="overflow-hidden rounded-brand-sm border border-line">
             <iframe
               title={t("contact.mapTitle")}
               src={MAP_EMBED}
@@ -241,10 +241,10 @@ export async function HomeSections({ content, locale }: { content: HomeContent; 
       </section>
 
       {/* 9 · Banda de descubrimiento (2026-09-28): empresa, distribución y Ayuda */}
-      <section aria-labelledby="home-band" className="px-5 pb-14 pt-2">
+      <section aria-labelledby="home-band" className="px-5 pb-20 pt-6 tablet:px-8">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 rounded-brand-lg border border-line bg-shell p-6 tablet:flex-row tablet:items-center tablet:justify-between">
           <div>
-            <h2 id="home-band" className="font-display text-h3 font-medium">
+            <h2 id="home-band" className="font-display text-h2 font-semibold">
               {t("band.title")}
             </h2>
             <p className="mt-1.5 max-w-prose text-small text-ink-soft">{t("band.helpBody")}</p>

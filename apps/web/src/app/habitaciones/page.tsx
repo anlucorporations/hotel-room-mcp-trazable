@@ -36,7 +36,7 @@ export default async function RoomsPage() {
         {overview.length === 0 ? (
           <p className="text-small text-ink-soft">{t("types.empty")}</p>
         ) : (
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-12">
             {overview.map((entry) => (
               <div key={entry.roomType} className="flex flex-col gap-3">
                 <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
@@ -67,7 +67,7 @@ export default async function RoomsPage() {
       <PageSection id="rooms-buying" title={t("buying.title")} tone="band">
         <ol className="grid gap-4 tablet:grid-cols-3">
           {BUYING_STEPS.map((step, index) => (
-            <li key={step} className="rounded-brand border border-line bg-shell p-5">
+            <li key={step} className="border-t border-line pt-5">
               <p className="text-micro font-bold uppercase tracking-[0.14em] text-coral-text">
                 {index + 1}
               </p>
@@ -75,7 +75,7 @@ export default async function RoomsPage() {
             </li>
           ))}
         </ol>
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div className="mt-10 flex flex-wrap gap-3">
           <Link
             href="/catalogo"
             className="inline-flex min-h-touch items-center rounded-pill bg-azure px-5 text-small font-semibold text-shell transition-colors hover:bg-azure-deep"

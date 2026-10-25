@@ -2,50 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Sistema visual «Brisa Marina» (docs/SRS.md §7 · Manual_Identidad_Visual.md v2.0.0).
-   Espejo de runtime del preset: registro luminoso y aéreo (porcelana fría, azur vívido,
-   marino profundo para el registro oscuro y la suite AdminLTE, coral de atención). */
+/* Identidad por superficie (2026-10-23).
+   · Suite pública: «Cal & Sal» — caliza tibia, azul mar, terracota y olivo.
+   · Suite administrativa (/admin/**): «Posidonia» — verde-teal, agua, arena y coral; se aplica
+     en `app/admin-surface.css` dentro del scope `.admin-surface` (mismos componentes y tokens).
+   Este `:root` es el espejo de runtime del preset para la identidad pública; el preset es la
+   fuente de verdad que miden los guardianes. */
 :root {
-  --mist: #f4f9fc;
-  --mist-2: #e6f0f6;
+  --mist: #f8f3e9;
+  --mist-2: #efe7d6;
   --shell: #ffffff;
-  --line: #dbe7ef;
-  --line-strong: #6b8296;
-  --ink: #101f2c;
-  --ink-soft: #41566a;
-  --azure: #0f6c9c;
-  --azure-deep: #0a4f75;
-  --navy: #0e2a3f;
-  --navy-soft: #1a4160;
-  --pearl: #c3d4e0;
-  --coral: #c4522c;
-  --coral-text: #a34222;
-  --amber: #b98324;
-  --fern: #276e4c;
-  --success: #1f7a4d;
-  --success-bg: #e2f2e9;
-  --warning: #8a5f0c;
-  --warning-bg: #fbf0d6;
-  --error: #b3261e;
-  --error-bg: #fae5e3;
-  --info: #0f6380;
-  --info-bg: #e0eff5;
-  --ease: cubic-bezier(0.21, 0.68, 0.27, 0.99);
+  --arena: #e9ddc8;
+  --line: #e4d9c5;
+  --line-strong: #8b7a62;
+  --ink: #15222c;
+  --ink-soft: #495764;
+  --azure: #0b5c74;
+  --azure-deep: #084659;
+  --navy: #0f2833;
+  --navy-soft: #1a3b49;
+  --pearl: #d9e8ec;
+  --coral: #ae4e2a;
+  --coral-text: #8f3d1e;
+  --amber: #9a6a12;
+  --fern: #56682f;
+  --success: #1c6e48;
+  --success-bg: #e2f0e8;
+  --warning: #875a0b;
+  --warning-bg: #f9efd4;
+  --error: #a62a1f;
+  --error-bg: #f7e3df;
+  --info: #1e6273;
+  --info-bg: #e1edf1;
+  --ease: cubic-bezier(0.22, 0.68, 0.24, 1);
+  /* Identidad pública (Cal & Sal), autohospedada en `fonts.css`. La suite admin redefine estas
+     dos variables en su scope con Spectral + Inter Tight. */
+  --font-display: "Cormorant Garamond";
+  --font-sans: "Onest";
 }
 
 @layer base {
   body {
     @apply bg-mist text-ink antialiased;
-    /* Manrope cubre ES/EN/RU (subconjuntos latin + cyrillic cargados en layout.tsx). */
-    font-family: var(--font-manrope), system-ui, -apple-system, sans-serif;
+    /* Onest cubre ES/EN/RU (subconjuntos latin + cyrillic cargados en layout.tsx). */
+    font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
     font-size: 1.0625rem;
     line-height: 1.5;
   }
 
   h1,
   h2,
-  h3 {
-    font-family: var(--font-playfair), Georgia, serif;
+  h3,
+  h4 {
+    font-family: var(--font-display), Georgia, serif;
     color: var(--ink);
   }
 
@@ -59,7 +68,7 @@
     font: inherit;
   }
 
-  /* Foco visible de marca: doble anillo porcelana + azur (WCAG 2.4.7 / 1.4.11). */
+  /* Foco visible de marca: doble anillo caliza + azul mar (WCAG 2.4.7 / 1.4.11). */
   :where(a, button, input, select, textarea, [tabindex]):focus-visible {
     outline: 2px solid var(--azure);
     outline-offset: 2px;
@@ -81,5 +90,25 @@
     transition-duration: 0.01ms !important;
     transition-delay: 0ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Cabecera superpuesta al hero (home) desde tablet. El gradiente se declara aquí —no con utilidades
+   bg-gradient-* en el JSX— para que el escáner de contraste no lo confunda con un fondo de texto:
+   el texto blanco se mide sobre el velo de marca, no sobre el gradiente de la cabecera. */
+.site-header--overlay {
+  width: 100%;
+  background-color: rgb(255 255 255 / 0.95);
+}
+
+@media (min-width: 768px) {
+  .site-header--overlay {
+    background-color: transparent;
+    background-image: linear-gradient(
+      180deg,
+      rgba(15, 40, 51, 0.8) 0%,
+      rgba(15, 40, 51, 0.4) 45%,
+      rgba(15, 40, 51, 0) 100%
+    );
   }
 }

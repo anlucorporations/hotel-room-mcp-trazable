@@ -4,82 +4,88 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 /**
- * Guardián de la **tipografía cirílica** (sistema «Brisa Marina», Manual_Identidad_Visual.md v2.0.0).
+ * Guardián de la tipografía cirílica por superficie (identidad 2026-10-23).
  *
- * El producto declara paridad ES/EN/RU. En el sistema anterior («Mediterráneo editorial») las
- * fuentes de marca no cubrían el ruso y hacía falta una cascada glifo a glifo con dos respaldos
- * `preload: false` (Playfair + Inter cirílicos). En «Brisa Marina» las DOS fuentes de marca —
- * **Playfair Display** (display) y **Manrope** (UI)— publican el subconjunto `cyrillic`, así que
- * el locale RU queda cubierto por las propias fuentes de marca y la cascada de respaldo desaparece.
+ * Las cuatro familias de marca se **autohospedan** (`public/fonts/*.woff2`) y se declaran en
+ * `app/fonts.css` con los subconjuntos `latin` y `cyrillic`, de modo que build y runtime no
+ * dependen de `fonts.gstatic.com` y el locale RU queda cubierto por la propia marca:
+ *   · pública «Cal & Sal»: Cormorant Garamond (display) + Onest (UI);
+ *   · administrativa «Posidonia»: Spectral (display) + Inter Tight (UI).
  *
- * Este test es **estático** a propósito: no puede consultar la cobertura de glifos de Google, pero
- * sí impedir que una familia de marca se cargue SIN el subconjunto cirílico (regresión del RU),
- * que se reintroduzcan respaldos precargados que penalicen el LCP, o que las pilas del preset y
- * de la hoja de estilos deriven.
+ * El test es estático: impide cargar una familia sin cirílico, que la pública herede la tipografía
+ * administrativa o que las pilas del preset y de la hoja de estilos deriven.
  */
 
 const SRC_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const layoutSource = readFileSync(`${SRC_ROOT}app/layout.tsx`, "utf8");
+const fontsCss = readFileSync(`${SRC_ROOT}app/fonts.css`, "utf8");
 const globalsSource = readFileSync(`${SRC_ROOT}app/globals.css`, "utf8");
+const adminSurface = readFileSync(`${SRC_ROOT}app/admin-surface.css`, "utf8");
 
 const require = createRequire(import.meta.url);
 const preset = require("../../../../../packages/config/tailwind/preset.cjs") as {
   theme: { extend: { fontFamily: Record<string, string[]> } };
 };
 
+const FAMILIES = [
+  ["Cormorant Garamond", "500 700"],
+  ["Onest", "400 700"],
+  ["Spectral", "500"],
+  ["Inter Tight", "400 700"],
+] as const;
+
 describe("Accesibilidad tipográfica · cirílico cubierto por las fuentes de marca", () => {
-  it("las dos familias de marca se cargan con los subconjuntos latin Y cyrillic", () => {
-    for (const [family, variable] of [
-      ["Playfair_Display", "--font-playfair"],
-      ["Manrope", "--font-manrope"],
-    ] as const) {
-      const call = new RegExp(`const \\w+ = ${family}\\(\\{([^}]*)\\}\\)`, "s").exec(layoutSource);
-      expect(call, `no se declara ${family} en layout.tsx`).not.toBeNull();
-      const body = call![1]!;
-      expect(body, `${family} debe pedir el subconjunto cirílico (paridad ES/EN/RU)`).toMatch(
-        /subsets:\s*\[[^\]]*["']cyrillic["'][^\]]*\]/,
-      );
-      expect(body, `${family} debe pedir el subconjunto latino`).toMatch(
-        /subsets:\s*\[[^\]]*["']latin["'][^\]]*\]/,
-      );
-      expect(body, `${family} debe exponer ${variable}`).toContain(variable);
-      expect(body, `${family} debe usar display swap`).toContain('display: "swap"');
+  it("las cuatro familias se declaran con latin Y cyrillic en fonts.css", () => {
+    for (const [family] of FAMILIES) {
+      expect(fontsCss, `${family} debe declarar su @font-face`).toContain(`font-family: '${family}';`);
+    }
+    // Cada familia tiene al menos una cara latin y otra cyrillic (marcadores del generador).
+    const cyrillicFamilies = [...fontsCss.matchAll(/\/\* cyrillic \*\/\s*@font-face\s*\{[^}]*font-family:\s*'([^']+)'/g)].map((m) => m[1]);
+    const latinFamilies = [...fontsCss.matchAll(/\/\* latin \*\/\s*@font-face\s*\{[^}]*font-family:\s*'([^']+)'/g)].map((m) => m[1]);
+    for (const [family] of FAMILIES) {
+      expect(cyrillicFamilies, `${family} sin cara cyrillic`).toContain(family);
+      expect(latinFamilies, `${family} sin cara latin`).toContain(family);
+    }
+    // Los woff2 se sirven desde el propio origen (no se vuelve a Google Fonts).
+    expect(fontsCss).toContain("url('/fonts/");
+  });
+
+  it("las familias variable declaran el rango de pesos que usa la interfaz", () => {
+    for (const [family, weight] of FAMILIES) {
+      if (family === "Spectral") continue; // estática: 500/600/700 en caras separadas
+      const block = new RegExp(`@font-face \\{[^}]*font-family: '${family}';[^}]*font-weight: ${weight};`, "s");
+      expect(block.test(fontsCss), `${family} debe declarar font-weight ${weight}`).toBe(true);
+    }
+    for (const weight of ["500", "600", "700"]) {
+      expect(fontsCss).toMatch(new RegExp(`font-family: 'Spectral';[^}]*font-weight: ${weight};`, "s"));
     }
   });
 
-  it("no quedan respaldos cirílicos separados (la cascada glifo a glifo se retiró)", () => {
-    expect(layoutSource).not.toContain("Inter");
-    expect(layoutSource).not.toContain("Fraunces");
-    expect(layoutSource).not.toContain("Hanken");
-    expect(layoutSource).not.toMatch(/preload:\s*false/);
+  it("el layout carga las fuentes autohospedadas y ya no pide next/font/google", () => {
+    expect(layoutSource).toContain('import "./fonts.css"');
+    expect(layoutSource).not.toContain("next/font/google");
   });
 
-  it("aplica las variables de las dos familias al documento", () => {
-    for (const variable of ["playfair.variable", "manrope.variable"]) {
-      expect(layoutSource, `falta ${variable} en <html className>`).toContain(variable);
-    }
-  });
-
-  it("las pilas del preset empiezan por la fuente de marca", () => {
+  it("las pilas del preset empiezan por las variables de superficie", () => {
     expect(preset.theme.extend.fontFamily.display).toEqual([
-      "var(--font-playfair)",
+      "var(--font-display)",
+      "Iowan Old Style",
       "Georgia",
       "serif",
     ]);
     expect(preset.theme.extend.fontFamily.sans).toEqual([
-      "var(--font-manrope)",
+      "var(--font-sans)",
+      "Segoe UI",
       "system-ui",
       "-apple-system",
       "sans-serif",
     ]);
   });
 
-  it("las pilas base de la hoja de estilos respetan el mismo orden", () => {
-    // Cuerpo: Manrope → sistema.
-    expect(globalsSource).toMatch(/font-family:\s*var\(--font-manrope\),\s*system-ui/);
-    // Titulares: Playfair → serif del sistema.
-    expect(globalsSource).toMatch(
-      /font-family:\s*var\(--font-playfair\),\s*Georgia,\s*serif/,
-    );
+  it("la hoja base y el scope administrativo activan las familias correctas", () => {
+    expect(globalsSource).toMatch(/--font-display:\s*"Cormorant Garamond"/);
+    expect(globalsSource).toMatch(/--font-sans:\s*"Onest"/);
+    expect(adminSurface).toMatch(/\.admin-surface\s*\{[^}]*--font-display:\s*"Spectral"/s);
+    expect(adminSurface).toMatch(/\.admin-surface\s*\{[^}]*--font-sans:\s*"Inter Tight"/s);
   });
 });

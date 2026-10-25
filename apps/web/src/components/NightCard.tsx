@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { formatEther } from "viem";
 import { BuyButton } from "@/components/buy/BuyButton";
@@ -34,7 +35,7 @@ function StatusBadge({ night, t }: { night: NightView; t: ReturnType<typeof useT
   }
   if (night.type === "suite") {
     return (
-      <span className="absolute left-3.5 top-3.5 rounded-pill bg-amber px-3 py-1.5 text-micro font-bold text-ink shadow-card">
+      <span className="absolute left-3.5 top-3.5 rounded-pill bg-amber px-3 py-1.5 text-micro font-bold text-shell shadow-card">
         {t("suite")}
       </span>
     );
@@ -95,7 +96,7 @@ export function NightCard({
     <article
       data-testid={`night-card-${night.tokenId}`}
       style={reveals ? { transitionDelay: `${delayMs}ms` } : undefined}
-      className={`group flex h-full flex-col overflow-hidden rounded-brand-lg border border-line bg-shell shadow-card transition duration-300 ease-brand motion-safe:hover:-translate-y-1 hover:shadow-card-hover ${
+      className={`group flex h-full flex-col overflow-hidden rounded-brand-sm bg-transparent transition duration-300 ease-brand ${
         reveals
           ? `motion-safe:transition-[opacity,transform] ${
               revealed ? "opacity-100" : "opacity-0 motion-safe:translate-y-3"
@@ -103,14 +104,19 @@ export function NightCard({
           : ""
       }`}
     >
-      <div className="relative aspect-[4/3] overflow-hidden">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-brand-sm bg-mist-2">
         <NightImage type={night.type} src={night.coverUrl ?? null} alt={alt} priority={priority} />
         <StatusBadge night={night} t={t} />
       </div>
-      <div className="flex flex-1 flex-col p-5">
+      <div className="flex flex-1 flex-col pt-4">
         <div className="flex items-baseline justify-between gap-3">
           <h3 className="font-display text-h3 font-semibold tracking-tight">
-            {t("room", { room: night.room })}
+            <Link
+              href={`/habitaciones/${night.room}`}
+              className="transition-colors hover:text-azure focus-visible:text-azure"
+            >
+              {t("room", { room: night.room })}
+            </Link>
           </h3>
           <span className="text-micro font-semibold uppercase tracking-wider text-ink-soft">
             {TYPE_LABEL[night.type]}
@@ -128,6 +134,17 @@ export function NightCard({
         {/* Reaseguro de propiedad/reventa (UX#29): qué obtiene quien reserva, en lenguaje honesto.
             No mostramos una conversión a € porque el piloto no integra un oráculo de precio. */}
         <p className="mt-1.5 text-micro text-ink-soft">{t("ownershipNote")}</p>
+        {/* Ficha pública de la habitación (fase 3): la tarjeta de una noche enlaza a su detalle. */}
+        <p className="mt-3">
+          <Link
+            href={`/habitaciones/${night.room}`}
+            aria-label={`${t("viewRoom")}: ${t("room", { room: night.room })}`}
+            className="inline-flex min-h-touch items-center gap-1 border-b border-line-strong pb-0.5 text-small font-semibold text-azure transition-colors hover:text-azure-deep"
+          >
+            {t("viewRoom")}
+            <span aria-hidden="true">→</span>
+          </Link>
+        </p>
         <div className="mt-3">
           {paused ? (
             <p
