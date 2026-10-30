@@ -59,7 +59,47 @@ fi
 
 COMMON_ENV="RPC_URL=${CHAIN_URL},CHAIN_ID=${CHAIN_ID},CONTRACT_ADDRESS=${CONTRACT},DEPLOYMENT_BLOCK=${DEPLOY_BLOCK}"
 COMMON_SECRETS="DATABASE_URL=hotel-database-url:latest,REDIS_URL=hotel-redis-url:latest"
-SMTP_ENV="SMTP_HOST=smtp.invalid,SMTP_PORT=587,SMTP_USER=hotel@example.com,SMTP_PASS=,SMTP_FROM=no-reply@example.com"
+# ── Correo saliente (avisos de venta, CU-10) ────────────────────────────────────────────────────
+# Dos modos, elegidos con GCP_SMTP_MODE:
+#   · `sandbox` (por defecto) — Mailtrap **sandbox**: captura los correos (no los entrega) y los deja
+#     visibles en el inbox; acepta cualquier destinatario y el 100 % de los correos del worker.
+#     Credenciales del inbox en Secret Manager: `hotel-smtp-sandbox-password`.
+#   · `live` — Mailtrap **Sending**: `live.smtp.mailtrap.io`, usuario `api`, token en
+#     `hotel-smtp-password`. OJO: el dominio `demomailtrap.co` (demo) SOLO entrega al correo dueño de
+#     la cuenta; para entrega real hay que verificar el dominio del hotel (p. ej. anlucorporations.org)
+#     en Mailtrap y ajustar SMTP_FROM/ADMIN_EMAIL.
+#   `send.api.mailtrap.io` (host antiguo) resuelve solo a IPv6 y no es alcanzable: no usar.
+# Variables: GCP_SMTP_MODE, GCP_SMTP_PORT, GCP_SMTP_USER, GCP_SMTP_FROM, GCP_ADMIN_EMAIL.
+# El ritmo de envío lo limita el worker (EMAIL_MIN_INTERVAL_MS, 11 s por defecto) porque el plan
+# gratuito de Mailtrap rechaza ráfagas con «Too many emails per second».
+SMTP_MODE="${GCP_SMTP_MODE:-sandbox}"
+SMTP_PORT_VALUE="${GCP_SMTP_PORT:-587}"
+SMTP_FROM_VALUE="${GCP_SMTP_FROM:-Hotel Marina del Sol <reservas@hotelmarinadelsol.es>}"
+SMTP_SECRETS=""
+if [[ "$SMTP_MODE" == "live" ]]; then
+  SMTP_HOST_VALUE="${GCP_SMTP_HOST:-live.smtp.mailtrap.io}"
+  SMTP_USER_VALUE="${GCP_SMTP_USER:-api}"
+  if gcloud secrets describe hotel-smtp-password --project="$GCP_PROJECT_ID" >/dev/null 2>&1; then
+    SMTP_SECRETS="SMTP_PASS=hotel-smtp-password:latest"
+    echo "==> Correo saliente ACTIVADO en modo LIVE (${SMTP_HOST_VALUE}:${SMTP_PORT_VALUE})"
+  else
+    echo "AVISO: modo live sin secreto hotel-smtp-password; los avisos de venta fallarán"
+  fi
+else
+  SMTP_HOST_VALUE="${GCP_SMTP_HOST:-sandbox.smtp.mailtrap.io}"
+  SMTP_USER_VALUE="${GCP_SMTP_USER:-${GCP_MAILTRAP_SANDBOX_USER:-}}"
+  if gcloud secrets describe hotel-smtp-sandbox-password --project="$GCP_PROJECT_ID" >/dev/null 2>&1; then
+    SMTP_SECRETS="SMTP_PASS=hotel-smtp-sandbox-password:latest"
+    echo "==> Correo saliente ACTIVADO en modo SANDBOX (${SMTP_HOST_VALUE}:${SMTP_PORT_VALUE})"
+  else
+    echo "AVISO: modo sandbox sin secreto hotel-smtp-sandbox-password; los avisos de venta fallarán"
+  fi
+  if [[ -z "$SMTP_USER_VALUE" ]]; then
+    echo "AVISO: define GCP_SMTP_USER con el usuario del inbox de Mailtrap (p. ej. 29925a2f7a6cc2)"
+  fi
+fi
+ADMIN_EMAIL_VALUE="${GCP_ADMIN_EMAIL:-admin@example.com}"
+SMTP_ENV="SMTP_HOST=${SMTP_HOST_VALUE},SMTP_PORT=${SMTP_PORT_VALUE},SMTP_USER=${SMTP_USER_VALUE},SMTP_FROM=${SMTP_FROM_VALUE}"
 
 # Une solo los fragmentos NO vacíos: `--set-env-vars` con un `,,` (por un bloque opcional vacío)
 # falla en gcloud, y eso convertiría una función desactivada en un despliegue roto.
@@ -162,8 +202,8 @@ gcloud run deploy hotel-mcp-worker \
   --service-account="$GCP_RUN_SA" \
   --port=8080 --no-cpu-throttling --min-instances=1 --max-instances=1 \
   --allow-unauthenticated \
-  --set-env-vars="$(join_nonempty "$COMMON_ENV" "WORKER_HOST=0.0.0.0" "WORKER_PORT=8080" "$SMTP_ENV" "$VAPID_ENV" "$BURN_ENV" "ADMIN_EMAIL=admin@example.com")" \
-  --set-secrets="$(join_nonempty "$COMMON_SECRETS" "$VAPID_SECRETS" "$BURN_SECRETS")" \
+  --set-env-vars="$(join_nonempty "$COMMON_ENV" "WORKER_HOST=0.0.0.0" "WORKER_PORT=8080" "$SMTP_ENV" "$VAPID_ENV" "$BURN_ENV" "ADMIN_EMAIL=${ADMIN_EMAIL_VALUE}")" \
+  --set-secrets="$(join_nonempty "$COMMON_SECRETS" "$VAPID_SECRETS" "$SMTP_SECRETS" "$BURN_SECRETS")" \
   --network="$NETWORK" --subnet="$SUBNET" --vpc-egress=private-ranges-only \
   $CANARY_FLAGS \
   --quiet

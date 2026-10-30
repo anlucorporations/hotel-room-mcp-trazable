@@ -19,13 +19,18 @@ interface FakeJob {
 
 class FakeQueue {
   handler: ((job: FakeJob) => Promise<void>) | null = null;
+  workerOptions: { concurrency?: number; limiter?: { max: number; duration: number } } | null = null;
   readonly listeners = new Map<string, (job?: FakeJob, error?: Error) => void>();
   job: FakeJob | null = null;
   reconciled = 0;
   readonly enqueued: Array<{ eventType: string; to: string; payload: Record<string, unknown> }> = [];
 
-  createWorker(handler: (job: FakeJob) => Promise<void>) {
+  createWorker(
+    handler: (job: FakeJob) => Promise<void>,
+    options: { concurrency?: number; limiter?: { max: number; duration: number } } = {},
+  ) {
     this.handler = handler;
+    this.workerOptions = options;
     return {
       on: (event: string, listener: (job?: FakeJob, error?: Error) => void) => {
         this.listeners.set(event, listener);
@@ -82,6 +87,22 @@ describe("cola única de correo (D-03)", () => {
       }),
     );
     expect(onDelivered).toHaveBeenCalledTimes(1);
+  });
+
+  it("espacia los correos con un limitador (planes SMTP gratuitos ~1 correo/10 s)", () => {
+    startEmailConsumer({
+      queue: queue as never,
+      sender,
+      logger: silentLogger() as never,
+      minIntervalMs: 11_000,
+    });
+
+    expect(queue.workerOptions).toEqual({ concurrency: 1, limiter: { max: 1, duration: 11_000 } });
+  });
+
+  it("sin minIntervalMs no impone limitador (proveedor propio sin límite bajo)", () => {
+    startEmailConsumer({ queue: queue as never, sender, logger: silentLogger() as never });
+    expect(queue.workerOptions).toEqual({ concurrency: 1 });
   });
 
   it("si el proveedor falla, el trabajo se propaga (BullMQ reintenta) y la salud se degrada", async () => {

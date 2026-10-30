@@ -4280,3 +4280,56 @@ sigue `HotelNights` `0x8b1B…0253` y `worker:v91` conserva `CONTRACT_ADDRESS`/`
 hay migraciones ni cambios de contrato que revertir ni restaurar.
 
 Evidencia: [`evidencias/un-solo-indexador-2026-10-23.json`](./evidencias/un-solo-indexador-2026-10-23.json).
+
+---
+
+## 106. Correo saliente con Mailtrap — sandbox de pruebas y modo live (2026-10-30)
+
+**Petición.** Configurar el SMTP de pruebas de Mailtrap para que el worker deje de estar degradado
+(`emailDegraded: true`) y los avisos de venta se entreguen.
+
+**Credenciales recibidas.** Host `send.api.mailtrap.io` y API token de la cuenta
+(`2867963`). Durante la puesta en marcha se comprobó:
+
+| Comprobación | Resultado |
+|---|---|
+| `send.api.mailtrap.io` | Resuelve **solo IPv6** y no responde desde Cloud Run ni desde la VM → **inalcanzable** (host antiguo) |
+| Host de envío real | `live.smtp.mailtrap.io`: **IPv4**, puerto 587 abierto; autentica con usuario `api` + API token ✅ |
+| Dominio demo `demomailtrap.co` | Verificado en Mailtrap, pero **solo entrega al correo dueño de la cuenta**; el resto se rechaza con `554 5.7.1 Demo domains can only be used to send emails to account owners` |
+| Dominio propio `anlucorporations.org` | Registrado en Mailtrap pero **DNS sin verificar** (faltan CNAME/TXT) |
+| Sandbox de la cuenta (`sandbox.smtp.mailtrap.io`) | Credenciales del inbox **My Sandbox** obtenidas por API; captura todos los correos, acepta cualquier destinatario ✅ |
+
+**Solución desplegada (modo pruebas).** Se configura el worker contra el **sandbox** de Mailtrap:
+
+| Elemento | Valor |
+|---|---|
+| `SMTP_HOST` / `SMTP_PORT` | `sandbox.smtp.mailtrap.io` : `587` |
+| `SMTP_USER` | usuario del inbox (`29925a2f7a6cc2`) |
+| `SMTP_PASS` | secreto `hotel-smtp-sandbox-password` (Secret Manager) |
+| `SMTP_FROM` | `Hotel Marina del Sol <reservas@hotelmarinadelsol.es>` (sandbox no valida dominio) |
+| Token de envío real | secreto `hotel-smtp-password` (para cuando se verifique el dominio) |
+| Imagen / revisión | `worker:v92` · `hotel-mcp-worker-00043-rzw` (100 % del tráfico; revisiones antiguas borradas) |
+| Código | `EMAIL_MIN_INTERVAL_MS` (11 s por defecto): consumidor con **concurrencia 1 + limitador BullMQ 1/11 s** |
+
+**Por qué el limitador.** El plan gratuito de Mailtrap rechaza ráfagas con
+`550 5.7.0 Too many emails per second`; el consumidor anterior usaba concurrencia 5 y tumbaba el
+envío (y la salud). Con el limitador, cada correo sale espaciado ~11 s (verificado en los logs: una
+entrega cada 11 s).
+
+**Verificación real.**
+
+| Comprobación | Resultado |
+|---|---|
+| `/health` del worker | **`status: ok`**, `emailDegraded: false`, `lag 0` ✅ |
+| Correos capturados en Mailtrap Sandbox | **11 mensajes** («Venta primaria…»), uno cada ~11 s ✅ |
+| Logs del worker | `correo entregado por la cola única` (nivel info) sin fallos nuevos ✅ |
+| Compra real de prueba | 4 noches compradas por la cuenta Anvil #5 (`104`, `106`, `107`… ) dispararon sus avisos ✅ |
+
+**Para entrega real (pendiente del cliente).** Verificar en Mailtrap el dominio del hotel (añadir los
+CNAME/TXT que muestra el panel para `anlucorporations.org` o el dominio definitivo), ajustar
+`SMTP_FROM` a ese dominio, poner `ADMIN_EMAIL` al buzón del hotel y desplegar con
+`GCP_SMTP_MODE=live` (el token ya está en `hotel-smtp-password`). El script
+`infra/gcp/70-deploy-apps.sh` soporta ambos modos.
+
+**Nota.** `send.api.mailtrap.io` **no se usa**: es el host antiguo, solo IPv6, y no es alcanzable
+desde el entorno.

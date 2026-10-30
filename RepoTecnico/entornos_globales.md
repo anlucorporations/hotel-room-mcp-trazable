@@ -215,7 +215,7 @@ Estado respecto a `.env.example`: **OK** = presente · **FALTA** = la exige el c
 
 | Variable | Componente | Obligatoria | Plantilla | Observación |
 |---|---|---|---|---|
-| `SMTP_HOST` / `_PORT` / `_USER` / `_PASS` / `_FROM` | worker, monitor | sí | OK | SendGrid por defecto |
+| `SMTP_HOST` / `_PORT` / `_USER` / `_PASS` / `_FROM` | worker, monitor | sí | OK | **Mailtrap** (2026-10-30): sandbox por defecto (`sandbox.smtp.mailtrap.io`); modo live en `live.smtp.mailtrap.io` con token. Contraseñas en Secret Manager: `hotel-smtp-sandbox-password` / `hotel-smtp-password`. Ritmo limitado por `EMAIL_MIN_INTERVAL_MS` (11 s) |
 | `ADMIN_EMAIL` | worker | sí | **FALTA** | Destinatario de los avisos de venta |
 | `ALERT_EMAIL` | monitor | sí | **FALTA** | Destinatario de las alertas (`DEVOPS_ALERT_EMAIL` existe para otro uso) |
 | `OWNER_EMAIL` | despliegue/semillas | no | OK | Correo de Carlos |

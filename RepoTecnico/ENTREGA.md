@@ -91,6 +91,7 @@ Una plataforma operativa para vender, revender, usar y operar **noches de hotel 
 | 4 | Confirmar/corregir la **propuesta de datos del hotel** del manual del huésped (RF-56) | Cliente | `docs/manual-huesped.md` · `solicitud-contenidos-cliente.md` |
 | 5 | CI canónico (GitLab falla sin jobs; GitHub no tiene el commit): decidir y reparar | Responsable técnico | [`ci-post-entrega-2026-10-20.md`](./ci-post-entrega-2026-10-20.md) |
 | 6 | APK Android del huésped (especificada y planificada, no construida) | Producto/desarrollo | [`casos_uso_apk.md`](./casos_uso_apk.md) · [`plan_desarrollo_apk.md`](./plan_desarrollo_apk.md) · [`ADR-31`](../docs/adr/ADR-31-app-android-huesped.md) |
+| 7 | **Correo en producción real**: el worker ya no está degradado con el **sandbox de Mailtrap** (captura de correos); para entregar a buzones externos hay que verificar el dominio del hotel en Mailtrap y pasar a `GCP_SMTP_MODE=live` | Cliente/operación | [`despliegue_gcp.md`](./despliegue_gcp.md) §106 |
 
 ## 7. Checklist de aceptación y firma
 

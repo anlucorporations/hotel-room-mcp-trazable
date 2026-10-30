@@ -1,0 +1,50 @@
+{
+  "id": "smtp-mailtrap-2026-10-30",
+  "titulo": "Correo saliente del worker con Mailtrap: sandbox operativo y modo live documentado",
+  "fechaUtc": "2026-10-30T20:10:00Z",
+  "peticion": "Configurar el SMTP de pruebas de Mailtrap (send.api.mailtrap.io + API token) para eliminar emailDegraded del worker",
+  "hallazgos": {
+    "send.api.mailtrap.io": "solo resuelve IPv6 y no es alcanzable desde Cloud Run ni la VM; host antiguo, descartado",
+    "live.smtp.mailtrap.io": "IPv4, puerto 587 abierto, autentica con usuario api + API token",
+    "demoDomain": "demomailtrap.co verificado, pero solo entrega al correo dueño de la cuenta (554 5.7.1 en el resto)",
+    "anlucorporations.org": "registrado en Mailtrap pero DNS sin verificar",
+    "sandbox": "sandbox.smtp.mailtrap.io con credenciales del inbox My Sandbox: captura todos los correos"
+  },
+  "configuracionDesplegada": {
+    "modo": "sandbox",
+    "host": "sandbox.smtp.mailtrap.io",
+    "port": 587,
+    "user": "29925a2f7a6cc2",
+    "secretos": [
+      "hotel-smtp-sandbox-password (sandbox)",
+      "hotel-smtp-password (API token, live)"
+    ],
+    "from": "Hotel Marina del Sol <reservas@hotelmarinadelsol.es>",
+    "adminEmail": "anlucorporaciones@gmail.com",
+    "imagen": "worker:v92",
+    "revision": "hotel-mcp-worker-00043-rzw",
+    "rateLimit": "EMAIL_MIN_INTERVAL_MS=11000 (concurrencia 1 + limitador BullMQ 1/11s)"
+  },
+  "verificacion": {
+    "health": {
+      "status": "ok",
+      "emailDegraded": false,
+      "lag": 0
+    },
+    "sandboxMessages": 11,
+    "ritmo": "una entrega cada ~11 s",
+    "logs": "correo entregado por la cola única",
+    "comprasDePrueba": [
+      "10420261117",
+      "10520261126",
+      "10620261204",
+      "10720261215"
+    ]
+  },
+  "pendiente": "Para entrega real: verificar el dominio del hotel en Mailtrap (DNS), ajustar SMTP_FROM/ADMIN_EMAIL y desplegar con GCP_SMTP_MODE=live",
+  "docs": [
+    "RepoTecnico/despliegue_gcp.md §106",
+    "RepoTecnico/entornos_globales.md §3.5",
+    "RepoTecnico/ENTREGA.md §6 #7"
+  ]
+}

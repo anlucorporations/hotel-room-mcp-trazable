@@ -33,6 +33,12 @@ export interface EmailConsumerDeps {
    * (queda `FAILED`) avisa a DevOps en lugar de quedarse en silencio (deuda de M6 cerrada en M8).
    */
   readonly devopsEmail?: string;
+  /**
+   * Intervalo mínimo entre correos (ms). Se traduce a un limitador de BullMQ con concurrencia 1.
+   * Los planes gratuitos de SMTP (p. ej. Mailtrap) rechazan ráfagas con «too many emails per second»;
+   * con 0/undefined no se limita (entornos con proveedor propio sin límite tan bajo).
+   */
+  readonly minIntervalMs?: number;
 }
 
 /** Campos que transportan los avisos. Se leen con cuidado: el JSON de la cola no está tipado. */
@@ -174,7 +180,7 @@ async function alertExhaustedDelivery(
  * reintenta (3 intentos con backoff) y, agotados, la fila queda `FAILED` **y se avisa a DevOps**.
  */
 export function startEmailConsumer(deps: EmailConsumerDeps): EmailConsumer {
-  const { queue, sender, logger, onDelivered, onFailed, devopsEmail } = deps;
+  const { queue, sender, logger, onDelivered, onFailed, devopsEmail, minIntervalMs } = deps;
 
   const worker = queue.createWorker(async (job) => {
     const { eventType, recipientEmail, payload } = job.data;
@@ -185,6 +191,11 @@ export function startEmailConsumer(deps: EmailConsumerDeps): EmailConsumer {
     await sender.sendEmail({ to: recipientEmail, subject, text });
     logger.info({ jobId: job.id, eventType }, "correo entregado por la cola única");
     onDelivered?.();
+  }, {
+    concurrency: 1,
+    ...(minIntervalMs && minIntervalMs > 0
+      ? { limiter: { max: 1, duration: minIntervalMs } }
+      : {}),
   });
 
   worker.on("failed", (job: FailedJobLike | undefined, error: Error) => {

@@ -177,6 +177,15 @@ export class NotificationQueueService {
    */
   createWorker(
     handler: (job: Job<{ notificationId: string; eventType: string; recipientEmail: string; payload: Record<string, unknown>; isEphemeral?: boolean }>) => Promise<void>,
+    options: {
+      /** Trabajos simultáneos (por defecto 5). */
+      readonly concurrency?: number;
+      /**
+       * Limitador de BullMQ (p. ej. `{ max: 1, duration: 11_000 }`). Necesario con proveedores SMTP
+       * de plan gratuito que rechazan más de un correo cada ~10 s (Mailtrap free).
+       */
+      readonly limiter?: { readonly max: number; readonly duration: number };
+    } = {},
   ): Worker {
     // Conexión BLOQUEANTE: BullMQ exige `maxRetriesPerRequest: null` para workers.
     const redis = getBlockingRedisClient();
@@ -200,7 +209,11 @@ export class NotificationQueueService {
           throw err;
         }
       },
-      { connection: createIORedisClient(redis), concurrency: 5 },
+      {
+        connection: createIORedisClient(redis),
+        concurrency: options.concurrency ?? 5,
+        ...(options.limiter ? { limiter: options.limiter } : {}),
+      },
     );
   }
 }

@@ -100,6 +100,12 @@ const workerEnvSchema = z.object({
   // ── Cola única de correo (D-03) ────────────────────────────────────────────
   /** Periodo de reconciliación de notificaciones `PENDING` (por defecto, 5 minutos). */
   EMAIL_RECONCILE_INTERVAL_MS: z.coerce.number().int().positive().default(300_000),
+  /**
+   * Intervalo mínimo entre correos (ms). 11 s por defecto: el plan gratuito de Mailtrap rechaza
+   * ráfagas con «Too many emails per second» y el consumidor anterior (concurrencia 5) las producía.
+   * Un proveedor propio sin ese límite puede bajarlo; 0 desactiva el limitador.
+   */
+  EMAIL_MIN_INTERVAL_MS: z.coerce.number().int().min(0).default(11_000),
 
   // ── Retención de datos (M9 · ADR-24) ───────────────────────────────────────
   /** Periodo entre limpiezas (sesiones caducadas, códigos huérfanos y correos viejos). */

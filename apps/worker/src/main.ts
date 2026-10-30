@@ -155,6 +155,9 @@ async function main(): Promise<void> {
     onFailed: () => health.markEmailDegraded(),
     // Un correo que agota los reintentos avisa a DevOps en vez de quedar `FAILED` en silencio (M8).
     devopsEmail: config.DEVOPS_ALERT_EMAIL,
+    // Los planes gratuitos de SMTP limitan el ritmo (Mailtrap: ~1 correo/10 s). Con concurrencia 5
+    // el consumidor los agotaba y la salud se degradaba; ahora se espacian de serie.
+    minIntervalMs: config.EMAIL_MIN_INTERVAL_MS,
   });
 
   const server = await startWorkerHttpServer({
