@@ -53,7 +53,7 @@ async function ensurePanel(page) {
 
 /** Hace una pregunta y devuelve la respuesta JSON del backend + el texto mostrado. */
 async function ask(page, question) {
-  const panel = await ensurePanel(page);
+  await ensurePanel(page);
   const input = page.getByTestId("assistant-input");
   await input.fill(question);
   const before = await page.getByTestId("msg-assistant").count();
@@ -128,7 +128,7 @@ async function connectWalletIfNeeded(page) {
 }
 
 async function runAccount(browser, account) {
-  const dir = ensureDirs(account);
+  ensureDirs(account);
   const transcriptFile = path.join(OUT_DIR, "transcripciones", `${account.id}.json`);
   const transcript = fs.existsSync(transcriptFile)
     ? JSON.parse(fs.readFileSync(transcriptFile, "utf8"))
@@ -154,7 +154,7 @@ async function runAccount(browser, account) {
     if (entry.flow === "consulta errada / ambigua" && !wrongStarted) {
       wrongStarted = true;
       // Hilo nuevo para las consultas erradas: aísla la prueba de robustez del contexto anterior.
-      const panel = await ensurePanel(page);
+      await ensurePanel(page);
       const reset = page.getByTestId("assistant-new-chat");
       if ((await reset.count()) > 0 && (await reset.isEnabled().catch(() => false))) {
         await reset.click();

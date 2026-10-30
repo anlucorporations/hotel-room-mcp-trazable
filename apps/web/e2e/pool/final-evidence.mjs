@@ -4,8 +4,8 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
 import { parseAbi } from "viem";
 import {
-  ACCOUNTS, WEB_URL, openAccountBrowser, gotoAndConnect, pub,
-  HOTEL_ADDRESS, AUCTION_ADDRESS, sleep,
+  ACCOUNTS, openAccountBrowser, gotoAndConnect, pub,
+  HOTEL_ADDRESS, AUCTION_ADDRESS,
 } from "./flow-lib.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -88,7 +88,7 @@ async function captureWallets(browser) {
 }
 
 async function main() {
-  const events = await scanEvents();
+  await scanEvents();
   const browser = await chromium.launch({ headless: true });
   await captureWallets(browser);
   await browser.close();

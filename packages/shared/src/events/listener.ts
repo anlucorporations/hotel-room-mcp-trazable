@@ -188,7 +188,16 @@ export function decodeCanonicalDomainEvents(
   const events: CanonicalDomainEvent[] = [];
   for (const log of logs) {
     const { blockNumber, transactionHash, logIndex } = log;
-    if (blockNumber == null || transactionHash == null || logIndex == null) continue;
+    if (
+      blockNumber === null ||
+      blockNumber === undefined ||
+      transactionHash === null ||
+      transactionHash === undefined ||
+      logIndex === null ||
+      logIndex === undefined
+    ) {
+      continue;
+    }
     const location = { blockNumber, txHash: transactionHash, logIndex };
     try {
       const decoded = decodeEventLog({

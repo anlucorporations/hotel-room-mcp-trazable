@@ -3,9 +3,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
 import {
-  ACCOUNTS, WEB_URL, tokenIdFor, openAccountBrowser, gotoAndConnect, walletConnected,
-  waitOwner, ownerOf, auctionState, pub, auctionAbi, AUCTION_ADDRESS, HOTEL_ADDRESS, hotelAbi,
-  sleep, walletFor, CURRENCY,
+  ACCOUNTS, WEB_URL, tokenIdFor, openAccountBrowser, gotoAndConnect,
+  waitOwner, ownerOf, auctionState, pub, auctionAbi, AUCTION_ADDRESS,
+  sleep, walletFor,
 } from "./flow-lib.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));

@@ -1,4 +1,3 @@
-import { chromium } from "@playwright/test";
 import { installNavegadorWallet } from "./navegador-wallet.mjs";
 import { ACCOUNTS } from "./pool-spec.mjs";
 export { ACCOUNTS };

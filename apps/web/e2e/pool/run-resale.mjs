@@ -4,7 +4,6 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
 import {
   ACCOUNTS, tokenIdFor, openAccountBrowser, gotoAndConnect, pub, HOTEL_ADDRESS, hotelAbi,
-  auctionAbi, AUCTION_ADDRESS, sleep,
 } from "./flow-lib.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
