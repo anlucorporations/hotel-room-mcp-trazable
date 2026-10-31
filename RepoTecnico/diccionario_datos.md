@@ -4,7 +4,7 @@
 > **Fuente de verdad**: `packages/shared/src/db/migrator.ts` (migraciones incrementales, **44 tablas**) · `packages/shared/src/db/schema.sql` se conserva como referencia histórica y su paridad la comprueba un guardián (`packages/shared/src/architecture-guardian.test.ts`)
 > **Artefactos sincronizados**: `RepoTecnico/base_datos.sql` (esquema físico ejecutable) y `RepoTecnico/diagrama_er.md` (modelo entidad-relación); los tres derivan del migrator y se actualizan en el mismo cambio.
 > **Decisiones normativas**: `docs/adr/` · **Especificación**: `docs/SRS.md` §5
-> **Estado**: las **16 tablas** de los apartados §2–§3.7 están **implementadas** y en producción. Las **11 tablas de §3.8–§3.9** (sección Habitación + checklist operativo RF-52/RF-55, D-1…D-28), las **17 de §3.10** (bloque 2, D-34…D-55) y las **2 de §3.11** (contenido público, D-73/D-74) están **sincronizadas con el runtime** (`migrator.ts`) y con `base_datos.sql` y `diagrama_er.md`. Total: **60 tablas** (las 12 de la extensión vNext F4–F9 y sus columnas están en §3.12). Lo que queda abierto en lo implementado se marca **HUECO ABIERTO** o **DEUDA**.
+> **Estado**: las **16 tablas** de los apartados §2–§3.7 están **implementadas** y en producción. Las **11 tablas de §3.8–§3.9** (sección Habitación + checklist operativo RF-52/RF-55, D-1…D-28), las **17 de §3.10** (bloque 2, D-34…D-55) y las **2 de §3.11** (contenido público, D-73/D-74) están **sincronizadas con el runtime** (`migrator.ts`) y con `base_datos.sql` y `diagrama_er.md`. Total: **61 tablas** (las 12 de la extensión vNext F4–F9 y sus columnas están en §3.12). Lo que queda abierto en lo implementado se marca **HUECO ABIERTO** o **DEUDA**.
 
 ---
 

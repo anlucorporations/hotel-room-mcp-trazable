@@ -15,7 +15,7 @@
 > **13 de habitaciones, reseñas y contenido público** (§6), **17 del bloque 2** (reservas, actividades,
 > housekeeping, mantenimiento y suministros, §7) y **14 de las extensiones vNext F4–F9** (§8): firmas
 > on-chain, operadores de terminal, auditoría, áreas comunes, inspecciones, cargos por daños y alertas de
-> suministros. **Total: 60 tablas**; el guardián `documentation-sync-guardian.test.ts` impide que se
+> suministros. **Total: 61 tablas**; el guardián `documentation-sync-guardian.test.ts` impide que se
 > desincronicen de nuevo.
 >
 > **Convenciones de notación**

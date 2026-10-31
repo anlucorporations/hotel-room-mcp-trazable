@@ -100,6 +100,8 @@ export const WIPE_ORDER = [
   "room_images",
   "room_amenity_links",
   "room_spaces",
+  // Outbox de publicación con minteo (D-85): job por habitación. Se borra antes que `rooms`.
+  "room_mint_jobs",
   "room_publications",
   "room_status_history",
   // — habitaciones (al final: los planes preventivos quedan con room_id = NULL) —
